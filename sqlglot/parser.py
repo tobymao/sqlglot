@@ -797,7 +797,7 @@ class Parser(metaclass=_Parser):
         self._next = None
         self._prev = None
         self._prev_comments = None
-    
+
     def parse(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
     ) -> t.List[t.Optional[exp.Expression]]:
@@ -1771,6 +1771,7 @@ class Parser(metaclass=_Parser):
             from_ = self._parse_from()
             if from_:
                 this.set("from", from_)
+
             self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
             this = self._parse_table() if table else self._parse_select(nested=True)
@@ -1899,7 +1900,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
         )
-    
+
     def _parse_from(self) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.FROM):
             return None
@@ -4193,7 +4194,6 @@ class Parser(metaclass=_Parser):
                 return subparser
         self._retreat(index)
         return None
-    
 
     def _match(self, token_type, advance=True):
         if not self._curr:

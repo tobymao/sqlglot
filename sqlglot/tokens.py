@@ -953,8 +953,10 @@ class Tokenizer(metaclass=_Tokenizer):
         comment_end = self._COMMENTS[comment_start]  # type: ignore
 
         if comment_end:
-            comment_end_size = len(comment_end)
+            # Skip the comment's start delimiter
+            self._advance(comment_start_size)
 
+            comment_end_size = len(comment_end)
             while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
 

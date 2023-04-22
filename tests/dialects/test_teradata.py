@@ -39,7 +39,31 @@ class TestTeradata(Validator):
             write={"teradata": "CREATE OR REPLACE VIEW a AS (SELECT b FROM c)"},
         )
 
-        self.validate_identity("CREATE VOLATILE TABLE a")
+        self.validate_all(
+            "CREATE VOLATILE TABLE a",
+            write={
+                "": "CREATE VOLATILE TABLE a",
+                "teradata": "CREATE VOLATILE TABLE a",
+                "bigquery": "CREATE TABLE a",
+                "clickhouse": "CREATE TABLE a",
+                "databricks": "CREATE TABLE a",
+                "drill": "CREATE TABLE a",
+                "duckdb": "CREATE TABLE a",
+                "hive": "CREATE TABLE a",
+                "mysql": "CREATE TABLE a",
+                "oracle": "CREATE TABLE a",
+                "postgres": "CREATE TABLE a",
+                "presto": "CREATE TABLE a",
+                "redshift": "CREATE TABLE a",
+                "snowflake": "CREATE TABLE a",
+                "spark": "CREATE TABLE a",
+                "sqlite": "CREATE TABLE a",
+                "starrocks": "CREATE TABLE a",
+                "tableau": "CREATE TABLE a",
+                "trino": "CREATE TABLE a",
+                "tsql": "CREATE TABLE a",
+            },
+        )
 
     def test_insert(self):
         self.validate_all(

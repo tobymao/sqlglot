@@ -615,9 +615,7 @@ class Parser(metaclass=_Parser):
         "TEMPORARY": lambda self: self._parse_temporary(global_=False),
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
         "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
-        "VOLATILE": lambda self: self.expression(
-            exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
-        ),
+        "VOLATILE": lambda self: self._parse_volatile_property(),
         "WITH": lambda self: self._parse_with_property(),
     }
 
@@ -1192,13 +1190,6 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_property(self) -> t.Optional[exp.Expression]:
-        if self._prev.token_type in (
-            TokenType.CREATE,
-            TokenType.REPLACE,
-            TokenType.UNIQUE,
-        ) and self._match(TokenType.VOLATILE):
-            return exp.VolatileProperty()
-
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -1269,6 +1260,21 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.FallbackProperty, no=no, protection=self._match_text_seq("PROTECTION")
         )
+
+    def _parse_volatile_property(self) -> exp.Expression:
+        if self._index >= 2:
+            pre_volatile_token = self._tokens[self._index - 2]
+        else:
+            pre_volatile_token = None
+
+        if pre_volatile_token and pre_volatile_token.token_type in (
+            TokenType.CREATE,
+            TokenType.REPLACE,
+            TokenType.UNIQUE,
+        ):
+            return exp.VolatileProperty()
+
+        return self.expression(exp.StabilityProperty, this=exp.Literal.string("VOLATILE"))
 
     def _parse_with_property(
         self,

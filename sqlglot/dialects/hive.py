@@ -340,6 +340,7 @@ class Hive(Dialect):
             exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:

@@ -42,7 +42,6 @@ class TestTeradata(Validator):
         self.validate_all(
             "CREATE VOLATILE TABLE a",
             write={
-                "": "CREATE VOLATILE TABLE a",
                 "teradata": "CREATE VOLATILE TABLE a",
                 "bigquery": "CREATE TABLE a",
                 "clickhouse": "CREATE TABLE a",

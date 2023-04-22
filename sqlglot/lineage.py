@@ -101,7 +101,7 @@ def lineage(
             if maybe_select.alias_or_name == column_name:
                 # If we get an exact match, stop searching.
                 select = maybe_select
-                break           
+                break
             if isinstance(maybe_select, exp.Star):
                 # If we get a `*`, make a note but keep moving. This means we will prefer
                 # an exact match if both a `*` and an exact match exist:

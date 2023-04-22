@@ -240,7 +240,6 @@ class Postgres(Dialect):
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "TEMP": TokenType.TEMPORARY,
-            "UUID": TokenType.UUID,
             "CSTRING": TokenType.PSEUDO_TYPE,
         }
 

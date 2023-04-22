@@ -105,7 +105,7 @@ def _parse_date_part(self: parser.Parser) -> t.Optional[exp.Expression]:
             scale = None
 
         ts = self.expression(exp.Cast, this=expression, to=exp.DataType.build("TIMESTAMP"))
-        to_unix = self.expression(exp.TimeToUnix, this=ts)
+        to_unix: exp.Expression = self.expression(exp.TimeToUnix, this=ts)
 
         if scale:
             to_unix = exp.Mul(this=to_unix, expression=exp.Literal.number(scale))

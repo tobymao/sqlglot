@@ -643,6 +643,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
+        "UUID": TokenType.UUID,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "VOLATILE": TokenType.VOLATILE,

@@ -18,6 +18,8 @@ from sqlglot.trie import in_trie, new_trie
 
 logger = logging.getLogger("sqlglot")
 
+E = t.TypeVar("E", bound=exp.Expression)
+
 
 def parse_var_map(args: t.Sequence) -> exp.Expression:
     keys = []
@@ -403,7 +405,7 @@ class Parser(metaclass=_Parser):
     COLUMN_OPERATORS = {
         TokenType.DOT: None,
         TokenType.DCOLON: lambda self, this, to: self.expression(
-            exp.Cast,
+            exp.Cast if self.STRICT_CAST else exp.TryCast,
             this=this,
             to=to,
         ),
@@ -925,8 +927,8 @@ class Parser(metaclass=_Parser):
         self.errors.append(error)
 
     def expression(
-        self, exp_class: t.Type[exp.Expression], comments: t.Optional[t.List[str]] = None, **kwargs
-    ) -> exp.Expression:
+        self, exp_class: t.Type[E], comments: t.Optional[t.List[str]] = None, **kwargs
+    ) -> E:
         """
         Creates a new, validated Expression.
 
@@ -982,7 +984,7 @@ class Parser(metaclass=_Parser):
         if index != self._index:
             self._advance(index - self._index)
 
-    def _parse_command(self) -> exp.Expression:
+    def _parse_command(self) -> exp.Command:
         return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
 
     def _parse_comment(self, allow_exists: bool = True) -> exp.Expression:
@@ -1027,7 +1029,7 @@ class Parser(metaclass=_Parser):
         self._parse_query_modifiers(expression)
         return expression
 
-    def _parse_drop(self) -> t.Optional[exp.Expression]:
+    def _parse_drop(self) -> t.Optional[exp.Drop | exp.Command]:
         start = self._prev
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match(TokenType.MATERIALIZED)
@@ -2588,9 +2590,7 @@ class Parser(metaclass=_Parser):
             return None
 
         this = self._parse_primary()
-        unit = self._parse_function() or self._parse_id_var(
-            any_token=False, tokens=self.INTERVAL_VARS
-        )
+        unit = self._parse_function() or self._parse_var()
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
@@ -2602,7 +2602,7 @@ class Parser(metaclass=_Parser):
             parts = this.name.split()
             if not unit and len(parts) <= 2:
                 this = exp.Literal.string(seq_get(parts, 0))
-                unit = exp.to_identifier(seq_get(parts, 1))
+                unit = self.expression(exp.Var, this=seq_get(parts, 1))
 
         return self.expression(exp.Interval, this=this, unit=unit)
 
@@ -4076,7 +4076,7 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.INSERT):
                 _this = self._parse_star()
                 if _this:
-                    then = self.expression(exp.Insert, this=_this)
+                    then: t.Optional[exp.Expression] = self.expression(exp.Insert, this=_this)
                 else:
                     then = self.expression(
                         exp.Insert,

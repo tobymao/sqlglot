@@ -133,6 +133,7 @@ INTERVAL '1' day * 5
 5 * INTERVAL '1' day
 CASE WHEN TRUE THEN INTERVAL '15' days END
 CAST('45' AS INTERVAL DAYS)
+CAST(x AS UUID)
 FILTER(a, x -> x.a.b.c.d.e.f.g)
 FILTER(a, x -> FOO(x.a.b.c.d.e.f.g) + x.a.b.c.d.e.f.g)
 TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), 1, DAY)

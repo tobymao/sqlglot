@@ -224,6 +224,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parse_one("SELECT @x, @@x, @1").sql(), "SELECT @x, @@x, @1")
 
     def test_var(self):
+        self.assertIsInstance(parse_one("INTERVAL '1' DAY").args["unit"], exp.Var)
         self.assertEqual(parse_one("SELECT @JOIN, @'foo'").sql(), "SELECT @JOIN, @'foo'")
 
     def test_comments(self):

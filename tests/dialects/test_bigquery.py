@@ -59,7 +59,7 @@ class TestBigQuery(Validator):
                 "spark": r"'/\*.*\*/'",
             },
         )
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ValueError):
             transpile("'\\'", read="bigquery")
 
         self.validate_all(

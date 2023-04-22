@@ -420,6 +420,7 @@ class MySQL(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         LIMIT_FETCH = "LIMIT"

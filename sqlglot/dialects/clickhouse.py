@@ -144,6 +144,11 @@ class ClickHouse(Dialect):
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
         }
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         EXPLICIT_UNION = True
 
         def _param_args_sql(

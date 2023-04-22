@@ -802,7 +802,16 @@ class Tokenizer(metaclass=_Tokenizer):
         self.reset()
         self.sql = sql
         self.size = len(sql)
-        self._scan()
+        try:
+            self._scan()
+        except Exception as e:
+            start = self._current - 50
+            end = self._current + 50
+            start = start if start > 0 else 0
+            end = end if end < self.size else self.size - 1
+            context = self.sql[start:end]
+            raise ValueError(f"Error tokenizing '{context}'") from e
+
         return self.tokens
 
     def _scan(self, until: t.Optional[t.Callable] = None) -> None:

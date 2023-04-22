@@ -47,6 +47,10 @@ class TestTokens(unittest.TestCase):
         self.assertEqual(tokens[2].token_type, TokenType.SHOW)
         self.assertEqual(tokens[3].token_type, TokenType.SEMICOLON)
 
+    def test_error_msg(self):
+        with self.assertRaisesRegex(ValueError, "Error tokenizing 'select.*"):
+            Tokenizer().tokenize("select /*")
+
     def test_jinja(self):
         tokenizer = Tokenizer()
 

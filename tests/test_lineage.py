@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import unittest
 
 from sqlglot.lineage import lineage
@@ -86,5 +88,41 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(
             downstream.source.sql(),
             "SELECT x.a AS a FROM x AS x",
+        )
+        self.assertEqual(downstream.alias, "")
+
+    def test_lineage_source_with_star(self) -> None:
+        node = lineage(
+            "a",
+            "WITH y AS (SELECT * FROM x) SELECT a FROM y",
+        )
+        self.assertEqual(
+            node.source.sql(),
+            "WITH y AS (SELECT * FROM x AS x) SELECT y.a AS a FROM y",
+        )
+        self.assertEqual(node.alias, "")
+
+        downstream = node.downstream[0]
+        self.assertEqual(
+            downstream.source.sql(),
+            "SELECT * FROM x AS x",
+        )
+        self.assertEqual(downstream.alias, "")
+
+    def test_lineage_external_col(self) -> None:
+        node = lineage(
+            "a",
+            "WITH y AS (SELECT * FROM x) SELECT a FROM y JOIN z USING (uid)",
+        )
+        self.assertEqual(
+            node.source.sql(),
+            "WITH y AS (SELECT * FROM x AS x) SELECT a AS a FROM y JOIN z AS z ON y.uid = z.uid",
+        )
+        self.assertEqual(node.alias, "")
+
+        downstream = node.downstream[0]
+        self.assertEqual(
+            downstream.source.sql(),
+            "?",
         )
         self.assertEqual(downstream.alias, "")

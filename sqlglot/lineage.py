@@ -94,29 +94,55 @@ def lineage(
                 )
             return node
 
-        select = next(select for select in scope.selects if select.alias_or_name == column_name)
+        # Find the specific select clause that is the source of the column we want.
+        # This can either be a specific, named select or a generic `*` clause.
+        select = None
+        for maybe_select in scope.selects:
+            if maybe_select.alias_or_name == column_name:
+                # If we get an exact match, stop searching.
+                select = maybe_select
+                break
+            if isinstance(maybe_select, exp.Star):
+                # If we get a `*`, make a note but keep moving. This means we will prefer
+                # an exact match if both a `*` and an exact match exist:
+                #   "x", WITH foo AS (SELECT *, x FROM bar) SELECT x from foo
+                #     => SELECT x FROM bar
+                select = maybe_select
+        if not select:
+            raise ValueError(f"Could not find {column_name} in {scope.expression.sql()}")
+
+        # For better ergonomics in our node labels, replace the full select with a version that
+        # has only the column we care about.
+        #   "x", SELECT x, y FROM foo
+        #     => "x", SELECT x FROM foo
         source = optimize(scope.expression.select(select, append=False), schema=schema, rules=rules)
         select = source.selects[0]
 
+        # Create the node for this step in the lineage chain, and attach it to the previous one.
         node = Node(
             name=f"{scope_name}.{column_name}" if scope_name else column_name,
             source=source,
             expression=select,
             alias=alias or "",
         )
-
         if upstream:
             upstream.downstream.append(node)
 
+        # Find all columns that went into creating this one to list their lineage nodes.
         for c in set(select.find_all(exp.Column)):
             table = c.table
-            source = scope.sources[table]
+            source = scope.sources.get(table)
 
             if isinstance(source, Scope):
+                # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
                 to_node(
                     c.name, scope=source, scope_name=table, upstream=node, alias=aliases.get(table)
                 )
             else:
+                # The source is not a scope - we've reached the end of the line. At this point, if a source is not found
+                # it means this column's lineage is unknown. This can happen if the definition of a source used in a query
+                # is not passed into the `sources` map.
+                source = source or exp.Placeholder()
                 node.downstream.append(Node(name=c.sql(), source=source, expression=source))
 
         return node

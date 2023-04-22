@@ -953,7 +953,7 @@ class Tokenizer(metaclass=_Tokenizer):
         comment_end = self._COMMENTS[comment_start]  # type: ignore
 
         if comment_end:
-            # Move past the comment start (we've already consumed its first character)
+            # Skip the comment's start delimiter
             self._advance(comment_start_size)
 
             comment_end_size = len(comment_end)

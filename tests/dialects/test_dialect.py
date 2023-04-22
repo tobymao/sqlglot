@@ -752,6 +752,20 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "TS_OR_DS_ADD(x, 1, 'DAY')",
+            write={
+                "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d'))",
+                "hive": "DATE_ADD(x, 1)",
+            },
+        )
+        self.validate_all(
+            "TS_OR_DS_ADD(CURRENT_DATE, 1, 'DAY')",
+            write={
+                "presto": "DATE_ADD('DAY', 1, CURRENT_DATE)",
+                "hive": "DATE_ADD(CURRENT_DATE, 1)",
+            },
+        )
+        self.validate_all(
             "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             write={
                 "drill": "DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL 1 DAY)",

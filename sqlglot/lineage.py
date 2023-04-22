@@ -96,20 +96,13 @@ def lineage(
 
         # Find the specific select clause that is the source of the column we want.
         # This can either be a specific, named select or a generic `*` clause.
-        select = None
-        for maybe_select in scope.selects:
-            if maybe_select.alias_or_name == column_name:
-                # If we get an exact match, stop searching.
-                select = maybe_select
-                break
-            if isinstance(maybe_select, exp.Star):
-                # If we get a `*`, make a note but keep moving. This means we will prefer
-                # an exact match if both a `*` and an exact match exist:
-                #   "x", WITH foo AS (SELECT *, x FROM bar) SELECT x from foo
-                #     => SELECT x FROM bar
-                select = maybe_select
+        select = next(
+            (select for select in scope.selects if select.alias_or_name == column_name),
+            exp.Star() if scope.expression.is_star else None,
+        )
+
         if not select:
-            raise ValueError(f"Could not find {column_name} in {scope.expression.sql()}")
+            raise ValueError(f"Could not find {column_name} in {scope.expression}")
 
         # For better ergonomics in our node labels, replace the full select with a version that
         # has only the column we care about.

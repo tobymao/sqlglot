@@ -28,6 +28,11 @@ class Tableau(Dialect):
             exp.Count: _count_sql,
         }
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore

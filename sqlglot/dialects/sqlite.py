@@ -82,6 +82,11 @@ class SQLite(Dialect):
             exp.TryCast: no_trycast_sql,
         }
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         LIMIT_FETCH = "LIMIT"
 
         def cast_sql(self, expression: exp.Cast) -> str:

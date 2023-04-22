@@ -818,7 +818,6 @@ class Create(Expression):
         "properties": False,
         "replace": False,
         "unique": False,
-        "volatile": False,
         "indexes": False,
         "no_schema_binding": False,
         "begin": False,
@@ -1698,6 +1697,10 @@ class SqlSecurityProperty(Property):
     arg_types = {"definer": True}
 
 
+class StabilityProperty(Property):
+    arg_types = {"this": True}
+
+
 class TableFormatProperty(Property):
     arg_types = {"this": True}
 
@@ -1710,8 +1713,8 @@ class TransientProperty(Property):
     arg_types = {"this": False}
 
 
-class VolatilityProperty(Property):
-    arg_types = {"this": True}
+class VolatileProperty(Property):
+    arg_types = {"this": False}
 
 
 class WithDataProperty(Property):

@@ -311,6 +311,11 @@ class TestMySQL(Validator):
             },
         )
 
+    def test_mysql_time(self):
+        self.validate_identity("FROM_UNIXTIME(a, b)")
+        self.validate_identity("FROM_UNIXTIME(a, b, c)")
+        self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
+
     def test_mysql(self):
         self.validate_all(
             "SELECT a FROM tbl FOR UPDATE",

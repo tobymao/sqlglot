@@ -435,6 +435,7 @@ class TestDialect(Validator):
             write={
                 "duckdb": "EPOCH(CAST('2020-01-01' AS TIMESTAMP))",
                 "hive": "UNIX_TIMESTAMP('2020-01-01')",
+                "mysql": "UNIX_TIMESTAMP('2020-01-01')",
                 "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d %T'))",
             },
         )

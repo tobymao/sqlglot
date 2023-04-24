@@ -2792,15 +2792,14 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:
-        if self._curr and self._curr.token_type in self.TYPE_TOKENS:
-            return self._parse_types()
-
+        index = self._index
         this = self._parse_id_var()
         self._match(TokenType.COLON)
         data_type = self._parse_types()
 
         if not data_type:
-            return None
+            self._retreat(index)
+            return self._parse_types()
         return self.expression(exp.StructKwarg, this=this, expression=data_type)
 
     def _parse_at_time_zone(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

@@ -212,6 +212,8 @@ class Generator:
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
 
+    UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren, exp.Column)
+
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
@@ -1704,15 +1706,10 @@ class Generator:
             this = expression.this.name if expression.this else ""
             return f"INTERVAL '{this}{unit}'"
 
-        this = expression.this
+        this = self.sql(expression, "this")
         if this:
-            this = (
-                f" {this}"
-                if isinstance(this, exp.Literal) or isinstance(this, exp.Paren)
-                else f" ({this})"
-            )
-        else:
-            this = ""
+            unwrapped = isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES)
+            this = f" {this}" if unwrapped else f" ({this})"
 
         return f"INTERVAL{this}{unit}"
 

@@ -2465,10 +2465,25 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.FETCH):
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
             direction = self._prev.text if direction else "FIRST"
+
             count = self._parse_number()
+            percent = self._match(TokenType.PERCENT)
+
             self._match_set((TokenType.ROW, TokenType.ROWS))
-            self._match(TokenType.ONLY)
-            return self.expression(exp.Fetch, direction=direction, count=count)
+
+            only = self._match(TokenType.ONLY)
+            with_ties = self._match_text_seq("WITH", "TIES")
+
+            if only and with_ties:
+                self.raise_error("Cannot specify both ONLY and WITH TIES in FETCH clause")
+
+            return self.expression(
+                exp.Fetch,
+                direction=direction,
+                count=count,
+                percent=percent,
+                with_ties=with_ties,
+            )
 
         return this
 

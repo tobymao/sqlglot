@@ -2482,7 +2482,6 @@ class Parser(metaclass=_Parser):
                 direction=direction,
                 count=count,
                 percent=percent,
-                only=only,
                 with_ties=with_ties,
             )
 

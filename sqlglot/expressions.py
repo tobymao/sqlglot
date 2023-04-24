@@ -1335,7 +1335,6 @@ class Fetch(Expression):
         "direction": False,
         "count": False,
         "percent": False,
-        "only": False,
         "with_ties": False,
     }
 

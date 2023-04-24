@@ -807,14 +807,17 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("DATE_ADD(cola, 2)", col.sql())
         col_col_for_add = SF.date_add("cola", "colb")
         self.assertEqual("DATE_ADD(cola, colb)", col_col_for_add.sql())
+        current_date_add = SF.date_add(SF.current_date(), 5)
+        self.assertEqual("DATE_ADD(CURRENT_DATE, 5)", current_date_add.sql())
+        self.assertEqual("DATEADD(day, 5, CURRENT_DATE)", current_date_add.sql(dialect="snowflake"))
 
     def test_date_sub(self):
         col_str = SF.date_sub("cola", 2)
-        self.assertEqual("DATE_SUB(cola, 2)", col_str.sql())
+        self.assertEqual("DATE_ADD(cola, -2)", col_str.sql())
         col = SF.date_sub(SF.col("cola"), 2)
-        self.assertEqual("DATE_SUB(cola, 2)", col.sql())
+        self.assertEqual("DATE_ADD(cola, -2)", col.sql())
         col_col_for_add = SF.date_sub("cola", "colb")
-        self.assertEqual("DATE_SUB(cola, colb)", col_col_for_add.sql())
+        self.assertEqual("DATE_ADD(cola, colb * -1)", col_col_for_add.sql())
 
     def test_date_diff(self):
         col_str = SF.date_diff("cola", "colb")

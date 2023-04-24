@@ -784,7 +784,11 @@ class Generator:
         direction = f" {direction.upper()}" if direction else ""
         count = expression.args.get("count")
         count = f" {count}" if count else ""
-        return f"{self.seg('FETCH')}{direction}{count} ROWS ONLY"
+        if expression.args.get("percent"):
+            count = f"{count} PERCENT"
+        with_ties = "WITH TIES" if expression.args.get("with_ties") else ""
+        only = "ONLY" if expression.args.get("only") or not with_ties else ""
+        return f"{self.seg('FETCH')}{direction}{count} ROWS {only}{with_ties}"
 
     def filter_sql(self, expression: exp.Filter) -> str:
         this = self.sql(expression, "this")

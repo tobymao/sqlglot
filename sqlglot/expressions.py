@@ -1331,7 +1331,13 @@ class Partition(Expression):
 
 
 class Fetch(Expression):
-    arg_types = {"direction": False, "count": False}
+    arg_types = {
+        "direction": False,
+        "count": False,
+        "percent": False,
+        "only": False,
+        "with_ties": False,
+    }
 
 
 class Group(Expression):

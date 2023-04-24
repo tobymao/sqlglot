@@ -201,14 +201,14 @@ def _simplify_comparison(expression, left, right, or_=False):
                     return left if (av < bv if or_ else av >= bv) else right
 
                 # we can't ever shortcut to true because the column could be null
-                if isinstance(a, exp.LT) and isinstance(b, GT_GTE):
-                    if not or_ and av <= bv:
-                        return exp.false()
-                elif isinstance(a, exp.GT) and isinstance(b, LT_LTE):
-                    if not or_ and av >= bv:
-                        return exp.false()
-                elif isinstance(a, exp.EQ):
-                    if not or_:
+                if not or_:
+                    if isinstance(a, exp.LT) and isinstance(b, GT_GTE):
+                        if av <= bv:
+                            return exp.false()
+                    elif isinstance(a, exp.GT) and isinstance(b, LT_LTE):
+                        if av >= bv:
+                            return exp.false()
+                    elif isinstance(a, exp.EQ):
                         if isinstance(b, exp.LT):
                             return exp.false() if av >= bv else a
                         if isinstance(b, exp.LTE):

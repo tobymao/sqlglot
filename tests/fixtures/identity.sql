@@ -770,6 +770,7 @@ STRUCT<VARCHAR(10)>("bla")
 STRUCT<INT>(5)
 STRUCT<DATE>("2011-05-05")
 STRUCT<x INT, y TEXT>(1, t.str_col)
+STRUCT<int INT>
 SELECT CAST(NULL AS ARRAY<INT>) IS NULL AS array_is_null
 ALTER TABLE "schema"."tablename" ADD CONSTRAINT "CHK_Name" CHECK (NOT "IdDwh" IS NULL AND "IdDwh" <> (0))
 ALTER TABLE persons ADD CONSTRAINT persons_pk PRIMARY KEY (first_name, last_name)

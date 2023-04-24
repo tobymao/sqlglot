@@ -321,6 +321,11 @@ class TestHive(Validator):
                 "": "TS_OR_DS_ADD('2020-01-01', 1 * -1, 'DAY')",
             },
         )
+        self.validate_all("DATE_ADD('2020-01-01', -1)", read={"": "DATE_SUB('2020-01-01', 1)"})
+        self.validate_all("DATE_ADD(a, b * -1)", read={"": "DATE_SUB(a, b)"})
+        self.validate_all(
+            "ADD_MONTHS('2020-01-01', -2)", read={"": "DATE_SUB('2020-01-01', 2, month)"}
+        )
         self.validate_all(
             "DATEDIFF(TO_DATE(y), x)",
             write={

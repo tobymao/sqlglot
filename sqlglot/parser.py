@@ -5,7 +5,7 @@ import typing as t
 from collections import defaultdict
 
 from sqlglot import exp
-from sqlglot.betterbrain import Suggestion, TableIdentifier
+from sqlglot.betterbrain import SQLSuggestion, TableIdentifier
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
 from sqlglot.helper import (
     apply_index_offset,
@@ -4341,7 +4341,7 @@ class BetterBrainParser(Parser):
 
     def suggest(
         self, raw_tokens: t.List[Token], sql: t.Optional[str] = None
-    ) -> Suggestion:
+    ) -> SQLSuggestion:
         return self._suggest(
             parse_method=self.__class__._parse_suggestion_statement, raw_tokens=raw_tokens, sql=sql
         )
@@ -4351,7 +4351,7 @@ class BetterBrainParser(Parser):
         parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
         raw_tokens: t.List[Token],
         sql: t.Optional[str] = None,
-    ) -> Suggestion:
+    ) -> SQLSuggestion:
         self.reset()
         self.sql = sql or ""
 
@@ -4386,7 +4386,7 @@ class BetterBrainParser(Parser):
                 all_tables = from_tables + join_tables
                 table_ids = [self._get_table_name_and_alias(table) for table in all_tables]
 
-        return Suggestion(suggestions=suggestions, table_ids= table_ids)
+        return SQLSuggestion(suggestions=suggestions, table_ids= table_ids)
 
 
     def _get_table_name_and_alias(self, table: exp.Table)-> TableIdentifier:

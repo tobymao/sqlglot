@@ -9,7 +9,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
-from sqlglot.betterbrain import Suggestion
+from sqlglot.betterbrain import SQLSuggestion
 from sqlglot.dialects.dialect import BetterBrainDialect, Dialect as Dialect, Dialects as Dialects
 from sqlglot.diff import diff as diff
 from sqlglot.errors import (
@@ -161,9 +161,9 @@ def sql_suggest(
     read: DialectType = None,
     into: t.Optional[exp.IntoType] = None,
     **opts,
-) -> Suggestion:
+) -> SQLSuggestion:
     dialect = BetterBrainDialect.get_or_raise(read)()
-    return dialect.suggest(sql, **opts)
+    return dialect.sql_suggest(sql, **opts)
 
 
 def transpile(

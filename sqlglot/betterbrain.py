@@ -11,7 +11,7 @@ class TableIdentifier:
     alias: t.Optional[str] = None
 
 @dataclass
-class Suggestion:
+class SQLSuggestion:
     suggestions: t.List[t.Union[TokenType, str]]
     table_ids: t.Optional[t.List[TableIdentifier]] = None
 

@@ -1,7 +1,7 @@
 import unittest
 
 from sqlglot import Parser, exp, parse, parse_one, sql_suggest
-from sqlglot.betterbrain import Suggestion, TableIdentifier
+from sqlglot.betterbrain import SQLSuggestion, TableIdentifier
 from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import assert_logger_contains
 from sqlglot.tokens import TokenType
@@ -66,56 +66,56 @@ class TestBetterBrain(unittest.TestCase):
 
     def test_individual(self):
         suggestion = sql_suggest("select asian, abbb from table_1 as tototot join table_2 as tatata join table_3 as momomo where <<", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_WHERE_COL_CURSOR, 
              table_ids=[TableIdentifier(name="table_1", alias="tototot"), 
                         TableIdentifier(name="table_2", alias="tatata"), 
                         TableIdentifier(name="table_3", alias="momomo")]))
 
         suggestion = sql_suggest("select asian, << from table_1 as tototot join table_2 as tatata join table_3 as momomo", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_COL_CURSOR, 
              table_ids=[TableIdentifier(name="table_1", alias="tototot"), 
                         TableIdentifier(name="table_2", alias="tatata"), 
                         TableIdentifier(name="table_3", alias="momomo")]))
         
         suggestion = sql_suggest("select col_1, sfd<< from table_1", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_COL_CURSOR, 
              table_ids=[TableIdentifier(name="table_1")]))
         
         suggestion = sql_suggest("select << from table_1", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_FIRST_COL_CURSOR, 
              table_ids=[TableIdentifier(name="table_1")]))
 
         suggestion = sql_suggest("select asian, a<< from table_1", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_COL_CURSOR, 
              table_ids=[TableIdentifier(name="table_1")]))
         
         suggestion = sql_suggest("select asian from table_2222 <<", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_FROM_CURSOR))
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_FROM_CURSOR))
 
         suggestion = sql_suggest("select asian from <<", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_TABLE_CURSOR))
         
 
         suggestion = sql_suggest("select asian <<", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_SELECT_CURSOR))
         
         suggestion = sql_suggest("select col_1 sfd<< a a a a a a a a a a", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_SELECT_CURSOR))
         
 
         suggestion = sql_suggest("select col_1 sfd<< limit where from table_1", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_SELECT_CURSOR))
         
 
         suggestion = sql_suggest("select * from <<", 'postgres')
-        self.assertEqual(suggestion, Suggestion(suggestions=                                    
+        self.assertEqual(suggestion, SQLSuggestion(suggestions=                                    
             EXPECTED_TOKEN_SUGGESTIONS_FOR_TABLE_CURSOR))

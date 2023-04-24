@@ -4,7 +4,7 @@ import typing as t
 from enum import Enum
 
 from sqlglot import exp
-from sqlglot.betterbrain import Suggestion
+from sqlglot.betterbrain import SQLSuggestion
 from sqlglot.parser import BetterBrainParser
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
@@ -511,7 +511,7 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
 
 class BetterBrainDialect(Dialect):
     @t.final
-    def suggest(self, sql: str, **opts) -> Suggestion:
+    def sql_suggest(self, sql: str, **opts) -> SQLSuggestion:
         return self.parser(**{**opts, "tokenizer": self.tokenizer}).suggest(self.tokenize_with_cursor(sql), sql)
 
     @t.final

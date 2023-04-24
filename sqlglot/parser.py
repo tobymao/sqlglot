@@ -2065,9 +2065,7 @@ class Parser(metaclass=_Parser):
         index = self._index
         natural, side, kind = self._parse_join_side_and_kind()
 
-        hint = None
-        if self._match_texts(self.JOIN_HINTS):
-            hint = self._prev.text
+        hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
 
         join = self._match(TokenType.JOIN)
         if not skip_join_token and not join:

@@ -208,16 +208,17 @@ def _simplify_comparison(expression, left, right, or_=False):
                     if not or_ and av >= bv:
                         return exp.false()
                 elif isinstance(a, exp.EQ):
-                    if isinstance(b, exp.LT):
-                        return exp.false() if av >= bv else a
-                    if isinstance(b, exp.LTE):
-                        return exp.false() if av > bv else a
-                    if isinstance(b, exp.GT):
-                        return exp.false() if av <= bv else a
-                    if isinstance(b, exp.GTE):
-                        return exp.false() if av < bv else a
-                    if isinstance(b, exp.NEQ):
-                        return exp.false() if av == bv else a
+                    if not or_:
+                        if isinstance(b, exp.LT):
+                            return exp.false() if av >= bv else a
+                        if isinstance(b, exp.LTE):
+                            return exp.false() if av > bv else a
+                        if isinstance(b, exp.GT):
+                            return exp.false() if av <= bv else a
+                        if isinstance(b, exp.GTE):
+                            return exp.false() if av < bv else a
+                        if isinstance(b, exp.NEQ):
+                            return exp.false() if av == bv else a
     return None
 
 

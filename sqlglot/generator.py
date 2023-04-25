@@ -210,7 +210,7 @@ class Generator:
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
-    WITH_JOIN_HINT = False
+    WITH_JOIN_HINT = True
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
 

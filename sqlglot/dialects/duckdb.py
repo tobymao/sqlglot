@@ -140,6 +140,7 @@ class DuckDB(Dialect):
         }
 
     class Generator(generator.Generator):
+        WITH_JOIN_HINT = False
         STRUCT_DELIMITER = ("(", ")")
 
         TRANSFORMS = {

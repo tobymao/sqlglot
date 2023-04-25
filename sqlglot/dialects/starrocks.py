@@ -21,6 +21,8 @@ class StarRocks(MySQL):
         }
 
     class Generator(MySQL.Generator):  # type: ignore
+        WITH_JOIN_HINT = False
+
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.TEXT: "STRING",

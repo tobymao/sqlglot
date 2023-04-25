@@ -462,8 +462,6 @@ class TSQL(Dialect):
 
         LIMIT_FETCH = "FETCH"
 
-        WITH_JOIN_HINT = True
-
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 

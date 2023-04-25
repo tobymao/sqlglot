@@ -131,6 +131,8 @@ class Teradata(Dialect):
             return cast
 
     class Generator(generator.Generator):
+        WITH_JOIN_HINT = False
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",

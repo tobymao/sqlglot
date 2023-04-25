@@ -26,7 +26,6 @@ EXPECTED_TOKEN_SUGGESTIONS_FOR_TABLE_CURSOR = [
             TokenType.WITH,
             TokenType.CROSS,
             TokenType.VALUES,
-            TokenType.SELECT
 ]
 
 EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_FROM_CURSOR = [TokenType.DISTRIBUTE_BY, 

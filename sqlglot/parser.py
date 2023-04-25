@@ -4300,7 +4300,8 @@ class BetterBrainParser(Parser):
     }
 
     SUGGESTION_TO_DISALLOWED_KEYWORDS = {
-        TokenType.COLUMN: {TokenType.ALIAS}
+        TokenType.COLUMN: {TokenType.ALIAS},
+        TokenType.TABLE: {TokenType.SELECT}
     }
     __slots__ = (
         *Parser.__slots__,

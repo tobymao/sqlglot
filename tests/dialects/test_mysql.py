@@ -318,6 +318,12 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT DATE(DATE_SUB(`dt`, INTERVAL DAYOFMONTH(`dt`) - 1 DAY)) AS __timestamp FROM tableT",
+            write={
+                "mysql": "SELECT DATE(DATE_SUB(`dt`, INTERVAL (DAYOFMONTH(`dt`) - 1) DAY)) AS __timestamp FROM tableT",
+            },
+        )
+        self.validate_all(
             "SELECT a FROM tbl FOR UPDATE",
             write={
                 "": "SELECT a FROM tbl",

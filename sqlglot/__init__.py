@@ -9,7 +9,8 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
-from sqlglot.dialects.dialect import Dialect as Dialect, Dialects as Dialects
+from sqlglot.betterbrain import SQLSuggestion
+from sqlglot.dialects.dialect import BetterBrainDialect, Dialect as Dialect, Dialects as Dialects
 from sqlglot.diff import diff as diff
 from sqlglot.errors import (
     ErrorLevel as ErrorLevel,
@@ -152,6 +153,17 @@ def parse_one(
         return expression
     else:
         raise ParseError(f"No expression was parsed from '{sql}'")
+
+
+
+def sql_suggest(
+    sql: str,
+    read: DialectType = None,
+    into: t.Optional[exp.IntoType] = None,
+    **opts,
+) -> SQLSuggestion:
+    dialect = BetterBrainDialect.get_or_raise(read)()
+    return dialect.sql_suggest(sql, **opts)
 
 
 def transpile(

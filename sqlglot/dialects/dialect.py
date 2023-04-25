@@ -4,11 +4,13 @@ import typing as t
 from enum import Enum
 
 from sqlglot import exp
+from sqlglot.betterbrain import SQLSuggestion
+from sqlglot.parser import BetterBrainParser
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
-from sqlglot.tokens import Token, Tokenizer
+from sqlglot.tokens import BetterBrainTokenizer, Token, Tokenizer
 from sqlglot.trie import new_trie
 
 E = t.TypeVar("E", bound=exp.Expression)
@@ -52,6 +54,8 @@ class _Dialect(type):
         return cls.classes.get(key, default)
 
     def __new__(cls, clsname, bases, attrs):
+        if clsname != "Dialect" and clsname != "BetterBrainDialect":
+            bases = (BetterBrainDialect,)
         klass = super().__new__(cls, clsname, bases, attrs)
         enum = Dialects.__members__.get(clsname.upper())
         cls.classes[enum.value if enum is not None else clsname.lower()] = klass
@@ -60,8 +64,8 @@ class _Dialect(type):
         klass.inverse_time_mapping = {v: k for k, v in klass.time_mapping.items()}
         klass.inverse_time_trie = new_trie(klass.inverse_time_mapping)
 
-        klass.tokenizer_class = getattr(klass, "Tokenizer", Tokenizer)
-        klass.parser_class = getattr(klass, "Parser", Parser)
+        klass.tokenizer_class = getattr(klass, "Tokenizer", BetterBrainTokenizer)
+        klass.parser_class = getattr(klass, "Parser", BetterBrainParser)
         klass.generator_class = getattr(klass, "Generator", Generator)
 
         klass.quote_start, klass.quote_end = list(klass.tokenizer_class._QUOTES.items())[0]
@@ -502,3 +506,10 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
         return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
     return _ts_or_ds_to_date_sql
+
+
+
+class BetterBrainDialect(Dialect):
+    @t.final
+    def sql_suggest(self, sql: str, **opts) -> SQLSuggestion:
+        return self.parser(**{**opts, "tokenizer": self.tokenizer}).suggest(self.tokenize(sql), sql)

@@ -4298,6 +4298,10 @@ class BetterBrainParser(Parser):
         TokenType.WHERE: TokenType.COLUMN,
         TokenType.FROM: TokenType.TABLE,
     }
+
+    SUGGESTION_TO_DISALLOWED_KEYWORDS = {
+        TokenType.COLUMN: {TokenType.ALIAS}
+    }
     __slots__ = (
         *Parser.__slots__,
         *("_cursor_position","_has_hit_error_after_cursor", "_suggestion_options", "_last_keyword", "tokenizer")
@@ -4365,6 +4369,10 @@ class BetterBrainParser(Parser):
                 join_tables = [table for join_clause in join_clauses for table in join_clause.find_all(exp.Table)]
                 all_tables = from_tables + join_tables
                 table_ids = [self._get_table_name_and_alias(table) for table in all_tables]
+
+        for suggestion, disallowed_keywords in self.SUGGESTION_TO_DISALLOWED_KEYWORDS.items():
+            if suggestion in suggestions:
+                suggestions = suggestions - disallowed_keywords
 
         return SQLSuggestion(suggestions=suggestions, table_ids= table_ids)
 

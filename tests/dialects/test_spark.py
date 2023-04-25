@@ -215,6 +215,13 @@ TBLPROPERTIES (
         self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
+            "DATE(x)",
+            write={
+                "": "CAST(x AS DATE)",
+                "spark": "CAST(x AS DATE)",
+            },
+        )
+        self.validate_all(
             "TIMESTAMP(x)",
             write={
                 "": "CAST(x AS TIMESTAMP)",

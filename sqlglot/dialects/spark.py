@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func, trim_sql
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 
 
-def _create_sql(self, e):
-    kind = e.args.get("kind")
+def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
+    kind = e.args["kind"]
     properties = e.args.get("properties")
 
     if kind.upper() == "TABLE" and any(
@@ -18,13 +20,13 @@ def _create_sql(self, e):
     return create_with_partitions_sql(self, e)
 
 
-def _map_sql(self, expression):
+def _map_sql(self: Hive.Generator, expression: exp.Map) -> str:
     keys = self.sql(expression.args["keys"])
     values = self.sql(expression.args["values"])
     return f"MAP_FROM_ARRAYS({keys}, {values})"
 
 
-def _str_to_date(self, expression):
+def _str_to_date(self: Hive.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Hive.date_format:
@@ -32,7 +34,7 @@ def _str_to_date(self, expression):
     return f"TO_DATE({this}, {time_format})"
 
 
-def _unix_to_time(self, expression):
+def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
     if scale is None:
@@ -111,15 +113,42 @@ class Spark(Hive):
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
 
-        def _parse_add_column(self):
+        def _parse_add_column(self) -> t.Optional[exp.Expression]:
             return self._match_text_seq("ADD", "COLUMNS") and self._parse_schema()
 
-        def _parse_drop_column(self):
+        def _parse_drop_column(self) -> t.Optional[exp.Expression]:
             return self._match_text_seq("DROP", "COLUMNS") and self.expression(
                 exp.Drop,
                 this=self._parse_schema(),
                 kind="COLUMNS",
             )
+
+        def _parse_pivot(self) -> t.Optional[exp.Expression]:
+            pivot = super()._parse_pivot()
+
+            if pivot and not pivot.args["unpivot"]:
+                if not pivot.expressions:
+                    self.raise_error("Failed to parse PIVOT's aggregation list")
+
+                suffixes = (
+                    [
+                        f"_{agg.alias if isinstance(agg, exp.Alias) else agg.sql(dialect='spark').lower()}"
+                        for agg in pivot.expressions
+                    ]
+                    if len(pivot.expressions) > 1
+                    else [""]
+                )
+
+                pivot_columns = pivot.args["field"].expressions
+
+                columns = []
+                for col in pivot_columns:
+                    for suffix in suffixes:
+                        columns.append(exp.to_identifier(col.alias_or_name + suffix))
+
+                pivot.set("columns", columns)
+
+            return pivot
 
     class Generator(Hive.Generator):
         TYPE_MAPPING = {
@@ -148,7 +177,7 @@ class Spark(Hive):
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.UnixToTime: _unix_to_time,
+            exp.UnixToTime: _unix_to_time_sql,
             exp.Create: _create_sql,
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),

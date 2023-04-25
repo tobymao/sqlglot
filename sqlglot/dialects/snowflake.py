@@ -247,6 +247,25 @@ class Snowflake(Dialect):
             parser = t.cast(t.Callable, self._parse_id_var if unset else self._parse_conjunction)
             return self.expression(exp.SetTag, expressions=self._parse_csv(parser), unset=unset)
 
+        def _parse_pivot(self) -> t.Optional[exp.Expression]:
+            pivot = super()._parse_pivot()
+
+            if pivot and not pivot.args["unpivot"]:
+                if not pivot.expressions:
+                    self.raise_error("Failed to parse PIVOT's aggregation list")
+
+                # Snowflake allows only a single aggregation
+                pivot.expressions[0]
+
+                # We can only specify names for pivot columns using a table alias
+                pivot_columns = pivot.args["field"].expressions
+                pivot.set(
+                    "columns",
+                    [exp.to_identifier(col.name, quoted=True) for col in pivot_columns],
+                )
+
+            return pivot
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]

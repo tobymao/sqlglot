@@ -377,3 +377,82 @@ class TestParser(unittest.TestCase):
             parse_one("ALTER TABLE foo RENAME TO bar").sql(),
             "ALTER TABLE foo RENAME TO bar",
         )
+
+    def test_pivot_columns(self):
+        nothing_aliased = """
+            SELECT * FROM (
+                SELECT partname, price FROM part
+            ) PIVOT (AVG(price) FOR partname IN ('prop', 'rudder'))
+        """
+
+        everything_aliased = """
+            SELECT * FROM (
+                SELECT partname, price FROM part
+            ) PIVOT (AVG(price) AS avg_price FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
+        """
+
+        only_pivot_columns_aliased = """
+            SELECT * FROM (
+                SELECT partname, price FROM part
+            ) PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
+        """
+
+        columns_partially_aliased = """
+            SELECT * FROM (
+                SELECT partname, price FROM part
+            ) PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder'))
+        """
+
+        multiple_aggregates_aliased = """
+            SELECT * FROM (
+                SELECT partname, price, quality FROM part
+            ) PIVOT (AVG(price) AS p, MAX(quality) AS q FOR partname IN ('prop' AS prop1, 'rudder'))
+        """
+
+        multiple_aggregates_not_aliased = """
+            SELECT * FROM (
+                SELECT partname, price, quality FROM part
+            ) PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
+        """
+
+        query_to_column_names = {
+            nothing_aliased: {
+                "bigquery": ["prop", "rudder"],
+                "redshift": ["prop", "rudder"],
+                "snowflake": ['"prop"', '"rudder"'],
+                "spark": ["prop", "rudder"],
+            },
+            everything_aliased: {
+                "bigquery": ["avg_price_prop1", "avg_price_rudder1"],
+                "redshift": ["prop1_avg_price", "rudder1_avg_price"],
+                "spark": ["prop1", "rudder1"],
+            },
+            only_pivot_columns_aliased: {
+                "bigquery": ["prop1", "rudder1"],
+                "redshift": ["prop1", "rudder1"],
+                "spark": ["prop1", "rudder1"],
+            },
+            columns_partially_aliased: {
+                "bigquery": ["prop1", "rudder"],
+                "redshift": ["prop1", "rudder"],
+                "spark": ["prop1", "rudder"],
+            },
+            multiple_aggregates_aliased: {
+                "bigquery": ["p_prop1", "q_prop1", "p_rudder", "q_rudder"],
+                "spark": ["prop1_p", "prop1_q", "rudder_p", "rudder_q"],
+            },
+            multiple_aggregates_not_aliased: {
+                "spark": [
+                    "`prop1_avg(price)`",
+                    "`prop1_max(quality)`",
+                    "`rudder_avg(price)`",
+                    "`rudder_max(quality)`",
+                ],
+            },
+        }
+
+        for query, dialect_columns in query_to_column_names.items():
+            for dialect, expected_columns in dialect_columns.items():
+                expr = parse_one(query, read=dialect)
+                columns = expr.args["from"].expressions[0].args["pivots"][0].args["columns"]
+                self.assertEqual(expected_columns, [col.sql(dialect=dialect) for col in columns])

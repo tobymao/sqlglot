@@ -4,7 +4,6 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import parse_date_delta
 from sqlglot.dialects.spark import Spark
 from sqlglot.dialects.tsql import generate_date_delta_with_unit_sql
-from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
 
@@ -19,9 +18,9 @@ class Databricks(Spark):
             "DATEDIFF": parse_date_delta(exp.DateDiff),
         }
 
-        RANGE_PARSERS = {
-            **Spark.Parser.RANGE_PARSERS,
-            TokenType.COLON: binary_range_parser(exp.JSONExtract),
+        FACTOR = {
+            **Spark.Parser.FACTOR,
+            TokenType.COLON: exp.JSONExtract,
         }
 
     class Generator(Spark.Generator):

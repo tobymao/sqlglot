@@ -4049,6 +4049,32 @@ ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 
 # Helpers
+@t.overload
+def maybe_parse(
+    sql_or_expression: ExpOrStr,
+    *,
+    into: t.Type[E],
+    dialect: DialectType = None,
+    prefix: t.Optional[str] = None,
+    copy: bool = False,
+    **opts,
+) -> E:
+    ...
+
+
+@t.overload
+def maybe_parse(
+    sql_or_expression: str | E,
+    *,
+    into: t.Optional[IntoType] = None,
+    dialect: DialectType = None,
+    prefix: t.Optional[str] = None,
+    copy: bool = False,
+    **opts,
+) -> E:
+    ...
+
+
 def maybe_parse(
     sql_or_expression: ExpOrStr,
     *,

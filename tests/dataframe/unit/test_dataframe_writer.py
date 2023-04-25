@@ -86,3 +86,10 @@ class TestDataFrameWriter(DataFrameSQLValidator):
             "CREATE TABLE table_name AS SELECT `t12441`.`employee_id` AS `employee_id`, `t12441`.`fname` AS `fname`, `t12441`.`lname` AS `lname`, `t12441`.`age` AS `age`, `t12441`.`store_id` AS `store_id` FROM `t12441` AS `t12441`",
         ]
         self.compare_sql(df, expected_statements)
+
+    def test_quotes(self):
+        sqlglot.schema.add_table('"Test"', {'"ID"': "STRING"})
+        df = self.spark.table('"Test"')
+        self.compare_sql(
+            df.select(df['"ID"']), ["SELECT `Test`.`ID` AS `ID` FROM `Test` AS `Test`"]
+        )

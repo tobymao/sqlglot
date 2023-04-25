@@ -20,6 +20,8 @@ class TestTranspile(unittest.TestCase):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
     def test_alias(self):
+        self.assertEqual(transpile("SELECT 1 overwrite")[0], "SELECT 1 AS overwrite")
+        self.assertEqual(transpile("SELECT 1 is")[0], "SELECT 1 AS is")
         self.assertEqual(transpile("SELECT 1 current_time")[0], "SELECT 1 AS current_time")
         self.assertEqual(
             transpile("SELECT 1 current_timestamp")[0], "SELECT 1 AS current_timestamp"

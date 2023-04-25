@@ -1157,35 +1157,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
 
 class BetterBrainTokenizer(Tokenizer):
-
-    def tokenize(self, sql: str, scan_for_cursor_token: bool= False) -> t.List[Token]:
-        """Returns a list of tokens corresponding to the SQL string `sql`."""
-        self.reset()
-        self.sql = sql
-        self.size = len(sql)
-        self._scan(scan_for_cursor_token=scan_for_cursor_token)
-        return self.tokens
     
-    def _scan(self, until: t.Optional[t.Callable] = None, scan_for_cursor_token: bool= False) -> None:
-        while self.size and not self._end:
-            self._start = self._current
-            self._advance()
-            if self._char is None:
-                break
-            if self._char not in self.WHITE_SPACE:
-                if self._char.isdigit():
-                    self._scan_number()
-                elif self._char in self._IDENTIFIERS:
-                    self._scan_identifier(self._IDENTIFIERS[self._char])
-                else:
-                    self._scan_keywords(scan_for_cursor_token)
-
-            if until and until():
-                break
-        if self.tokens:
-            self.tokens[-1].comments.extend(self._comments)
-
-    def _scan_keywords(self, scan_for_cursor_token: bool= False) -> None:
+    def _scan_keywords(self) -> None:
         size = 0
         word = None
         chars = self._text
@@ -1223,7 +1196,7 @@ class BetterBrainTokenizer(Tokenizer):
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
-                if scan_for_cursor_token and self._char == "<" and self._peek == "<":
+                if self._char == "<" and self._peek == "<":
                     self._advance()
                     self._add(
                         TokenType.CURSOR
@@ -1232,7 +1205,7 @@ class BetterBrainTokenizer(Tokenizer):
                 else:
                     self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
                     return
-            self._scan_var(True)
+            self._scan_var()
             return
 
         if self._scan_string(word):
@@ -1245,13 +1218,13 @@ class BetterBrainTokenizer(Tokenizer):
         word = word.upper()
         self._add(self.KEYWORDS[word], text=word)
 
-    def _scan_var(self, scan_for_cursor_token: bool = False ) -> None:
+    def _scan_var(self,) -> None:
         while True:
             char = self._peek.strip()  # type: ignore
             if char and char not in self.SINGLE_TOKENS:
                 self._advance()
             else:
-                if scan_for_cursor_token and char == "<" and (self._current + 1 < self.size) and self.sql[self._current + 1] == "<":
+                if char == "<" and (self._current + 1 < self.size) and self.sql[self._current + 1] == "<":
                     self._advance(2)
                     self._add(TokenType.CURSOR)
                     return

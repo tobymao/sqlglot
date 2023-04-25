@@ -512,8 +512,4 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
 class BetterBrainDialect(Dialect):
     @t.final
     def sql_suggest(self, sql: str, **opts) -> SQLSuggestion:
-        return self.parser(**{**opts, "tokenizer": self.tokenizer}).suggest(self.tokenize_with_cursor(sql), sql)
-
-    @t.final
-    def tokenize_with_cursor(self, sql: str) -> t.List[Token]:
-        return self.tokenizer.tokenize(sql, True)
+        return self.parser(**{**opts, "tokenizer": self.tokenizer}).suggest(self.tokenize(sql), sql)

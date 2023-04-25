@@ -71,22 +71,7 @@ Given a version number `MAJOR`.`MINOR`.`PATCH`, SQLGlot uses the following versi
 - The `MAJOR` version is incremented when there are significant backwards-incompatible fixes or feature additions.
 
 ## Get in Touch
-
 We'd love to hear from you. Join our community [Slack channel](https://tobikodata.com/slack)!
-
-## FAQ
-
-I tried to parse SQL that should be valid but it failed, why did that happen?
-
-* Most of the time, issues like this occur because the "source" dialect is omitted during parsing. For example, this is how to correctly parse a SQL query written in Spark SQL: `parse_one(sql, dialect="spark")` (alternatively: `read="spark"`). If no dialect is specified, `parse_one` will attempt to parse the query according to the "SQLGlot dialect", which is designed to be a superset of all supported dialects. If you tried specifying the dialect and it still doesn't work, please file an issue.
-
-I tried to output SQL but it's not in the correct dialect!
-
-* Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")` (alternatively: `transpile(sql, read="spark", write="duckdb")`).
-
-What happened to sqlglot.dataframe?
-
-* The PySpark dataframe api was moved to a standalone library called [SQLFrame](https://github.com/eakmanrq/sqlframe) in v24. It now allows you to run queries as opposed to just generate SQL.
 
 ## Examples
 

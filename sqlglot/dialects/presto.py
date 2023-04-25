@@ -242,6 +242,7 @@ class Presto(Dialect):
 
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
+        WITH_JOIN_HINT = False
         STRUCT_DELIMITER = ("(", ")")
 
         PROPERTIES_LOCATION = {

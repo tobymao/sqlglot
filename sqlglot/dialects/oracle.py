@@ -99,6 +99,7 @@ class Oracle(Dialect):
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
+        WITH_JOIN_HINT = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

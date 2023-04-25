@@ -266,6 +266,7 @@ class TSQL(Dialect):
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "VARCHAR(MAX)": TokenType.TEXT,
             "XML": TokenType.XML,
+            "SYSTEM_USER": TokenType.CURRENT_USER,
         }
 
         # TSQL allows @, # to appear as a variable/identifier prefix
@@ -296,6 +297,14 @@ class TSQL(Dialect):
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
             "SUSER_NAME": exp.CurrentUser.from_arg_list,
             "SUSER_SNAME": exp.CurrentUser.from_arg_list,
+            "SYSTEM_USER": exp.CurrentUser.from_arg_list,
+        }
+
+        JOIN_HINTS = {
+            "LOOP",
+            "HASH",
+            "MERGE",
+            "REMOTE",
         }
 
         VAR_LENGTH_DATATYPES = {

@@ -21,6 +21,8 @@ def _count_sql(self, expression):
 
 class Tableau(Dialect):
     class Generator(generator.Generator):
+        WITH_JOIN_HINT = False
+
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.If: _if_sql,

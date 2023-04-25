@@ -296,6 +296,7 @@ class Postgres(Dialect):
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
+        WITH_JOIN_HINT = False
         PARAMETER_TOKEN = "$"
 
         TYPE_MAPPING = {

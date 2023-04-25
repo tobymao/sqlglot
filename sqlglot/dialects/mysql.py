@@ -382,6 +382,7 @@ class MySQL(Dialect):
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
+        WITH_JOIN_HINT = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

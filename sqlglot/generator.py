@@ -210,6 +210,8 @@ class Generator:
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
+    WITH_JOIN_HINT = True
+
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
 
     UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren, exp.Column)
@@ -1204,6 +1206,7 @@ class Generator:
                     "NATURAL" if expression.args.get("natural") else None,
                     expression.side,
                     expression.kind,
+                    expression.hint if self.WITH_JOIN_HINT else None,
                     "JOIN",
                 )
                 if op

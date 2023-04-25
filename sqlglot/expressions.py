@@ -1384,6 +1384,7 @@ class Join(Expression):
         "kind": False,
         "using": False,
         "natural": False,
+        "hint": False,
     }
 
     @property
@@ -1393,6 +1394,10 @@ class Join(Expression):
     @property
     def side(self):
         return self.text("side").upper()
+
+    @property
+    def hint(self):
+        return self.text("hint").upper()
 
     @property
     def alias_or_name(self):

@@ -149,6 +149,7 @@ class ClickHouse(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        WITH_JOIN_HINT = False
         EXPLICIT_UNION = True
 
         def _param_args_sql(

@@ -110,6 +110,8 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_USER: exp.CurrentUser,
     }
 
+    JOIN_HINTS: t.Set[str] = set()
+
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
         TokenType.MAP,
@@ -1879,15 +1881,20 @@ class Parser(metaclass=_Parser):
         table = isinstance(this, exp.Table)
 
         while True:
-            lateral = self._parse_lateral()
             join = self._parse_join()
-            comma = None if table else self._match(TokenType.COMMA)
-            if lateral:
-                this.append("laterals", lateral)
             if join:
                 this.append("joins", join)
+
+            lateral = None
+            if not join:
+                lateral = self._parse_lateral()
+                if lateral:
+                    this.append("laterals", lateral)
+
+            comma = None if table else self._match(TokenType.COMMA)
             if comma:
                 this.args["from"].append("expressions", self._parse_table())
+
             if not (lateral or join or comma):
                 break
 
@@ -2054,9 +2061,6 @@ class Parser(metaclass=_Parser):
             alias=table_alias,
         )
 
-        if outer_apply or cross_apply:
-            return self.expression(exp.Join, this=expression, side=None if cross_apply else "LEFT")
-
         return expression
 
     def _parse_join_side_and_kind(
@@ -2069,10 +2073,26 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Expression]:
+        index = self._index
         natural, side, kind = self._parse_join_side_and_kind()
 
-        if not skip_join_token and not self._match(TokenType.JOIN):
+        hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
+
+        join = self._match(TokenType.JOIN)
+        if not skip_join_token and not join:
+            self._retreat(index)
+            kind = None
+            natural = None
+            side = None
+
+        outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY, False)
+        cross_apply = self._match_pair(TokenType.CROSS, TokenType.APPLY, False)
+
+        if not skip_join_token and not join and not outer_apply and not cross_apply:
             return None
+
+        if outer_apply:
+            side = Token(TokenType.LEFT, "LEFT")
 
         kwargs: t.Dict[
             str, t.Optional[exp.Expression] | bool | str | t.List[t.Optional[exp.Expression]]
@@ -2084,6 +2104,8 @@ class Parser(metaclass=_Parser):
             kwargs["side"] = side.text
         if kind:
             kwargs["kind"] = kind.text
+        if hint:
+            kwargs["hint"] = hint
 
         if self._match(TokenType.ON):
             kwargs["on"] = self._parse_conjunction()

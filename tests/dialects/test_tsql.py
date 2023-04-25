@@ -482,6 +482,12 @@ WHERE
                 "spark": "SELECT x.a, x.b, t.v, t.y FROM x LEFT JOIN LATERAL (SELECT v, y FROM t) AS t(v, y)",
             },
         )
+        self.validate_all(
+            "SELECT x.a, x.b, t.v, t.y, s.v, s.y FROM x OUTER APPLY (SELECT v, y FROM t) t(v, y) OUTER APPLY (SELECT v, y FROM t) s(v, y) LEFT JOIN z ON z.id = s.id",
+            write={
+                "spark": "SELECT x.a, x.b, t.v, t.y, s.v, s.y FROM x LEFT JOIN LATERAL (SELECT v, y FROM t) AS t(v, y) LEFT JOIN LATERAL (SELECT v, y FROM t) AS s(v, y) LEFT JOIN z ON z.id = s.id",
+            },
+        )
 
     def test_lateral_table_valued_function(self):
         self.validate_all(
@@ -631,3 +637,30 @@ WHERE
             "SUSER_SNAME()",
             write={"spark": "CURRENT_USER()"},
         )
+        self.validate_all(
+            "SYSTEM_USER()",
+            write={"spark": "CURRENT_USER()"},
+        )
+        self.validate_all(
+            "SYSTEM_USER",
+            write={"spark": "CURRENT_USER()"},
+        )
+
+    def test_join_hint(self):
+        self.validate_all(
+            "SELECT x FROM a INNER HASH JOIN b ON b.id = a.id",
+            write={"spark": "SELECT x FROM a INNER JOIN b ON b.id = a.id"},
+        )
+        self.validate_all(
+            "SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id",
+            write={"spark": "SELECT x FROM a INNER JOIN b ON b.id = a.id"},
+        )
+        self.validate_all(
+            "SELECT x FROM a INNER REMOTE JOIN b ON b.id = a.id",
+            write={"spark": "SELECT x FROM a INNER JOIN b ON b.id = a.id"},
+        )
+        self.validate_all(
+            "SELECT x FROM a INNER MERGE JOIN b ON b.id = a.id",
+            write={"spark": "SELECT x FROM a INNER JOIN b ON b.id = a.id"},
+        )
+        self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")

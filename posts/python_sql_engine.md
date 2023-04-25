@@ -205,4 +205,4 @@ I'm hoping that over time, SQLGlot will spark the Python SQL ecosystem just like
 SQLGlot would not be what it is without it's core contributors. In particular, the execution engine would not exist without [Barak Alon](https://github.com/barakalon) and [George Sittas](https://github.com/GeorgeSittas).
 
 ## Get in touch
-If you'd like to chat more about SQLGlot, please join my [Slack Channel](https://join.slack.com/t/tobiko-data/shared_invite/zt-1ma66d79v-a4dbf4DUpLAQJ8ptQrJygg)!
+If you'd like to chat more about SQLGlot, please join my [Slack Channel](https://tobikodata.com/slack)!

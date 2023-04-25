@@ -52,7 +52,7 @@ make install-dev
 ```
 
 ## Get in Touch
-We'd love to hear from you. Join our community [Slack channel](https://join.slack.com/t/tobiko-data/shared_invite/zt-1tofr385z-vi~hDISNABiYIgkfGM3Khg)!
+We'd love to hear from you. Join our community [Slack channel](https://tobikodata.com/slack)!
 
 ## Examples
 

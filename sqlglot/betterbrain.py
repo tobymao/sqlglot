@@ -12,7 +12,7 @@ class TableIdentifier:
 
 @dataclass
 class SQLSuggestion:
-    suggestions: t.List[t.Union[TokenType, str]]
+    suggestions: t.List[str]
     table_ids: t.Optional[t.List[TableIdentifier]] = None
 
     def __eq__(self, __value: object) -> bool:

@@ -4350,14 +4350,14 @@ class BetterBrainParser(Parser):
 
         self.check_errors()
 
-        suggestions = self._suggestion_options.intersection(self.tokenizer.TOKEN_TO_KEYWORD.keys())
+        token_suggestions = self._suggestion_options.intersection(self.tokenizer.TOKEN_TO_KEYWORD.keys())
         if TokenType.IDENTIFIER in self._suggestion_options:
             resolved_identifier = self.KEYWORDS_TO_IDENTIFIER_TYPE[self._last_keyword.token_type] if (self._last_keyword and self._last_keyword.token_type in self.KEYWORDS_TO_IDENTIFIER_TYPE) else TokenType.IDENTIFIER
-            suggestions.add(resolved_identifier)
+            token_suggestions.add(resolved_identifier)
 
         table_ids = []
 
-        if TokenType.COLUMN in suggestions:
+        if TokenType.COLUMN in token_suggestions:
             from_clause = expression.find(exp.From)
             if from_clause is None:
                 while self._index < (len(raw_tokens) -1) and from_clause is None:
@@ -4372,10 +4372,11 @@ class BetterBrainParser(Parser):
                 table_ids = [self._get_table_name_and_alias(table) for table in all_tables]
 
         for suggestion, disallowed_keywords in self.SUGGESTION_TO_DISALLOWED_KEYWORDS.items():
-            if suggestion in suggestions:
-                suggestions = suggestions - disallowed_keywords
+            if suggestion in token_suggestions:
+                token_suggestions = token_suggestions - disallowed_keywords
 
-        return SQLSuggestion(suggestions=suggestions, table_ids= table_ids)
+        str_suggestions = [self.tokenizer.TOKEN_TO_KEYWORD[token_suggestion] for token_suggestion in token_suggestions]
+        return SQLSuggestion(suggestions=str_suggestions, table_ids= table_ids)
 
 
     def _get_table_name_and_alias(self, table: exp.Table)-> TableIdentifier:

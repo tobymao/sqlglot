@@ -2,23 +2,24 @@ import unittest
 
 from sqlglot import Parser, exp, parse, parse_one, sql_suggest
 from sqlglot.betterbrain import SQLSuggestion, TableIdentifier
+from sqlglot.dialects import Postgres
 from sqlglot.errors import ErrorLevel, ParseError
 from tests.helpers import assert_logger_contains
 from sqlglot.tokens import TokenType
 
-EXPECTED_TOKEN_SUGGESTIONS_FOR_WHERE_COL_CURSOR = [TokenType.INTERVAL, 
+EXPECTED_TOKEN_SUGGESTIONS_FOR_WHERE_COL_CURSOR = [Postgres.Tokenizer.TOKEN_TO_KEYWORD[token] for token in [TokenType.INTERVAL,
              TokenType.NOTNULL, 
              TokenType.COLUMN, 
              TokenType.AT_TIME_ZONE, 
              TokenType.ISNULL, 
              TokenType.NOT, 
-             TokenType.IS]
+             TokenType.IS]]
 
 EXPECTED_TOKEN_SUGGESTIONS_FOR_COL_CURSOR = EXPECTED_TOKEN_SUGGESTIONS_FOR_WHERE_COL_CURSOR
 
-EXPECTED_TOKEN_SUGGESTIONS_FOR_FIRST_COL_CURSOR = EXPECTED_TOKEN_SUGGESTIONS_FOR_COL_CURSOR + [TokenType.ALL, TokenType.FETCH, TokenType.DISTINCT, TokenType.HINT]
+EXPECTED_TOKEN_SUGGESTIONS_FOR_FIRST_COL_CURSOR = [Postgres.Tokenizer.TOKEN_TO_KEYWORD[token] for token in [TokenType.ALL, TokenType.FETCH, TokenType.DISTINCT, TokenType.HINT]] + EXPECTED_TOKEN_SUGGESTIONS_FOR_COL_CURSOR
 
-EXPECTED_TOKEN_SUGGESTIONS_FOR_TABLE_CURSOR = [
+EXPECTED_TOKEN_SUGGESTIONS_FOR_TABLE_CURSOR = [Postgres.Tokenizer.TOKEN_TO_KEYWORD[token] for token in [
             TokenType.LATERAL,
             TokenType.UNNEST,
             TokenType.OUTER,
@@ -26,9 +27,9 @@ EXPECTED_TOKEN_SUGGESTIONS_FOR_TABLE_CURSOR = [
             TokenType.WITH,
             TokenType.CROSS,
             TokenType.VALUES,
-]
+]]
 
-EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_FROM_CURSOR = [TokenType.DISTRIBUTE_BY, 
+EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_FROM_CURSOR = [Postgres.Tokenizer.TOKEN_TO_KEYWORD[token] for token in [TokenType.DISTRIBUTE_BY,
              TokenType.CLUSTER_BY, 
              TokenType.FETCH,
              TokenType.NATURAL,
@@ -44,13 +45,13 @@ EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_FROM_CURSOR = [TokenType.DISTRIBUTE_BY,
              TokenType.OUTER,
              TokenType.HAVING,
              TokenType.SORT_BY,
-             TokenType.GROUP_BY]
+             TokenType.GROUP_BY]]
 
 
-EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_SELECT_CURSOR = [
+EXPECTED_TOKEN_SUGGESTIONS_FOR_POST_SELECT_CURSOR = [Postgres.Tokenizer.TOKEN_TO_KEYWORD[token] for token in [
             TokenType.INTO,
             TokenType.FROM,
-]
+]]
 
 class TestBetterBrain(unittest.TestCase):
     def test_not_working(self):

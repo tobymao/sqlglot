@@ -4,7 +4,7 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.helper import object_to_dict
+from sqlglot.helper import object_to_dict, should_identify
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.dataframe import DataFrame
@@ -19,9 +19,17 @@ class DataFrameReader:
         from sqlglot.dataframe.sql.dataframe import DataFrame
 
         sqlglot.schema.add_table(tableName)
+
         return DataFrame(
             self.spark,
-            exp.Select().from_(tableName).select(*sqlglot.schema.column_names(tableName)),
+            exp.Select()
+            .from_(tableName)
+            .select(
+                *(
+                    column if should_identify(column, "safe") else f'"{column}"'
+                    for column in sqlglot.schema.column_names(tableName)
+                )
+            ),
         )
 
 

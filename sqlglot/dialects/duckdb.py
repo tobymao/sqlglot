@@ -215,6 +215,11 @@ class DuckDB(Dialect):
             "except": "EXCLUDE",
         }
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         LIMIT_FETCH = "LIMIT"
 
         def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:

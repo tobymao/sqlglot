@@ -70,8 +70,8 @@ class TestHive(Validator):
         self.validate_all(
             "1s",
             write={
-                "duckdb": "CAST(1 AS SMALLINT)",
-                "presto": "CAST(1 AS SMALLINT)",
+                "duckdb": "TRY_CAST(1 AS SMALLINT)",
+                "presto": "TRY_CAST(1 AS SMALLINT)",
                 "hive": "CAST(1 AS SMALLINT)",
                 "spark": "CAST(1 AS SHORT)",
             },
@@ -79,8 +79,8 @@ class TestHive(Validator):
         self.validate_all(
             "1S",
             write={
-                "duckdb": "CAST(1 AS SMALLINT)",
-                "presto": "CAST(1 AS SMALLINT)",
+                "duckdb": "TRY_CAST(1 AS SMALLINT)",
+                "presto": "TRY_CAST(1 AS SMALLINT)",
                 "hive": "CAST(1 AS SMALLINT)",
                 "spark": "CAST(1 AS SHORT)",
             },
@@ -88,8 +88,8 @@ class TestHive(Validator):
         self.validate_all(
             "1Y",
             write={
-                "duckdb": "CAST(1 AS TINYINT)",
-                "presto": "CAST(1 AS TINYINT)",
+                "duckdb": "TRY_CAST(1 AS TINYINT)",
+                "presto": "TRY_CAST(1 AS TINYINT)",
                 "hive": "CAST(1 AS TINYINT)",
                 "spark": "CAST(1 AS BYTE)",
             },
@@ -97,8 +97,8 @@ class TestHive(Validator):
         self.validate_all(
             "1L",
             write={
-                "duckdb": "CAST(1 AS BIGINT)",
-                "presto": "CAST(1 AS BIGINT)",
+                "duckdb": "TRY_CAST(1 AS BIGINT)",
+                "presto": "TRY_CAST(1 AS BIGINT)",
                 "hive": "CAST(1 AS BIGINT)",
                 "spark": "CAST(1 AS LONG)",
             },
@@ -106,8 +106,8 @@ class TestHive(Validator):
         self.validate_all(
             "1.0bd",
             write={
-                "duckdb": "CAST(1.0 AS DECIMAL)",
-                "presto": "CAST(1.0 AS DECIMAL)",
+                "duckdb": "TRY_CAST(1.0 AS DECIMAL)",
+                "presto": "TRY_CAST(1.0 AS DECIMAL)",
                 "hive": "CAST(1.0 AS DECIMAL)",
                 "spark": "CAST(1.0 AS DECIMAL)",
             },
@@ -320,6 +320,11 @@ class TestHive(Validator):
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",
                 "": "TS_OR_DS_ADD('2020-01-01', 1 * -1, 'DAY')",
             },
+        )
+        self.validate_all("DATE_ADD('2020-01-01', -1)", read={"": "DATE_SUB('2020-01-01', 1)"})
+        self.validate_all("DATE_ADD(a, b * -1)", read={"": "DATE_SUB(a, b)"})
+        self.validate_all(
+            "ADD_MONTHS('2020-01-01', -2)", read={"": "DATE_SUB('2020-01-01', 2, month)"}
         )
         self.validate_all(
             "DATEDIFF(TO_DATE(y), x)",

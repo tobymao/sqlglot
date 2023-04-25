@@ -455,6 +455,11 @@ class TSQL(Dialect):
 
         TRANSFORMS.pop(exp.ReturnsProperty)
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         LIMIT_FETCH = "FETCH"
 
         WITH_JOIN_HINT = True

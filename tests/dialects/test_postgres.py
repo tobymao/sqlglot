@@ -1,4 +1,4 @@
-from sqlglot import ParseError, transpile
+from sqlglot import ParseError, exp, parse_one, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -171,8 +171,8 @@ class TestPostgres(Validator):
             "GENERATE_SERIES('2019-01-01'::TIMESTAMP, NOW(), '1day')",
             write={
                 "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1' day)",
-                "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
-                "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+                "presto": "SEQUENCE(TRY_CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+                "trino": "SEQUENCE(TRY_CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
             },
         )
         self.validate_all(
@@ -347,7 +347,7 @@ class TestPostgres(Validator):
             """SELECT JSON_ARRAY_ELEMENTS((foo->'sections')::JSON) AS sections""",
             write={
                 "postgres": """SELECT JSON_ARRAY_ELEMENTS(CAST((foo -> 'sections') AS JSON)) AS sections""",
-                "presto": """SELECT JSON_ARRAY_ELEMENTS(CAST((JSON_EXTRACT(foo, 'sections')) AS JSON)) AS sections""",
+                "presto": """SELECT JSON_ARRAY_ELEMENTS(TRY_CAST((JSON_EXTRACT(foo, 'sections')) AS JSON)) AS sections""",
             },
         )
         self.validate_all(
@@ -410,6 +410,36 @@ class TestPostgres(Validator):
                 "spark": "TRIM(BOTH 'as' FROM 'as string as')",
             },
         )
+        self.validate_all(
+            "merge into x as x using (select id) as y on a = b WHEN matched then update set X.a = y.b",
+            write={
+                "postgres": "MERGE INTO x AS x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+                "snowflake": "MERGE INTO x AS x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET X.a = y.b",
+            },
+        )
+        self.validate_all(
+            "merge into x as z using (select id) as y on a = b WHEN matched then update set X.a = y.b",
+            write={
+                "postgres": "MERGE INTO x AS z USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+                "snowflake": "MERGE INTO x AS z USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET X.a = y.b",
+            },
+        )
+        self.validate_all(
+            "merge into x as z using (select id) as y on a = b WHEN matched then update set Z.a = y.b",
+            write={
+                "postgres": "MERGE INTO x AS z USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+                "snowflake": "MERGE INTO x AS z USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET Z.a = y.b",
+            },
+        )
+        self.validate_all(
+            "merge into x using (select id) as y on a = b WHEN matched then update set x.a = y.b",
+            write={
+                "postgres": "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+                "snowflake": "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b",
+            },
+        )
+
+        self.assertIsInstance(parse_one("id::UUID", read="postgres"), exp.TryCast)
 
     def test_bool_or(self):
         self.validate_all(

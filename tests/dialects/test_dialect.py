@@ -435,6 +435,7 @@ class TestDialect(Validator):
             write={
                 "duckdb": "EPOCH(CAST('2020-01-01' AS TIMESTAMP))",
                 "hive": "UNIX_TIMESTAMP('2020-01-01')",
+                "mysql": "UNIX_TIMESTAMP('2020-01-01')",
                 "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d %T'))",
             },
         )
@@ -632,13 +633,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
-            read={
-                "postgres": "DATE_TRUNC('day', x::DATE)",
-                "starrocks": "DATE_TRUNC('day', x::DATE)",
-            },
+            "TIMESTAMP_TRUNC(TRY_CAST(x AS DATE), day)",
+            read={"postgres": "DATE_TRUNC('day', x::DATE)"},
         )
-
+        self.validate_all(
+            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
+            read={"starrocks": "DATE_TRUNC('day', x::DATE)"},
+        )
         self.validate_all(
             "DATE_TRUNC('week', x)",
             write={
@@ -749,6 +750,20 @@ class TestDialect(Validator):
                 "hive": "DATE_ADD('2021-02-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d'))",
                 "spark": "DATE_ADD('2021-02-01', 1)",
+            },
+        )
+        self.validate_all(
+            "TS_OR_DS_ADD(x, 1, 'DAY')",
+            write={
+                "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d'))",
+                "hive": "DATE_ADD(x, 1)",
+            },
+        )
+        self.validate_all(
+            "TS_OR_DS_ADD(CURRENT_DATE, 1, 'DAY')",
+            write={
+                "presto": "DATE_ADD('DAY', 1, CURRENT_DATE)",
+                "hive": "DATE_ADD(CURRENT_DATE, 1)",
             },
         )
         self.validate_all(

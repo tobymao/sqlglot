@@ -331,6 +331,7 @@ class Snowflake(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         def except_op(self, expression: exp.Except) -> str:

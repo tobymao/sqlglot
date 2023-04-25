@@ -5,7 +5,7 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.errors import SchemaError
+from sqlglot.errors import ParseError, SchemaError
 from sqlglot.helper import dict_depth
 from sqlglot.trie import in_trie, new_trie
 
@@ -221,7 +221,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         return [col for col in schema if col in visible]  # type: ignore
 
     def get_column_type(self, table: exp.Table | str, column: exp.Column | str) -> exp.DataType:
-        column_name = self._normalize_name(column if isinstance(column, str) else column.name)
+        column_name = self._normalize_name(column if isinstance(column, str) else column.this)
         table_ = self._normalize_table(self._ensure_table(table))
 
         table_schema = self.find(table_, raise_on_missing=False)
@@ -268,18 +268,15 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         for arg in TABLE_ARGS:
             value = normalized_table.args.get(arg)
             if isinstance(value, (str, exp.Identifier)):
-                value = value.name if isinstance(value, exp.Identifier) else value
                 normalized_table.set(arg, self._normalize_name(value))
 
         return normalized_table
 
-    def _normalize_name(self, name: str) -> str:
+    def _normalize_name(self, name: str | exp.Identifier) -> str:
         try:
-            identifier = t.cast(
-                exp.Identifier, sqlglot.parse_one(name, read=self.dialect, into=exp.Identifier)
-            )
-        except:
-            return name
+            identifier = sqlglot.maybe_parse(name, dialect=self.dialect, into=exp.Identifier)
+        except ParseError:
+            return name if isinstance(name, str) else name.name
 
         return identifier.name if identifier.quoted else identifier.name.lower()
 

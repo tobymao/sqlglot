@@ -20,7 +20,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
-from sqlglot.transforms import preprocess
+from sqlglot.transforms import preprocess, remove_target_from_merge
 
 DATE_DIFF_FACTOR = {
     "MICROSECOND": " * 1000000",
@@ -240,7 +240,6 @@ class Postgres(Dialect):
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "TEMP": TokenType.TEMPORARY,
-            "UUID": TokenType.UUID,
             "CSTRING": TokenType.PSEUDO_TYPE,
         }
 
@@ -337,6 +336,7 @@ class Postgres(Dialect):
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
             exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
+            exp.Merge: preprocess([remove_target_from_merge]),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,
@@ -360,4 +360,5 @@ class Postgres(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

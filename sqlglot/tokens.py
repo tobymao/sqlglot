@@ -643,6 +643,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "UPDATE": TokenType.UPDATE,
         "USE": TokenType.USE,
         "USING": TokenType.USING,
+        "UUID": TokenType.UUID,
         "VALUES": TokenType.VALUES,
         "VIEW": TokenType.VIEW,
         "VOLATILE": TokenType.VOLATILE,
@@ -801,7 +802,16 @@ class Tokenizer(metaclass=_Tokenizer):
         self.reset()
         self.sql = sql
         self.size = len(sql)
-        self._scan()
+        try:
+            self._scan()
+        except Exception as e:
+            start = self._current - 50
+            end = self._current + 50
+            start = start if start > 0 else 0
+            end = end if end < self.size else self.size - 1
+            context = self.sql[start:end]
+            raise ValueError(f"Error tokenizing '{context}'") from e
+
         return self.tokens
 
     def _scan(self, until: t.Optional[t.Callable] = None) -> None:
@@ -952,8 +962,10 @@ class Tokenizer(metaclass=_Tokenizer):
         comment_end = self._COMMENTS[comment_start]  # type: ignore
 
         if comment_end:
-            comment_end_size = len(comment_end)
+            # Skip the comment's start delimiter
+            self._advance(comment_start_size)
 
+            comment_end_size = len(comment_end)
             while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
 

@@ -105,15 +105,25 @@ def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDat
 
 
 def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
+    this = expression.this
+
+    if not isinstance(this, exp.CurrentDate):
+        this = self.func(
+            "DATE_PARSE",
+            self.func(
+                "SUBSTR",
+                this if this.is_string else exp.cast(this, "VARCHAR"),
+                exp.Literal.number(1),
+                exp.Literal.number(10),
+            ),
+            Presto.date_format,
+        )
+
     return self.func(
         "DATE_ADD",
         exp.Literal.string(expression.text("unit") or "day"),
         expression.expression,
-        self.func(
-            "DATE_PARSE",
-            self.func("SUBSTR", expression.this, exp.Literal.number(1), exp.Literal.number(10)),
-            Presto.date_format,
-        ),
+        this,
     )
 
 
@@ -237,6 +247,7 @@ class Presto(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.LocationProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         TYPE_MAPPING = {

@@ -134,6 +134,11 @@ class Oracle(Dialect):
             exp.IfNull: rename_func("NVL"),
         }
 
+        PROPERTIES_LOCATION = {
+            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        }
+
         LIMIT_FETCH = "FETCH"
 
         def offset_sql(self, expression: exp.Offset) -> str:

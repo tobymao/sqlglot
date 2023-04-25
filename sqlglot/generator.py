@@ -76,7 +76,8 @@ class Generator:
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.TemporaryProperty: lambda self, e: f"{'GLOBAL ' if e.args.get('global_') else ''}TEMPORARY",
         exp.TransientProperty: lambda self, e: "TRANSIENT",
-        exp.VolatilityProperty: lambda self, e: e.name,
+        exp.StabilityProperty: lambda self, e: e.name,
+        exp.VolatileProperty: lambda self, e: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda self, e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
@@ -200,10 +201,11 @@ class Generator:
         exp.SetProperty: exp.Properties.Location.POST_CREATE,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
+        exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
-        exp.VolatilityProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
@@ -211,6 +213,8 @@ class Generator:
     WITH_JOIN_HINT = False
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
+
+    UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren, exp.Column)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
@@ -654,7 +658,6 @@ class Generator:
 
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
-        volatile = " VOLATILE" if expression.args.get("volatile") else ""
 
         postcreate_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_CREATE):
@@ -665,7 +668,7 @@ class Generator:
                 wrapped=False,
             )
 
-        modifiers = "".join((replace, unique, volatile, postcreate_props_sql))
+        modifiers = "".join((replace, unique, postcreate_props_sql))
 
         postexpression_props_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_EXPRESSION):
@@ -783,7 +786,10 @@ class Generator:
         direction = f" {direction.upper()}" if direction else ""
         count = expression.args.get("count")
         count = f" {count}" if count else ""
-        return f"{self.seg('FETCH')}{direction}{count} ROWS ONLY"
+        if expression.args.get("percent"):
+            count = f"{count} PERCENT"
+        with_ties_or_only = "WITH TIES" if expression.args.get("with_ties") else "ONLY"
+        return f"{self.seg('FETCH')}{direction}{count} ROWS {with_ties_or_only}"
 
     def filter_sql(self, expression: exp.Filter) -> str:
         this = self.sql(expression, "this")
@@ -1706,15 +1712,10 @@ class Generator:
             this = expression.this.name if expression.this else ""
             return f"INTERVAL '{this}{unit}'"
 
-        this = expression.this
+        this = self.sql(expression, "this")
         if this:
-            this = (
-                f" {this}"
-                if isinstance(this, exp.Literal) or isinstance(this, exp.Paren)
-                else f" ({this})"
-            )
-        else:
-            this = ""
+            unwrapped = isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES)
+            this = f" {this}" if unwrapped else f" ({this})"
 
         return f"INTERVAL{this}{unit}"
 

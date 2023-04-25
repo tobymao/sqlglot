@@ -818,7 +818,6 @@ class Create(Expression):
         "properties": False,
         "replace": False,
         "unique": False,
-        "volatile": False,
         "indexes": False,
         "no_schema_binding": False,
         "begin": False,
@@ -1332,7 +1331,12 @@ class Partition(Expression):
 
 
 class Fetch(Expression):
-    arg_types = {"direction": False, "count": False}
+    arg_types = {
+        "direction": False,
+        "count": False,
+        "percent": False,
+        "with_ties": False,
+    }
 
 
 class Group(Expression):
@@ -1703,6 +1707,10 @@ class SqlSecurityProperty(Property):
     arg_types = {"definer": True}
 
 
+class StabilityProperty(Property):
+    arg_types = {"this": True}
+
+
 class TableFormatProperty(Property):
     arg_types = {"this": True}
 
@@ -1715,8 +1723,8 @@ class TransientProperty(Property):
     arg_types = {"this": False}
 
 
-class VolatilityProperty(Property):
-    arg_types = {"this": True}
+class VolatileProperty(Property):
+    arg_types = {"this": False}
 
 
 class WithDataProperty(Property):
@@ -4046,6 +4054,32 @@ ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 
 
 # Helpers
+@t.overload
+def maybe_parse(
+    sql_or_expression: ExpOrStr,
+    *,
+    into: t.Type[E],
+    dialect: DialectType = None,
+    prefix: t.Optional[str] = None,
+    copy: bool = False,
+    **opts,
+) -> E:
+    ...
+
+
+@t.overload
+def maybe_parse(
+    sql_or_expression: str | E,
+    *,
+    into: t.Optional[IntoType] = None,
+    dialect: DialectType = None,
+    prefix: t.Optional[str] = None,
+    copy: bool = False,
+    **opts,
+) -> E:
+    ...
+
+
 def maybe_parse(
     sql_or_expression: ExpOrStr,
     *,

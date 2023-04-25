@@ -161,6 +161,24 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
+    """Remove table refs from columns in when statements."""
+    if isinstance(expression, exp.Merge):
+        alias = expression.this.args.get("alias")
+        targets = {expression.this.this}
+        if alias:
+            targets.add(alias.this)
+
+        for when in expression.expressions:
+            when.transform(
+                lambda node: exp.column(node.name)
+                if isinstance(node, exp.Column) and node.args.get("table") in targets
+                else node,
+                copy=False,
+            )
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

@@ -45,16 +45,23 @@ TIME_DIFF_FACTOR = {
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 
-def _add_date_sql(self: generator.Generator, expression: exp.DateAdd) -> str:
+def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
-    modified_increment = (
-        int(expression.text("expression")) * multiplier
-        if expression.expression.is_number
-        else expression.expression
-    )
-    modified_increment = exp.Literal.number(modified_increment)
-    return self.func(func, expression.this, modified_increment.this)
+
+    if isinstance(expression, exp.DateSub):
+        multiplier *= -1
+
+    if expression.expression.is_number:
+        modified_increment = exp.Literal.number(int(expression.text("expression")) * multiplier)
+    else:
+        modified_increment = expression.expression
+        if multiplier != 1:
+            modified_increment = exp.Mul(  # type: ignore
+                this=modified_increment, expression=exp.Literal.number(multiplier)
+            )
+
+    return self.func(func, expression.this, modified_increment)
 
 
 def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
@@ -285,6 +292,7 @@ class Hive(Dialect):
             exp.DateAdd: _add_date_sql,
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: rename_func("TO_DATE"),
+            exp.DateSub: _add_date_sql,
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
             exp.FileFormatProperty: lambda self, e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
@@ -340,6 +348,7 @@ class Hive(Dialect):
             exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:

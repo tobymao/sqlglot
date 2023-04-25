@@ -407,7 +407,7 @@ class Parser(metaclass=_Parser):
     COLUMN_OPERATORS = {
         TokenType.DOT: None,
         TokenType.DCOLON: lambda self, this, to: self.expression(
-            exp.Cast,
+            exp.Cast if self.STRICT_CAST else exp.TryCast,
             this=this,
             to=to,
         ),
@@ -567,7 +567,7 @@ class Parser(metaclass=_Parser):
         ),
         "DEFINER": lambda self: self._parse_definer(),
         "DETERMINISTIC": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
+            exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
         "DISTKEY": lambda self: self._parse_distkey(),
         "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
@@ -578,7 +578,7 @@ class Parser(metaclass=_Parser):
         "FREESPACE": lambda self: self._parse_freespace(),
         "GLOBAL": lambda self: self._parse_temporary(global_=True),
         "IMMUTABLE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("IMMUTABLE")
+            exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
         "JOURNAL": lambda self: self._parse_journal(
             no=self._prev.text.upper() == "NO", dual=self._prev.text.upper() == "DUAL"
@@ -611,7 +611,7 @@ class Parser(metaclass=_Parser):
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SORTKEY": lambda self: self._parse_sortkey(),
         "STABLE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("STABLE")
+            exp.StabilityProperty, this=exp.Literal.string("STABLE")
         ),
         "STORED": lambda self: self._parse_stored(),
         "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
@@ -619,9 +619,7 @@ class Parser(metaclass=_Parser):
         "TEMPORARY": lambda self: self._parse_temporary(global_=False),
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
         "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
-        "VOLATILE": lambda self: self.expression(
-            exp.VolatilityProperty, this=exp.Literal.string("VOLATILE")
-        ),
+        "VOLATILE": lambda self: self._parse_volatile_property(),
         "WITH": lambda self: self._parse_with_property(),
     }
 
@@ -1066,7 +1064,6 @@ class Parser(metaclass=_Parser):
             TokenType.OR, TokenType.REPLACE
         )
         unique = self._match(TokenType.UNIQUE)
-        volatile = self._match(TokenType.VOLATILE)
 
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
             self._match(TokenType.TABLE)
@@ -1175,7 +1172,6 @@ class Parser(metaclass=_Parser):
             kind=create_token.text,
             replace=replace,
             unique=unique,
-            volatile=volatile,
             expression=expression,
             exists=exists,
             properties=properties,
@@ -1268,6 +1264,21 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.FallbackProperty, no=no, protection=self._match_text_seq("PROTECTION")
         )
+
+    def _parse_volatile_property(self) -> exp.Expression:
+        if self._index >= 2:
+            pre_volatile_token = self._tokens[self._index - 2]
+        else:
+            pre_volatile_token = None
+
+        if pre_volatile_token and pre_volatile_token.token_type in (
+            TokenType.CREATE,
+            TokenType.REPLACE,
+            TokenType.UNIQUE,
+        ):
+            return exp.VolatileProperty()
+
+        return self.expression(exp.StabilityProperty, this=exp.Literal.string("VOLATILE"))
 
     def _parse_with_property(
         self,
@@ -2476,10 +2487,25 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.FETCH):
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
             direction = self._prev.text if direction else "FIRST"
+
             count = self._parse_number()
+            percent = self._match(TokenType.PERCENT)
+
             self._match_set((TokenType.ROW, TokenType.ROWS))
-            self._match(TokenType.ONLY)
-            return self.expression(exp.Fetch, direction=direction, count=count)
+
+            only = self._match(TokenType.ONLY)
+            with_ties = self._match_text_seq("WITH", "TIES")
+
+            if only and with_ties:
+                self.raise_error("Cannot specify both ONLY and WITH TIES in FETCH clause")
+
+            return self.expression(
+                exp.Fetch,
+                direction=direction,
+                count=count,
+                percent=percent,
+                with_ties=with_ties,
+            )
 
         return this
 
@@ -2600,14 +2626,12 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.INTERVAL):
             return None
 
-        this = self._parse_primary()
-        unit = self._parse_function() or self._parse_id_var(
-            any_token=False, tokens=self.INTERVAL_VARS
-        )
+        this = self._parse_primary() or self._parse_column()
+        unit = self._parse_function() or self._parse_var()
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
-        if this:
+        if this and isinstance(this, exp.Literal):
             if this.is_number:
                 this = exp.Literal.string(this.name)
 
@@ -2615,7 +2639,7 @@ class Parser(metaclass=_Parser):
             parts = this.name.split()
             if not unit and len(parts) <= 2:
                 this = exp.Literal.string(seq_get(parts, 0))
-                unit = exp.to_identifier(seq_get(parts, 1))
+                unit = self.expression(exp.Var, this=seq_get(parts, 1))
 
         return self.expression(exp.Interval, this=this, unit=unit)
 
@@ -2790,15 +2814,14 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:
-        if self._curr and self._curr.token_type in self.TYPE_TOKENS:
-            return self._parse_types()
-
+        index = self._index
         this = self._parse_id_var()
         self._match(TokenType.COLON)
         data_type = self._parse_types()
 
         if not data_type:
-            return None
+            self._retreat(index)
+            return self._parse_types()
         return self.expression(exp.StructKwarg, this=this, expression=data_type)
 
     def _parse_at_time_zone(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:

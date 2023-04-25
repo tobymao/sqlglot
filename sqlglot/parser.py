@@ -226,6 +226,7 @@ class Parser(metaclass=_Parser):
         TokenType.FORMAT,
         TokenType.FULL,
         TokenType.IF,
+        TokenType.IS,
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.LAZY,
@@ -1003,7 +1004,7 @@ class Parser(metaclass=_Parser):
         if kind.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=kind.token_type)
         elif kind.token_type == TokenType.TABLE:
-            this = self._parse_table()
+            this = self._parse_table(alias_tokens=self.TABLE_ALIAS_TOKENS - {TokenType.IS})
         elif kind.token_type == TokenType.COLUMN:
             this = self._parse_column()
         else:
@@ -2561,7 +2562,11 @@ class Parser(metaclass=_Parser):
         negate = self._match(TokenType.NOT)
 
         if self._match_set(self.RANGE_PARSERS):
-            this = self.RANGE_PARSERS[self._prev.token_type](self, this)
+            expression = self.RANGE_PARSERS[self._prev.token_type](self, this)
+            if not expression:
+                return this
+
+            this = expression
         elif self._match(TokenType.ISNULL):
             this = self.expression(exp.Is, this=this, expression=exp.Null())
 
@@ -2579,17 +2584,19 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_is(self, this: t.Optional[exp.Expression]) -> exp.Expression:
+    def _parse_is(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        index = self._index - 1
         negate = self._match(TokenType.NOT)
         if self._match(TokenType.DISTINCT_FROM):
             klass = exp.NullSafeEQ if negate else exp.NullSafeNEQ
             return self.expression(klass, this=this, expression=self._parse_expression())
 
-        this = self.expression(
-            exp.Is,
-            this=this,
-            expression=self._parse_null() or self._parse_boolean(),
-        )
+        expression = self._parse_null() or self._parse_boolean()
+        if not expression:
+            self._retreat(index)
+            return None
+
+        this = self.expression(exp.Is, this=this, expression=expression)
         return self.expression(exp.Not, this=this) if negate else this
 
     def _parse_in(self, this: t.Optional[exp.Expression]) -> exp.Expression:

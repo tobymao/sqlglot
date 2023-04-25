@@ -172,7 +172,6 @@ class Spark(Hive):
 
         WRAP_DERIVED_VALUES = False
         CREATE_FUNCTION_RETURN_AS = False
-        WITH_JOIN_HINT = False
 
         def cast_sql(self, expression: exp.Cast) -> str:
             if isinstance(expression.this, exp.Cast) and expression.this.is_type(

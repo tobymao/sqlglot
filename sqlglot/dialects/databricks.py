@@ -19,8 +19,6 @@ class Databricks(Spark):
         LOG_DEFAULTS_TO_LN = True
 
     class Generator(Spark.Generator):
-        WITH_JOIN_HINT = False
-
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,

@@ -6,8 +6,6 @@ from sqlglot.dialects.presto import Presto
 
 class Trino(Presto):
     class Generator(Presto.Generator):
-        WITH_JOIN_HINT = False
-
         TRANSFORMS = {
             **Presto.Generator.TRANSFORMS,  # type: ignore
             exp.ArraySum: lambda self, e: f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",

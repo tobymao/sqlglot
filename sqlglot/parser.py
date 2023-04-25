@@ -1891,8 +1891,7 @@ class Parser(metaclass=_Parser):
                 if lateral:
                     this.append("laterals", lateral)
 
-            comma = None if table else self._match(TokenType.COMMA)
-            if comma:
+            if not table and self._match(TokenType.COMMA):
                 this.args["from"].append("expressions", self._parse_table())
 
             if not (lateral or join or comma):

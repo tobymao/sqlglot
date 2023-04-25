@@ -4299,28 +4299,8 @@ class BetterBrainParser(Parser):
         TokenType.FROM: TokenType.TABLE,
     }
     __slots__ = (
-        "tokenizer",
-        "error_level",
-        "error_message_context",
-        "sql",
-        "errors",
-        "index_offset",
-        "unnest_column_only",
-        "alias_post_tablesample",
-        "max_errors",
-        "null_ordering",
-        "_tokens",
-        "_index",
-        "_curr",
-        "_next",
-        "_prev",
-        "_prev_comments",
-        "_show_trie",
-        "_set_trie",
-        "_cursor_position",
-        "_has_hit_error_after_cursor",
-        "_suggestion_options",
-        "_last_keyword",
+        *Parser.__slots__,
+        *("_cursor_position","_has_hit_error_after_cursor", "_suggestion_options", "_last_keyword", "tokenizer")
     )
 
     def __init__(
@@ -4427,25 +4407,7 @@ class BetterBrainParser(Parser):
             self._has_hit_error_after_cursor = True
             return
 
-        token = token or self._curr or self._prev or Token.string("")
-        start = token.start
-        end = token.end
-        start_context = self.sql[max(start - self.error_message_context, 0) : start]
-        highlight = self.sql[start:end]
-        end_context = self.sql[end : end + self.error_message_context]
-        error = ParseError.new(
-            f"{message}. Line {token.line}, Col: {token.col}.\n"
-            f"  {start_context}\033[4m{highlight}\033[0m{end_context}",
-            description=message,
-            line=token.line,
-            col=token.col,
-            start_context=start_context,
-            highlight=highlight,
-            end_context=end_context,
-        )
-        if self.error_level == ErrorLevel.IMMEDIATE:
-            raise error
-        self.errors.append(error)
+        super().raise_error(message, token)
 
     def validate_expression(
         self, expression: exp.Expression, args: t.Optional[t.List] = None
@@ -4486,16 +4448,6 @@ class BetterBrainParser(Parser):
         else:
             self._prev = None
             self._prev_comments = None
-
-    def _parse_value(self) -> exp.Expression:
-        if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(self._parse_conjunction)
-            self._match_r_paren()
-            return self.expression(exp.Tuple, expressions=expressions)
-
-        # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
-        # Source: https://prestodb.io/docs/current/sql/values.html
-        return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
 
     def _parse_select(
         self, nested: bool = False, table: bool = False, parse_subquery_alias: bool = True
@@ -4578,12 +4530,7 @@ class BetterBrainParser(Parser):
 
 
     def _parse_from(self, parent_exp: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
-        if not self._match(TokenType.FROM):
-            return None
-
-        expression = self.expression(
-            exp.From, comments=self._prev_comments, expressions=self._parse_csv(self._parse_table)
-        )
+        expression = super()._parse_from()
         if parent_exp is not None:
             parent_exp.set("from", expression)
             self._parse_query_modifiers(parent_exp)

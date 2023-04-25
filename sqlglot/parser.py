@@ -2075,10 +2075,9 @@ class Parser(metaclass=_Parser):
     def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Expression]:
         index = self._index
         natural, side, kind = self._parse_join_side_and_kind()
-
         hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
-
         join = self._match(TokenType.JOIN)
+
         if not skip_join_token and not join:
             self._retreat(index)
             kind = None

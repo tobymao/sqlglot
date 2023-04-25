@@ -2604,7 +2604,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.INTERVAL):
             return None
 
-        this = self._parse_primary() or self._parse_column()
+        this = self._parse_primary() or self._parse_term()
         unit = self._parse_function() or self._parse_var()
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse

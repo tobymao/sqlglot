@@ -70,7 +70,6 @@ class Redshift(Postgres):
 
     class Generator(Postgres.Generator):
         SINGLE_STRING_INTERVAL = True
-        WITH_JOIN_HINT = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,  # type: ignore

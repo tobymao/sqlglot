@@ -89,7 +89,7 @@ class Spark(Hive):
             "WEEKOFYEAR": lambda args: exp.WeekOfYear(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
             ),
-            "DATE": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("date")),
+            "DATE": lambda args: exp.cast(seq_get(args, 0), "date"),
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1),
                 unit=exp.var(seq_get(args, 0)),

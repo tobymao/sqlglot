@@ -75,6 +75,9 @@ class Spark(Hive):
                 length=seq_get(args, 1),
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
+            "BOOLEAN": lambda args: exp.Cast(
+                this=seq_get(args, 0), to=exp.DataType.build("boolean")
+            ),
             "IIF": exp.If.from_arg_list,
             "AGGREGATE": exp.Reduce.from_arg_list,
             "DAYOFWEEK": lambda args: exp.DayOfWeek(
@@ -94,6 +97,7 @@ class Spark(Hive):
                 this=seq_get(args, 1),
                 unit=exp.var(seq_get(args, 0)),
             ),
+            "STRING": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("string")),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
             "TIMESTAMP": lambda args: exp.Cast(
                 this=seq_get(args, 0), to=exp.DataType.build("timestamp")

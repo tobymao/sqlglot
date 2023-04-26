@@ -224,7 +224,7 @@ TBLPROPERTIES (
         self.validate_all(
             "STRING(x)",
             write={
-                "": "CAST(x AS STRING)",
+                "": "CAST(x AS TEXT)",
                 "spark": "CAST(x AS STRING)",
             },
         )

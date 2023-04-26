@@ -126,3 +126,31 @@ class TestLineage(unittest.TestCase):
             "?",
         )
         self.assertEqual(downstream.alias, "")
+
+    def test_lineage_values(self) -> None:
+        node = lineage(
+            "a",
+            "SELECT a FROM y",
+            sources={"y": "SELECT a FROM (VALUES (1), (2)) AS t (a)"},
+        )
+        self.assertEqual(
+            node.source.sql(),
+            "SELECT y.a AS a FROM (SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)) AS y /* source: y */",
+        )
+        self.assertEqual(node.alias, "")
+
+        downstream = node.downstream[0]
+        self.assertEqual(
+            downstream.source.sql(),
+            "SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)",
+        )
+        self.assertEqual(downstream.expression.sql(), "t.a AS a")
+        self.assertEqual(downstream.alias, "y")
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(
+            downstream.source.sql(),
+            "(VALUES (1), (2)) AS t(a)",
+        )
+        self.assertEqual(downstream.expression.sql(), "a")
+        self.assertEqual(downstream.alias, "")

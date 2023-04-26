@@ -215,6 +215,20 @@ TBLPROPERTIES (
         self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
+            "BOOLEAN(x)",
+            write={
+                "": "CAST(x AS BOOLEAN)",
+                "spark": "CAST(x AS BOOLEAN)",
+            },
+        )
+        self.validate_all(
+            "STRING(x)",
+            write={
+                "": "CAST(x AS TEXT)",
+                "spark": "CAST(x AS STRING)",
+            },
+        )
+        self.validate_all(
             "DATE(x)",
             write={
                 "": "CAST(x AS DATE)",

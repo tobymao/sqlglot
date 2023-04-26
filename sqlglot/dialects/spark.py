@@ -127,7 +127,11 @@ class Spark(Hive):
             # Spark doesn't add a suffix to the pivot columns when there's a single aggregation
             if len(pivot_columns) == 1:
                 return [""]
-            return [agg.alias or agg.sql(dialect="spark").lower() for agg in pivot_columns]
+
+            return [
+                agg.alias or agg.sql(dialect="spark", normalize_functions="lower")
+                for agg in pivot_columns
+            ]
 
     class Generator(Hive.Generator):
         TYPE_MAPPING = {

@@ -128,10 +128,27 @@ class Spark(Hive):
             if len(pivot_columns) == 1:
                 return [""]
 
-            return [
-                agg.alias or agg.sql(dialect="spark", normalize_functions="lower")
-                for agg in pivot_columns
-            ]
+            names = []
+            for agg in pivot_columns:
+                if isinstance(agg, exp.Alias):
+                    names.append(agg.alias)
+                else:
+                    """
+                    This case corresponds to aggregations without aliases being used as suffixes
+                    (e.g. col_avg(foo)). We need to unquote identifiers because they're going to
+                    be quoted in the base parser's `_parse_pivot` method, due to `to_identifier`.
+                    Otherwise, we'd end up with `col_avg(`foo`)` (notice the double quotes).
+
+                    Moreover, function names are lowercased in order to mimic Spark's naming scheme.
+                    """
+                    agg_all_unquoted = agg.copy().transform(
+                        lambda node: exp.Identifier(this=node.name, quoted=False)
+                        if isinstance(node, exp.Identifier)
+                        else node
+                    )
+                    names.append(agg_all_unquoted.sql(dialect="spark", normalize_functions="lower"))
+
+            return names
 
     class Generator(Hive.Generator):
         TYPE_MAPPING = {

@@ -415,6 +415,12 @@ class TestParser(unittest.TestCase):
             ) PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
+        multiple_aggregates_not_aliased_with_quoted_identifier = """
+            SELECT * FROM (
+                SELECT partname, price, quality FROM part
+            ) PIVOT (AVG(`PrIcE`), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
+        """
+
         query_to_column_names = {
             nothing_aliased: {
                 "bigquery": ["prop", "rudder"],
@@ -446,6 +452,14 @@ class TestParser(unittest.TestCase):
                     "`prop1_avg(price)`",
                     "`prop1_max(quality)`",
                     "`rudder_avg(price)`",
+                    "`rudder_max(quality)`",
+                ],
+            },
+            multiple_aggregates_not_aliased_with_quoted_identifier: {
+                "spark": [
+                    "`prop1_avg(PrIcE)`",
+                    "`prop1_max(quality)`",
+                    "`rudder_avg(PrIcE)`",
                     "`rudder_max(quality)`",
                 ],
             },

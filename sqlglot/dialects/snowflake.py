@@ -177,6 +177,8 @@ class Snowflake(Dialect):
     }
 
     class Parser(parser.Parser):
+        QUOTED_PIVOT_COLUMNS = True
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
@@ -246,25 +248,6 @@ class Snowflake(Dialect):
             self._match_text_seq("TAG")
             parser = t.cast(t.Callable, self._parse_id_var if unset else self._parse_conjunction)
             return self.expression(exp.SetTag, expressions=self._parse_csv(parser), unset=unset)
-
-        def _parse_pivot(self) -> t.Optional[exp.Expression]:
-            pivot = super()._parse_pivot()
-
-            if pivot and not pivot.args["unpivot"]:
-                if not pivot.expressions:
-                    self.raise_error("Failed to parse PIVOT's aggregation list")
-
-                # Snowflake allows only a single aggregation
-                pivot.expressions[0]
-
-                # We can only specify names for pivot columns using a table alias
-                pivot_columns = pivot.args["field"].expressions
-                pivot.set(
-                    "columns",
-                    [exp.to_identifier(col.name, quoted=True) for col in pivot_columns],
-                )
-
-            return pivot
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]

@@ -47,29 +47,6 @@ class Redshift(Postgres):
 
             return this
 
-        def _parse_pivot(self) -> t.Optional[exp.Expression]:
-            pivot = super()._parse_pivot()
-
-            if pivot and not pivot.args["unpivot"]:
-                if not pivot.expressions:
-                    self.raise_error("Failed to parse PIVOT's aggregation list")
-
-                # Redshift allows only a single aggregation
-                aggregation = pivot.expressions[0]
-
-                suffix = ""
-                if isinstance(aggregation, exp.Alias):
-                    suffix = f"_{aggregation.alias}"
-                    aggregation = aggregation.this
-
-                pivot_columns = pivot.args["field"].expressions
-                pivot.set(
-                    "columns",
-                    [exp.to_identifier(col.alias_or_name + suffix) for col in pivot_columns],
-                )
-
-            return pivot
-
     class Tokenizer(Postgres.Tokenizer):
         STRING_ESCAPES = ["\\"]
 

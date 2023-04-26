@@ -123,32 +123,14 @@ class Spark(Hive):
                 kind="COLUMNS",
             )
 
-        def _parse_pivot(self) -> t.Optional[exp.Expression]:
-            pivot = super()._parse_pivot()
+        def _pivot_column_names(self, pivot_columns: t.List[exp.Expression]) -> t.List[str]:
+            if len(pivot_columns) == 1:
+                return [""]
 
-            if pivot and not pivot.args["unpivot"]:
-                if not pivot.expressions:
-                    self.raise_error("Failed to parse PIVOT's aggregation list")
-
-                suffixes = (
-                    [
-                        f"_{agg.alias if isinstance(agg, exp.Alias) else agg.sql(dialect='spark').lower()}"
-                        for agg in pivot.expressions
-                    ]
-                    if len(pivot.expressions) > 1
-                    else [""]
-                )
-
-                pivot_columns = pivot.args["field"].expressions
-
-                columns = []
-                for col in pivot_columns:
-                    for suffix in suffixes:
-                        columns.append(exp.to_identifier(col.alias_or_name + suffix))
-
-                pivot.set("columns", columns)
-
-            return pivot
+            return [
+                agg.alias if isinstance(agg, exp.Alias) else agg.sql(dialect="spark").lower()
+                for agg in pivot_columns
+            ]
 
     class Generator(Hive.Generator):
         TYPE_MAPPING = {

@@ -747,6 +747,9 @@ class Parser(metaclass=_Parser):
 
     CONVERT_TYPE_FIRST = False
 
+    QUOTED_PIVOT_COLUMNS: t.Optional[bool] = None
+    PREFIXED_PIVOT_COLUMNS = False
+
     LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
 
@@ -2326,6 +2329,9 @@ class Parser(metaclass=_Parser):
         else:
             expressions = self._parse_csv(lambda: self._parse_alias(self._parse_function()))
 
+        if not expressions:
+            self.raise_error("Failed to parse PIVOT's aggregation list")
+
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
 
@@ -2343,7 +2349,25 @@ class Parser(metaclass=_Parser):
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
             pivot.set("alias", self._parse_table_alias())
 
+        if not unpivot:
+            names = self._pivot_column_names(t.cast(t.List[exp.Expression], expressions))
+
+            columns: t.List[exp.Expression] = []
+            for col in pivot.args["field"].expressions:
+                for name in names:
+                    if self.PREFIXED_PIVOT_COLUMNS:
+                        name = f"{name}_{col.alias_or_name}" if name else col.alias_or_name
+                    else:
+                        name = f"{col.alias_or_name}_{name}" if name else col.alias_or_name
+
+                    columns.append(exp.to_identifier(name, quoted=self.QUOTED_PIVOT_COLUMNS))
+
+            pivot.set("columns", columns)
+
         return pivot
+
+    def _pivot_column_names(self, pivot_columns: t.List[exp.Expression]) -> t.List[str]:
+        return [agg.alias for agg in pivot_columns]
 
     def _parse_where(self, skip_where_token: bool = False) -> t.Optional[exp.Expression]:
         if not skip_where_token and not self._match(TokenType.WHERE):

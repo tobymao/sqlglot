@@ -144,6 +144,11 @@ class BigQuery(Dialect):
         KEYWORDS.pop("DIV")
 
     class Parser(parser.Parser):
+        PREFIXED_PIVOT_COLUMNS = True
+
+        LOG_BASE_FIRST = False
+        LOG_DEFAULTS_TO_LN = True
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_TRUNC": lambda args: exp.DateTrunc(
@@ -201,31 +206,6 @@ class BigQuery(Dialect):
                 exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
             ),
         }
-
-        LOG_BASE_FIRST = False
-        LOG_DEFAULTS_TO_LN = True
-
-        def _parse_pivot(self) -> t.Optional[exp.Expression]:
-            pivot = super()._parse_pivot()
-
-            if pivot and not pivot.args["unpivot"]:
-                if not pivot.expressions:
-                    self.raise_error("Failed to parse PIVOT's aggregation list")
-
-                prefixes = [f"{agg.alias}_" for agg in pivot.expressions]
-                if len(prefixes) == 1 and not isinstance(pivot.expressions[0], exp.Alias):
-                    prefixes = [""]
-
-                pivot_columns = pivot.args["field"].expressions
-
-                columns = []
-                for col in pivot_columns:
-                    for prefix in prefixes:
-                        columns.append(exp.to_identifier(prefix + col.alias_or_name))
-
-                pivot.set("columns", columns)
-
-            return pivot
 
     class Generator(generator.Generator):
         EXPLICIT_UNION = True

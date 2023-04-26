@@ -104,12 +104,17 @@ def lineage(
         if not select:
             raise ValueError(f"Could not find {column_name} in {scope.expression}")
 
-        # For better ergonomics in our node labels, replace the full select with a version that
-        # has only the column we care about.
-        #   "x", SELECT x, y FROM foo
-        #     => "x", SELECT x FROM foo
-        source = optimize(scope.expression.select(select, append=False), schema=schema, rules=rules)
-        select = source.selects[0]
+        if isinstance(scope.expression, exp.Select):
+            # For better ergonomics in our node labels, replace the full select with
+            # a version that has only the column we care about.
+            #   "x", SELECT x, y FROM foo
+            #     => "x", SELECT x FROM foo
+            source = optimize(
+                scope.expression.select(select, append=False), schema=schema, rules=rules
+            )
+            select = source.selects[0]
+        else:
+            source = scope.expression
 
         # Create the node for this step in the lineage chain, and attach it to the previous one.
         node = Node(

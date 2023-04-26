@@ -124,13 +124,10 @@ class Spark(Hive):
             )
 
         def _pivot_column_names(self, pivot_columns: t.List[exp.Expression]) -> t.List[str]:
+            # Spark doesn't add a suffix to the pivot columns when there's a single aggregation
             if len(pivot_columns) == 1:
                 return [""]
-
-            return [
-                agg.alias if isinstance(agg, exp.Alias) else agg.sql(dialect="spark").lower()
-                for agg in pivot_columns
-            ]
+            return [agg.alias or agg.sql(dialect="spark").lower() for agg in pivot_columns]
 
     class Generator(Hive.Generator):
         TYPE_MAPPING = {

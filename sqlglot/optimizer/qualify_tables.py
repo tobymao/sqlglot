@@ -65,5 +65,8 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
 
                 if not table_alias.name:
                     table_alias.set("this", next_name())
+                if isinstance(udtf, exp.Values) and not table_alias.columns:
+                    for i, e in enumerate(udtf.expressions[0].expressions):
+                        table_alias.append("columns", exp.to_identifier(f"_col_{i}"))
 
     return expression

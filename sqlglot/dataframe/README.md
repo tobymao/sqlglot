@@ -222,3 +222,36 @@ df.show()
 # Unsupportable Operations
 
 Any operation that lacks a way to represent it in SQL cannot be supported by this tool. An example of this would be rdd operations. Since the DataFrame API though is mostly modeled around SQL concepts most operations can be supported.
+
+# Known Issues
+
+* Triple joins without a select - If you do a join and then don't specify a select after then you could get optimizer errors. See example of what can cause this issue:
+```python
+self.df_employee
+.join(
+    self.df_store,
+    on=self.df_employee["employee_id"] == self.df_store["store_id"],
+    how="left",
+)
+.join(
+    self.df_district,
+    on=self.df_store["store_id"] == self.df_district["district_id"],
+    how="left"
+)
+```
+The workaround is to explicitly specify the columns you want to select after the joins. This is good practice anyways since without this your result can have duplicate column names and implicit behavior on how to deal with ambiguity.
+```python
+self.df_employee
+.join(
+    self.df_store, on=self.df_employee.employee_id == self.df_store.store_id
+)
+.join(self.df_district, on=self.df_store.store_id == self.df_district.district_id)
+.select(
+    self.df_employee.employee_id,
+    self.df_store.store_id,
+    self.df_district.district_id,
+    self.df_employee.fname,
+    self.df_store.store_name,
+    self.df_district.district_name,
+)
+```

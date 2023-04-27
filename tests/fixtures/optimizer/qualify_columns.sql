@@ -131,6 +131,14 @@ SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 SELECT x FROM READ_PARQUET('path.parquet', hive_partition=1);
 SELECT _q_0.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS _q_0;
 
+# execute: false
+select * from (values (1, 2));
+SELECT _q_0._col_0 AS _col_0, _q_0._col_1 AS _col_1 FROM (VALUES (1, 2)) AS _q_0(_col_0, _col_1);
+
+# execute: false
+select * from (values (1, 2)) x;
+SELECT x._col_0 AS _col_0, x._col_1 AS _col_1 FROM (VALUES (1, 2)) AS x(_col_0, _col_1);
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

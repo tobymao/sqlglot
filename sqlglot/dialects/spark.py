@@ -141,7 +141,7 @@ class Spark(Hive):
 
                     Moreover, function names are lowercased in order to mimic Spark's naming scheme.
                     """
-                    agg_all_unquoted = agg.copy().transform(
+                    agg_all_unquoted = agg.transform(
                         lambda node: exp.Identifier(this=node.name, quoted=False)
                         if isinstance(node, exp.Identifier)
                         else node

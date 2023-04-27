@@ -177,6 +177,8 @@ class Snowflake(Dialect):
     }
 
     class Parser(parser.Parser):
+        QUOTED_PIVOT_COLUMNS = True
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,

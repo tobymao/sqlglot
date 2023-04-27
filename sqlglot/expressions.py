@@ -2750,6 +2750,7 @@ class Pivot(Expression):
         "expressions": True,
         "field": True,
         "unpivot": True,
+        "columns": False,
     }
 
 

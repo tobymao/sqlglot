@@ -145,6 +145,11 @@ class BigQuery(Dialect):
         KEYWORDS.pop("DIV")
 
     class Parser(parser.Parser):
+        PREFIXED_PIVOT_COLUMNS = True
+
+        LOG_BASE_FIRST = False
+        LOG_DEFAULTS_TO_LN = True
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_TRUNC": lambda args: exp.DateTrunc(
@@ -202,9 +207,6 @@ class BigQuery(Dialect):
                 exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
             ),
         }
-
-        LOG_BASE_FIRST = False
-        LOG_DEFAULTS_TO_LN = True
 
     class Generator(generator.Generator):
         EXPLICIT_UNION = True

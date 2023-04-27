@@ -646,7 +646,7 @@ WHERE
             write={"spark": "CURRENT_USER()"},
         )
 
-    def test_join_hint(self):
+    def test_hints(self):
         self.validate_all(
             "SELECT x FROM a INNER HASH JOIN b ON b.id = a.id",
             write={"spark": "SELECT x FROM a INNER JOIN b ON b.id = a.id"},
@@ -662,5 +662,13 @@ WHERE
         self.validate_all(
             "SELECT x FROM a INNER MERGE JOIN b ON b.id = a.id",
             write={"spark": "SELECT x FROM a INNER JOIN b ON b.id = a.id"},
+        )
+        self.validate_all(
+            "SELECT x FROM a WITH (NOLOCK)",
+            write={
+                "spark": "SELECT x FROM a",
+                "tsql": "SELECT x FROM a WITH (NOLOCK)",
+                "": "SELECT x FROM a WITH (NOLOCK)",
+            },
         )
         self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")

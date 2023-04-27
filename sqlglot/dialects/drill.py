@@ -104,7 +104,8 @@ class Drill(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
     class Generator(generator.Generator):
-        WITH_JOIN_HINT = False
+        JOIN_HINTS = False
+        TABLE_HINTS = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

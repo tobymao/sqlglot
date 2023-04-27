@@ -266,7 +266,8 @@ class Hive(Dialect):
         LIMIT_FETCH = "LIMIT"
         TABLESAMPLE_WITH_METHOD = False
         TABLESAMPLE_SIZE_IS_PERCENT = True
-        WITH_JOIN_HINT = False
+        JOIN_HINTS = False
+        TABLE_HINTS = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore

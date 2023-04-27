@@ -210,7 +210,8 @@ class Generator:
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
     }
 
-    WITH_JOIN_HINT = True
+    JOIN_HINTS = True
+    TABLE_HINTS = True
 
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
 
@@ -1086,7 +1087,7 @@ class Generator:
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
         hints = self.expressions(expression, key="hints", sep=", ", flat=True)
-        hints = f" WITH ({hints})" if hints else ""
+        hints = f" WITH ({hints})" if hints and self.TABLE_HINTS else ""
         laterals = self.expressions(expression, key="laterals", sep="")
         joins = self.expressions(expression, key="joins", sep="")
         pivots = self.expressions(expression, key="pivots", sep="")
@@ -1206,7 +1207,7 @@ class Generator:
                     "NATURAL" if expression.args.get("natural") else None,
                     expression.side,
                     expression.kind,
-                    expression.hint if self.WITH_JOIN_HINT else None,
+                    expression.hint if self.JOIN_HINTS else None,
                     "JOIN",
                 )
                 if op

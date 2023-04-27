@@ -280,7 +280,8 @@ class Snowflake(Dialect):
         PARAMETER_TOKEN = "$"
         MATCHED_BY_SOURCE = False
         SINGLE_STRING_INTERVAL = True
-        WITH_JOIN_HINT = False
+        JOIN_HINTS = False
+        TABLE_HINTS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

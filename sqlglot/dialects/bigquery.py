@@ -211,7 +211,8 @@ class BigQuery(Dialect):
     class Generator(generator.Generator):
         EXPLICIT_UNION = True
         INTERVAL_ALLOWS_PLURAL_FORM = False
-        WITH_JOIN_HINT = False
+        JOIN_HINTS = False
+        TABLE_HINTS = False
         LIMIT_FETCH = "LIMIT"
 
         TRANSFORMS = {

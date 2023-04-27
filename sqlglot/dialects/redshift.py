@@ -8,6 +8,10 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
+def _json_sql(self, e) -> str:
+    return f'{self.sql(e, "this")}."{e.expression.name}"'
+
+
 class Redshift(Postgres):
     time_format = "'YYYY-MM-DD HH:MI:SS'"
     time_mapping = {
@@ -95,6 +99,8 @@ class Redshift(Postgres):
             ),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
+            exp.JSONExtract: _json_sql,
+            exp.JSONExtractScalar: _json_sql,
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
         }
 

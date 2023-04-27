@@ -317,7 +317,10 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             """'{"a":1,"b":2}'::json->'b'""",
-            write={"postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'"""},
+            write={
+                "postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'""",
+                "redshift": """CAST('{"a":1,"b":2}' AS JSON)."b\"""",
+            },
         )
         self.validate_all(
             """'{"x": {"y": 1}}'::json->'x'->'y'""",

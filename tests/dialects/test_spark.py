@@ -222,6 +222,13 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "INT(x)",
+            write={
+                "": "CAST(x AS INT)",
+                "spark": "CAST(x AS INT)",
+            },
+        )
+        self.validate_all(
             "STRING(x)",
             write={
                 "": "CAST(x AS TEXT)",

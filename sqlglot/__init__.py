@@ -47,7 +47,7 @@ if t.TYPE_CHECKING:
     T = t.TypeVar("T", bound=Expression)
 
 
-__version__ = "11.5.9"
+__version__ = "11.6.0"
 
 pretty = False
 """Whether to format generated SQL by default."""

@@ -225,7 +225,7 @@ Any operation that lacks a way to represent it in SQL cannot be supported by thi
 
 # Known Issues
 
-* Triple joins without a select - If you do a join and then don't specify a select after then you could get optimizer errors. See example of what can cause this issue:
+* Triple joins without a select - If you do two joins and then don't specify a select after then you could get optimizer errors. See example of what can cause this issue:
 ```python
 self.df_employee
 .join(

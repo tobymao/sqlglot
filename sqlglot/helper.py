@@ -131,11 +131,16 @@ def subclasses(
     ]
 
 
-def apply_index_offset(expressions: t.List[t.Optional[E]], offset: int) -> t.List[t.Optional[E]]:
+def apply_index_offset(
+    this: exp.Expression,
+    expressions: t.List[t.Optional[E]],
+    offset: int,
+) -> t.List[t.Optional[E]]:
     """
     Applies an offset to a given integer literal expression.
 
     Args:
+        this: the target of the index
         expressions: the expression the offset will be applied to, wrapped in a list.
         offset: the offset that will be applied.
 
@@ -148,11 +153,28 @@ def apply_index_offset(expressions: t.List[t.Optional[E]], offset: int) -> t.Lis
 
     expression = expressions[0]
 
-    if expression and expression.is_int:
-        expression = expression.copy()
-        logger.warning("Applying array index offset (%s)", offset)
-        expression.args["this"] = str(int(expression.this) + offset)  # type: ignore
-        return [expression]
+    from sqlglot import exp
+    from sqlglot.optimizer.annotate_types import annotate_types
+    from sqlglot.optimizer.simplify import simplify
+
+    if not this.type:
+        annotate_types(this)
+
+    if t.cast(exp.DataType, this.type).this not in (
+        exp.DataType.Type.UNKNOWN,
+        exp.DataType.Type.ARRAY,
+    ):
+        return expressions
+
+    if expression:
+        if not expression.type:
+            annotate_types(expression)
+        if t.cast(exp.DataType, expression.type).this in exp.DataType.INTEGER_TYPES:
+            logger.warning("Applying array index offset (%s)", offset)
+            expression = simplify(
+                exp.Add(this=expression.copy(), expression=exp.Literal.number(offset))
+            )
+            return [expression]
 
     return expressions
 

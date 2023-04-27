@@ -493,6 +493,13 @@ FROM v""",
         mock_logger.warning.assert_any_call("Applying array index offset (%s)", 1)
         mock_logger.warning.assert_any_call("Applying array index offset (%s)", -1)
 
+        self.validate("x[x - 1]", "x[x - 1]", write="presto", identity=False)
+        self.validate(
+            "x[array_size(y) - 1]", "x[CARDINALITY(y) - 1 + 1]", write="presto", identity=False
+        )
+        self.validate("x[3 - 1]", "x[3]", write="presto", identity=False)
+        self.validate("MAP(a, b)[0]", "MAP(a, b)[0]", write="presto", identity=False)
+
     def test_identify_lambda(self):
         self.validate("x(y -> y)", 'X("y" -> "y")', identify=True)
 

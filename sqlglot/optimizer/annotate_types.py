@@ -116,6 +116,9 @@ class TypeAnnotator:
         exp.ArrayConcat: lambda self, expr: self._annotate_with_type(
             expr, exp.DataType.Type.VARCHAR
         ),
+        exp.ArraySize: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.BIGINT),
+        exp.Map: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.MAP),
+        exp.VarMap: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.MAP),
         exp.Initcap: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
         exp.Interval: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.INTERVAL),
         exp.Least: lambda self, expr: self._annotate_by_args(expr, "expressions"),

@@ -3367,7 +3367,7 @@ class Parser(metaclass=_Parser):
         elif not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:
-            expressions = apply_index_offset(expressions, -self.index_offset)
+            expressions = apply_index_offset(this, expressions, -self.index_offset)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
         if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:

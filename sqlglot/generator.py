@@ -1567,7 +1567,7 @@ class Generator:
         return f"{this} BETWEEN {low} AND {high}"
 
     def bracket_sql(self, expression: exp.Bracket) -> str:
-        expressions = apply_index_offset(expression.expressions, self.index_offset)
+        expressions = apply_index_offset(expression.this, expression.expressions, self.index_offset)
         expressions_sql = ", ".join(self.sql(e) for e in expressions)
 
         return f"{self.sql(expression, 'this')}[{expressions_sql}]"

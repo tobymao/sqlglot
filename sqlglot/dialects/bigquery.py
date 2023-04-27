@@ -131,6 +131,7 @@ class BigQuery(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "ANY TYPE": TokenType.VARIANT,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
@@ -267,6 +268,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.VARCHAR: "STRING",
+            exp.DataType.Type.VARIANT: "ANY TYPE",
         }
 
         PROPERTIES_LOCATION = {

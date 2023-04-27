@@ -2237,7 +2237,7 @@ class Parser(metaclass=_Parser):
             return None
 
         expressions = self._parse_wrapped_csv(self._parse_column)
-        ordinality = bool(self._match(TokenType.WITH) and self._match(TokenType.ORDINALITY))
+        ordinality = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
         alias = self._parse_table_alias()
 
         if alias and self.unnest_column_only:
@@ -2249,7 +2249,7 @@ class Parser(metaclass=_Parser):
         offset = None
         if self._match_pair(TokenType.WITH, TokenType.OFFSET):
             self._match(TokenType.ALIAS)
-            offset = self._parse_conjunction()
+            offset = self._parse_id_var() or exp.Identifier(this="offset")
 
         return self.expression(
             exp.Unnest,

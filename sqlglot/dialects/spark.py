@@ -79,6 +79,7 @@ class Spark(Hive):
                 this=seq_get(args, 0), to=exp.DataType.build("boolean")
             ),
             "IIF": exp.If.from_arg_list,
+            "INT": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("int")),
             "AGGREGATE": exp.Reduce.from_arg_list,
             "DAYOFWEEK": lambda args: exp.DayOfWeek(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),

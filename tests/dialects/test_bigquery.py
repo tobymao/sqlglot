@@ -366,6 +366,16 @@ class TestBigQuery(Validator):
         self.validate_identity("ROLLBACK TRANSACTION")
         self.validate_identity("CAST(x AS BIGNUMERIC)")
 
+        self.validate_identity("SELECT * FROM UNNEST([1]) WITH ORDINALITY")
+        self.validate_all(
+            "SELECT * FROM UNNEST([1]) WITH OFFSET",
+            write={"bigquery": "SELECT * FROM UNNEST([1]) WITH OFFSET AS offset"},
+        )
+        self.validate_all(
+            "SELECT * FROM UNNEST([1]) WITH OFFSET y",
+            write={"bigquery": "SELECT * FROM UNNEST([1]) WITH OFFSET AS y"},
+        )
+
     def test_user_defined_functions(self):
         self.validate_identity(
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"

@@ -213,8 +213,8 @@ class Generator:
     JOIN_HINTS = True
     TABLE_HINTS = True
 
+    RESERVED_KEYWORDS: t.Set[str] = set()
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
-
     UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren, exp.Column)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
@@ -810,9 +810,14 @@ class Generator:
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name
-        text = text.lower() if self.normalize and not expression.quoted else text
+        lower = text.lower()
+        text = lower if self.normalize and not expression.quoted else text
         text = text.replace(self.identifier_end, self._escaped_identifier_end)
-        if expression.quoted or should_identify(text, self.identify):
+        if (
+            expression.quoted
+            or should_identify(text, self.identify)
+            or lower in self.RESERVED_KEYWORDS
+        ):
             text = f"{self.identifier_start}{text}{self.identifier_end}"
         return text
 

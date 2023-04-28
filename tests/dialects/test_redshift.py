@@ -9,6 +9,14 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT INTERVAL '5 days'")
 
         self.validate_all(
+            "SELECT SNAPSHOT",
+            write={
+                "": "SELECT SNAPSHOT",
+                "redshift": 'SELECT "SNAPSHOT"',
+            },
+        )
+
+        self.validate_all(
             "SELECT SYSDATE",
             write={
                 "": "SELECT CURRENT_TIMESTAMP()",

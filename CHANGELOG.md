@@ -1,6 +1,55 @@
 Changelog
 =========
 
+v11.6.0
+------
+
+- Breaking: [Removed](https://github.com/tobymao/sqlglot/commit/08b8623f11214573e17c6948bf71587c0c553c9f) table hints when not supported.
+
+- New: Added support for Databricks' `:` operator.
+
+- New: Added several spark functions, e.g. INT, DATE, TIMESTAMP etc.
+
+- New: Added ON UPDATE CURRENT_TIMESTAMP column constraint in MySQL.
+
+- New: Added date functions (YEAR, MONTH, etc) in the executor.
+
+- New: Added support for Databricks ALTER TABLE .. ADD COLUMN .. FIRST/AFTER .. syntax.
+
+- Improvement: [Made](https://github.com/tobymao/sqlglot/commit/c0fb040562cc7ea052eb7f75783326941282df36) adding index offsets for arrays more robust.
+
+- Improvement: [Added](https://github.com/tobymao/sqlglot/commit/949eba7349d0eba292f2eadaf99ee716decdf275) columns to anonymous values.
+
+- Improvement: [Added](https://github.com/tobymao/sqlglot/commit/9ee9e0a9e85d181c7cba0f709e5f5567dbfddade) support for T-SQL hints, fixed several transpilation issues.
+
+- Improvement: Refactored generation of DATE_SUB for spark.
+
+- Improvement: [Fixed](https://github.com/tobymao/sqlglot/commit/9a3f4c62f6e1b28fceac0adc0a8676013436611d) optimizer bug in simplify related to OR expressions.
+
+- Improvement: [Transformed](https://github.com/tobymao/sqlglot/commit/42c76bac948090d8dffc874b1c89dfea37472229) postgres merge to remove table refs.
+
+- Improvement: Converted VOLATILE from CREATE arg to property.
+
+- Improvement: Fixed parsing of `::` as TryCast.
+
+- Improvement: Improved performance of table addition for schema.
+
+- Improvement: [Removed](https://github.com/tobymao/sqlglot/commit/d13a557e93ebe3eafd0bd80da05186e60caa4a94) default kind in `_parse_drop` to make it more lenient.
+
+- Improvement: [Fixed](https://github.com/tobymao/sqlglot/commit/f040e90fd7b054396d418f3ca15381b1e417b83f) lateral view explode order.
+
+- Improvement: Made `_expand_using` more lenient in qualify_columns.
+
+- Improvement: Fixed various issues related to parsing and transpiling of INTERVAL expressions.
+
+- Improvement: [Ensured](https://github.com/tobymao/sqlglot/commit/8e6f860083b7bbbf0702c090a0864f8d1cf72d8f) name normalization for schema methods.
+
+- Improvement: [Added](https://github.com/tobymao/sqlglot/commit/67961fbf9776e349044dcbdc6029b1731ee78761) aliases to column lineage nodes. 
+
+- Improvement: [Fixed](https://github.com/tobymao/sqlglot/commit/83700737b558756bca9810a2068f57987f2340c0#diff-c5dbbef7e9cbb2c64b384079070c3006398036d834774db5983a1e347b7747f8) transpilation of DATE_FORMAT for MySQL -> Snowflake.
+
+- Improvement: [Fixed](https://github.com/tobymao/sqlglot/commit/02ab64ad927dc51c908a618ea3605d8688bbdc3a) math simplification (doesn't do int division anymore).
+
 v11.5.0
 ------
 

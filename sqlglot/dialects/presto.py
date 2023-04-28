@@ -265,7 +265,6 @@ class Presto(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
-            **transforms.ELIMINATE_QUALIFY,  # type: ignore
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
             exp.ArrayConcat: rename_func("CONCAT"),
@@ -303,6 +302,9 @@ class Presto(Dialect):
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
+            exp.Select: transforms.preprocess(
+                [transforms.eliminate_qualify, transforms.explode_to_unnest]
+            ),
             exp.SortArray: _no_sort_array,
             exp.StrPosition: rename_func("STRPOS"),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",

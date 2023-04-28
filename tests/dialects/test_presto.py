@@ -676,3 +676,41 @@ class TestPresto(Validator):
                 "presto": "SELECT CAST(ARRAY[1, 23, 456] AS JSON)",
             },
         )
+
+    def test_explode_to_unnest(self):
+        self.validate_all(
+            "SELECT _c FROM tbl CROSS JOIN UNNEST(col) AS _u(_c)",
+            read={"spark": "SELECT EXPLODE(col) FROM tbl"},
+        )
+        self.validate_all(
+            "SELECT _c_2 FROM _u CROSS JOIN UNNEST(_c) AS _u_2(_c_2)",
+            read={"spark": "SELECT EXPLODE(_c) FROM _u"},
+        )
+        self.validate_all(
+            "SELECT exploded FROM schema.tbl CROSS JOIN UNNEST(col) AS _u(exploded)",
+            read={"spark": "SELECT EXPLODE(col) AS exploded FROM schema.tbl"},
+        )
+        self.validate_all(
+            "SELECT _c FROM UNNEST(SEQUENCE(1, 2)) AS _u(_c)",
+            read={"spark": "SELECT EXPLODE(SEQUENCE(1, 2))"},
+        )
+        self.validate_all(
+            "SELECT _c FROM tbl AS t CROSS JOIN UNNEST(t.c) AS _u(_c)",
+            read={"spark": "SELECT EXPLODE(t.c) FROM tbl t"},
+        )
+        self.validate_all(
+            "SELECT _c, _c_2 FROM UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u(_c_2, _c)",
+            read={"spark": "SELECT posexplode(sequence(2, 3))"},
+        )
+        self.validate_all(
+            "SELECT _c, _c_2 FROM tbl CROSS JOIN UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u(_c_2, _c)",
+            read={"spark": "SELECT posexplode(sequence(2, 3)) FROM tbl"},
+        )
+        self.validate_all(
+            "SELECT _c, _c_2 FROM tbl AS t CROSS JOIN UNNEST(t.c) WITH ORDINALITY AS _u(_c_2, _c)",
+            read={"spark": "SELECT posexplode(t.c) FROM tbl t"},
+        )
+        self.validate_all(
+            "SELECT _c, _c_2, _c_3, _c_4 FROM _u CROSS JOIN UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u_2(_c_4, _c_3)",
+            read={"spark": "SELECT _c, _c_2, posexplode(sequence(2, 3)) FROM _u"},
+        )

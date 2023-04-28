@@ -367,7 +367,7 @@ class Token:
 
 
 class _Tokenizer(type):
-    def __new__(cls, clsname, bases, attrs):  # type: ignore
+    def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
         klass._QUOTES = {
@@ -442,27 +442,25 @@ class Tokenizer(metaclass=_Tokenizer):
         "#": TokenType.HASH,
     }
 
+    BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []
+    BYTE_STRINGS: t.List[str | t.Tuple[str, str]] = []
+    HEX_STRINGS: t.List[str | t.Tuple[str, str]] = []
+    IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
+    IDENTIFIER_ESCAPES = ['"']
+    QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
+    STRING_ESCAPES = ["'"]
     VAR_SINGLE_TOKENS: t.Set[str] = set()
 
-    QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
-
-    BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []
-
-    HEX_STRINGS: t.List[str | t.Tuple[str, str]] = []
-
-    BYTE_STRINGS: t.List[str | t.Tuple[str, str]] = []
-
-    IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
-
-    STRING_ESCAPES = ["'"]
-
+    _COMMENTS: t.Dict[str, str] = {}
+    _BIT_STRINGS: t.Dict[str, str] = {}
+    _BYTE_STRINGS: t.Dict[str, str] = {}
+    _HEX_STRINGS: t.Dict[str, str] = {}
+    _IDENTIFIERS: t.Dict[str, str] = {}
+    _IDENTIFIER_ESCAPES: t.Set[str] = set()
+    _QUOTES: t.Dict[str, str] = {}
     _STRING_ESCAPES: t.Set[str] = set()
 
-    IDENTIFIER_ESCAPES = ['"']
-
-    _IDENTIFIER_ESCAPES: t.Set[str] = set()
-
-    KEYWORDS = {
+    KEYWORDS: t.Dict[t.Optional[str], TokenType] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
         **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
         "{{+": TokenType.BLOCK_START,
@@ -756,7 +754,7 @@ class Tokenizer(metaclass=_Tokenizer):
     ENCODE: t.Optional[str] = None
 
     COMMENTS = ["--", ("/*", "*/"), ("{#", "#}")]
-    KEYWORD_TRIE = None  # autofilled
+    KEYWORD_TRIE: t.Dict = {}  # autofilled
 
     IDENTIFIER_CAN_START_WITH_DIGIT = False
 
@@ -790,12 +788,12 @@ class Tokenizer(metaclass=_Tokenizer):
         self._col = 1
         self._comments: t.List[str] = []
 
-        self._char = None
-        self._end = None
-        self._peek = None
+        self._char = ""
+        self._end = False
+        self._peek = ""
         self._prev_token_line = -1
         self._prev_token_comments: t.List[str] = []
-        self._prev_token_type = None
+        self._prev_token_type: t.Optional[TokenType] = None
 
     def tokenize(self, sql: str) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
@@ -838,7 +836,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _chars(self, size: int) -> str:
         if size == 1:
-            return self._char  # type: ignore
+            return self._char
         start = self._current - 1
         end = start + size
         if end <= self.size:
@@ -851,9 +849,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
         self._col += i
         self._current += i
-        self._end = self._current >= self.size  # type: ignore
-        self._char = self.sql[self._current - 1]  # type: ignore
-        self._peek = self.sql[self._current] if self._current < self.size else ""  # type: ignore
+        self._end = self._current >= self.size
+        self._char = self.sql[self._current - 1]
+        self._peek = "" if self._end else self.sql[self._current]
 
     def _set_new_line(self) -> None:
         self._col = 1
@@ -866,7 +864,7 @@ class Tokenizer(metaclass=_Tokenizer):
     def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
         self._prev_token_line = self._line
         self._prev_token_comments = self._comments
-        self._prev_token_type = token_type  # type: ignore
+        self._prev_token_type = token_type
         self.tokens.append(
             Token(
                 token_type,
@@ -908,7 +906,7 @@ class Tokenizer(metaclass=_Tokenizer):
             if skip:
                 result = 1
             else:
-                result, trie = in_trie(trie, char.upper())  # type: ignore
+                result, trie = in_trie(trie, char.upper())
 
             if result == 0:
                 break
@@ -937,7 +935,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if not word:
             if self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char], text=self._char)  # type: ignore
+                self._add(self.SINGLE_TOKENS[self._char], text=self._char)
                 return
             self._scan_var()
             return
@@ -954,12 +952,12 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(self.KEYWORDS[word], text=word)
 
     def _scan_comment(self, comment_start: str) -> bool:
-        if comment_start not in self._COMMENTS:  # type: ignore
+        if comment_start not in self._COMMENTS:
             return False
 
         comment_start_line = self._line
         comment_start_size = len(comment_start)
-        comment_end = self._COMMENTS[comment_start]  # type: ignore
+        comment_end = self._COMMENTS[comment_start]
 
         if comment_end:
             # Skip the comment's start delimiter
@@ -969,12 +967,12 @@ class Tokenizer(metaclass=_Tokenizer):
             while not self._end and self._chars(comment_end_size) != comment_end:
                 self._advance()
 
-            self._comments.append(self._text[comment_start_size : -comment_end_size + 1])  # type: ignore
+            self._comments.append(self._text[comment_start_size : -comment_end_size + 1])
             self._advance(comment_end_size - 1)
         else:
             while not self._end and not self.WHITE_SPACE.get(self._peek) is TokenType.BREAK:
                 self._advance()
-            self._comments.append(self._text[comment_start_size:])  # type: ignore
+            self._comments.append(self._text[comment_start_size:])
 
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding.
         # Multiple consecutive comments are preserved by appending them to the current comments list.
@@ -987,7 +985,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_number(self) -> None:
         if self._char == "0":
-            peek = self._peek.upper()  # type: ignore
+            peek = self._peek.upper()  #
             if peek == "B":
                 return self._scan_bits()
             elif peek == "X":
@@ -997,7 +995,7 @@ class Tokenizer(metaclass=_Tokenizer):
         scientific = 0
 
         while True:
-            if self._peek.isdigit():  # type: ignore
+            if self._peek.isdigit():
                 self._advance()
             elif self._peek == "." and not decimal:
                 decimal = True
@@ -1005,24 +1003,23 @@ class Tokenizer(metaclass=_Tokenizer):
             elif self._peek in ("-", "+") and scientific == 1:
                 scientific += 1
                 self._advance()
-            elif self._peek.upper() == "E" and not scientific:  # type: ignore
+            elif self._peek.upper() == "E" and not scientific:
                 scientific += 1
                 self._advance()
-            elif self._peek.isidentifier():  # type: ignore
+            elif self._peek.isidentifier():
                 number_text = self._text
-                literal = []
+                literal = ""
 
-                while self._peek.strip() and self._peek not in self.SINGLE_TOKENS:  # type: ignore
-                    literal.append(self._peek.upper())  # type: ignore
+                while self._peek.strip() and self._peek not in self.SINGLE_TOKENS:
+                    literal += self._peek.upper()
                     self._advance()
 
-                literal = "".join(literal)  # type: ignore
-                token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal))  # type: ignore
+                token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal))
 
                 if token_type:
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
-                    return self._add(token_type, literal)  # type: ignore
+                    return self._add(token_type, literal)
                 elif self.IDENTIFIER_CAN_START_WITH_DIGIT:
                     return self._add(TokenType.VAR)
 
@@ -1049,7 +1046,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _extract_value(self) -> str:
         while True:
-            char = self._peek.strip()  # type: ignore
+            char = self._peek.strip()
             if char and char not in self.SINGLE_TOKENS:
                 self._advance()
             else:
@@ -1058,35 +1055,35 @@ class Tokenizer(metaclass=_Tokenizer):
         return self._text
 
     def _scan_string(self, quote: str) -> bool:
-        quote_end = self._QUOTES.get(quote)  # type: ignore
+        quote_end = self._QUOTES.get(quote)
         if quote_end is None:
             return False
 
         self._advance(len(quote))
         text = self._extract_string(quote_end)
-        text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text  # type: ignore
+        text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
         self._add(TokenType.NATIONAL if quote[0].upper() == "N" else TokenType.STRING, text)
         return True
 
     # X'1234, b'0110', E'\\\\\' etc.
     def _scan_formatted_string(self, string_start: str) -> bool:
-        if string_start in self._HEX_STRINGS:  # type: ignore
-            delimiters = self._HEX_STRINGS  # type: ignore
+        if string_start in self._HEX_STRINGS:
+            delimiters = self._HEX_STRINGS
             token_type = TokenType.HEX_STRING
             base = 16
-        elif string_start in self._BIT_STRINGS:  # type: ignore
-            delimiters = self._BIT_STRINGS  # type: ignore
+        elif string_start in self._BIT_STRINGS:
+            delimiters = self._BIT_STRINGS
             token_type = TokenType.BIT_STRING
             base = 2
-        elif string_start in self._BYTE_STRINGS:  # type: ignore
-            delimiters = self._BYTE_STRINGS  # type: ignore
+        elif string_start in self._BYTE_STRINGS:
+            delimiters = self._BYTE_STRINGS
             token_type = TokenType.BYTE_STRING
             base = None
         else:
             return False
 
         self._advance(len(string_start))
-        string_end = delimiters.get(string_start)
+        string_end = delimiters[string_start]
         text = self._extract_string(string_end)
 
         if base is None:
@@ -1112,19 +1109,19 @@ class Tokenizer(metaclass=_Tokenizer):
             self._advance()
             if self._char == identifier_end:
                 if identifier_end_is_escape and self._peek == identifier_end:
-                    text += identifier_end  # type: ignore
+                    text += identifier_end
                     self._advance()
                     continue
 
                 break
 
-            text += self._char  # type: ignore
+            text += self._char
 
         self._add(TokenType.IDENTIFIER, text)
 
     def _scan_var(self) -> None:
         while True:
-            char = self._peek.strip()  # type: ignore
+            char = self._peek.strip()
             if char and (char in self.VAR_SINGLE_TOKENS or char not in self.SINGLE_TOKENS):
                 self._advance()
             else:
@@ -1144,9 +1141,9 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._peek == delimiter or self._peek in self._STRING_ESCAPES
             ):
                 if self._peek == delimiter:
-                    text += self._peek  # type: ignore
+                    text += self._peek
                 else:
-                    text += self._char + self._peek  # type: ignore
+                    text += self._char + self._peek
 
                 if self._current + 1 < self.size:
                     self._advance(2)
@@ -1160,7 +1157,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
                 if self._end:
                     raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._start}")
-                text += self._char  # type: ignore
+                text += self._char
                 self._advance()
 
         return text

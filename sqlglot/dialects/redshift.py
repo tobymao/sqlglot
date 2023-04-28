@@ -73,6 +73,7 @@ class Redshift(Postgres):
         SINGLE_TOKENS.pop("#")
 
     class Generator(Postgres.Generator):
+        LOCKING_READS_SUPPORTED = False
         SINGLE_STRING_INTERVAL = True
 
         TYPE_MAPPING = {

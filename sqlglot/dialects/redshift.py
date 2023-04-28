@@ -107,6 +107,8 @@ class Redshift(Postgres):
         # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
         TRANSFORMS.pop(exp.Pow)
 
+        RESERVED_KEYWORDS = {*Postgres.Generator.RESERVED_KEYWORDS, "snapshot"}
+
         def values_sql(self, expression: exp.Values) -> str:
             """
             Converts `VALUES...` expression into a series of unions.

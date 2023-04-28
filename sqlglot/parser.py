@@ -25,7 +25,10 @@ def parse_var_map(args: t.Sequence) -> exp.Expression:
     keys = []
     values = []
     for i in range(0, len(args), 2):
-        keys.append(args[i])
+        key = args[i]
+        if key.is_star:
+            return exp.StarMap(this=key)
+        keys.append(key)
         values.append(args[i + 1])
     return exp.VarMap(
         keys=exp.Array(expressions=keys),

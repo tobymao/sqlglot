@@ -305,6 +305,7 @@ class Snowflake(Dialect):
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StrPosition: lambda self, e: self.func(
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),

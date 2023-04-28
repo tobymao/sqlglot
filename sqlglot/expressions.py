@@ -3749,6 +3749,10 @@ class Map(Func):
     arg_types = {"keys": False, "values": False}
 
 
+class StarMap(Func):
+    pass
+
+
 class VarMap(Func):
     arg_types = {"keys": True, "values": True}
     is_var_len_args = True

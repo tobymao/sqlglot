@@ -23,14 +23,17 @@ class TestTokens(unittest.TestCase):
     def test_token_line(self):
         tokens = Tokenizer().tokenize(
             """SELECT /*
-            line break
-            */
-            'x
-            y',
-            x"""
+line break
+*/
+'x
+ y',
+x"""
         )
 
+        self.assertEqual(tokens[1].line, 5)
+        self.assertEqual(tokens[1].col, 3)
         self.assertEqual(tokens[-1].line, 6)
+        self.assertEqual(tokens[-1].col, 1)
 
     def test_command(self):
         tokens = Tokenizer().tokenize("SHOW;")

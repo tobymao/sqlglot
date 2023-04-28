@@ -351,8 +351,7 @@ class Token:
         self.text = text
         self.line = line
         size = len(text)
-        self.col = col - size
-        self.col = self.col if self.col > 1 else 1
+        self.col = col
         self.end = end if end else size
         self.comments = comments
 
@@ -845,17 +844,15 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _advance(self, i: int = 1) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
-            self._set_new_line()
+            self._col = 1
+            self._line += 1
+        else:
+            self._col += i
 
-        self._col += i
         self._current += i
         self._end = self._current >= self.size
         self._char = self.sql[self._current - 1]
         self._peek = "" if self._end else self.sql[self._current]
-
-    def _set_new_line(self) -> None:
-        self._col = 1
-        self._line += 1
 
     @property
     def _text(self) -> str:

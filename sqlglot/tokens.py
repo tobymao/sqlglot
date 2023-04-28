@@ -982,7 +982,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_number(self) -> None:
         if self._char == "0":
-            peek = self._peek.upper()  #
+            peek = self._peek.upper()
             if peek == "B":
                 return self._scan_bits()
             elif peek == "X":

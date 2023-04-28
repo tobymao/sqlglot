@@ -319,7 +319,10 @@ def var_map_sql(
     self: Generator, expression: exp.Map | exp.VarMap, map_func_name: str = "MAP"
 ) -> str:
     keys = expression.args["keys"]
-    values = expression.args["values"]
+    values = expression.args.get("values")
+
+    if not values:
+        return self.func(map_func_name, keys)
 
     if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
         self.unsupported("Cannot convert array columns into map.")

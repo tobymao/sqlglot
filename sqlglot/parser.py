@@ -22,6 +22,11 @@ E = t.TypeVar("E", bound=exp.Expression)
 
 
 def parse_var_map(args: t.Sequence) -> exp.Expression:
+    # This allows having a single star as an argument
+    # (e.g. snowflake allow this for OBJECT_CONSTRUCT)
+    if len(args) == 1:
+        return exp.VarMap(keys=args[0])
+
     keys = []
     values = []
     for i in range(0, len(args), 2):

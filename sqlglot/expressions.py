@@ -3750,7 +3750,7 @@ class Map(Func):
 
 
 class VarMap(Func):
-    arg_types = {"keys": True, "values": True}
+    arg_types = {"keys": True, "values": False}
     is_var_len_args = True
 
 

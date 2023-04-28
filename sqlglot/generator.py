@@ -61,7 +61,6 @@ class Generator:
         exp.TsOrDsAdd: lambda self, e: self.func(
             "TS_OR_DS_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
         ),
-        exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.ExternalProperty: lambda self, e: "EXTERNAL",
@@ -1442,6 +1441,11 @@ class Generator:
             self.sql(expression, "from", comment=False),
         )
         return self.prepend_ctes(expression, sql)
+
+    def varmap_sql(self, expression: exp.VarMap) -> str:
+        if expression.args.get("values"):
+            return self.func("MAP", expression.args["keys"], expression.args["values"])
+        return self.func("MAP", expression.args["keys"])
 
     def schema_sql(self, expression: exp.Schema) -> str:
         this = self.sql(expression, "this")

@@ -330,6 +330,7 @@ class TestMySQL(Validator):
                 "mysql": "SELECT a FROM tbl FOR UPDATE",
                 "oracle": "SELECT a FROM tbl FOR UPDATE",
                 "postgres": "SELECT a FROM tbl FOR UPDATE",
+                "redshift": "SELECT a FROM tbl",
                 "tsql": "SELECT a FROM tbl FOR UPDATE",
             },
         )

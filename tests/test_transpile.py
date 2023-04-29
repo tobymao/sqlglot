@@ -258,6 +258,10 @@ SELECT
 FROM v""",
             pretty=True,
         )
+        self.validate(
+            "(/* 1 */ 1 ) /* 2 */",
+            "(1) /* 1 */ /* 2 */",
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

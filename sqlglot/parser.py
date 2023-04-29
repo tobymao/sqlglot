@@ -2955,6 +2955,7 @@ class Parser(metaclass=_Parser):
                 this = self.expression(exp.Paren, this=self._parse_set_operations(this))
 
             self._match_r_paren()
+            comments.extend(self._prev_comments)
 
             if this and comments:
                 this.comments = comments

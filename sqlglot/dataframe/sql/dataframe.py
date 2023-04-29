@@ -486,12 +486,12 @@ class DataFrame:
                 for column_name in select_column_names
                 if column_name not in [x.alias_or_name for x in join_columns]
             ]
-            join_column_names + select_column_names
+            select_column_names = join_column_names + select_column_names
         else:
             """
             Unique characteristics of join on expressions:
             * There is no deduplication of the results.
-            * The left join dataframe columns go first and left come after. No sort preference is given to join columns
+            * The left join dataframe columns go first and right come after. No sort preference is given to join columns
             """
             join_columns = self._ensure_and_normalize_cols(join_columns, join_expression)
             if len(join_columns) > 1:

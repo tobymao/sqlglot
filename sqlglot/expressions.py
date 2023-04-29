@@ -4713,6 +4713,8 @@ def alias_(
 
     if table:
         table_alias = TableAlias(this=alias)
+
+        exp = exp.copy()
         exp.set("alias", table_alias)
 
         if not isinstance(table, bool):

@@ -197,21 +197,22 @@ def explode_to_unnest(expression: exp.Expression) -> exp.Expression:
                 taken_source_names.add(unnest_source_alias)
 
                 if not explode_alias:
-                    explode_alias = find_new_name(taken_select_names, "_c")
+                    explode_alias = find_new_name(taken_select_names, "_col")
                     taken_select_names.add(explode_alias)
 
                     if is_posexplode:
-                        pos_alias = find_new_name(taken_select_names, "_c")
+                        pos_alias = find_new_name(taken_select_names, "_pos")
                         taken_select_names.add(pos_alias)
 
                 if is_posexplode:
-                    column_names = [pos_alias, explode_alias]
+                    column_names = [explode_alias, pos_alias]
                     to_replace.pop()
-                    expression.select(exp.column(explode_alias), exp.column(pos_alias), copy=False)
+                    expression.select(pos_alias, explode_alias, copy=False)
                 else:
                     column_names = [explode_alias]
                     to_replace.replace(exp.column(explode_alias))
 
+                # This mutates `unnest` by setting its table alias arg
                 exp.alias_(unnest, unnest_source_alias, table=column_names)
 
                 if not expression.args.get("from"):

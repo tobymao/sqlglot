@@ -679,38 +679,38 @@ class TestPresto(Validator):
 
     def test_explode_to_unnest(self):
         self.validate_all(
-            "SELECT _c FROM tbl CROSS JOIN UNNEST(col) AS _u(_c)",
+            "SELECT _col FROM tbl CROSS JOIN UNNEST(col) AS _u(_col)",
             read={"spark": "SELECT EXPLODE(col) FROM tbl"},
         )
         self.validate_all(
-            "SELECT _c_2 FROM _u CROSS JOIN UNNEST(_c) AS _u_2(_c_2)",
-            read={"spark": "SELECT EXPLODE(_c) FROM _u"},
+            "SELECT _col_2 FROM _u CROSS JOIN UNNEST(_col) AS _u_2(_col_2)",
+            read={"spark": "SELECT EXPLODE(_col) FROM _u"},
         )
         self.validate_all(
             "SELECT exploded FROM schema.tbl CROSS JOIN UNNEST(col) AS _u(exploded)",
             read={"spark": "SELECT EXPLODE(col) AS exploded FROM schema.tbl"},
         )
         self.validate_all(
-            "SELECT _c FROM UNNEST(SEQUENCE(1, 2)) AS _u(_c)",
+            "SELECT _col FROM UNNEST(SEQUENCE(1, 2)) AS _u(_col)",
             read={"spark": "SELECT EXPLODE(SEQUENCE(1, 2))"},
         )
         self.validate_all(
-            "SELECT _c FROM tbl AS t CROSS JOIN UNNEST(t.c) AS _u(_c)",
+            "SELECT _col FROM tbl AS t CROSS JOIN UNNEST(t.c) AS _u(_col)",
             read={"spark": "SELECT EXPLODE(t.c) FROM tbl t"},
         )
         self.validate_all(
-            "SELECT _c, _c_2 FROM UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u(_c_2, _c)",
-            read={"spark": "SELECT posexplode(sequence(2, 3))"},
+            "SELECT _pos, _col FROM UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u(_col, _pos)",
+            read={"spark": "SELECT POSEXPLODE(SEQUENCE(2, 3))"},
         )
         self.validate_all(
-            "SELECT _c, _c_2 FROM tbl CROSS JOIN UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u(_c_2, _c)",
-            read={"spark": "SELECT posexplode(sequence(2, 3)) FROM tbl"},
+            "SELECT _pos, _col FROM tbl CROSS JOIN UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u(_col, _pos)",
+            read={"spark": "SELECT POSEXPLODE(SEQUENCE(2, 3)) FROM tbl"},
         )
         self.validate_all(
-            "SELECT _c, _c_2 FROM tbl AS t CROSS JOIN UNNEST(t.c) WITH ORDINALITY AS _u(_c_2, _c)",
-            read={"spark": "SELECT posexplode(t.c) FROM tbl t"},
+            "SELECT _pos, _col FROM tbl AS t CROSS JOIN UNNEST(t.c) WITH ORDINALITY AS _u(_col, _pos)",
+            read={"spark": "SELECT POSEXPLODE(t.c) FROM tbl t"},
         )
         self.validate_all(
-            "SELECT _c, _c_2, _c_3, _c_4 FROM _u CROSS JOIN UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u_2(_c_4, _c_3)",
-            read={"spark": "SELECT _c, _c_2, posexplode(sequence(2, 3)) FROM _u"},
+            "SELECT _col, _pos, _pos_2, _col_2 FROM _u CROSS JOIN UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u_2(_col_2, _pos_2)",
+            read={"spark": "SELECT _col, _pos, POSEXPLODE(SEQUENCE(2, 3)) FROM _u"},
         )

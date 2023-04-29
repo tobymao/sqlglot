@@ -123,6 +123,12 @@ class TestPostgres(Validator):
         self.validate_identity("x ~* 'y'")
 
         self.validate_all(
+            "SELECT DATE_PART('isodow'::varchar(6), current_date)",
+            write={
+                "postgres": "SELECT EXTRACT(CAST('isodow' AS VARCHAR(6)) FROM CURRENT_DATE)",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_PART('minute', timestamp '2023-01-04 04:05:06.789')",
             write={
                 "postgres": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",

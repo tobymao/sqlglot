@@ -1601,9 +1601,44 @@ class Parser(metaclass=_Parser):
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_ddl_select(),
+            onconflict=self._parse_onconflict(),
             returning=self._parse_returning(),
             overwrite=overwrite,
             alternative=alternative,
+        )
+
+    def _parse_onconflict(self) -> t.Optional[exp.Expression]:
+        conflict = self._match_text_seq("ON", "CONFLICT")
+        duplicate = self._match_text_seq("ON", "DUPLICATE", "KEY")
+
+        if not (conflict or duplicate):
+            return None
+
+        nothing = None
+        expressions = None
+        key = None
+        constraint = None
+
+        if conflict:
+            if self._match_text_seq("ON", "CONSTRAINT"):
+                constraint = self._parse_id_var()
+            else:
+                key = self._parse_csv(self._parse_value)
+
+        self._match_text_seq("DO")
+        if self._match_text_seq("NOTHING"):
+            nothing = True
+        else:
+            self._match(TokenType.UPDATE)
+            expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
+
+        return self.expression(
+            exp.OnConflict,
+            duplicate=duplicate,
+            expressions=expressions,
+            nothing=nothing,
+            key=key,
+            constraint=constraint,
         )
 
     def _parse_returning(self) -> t.Optional[exp.Expression]:

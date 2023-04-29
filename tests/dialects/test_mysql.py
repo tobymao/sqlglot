@@ -20,6 +20,9 @@ class TestMySQL(Validator):
                 "mysql": "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
             },
         )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE SET x.id = 1"
+        )
 
     def test_identity(self):
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")

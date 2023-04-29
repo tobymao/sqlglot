@@ -285,7 +285,7 @@ class Postgres(Dialect):
         }
 
         def _parse_date_part(self) -> exp.Expression:
-            part = self._parse_var_or_string()
+            part = self._parse_type()
             self._match(TokenType.COMMA)
             value = self._parse_bitwise()
 

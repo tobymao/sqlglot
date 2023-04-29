@@ -16,7 +16,7 @@ from sqlglot.dataframe.sql.readwriter import DataFrameWriter
 from sqlglot.dataframe.sql.transforms import replace_id_value
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.dataframe.sql.window import Window
-from sqlglot.helper import ensure_list, object_to_dict
+from sqlglot.helper import ensure_list, object_to_dict, seq_get
 from sqlglot.optimizer import optimize as optimize_func
 
 if t.TYPE_CHECKING:
@@ -146,9 +146,9 @@ class DataFrame:
     def _ensure_list_of_columns(self, cols):
         return Column.ensure_cols(ensure_list(cols))
 
-    def _ensure_and_normalize_cols(self, cols):
+    def _ensure_and_normalize_cols(self, cols, expression: t.Optional[exp.Select] = None):
         cols = self._ensure_list_of_columns(cols)
-        normalize(self.spark, self.expression, cols)
+        normalize(self.spark, expression or self.expression, cols)
         return cols
 
     def _ensure_and_normalize_col(self, col):
@@ -365,6 +365,10 @@ class DataFrame:
                     x.this for x in get_tables_from_expression_with_join(self.expression)
                 ]
                 cte_names_in_join = [x.this for x in join_table_identifiers]
+                # If we a columns resolves to multiple CTE expressions then we want to use each CTE left-to-right
+                # and therefore we allow multiple columns with the same name in the result. This matches the behavior
+                # of Spark.
+                resolved_column_position: t.Dict[str, int] = {}
                 for ambiguous_col in ambiguous_cols:
                     ctes_with_column = [
                         cte
@@ -372,13 +376,16 @@ class DataFrame:
                         if cte.alias_or_name in cte_names_in_join
                         and ambiguous_col.alias_or_name in cte.this.named_selects
                     ]
-                    # If the select column does not specify a table and there is a join
-                    # then we assume they are referring to the left table
-                    if len(ctes_with_column) > 1:
-                        table_identifier = self.expression.args["from"].args["expressions"][0].this
+                    if ambiguous_col in resolved_column_position:
+                        cte = seq_get(ctes_with_column, resolved_column_position[ambiguous_col] + 1)
+                        if cte:
+                            resolved_column_position[ambiguous_col] += 1
+                        else:
+                            cte = ctes_with_column[resolved_column_position[ambiguous_col]]
                     else:
-                        table_identifier = ctes_with_column[0].args["alias"].this
-                    ambiguous_col.expression.set("table", table_identifier)
+                        cte = ctes_with_column[0]
+                        resolved_column_position[ambiguous_col] = 0
+                    ambiguous_col.expression.set("table", cte.alias_or_name)
         return self.copy(
             expression=self.expression.select(*[x.expression for x in cols], **kwargs), **kwargs
         )
@@ -420,59 +427,84 @@ class DataFrame:
         **kwargs,
     ) -> DataFrame:
         other_df = other_df._convert_leaf_to_cte()
-        pre_join_self_latest_cte_name = self.latest_cte_name
-        columns = self._ensure_and_normalize_cols(on)
-        join_type = how.replace("_", " ")
-        if isinstance(columns[0].expression, exp.Column):
-            join_columns = [
-                Column(x).set_table_name(pre_join_self_latest_cte_name) for x in columns
+        join_columns = self._ensure_list_of_columns(on)
+        # We will determine actual join expression later so we provide a dummy one for now.
+        join_expression = self.expression.copy().join(
+            other_df.latest_cte_name, on=exp.Column(), join_type=how.replace("_", " ")
+        )
+        join_expression = self._add_ctes_to_expression(join_expression, other_df.expression.ctes)
+        self_columns = self._get_outer_select_columns(join_expression)
+        other_columns = self._get_outer_select_columns(other_df)
+        # Determines the join clause and select columns to be used passed on what type of columns were provided for
+        # the join. The columns returned changes based on how the on expression is provided.
+        if isinstance(join_columns[0].expression, exp.Column):
+            """
+            Unique characteristics of join on column names only:
+            * The column names are put at the front of the select list
+            * The column names are deduplicated across the entire select list and only the column names (other dups are allowed)
+            """
+            tables = get_tables_from_expression_with_join(join_expression)
+            potential_ctes = [
+                cte
+                for cte in join_expression.ctes
+                if cte.alias_or_name in [x.alias_or_name for x in tables]
+                and cte.alias_or_name != other_df.latest_cte_name
             ]
+            # Determine the table to reference for the left side of the join by checking each of the left side
+            # tables and see if they have the column being referenced.
+            join_column_pairs = []
+            for join_column in join_columns:
+                num_matching_ctes = 0
+                for cte in potential_ctes:
+                    if join_column.alias_or_name in cte.this.named_selects:
+                        left_column = join_column.copy().set_table_name(cte.alias_or_name)
+                        right_column = join_column.copy().set_table_name(other_df.latest_cte_name)
+                        join_column_pairs.append((left_column, right_column))
+                        num_matching_ctes += 1
+                if num_matching_ctes > 1:
+                    raise ValueError(
+                        f"Column {join_column.alias_or_name} is ambiguous. Please specify the table name."
+                    )
+                elif num_matching_ctes == 0:
+                    raise ValueError(
+                        f"Column {join_column.alias_or_name} does not exist in any of the tables."
+                    )
             join_clause = functools.reduce(
                 lambda x, y: x & y,
-                [
-                    col.copy().set_table_name(pre_join_self_latest_cte_name)
-                    == col.copy().set_table_name(other_df.latest_cte_name)
-                    for col in columns
-                ],
+                [left_column == right_column for left_column, right_column in join_column_pairs],
             )
-        else:
-            if len(columns) > 1:
-                columns = [functools.reduce(lambda x, y: x & y, columns)]
-            join_clause = columns[0]
-            join_columns = [
-                Column(x).set_table_name(pre_join_self_latest_cte_name)
-                if i % 2 == 0
-                else Column(x).set_table_name(other_df.latest_cte_name)
-                for i, x in enumerate(join_clause.expression.find_all(exp.Column))
+            join_column_names = [left_col.alias_or_name for left_col, _ in join_column_pairs]
+            # To match spark behavior only the join clause gets deduplicated and it gets put in the front of the column list
+            select_column_names = [
+                column.alias_or_name
+                if not isinstance(column.expression.this, exp.Star)
+                else column.sql()
+                for column in self_columns + other_columns
             ]
-        self_columns = [
-            column.set_table_name(pre_join_self_latest_cte_name, copy=True)
-            for column in self._get_outer_select_columns(self)
-        ]
-        other_columns = [
-            column.set_table_name(other_df.latest_cte_name, copy=True)
-            for column in self._get_outer_select_columns(other_df)
-        ]
-        column_value_mapping = {
-            column.alias_or_name
-            if not isinstance(column.expression.this, exp.Star)
-            else column.sql(): column
-            for column in other_columns + self_columns + join_columns
-        }
-        all_columns = [
-            column_value_mapping[name]
-            for name in {x.alias_or_name: None for x in join_columns + self_columns + other_columns}
-        ]
-        new_df = self.copy(
-            expression=self.expression.join(
-                other_df.latest_cte_name, on=join_clause.expression, join_type=join_type
-            )
-        )
-        new_df.expression = new_df._add_ctes_to_expression(
-            new_df.expression, other_df.expression.ctes
-        )
+            select_column_names = [
+                column_name
+                for column_name in select_column_names
+                if column_name not in [x.alias_or_name for x in join_columns]
+            ]
+            join_column_names + select_column_names
+        else:
+            """
+            Unique characteristics of join on expressions:
+            * There is no deduplication of the results.
+            * The left join dataframe columns go first and left come after. No sort preference is given to join columns
+            """
+            join_columns = self._ensure_and_normalize_cols(join_columns, join_expression)
+            if len(join_columns) > 1:
+                join_columns = [functools.reduce(lambda x, y: x & y, join_columns)]
+            join_clause = join_columns[0]
+            select_column_names = [column.alias_or_name for column in self_columns + other_columns]
+
+        # Update the on expression with the actual join clause to replace the dummy one from before
+        join_expression.args["joins"][-1].set("on", join_clause.expression)
+        new_df = self.copy(expression=join_expression)
+        new_df.pending_join_hints.extend(self.pending_join_hints)
         new_df.pending_hints.extend(other_df.pending_hints)
-        new_df = new_df.select.__wrapped__(new_df, *all_columns)
+        new_df = new_df.select.__wrapped__(new_df, *select_column_names)
         return new_df
 
     @operation(Operation.ORDER_BY)

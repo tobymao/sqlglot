@@ -332,8 +332,8 @@ class TestDataframeFunc(DataFrameValidator):
     def test_join_inner_equality_multiple_bitwise_and(self):
         df_joined = self.df_spark_employee.join(
             self.df_spark_store,
-            on=(self.df_spark_employee.store_id == self.df_spark_store.store_id)
-            & (self.df_spark_employee.age == self.df_spark_store.num_sales),
+            on=(self.df_spark_store.store_id == self.df_spark_employee.store_id)
+            & (self.df_spark_store.num_sales == self.df_spark_employee.age),
             how="inner",
         ).select(
             self.df_spark_employee.employee_id,
@@ -346,8 +346,8 @@ class TestDataframeFunc(DataFrameValidator):
         )
         dfs_joined = self.df_sqlglot_employee.join(
             self.df_sqlglot_store,
-            on=(self.df_sqlglot_employee.store_id == self.df_sqlglot_store.store_id)
-            & (self.df_sqlglot_employee.age == self.df_sqlglot_store.num_sales),
+            on=(self.df_sqlglot_store.store_id == self.df_sqlglot_employee.store_id)
+            & (self.df_sqlglot_store.num_sales == self.df_sqlglot_employee.age),
             how="inner",
         ).select(
             self.df_sqlglot_employee.employee_id,
@@ -443,6 +443,65 @@ class TestDataframeFunc(DataFrameValidator):
                 self.dfs_district.district_name,
             )
         )
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_triple_join_no_select(self):
+        df = self.df_employee.join(
+            self.df_store,
+            on=self.df_employee["employee_id"] == self.df_store["store_id"],
+            how="left",
+        ).join(
+            self.df_district,
+            on=self.df_store["store_id"] == self.df_district["district_id"],
+            how="left",
+        )
+        dfs = self.dfs_employee.join(
+            self.dfs_store,
+            on=self.dfs_employee["employee_id"] == self.dfs_store["store_id"],
+            how="left",
+        ).join(
+            self.dfs_district,
+            on=self.dfs_store["store_id"] == self.dfs_district["district_id"],
+            how="left",
+        )
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_triple_joins_filter(self):
+        df = (
+            self.df_employee.join(
+                self.df_store,
+                on=self.df_employee["employee_id"] == self.df_store["store_id"],
+                how="left",
+            ).join(
+                self.df_district,
+                on=self.df_store["store_id"] == self.df_district["district_id"],
+                how="left",
+            )
+        ).filter(F.coalesce(self.df_store["num_sales"], F.lit(0)) > 100)
+        dfs = (
+            self.dfs_employee.join(
+                self.dfs_store,
+                on=self.dfs_employee["employee_id"] == self.dfs_store["store_id"],
+                how="left",
+            ).join(
+                self.dfs_district,
+                on=self.dfs_store["store_id"] == self.dfs_district["district_id"],
+                how="left",
+            )
+        ).filter(SF.coalesce(self.dfs_store["num_sales"], SF.lit(0)) > 100)
+        self.compare_spark_with_sqlglot(df, dfs)
+
+    def test_triple_join_column_name_only(self):
+        df = self.df_employee.join(
+            self.df_store,
+            on=self.df_employee["employee_id"] == self.df_store["store_id"],
+            how="left",
+        ).join(self.df_district, on="district_id", how="left")
+        dfs = self.dfs_employee.join(
+            self.dfs_store,
+            on=self.dfs_employee["employee_id"] == self.dfs_store["store_id"],
+            how="left",
+        ).join(self.dfs_district, on="district_id", how="left")
         self.compare_spark_with_sqlglot(df, dfs)
 
     def test_join_select_and_select_start(self):

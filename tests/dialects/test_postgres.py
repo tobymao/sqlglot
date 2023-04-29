@@ -162,7 +162,7 @@ class TestPostgres(Validator):
         self.validate_all(
             "GENERATE_SERIES(a, b, '  2   days  ')",
             write={
-                "postgres": "GENERATE_SERIES(a, b, INTERVAL '2' days)",
+                "postgres": "GENERATE_SERIES(a, b, INTERVAL '2' day)",
                 "presto": "SEQUENCE(a, b, INTERVAL '2' day)",
                 "trino": "SEQUENCE(a, b, INTERVAL '2' day)",
             },

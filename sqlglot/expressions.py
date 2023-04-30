@@ -1292,11 +1292,22 @@ class Insert(Expression):
         "with": False,
         "this": True,
         "expression": False,
+        "onconflict": False,
         "returning": False,
         "overwrite": False,
         "exists": False,
         "partition": False,
         "alternative": False,
+    }
+
+
+class OnConflict(Expression):
+    arg_types = {
+        "duplicate": False,
+        "expressions": False,
+        "nothing": False,
+        "key": False,
+        "constraint": False,
     }
 
 

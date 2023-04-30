@@ -138,7 +138,7 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
 
 
 def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
-    """Convert cross join unnest into lateral view explode. Used in presto -> hive"""
+    """Convert cross join unnest into lateral view explode (used in presto -> hive)."""
     if isinstance(expression, exp.Select):
         for join in expression.args.get("joins") or []:
             unnest = join.this
@@ -158,6 +158,67 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
                             alias=exp.TableAlias(this=alias.this, columns=[column]),  # type: ignore
                         ),
                     )
+    return expression
+
+
+def explode_to_unnest(expression: exp.Expression) -> exp.Expression:
+    """Convert explode/posexplode into unnest (used in hive -> presto)."""
+    if isinstance(expression, exp.Select):
+        from sqlglot.optimizer.scope import build_scope
+
+        taken_select_names = set(expression.named_selects)
+        taken_source_names = set(build_scope(expression).selected_sources)
+
+        for select in expression.selects:
+            to_replace = select
+
+            pos_alias = ""
+            explode_alias = ""
+
+            if isinstance(select, exp.Alias):
+                explode_alias = select.alias
+                select = select.this
+            elif isinstance(select, exp.Aliases):
+                pos_alias = select.aliases[0].name
+                explode_alias = select.aliases[1].name
+                select = select.this
+
+            if isinstance(select, (exp.Explode, exp.Posexplode)):
+                is_posexplode = isinstance(select, exp.Posexplode)
+
+                explode_arg = select.this
+                unnest = exp.Unnest(expressions=[explode_arg.copy()], ordinality=is_posexplode)
+
+                # This ensures that we won't use [POS]EXPLODE's argument as a new selection
+                if isinstance(explode_arg, exp.Column):
+                    taken_select_names.add(explode_arg.output_name)
+
+                unnest_source_alias = find_new_name(taken_source_names, "_u")
+                taken_source_names.add(unnest_source_alias)
+
+                if not explode_alias:
+                    explode_alias = find_new_name(taken_select_names, "col")
+                    taken_select_names.add(explode_alias)
+
+                    if is_posexplode:
+                        pos_alias = find_new_name(taken_select_names, "pos")
+                        taken_select_names.add(pos_alias)
+
+                if is_posexplode:
+                    column_names = [explode_alias, pos_alias]
+                    to_replace.pop()
+                    expression.select(pos_alias, explode_alias, copy=False)
+                else:
+                    column_names = [explode_alias]
+                    to_replace.replace(exp.column(explode_alias))
+
+                unnest = exp.alias_(unnest, unnest_source_alias, table=column_names)
+
+                if not expression.args.get("from"):
+                    expression.from_(unnest, copy=False)
+                else:
+                    expression.join(unnest, join_type="CROSS", copy=False)
+
     return expression
 
 

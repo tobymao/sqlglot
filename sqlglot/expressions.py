@@ -1292,7 +1292,7 @@ class Insert(Expression):
         "with": False,
         "this": True,
         "expression": False,
-        "onconflict": False,
+        "conflict": False,
         "returning": False,
         "overwrite": False,
         "exists": False,

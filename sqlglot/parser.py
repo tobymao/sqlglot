@@ -1607,13 +1607,13 @@ class Parser(metaclass=_Parser):
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             expression=self._parse_ddl_select(),
-            onconflict=self._parse_onconflict(),
+            conflict=self._parse_on_conflict(),
             returning=self._parse_returning(),
             overwrite=overwrite,
             alternative=alternative,
         )
 
-    def _parse_onconflict(self) -> t.Optional[exp.Expression]:
+    def _parse_on_conflict(self) -> t.Optional[exp.Expression]:
         conflict = self._match_text_seq("ON", "CONFLICT")
         duplicate = self._match_text_seq("ON", "DUPLICATE", "KEY")
 

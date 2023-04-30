@@ -14,6 +14,21 @@ class TestPostgres(Validator):
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
         self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO NOTHING RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO UPDATE SET x.id = 1 RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO UPDATE SET x.id = excluded.id RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT ON CONSTRAINT pkey DO NOTHING RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT ON CONSTRAINT pkey DO UPDATE SET x.id = 1 RETURNING *"
+        )
+        self.validate_identity(
             "DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid RETURNING a"
         )
         self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")

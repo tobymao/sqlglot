@@ -4742,7 +4742,7 @@ def alias_(
     if table:
         table_alias = TableAlias(this=alias)
 
-        exp = exp.copy()
+        exp = exp.copy() if isinstance(expression, str) else exp
         exp.set("alias", table_alias)
 
         if not isinstance(table, bool):

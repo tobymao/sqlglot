@@ -368,7 +368,7 @@ class DataFrame:
                 # If we a columns resolves to multiple CTE expressions then we want to use each CTE left-to-right
                 # and therefore we allow multiple columns with the same name in the result. This matches the behavior
                 # of Spark.
-                resolved_column_position: t.Dict[str, int] = {}
+                resolved_column_position: t.Dict[Column, int] = {col: -1 for col in ambiguous_cols}
                 for ambiguous_col in ambiguous_cols:
                     ctes_with_column = [
                         cte
@@ -376,15 +376,13 @@ class DataFrame:
                         if cte.alias_or_name in cte_names_in_join
                         and ambiguous_col.alias_or_name in cte.this.named_selects
                     ]
-                    if ambiguous_col in resolved_column_position:
-                        cte = seq_get(ctes_with_column, resolved_column_position[ambiguous_col] + 1)
-                        if cte:
-                            resolved_column_position[ambiguous_col] += 1
-                        else:
-                            cte = ctes_with_column[resolved_column_position[ambiguous_col]]
+                    # Check if there is a CTE with this column that we haven't used before. If so, use it. Otherwise,
+                    # use the same CTE we used before
+                    cte = seq_get(ctes_with_column, resolved_column_position[ambiguous_col] + 1)
+                    if cte:
+                        resolved_column_position[ambiguous_col] += 1
                     else:
-                        cte = ctes_with_column[0]
-                        resolved_column_position[ambiguous_col] = 0
+                        cte = ctes_with_column[resolved_column_position[ambiguous_col]]
                     ambiguous_col.expression.set("table", cte.alias_or_name)
         return self.copy(
             expression=self.expression.select(*[x.expression for x in cols], **kwargs), **kwargs
@@ -429,7 +427,7 @@ class DataFrame:
         other_df = other_df._convert_leaf_to_cte()
         join_columns = self._ensure_list_of_columns(on)
         # We will determine actual join expression later so we provide a dummy one for now.
-        join_expression = self.expression.copy().join(
+        join_expression = self.expression.join(
             other_df.latest_cte_name, on=exp.Column(), join_type=how.replace("_", " ")
         )
         join_expression = self._add_ctes_to_expression(join_expression, other_df.expression.ctes)
@@ -443,11 +441,14 @@ class DataFrame:
             * The column names are put at the front of the select list
             * The column names are deduplicated across the entire select list and only the column names (other dups are allowed)
             """
-            tables = get_tables_from_expression_with_join(join_expression)
+            table_names = [
+                table.alias_or_name
+                for table in get_tables_from_expression_with_join(join_expression)
+            ]
             potential_ctes = [
                 cte
                 for cte in join_expression.ctes
-                if cte.alias_or_name in [x.alias_or_name for x in tables]
+                if cte.alias_or_name in table_names
                 and cte.alias_or_name != other_df.latest_cte_name
             ]
             # Determine the table to reference for the left side of the join by checking each of the left side
@@ -484,7 +485,7 @@ class DataFrame:
             select_column_names = [
                 column_name
                 for column_name in select_column_names
-                if column_name not in [x.alias_or_name for x in join_columns]
+                if column_name not in join_column_names
             ]
             select_column_names = join_column_names + select_column_names
         else:

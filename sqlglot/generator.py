@@ -1040,10 +1040,10 @@ class Generator:
             self.sql(expression, "partition") if expression.args.get("partition") else ""
         )
         expression_sql = self.sql(expression, "expression")
-        onconflict = self.sql(expression, "onconflict")
+        conflict = self.sql(expression, "conflict")
         returning = self.sql(expression, "returning")
         sep = self.sep() if partition_sql else ""
-        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}{onconflict}{returning}"
+        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}{conflict}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1062,7 +1062,7 @@ class Generator:
         return expression.name.upper()
 
     def onconflict_sql(self, expression: exp.OnConflict) -> str:
-        onconflict = "ON DUPLICATE KEY" if expression.args.get("duplicate") else "ON CONFLICT"
+        conflict = "ON DUPLICATE KEY" if expression.args.get("duplicate") else "ON CONFLICT"
         constraint = self.sql(expression, "constraint")
         if constraint:
             constraint = f"ON CONSTRAINT {constraint}"
@@ -1072,7 +1072,7 @@ class Generator:
         expressions = self.expressions(expression, flat=True)
         if expressions:
             expressions = f"UPDATE SET {expressions}"
-        return f"{self.seg(onconflict)} {constraint}{key}{do}{nothing}{expressions}"
+        return f"{self.seg(conflict)} {constraint}{key}{do}{nothing}{expressions}"
 
     def returning_sql(self, expression: exp.Returning) -> str:
         return f"{self.seg('RETURNING')} {self.expressions(expression, flat=True)}"

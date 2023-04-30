@@ -699,18 +699,17 @@ def crc32(col: ColumnOrName) -> Column:
 
 def md5(col: ColumnOrName) -> Column:
     column = col if isinstance(col, Column) else lit(col)
-    return Column.invoke_anonymous_function(column, "MD5")
+    return Column.invoke_expression_over_column(column, expression.MD5)
 
 
 def sha1(col: ColumnOrName) -> Column:
     column = col if isinstance(col, Column) else lit(col)
-    return Column.invoke_anonymous_function(column, "SHA1")
+    return Column.invoke_expression_over_column(column, expression.SHA)
 
 
 def sha2(col: ColumnOrName, numBits: int) -> Column:
     column = col if isinstance(col, Column) else lit(col)
-    num_bits = lit(numBits)
-    return Column.invoke_anonymous_function(column, "SHA2", num_bits)
+    return Column.invoke_expression_over_column(column, expression.SHA2, length=lit(numBits))
 
 
 def hash(*cols: ColumnOrName) -> Column:

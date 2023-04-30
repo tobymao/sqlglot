@@ -960,9 +960,9 @@ class TestFunctions(unittest.TestCase):
 
     def test_sha1(self):
         col_str = SF.sha1("Spark")
-        self.assertEqual("SHA1('Spark')", col_str.sql())
+        self.assertEqual("SHA('Spark')", col_str.sql())
         col = SF.sha1(SF.col("cola"))
-        self.assertEqual("SHA1(cola)", col.sql())
+        self.assertEqual("SHA(cola)", col.sql())
 
     def test_sha2(self):
         col_str = SF.sha2("Spark", 256)

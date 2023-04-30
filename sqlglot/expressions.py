@@ -3779,6 +3779,10 @@ class Max(AggFunc):
     is_var_len_args = True
 
 
+class MD5(Func):
+    _sql_names = ["MD5"]
+
+
 class Min(AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
@@ -3883,6 +3887,15 @@ class SafeDivide(Func):
 
 class SetAgg(AggFunc):
     pass
+
+
+class SHA(Func):
+    _sql_names = ["SHA", "SHA1"]
+
+
+class SHA2(Func):
+    _sql_names = ["SHA2"]
+    arg_types = {"this": True, "length": False}
 
 
 class SortArray(Func):

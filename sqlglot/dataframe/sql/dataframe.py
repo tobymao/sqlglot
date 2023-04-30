@@ -365,7 +365,7 @@ class DataFrame:
                     x.this for x in get_tables_from_expression_with_join(self.expression)
                 ]
                 cte_names_in_join = [x.this for x in join_table_identifiers]
-                # If we a columns resolves to multiple CTE expressions then we want to use each CTE left-to-right
+                # If we have columns that resolve to multiple CTE expressions then we want to use each CTE left-to-right
                 # and therefore we allow multiple columns with the same name in the result. This matches the behavior
                 # of Spark.
                 resolved_column_position: t.Dict[Column, int] = {col: -1 for col in ambiguous_cols}

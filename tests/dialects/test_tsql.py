@@ -66,6 +66,54 @@ class TestTSQL(Validator):
                 "postgres": "STRING_AGG(x, '|')",
             },
         )
+        self.validate_all(
+            "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
+            write={
+                "tsql": 'SELECT CAST("a"."b" AS SMALLINT) FROM foo',
+                "spark": "SELECT CAST(`a`.`b` AS SHORT) FROM foo",
+            },
+        )
+        self.validate_all(
+            "HASHBYTES('SHA1', x)",
+            read={
+                "spark": "SHA(x)",
+            },
+            write={
+                "tsql": "HASHBYTES('SHA1', x)",
+                "spark": "SHA(x)",
+            },
+        )
+        self.validate_all(
+            "HASHBYTES('SHA2_256', x)",
+            read={
+                "spark": "SHA2(x, 256)",
+            },
+            write={
+                "tsql": "HASHBYTES('SHA2_256', x)",
+                "spark": "SHA2(x, 256)",
+            },
+        )
+        self.validate_all(
+            "HASHBYTES('SHA2_512', x)",
+            read={
+                "spark": "SHA2(x, 512)",
+            },
+            write={
+                "tsql": "HASHBYTES('SHA2_512', x)",
+                "spark": "SHA2(x, 512)",
+            },
+        )
+        self.validate_all(
+            "HASHBYTES('MD5', 'x')",
+            read={
+                "spark": "MD5('x')",
+            },
+            write={
+                "tsql": "HASHBYTES('MD5', 'x')",
+                "spark": "MD5('x')",
+            },
+        )
+        self.validate_identity("HASHBYTES('MD2', 'x')")
 
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")

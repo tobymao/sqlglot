@@ -96,6 +96,23 @@ def _parse_eomonth(args):
     return exp.LastDateOfMonth(this=exp.DateAdd(this=date, expression=month_lag, unit=unit))
 
 
+def _parse_hashbytes(args):
+    kind, data = args
+    kind = kind.name.upper() if kind.is_string else ""
+
+    if kind == "MD5":
+        args.pop(0)
+        return exp.MD5(this=data)
+    if kind in ("SHA", "SHA1"):
+        args.pop(0)
+        return exp.SHA(this=data)
+    if kind == "SHA2_256":
+        return exp.SHA2(this=data, length=exp.Literal.number(256))
+    if kind == "SHA2_512":
+        return exp.SHA2(this=data, length=exp.Literal.number(512))
+    return exp.func("HASHBYTES", *args)
+
+
 def generate_date_delta_with_unit_sql(self, e):
     func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
     return self.func(func, e.text("unit"), e.expression, e.this)
@@ -288,6 +305,7 @@ class TSQL(Dialect):
             "EOMONTH": _parse_eomonth,
             "FORMAT": _parse_format,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
+            "HASHBYTES": _parse_hashbytes,
             "IIF": exp.If.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
@@ -450,7 +468,12 @@ class TSQL(Dialect):
             exp.TimeToStr: _format_sql,
             exp.GroupConcat: _string_agg_sql,
             exp.Max: max_or_greatest,
+            exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
+            exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
+            exp.SHA2: lambda self, e: self.func(
+                "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
+            ),
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

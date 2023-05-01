@@ -7,6 +7,8 @@ class TestRedshift(Validator):
     def test_redshift(self):
         self.validate_identity("SELECT * FROM #x")
         self.validate_identity("SELECT INTERVAL '5 day'")
+        self.validate_identity("foo$")
+        self.validate_identity("$foo")
 
         self.validate_all(
             "SELECT SNAPSHOT",

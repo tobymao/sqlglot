@@ -37,7 +37,6 @@
     <li><a href="#example-implementations">Example Implementations</a></li>
   </ul></li>
   <li><a href="#unsupportable-operations">Unsupportable Operations</a></li>
-  <li><a href="#known-issues">Known Issues</a></li>
 </ul>
 
 
@@ -308,46 +307,6 @@ GROUP BY
 <h1 id="unsupportable-operations">Unsupportable Operations</h1>
 
 <p>Any operation that lacks a way to represent it in SQL cannot be supported by this tool. An example of this would be rdd operations. Since the DataFrame API though is mostly modeled around SQL concepts most operations can be supported.</p>
-
-<h1 id="known-issues">Known Issues</h1>
-
-<ul>
-<li>Triple joins without a select - If you do two joins and then don't specify a select after then you could get optimizer errors. See example of what can cause this issue:</li>
-</ul>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">df_employee</span>
-<span class="o">.</span><span class="n">join</span><span class="p">(</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="p">,</span>
-    <span class="n">on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">df_employee</span><span class="p">[</span><span class="s2">&quot;employee_id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="p">[</span><span class="s2">&quot;store_id&quot;</span><span class="p">],</span>
-    <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="o">.</span><span class="n">join</span><span class="p">(</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_district</span><span class="p">,</span>
-    <span class="n">on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="p">[</span><span class="s2">&quot;store_id&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_district</span><span class="p">[</span><span class="s2">&quot;district_id&quot;</span><span class="p">],</span>
-    <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span>
-<span class="p">)</span>
-</code></pre>
-</div>
-
-<p>The workaround is to explicitly specify the columns you want to select after the joins. This is good practice anyways since without this your result can have duplicate column names and implicit behavior on how to deal with ambiguity.</p>
-
-<div class="pdoc-code codehilite">
-<pre><span></span><code><span class="bp">self</span><span class="o">.</span><span class="n">df_employee</span>
-<span class="o">.</span><span class="n">join</span><span class="p">(</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">df_employee</span><span class="o">.</span><span class="n">employee_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="o">.</span><span class="n">store_id</span>
-<span class="p">)</span>
-<span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df_district</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="o">.</span><span class="n">store_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_district</span><span class="o">.</span><span class="n">district_id</span><span class="p">)</span>
-<span class="o">.</span><span class="n">select</span><span class="p">(</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_employee</span><span class="o">.</span><span class="n">employee_id</span><span class="p">,</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="o">.</span><span class="n">store_id</span><span class="p">,</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_district</span><span class="o">.</span><span class="n">district_id</span><span class="p">,</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_employee</span><span class="o">.</span><span class="n">fname</span><span class="p">,</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_store</span><span class="o">.</span><span class="n">store_name</span><span class="p">,</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">df_district</span><span class="o">.</span><span class="n">district_name</span><span class="p">,</span>
-<span class="p">)</span>
-</code></pre>
-</div>
 </div>
 
                         <input id="mod-dataframe-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">

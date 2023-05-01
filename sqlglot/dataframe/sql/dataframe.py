@@ -426,9 +426,9 @@ class DataFrame:
     ) -> DataFrame:
         other_df = other_df._convert_leaf_to_cte()
         join_columns = self._ensure_list_of_columns(on)
-        # We will determine actual join expression later so we provide a dummy one for now.
+        # We will determine actual "join on" expression later so we don't provide it at first
         join_expression = self.expression.join(
-            other_df.latest_cte_name, on=exp.Column(), join_type=how.replace("_", " ")
+            other_df.latest_cte_name, join_type=how.replace("_", " ")
         )
         join_expression = self._add_ctes_to_expression(join_expression, other_df.expression.ctes)
         self_columns = self._get_outer_select_columns(join_expression)

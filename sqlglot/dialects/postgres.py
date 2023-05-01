@@ -248,6 +248,8 @@ class Postgres(Dialect):
             "$": TokenType.PARAMETER,
         }
 
+        VAR_SINGLE_TOKENS = {"$"}
+
     class Parser(parser.Parser):
         STRICT_CAST = False
 

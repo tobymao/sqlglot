@@ -20,6 +20,8 @@ Pull requests are the best way to propose changes to the codebase. We actively w
 4. Ensure the test suite & linter [checks](https://github.com/tobymao/sqlglot/blob/main/README.md#run-tests-and-lint) pass.
 5. Issue that pull request and wait for it to be reviewed by a maintainer or contributor!
 
+Note: make sure to follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) guidelines when creating a PR.
+
 ## Report bugs using Github's [issues](https://github.com/tobymao/sqlglot/issues)
 We use GitHub issues to track public bugs. Report a bug by opening a new issue.
 

@@ -26,14 +26,17 @@ jobs:
       run: |
         python setup.py sdist bdist_wheel
         twine upload dist/*
-    - name: Update documentation
-      run: |
-        make docs
-        git add docs
-        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git commit -m "CI: Auto-generated documentation" -a | exit 0
-    - name: Push changes
-      uses: ad-m/github-push-action@master
+    - name: Update API docs
+      run: make docs
+    - name: Update CHANGELOG
+      id: changelog
+      uses: requarks/changelog-action@v1
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ github.token }}
+        tag: ${{ github.ref_name }}
+    - name: Commit API docs, CHANGELOG.md
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        branch: main
+        commit_message: 'docs: update API docs, CHANGELOG.md for ${{ github.ref_name }} [skip ci]'
+        file_pattern: 'docs CHANGELOG.md'

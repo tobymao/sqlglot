@@ -269,6 +269,8 @@ class BigQuery(Dialect):
             exp.DataType.Type.NVARCHAR: "STRING",
             exp.DataType.Type.SMALLINT: "INT64",
             exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.TIMESTAMP: "DATETIME",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.VARIANT: "ANY TYPE",

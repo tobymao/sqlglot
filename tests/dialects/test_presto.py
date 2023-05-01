@@ -60,7 +60,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
             write={
-                "bigquery": "CAST(x AS TIMESTAMPTZ)",
+                "bigquery": "CAST(x AS TIMESTAMP)",
                 "duckdb": "CAST(x AS TIMESTAMPTZ(9))",
                 "presto": "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
                 "hive": "CAST(x AS TIMESTAMP)",

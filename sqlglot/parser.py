@@ -2793,7 +2793,7 @@ class Parser(metaclass=_Parser):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_kwargs)
             elif nested:
-                expressions = self._parse_csv(self._parse_types)
+                expressions = self._parse_csv(lambda: self._parse_types() or self._parse_bitwise())
             else:
                 expressions = self._parse_csv(self._parse_conjunction)
 

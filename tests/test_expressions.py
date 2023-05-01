@@ -528,6 +528,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("VARIANCE_POP(a)"), exp.VariancePop)
         self.assertIsInstance(parse_one("YEAR(a)"), exp.Year)
         self.assertIsInstance(parse_one("HLL(a)"), exp.Hll)
+        self.assertIsInstance(parse_one("ARRAY(time, foo)"), exp.Array)
 
     def test_column(self):
         column = parse_one("a.b.c.d")

@@ -3768,14 +3768,24 @@ class Parser(metaclass=_Parser):
 
         # bigquery select from window x AS (partition by ...)
         if alias:
+            over = None
             self._match(TokenType.ALIAS)
-        elif not self._match(TokenType.OVER):
+        elif not self._match_texts({"OVER", "KEEP"}):
             return this
+        else:
+            over = self._prev.text.upper() == "OVER"
 
         if not self._match(TokenType.L_PAREN):
-            return self.expression(exp.Window, this=this, alias=self._parse_id_var(False))
+            return self.expression(
+                exp.Window, this=this, alias=self._parse_id_var(False), over=over
+            )
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
+
+        first = self._match(TokenType.FIRST)
+        if self._match_text_seq("LAST"):
+            first = False
+
         partition = self._parse_partition_by()
         order = self._parse_order()
         kind = self._match_set((TokenType.ROWS, TokenType.RANGE)) and self._prev.text
@@ -3806,6 +3816,8 @@ class Parser(metaclass=_Parser):
             order=order,
             spec=spec,
             alias=window_alias,
+            over=over,
+            first=first,
         )
 
     def _parse_window_spec(self) -> t.Dict[str, t.Optional[str | exp.Expression]]:

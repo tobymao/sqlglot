@@ -21,6 +21,7 @@ from sqlglot.expressions import (
     Expression as Expression,
     alias_ as alias,
     and_ as and_,
+    coalesce as coalesce,
     column as column,
     condition as condition,
     except_ as except_,

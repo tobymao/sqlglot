@@ -6,6 +6,9 @@ class TestOracle(Validator):
 
     def test_oracle(self):
         self.validate_identity("SELECT * FROM V$SESSION")
+        self.validate_identity(
+            "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"
+        )
 
         self.validate_all(
             "NVL(NULL, 1)",

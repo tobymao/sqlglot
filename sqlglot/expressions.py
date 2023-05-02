@@ -2885,6 +2885,8 @@ class Window(Expression):
         "order": False,
         "spec": False,
         "alias": False,
+        "over": False,
+        "first": False,
     }
 
 

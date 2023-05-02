@@ -215,6 +215,7 @@ class TokenType(AutoName):
     ISNULL = auto()
     JOIN = auto()
     JOIN_MARKER = auto()
+    KEEP = auto()
     LANGUAGE = auto()
     LATERAL = auto()
     LAZY = auto()
@@ -562,6 +563,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "IS": TokenType.IS,
         "ISNULL": TokenType.ISNULL,
         "JOIN": TokenType.JOIN,
+        "KEEP": TokenType.KEEP,
         "LATERAL": TokenType.LATERAL,
         "LAZY": TokenType.LAZY,
         "LEADING": TokenType.LEADING,

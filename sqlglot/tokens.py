@@ -232,6 +232,7 @@ class TokenType(AutoName):
     MOD = auto()
     NATURAL = auto()
     NEXT = auto()
+    NEXT_VALUE_FOR = auto()
     NO_ACTION = auto()
     NOTNULL = auto()
     NULL = auto()
@@ -573,6 +574,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
+        "NEXT VALUE FOR": TokenType.NEXT_VALUE_FOR,
         "NO ACTION": TokenType.NO_ACTION,
         "NOT": TokenType.NOT,
         "NOTNULL": TokenType.NOTNULL,

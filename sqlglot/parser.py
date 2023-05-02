@@ -685,9 +685,14 @@ class Parser(metaclass=_Parser):
     SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE"}
 
     NO_PAREN_FUNCTION_PARSERS = {
+        TokenType.ANY: lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
         TokenType.CASE: lambda self: self._parse_case(),
         TokenType.IF: lambda self: self._parse_if(),
-        TokenType.ANY: lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
+        TokenType.NEXT_VALUE_FOR: lambda self: self.expression(
+            exp.NextValueFor,
+            this=self._parse_column(),
+            order=self._match(TokenType.OVER) and self._parse_wrapped(self._parse_order),
+        ),
     }
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {

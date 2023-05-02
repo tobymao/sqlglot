@@ -3450,7 +3450,13 @@ class Parser(metaclass=_Parser):
             self.validate_expression(this, args)
             self._match_r_paren()
         else:
+            index = self._index - 1
             condition = self._parse_conjunction()
+
+            if not condition:
+                self._retreat(index)
+                return None
+
             self._match(TokenType.THEN)
             true = self._parse_conjunction()
             false = self._parse_conjunction() if self._match(TokenType.ELSE) else None

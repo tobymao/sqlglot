@@ -2793,15 +2793,14 @@ class Parser(metaclass=_Parser):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_kwargs)
             elif nested:
-                expressions = self._parse_csv(lambda: self._parse_types() or self._parse_bitwise())
+                expressions = self._parse_csv(self._parse_types)
             else:
                 expressions = self._parse_csv(self._parse_conjunction)
 
-            if not expressions:
+            if not expressions or not self._match(TokenType.R_PAREN):
                 self._retreat(index)
                 return None
 
-            self._match_r_paren()
             maybe_func = True
 
         if self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):

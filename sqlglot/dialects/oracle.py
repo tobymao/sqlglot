@@ -168,7 +168,6 @@ class Oracle(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
             "COLUMNS": TokenType.COLUMN,
-            "KEEP": TokenType.KEEP,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "NVARCHAR2": TokenType.NVARCHAR,

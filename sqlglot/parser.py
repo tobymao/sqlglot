@@ -232,6 +232,7 @@ class Parser(metaclass=_Parser):
         TokenType.IS,
         TokenType.ISNULL,
         TokenType.INTERVAL,
+        TokenType.KEEP,
         TokenType.LAZY,
         TokenType.LEADING,
         TokenType.LEFT,

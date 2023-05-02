@@ -3,7 +3,6 @@ import unittest
 from sqlglot import (
     alias,
     and_,
-    coalesce,
     condition,
     except_,
     exp,
@@ -66,7 +65,11 @@ class TestBuild(unittest.TestCase):
             (lambda: x.like("y"), "x LIKE 'y'"),
             (lambda: x.ilike("y"), "x ILIKE 'y'"),
             (lambda: x.rlike("y"), "REGEXP_LIKE(x, 'y')"),
-            (lambda: coalesce("x", 1), "COALESCE(x, 1)"),
+            (
+                lambda: exp.Case().when("x = 1", "x").else_("bar"),
+                "CASE WHEN x = 1 THEN x ELSE bar END",
+            ),
+            (lambda: exp.func("COALESCE", "x", 1), "COALESCE(x, 1)"),
             (lambda: select("x"), "SELECT x"),
             (lambda: select("x"), "SELECT x"),
             (lambda: select("x", "y"), "SELECT x, y"),

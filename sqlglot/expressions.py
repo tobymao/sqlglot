@@ -3535,6 +3535,16 @@ class AnyValue(AggFunc):
 class Case(Func):
     arg_types = {"this": False, "ifs": True, "default": False}
 
+    def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
+        this = self.copy() if copy else self
+        this.append("ifs", If(this=maybe_parse(condition, **opts), true=maybe_parse(then, **opts)))
+        return this
+
+    def else_(self, condition: ExpOrStr, copy: bool = True, **opts) -> Case:
+        this = self.copy() if copy else self
+        this.set("default", maybe_parse(condition, **opts))
+        return this
+
 
 class Cast(Func):
     arg_types = {"this": True, "to": True}
@@ -4951,23 +4961,6 @@ def cast(expression: ExpOrStr, to: str | DataType | DataType.Type, **opts) -> Ca
     return Cast(this=expression, to=DataType.build(to, **opts))
 
 
-def coalesce(*expressions: ExpOrStr, dialect: DialectType = None, **opts) -> Coalesce:
-    """Create a coalesce node.
-
-    Example:
-        >>> coalesce('x + 1', '0').sql()
-        'COALESCE(x + 1, 0)'
-
-    Args:
-        expressions: The expressions to coalesce.
-
-    Returns:
-        A coalesce node.
-    """
-    this, *exprs = [maybe_parse(e, **opts) for e in expressions]
-    return Coalesce(this=this, expressions=exprs)
-
-
 def table_(table, db=None, catalog=None, quoted=None, alias=None) -> Table:
     """Build a Table.
 
@@ -5314,8 +5307,8 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
 
     from sqlglot.dialects.dialect import Dialect
 
-    converted = [convert(arg) for arg in args]
-    kwargs = {key: convert(value) for key, value in kwargs.items()}
+    converted: t.List[Expression] = [maybe_parse(arg, dialect=dialect) for arg in args]
+    kwargs = {key: maybe_parse(value, dialect=dialect) for key, value in kwargs.items()}
 
     parser = Dialect.get_or_raise(dialect)().parser()
     from_args_list = parser.FUNCTIONS.get(name.upper())

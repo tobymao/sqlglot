@@ -338,7 +338,7 @@ class TypeAnnotator:
         left_type = expression.left.type.this
         right_type = expression.right.type.this
 
-        if isinstance(expression, (exp.And, exp.Or)):
+        if isinstance(expression, exp.Connector):
             if left_type == exp.DataType.Type.NULL and right_type == exp.DataType.Type.NULL:
                 expression.type = exp.DataType.Type.NULL
             elif exp.DataType.Type.NULL in (left_type, right_type):
@@ -347,7 +347,7 @@ class TypeAnnotator:
                 )
             else:
                 expression.type = exp.DataType.Type.BOOLEAN
-        elif isinstance(expression, (exp.Condition, exp.Predicate)):
+        elif isinstance(expression, exp.Predicate):
             expression.type = exp.DataType.Type.BOOLEAN
         else:
             expression.type = self._maybe_coerce(left_type, right_type)

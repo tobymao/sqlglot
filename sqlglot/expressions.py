@@ -4075,6 +4075,12 @@ class When(Func):
     arg_types = {"matched": True, "source": False, "condition": False, "then": True}
 
 
+# https://docs.oracle.com/javadb/10.8.3.0/ref/rrefsqljnextvaluefor.html
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/next-value-for-transact-sql?view=sql-server-ver16
+class NextValueFor(Func):
+    arg_types = {"this": True, "order": False}
+
+
 def _norm_arg(arg):
     return arg.lower() if type(arg) is str else arg
 

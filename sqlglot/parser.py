@@ -232,6 +232,7 @@ class Parser(metaclass=_Parser):
         TokenType.IS,
         TokenType.ISNULL,
         TokenType.INTERVAL,
+        TokenType.KEEP,
         TokenType.LAZY,
         TokenType.LEADING,
         TokenType.LEFT,
@@ -755,6 +756,7 @@ class Parser(metaclass=_Parser):
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
+    WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
@@ -3773,14 +3775,24 @@ class Parser(metaclass=_Parser):
 
         # bigquery select from window x AS (partition by ...)
         if alias:
+            over = None
             self._match(TokenType.ALIAS)
-        elif not self._match(TokenType.OVER):
+        elif not self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS):
             return this
+        else:
+            over = self._prev.text.upper()
 
         if not self._match(TokenType.L_PAREN):
-            return self.expression(exp.Window, this=this, alias=self._parse_id_var(False))
+            return self.expression(
+                exp.Window, this=this, alias=self._parse_id_var(False), over=over
+            )
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
+
+        first = self._match(TokenType.FIRST)
+        if self._match_text_seq("LAST"):
+            first = False
+
         partition = self._parse_partition_by()
         order = self._parse_order()
         kind = self._match_set((TokenType.ROWS, TokenType.RANGE)) and self._prev.text
@@ -3811,6 +3823,8 @@ class Parser(metaclass=_Parser):
             order=order,
             spec=spec,
             alias=window_alias,
+            over=over,
+            first=first,
         )
 
     def _parse_window_spec(self) -> t.Dict[str, t.Optional[str | exp.Expression]]:

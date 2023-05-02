@@ -1553,12 +1553,18 @@ class Generator:
         spec_sql = " " + self.window_spec_sql(spec) if spec else ""
 
         alias = self.sql(expression, "alias")
-        this = f"{this} {'AS' if expression.arg_key == 'windows' else 'OVER'}"
+        over = self.sql(expression, "over") or "OVER"
+        this = f"{this} {'AS' if expression.arg_key == 'windows' else over}"
+
+        first = expression.args.get("first")
+        if first is not None:
+            first = " FIRST " if first else " LAST "
+        first = first or ""
 
         if not partition and not order and not spec and alias:
             return f"{this} {alias}"
 
-        window_args = alias + partition_sql + order_sql + spec_sql
+        window_args = alias + first + partition_sql + order_sql + spec_sql
 
         return f"{this} ({window_args.strip()})"
 

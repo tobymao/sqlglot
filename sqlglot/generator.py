@@ -1550,7 +1550,7 @@ class Generator:
         partition_sql = partition + " " if partition and order else partition
 
         spec = expression.args.get("spec")
-        spec_sql = " " + self.window_spec_sql(spec) if spec else ""
+        spec_sql = " " + self.windowspec_sql(spec) if spec else ""
 
         alias = self.sql(expression, "alias")
         over = self.sql(expression, "over") or "OVER"
@@ -1572,7 +1572,7 @@ class Generator:
         partition = self.expressions(expression, key="partition_by", flat=True)
         return f"PARTITION BY {partition}" if partition else ""
 
-    def window_spec_sql(self, expression: exp.WindowSpec) -> str:
+    def windowspec_sql(self, expression: exp.WindowSpec) -> str:
         kind = self.sql(expression, "kind")
         start = csv(self.sql(expression, "start"), self.sql(expression, "start_side"), sep=" ")
         end = (

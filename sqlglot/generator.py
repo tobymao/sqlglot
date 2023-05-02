@@ -1629,6 +1629,11 @@ class Generator:
         expressions = self.expressions(expression, flat=True)
         return f"CONSTRAINT {this} {expressions}"
 
+    def nextvaluefor_sql(self, expression: exp.NextValueFor) -> str:
+        order = expression.args.get("order")
+        order = f" OVER ({self.order_sql(order, flat=True)})" if order else ""
+        return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
+
     def extract_sql(self, expression: exp.Extract) -> str:
         this = self.sql(expression, "this")
         expression_sql = self.sql(expression, "expression")

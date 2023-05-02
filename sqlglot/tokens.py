@@ -215,6 +215,7 @@ class TokenType(AutoName):
     ISNULL = auto()
     JOIN = auto()
     JOIN_MARKER = auto()
+    KEEP = auto()
     LANGUAGE = auto()
     LATERAL = auto()
     LAZY = auto()

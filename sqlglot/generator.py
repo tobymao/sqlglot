@@ -1553,8 +1553,7 @@ class Generator:
         spec_sql = " " + self.window_spec_sql(spec) if spec else ""
 
         alias = self.sql(expression, "alias")
-        over = expression.args.get("over", "OVER")
-        over = "OVER" if over else "KEEP"
+        over = self.sql(expression, "over") or "OVER"
         this = f"{this} {'AS' if expression.arg_key == 'windows' else over}"
 
         first = expression.args.get("first")

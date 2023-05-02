@@ -61,6 +61,8 @@ class Oracle(Dialect):
     }
 
     class Parser(parser.Parser):
+        WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
@@ -166,6 +168,7 @@ class Oracle(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
             "COLUMNS": TokenType.COLUMN,
+            "KEEP": TokenType.KEEP,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "NVARCHAR2": TokenType.NVARCHAR,

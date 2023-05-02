@@ -750,6 +750,7 @@ class Parser(metaclass=_Parser):
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
+    WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
@@ -3770,10 +3771,10 @@ class Parser(metaclass=_Parser):
         if alias:
             over = None
             self._match(TokenType.ALIAS)
-        elif not self._match_texts({"OVER", "KEEP"}):
+        elif not self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS):
             return this
         else:
-            over = self._prev.text.upper() == "OVER"
+            over = self._prev.text.upper()
 
         if not self._match(TokenType.L_PAREN):
             return self.expression(

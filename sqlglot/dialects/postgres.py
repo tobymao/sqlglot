@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
@@ -20,7 +20,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
-from sqlglot.transforms import preprocess, remove_target_from_merge
 
 DATE_DIFF_FACTOR = {
     "MICROSECOND": " * 1000000",
@@ -316,7 +315,7 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
-            exp.ColumnDef: preprocess(
+            exp.ColumnDef: transforms.preprocess(
                 [
                     _auto_increment_to_serial,
                     _serial_to_generated,
@@ -341,7 +340,7 @@ class Postgres(Dialect):
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
             exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
-            exp.Merge: preprocess([remove_target_from_merge]),
+            exp.Merge: transforms.preprocess([transforms.remove_target_from_merge]),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.StrPosition: str_position_sql,

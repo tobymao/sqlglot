@@ -23,6 +23,7 @@ class TestBuild(unittest.TestCase):
 
         # Make sure we're not mutating x by changing its parent to be x_plus_one
         self.assertIsNone(x.parent)
+        self.assertNotEqual(id(x_plus_one.this), id(x))
 
         for expression, sql, *dialect in [
             (lambda: x + 1, "x + 1"),

@@ -459,22 +459,22 @@ class TSQL(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
-            exp.If: rename_func("IIF"),
-            exp.NumberToStr: _format_sql,
-            exp.TimeToStr: _format_sql,
             exp.GroupConcat: _string_agg_sql,
+            exp.If: rename_func("IIF"),
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
+            exp.NumberToStr: _format_sql,
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
                 "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
+            exp.TimeToStr: _format_sql,
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

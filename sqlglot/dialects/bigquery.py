@@ -217,11 +217,11 @@ class BigQuery(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "TIMESTAMP", self.func("DATETIME", e.this, e.args.get("zone"))
             ),
+            exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),

@@ -10,3 +10,11 @@ class TestMySQL(Validator):
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
+
+    def test_regex(self):
+        self.validate_all(
+            "SELECT REGEXP_LIKE(abc, '%foo%')",
+            write={
+                "starrocks": "SELECT REGEXP(abc, '%foo%')",
+            },
+        )

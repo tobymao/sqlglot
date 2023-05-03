@@ -139,6 +139,7 @@ class BigQuery(Dialect):
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,
+            "BYTES": TokenType.BINARY,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "UNKNOWN": TokenType.NULL,
         }

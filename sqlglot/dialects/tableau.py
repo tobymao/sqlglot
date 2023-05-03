@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser
+from sqlglot import exp, generator, parser, transforms
 from sqlglot.dialects.dialect import Dialect
 
 
@@ -26,6 +26,7 @@ class Tableau(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.If: _if_sql,
             exp.Coalesce: _coalesce_sql,
             exp.Count: _count_sql,

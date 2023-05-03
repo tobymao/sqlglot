@@ -3148,12 +3148,7 @@ class Parser(metaclass=_Parser):
                 if isinstance(left, exp.Column):
                     left.replace(exp.Var(this=left.text("this")))
 
-        if self._match(TokenType.IGNORE_NULLS):
-            this = self.expression(exp.IgnoreNulls, this=this)
-        else:
-            self._match(TokenType.RESPECT_NULLS)
-
-        return self._parse_limit(self._parse_order(this))
+        return self._parse_limit(self._parse_order(self._parse_respect_or_ignore_nulls(this)))
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         index = self._index
@@ -3741,6 +3736,15 @@ class Parser(metaclass=_Parser):
     def _parse_named_window(self) -> t.Optional[exp.Expression]:
         return self._parse_window(self._parse_id_var(), alias=True)
 
+    def _parse_respect_or_ignore_nulls(
+        self, this: t.Optional[exp.Expression]
+    ) -> t.Optional[exp.Expression]:
+        if self._match(TokenType.IGNORE_NULLS):
+            return self.expression(exp.IgnoreNulls, this=this)
+        if self._match(TokenType.RESPECT_NULLS):
+            return self.expression(exp.RespectNulls, this=this)
+        return this
+
     def _parse_window(
         self, this: t.Optional[exp.Expression], alias: bool = False
     ) -> t.Optional[exp.Expression]:
@@ -3768,10 +3772,7 @@ class Parser(metaclass=_Parser):
         #   (https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/img_text/first_value.html)
         #   and Snowflake chose to do the same for familiarity
         #   https://docs.snowflake.com/en/sql-reference/functions/first_value.html#usage-notes
-        if self._match(TokenType.IGNORE_NULLS):
-            this = self.expression(exp.IgnoreNulls, this=this)
-        elif self._match(TokenType.RESPECT_NULLS):
-            this = self.expression(exp.RespectNulls, this=this)
+        this = self._parse_respect_or_ignore_nulls(this)
 
         # bigquery select from window x AS (partition by ...)
         if alias:

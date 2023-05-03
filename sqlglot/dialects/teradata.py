@@ -146,9 +146,9 @@ class Teradata(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.TimeToStr: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }

@@ -387,7 +387,6 @@ class MySQL(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.DateAdd: _date_add_sql("ADD"),
@@ -404,6 +403,7 @@ class MySQL(Dialect):
             exp.Min: min_or_least,
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StrPosition: strposition_to_locate_sql,
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_date_sql,

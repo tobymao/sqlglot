@@ -285,7 +285,6 @@ class Snowflake(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
@@ -306,6 +305,7 @@ class Snowflake(Dialect):
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StrPosition: lambda self, e: self.func(
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")

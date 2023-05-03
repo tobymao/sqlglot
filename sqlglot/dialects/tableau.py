@@ -26,10 +26,10 @@ class Tableau(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.If: _if_sql,
             exp.Coalesce: _coalesce_sql,
             exp.Count: _count_sql,
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
         }
 
         PROPERTIES_LOCATION = {

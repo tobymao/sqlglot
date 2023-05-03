@@ -81,7 +81,7 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     return f"{diff_sql}{multiplier_sql}"
 
 
-def _array_sort(self: generator.Generator, expression: exp.ArraySort) -> str:
+def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("Hive SORT_ARRAY does not support a comparator")
     return f"SORT_ARRAY({self.sql(expression, 'this')})"
@@ -91,11 +91,11 @@ def _property_sql(self: generator.Generator, expression: exp.Property) -> str:
     return f"'{expression.name}'={self.sql(expression, 'value')}"
 
 
-def _str_to_unix(self: generator.Generator, expression: exp.StrToUnix) -> str:
+def _str_to_unix_sql(self: generator.Generator, expression: exp.StrToUnix) -> str:
     return self.func("UNIX_TIMESTAMP", expression.this, _time_format(self, expression))
 
 
-def _str_to_date(self: generator.Generator, expression: exp.StrToDate) -> str:
+def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format not in (Hive.time_format, Hive.date_format):
@@ -103,7 +103,7 @@ def _str_to_date(self: generator.Generator, expression: exp.StrToDate) -> str:
     return f"CAST({this} AS DATE)"
 
 
-def _str_to_time(self: generator.Generator, expression: exp.StrToTime) -> str:
+def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format not in (Hive.time_format, Hive.date_format):
@@ -280,17 +280,19 @@ class Hive(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
-            **transforms.UNALIAS_GROUP,  # type: ignore
-            **transforms.ELIMINATE_QUALIFY,  # type: ignore
+            exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_qualify, transforms.unnest_to_explode]
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.unnest_to_explode,
+                ]
             ),
             exp.Property: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArraySize: rename_func("SIZE"),
-            exp.ArraySort: _array_sort,
+            exp.ArraySort: _array_sort_sql,
             exp.With: no_recursive_cte_sql,
             exp.DateAdd: _add_date_sql,
             exp.DateDiff: _date_diff_sql,
@@ -319,9 +321,9 @@ class Hive(Dialect):
             exp.SetAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
             exp.StrPosition: strposition_to_locate_sql,
-            exp.StrToDate: _str_to_date,
-            exp.StrToTime: _str_to_time,
-            exp.StrToUnix: _str_to_unix,
+            exp.StrToDate: _str_to_date_sql,
+            exp.StrToTime: _str_to_time_sql,
+            exp.StrToUnix: _str_to_unix_sql,
             exp.StructExtract: struct_extract_sql,
             exp.TableFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
             exp.TimeStrToDate: rename_func("TO_DATE"),

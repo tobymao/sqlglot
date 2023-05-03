@@ -90,7 +90,6 @@ class Redshift(Postgres):
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.CurrentTimestamp: lambda self, e: "SYSDATE",
             exp.DateAdd: lambda self, e: self.func(
                 "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this
@@ -102,6 +101,7 @@ class Redshift(Postgres):
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.JSONExtract: _json_sql,
             exp.JSONExtractScalar: _json_sql,
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
         }
 

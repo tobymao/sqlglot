@@ -128,7 +128,6 @@ class Drill(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),
@@ -146,6 +145,7 @@ class Drill(Dialect):
             exp.StrPosition: str_position_sql,
             exp.StrToDate: _str_to_date,
             exp.Pow: rename_func("POW"),
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,

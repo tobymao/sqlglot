@@ -240,7 +240,9 @@ def _qualify_columns(scope, resolver):
             # column_table can be a '' because bigquery unnest has no table alias
             if column_table:
                 column.set("table", column_table)
-        elif column_table not in scope.sources:
+        elif column_table not in scope.sources and (
+            not scope.parent or column_table not in scope.parent.sources
+        ):
             # structs are used like tables (e.g. "struct"."field"), so they need to be qualified
             # separately and represented as dot(dot(...(<table>.<column>, field1), field2, ...))
 

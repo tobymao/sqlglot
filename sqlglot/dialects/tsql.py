@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     max_or_greatest,
@@ -459,6 +459,7 @@ class TSQL(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),

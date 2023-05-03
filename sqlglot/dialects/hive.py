@@ -280,6 +280,7 @@ class Hive(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
             **transforms.ELIMINATE_QUALIFY,  # type: ignore
             exp.Select: transforms.preprocess(

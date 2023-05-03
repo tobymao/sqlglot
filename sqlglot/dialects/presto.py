@@ -264,6 +264,7 @@ class Presto(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",

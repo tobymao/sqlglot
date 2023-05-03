@@ -217,6 +217,7 @@ class BigQuery(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.AtTimeZone: lambda self, e: self.func(

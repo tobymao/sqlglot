@@ -70,6 +70,7 @@ from sqlglot.dialects.presto import Presto
 from sqlglot.dialects.redshift import Redshift
 from sqlglot.dialects.snowflake import Snowflake
 from sqlglot.dialects.spark import Spark
+from sqlglot.dialects.spark2 import Spark2
 from sqlglot.dialects.sqlite import SQLite
 from sqlglot.dialects.starrocks import StarRocks
 from sqlglot.dialects.tableau import Tableau

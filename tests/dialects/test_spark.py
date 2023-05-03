@@ -222,6 +222,20 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "FLOAT(x)",
+            write={
+                "": "CAST(x AS FLOAT)",
+                "spark": "CAST(x AS FLOAT)",
+            },
+        )
+        self.validate_all(
+            "DOUBLE(x)",
+            write={
+                "": "CAST(x AS DOUBLE)",
+                "spark": "CAST(x AS DOUBLE)",
+            },
+        )
+        self.validate_all(
             "INT(x)",
             write={
                 "": "CAST(x AS INT)",

@@ -100,6 +100,8 @@ class Spark(Hive):
                 this=seq_get(args, 1),
                 unit=exp.var(seq_get(args, 0)),
             ),
+            "FLOAT": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("float")),
+            "DOUBLE": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("double")),
             "STRING": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("string")),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
             "TIMESTAMP": lambda args: exp.Cast(

@@ -711,22 +711,25 @@ class Condition(Expression):
             return klass(this=other, expression=this)
         return klass(this=this, expression=other)
 
-    def __getitem__(self, other: ExpOrStr | slice | t.Tuple[ExpOrStr]):
-        if isinstance(other, slice):
-            return Between(
-                this=self.copy(),
-                low=convert(other.start, copy=True),
-                high=convert(other.stop, copy=True),
-            )
+    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]):
         return Bracket(
             this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
         )
 
-    def isin(self, *expressions: ExpOrStr, query: t.Optional[ExpOrStr] = None, **opts) -> In:
+    def isin(
+        self, *expressions: ExpOrStr, query: t.Optional[ExpOrStr] = None, copy=True, **opts
+    ) -> In:
         return In(
-            this=self.copy(),
-            expressions=[convert(e, copy=True) for e in expressions],
-            query=maybe_parse(query, **opts) if query else None,
+            this=_maybe_copy(self, copy),
+            expressions=[convert(e, copy=copy) for e in expressions],
+            query=maybe_parse(query, copy=copy, **opts) if query else None,
+        )
+
+    def between(self, low: ExpOrStr, high: ExpOrStr, copy=True, **opts) -> Between:
+        return Between(
+            this=_maybe_copy(self, copy),
+            low=maybe_parse(low, copy=copy, **opts),
+            high=maybe_parse(high, copy=copy, **opts),
         )
 
     def like(self, other: ExpOrStr) -> Like:
@@ -3542,13 +3545,17 @@ class Case(Func):
     def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
         instance = _maybe_copy(self, copy)
         instance.append(
-            "ifs", If(this=maybe_parse(condition, **opts), true=maybe_parse(then, **opts))
+            "ifs",
+            If(
+                this=maybe_parse(condition, copy=copy, **opts),
+                true=maybe_parse(then, copy=copy, **opts),
+            ),
         )
         return instance
 
     def else_(self, condition: ExpOrStr, copy: bool = True, **opts) -> Case:
         instance = _maybe_copy(self, copy)
-        instance.set("default", maybe_parse(condition, **opts))
+        instance.set("default", maybe_parse(condition, copy=copy, **opts))
         return instance
 
 

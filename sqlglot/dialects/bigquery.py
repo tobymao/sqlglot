@@ -139,6 +139,7 @@ class BigQuery(Dialect):
             "GEOGRAPHY": TokenType.GEOGRAPHY,
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,
+            "BYTES": TokenType.BINARY,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "UNKNOWN": TokenType.NULL,
         }
@@ -261,6 +262,7 @@ class BigQuery(Dialect):
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.BIGDECIMAL: "BIGNUMERIC",
             exp.DataType.Type.BIGINT: "INT64",
+            exp.DataType.Type.BINARY: "BYTES",
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.CHAR: "STRING",
             exp.DataType.Type.DECIMAL: "NUMERIC",
@@ -274,6 +276,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TINYINT: "INT64",
+            exp.DataType.Type.VARBINARY: "BYTES",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.VARIANT: "ANY TYPE",
         }

@@ -264,7 +264,6 @@ class Presto(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
@@ -304,7 +303,11 @@ class Presto(Dialect):
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_qualify, transforms.explode_to_unnest]
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.explode_to_unnest,
+                ]
             ),
             exp.SortArray: _no_sort_array,
             exp.StrPosition: rename_func("STRPOS"),

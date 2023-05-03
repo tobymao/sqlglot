@@ -217,7 +217,6 @@ class BigQuery(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
             **transforms.REMOVE_PRECISION_PARAMETERIZED_TYPES,  # type: ignore
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.AtTimeZone: lambda self, e: self.func(
@@ -235,7 +234,9 @@ class BigQuery(Dialect):
             exp.IntDiv: rename_func("DIV"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
-            exp.Select: transforms.preprocess([_unqualify_unnest]),
+            exp.Select: transforms.preprocess(
+                [_unqualify_unnest, transforms.eliminate_distinct_on]
+            ),
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),

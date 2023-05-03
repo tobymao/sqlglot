@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import parse_date_delta
 from sqlglot.dialects.spark import Spark
 from sqlglot.dialects.tsql import generate_date_delta_with_unit_sql
@@ -29,9 +29,14 @@ class Databricks(Spark):
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.JSONExtract: lambda self, e: self.binary(e, ":"),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.unnest_to_explode,
+                ]
+            ),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
-        TRANSFORMS.pop(exp.Select)  # Remove the ELIMINATE_QUALIFY transformation
 
         PARAMETER_TOKEN = "$"
 

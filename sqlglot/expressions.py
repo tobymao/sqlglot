@@ -3930,11 +3930,11 @@ class Pow(Binary, Func):
 
 
 class PercentileCont(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class PercentileDisc(AggFunc):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class Quantile(AggFunc):

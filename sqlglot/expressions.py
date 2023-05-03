@@ -5078,10 +5078,11 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
     Raises an error if a conversion is not possible.
 
     Args:
-        value (Any): a python object
+        value: A python object.
+        copy: Whether or not to copy `value` (only applies to expressions and collections).
 
     Returns:
-        Expression: the equivalent expression object
+        Expression: the equivalent expression object.
     """
     if isinstance(value, Expression):
         return _maybe_copy(value, copy)

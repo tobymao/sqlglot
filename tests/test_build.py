@@ -20,6 +20,9 @@ class TestBuild(unittest.TestCase):
     def test_build(self):
         x = condition("x")
 
+        x_plus_one = x + 1
+        self.assertNotEqual(id(x_plus_one.this), id(x))
+
         for expression, sql, *dialect in [
             (lambda: x + 1, "x + 1"),
             (lambda: 1 + x, "1 + x"),

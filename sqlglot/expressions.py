@@ -702,8 +702,8 @@ class Condition(Expression):
         return not_(self)
 
     def _binop(self, klass: t.Type[E], other: ExpOrStr, reverse=False) -> E:
-        this = self
-        other = convert(other)
+        this = self.copy()
+        other = convert(other, copy=True)
         if not isinstance(this, klass) and not isinstance(other, klass):
             this = _wrap(this, Binary)
             other = _wrap(other, Binary)
@@ -715,15 +715,17 @@ class Condition(Expression):
         if isinstance(other, slice):
             return Between(
                 this=self,
-                low=convert(other.start),
-                high=convert(other.stop),
+                low=convert(other.start, copy=True),
+                high=convert(other.stop, copy=True),
             )
-        return Bracket(this=self, expressions=[convert(e) for e in ensure_list(other)])
+        return Bracket(
+            this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
+        )
 
     def isin(self, *expressions: ExpOrStr, query: t.Optional[ExpOrStr] = None, **opts) -> In:
         return In(
-            this=self,
-            expressions=[convert(e) for e in expressions],
+            this=self.copy(),
+            expressions=[convert(e, copy=True) for e in expressions],
             query=maybe_parse(query, **opts) if query else None,
         )
 
@@ -809,10 +811,10 @@ class Condition(Expression):
         return self._binop(Or, other, reverse=True)
 
     def __neg__(self) -> Neg:
-        return Neg(this=_wrap(self, Binary))
+        return Neg(this=_wrap(self.copy(), Binary))
 
     def __invert__(self) -> Not:
-        return not_(self)
+        return not_(self.copy())
 
 
 class Predicate(Condition):
@@ -3538,14 +3540,16 @@ class Case(Func):
     arg_types = {"this": False, "ifs": True, "default": False}
 
     def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
-        this = self.copy() if copy else self
-        this.append("ifs", If(this=maybe_parse(condition, **opts), true=maybe_parse(then, **opts)))
-        return this
+        instance = _maybe_copy(self, copy)
+        instance.append(
+            "ifs", If(this=maybe_parse(condition, **opts), true=maybe_parse(then, **opts))
+        )
+        return instance
 
     def else_(self, condition: ExpOrStr, copy: bool = True, **opts) -> Case:
-        this = self.copy() if copy else self
-        this.set("default", maybe_parse(condition, **opts))
-        return this
+        instance = _maybe_copy(self, copy)
+        instance.set("default", maybe_parse(condition, **opts))
+        return instance
 
 
 class Cast(Func):
@@ -5068,7 +5072,7 @@ def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:
     )
 
 
-def convert(value) -> Expression:
+def convert(value: t.Any, copy: bool = False) -> Expression:
     """Convert a python value into an expression object.
 
     Raises an error if a conversion is not possible.
@@ -5080,7 +5084,7 @@ def convert(value) -> Expression:
         Expression: the equivalent expression object
     """
     if isinstance(value, Expression):
-        return value
+        return _maybe_copy(value, copy)
     if isinstance(value, str):
         return Literal.string(value)
     if isinstance(value, bool):
@@ -5098,13 +5102,13 @@ def convert(value) -> Expression:
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
         return DateStrToDate(this=date_literal)
     if isinstance(value, tuple):
-        return Tuple(expressions=[convert(v) for v in value])
+        return Tuple(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, list):
-        return Array(expressions=[convert(v) for v in value])
+        return Array(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, dict):
         return Map(
-            keys=[convert(k) for k in value],
-            values=[convert(v) for v in value.values()],
+            keys=[convert(k, copy=copy) for k in value],
+            values=[convert(v, copy=copy) for v in value.values()],
         )
     raise ValueError(f"Cannot convert {value}")
 

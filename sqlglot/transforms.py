@@ -261,11 +261,3 @@ def preprocess(
         return getattr(self, expression.key + "_sql")(expression)
 
     return _to_sql
-
-
-UNALIAS_GROUP = {exp.Group: preprocess([unalias_group])}
-ELIMINATE_DISTINCT_ON = {exp.Select: preprocess([eliminate_distinct_on])}
-ELIMINATE_QUALIFY = {exp.Select: preprocess([eliminate_qualify])}
-REMOVE_PRECISION_PARAMETERIZED_TYPES = {
-    exp.Cast: preprocess([remove_precision_parameterized_types])
-}

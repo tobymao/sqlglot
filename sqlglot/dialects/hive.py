@@ -280,11 +280,13 @@ class Hive(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
-            **transforms.UNALIAS_GROUP,  # type: ignore
-            **transforms.ELIMINATE_QUALIFY,  # type: ignore
+            exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_qualify, transforms.unnest_to_explode]
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.unnest_to_explode,
+                ]
             ),
             exp.Property: _property_sql,
             exp.ApproxDistinct: approx_count_distinct_sql,

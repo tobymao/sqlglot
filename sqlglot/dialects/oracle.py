@@ -121,13 +121,14 @@ class Oracle(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
-            **transforms.UNALIAS_GROUP,  # type: ignore
             exp.DateStrToDate: lambda self, e: self.func(
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
+            exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.ILike: no_ilike_sql,
+            exp.IfNull: rename_func("NVL"),
+            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
             exp.Substring: rename_func("SUBSTR"),
@@ -136,7 +137,6 @@ class Oracle(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
-            exp.IfNull: rename_func("NVL"),
         }
 
         PROPERTIES_LOCATION = {

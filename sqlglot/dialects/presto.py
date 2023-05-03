@@ -269,8 +269,6 @@ class Presto(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            **transforms.ELIMINATE_DISTINCT_ON,  # type: ignore
-            **transforms.UNALIAS_GROUP,  # type: ignore
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
             exp.ArrayConcat: rename_func("CONCAT"),
@@ -296,6 +294,7 @@ class Presto(Dialect):
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.dateint_format}) AS DATE)",
             exp.Encode: _encode_sql,
             exp.GenerateSeries: _sequence_sql,
+            exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hex: rename_func("TO_HEX"),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
@@ -309,7 +308,11 @@ class Presto(Dialect):
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_qualify, transforms.explode_to_unnest]
+                [
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_distinct_on,
+                    transforms.explode_to_unnest,
+                ]
             ),
             exp.SortArray: _no_sort_array,
             exp.StrPosition: rename_func("STRPOS"),

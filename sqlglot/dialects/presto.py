@@ -130,7 +130,7 @@ def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> s
 def _sequence_sql(self: generator.Generator, expression: exp.GenerateSeries) -> str:
     start = expression.args["start"]
     end = expression.args["end"]
-    step = expression.args.get("step", 1)  # Postgres defaults to 1 for generate_series
+    step = expression.args.get("step")
 
     target_type = None
 
@@ -147,7 +147,11 @@ def _sequence_sql(self: generator.Generator, expression: exp.GenerateSeries) -> 
         else:
             start = exp.Cast(this=start, to=to)
 
-    return self.func("SEQUENCE", start, end, step)
+    sql = self.func("SEQUENCE", start, end, step)
+    if isinstance(expression.parent, exp.Table):
+        sql = f"UNNEST({sql})"
+
+    return sql
 
 
 def _ensure_utf8(charset: exp.Literal) -> None:
@@ -204,6 +208,7 @@ class Presto(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
+            "APPROX_PERCENTILE": _approx_percentile,
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "CONTAINS": exp.ArrayContains.from_arg_list,
             "DATE_ADD": lambda args: exp.DateAdd(
@@ -219,22 +224,22 @@ class Presto(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
             "DATE_TRUNC": date_trunc_to_time,
+            "FROM_HEX": exp.Unhex.from_arg_list,
             "FROM_UNIXTIME": _from_unixtime,
+            "FROM_UTF8": lambda args: exp.Decode(
+                this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
+            ),
             "NOW": exp.CurrentTimestamp.from_arg_list,
+            "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "STRPOS": lambda args: exp.StrPosition(
                 this=seq_get(args, 0),
                 substr=seq_get(args, 1),
                 instance=seq_get(args, 2),
             ),
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
-            "APPROX_PERCENTILE": _approx_percentile,
-            "FROM_HEX": exp.Unhex.from_arg_list,
             "TO_HEX": exp.Hex.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
-            ),
-            "FROM_UTF8": lambda args: exp.Decode(
-                this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
         }
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()

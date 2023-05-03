@@ -98,6 +98,16 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "CAST(a AS BYTES)",
+            write={
+                "bigquery": "CAST(a AS BYTES)",
+                "duckdb": "CAST(a AS BLOB)",
+                "presto": "CAST(a AS VARBINARY)",
+                "hive": "CAST(a AS BINARY)",
+                "spark": "CAST(a AS BINARY)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS NUMERIC)",
             write={
                 "bigquery": "CAST(a AS NUMERIC)",

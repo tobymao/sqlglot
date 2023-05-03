@@ -485,26 +485,30 @@ WHERE
 
     def test_date_diff(self):
         self.validate_identity("SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')")
+
         self.validate_all(
             "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
             write={
                 "tsql": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
-                "spark": "SELECT MONTHS_BETWEEN('2021/01/01', '2020/01/01') / 12",
+                "spark": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+                "spark2": "SELECT MONTHS_BETWEEN('2021/01/01', '2020/01/01') / 12",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(mm, 'start','end')",
             write={
-                "spark": "SELECT MONTHS_BETWEEN('end', 'start')",
-                "tsql": "SELECT DATEDIFF(month, 'start', 'end')",
                 "databricks": "SELECT DATEDIFF(month, 'start', 'end')",
+                "spark2": "SELECT MONTHS_BETWEEN('end', 'start')",
+                "tsql": "SELECT DATEDIFF(month, 'start', 'end')",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(quarter, 'start', 'end')",
             write={
-                "spark": "SELECT MONTHS_BETWEEN('end', 'start') / 3",
                 "databricks": "SELECT DATEDIFF(quarter, 'start', 'end')",
+                "spark": "SELECT DATEDIFF(quarter, 'start', 'end')",
+                "spark2": "SELECT MONTHS_BETWEEN('end', 'start') / 3",
+                "tsql": "SELECT DATEDIFF(quarter, 'start', 'end')",
             },
         )
 

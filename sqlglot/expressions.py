@@ -714,7 +714,7 @@ class Condition(Expression):
     def __getitem__(self, other: ExpOrStr | slice | t.Tuple[ExpOrStr]):
         if isinstance(other, slice):
             return Between(
-                this=self,
+                this=self.copy(),
                 low=convert(other.start, copy=True),
                 high=convert(other.stop, copy=True),
             )

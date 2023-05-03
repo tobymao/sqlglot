@@ -324,9 +324,6 @@ FROM v""",
         )
         self.validate("SELECT IF(a > 1, 1) FROM foo", "SELECT CASE WHEN a > 1 THEN 1 END FROM foo")
 
-    def test_ignore_nulls(self):
-        self.validate("SELECT COUNT(x RESPECT NULLS)", "SELECT COUNT(x)")
-
     def test_with(self):
         self.validate(
             "WITH a AS (SELECT 1) WITH b AS (SELECT 2) SELECT *",

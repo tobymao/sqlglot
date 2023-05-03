@@ -19,9 +19,10 @@ from sqlglot import (
 class TestBuild(unittest.TestCase):
     def test_build(self):
         x = condition("x")
-
         x_plus_one = x + 1
-        self.assertNotEqual(id(x_plus_one.this), id(x))
+
+        # Make sure we're not mutating x by changing its parent to be x_plus_one
+        self.assertIsNone(x.parent)
 
         for expression, sql, *dialect in [
             (lambda: x + 1, "x + 1"),

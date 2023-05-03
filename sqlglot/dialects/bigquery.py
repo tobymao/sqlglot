@@ -207,6 +207,12 @@ class BigQuery(Dialect):
             "NOT DETERMINISTIC": lambda self: self.expression(
                 exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
             ),
+            "OPTIONS": lambda self: self._parse_with_property(),
+        }
+
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,  # type: ignore
+            "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
 
     class Generator(generator.Generator):
@@ -315,3 +321,6 @@ class BigQuery(Dialect):
             if not expression.args.get("distinct", False):
                 self.unsupported("INTERSECT without DISTINCT is not supported in BigQuery")
             return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+
+        def with_properties(self, properties: exp.Properties) -> str:
+            return self.properties(properties, prefix=self.seg("OPTIONS"))

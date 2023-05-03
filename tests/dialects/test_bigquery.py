@@ -6,6 +6,9 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity(
+            """CREATE TABLE x (a STRING OPTIONS (description='x')) OPTIONS (table_expiration_days=1)"""
+        )
         self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
         self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")

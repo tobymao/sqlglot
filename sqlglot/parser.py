@@ -3717,15 +3717,15 @@ class Parser(metaclass=_Parser):
         if self._match_set(self.TRIM_TYPES):
             position = self._prev.text.upper()
 
-        expression = self._parse_term()
+        expression = self._parse_bitwise()
         if self._match_set((TokenType.FROM, TokenType.COMMA)):
-            this = self._parse_term()
+            this = self._parse_bitwise()
         else:
             this = expression
             expression = None
 
         if self._match(TokenType.COLLATE):
-            collation = self._parse_term()
+            collation = self._parse_bitwise()
 
         return self.expression(
             exp.Trim,

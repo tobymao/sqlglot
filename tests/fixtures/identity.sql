@@ -85,6 +85,7 @@ x IS TRUE
 x IS FALSE
 x IS TRUE IS TRUE
 x LIKE y IS TRUE
+TRIM('a' || 'b')
 MAP()
 GREATEST(x)
 LEAST(y)

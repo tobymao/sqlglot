@@ -198,6 +198,33 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "GENERATE_SERIES(a, b)",
+            write={
+                "postgres": "GENERATE_SERIES(a, b)",
+                "presto": "SEQUENCE(a, b)",
+                "trino": "SEQUENCE(a, b)",
+                "tsql": "GENERATE_SERIES(a, b)",
+            },
+        )
+        self.validate_all(
+            "GENERATE_SERIES(a, b)",
+            read={
+                "postgres": "GENERATE_SERIES(a, b)",
+                "presto": "SEQUENCE(a, b)",
+                "trino": "SEQUENCE(a, b)",
+                "tsql": "GENERATE_SERIES(a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4)",
+            write={
+                "postgres": "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4)",
+                "presto": "SELECT * FROM t CROSS JOIN UNNEST(SEQUENCE(2, 4))",
+                "trino": "SELECT * FROM t CROSS JOIN UNNEST(SEQUENCE(2, 4))",
+                "tsql": "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4)",
+            },
+        )
+        self.validate_all(
             "END WORK AND NO CHAIN",
             write={"postgres": "COMMIT AND NO CHAIN"},
         )

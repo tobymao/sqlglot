@@ -524,7 +524,7 @@ class Generator:
 
     def columnconstraint_sql(self, expression: exp.ColumnConstraint) -> str:
         this = self.sql(expression, "this")
-        kind_sql = self.sql(expression, "kind")
+        kind_sql = self.sql(expression, "kind").strip()
         return f"CONSTRAINT {this} {kind_sql}" if this else kind_sql
 
     def autoincrementcolumnconstraint_sql(self, _) -> str:

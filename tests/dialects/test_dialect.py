@@ -95,7 +95,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CAST(a AS BINARY(4))",
             write={
-                "bigquery": "CAST(a AS BYTES(4))",
+                "bigquery": "CAST(a AS BYTES)",
                 "clickhouse": "CAST(a AS BINARY(4))",
                 "drill": "CAST(a AS VARBINARY(4))",
                 "duckdb": "CAST(a AS BLOB(4))",
@@ -114,7 +114,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CAST(a AS VARBINARY(4))",
             write={
-                "bigquery": "CAST(a AS BYTES(4))",
+                "bigquery": "CAST(a AS BYTES)",
                 "clickhouse": "CAST(a AS VARBINARY(4))",
                 "duckdb": "CAST(a AS BLOB(4))",
                 "mysql": "CAST(a AS VARBINARY(4))",

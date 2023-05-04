@@ -29,6 +29,21 @@ class TestOracle(Validator):
             },
         )
 
+        self.validate_all(
+            "x::binary_double",
+            write={
+                "oracle": "CAST(x AS DOUBLE PRECISION)",
+                "": "CAST(x AS DOUBLE)",
+            },
+        )
+        self.validate_all(
+            "x::binary_float",
+            write={
+                "oracle": "CAST(x AS FLOAT)",
+                "": "CAST(x AS FLOAT)",
+            },
+        )
+
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y = e2.y (+)")

@@ -5,6 +5,7 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("SELECT * FROM table_name@dblink_name.database_link_domain")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity(
             "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"

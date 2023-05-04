@@ -137,10 +137,14 @@ class TestBuild(unittest.TestCase):
                 "SELECT x, y, z, a FROM tbl GROUP BY x, y, z, a",
             ),
             (
-                lambda: select("x").distinct(True).from_("tbl"),
+                lambda: select("x").distinct("a", "b").from_("tbl"),
+                "SELECT DISTINCT ON (a, b) x FROM tbl",
+            ),
+            (
+                lambda: select("x").distinct(distinct=True).from_("tbl"),
                 "SELECT DISTINCT x FROM tbl",
             ),
-            (lambda: select("x").distinct(False).from_("tbl"), "SELECT x FROM tbl"),
+            (lambda: select("x").distinct(distinct=False).from_("tbl"), "SELECT x FROM tbl"),
             (
                 lambda: select("x").lateral("OUTER explode(y) tbl2 AS z").from_("tbl"),
                 "SELECT x FROM tbl LATERAL VIEW OUTER EXPLODE(y) tbl2 AS z",

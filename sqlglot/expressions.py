@@ -2723,7 +2723,7 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def distinct(self, distinct=True, copy=True) -> Select:
+    def distinct(self, *ons: ExpOrStr, distinct: bool = True, copy: bool = True) -> Select:
         """
         Set the OFFSET expression.
 
@@ -2732,14 +2732,16 @@ class Select(Subqueryable):
             'SELECT DISTINCT x FROM tbl'
 
         Args:
-            distinct (bool): whether the Select should be distinct
-            copy (bool): if `False`, modify this expression instance in-place.
+            ons: the expressions to distinct on
+            distinct: whether the Select should be distinct
+            copy: if `False`, modify this expression instance in-place.
 
         Returns:
             Select: the modified expression.
         """
         instance = _maybe_copy(self, copy)
-        instance.set("distinct", Distinct() if distinct else None)
+        on = Tuple(expressions=[maybe_parse(on, copy=copy) for on in ons]) if ons else None
+        instance.set("distinct", Distinct(on=on) if distinct else None)
         return instance
 
     def ctas(self, table, properties=None, dialect=None, copy=True, **opts) -> Create:

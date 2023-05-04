@@ -6,6 +6,9 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_time(self):
+        self.validate_identity("SELECT CURRENT_DATE")
+        self.validate_identity("SELECT CURRENT_TIMESTAMP")
+
         self.validate_all(
             "EPOCH(x)",
             read={

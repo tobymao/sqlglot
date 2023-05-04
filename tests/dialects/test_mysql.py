@@ -162,6 +162,17 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
+            "SELECT 0x0000CC",
+            write={
+                "mysql": "SELECT x'0000CC'",
+                "sqlite": "SELECT x'0000CC'",
+                "spark": "SELECT X'0000CC'",
+                "trino": "SELECT X'0000CC'",
+                "bigquery": "SELECT 0x0000CC",
+                "oracle": "SELECT 204",
+            },
+        )
+        self.validate_all(
             "SELECT X'1A'",
             write={
                 "mysql": "SELECT x'1A'",

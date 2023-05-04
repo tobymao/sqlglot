@@ -730,11 +730,11 @@ class Condition(Expression):
             query=maybe_parse(query, copy=copy, **opts) if query else None,
         )
 
-    def between(self, low: ExpOrStr, high: ExpOrStr, copy=True, **opts) -> Between:
+    def between(self, low: t.Any, high: t.Any, copy=True, **opts) -> Between:
         return Between(
             this=_maybe_copy(self, copy),
-            low=maybe_parse(low, copy=copy, **opts),
-            high=maybe_parse(high, copy=copy, **opts),
+            low=convert(low, copy=copy, **opts),
+            high=convert(high, copy=copy, **opts),
         )
 
     def like(self, other: ExpOrStr) -> Like:

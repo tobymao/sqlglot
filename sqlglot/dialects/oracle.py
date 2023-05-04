@@ -34,6 +34,8 @@ def _parse_xml_table(self) -> exp.XMLTable:
 
 
 class Oracle(Dialect):
+    alias_post_tablesample = True
+
     # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
     time_mapping = {
@@ -133,6 +135,7 @@ class Oracle(Dialect):
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
             exp.Substring: rename_func("SUBSTR"),
             exp.Table: lambda self, e: self.table_sql(e, sep=" "),
+            exp.TableSample: lambda self, e: self.tablesample_sql(e, sep=" "),
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
@@ -175,6 +178,7 @@ class Oracle(Dialect):
             "MINUS": TokenType.EXCEPT,
             "NVARCHAR2": TokenType.NVARCHAR,
             "RETURNING": TokenType.RETURNING,
+            "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,

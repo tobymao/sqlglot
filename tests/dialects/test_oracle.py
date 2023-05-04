@@ -6,6 +6,7 @@ class TestOracle(Validator):
 
     def test_oracle(self):
         self.validate_identity("SELECT * FROM table_name@dblink_name.database_link_domain")
+        self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity(
             "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"
@@ -18,7 +19,6 @@ class TestOracle(Validator):
                 "": "IFNULL(NULL, 1)",
             },
         )
-
         self.validate_all(
             "DATE '2022-01-01'",
             write={

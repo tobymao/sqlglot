@@ -426,29 +426,18 @@ class TestSnowflake(Validator):
     def test_sample(self):
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE (100)")
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
+        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
+        self.validate_identity("SELECT * FROM testtable SAMPLE (10)")
+        self.validate_identity("SELECT * FROM testtable SAMPLE ROW (0)")
+        self.validate_identity("SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)")
         self.validate_identity(
             "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE (50) WHERE t2.j = t1.i"
         )
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)"
         )
-        self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
-        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
 
-        self.validate_all(
-            "SELECT * FROM testtable SAMPLE (10)",
-            write={"snowflake": "SELECT * FROM testtable TABLESAMPLE (10)"},
-        )
-        self.validate_all(
-            "SELECT * FROM testtable SAMPLE ROW (0)",
-            write={"snowflake": "SELECT * FROM testtable TABLESAMPLE ROW (0)"},
-        )
-        self.validate_all(
-            "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
-            write={
-                "snowflake": "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
-            },
-        )
         self.validate_all(
             """
             SELECT i, j
@@ -458,13 +447,13 @@ class TestSnowflake(Validator):
                      table2 AS t2 SAMPLE (50)     -- 50% of rows in table2
                 WHERE t2.j = t1.i""",
             write={
-                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
+                "snowflake": "SELECT i, j FROM table1 AS t1 SAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 SAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
             },
         )
         self.validate_all(
             "SELECT * FROM testtable SAMPLE BLOCK (0.012) REPEATABLE (99992)",
             write={
-                "snowflake": "SELECT * FROM testtable TABLESAMPLE BLOCK (0.012) SEED (99992)",
+                "snowflake": "SELECT * FROM testtable SAMPLE BLOCK (0.012) SEED (99992)",
             },
         )
 

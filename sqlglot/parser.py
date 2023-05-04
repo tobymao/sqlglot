@@ -2333,7 +2333,9 @@ class Parser(metaclass=_Parser):
         size = None
         seed = None
 
-        kind = "TABLESAMPLE" if self._prev.token_type == TokenType.TABLE_SAMPLE else "USING SAMPLE"
+        kind = (
+            self._prev.text if self._prev.token_type == TokenType.TABLE_SAMPLE else "USING SAMPLE"
+        )
         method = self._parse_var(tokens=(TokenType.ROW,))
 
         self._match(TokenType.L_PAREN)

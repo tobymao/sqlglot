@@ -1115,10 +1115,10 @@ class Generator:
 
         return f"{table}{system_time}{alias}{hints}{laterals}{joins}{pivots}"
 
-    def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:
+    def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS ") -> str:
         if self.alias_post_tablesample and expression.this.alias:
             this = self.sql(expression.this, "this")
-            alias = f" AS {self.sql(expression.this, 'alias')}"
+            alias = f"{sep}{self.sql(expression.this, 'alias')}"
         else:
             this = self.sql(expression, "this")
             alias = ""

@@ -153,7 +153,7 @@ def join_condition(join):
     #
     # should pull y.b as the join key and x.a as the source key
     if normalized(on):
-        on = on if isinstance(on, exp.And) else exp.and_(on, exp.true())
+        on = on if isinstance(on, exp.And) else exp.and_(on, exp.true(), copy=False)
 
         for condition in on.flatten():
             if isinstance(condition, exp.EQ):

@@ -650,7 +650,7 @@ ExpOrStr = t.Union[str, Expression]
 
 
 class Condition(Expression):
-    def and_(self, *expressions, dialect=None, **opts):
+    def and_(self, *expressions, dialect=None, copy=True, **opts):
         """
         AND this condition with one or multiple expressions.
 
@@ -662,14 +662,15 @@ class Condition(Expression):
             *expressions (str | Expression): the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
             dialect (str): the dialect used to parse the input expression.
+            copy (bool): whether or not to copy the involved expressions (only applies to Expressions).
             opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             And: the new condition.
         """
-        return and_(self, *expressions, dialect=dialect, **opts)
+        return and_(self, *expressions, dialect=dialect, copy=copy, **opts)
 
-    def or_(self, *expressions, dialect=None, **opts):
+    def or_(self, *expressions, dialect=None, copy=True, **opts):
         """
         OR this condition with one or multiple expressions.
 
@@ -681,14 +682,15 @@ class Condition(Expression):
             *expressions (str | Expression): the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
             dialect (str): the dialect used to parse the input expression.
+            copy (bool): whether or not to copy the involved expressions (only applies to Expressions).
             opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Or: the new condition.
         """
-        return or_(self, *expressions, dialect=dialect, **opts)
+        return or_(self, *expressions, dialect=dialect, copy=copy, **opts)
 
-    def not_(self):
+    def not_(self, copy=True):
         """
         Wrap this condition with NOT.
 
@@ -696,10 +698,13 @@ class Condition(Expression):
             >>> condition("x=1").not_().sql()
             'NOT x = 1'
 
+        Args:
+            copy (bool): whether or not to copy this object.
+
         Returns:
             Not: the new condition.
         """
-        return not_(self)
+        return not_(self, copy=copy)
 
     def _binop(self, klass: t.Type[E], other: ExpOrStr, reverse=False) -> E:
         this = self.copy()
@@ -2616,7 +2621,7 @@ class Select(Subqueryable):
                 join.set("kind", kind.text)
 
         if on:
-            on = and_(*ensure_collection(on), dialect=dialect, **opts)
+            on = and_(*ensure_collection(on), dialect=dialect, copy=copy, **opts)
             join.set("on", on)
 
         if using:
@@ -4416,14 +4421,16 @@ def _apply_conjunction_builder(
     if append and existing is not None:
         expressions = [existing.this if into else existing] + list(expressions)
 
-    node = and_(*expressions, dialect=dialect, **opts)
+    node = and_(*expressions, dialect=dialect, copy=copy, **opts)
 
     inst.set(arg, into(this=node) if into else node)
     return inst
 
 
-def _combine(expressions, operator, dialect=None, **opts):
-    expressions = [condition(expression, dialect=dialect, **opts) for expression in expressions]
+def _combine(expressions, operator, dialect=None, copy=True, **opts):
+    expressions = [
+        condition(expression, dialect=dialect, copy=copy, **opts) for expression in expressions
+    ]
     this = expressions[0]
     if expressions[1:]:
         this = _wrap(this, Connector)
@@ -4637,7 +4644,7 @@ def delete(
     return delete_expr
 
 
-def condition(expression, dialect=None, **opts) -> Condition:
+def condition(expression, dialect=None, copy=True, **opts) -> Condition:
     """
     Initialize a logical condition expression.
 
@@ -4656,6 +4663,7 @@ def condition(expression, dialect=None, **opts) -> Condition:
             If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression (in the case that the
             input expression is a SQL string).
+        copy (bool): Whether or not to copy `expression` (only applies to expressions).
         **opts: other options to use to parse the input expressions (again, in the case
             that the input expression is a SQL string).
 
@@ -4666,11 +4674,12 @@ def condition(expression, dialect=None, **opts) -> Condition:
         expression,
         into=Condition,
         dialect=dialect,
+        copy=copy,
         **opts,
     )
 
 
-def and_(*expressions, dialect=None, **opts) -> And:
+def and_(*expressions, dialect=None, copy=True, **opts) -> And:
     """
     Combine multiple conditions with an AND logical operator.
 
@@ -4682,15 +4691,16 @@ def and_(*expressions, dialect=None, **opts) -> And:
         *expressions (str | Expression): the SQL code strings to parse.
             If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression.
+        copy (bool): whether or not to copy `expressions` (only applies to Expressions).
         **opts: other options to use to parse the input expressions.
 
     Returns:
         And: the new condition
     """
-    return _combine(expressions, And, dialect, **opts)
+    return _combine(expressions, And, dialect, copy=copy, **opts)
 
 
-def or_(*expressions, dialect=None, **opts) -> Or:
+def or_(*expressions, dialect=None, copy=True, **opts) -> Or:
     """
     Combine multiple conditions with an OR logical operator.
 
@@ -4702,15 +4712,16 @@ def or_(*expressions, dialect=None, **opts) -> Or:
         *expressions (str | Expression): the SQL code strings to parse.
             If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression.
+        copy (bool): whether or not to copy `expressions` (only applies to Expressions).
         **opts: other options to use to parse the input expressions.
 
     Returns:
         Or: the new condition
     """
-    return _combine(expressions, Or, dialect, **opts)
+    return _combine(expressions, Or, dialect, copy=copy, **opts)
 
 
-def not_(expression, dialect=None, **opts) -> Not:
+def not_(expression, dialect=None, copy=True, **opts) -> Not:
     """
     Wrap a condition with a NOT operator.
 
@@ -4730,6 +4741,7 @@ def not_(expression, dialect=None, **opts) -> Not:
     this = condition(
         expression,
         dialect=dialect,
+        copy=copy,
         **opts,
     )
     return Not(this=_wrap(this, Connector))
@@ -5086,7 +5098,7 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
 
     Args:
         value: A python object.
-        copy: Whether or not to copy `value` (only applies to expressions and collections).
+        copy: Whether or not to copy `value` (only applies to Expressions and collections).
 
     Returns:
         Expression: the equivalent expression object.

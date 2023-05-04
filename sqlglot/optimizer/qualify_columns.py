@@ -124,7 +124,7 @@ def _expand_using(scope, resolver):
                 tables[join_table] = None
 
         join.args.pop("using")
-        join.set("on", exp.and_(*conditions))
+        join.set("on", exp.and_(*conditions, copy=False))
 
     if column_tables:
         for column in scope.columns:

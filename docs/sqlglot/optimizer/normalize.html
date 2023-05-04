@@ -219,15 +219,17 @@
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>            <span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">to_func</span><span class="p">(</span>
 </span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>                <span class="n">uniq_sort</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">from_func</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">left</span><span class="p">)),</span> <span class="n">cache</span><span class="p">),</span>
 </span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>                <span class="n">uniq_sort</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">from_func</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">right</span><span class="p">)),</span> <span class="n">cache</span><span class="p">),</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>            <span class="p">),</span>
-</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>        <span class="p">)</span>
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="n">a</span> <span class="o">=</span> <span class="n">to_func</span><span class="p">(</span>
-</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>            <span class="n">uniq_sort</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">from_func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">left</span><span class="p">)),</span> <span class="n">cache</span><span class="p">),</span>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>            <span class="n">uniq_sort</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">from_func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">right</span><span class="p">)),</span> <span class="n">cache</span><span class="p">),</span>
-</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="p">)</span>
-</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>
-</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>    <span class="k">return</span> <span class="n">a</span>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>                <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>            <span class="p">),</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>        <span class="p">)</span>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>        <span class="n">a</span> <span class="o">=</span> <span class="n">to_func</span><span class="p">(</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>            <span class="n">uniq_sort</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">from_func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">left</span><span class="p">)),</span> <span class="n">cache</span><span class="p">),</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>            <span class="n">uniq_sort</span><span class="p">(</span><span class="n">flatten</span><span class="p">(</span><span class="n">from_func</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">right</span><span class="p">)),</span> <span class="n">cache</span><span class="p">),</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>        <span class="p">)</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>    <span class="k">return</span> <span class="n">a</span>
 </span></pre></div>
 
 

@@ -3585,7 +3585,9 @@ class Parser(metaclass=_Parser):
                     exp.and_(
                         exp.Is(this=expression.copy(), expression=exp.Null()),
                         exp.Is(this=search.copy(), expression=exp.Null()),
+                        copy=False,
                     ),
+                    copy=False,
                 )
                 ifs.append(exp.If(this=cond, true=result))
 

@@ -6386,6 +6386,14 @@ WITH "tmp1" AS (
       OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
     )
     AND (
+      "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
+      OR "item"."i_category" IN ('Women', 'Music', 'Men')
+    )
+    AND (
+      "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
+      OR "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
+    )
+    AND (
       "item"."i_category" IN ('Books', 'Children', 'Electronics')
       OR "item"."i_category" IN ('Women', 'Music', 'Men')
     )
@@ -7588,6 +7596,14 @@ WITH "tmp1" AS (
     AND (
       "item"."i_brand" IN ('amalgimporto #1', 'edu packscholar #1', 'exportiimporto #1', 'importoamalg #1')
       OR "item"."i_class" IN ('personal', 'portable', 'reference', 'self-help')
+    )
+    AND (
+      "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
+      OR "item"."i_category" IN ('Women', 'Music', 'Men')
+    )
+    AND (
+      "item"."i_brand" IN ('scholaramalgamalg #14', 'scholaramalgamalg #7', 'exportiunivamalg #9', 'scholaramalgamalg #9')
+      OR "item"."i_class" IN ('accessories', 'classical', 'fragrances', 'pants')
     )
     AND (
       "item"."i_category" IN ('Books', 'Children', 'Electronics')

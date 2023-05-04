@@ -165,6 +165,8 @@ class Oracle(Dialect):
             return f"XMLTABLE({self.sep('')}{self.indent(this + passing + by_ref + columns)}{self.seg(')', sep='')}"
 
     class Tokenizer(tokens.Tokenizer):
+        VAR_SINGLE_TOKENS = {"@"}
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,

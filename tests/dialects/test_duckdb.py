@@ -136,6 +136,20 @@ class TestDuckDB(Validator):
             "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a)"
         )
 
+        self.validate_all(
+            """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",
+            write={
+                "duckdb": """SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1""",
+                "trino": "SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('day', DATE '2020-01-01', DATE '2020-01-05')",
+            write={
+                "duckdb": "SELECT DATE_DIFF('day', DATE '2020-01-01', DATE '2020-01-05')",
+                "trino": "SELECT DATE_DIFF('day', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
+            },
+        )
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(

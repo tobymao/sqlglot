@@ -56,7 +56,7 @@ class TestBuild(unittest.TestCase):
             (lambda: x.neq(1), "x <> 1"),
             (lambda: x.isin(1, "2"), "x IN (1, '2')"),
             (lambda: x.isin(query="select 1"), "x IN (SELECT 1)"),
-            (lambda: x.between("1", "2"), "x BETWEEN 1 AND 2"),
+            (lambda: x.between(1, 2), "x BETWEEN 1 AND 2"),
             (lambda: 1 + x + 2 + 3, "1 + x + 2 + 3"),
             (lambda: 1 + x * 2 + 3, "1 + (x * 2) + 3"),
             (lambda: x * 1 * 2 + 3, "(x * 1 * 2) + 3"),

@@ -152,12 +152,14 @@ def _distribute(a, b, from_func, to_func, cache):
             lambda c: to_func(
                 uniq_sort(flatten(from_func(c, b.left)), cache),
                 uniq_sort(flatten(from_func(c, b.right)), cache),
+                copy=False,
             ),
         )
     else:
         a = to_func(
             uniq_sort(flatten(from_func(a, b.left)), cache),
             uniq_sort(flatten(from_func(a, b.right)), cache),
+            copy=False,
         )
 
     return a

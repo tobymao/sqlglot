@@ -77,9 +77,17 @@ def simplify_not(expression):
         if isinstance(expression.this, exp.Paren):
             condition = expression.this.unnest()
             if isinstance(condition, exp.And):
-                return exp.or_(exp.not_(condition.left), exp.not_(condition.right))
+                return exp.or_(
+                    exp.not_(condition.left, copy=False),
+                    exp.not_(condition.right, copy=False),
+                    copy=False,
+                )
             if isinstance(condition, exp.Or):
-                return exp.and_(exp.not_(condition.left), exp.not_(condition.right))
+                return exp.and_(
+                    exp.not_(condition.left, copy=False),
+                    exp.not_(condition.right, copy=False),
+                    copy=False,
+                )
             if is_null(condition):
                 return exp.null()
         if always_true(expression.this):
@@ -255,12 +263,12 @@ def uniq_sort(expression, cache=None, root=True):
         # A AND C AND B -> A AND B AND C
         for i, (sql, e) in enumerate(arr[1:]):
             if sql < arr[i][0]:
-                expression = result_func(*(e for _, e in sorted(arr)))
+                expression = result_func(*(e for _, e in sorted(arr)), copy=False)
                 break
         else:
             # we didn't have to sort but maybe we need to dedup
             if len(deduped) < len(flattened):
-                expression = result_func(*deduped.values())
+                expression = result_func(*deduped.values(), copy=False)
 
     return expression
 

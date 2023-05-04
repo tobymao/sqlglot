@@ -26,6 +26,10 @@ def _map_sql(self: Hive.Generator, expression: exp.Map) -> str:
     return f"MAP_FROM_ARRAYS({keys}, {values})"
 
 
+def _parse_as_cast(to_type: str) -> t.Callable[[t.Sequence], exp.Expression]:
+    return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
+
+
 def _str_to_date(self: Hive.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
@@ -77,11 +81,7 @@ class Spark2(Hive):
                 length=seq_get(args, 1),
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
-            "BOOLEAN": lambda args: exp.Cast(
-                this=seq_get(args, 0), to=exp.DataType.build("boolean")
-            ),
             "IIF": exp.If.from_arg_list,
-            "INT": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("int")),
             "AGGREGATE": exp.Reduce.from_arg_list,
             "DAYOFWEEK": lambda args: exp.DayOfWeek(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
@@ -100,11 +100,13 @@ class Spark2(Hive):
                 this=seq_get(args, 1),
                 unit=exp.var(seq_get(args, 0)),
             ),
-            "STRING": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("string")),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
-            "TIMESTAMP": lambda args: exp.Cast(
-                this=seq_get(args, 0), to=exp.DataType.build("timestamp")
-            ),
+            "BOOLEAN": _parse_as_cast("boolean"),
+            "DOUBLE": _parse_as_cast("double"),
+            "FLOAT": _parse_as_cast("float"),
+            "INT": _parse_as_cast("int"),
+            "STRING": _parse_as_cast("string"),
+            "TIMESTAMP": _parse_as_cast("timestamp"),
         }
 
         FUNCTION_PARSERS = {

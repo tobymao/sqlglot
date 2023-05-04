@@ -233,5 +233,7 @@ class DuckDB(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        def tablesample_sql(self, expression: exp.TableSample, seed_prefix: str = "SEED") -> str:
-            return super().tablesample_sql(expression, seed_prefix="REPEATABLE")
+        def tablesample_sql(
+            self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
+        ) -> str:
+            return super().tablesample_sql(expression, seed_prefix="REPEATABLE", sep=sep)

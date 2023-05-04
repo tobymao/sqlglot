@@ -221,6 +221,12 @@ class TestOptimizer(unittest.TestCase):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 
     def test_expand_laterals(self):
+        # check order of lateral expansion with no schema
+        self.assertEqual(
+            optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x " "").sql(),
+            'SELECT "x"."a" + 1 AS "d", "x"."a" + 2 AS "e" FROM "x" AS "x"',
+        )
+
         self.check_file(
             "expand_laterals",
             optimizer.expand_laterals.expand_laterals,

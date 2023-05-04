@@ -3,11 +3,12 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
+from sqlglot.optimizer.expand_laterals import expand_laterals as _expand_laterals
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import ensure_schema
 
 
-def qualify_columns(expression, schema):
+def qualify_columns(expression, schema, expand_laterals=True):
     """
     Rewrite sqlglot AST to have fully qualified columns.
 
@@ -26,6 +27,9 @@ def qualify_columns(expression, schema):
     """
     schema = ensure_schema(schema)
 
+    if not schema.mapping and expand_laterals:
+        expression = _expand_laterals(expression)
+
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema)
         _pop_table_column_aliases(scope.ctes)
@@ -38,6 +42,9 @@ def qualify_columns(expression, schema):
         _expand_alias_refs(scope, resolver)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
+
+    if schema.mapping and expand_laterals:
+        expression = _expand_laterals(expression)
 
     return expression
 

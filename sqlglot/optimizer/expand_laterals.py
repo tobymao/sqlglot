@@ -29,6 +29,6 @@ def expand_laterals(expression: exp.Expression) -> exp.Expression:
             for column in projection.find_all(exp.Column):
                 if not column.table and column.name in alias_to_expression:
                     column.replace(alias_to_expression[column.name].copy())
-                if isinstance(projection, exp.Alias):
-                    alias_to_expression[projection.alias] = projection.this
+            if isinstance(projection, exp.Alias):
+                alias_to_expression[projection.alias] = projection.this
     return expression

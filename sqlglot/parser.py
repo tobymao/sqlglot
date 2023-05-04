@@ -2284,7 +2284,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.UNNEST):
             return None
 
-        expressions = self._parse_wrapped_csv(self._parse_column)
+        expressions = self._parse_wrapped_csv(self._parse_type)
         ordinality = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
         alias = self._parse_table_alias()
 

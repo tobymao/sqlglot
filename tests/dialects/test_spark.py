@@ -225,34 +225,15 @@ TBLPROPERTIES (
                 "trino": "SELECT DATE_DIFF('MONTH', CAST(SUBSTR(CAST('2020-01-01' AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST('2020-03-05' AS VARCHAR), 1, 10) AS DATE))",
             },
         )
-        self.validate_all(
-            "BOOLEAN(x)",
-            write={
-                "": "CAST(x AS BOOLEAN)",
-                "spark": "CAST(x AS BOOLEAN)",
-            },
-        )
-        self.validate_all(
-            "FLOAT(x)",
-            write={
-                "": "CAST(x AS FLOAT)",
-                "spark": "CAST(x AS FLOAT)",
-            },
-        )
-        self.validate_all(
-            "DOUBLE(x)",
-            write={
-                "": "CAST(x AS DOUBLE)",
-                "spark": "CAST(x AS DOUBLE)",
-            },
-        )
-        self.validate_all(
-            "INT(x)",
-            write={
-                "": "CAST(x AS INT)",
-                "spark": "CAST(x AS INT)",
-            },
-        )
+
+        for data_type in ("BOOLEAN", "DATE", "DOUBLE", "FLOAT", "INT", "TIMESTAMP"):
+            self.validate_all(
+                f"{data_type}(x)",
+                write={
+                    "": f"CAST(x AS {data_type})",
+                    "spark": f"CAST(x AS {data_type})",
+                },
+            )
         self.validate_all(
             "STRING(x)",
             write={
@@ -260,20 +241,7 @@ TBLPROPERTIES (
                 "spark": "CAST(x AS STRING)",
             },
         )
-        self.validate_all(
-            "DATE(x)",
-            write={
-                "": "CAST(x AS DATE)",
-                "spark": "CAST(x AS DATE)",
-            },
-        )
-        self.validate_all(
-            "TIMESTAMP(x)",
-            write={
-                "": "CAST(x AS TIMESTAMP)",
-                "spark": "CAST(x AS TIMESTAMP)",
-            },
-        )
+
         self.validate_all(
             "CAST(x AS TIMESTAMP)", read={"trino": "CAST(x AS TIMESTAMP(6) WITH TIME ZONE)"}
         )

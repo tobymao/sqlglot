@@ -173,6 +173,8 @@ class Oracle(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
+            "BINARY_DOUBLE": TokenType.DOUBLE,
+            "BINARY_FLOAT": TokenType.FLOAT,
             "COLUMNS": TokenType.COLUMN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,

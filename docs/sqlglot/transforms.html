@@ -340,14 +340,6 @@
 </span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a>        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">)(</span><span class="n">expression</span><span class="p">)</span>
 </span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>
 </span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
-</span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a>
-</span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a>
-</span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a><span class="n">UNALIAS_GROUP</span> <span class="o">=</span> <span class="p">{</span><span class="n">exp</span><span class="o">.</span><span class="n">Group</span><span class="p">:</span> <span class="n">preprocess</span><span class="p">([</span><span class="n">unalias_group</span><span class="p">])}</span>
-</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a><span class="n">ELIMINATE_DISTINCT_ON</span> <span class="o">=</span> <span class="p">{</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">:</span> <span class="n">preprocess</span><span class="p">([</span><span class="n">eliminate_distinct_on</span><span class="p">])}</span>
-</span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a><span class="n">ELIMINATE_QUALIFY</span> <span class="o">=</span> <span class="p">{</span><span class="n">exp</span><span class="o">.</span><span class="n">Select</span><span class="p">:</span> <span class="n">preprocess</span><span class="p">([</span><span class="n">eliminate_qualify</span><span class="p">])}</span>
-</span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a><span class="n">REMOVE_PRECISION_PARAMETERIZED_TYPES</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>    <span class="n">exp</span><span class="o">.</span><span class="n">Cast</span><span class="p">:</span> <span class="n">preprocess</span><span class="p">([</span><span class="n">remove_precision_parameterized_types</span><span class="p">])</span>
-</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="p">}</span>
 </span></pre></div>
 
 

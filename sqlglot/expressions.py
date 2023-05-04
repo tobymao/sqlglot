@@ -650,7 +650,7 @@ ExpOrStr = t.Union[str, Expression]
 
 
 class Condition(Expression):
-    def and_(self, *expressions, dialect=None, **opts):
+    def and_(self, *expressions, dialect=None, copy=True, **opts):
         """
         AND this condition with one or multiple expressions.
 
@@ -662,14 +662,15 @@ class Condition(Expression):
             *expressions (str | Expression): the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
             dialect (str): the dialect used to parse the input expression.
+            copy (bool): whether or not to copy the involved expressions (only applies to Expressions).
             opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             And: the new condition.
         """
-        return and_(self, *expressions, dialect=dialect, **opts)
+        return and_(self, *expressions, dialect=dialect, copy=copy, **opts)
 
-    def or_(self, *expressions, dialect=None, **opts):
+    def or_(self, *expressions, dialect=None, copy=True, **opts):
         """
         OR this condition with one or multiple expressions.
 
@@ -681,14 +682,15 @@ class Condition(Expression):
             *expressions (str | Expression): the SQL code strings to parse.
                 If an `Expression` instance is passed, it will be used as-is.
             dialect (str): the dialect used to parse the input expression.
+            copy (bool): whether or not to copy the involved expressions (only applies to Expressions).
             opts (kwargs): other options to use to parse the input expressions.
 
         Returns:
             Or: the new condition.
         """
-        return or_(self, *expressions, dialect=dialect, **opts)
+        return or_(self, *expressions, dialect=dialect, copy=copy, **opts)
 
-    def not_(self):
+    def not_(self, copy=True):
         """
         Wrap this condition with NOT.
 
@@ -696,14 +698,17 @@ class Condition(Expression):
             >>> condition("x=1").not_().sql()
             'NOT x = 1'
 
+        Args:
+            copy (bool): whether or not to copy this object.
+
         Returns:
             Not: the new condition.
         """
-        return not_(self)
+        return not_(self, copy=copy)
 
     def _binop(self, klass: t.Type[E], other: ExpOrStr, reverse=False) -> E:
-        this = self
-        other = convert(other)
+        this = self.copy()
+        other = convert(other, copy=True)
         if not isinstance(this, klass) and not isinstance(other, klass):
             this = _wrap(this, Binary)
             other = _wrap(other, Binary)
@@ -711,20 +716,25 @@ class Condition(Expression):
             return klass(this=other, expression=this)
         return klass(this=this, expression=other)
 
-    def __getitem__(self, other: ExpOrStr | slice | t.Tuple[ExpOrStr]):
-        if isinstance(other, slice):
-            return Between(
-                this=self,
-                low=convert(other.start),
-                high=convert(other.stop),
-            )
-        return Bracket(this=self, expressions=[convert(e) for e in ensure_list(other)])
+    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]):
+        return Bracket(
+            this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
+        )
 
-    def isin(self, *expressions: ExpOrStr, query: t.Optional[ExpOrStr] = None, **opts) -> In:
+    def isin(
+        self, *expressions: t.Any, query: t.Optional[ExpOrStr] = None, copy=True, **opts
+    ) -> In:
         return In(
-            this=self,
-            expressions=[convert(e) for e in expressions],
-            query=maybe_parse(query, **opts) if query else None,
+            this=_maybe_copy(self, copy),
+            expressions=[convert(e, copy=copy) for e in expressions],
+            query=maybe_parse(query, copy=copy, **opts) if query else None,
+        )
+
+    def between(self, low: t.Any, high: t.Any, copy=True, **opts) -> Between:
+        return Between(
+            this=_maybe_copy(self, copy),
+            low=convert(low, copy=copy, **opts),
+            high=convert(high, copy=copy, **opts),
         )
 
     def like(self, other: ExpOrStr) -> Like:
@@ -809,10 +819,10 @@ class Condition(Expression):
         return self._binop(Or, other, reverse=True)
 
     def __neg__(self) -> Neg:
-        return Neg(this=_wrap(self, Binary))
+        return Neg(this=_wrap(self.copy(), Binary))
 
     def __invert__(self) -> Not:
-        return not_(self)
+        return not_(self.copy())
 
 
 class Predicate(Condition):
@@ -2611,7 +2621,7 @@ class Select(Subqueryable):
                 join.set("kind", kind.text)
 
         if on:
-            on = and_(*ensure_collection(on), dialect=dialect, **opts)
+            on = and_(*ensure_collection(on), dialect=dialect, copy=copy, **opts)
             join.set("on", on)
 
         if using:
@@ -3540,14 +3550,20 @@ class Case(Func):
     arg_types = {"this": False, "ifs": True, "default": False}
 
     def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
-        this = self.copy() if copy else self
-        this.append("ifs", If(this=maybe_parse(condition, **opts), true=maybe_parse(then, **opts)))
-        return this
+        instance = _maybe_copy(self, copy)
+        instance.append(
+            "ifs",
+            If(
+                this=maybe_parse(condition, copy=copy, **opts),
+                true=maybe_parse(then, copy=copy, **opts),
+            ),
+        )
+        return instance
 
     def else_(self, condition: ExpOrStr, copy: bool = True, **opts) -> Case:
-        this = self.copy() if copy else self
-        this.set("default", maybe_parse(condition, **opts))
-        return this
+        instance = _maybe_copy(self, copy)
+        instance.set("default", maybe_parse(condition, copy=copy, **opts))
+        return instance
 
 
 class Cast(Func):
@@ -4407,14 +4423,16 @@ def _apply_conjunction_builder(
     if append and existing is not None:
         expressions = [existing.this if into else existing] + list(expressions)
 
-    node = and_(*expressions, dialect=dialect, **opts)
+    node = and_(*expressions, dialect=dialect, copy=copy, **opts)
 
     inst.set(arg, into(this=node) if into else node)
     return inst
 
 
-def _combine(expressions, operator, dialect=None, **opts):
-    expressions = [condition(expression, dialect=dialect, **opts) for expression in expressions]
+def _combine(expressions, operator, dialect=None, copy=True, **opts):
+    expressions = [
+        condition(expression, dialect=dialect, copy=copy, **opts) for expression in expressions
+    ]
     this = expressions[0]
     if expressions[1:]:
         this = _wrap(this, Connector)
@@ -4628,7 +4646,7 @@ def delete(
     return delete_expr
 
 
-def condition(expression, dialect=None, **opts) -> Condition:
+def condition(expression, dialect=None, copy=True, **opts) -> Condition:
     """
     Initialize a logical condition expression.
 
@@ -4647,6 +4665,7 @@ def condition(expression, dialect=None, **opts) -> Condition:
             If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression (in the case that the
             input expression is a SQL string).
+        copy (bool): Whether or not to copy `expression` (only applies to expressions).
         **opts: other options to use to parse the input expressions (again, in the case
             that the input expression is a SQL string).
 
@@ -4657,11 +4676,12 @@ def condition(expression, dialect=None, **opts) -> Condition:
         expression,
         into=Condition,
         dialect=dialect,
+        copy=copy,
         **opts,
     )
 
 
-def and_(*expressions, dialect=None, **opts) -> And:
+def and_(*expressions, dialect=None, copy=True, **opts) -> And:
     """
     Combine multiple conditions with an AND logical operator.
 
@@ -4673,15 +4693,16 @@ def and_(*expressions, dialect=None, **opts) -> And:
         *expressions (str | Expression): the SQL code strings to parse.
             If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression.
+        copy (bool): whether or not to copy `expressions` (only applies to Expressions).
         **opts: other options to use to parse the input expressions.
 
     Returns:
         And: the new condition
     """
-    return _combine(expressions, And, dialect, **opts)
+    return _combine(expressions, And, dialect, copy=copy, **opts)
 
 
-def or_(*expressions, dialect=None, **opts) -> Or:
+def or_(*expressions, dialect=None, copy=True, **opts) -> Or:
     """
     Combine multiple conditions with an OR logical operator.
 
@@ -4693,15 +4714,16 @@ def or_(*expressions, dialect=None, **opts) -> Or:
         *expressions (str | Expression): the SQL code strings to parse.
             If an Expression instance is passed, this is used as-is.
         dialect (str): the dialect used to parse the input expression.
+        copy (bool): whether or not to copy `expressions` (only applies to Expressions).
         **opts: other options to use to parse the input expressions.
 
     Returns:
         Or: the new condition
     """
-    return _combine(expressions, Or, dialect, **opts)
+    return _combine(expressions, Or, dialect, copy=copy, **opts)
 
 
-def not_(expression, dialect=None, **opts) -> Not:
+def not_(expression, dialect=None, copy=True, **opts) -> Not:
     """
     Wrap a condition with a NOT operator.
 
@@ -4721,13 +4743,14 @@ def not_(expression, dialect=None, **opts) -> Not:
     this = condition(
         expression,
         dialect=dialect,
+        copy=copy,
         **opts,
     )
     return Not(this=_wrap(this, Connector))
 
 
-def paren(expression) -> Paren:
-    return Paren(this=expression)
+def paren(expression, copy=True) -> Paren:
+    return Paren(this=_maybe_copy(expression, copy))
 
 
 SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")
@@ -5070,19 +5093,20 @@ def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:
     )
 
 
-def convert(value) -> Expression:
+def convert(value: t.Any, copy: bool = False) -> Expression:
     """Convert a python value into an expression object.
 
     Raises an error if a conversion is not possible.
 
     Args:
-        value (Any): a python object
+        value: A python object.
+        copy: Whether or not to copy `value` (only applies to Expressions and collections).
 
     Returns:
-        Expression: the equivalent expression object
+        Expression: the equivalent expression object.
     """
     if isinstance(value, Expression):
-        return value
+        return _maybe_copy(value, copy)
     if isinstance(value, str):
         return Literal.string(value)
     if isinstance(value, bool):
@@ -5100,13 +5124,13 @@ def convert(value) -> Expression:
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
         return DateStrToDate(this=date_literal)
     if isinstance(value, tuple):
-        return Tuple(expressions=[convert(v) for v in value])
+        return Tuple(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, list):
-        return Array(expressions=[convert(v) for v in value])
+        return Array(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, dict):
         return Map(
-            keys=[convert(k) for k in value],
-            values=[convert(v) for v in value.values()],
+            keys=[convert(k, copy=copy) for k in value],
+            values=[convert(v, copy=copy) for v in value.values()],
         )
     raise ValueError(f"Cannot convert {value}")
 

@@ -60,6 +60,7 @@ def rewrite_between(expression: exp.Expression) -> exp.Expression:
         return exp.and_(
             exp.GTE(this=expression.this.copy(), expression=expression.args["low"]),
             exp.LTE(this=expression.this.copy(), expression=expression.args["high"]),
+            copy=False,
         )
     return expression
 

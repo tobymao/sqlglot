@@ -56,7 +56,9 @@ def _sort_array_reverse(args: t.Sequence) -> exp.Expression:
 
 def _parse_date_diff(args: t.Sequence) -> exp.Expression:
     return exp.DateDiff(
-        this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0),
+        this=seq_get(args, 2),
+        expression=seq_get(args, 1),
+        unit=seq_get(args, 0),
     )
 
 

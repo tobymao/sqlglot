@@ -140,7 +140,7 @@ class TestDuckDB(Validator):
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             write={
                 "duckdb": """SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1""",
-                "trino": "SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1",
+                "trino": """SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             },
         )
         self.validate_all(

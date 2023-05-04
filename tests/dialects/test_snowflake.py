@@ -227,7 +227,7 @@ class TestSnowflake(Validator):
             write={
                 "bigquery": "SELECT UNIX_TO_TIME(1659981729)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729)",
-                "spark": "SELECT FROM_UNIXTIME(1659981729)",
+                "spark": "SELECT CAST(FROM_UNIXTIME(1659981729) AS TIMESTAMP)",
             },
         )
         self.validate_all(
@@ -243,7 +243,7 @@ class TestSnowflake(Validator):
             write={
                 "bigquery": "SELECT UNIX_TO_TIME('1659981729')",
                 "snowflake": "SELECT TO_TIMESTAMP('1659981729')",
-                "spark": "SELECT FROM_UNIXTIME('1659981729')",
+                "spark": "SELECT CAST(FROM_UNIXTIME('1659981729') AS TIMESTAMP)",
             },
         )
         self.validate_all(

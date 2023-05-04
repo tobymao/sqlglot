@@ -42,7 +42,7 @@ def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
     if scale is None:
-        return f"FROM_UNIXTIME({timestamp})"
+        return f"CAST(FROM_UNIXTIME({timestamp}) AS TIMESTAMP)"
     if scale == exp.UnixToTime.SECONDS:
         return f"TIMESTAMP_SECONDS({timestamp})"
     if scale == exp.UnixToTime.MILLIS:

@@ -27,7 +27,7 @@ class TestDuckDB(Validator):
                 "bigquery": "UNIX_TO_TIME(x / 1000)",
                 "duckdb": "TO_TIMESTAMP(x / 1000)",
                 "presto": "FROM_UNIXTIME(x / 1000)",
-                "spark": "FROM_UNIXTIME(x / 1000)",
+                "spark": "CAST(FROM_UNIXTIME(x / 1000) AS TIMESTAMP)",
             },
         )
         self.validate_all(

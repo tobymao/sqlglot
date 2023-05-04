@@ -134,6 +134,14 @@ class TestPresto(Validator):
         self.validate_identity("VAR_POP(a)")
 
         self.validate_all(
+            "SELECT FROM_UNIXTIME(col) FROM tbl",
+            write={
+                "presto": "SELECT FROM_UNIXTIME(col) FROM tbl",
+                "spark": "SELECT CAST(FROM_UNIXTIME(col) AS TIMESTAMP) FROM tbl",
+                "trino": "SELECT FROM_UNIXTIME(col) FROM tbl",
+            },
+        )
+        self.validate_all(
             "DATE_FORMAT(x, '%Y-%m-%d %H:%i:%S')",
             write={
                 "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
@@ -181,7 +189,7 @@ class TestPresto(Validator):
                 "duckdb": "TO_TIMESTAMP(x)",
                 "presto": "FROM_UNIXTIME(x)",
                 "hive": "FROM_UNIXTIME(x)",
-                "spark": "FROM_UNIXTIME(x)",
+                "spark": "CAST(FROM_UNIXTIME(x) AS TIMESTAMP)",
             },
         )
         self.validate_all(

@@ -4747,8 +4747,8 @@ def not_(expression, dialect=None, copy=True, **opts) -> Not:
     return Not(this=_wrap(this, Connector))
 
 
-def paren(expression) -> Paren:
-    return Paren(this=expression)
+def paren(expression, copy=True) -> Paren:
+    return Paren(this=_maybe_copy(expression, copy))
 
 
 SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")

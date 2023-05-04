@@ -47,6 +47,7 @@ class TestOptimizer(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        sqlglot.schema = MappingSchema()
         cls.conn = duckdb.connect()
         cls.conn.execute(
             """

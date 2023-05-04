@@ -476,9 +476,7 @@ FROM v""",
             "UNIX_TIMESTAMP(x)",
             write="spark",
         )
-        self.validate(
-            "UNIX_TO_STR(123, 'y')", "FROM_UNIXTIME(123, 'y')", write="spark"
-        )
+        self.validate("UNIX_TO_STR(123, 'y')", "FROM_UNIXTIME(123, 'y')", write="spark")
         self.validate(
             "UNIX_TO_TIME(123)",
             "CAST(FROM_UNIXTIME(123) AS TIMESTAMP)",

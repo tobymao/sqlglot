@@ -2932,7 +2932,7 @@ class Parser(metaclass=_Parser):
                     else exp.Literal.string(value)
                 )
             else:
-                field = self._parse_star() or self._parse_function() or self._parse_id_var()
+                field = self._parse_star() or self._parse_function(anonymous=True) or self._parse_id_var()
 
             if isinstance(field, exp.Func):
                 # bigquery allows function calls like x.y.count(...)
@@ -3017,7 +3017,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_function(
-        self, functions: t.Optional[t.Dict[str, t.Callable]] = None
+        self, functions: t.Optional[t.Dict[str, t.Callable]] = None, anonymous: bool=False
     ) -> t.Optional[exp.Expression]:
         if not self._curr:
             return None
@@ -3043,7 +3043,7 @@ class Parser(metaclass=_Parser):
 
         parser = self.FUNCTION_PARSERS.get(upper)
 
-        if parser:
+        if parser and not anonymous:
             this = parser(self)
         else:
             subquery_predicate = self.SUBQUERY_PREDICATES.get(token_type)
@@ -3059,7 +3059,7 @@ class Parser(metaclass=_Parser):
             function = functions.get(upper)
             args = self._parse_csv(self._parse_lambda)
 
-            if function:
+            if function and not anonymous:
                 # Clickhouse supports function calls like foo(x, y)(z), so for these we need to also parse the
                 # second parameter list (i.e. "(z)") and the corresponding function will receive both arg lists.
                 if count_params(function) == 2:

@@ -146,7 +146,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT DATE_DIFF('day', DATE '2020-01-01', DATE '2020-01-05')",
             write={
-                "duckdb": "SELECT DATE_DIFF('day', DATE '2020-01-01', DATE '2020-01-05')",
+                "duckdb": "SELECT DATE_DIFF('day', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
                 "trino": "SELECT DATE_DIFF('day', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
             },
         )

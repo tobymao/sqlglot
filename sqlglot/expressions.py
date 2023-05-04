@@ -722,7 +722,7 @@ class Condition(Expression):
         )
 
     def isin(
-        self, *expressions: ExpOrStr, query: t.Optional[ExpOrStr] = None, copy=True, **opts
+        self, *expressions: t.Any, query: t.Optional[ExpOrStr] = None, copy=True, **opts
     ) -> In:
         return In(
             this=_maybe_copy(self, copy),

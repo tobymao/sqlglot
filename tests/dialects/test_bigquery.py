@@ -187,7 +187,6 @@ class TestBigQuery(Validator):
             "current_datetime",
             write={
                 "bigquery": "CURRENT_DATETIME()",
-                "duckdb": "CURRENT_DATETIME()",
                 "presto": "CURRENT_DATETIME()",
                 "hive": "CURRENT_DATETIME()",
                 "spark": "CURRENT_DATETIME()",
@@ -197,7 +196,7 @@ class TestBigQuery(Validator):
             "current_time",
             write={
                 "bigquery": "CURRENT_TIME()",
-                "duckdb": "CURRENT_TIME()",
+                "duckdb": "CURRENT_TIME",
                 "presto": "CURRENT_TIME()",
                 "hive": "CURRENT_TIME()",
                 "spark": "CURRENT_TIME()",
@@ -207,7 +206,7 @@ class TestBigQuery(Validator):
             "current_timestamp",
             write={
                 "bigquery": "CURRENT_TIMESTAMP()",
-                "duckdb": "CURRENT_TIMESTAMP()",
+                "duckdb": "CURRENT_TIMESTAMP",
                 "postgres": "CURRENT_TIMESTAMP",
                 "presto": "CURRENT_TIMESTAMP",
                 "hive": "CURRENT_TIMESTAMP()",
@@ -218,7 +217,7 @@ class TestBigQuery(Validator):
             "current_timestamp()",
             write={
                 "bigquery": "CURRENT_TIMESTAMP()",
-                "duckdb": "CURRENT_TIMESTAMP()",
+                "duckdb": "CURRENT_TIMESTAMP",
                 "postgres": "CURRENT_TIMESTAMP",
                 "presto": "CURRENT_TIMESTAMP",
                 "hive": "CURRENT_TIMESTAMP()",

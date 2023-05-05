@@ -17,11 +17,8 @@ def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
     def _expand_join_constructs(expression: exp.Expression) -> exp.Expression:
         if isinstance(expression, exp.Subquery):
             unnested = expression.unnest()
-
             if isinstance(unnested, exp.Table):
                 expression.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
-                for join in expression.this.args.get("join", []):
-                    join.transform(_expand_join_constructs)
 
         return expression
 

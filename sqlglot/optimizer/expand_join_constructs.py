@@ -16,18 +16,16 @@ def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
 
     (*) See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
     """
-    for scope in traverse_scope(expression):
-        if isinstance(scope.expression, exp.Table):
-            for join in scope.expression.args.get("joins", []):
-                if isinstance(join.this, exp.Subquery):
-                    expand_join_constructs(join.this.unnest())
+    def _expand_join_constructs(expression: exp.Expression) -> exp.Expression:
+        if isinstance(expression, exp.Subquery):
+            unnested = expression.unnest()
 
-            outermost_subquery = t.cast(exp.Expression, scope.expression.parent)
-            while isinstance(outermost_subquery.parent, exp.Subquery):
-                outermost_subquery = outermost_subquery.parent
+            if isinstance(unnested, exp.Table):
+                expression.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
 
-            outermost_subquery.this.replace(
-                exp.select("*").from_(scope.expression.copy(), copy=False)
-            )
+                for join in expression.this.args.get("join", []):
+                    join.transform(_expand_join_constructs)
 
-    return expression
+        return expression
+
+    return expression.transform(_expand_join_constructs)

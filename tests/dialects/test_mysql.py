@@ -12,6 +12,7 @@ class TestMySQL(Validator):
                 "duckdb": "CREATE TABLE z (a INT)",
                 "mysql": "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
                 "spark": "CREATE TABLE z (a INT) COMMENT 'x'",
+                "sqlite": "CREATE TABLE z (a INTEGER)",
             },
         )
         self.validate_all(

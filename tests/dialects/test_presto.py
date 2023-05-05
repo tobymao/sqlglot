@@ -591,6 +591,14 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_all(
+            "JSON_FORMAT(JSON 'x')",
+            write={
+                "presto": "JSON_FORMAT(CAST('x' AS JSON))",
+                "spark": "TO_JSON('x')",
+            },
+        )
+
     def test_encode_decode(self):
         self.validate_all(
             "TO_UTF8(x)",

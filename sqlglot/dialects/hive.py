@@ -81,6 +81,19 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     return f"{diff_sql}{multiplier_sql}"
 
 
+def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
+    this = expression.this
+
+    if not this.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        annotate_types(this)
+
+    if this.type.is_type(exp.DataType.Type.JSON):
+        return self.sql(this)
+    return self.func("TO_JSON", this, expression.args.get("options"))
+
+
 def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("Hive SORT_ARRAY does not support a comparator")
@@ -306,7 +319,7 @@ class Hive(Dialect):
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
-            exp.JSONFormat: rename_func("TO_JSON"),
+            exp.JSONFormat: _json_format_sql,
             exp.Map: var_map_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,

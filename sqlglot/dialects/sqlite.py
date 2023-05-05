@@ -88,8 +88,8 @@ class SQLite(Dialect):
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
-            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            k: exp.Properties.Location.UNSUPPORTED
+            for k, v in generator.Generator.PROPERTIES_LOCATION.items()
         }
 
         LIMIT_FETCH = "LIMIT"

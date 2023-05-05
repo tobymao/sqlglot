@@ -385,7 +385,7 @@ class Generator:
         expression: t.Optional[exp.Expression] = None,
         comments: t.Optional[t.List[str]] = None,
     ) -> str:
-        comments = (comments or (expression and expression.comments)) if self._comments else None  # type: ignore
+        comments = ((expression and expression.comments) if comments is None else comments) if self._comments else None  # type: ignore
 
         if not comments or isinstance(expression, exp.Binary):
             return sql
@@ -1841,7 +1841,7 @@ class Generator:
             return self.binary(expression, op)
 
         sqls = tuple(
-            self.maybe_comment(self.sql(e), e, e.parent.comments) if i != 1 else self.sql(e)
+            self.maybe_comment(self.sql(e), e, e.parent.comments or []) if i != 1 else self.sql(e)
             for i, e in enumerate(expression.flatten(unnest=False))
         )
 

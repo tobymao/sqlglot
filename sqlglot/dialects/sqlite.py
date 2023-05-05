@@ -22,6 +22,40 @@ def _date_add_sql(self, expression):
     return self.func("DATE", expression.this, modifier)
 
 
+def _transform_create(expression: exp.Expression) -> exp.Expression:
+    """Move primary key to a column and enforce auto_increment on primary keys."""
+    schema = expression.this
+
+    if isinstance(expression, exp.Create) and isinstance(schema, exp.Schema):
+        defs = {}
+        primary_key = None
+
+        for e in schema.expressions:
+            if isinstance(e, exp.ColumnDef):
+                defs[e.name] = e
+            elif isinstance(e, exp.PrimaryKey):
+                primary_key = e
+
+        if primary_key and len(primary_key.expressions) == 1:
+            column = defs[primary_key.expressions[0].name]
+            column.append(
+                "constraints", exp.ColumnConstraint(kind=exp.PrimaryKeyColumnConstraint())
+            )
+            schema.expressions.remove(primary_key)
+        else:
+            for column in defs.values():
+                auto_increment = None
+                for constraint in column.constraints.copy():
+                    if isinstance(constraint.kind, exp.PrimaryKeyColumnConstraint):
+                        break
+                    if isinstance(constraint.kind, exp.AutoIncrementColumnConstraint):
+                        auto_increment = constraint
+                if auto_increment:
+                    column.constraints.remove(auto_increment)
+
+    return expression
+
+
 class SQLite(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -66,6 +100,7 @@ class SQLite(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.CountIf: count_if_to_sum,
+            exp.Create: transforms.preprocess([_transform_create]),
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
             exp.CurrentTime: lambda *_: "CURRENT_TIME",
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",

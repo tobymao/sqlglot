@@ -41,12 +41,17 @@ def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.V
     if not isinstance(expression.unnest().parent, exp.From):
         return self.values_sql(expression)
 
+    alias = expression.args.get("alias")
+
     structs = [
         exp.Struct(
             expressions=[
                 exp.alias_(value, column_name)
                 for value, column_name in zip(
-                    t.expressions, expression.args["alias"].args["columns"]
+                    t.expressions,
+                    alias.columns
+                    if alias and alias.columns
+                    else (f"_c{i}" for i in range(len(t.expressions))),
                 )
             ]
         )

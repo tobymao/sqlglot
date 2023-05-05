@@ -5023,29 +5023,20 @@ def values(
         alias: optional alias
         columns: Optional list of ordered column names or ordered dictionary of column names to types.
          If either are provided then an alias is also required.
-         If a dictionary is provided then the first column of the values will be casted to the expected type
-         in order to help with type inference.
 
     Returns:
         Values: the Values expression object
     """
     if columns and not alias:
         raise ValueError("Alias is required when providing columns")
-    table_alias = (
-        TableAlias(this=to_identifier(alias), columns=[to_identifier(x) for x in columns])
-        if columns
-        else TableAlias(this=to_identifier(alias) if alias else None)
-    )
-    expressions = [convert(tup) for tup in values]
-    if columns and isinstance(columns, dict):
-        types = list(columns.values())
-        expressions[0].set(
-            "expressions",
-            [cast(x, types[i]) for i, x in enumerate(expressions[0].expressions)],
-        )
+
     return Values(
-        expressions=expressions,
-        alias=table_alias,
+        expressions=[convert(tup) for tup in values],
+        alias=(
+            TableAlias(this=to_identifier(alias), columns=[to_identifier(x) for x in columns])
+            if columns
+            else (TableAlias(this=to_identifier(alias)) if alias else None)
+        ),
     )
 
 

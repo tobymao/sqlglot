@@ -70,30 +70,17 @@ class _Dialect(type):
             klass.tokenizer_class._IDENTIFIERS.items()
         )[0]
 
-        if (
-            klass.tokenizer_class._BIT_STRINGS
-            and exp.BitString not in klass.generator_class.TRANSFORMS
-        ):
-            bs_start, bs_end = list(klass.tokenizer_class._BIT_STRINGS.items())[0]
-            klass.generator_class.TRANSFORMS[
-                exp.BitString
-            ] = lambda self, e: f"{bs_start}{int(self.sql(e, 'this')):b}{bs_end}"
-        if (
-            klass.tokenizer_class._HEX_STRINGS
-            and exp.HexString not in klass.generator_class.TRANSFORMS
-        ):
-            hs_start, hs_end = list(klass.tokenizer_class._HEX_STRINGS.items())[0]
-            klass.generator_class.TRANSFORMS[
-                exp.HexString
-            ] = lambda self, e: f"{hs_start}{int(self.sql(e, 'this')):X}{hs_end}"
-        if (
-            klass.tokenizer_class._BYTE_STRINGS
-            and exp.ByteString not in klass.generator_class.TRANSFORMS
-        ):
-            be_start, be_end = list(klass.tokenizer_class._BYTE_STRINGS.items())[0]
-            klass.generator_class.TRANSFORMS[
-                exp.ByteString
-            ] = lambda self, e: f"{be_start}{self.sql(e, 'this')}{be_end}"
+        klass.bit_start, klass.bit_end = seq_get(
+            list(klass.tokenizer_class._BIT_STRINGS.items()), 0
+        ) or (None, None)
+
+        klass.hex_start, klass.hex_end = seq_get(
+            list(klass.tokenizer_class._HEX_STRINGS.items()), 0
+        ) or (None, None)
+
+        klass.byte_start, klass.byte_end = seq_get(
+            list(klass.tokenizer_class._BYTE_STRINGS.items()), 0
+        ) or (None, None)
 
         return klass
 
@@ -199,6 +186,12 @@ class Dialect(metaclass=_Dialect):
             **{
                 "quote_start": self.quote_start,
                 "quote_end": self.quote_end,
+                "bit_start": self.bit_start,
+                "bit_end": self.bit_end,
+                "hex_start": self.hex_start,
+                "hex_end": self.hex_end,
+                "byte_start": self.byte_start,
+                "byte_end": self.byte_end,
                 "identifier_start": self.identifier_start,
                 "identifier_end": self.identifier_end,
                 "string_escape": self.tokenizer_class.STRING_ESCAPES[0],

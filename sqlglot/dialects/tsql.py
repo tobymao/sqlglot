@@ -259,8 +259,8 @@ class TSQL(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]")]
-
         QUOTES = ["'", '"']
+        HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

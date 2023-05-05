@@ -52,6 +52,8 @@ class Redshift(Postgres):
             return this
 
     class Tokenizer(Postgres.Tokenizer):
+        BIT_STRINGS = []
+        HEX_STRINGS = []
         STRING_ESCAPES = ["\\"]
 
         KEYWORDS = {

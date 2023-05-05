@@ -988,9 +988,9 @@ class Tokenizer(metaclass=_Tokenizer):
         if self._char == "0":
             peek = self._peek.upper()
             if peek == "B":
-                return self._scan_bits()
+                return self._scan_bits() if self._BIT_STRINGS else self._add(TokenType.NUMBER)
             elif peek == "X":
-                return self._scan_hex()
+                return self._scan_hex() if self._HEX_STRINGS else self._add(TokenType.NUMBER)
 
         decimal = False
         scientific = 0

@@ -2246,6 +2246,8 @@ class Select(Subqueryable):
         "expressions": False,
         "hint": False,
         "distinct": False,
+        "struct": False,  # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#return_query_results_as_a_value_table
+        "value": False,
         "into": False,
         "from": False,
         **QUERY_MODIFIERS,

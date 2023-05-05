@@ -1802,14 +1802,15 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.SELECT):
             comments = self._prev_comments
 
+            hint = self._parse_hint()
+            all_ = self._match(TokenType.ALL)
+            distinct = self._match(TokenType.DISTINCT)
+
             kind = (
                 self._match(TokenType.ALIAS)
                 and self._match_texts(("STRUCT", "VALUE"))
                 and self._prev.text
             )
-            hint = self._parse_hint()
-            all_ = self._match(TokenType.ALL)
-            distinct = self._match(TokenType.DISTINCT)
 
             if distinct:
                 distinct = self.expression(

@@ -25,6 +25,12 @@ class Generator:
         quote_end (str): specifies which ending character to use to delimit quotes. Default: '.
         identifier_start (str): specifies which starting character to use to delimit identifiers. Default: ".
         identifier_end (str): specifies which ending character to use to delimit identifiers. Default: ".
+        bit_start (str): specifies which starting character to use to delimit bit literals. Default: None.
+        bit_end (str): specifies which ending character to use to delimit bit literals. Default: None.
+        hex_start (str): specifies which starting character to use to delimit hex literals. Default: None.
+        hex_end (str): specifies which ending character to use to delimit hex literals. Default: None.
+        byte_start (str): specifies which starting character to use to delimit byte literals. Default: None.
+        byte_end (str): specifies which ending character to use to delimit byte literals. Default: None.
         identify (bool | str): 'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.
         normalize (bool): if set to True all identifiers will lower cased
         string_escape (str): specifies a string escape character. Default: '.
@@ -227,6 +233,12 @@ class Generator:
         "quote_end",
         "identifier_start",
         "identifier_end",
+        "bit_start",
+        "bit_end",
+        "hex_start",
+        "hex_end",
+        "byte_start",
+        "byte_end",
         "identify",
         "normalize",
         "string_escape",
@@ -258,6 +270,12 @@ class Generator:
         quote_end=None,
         identifier_start=None,
         identifier_end=None,
+        bit_start=None,
+        bit_end=None,
+        hex_start=None,
+        hex_end=None,
+        byte_start=None,
+        byte_end=None,
         identify=False,
         normalize=False,
         string_escape=None,
@@ -284,6 +302,12 @@ class Generator:
         self.quote_end = quote_end or "'"
         self.identifier_start = identifier_start or '"'
         self.identifier_end = identifier_end or '"'
+        self.bit_start = bit_start
+        self.bit_end = bit_end
+        self.hex_start = hex_start
+        self.hex_end = hex_end
+        self.byte_start = byte_start
+        self.byte_end = byte_end
         self.identify = identify
         self.normalize = normalize
         self.string_escape = string_escape or "'"
@@ -714,6 +738,24 @@ class Generator:
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
         return f"{alias}{columns}"
+
+    def bitstring_sql(self, expression: exp.BitString) -> str:
+        this = self.sql(expression, "this")
+        if self.bit_start or self.bit_end:
+            return f"{self.bit_start}{this}{self.bit_end}"
+        return f"{int(this, 2)}"
+
+    def hexstring_sql(self, expression: exp.HexString) -> str:
+        this = self.sql(expression, "this")
+        if self.hex_start or self.hex_end:
+            return f"{self.hex_start}{this}{self.hex_end}"
+        return f"{int(this, 16)}"
+
+    def bytestring_sql(self, expression: exp.ByteString) -> str:
+        this = self.sql(expression, "this")
+        if self.byte_start or self.byte_end:
+            return f"{self.byte_start}{this}{self.byte_end}"
+        return this
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         type_value = expression.this

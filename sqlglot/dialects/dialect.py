@@ -70,38 +70,17 @@ class _Dialect(type):
             klass.tokenizer_class._IDENTIFIERS.items()
         )[0]
 
-        tokenizer_dict = klass.tokenizer_class.__dict__
-        tokenizer_transforms = klass.generator_class.TRANSFORMS
+        klass.bit_start, klass.bit_end = None, None
+        if klass.tokenizer_class.__dict__.get("BIT_STRINGS"):
+            klass.bit_start, klass.bit_end = list(klass.tokenizer_class._BIT_STRINGS.items())[0]
 
-        if exp.BitString not in tokenizer_transforms and "bitstring_sql" not in tokenizer_dict:
-            bit_strings = tokenizer_dict.get("_BIT_STRINGS")
-            if bit_strings:
-                bs_start, bs_end = list(bit_strings.items())[0]
-                bitstring_sql = lambda self, e: f"{bs_start}{self.sql(e, 'this')}{bs_end}"
-            else:
-                bitstring_sql = lambda self, e: f"{int(self.sql(e, 'this'), 2)}"
+        klass.hex_start, klass.hex_end = None, None
+        if klass.tokenizer_class.__dict__.get("HEX_STRINGS"):
+            klass.hex_start, klass.hex_end = list(klass.tokenizer_class._HEX_STRINGS.items())[0]
 
-            setattr(klass.generator_class, "bitstring_sql", bitstring_sql)
-
-        if exp.HexString not in tokenizer_transforms and "hexstring_sql" not in tokenizer_dict:
-            hex_strings = tokenizer_dict.get("_HEX_STRINGS")
-            if hex_strings:
-                hs_start, hs_end = list(hex_strings.items())[0]
-                hexstring_sql = lambda self, e: f"{hs_start}{self.sql(e, 'this')}{hs_end}"
-            else:
-                hexstring_sql = lambda self, e: f"{int(self.sql(e, 'this'), 16)}"
-
-            setattr(klass.generator_class, "hexstring_sql", hexstring_sql)
-
-        if exp.ByteString not in tokenizer_transforms and "bytestring_sql" not in tokenizer_dict:
-            byte_strings = tokenizer_dict.get("_BYTE_STRINGS")
-            if byte_strings:
-                be_start, be_end = list(byte_strings.items())[0]
-                bytestring_sql = lambda self, e: f"{be_start}{self.sql(e, 'this')}{be_end}"
-            else:
-                bytestring_sql = lambda self, e: self.sql(e, "this")
-
-            setattr(klass.generator_class, "bytestring_sql", bytestring_sql)
+        klass.byte_start, klass.byte_end = None, None
+        if klass.tokenizer_class.__dict__.get("BYTE_STRINGS"):
+            klass.byte_start, klass.byte_end = list(klass.tokenizer_class._BYTE_STRINGS.items())[0]
 
         return klass
 
@@ -207,6 +186,12 @@ class Dialect(metaclass=_Dialect):
             **{
                 "quote_start": self.quote_start,
                 "quote_end": self.quote_end,
+                "bit_start": self.bit_start,
+                "bit_end": self.bit_end,
+                "hex_start": self.hex_start,
+                "hex_end": self.hex_end,
+                "byte_start": self.byte_start,
+                "byte_end": self.byte_end,
                 "identifier_start": self.identifier_start,
                 "identifier_end": self.identifier_end,
                 "string_escape": self.tokenizer_class.STRING_ESCAPES[0],

@@ -127,18 +127,20 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT {'a': 1} AS x")
         self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")
         self.validate_identity("SELECT {'x': 1, 'y': 2, 'z': 3}")
-        self.validate_identity(
-            "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
-        )
         self.validate_identity("SELECT {'key1': 'string', 'key2': 1, 'key3': 12.345}")
         self.validate_identity("SELECT ROW(x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
         self.validate_identity("SELECT (x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y)")
         self.validate_identity("SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a)")
         self.validate_identity("ATTACH DATABASE ':memory:' AS new_database")
         self.validate_identity(
+            "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'}"
+        )
+        self.validate_identity(
             "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a)"
         )
 
+        self.validate_all("0b1010", write={"": "0 AS b1010"})
+        self.validate_all("0x1010", write={"": "0 AS x1010"})
         self.validate_all(
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             write={

@@ -988,9 +988,9 @@ class Tokenizer(metaclass=_Tokenizer):
         if self._char == "0":
             peek = self._peek.upper()
             if peek == "B":
-                return self._scan_bits()
+                return self._scan_bits() if self._BIT_STRINGS else self._add(TokenType.NUMBER)
             elif peek == "X":
-                return self._scan_hex()
+                return self._scan_hex() if self._HEX_STRINGS else self._add(TokenType.NUMBER)
 
         decimal = False
         scientific = 0
@@ -1033,7 +1033,9 @@ class Tokenizer(metaclass=_Tokenizer):
         self._advance()
         value = self._extract_value()
         try:
-            self._add(TokenType.BIT_STRING, f"{int(value, 2)}")
+            # If `value` can't be converted to a binary, fallback to tokenizing it as an identifier
+            int(value, 2)
+            self._add(TokenType.BIT_STRING, value[2:])  # Drop the 0b
         except ValueError:
             self._add(TokenType.IDENTIFIER)
 
@@ -1041,7 +1043,9 @@ class Tokenizer(metaclass=_Tokenizer):
         self._advance()
         value = self._extract_value()
         try:
-            self._add(TokenType.HEX_STRING, f"{int(value, 16)}")
+            # If `value` can't be converted to a hex, fallback to tokenizing it as an identifier
+            int(value, 16)
+            self._add(TokenType.HEX_STRING, value[2:])  # Drop the 0x
         except ValueError:
             self._add(TokenType.IDENTIFIER)
 
@@ -1066,7 +1070,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._add(TokenType.NATIONAL if quote[0].upper() == "N" else TokenType.STRING, text)
         return True
 
-    # X'1234, b'0110', E'\\\\\' etc.
+    # X'1234', b'0110', E'\\\\\' etc.
     def _scan_formatted_string(self, string_start: str) -> bool:
         if string_start in self._HEX_STRINGS:
             delimiters = self._HEX_STRINGS
@@ -1087,16 +1091,15 @@ class Tokenizer(metaclass=_Tokenizer):
         string_end = delimiters[string_start]
         text = self._extract_string(string_end)
 
-        if base is None:
-            self._add(token_type, text)
-        else:
+        if base:
             try:
-                self._add(token_type, f"{int(text, base)}")
+                int(text, base)
             except:
                 raise RuntimeError(
                     f"Numeric string contains invalid characters from {self._line}:{self._start}"
                 )
 
+        self._add(token_type, text)
         return True
 
     def _scan_identifier(self, identifier_end: str) -> None:

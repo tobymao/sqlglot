@@ -41,6 +41,8 @@ class Databricks(Spark):
         PARAMETER_TOKEN = "$"
 
     class Tokenizer(Spark.Tokenizer):
+        HEX_STRINGS = []
+
         SINGLE_TOKENS = {
             **Spark.Tokenizer.SINGLE_TOKENS,
             "$": TokenType.PARAMETER,

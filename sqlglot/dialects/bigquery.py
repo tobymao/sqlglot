@@ -136,6 +136,7 @@ class BigQuery(Dialect):
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
         HEX_STRINGS = [("0x", ""), ("0X", "")]
+        BYTE_STRINGS = [("b'", "'"), ("B'", "'")]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

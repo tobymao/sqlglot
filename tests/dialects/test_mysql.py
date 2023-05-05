@@ -25,6 +25,19 @@ class TestMySQL(Validator):
             "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE SET x.id = 1"
         )
 
+        self.validate_all(
+            "CREATE TABLE x (id int not null auto_increment, primary key (id))",
+            write={
+                "sqlite": "CREATE TABLE x (id INTEGER NOT NULL AUTOINCREMENT PRIMARY KEY)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE x (id int not null auto_increment)",
+            write={
+                "sqlite": "CREATE TABLE x (id INTEGER NOT NULL)",
+            },
+        )
+
     def test_identity(self):
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
         self.validate_identity("x ->> '$.name'")

@@ -1083,6 +1083,10 @@ class ColumnDef(Expression):
         "position": False,
     }
 
+    @property
+    def constraints(self) -> t.List[ColumnConstraint]:
+        return self.args.get("constraints") or []
+
 
 class AlterColumn(Expression):
     arg_types = {
@@ -1109,6 +1113,10 @@ class Comment(Expression):
 
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
+
+    @property
+    def kind(self) -> ColumnConstraintKind:
+        return self.args["kind"]
 
 
 class ColumnConstraintKind(Expression):

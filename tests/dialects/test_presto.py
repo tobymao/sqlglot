@@ -105,6 +105,13 @@ class TestPresto(Validator):
                 "spark": "SIZE(x)",
             },
         )
+        self.validate_all(
+            "ARRAY_JOIN(x, '-', 'a')",
+            write={
+                "hive": "CONCAT_WS('-', x)",
+                "spark": "ARRAY_JOIN(x, '-', 'a')",
+            },
+        )
 
     def test_interval_plural_to_singular(self):
         # Microseconds, weeks and quarters are not supported in Presto/Trino INTERVAL literals

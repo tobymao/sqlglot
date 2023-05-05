@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -273,8 +275,7 @@ class Postgres(Dialect):
             TokenType.HASH: exp.BitwiseXor,
         }
 
-        FACTOR = {
-            **parser.Parser.FACTOR,
+        EXPONENT = {
             TokenType.CARET: exp.Pow,
         }
 
@@ -284,6 +285,12 @@ class Postgres(Dialect):
             TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
             TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
         }
+
+        def _parse_factor(self) -> t.Optional[exp.Expression]:
+            return self._parse_tokens(self._parse_exponent, self.FACTOR)
+
+        def _parse_exponent(self) -> t.Optional[exp.Expression]:
+            return self._parse_tokens(self._parse_unary, self.EXPONENT)
 
         def _parse_date_part(self) -> exp.Expression:
             part = self._parse_type()

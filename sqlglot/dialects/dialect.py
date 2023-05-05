@@ -70,17 +70,17 @@ class _Dialect(type):
             klass.tokenizer_class._IDENTIFIERS.items()
         )[0]
 
-        klass.bit_start, klass.bit_end = None, None
-        if klass.tokenizer_class.__dict__.get("BIT_STRINGS"):
-            klass.bit_start, klass.bit_end = list(klass.tokenizer_class._BIT_STRINGS.items())[0]
+        klass.bit_start, klass.bit_end = seq_get(
+            list(klass.tokenizer_class._BIT_STRINGS.items()), 0
+        ) or (None, None)
 
-        klass.hex_start, klass.hex_end = None, None
-        if klass.tokenizer_class.__dict__.get("HEX_STRINGS"):
-            klass.hex_start, klass.hex_end = list(klass.tokenizer_class._HEX_STRINGS.items())[0]
+        klass.hex_start, klass.hex_end = seq_get(
+            list(klass.tokenizer_class._HEX_STRINGS.items()), 0
+        ) or (None, None)
 
-        klass.byte_start, klass.byte_end = None, None
-        if klass.tokenizer_class.__dict__.get("BYTE_STRINGS"):
-            klass.byte_start, klass.byte_end = list(klass.tokenizer_class._BYTE_STRINGS.items())[0]
+        klass.byte_start, klass.byte_end = seq_get(
+            list(klass.tokenizer_class._BYTE_STRINGS.items()), 0
+        ) or (None, None)
 
         return klass
 

@@ -13,14 +13,12 @@ def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
 
     (*) See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
     """
-
     def _expand_join_constructs(expression: exp.Expression) -> exp.Expression:
         if isinstance(expression, exp.Subquery):
             unnested = expression.unnest()
 
             if isinstance(unnested, exp.Table):
                 expression.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
-
                 for join in expression.this.args.get("join", []):
                     join.transform(_expand_join_constructs)
 

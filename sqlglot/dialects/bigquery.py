@@ -39,18 +39,21 @@ def _date_add_sql(
 
 def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.Values) -> str:
     if not isinstance(expression.unnest().parent, exp.From):
-        expression = t.cast(exp.Values, transforms.remove_precision_parameterized_types(expression))
         return self.values_sql(expression)
-    rows = [tuple_exp.expressions for tuple_exp in expression.find_all(exp.Tuple)]
-    structs = []
-    for row in rows:
-        aliases = [
-            exp.alias_(value, column_name)
-            for value, column_name in zip(row, expression.args["alias"].args["columns"])
-        ]
-        structs.append(exp.Struct(expressions=aliases))
-    unnest_exp = exp.Unnest(expressions=[exp.Array(expressions=structs)])
-    return self.unnest_sql(unnest_exp)
+
+    structs = [
+        exp.Struct(
+            expressions=[
+                exp.alias_(value, column_name)
+                for value, column_name in zip(
+                    t.expressions, expression.args["alias"].args["columns"]
+                )
+            ]
+        )
+        for t in expression.find_all(exp.Tuple)
+    ]
+
+    return self.unnest_sql(exp.Unnest(expressions=[exp.Array(expressions=structs)]))
 
 
 def _returnsproperty_sql(self: generator.Generator, expression: exp.ReturnsProperty) -> str:

@@ -204,6 +204,7 @@ class Spark2(Hive):
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
         }
+        TRANSFORMS.pop(exp.ArrayJoin)
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
 

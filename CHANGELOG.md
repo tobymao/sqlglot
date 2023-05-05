@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v12.1.0] - 2023-05-05
+### :bug: Bug Fixes
+- [`0b46fa6`](https://github.com/tobymao/sqlglot/commit/0b46fa69f440e3756266f22c25136efc503209c2) - remove bigquery workaround for values type inference *(commit by [@tobymao](https://github.com/tobymao))*
+- [`dfae784`](https://github.com/tobymao/sqlglot/commit/dfae784159499159602b6d518d48f0a501e32e25) - sqlite no table options closes [#1553](https://github.com/tobymao/sqlglot/pull/1553) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`aef9cfa`](https://github.com/tobymao/sqlglot/commit/aef9cfa9c4dd29ac637d23737b74b0239f253a84) - double json spark closes [#1547](https://github.com/tobymao/sqlglot/pull/1547) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`7e5cede`](https://github.com/tobymao/sqlglot/commit/7e5cede6afc906dcb00eaaf5e9061a042f18a912) - cleanup bigquery transform *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v12.0.0] - 2023-05-04
 ### :sparkles: New Features
 - [`862cbeb`](https://github.com/tobymao/sqlglot/commit/862cbeb2f48ccc004fbc06eacd55b331faeeac9b) - Use alternative transform for dialects that do not support distinct on *(PR [#1524](https://github.com/tobymao/sqlglot/pull/1524) by [@crericha](https://github.com/crericha))*
@@ -81,3 +91,4 @@ Changelog
 
 [v11.7.0]: https://github.com/tobymao/sqlglot/compare/v11.6.3...v11.7.0
 [v12.0.0]: https://github.com/tobymao/sqlglot/compare/v11.7.1...v12.0.0
+[v12.1.0]: https://github.com/tobymao/sqlglot/compare/v12.0.0...v12.1.0

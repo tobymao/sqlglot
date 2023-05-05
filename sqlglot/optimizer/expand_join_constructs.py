@@ -1,5 +1,8 @@
+import typing as t
+
 from sqlglot import exp
 from sqlglot.optimizer.scope import traverse_scope
+
 
 def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
     """
@@ -19,7 +22,7 @@ def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
                 if isinstance(join.this, exp.Subquery):
                     expand_join_constructs(join.this.unnest())
 
-            outermost_subquery = scope.expression.parent
+            outermost_subquery = t.cast(exp.Expression, scope.expression.parent)
             while isinstance(outermost_subquery.parent, exp.Subquery):
                 outermost_subquery = outermost_subquery.parent
 

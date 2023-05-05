@@ -22,6 +22,8 @@ class ClickHouse(Dialect):
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         IDENTIFIERS = ['"', "`"]
+        BIT_STRINGS = [("0b", "")]
+        HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

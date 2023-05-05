@@ -70,30 +70,38 @@ class _Dialect(type):
             klass.tokenizer_class._IDENTIFIERS.items()
         )[0]
 
-        if (
-            klass.tokenizer_class._BIT_STRINGS
-            and exp.BitString not in klass.generator_class.TRANSFORMS
-        ):
-            bs_start, bs_end = list(klass.tokenizer_class._BIT_STRINGS.items())[0]
-            klass.generator_class.TRANSFORMS[
-                exp.BitString
-            ] = lambda self, e: f"{bs_start}{self.sql(e, 'this')}{bs_end}"
-        if (
-            klass.tokenizer_class._HEX_STRINGS
-            and exp.HexString not in klass.generator_class.TRANSFORMS
-        ):
-            hs_start, hs_end = list(klass.tokenizer_class._HEX_STRINGS.items())[0]
-            klass.generator_class.TRANSFORMS[
-                exp.HexString
-            ] = lambda self, e: f"{hs_start}{self.sql(e, 'this')}{hs_end}"
-        if (
-            klass.tokenizer_class._BYTE_STRINGS
-            and exp.ByteString not in klass.generator_class.TRANSFORMS
-        ):
-            be_start, be_end = list(klass.tokenizer_class._BYTE_STRINGS.items())[0]
-            klass.generator_class.TRANSFORMS[
-                exp.ByteString
-            ] = lambda self, e: f"{be_start}{self.sql(e, 'this')}{be_end}"
+        tokenizer_dict = klass.tokenizer_class.__dict__
+        tokenizer_transforms = klass.generator_class.TRANSFORMS
+
+        if exp.BitString not in tokenizer_transforms and "bitstring_sql" not in tokenizer_dict:
+            bit_strings = tokenizer_dict.get("_BIT_STRINGS")
+            if bit_strings:
+                bs_start, bs_end = list(bit_strings.items())[0]
+                bitstring_sql = lambda self, e: f"{bs_start}{self.sql(e, 'this')}{bs_end}"
+            else:
+                bitstring_sql = lambda self, e: f"{int(self.sql(e, 'this'), 2)}"
+
+            setattr(klass.generator_class, "bitstring_sql", bitstring_sql)
+
+        if exp.HexString not in tokenizer_transforms and "hexstring_sql" not in tokenizer_dict:
+            hex_strings = tokenizer_dict.get("_HEX_STRINGS")
+            if hex_strings:
+                hs_start, hs_end = list(hex_strings.items())[0]
+                hexstring_sql = lambda self, e: f"{hs_start}{self.sql(e, 'this')}{hs_end}"
+            else:
+                hexstring_sql = lambda self, e: f"{int(self.sql(e, 'this'), 16)}"
+
+            setattr(klass.generator_class, "hexstring_sql", hexstring_sql)
+
+        if exp.ByteString not in tokenizer_transforms and "bytestring_sql" not in tokenizer_dict:
+            byte_strings = tokenizer_dict.get("_BYTE_STRINGS")
+            if byte_strings:
+                be_start, be_end = list(byte_strings.items())[0]
+                bytestring_sql = lambda self, e: f"{be_start}{self.sql(e, 'this')}{be_end}"
+            else:
+                bytestring_sql = lambda self, e: self.sql(e, "this")
+
+            setattr(klass.generator_class, "bytestring_sql", bytestring_sql)
 
         return klass
 

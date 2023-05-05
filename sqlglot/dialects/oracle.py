@@ -123,12 +123,10 @@ class Oracle(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
-            exp.BitString: lambda self, e: f"{int(e.this, 2)}",
             exp.DateStrToDate: lambda self, e: self.func(
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.HexString: lambda self, e: f"{int(e.this, 16)}",
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.ILike: no_ilike_sql,
             exp.IfNull: rename_func("NVL"),

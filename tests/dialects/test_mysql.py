@@ -150,58 +150,80 @@ class TestMySQL(Validator):
         )
 
     def test_hexadecimal_literal(self):
-        self.validate_all(
-            "SELECT 0xCC",
-            write={
-                "mysql": "SELECT x'CC'",
-                "sqlite": "SELECT x'CC'",
-                "spark": "SELECT X'CC'",
-                "trino": "SELECT X'CC'",
-                "bigquery": "SELECT 0xCC",
-                "oracle": "SELECT 204",
-            },
-        )
-        self.validate_all(
-            "SELECT 0x0000CC",
-            write={
-                "mysql": "SELECT x'0000CC'",
-                "sqlite": "SELECT x'0000CC'",
-                "spark": "SELECT X'0000CC'",
-                "trino": "SELECT X'0000CC'",
-                "bigquery": "SELECT 0x0000CC",
-                "oracle": "SELECT 204",
-            },
-        )
-        self.validate_all(
-            "SELECT X'1A'",
-            write={
-                "mysql": "SELECT x'1A'",
-            },
-        )
-        self.validate_all(
-            "SELECT 0xz",
-            write={
-                "mysql": "SELECT `0xz`",
-            },
-        )
+        write_CC = {
+            "bigquery": "SELECT 0xCC",
+            "clickhouse": "SELECT 0xCC",
+            "databricks": "SELECT 204",
+            "drill": "SELECT 204",
+            "duckdb": "SELECT 204",
+            "hive": "SELECT 204",
+            "mysql": "SELECT x'CC'",
+            "oracle": "SELECT 204",
+            "postgres": "SELECT x'CC'",
+            "presto": "SELECT 204",
+            "redshift": "SELECT 204",
+            "snowflake": "SELECT x'CC'",
+            "spark": "SELECT X'CC'",
+            "sqlite": "SELECT x'CC'",
+            "starrocks": "SELECT x'CC'",
+            "tableau": "SELECT 204",
+            "teradata": "SELECT 204",
+            "trino": "SELECT X'CC'",
+            "tsql": "SELECT 0xCC",
+        }
+        write_CC_with_leading_zeros = {
+            "bigquery": "SELECT 0x0000CC",
+            "clickhouse": "SELECT 0x0000CC",
+            "databricks": "SELECT 204",
+            "drill": "SELECT 204",
+            "duckdb": "SELECT 204",
+            "hive": "SELECT 204",
+            "mysql": "SELECT x'0000CC'",
+            "oracle": "SELECT 204",
+            "postgres": "SELECT x'0000CC'",
+            "presto": "SELECT 204",
+            "redshift": "SELECT 204",
+            "snowflake": "SELECT x'0000CC'",
+            "spark": "SELECT X'0000CC'",
+            "sqlite": "SELECT x'0000CC'",
+            "starrocks": "SELECT x'0000CC'",
+            "tableau": "SELECT 204",
+            "teradata": "SELECT 204",
+            "trino": "SELECT X'0000CC'",
+            "tsql": "SELECT 0x0000CC",
+        }
+
+        self.validate_all("SELECT X'1A'", write={"mysql": "SELECT x'1A'"})
+        self.validate_all("SELECT 0xz", write={"mysql": "SELECT `0xz`"})
+        self.validate_all("SELECT 0xCC", write=write_CC)
+        self.validate_all("SELECT x'CC'", write=write_CC)
+        self.validate_all("SELECT 0x0000CC", write=write_CC_with_leading_zeros)
+        self.validate_all("SELECT x'0000CC'", write=write_CC_with_leading_zeros)
 
     def test_bits_literal(self):
-        self.validate_all(
-            "SELECT 0b1011",
-            write={
-                "mysql": "SELECT b'1011'",
-                "postgres": "SELECT b'1011'",
-                "oracle": "SELECT 11",
-            },
-        )
-        self.validate_all(
-            "SELECT B'1011'",
-            write={
-                "mysql": "SELECT b'1011'",
-                "postgres": "SELECT b'1011'",
-                "oracle": "SELECT 11",
-            },
-        )
+        write_1011 = {
+            "bigquery": "SELECT 11",
+            "clickhouse": "SELECT 0b1011",
+            "databricks": "SELECT 11",
+            "drill": "SELECT 11",
+            "hive": "SELECT 11",
+            "mysql": "SELECT b'1011'",
+            "oracle": "SELECT 11",
+            "postgres": "SELECT b'1011'",
+            "presto": "SELECT 11",
+            "redshift": "SELECT 11",
+            "snowflake": "SELECT 11",
+            "spark": "SELECT 11",
+            "sqlite": "SELECT 11",
+            "mysql": "SELECT b'1011'",
+            "tableau": "SELECT 11",
+            "teradata": "SELECT 11",
+            "trino": "SELECT 11",
+            "tsql": "SELECT 11",
+        }
+
+        self.validate_all("SELECT 0b1011", write=write_1011)
+        self.validate_all("SELECT b'1011'", write=write_1011)
 
     def test_string_literals(self):
         self.validate_all(

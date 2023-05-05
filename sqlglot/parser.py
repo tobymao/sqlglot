@@ -961,13 +961,14 @@ class Parser(metaclass=_Parser):
             The target expression.
         """
         instance = exp_class(**kwargs)
-        if self._prev_comments:
-            instance.comments = self._prev_comments
-            self._prev_comments = None
-        if comments:
-            instance.comments = comments
+        instance.add_comments(comments) if comments else self._add_comments(instance)
         self.validate_expression(instance)
         return instance
+
+    def _add_comments(self, expression: t.Optional[exp.Expression]) -> None:
+        if expression and self._prev_comments:
+            expression.add_comments(self._prev_comments)
+            self._prev_comments = None
 
     def validate_expression(
         self, expression: exp.Expression, args: t.Optional[t.List] = None
@@ -2687,7 +2688,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
 
-            self._match_r_paren()
+            self._match_r_paren(this)
         else:
             this = self.expression(exp.In, this=this, field=self._parse_field())
 
@@ -3002,11 +3003,9 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Paren, this=self._parse_set_operations(this))
 
-            self._match_r_paren()
-            comments.extend(self._prev_comments)
-
-            if this and comments:
-                this.comments = comments
+            if this:
+                this.add_comments(comments)
+            self._match_r_paren(expression=this)
 
             return this
 
@@ -3422,7 +3421,7 @@ class Parser(metaclass=_Parser):
         elif not self._match(TokenType.R_BRACE) and bracket_kind == TokenType.L_BRACE:
             self.raise_error("Expected }")
 
-        this.comments = self._prev_comments
+        self._add_comments(this)
         return self._parse_bracket(this)
 
     def _parse_slice(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
@@ -3985,9 +3984,7 @@ class Parser(metaclass=_Parser):
         items = [parse_result] if parse_result is not None else []
 
         while self._match(sep):
-            if parse_result and self._prev_comments:
-                parse_result.comments = self._prev_comments
-
+            self._add_comments(parse_result)
             parse_result = parse_method()
             if parse_result is not None:
                 items.append(parse_result)
@@ -4355,13 +4352,14 @@ class Parser(metaclass=_Parser):
         self._retreat(index)
         return None
 
-    def _match(self, token_type, advance=True):
+    def _match(self, token_type, advance=True, expression=None):
         if not self._curr:
             return None
 
         if self._curr.token_type == token_type:
             if advance:
                 self._advance()
+            self._add_comments(expression)
             return True
 
         return None
@@ -4389,16 +4387,12 @@ class Parser(metaclass=_Parser):
         return None
 
     def _match_l_paren(self, expression=None):
-        if not self._match(TokenType.L_PAREN):
+        if not self._match(TokenType.L_PAREN, expression=expression):
             self.raise_error("Expecting (")
-        if expression and self._prev_comments:
-            expression.comments = self._prev_comments
 
     def _match_r_paren(self, expression=None):
-        if not self._match(TokenType.R_PAREN):
+        if not self._match(TokenType.R_PAREN, expression=expression):
             self.raise_error("Expecting )")
-        if expression and self._prev_comments:
-            expression.comments = self._prev_comments
 
     def _match_texts(self, texts, advance=True):
         if self._curr and self._curr.text.upper() in texts:

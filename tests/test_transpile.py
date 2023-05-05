@@ -263,6 +263,18 @@ FROM v""",
             "(/* 1 */ 1 ) /* 2 */",
             "(1) /* 1 */ /* 2 */",
         )
+        self.validate(
+            "select * from t where not a in (23) /*test*/ and b in (14)",
+            "SELECT * FROM t WHERE NOT a IN (23) /* test */ AND b IN (14)",
+        )
+        self.validate(
+            "select * from t where a in (23) /*test*/ and b in (14)",
+            "SELECT * FROM t WHERE a IN (23) /* test */ AND b IN (14)",
+        )
+        self.validate(
+            "select * from t where ((condition = 1)/*test*/)",
+            "SELECT * FROM t WHERE ((condition = 1) /* test */)",
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

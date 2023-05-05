@@ -64,6 +64,13 @@ class Expression(metaclass=_Expression):
             and representing expressions as strings.
         arg_types: determines what arguments (child nodes) are supported by an expression. It
             maps arg keys to booleans that indicate whether the corresponding args are optional.
+        parent: a reference to the parent expression (or None, in case of root expressions).
+        arg_key: the arg key an expression is associated with, i.e. the name its parent expression
+            uses to refer to it.
+        comments: a list of comments that are associated with a given expression. This is used in
+            order to preserve comments when transpiling SQL code.
+        _type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
+            optimizer, in order to enable some transformations that require type information.
 
     Example:
         >>> class Foo(Expression):
@@ -74,13 +81,6 @@ class Expression(metaclass=_Expression):
 
     Args:
         args: a mapping used for retrieving the arguments of an expression, given their arg keys.
-        parent: a reference to the parent expression (or None, in case of root expressions).
-        arg_key: the arg key an expression is associated with, i.e. the name its parent expression
-            uses to refer to it.
-        comments: a list of comments that are associated with a given expression. This is used in
-            order to preserve comments when transpiling SQL code.
-        _type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
-            optimizer, in order to enable some transformations that require type information.
     """
 
     key = "expression"
@@ -257,6 +257,12 @@ class Expression(metaclass=_Expression):
         new = deepcopy(self)
         new.parent = self.parent
         return new
+
+    def add_comments(self, comments: t.Optional[t.List[str]]) -> None:
+        if self.comments is None:
+            self.comments = []
+        if comments:
+            self.comments.extend(comments)
 
     def append(self, arg_key, value):
         """

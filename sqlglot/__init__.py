@@ -181,7 +181,7 @@ def transpile(
     Returns:
         The list of transpiled SQL statements.
     """
-    write = write or read if identity else write
+    write = (read if write is None else write) if identity else write
     return [
         Dialect.get_or_raise(write)().generate(expression, **opts)
         for expression in parse(sql, read, error_level=error_level)

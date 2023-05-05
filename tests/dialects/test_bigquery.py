@@ -356,6 +356,18 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab",
+            write={
+                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS _c0, 'test' AS _c1)])",
+            },
+        )
+        self.validate_all(
+            "SELECT cola, colb FROM (VALUES (1, 'test'))",
+            write={
+                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS _c0, 'test' AS _c1)])",
+            },
+        )
+        self.validate_all(
             "SELECT cola, colb, colc FROM (VALUES (1, 'test', NULL)) AS tab(cola, colb, colc)",
             write={
                 "spark": "SELECT cola, colb, colc FROM VALUES (1, 'test', NULL) AS tab(cola, colb, colc)",

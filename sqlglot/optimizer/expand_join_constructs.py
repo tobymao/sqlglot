@@ -26,6 +26,8 @@ def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
             while isinstance(outermost_subquery.parent, exp.Subquery):
                 outermost_subquery = outermost_subquery.parent
 
-            outermost_subquery.this.replace(exp.select("*").from_(scope.expression.copy()))
+            outermost_subquery.this.replace(
+                exp.select("*").from_(scope.expression.copy(), copy=False)
+            )
 
     return expression

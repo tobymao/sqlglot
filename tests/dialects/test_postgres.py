@@ -175,6 +175,13 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "x / y ^ z",
+            write={
+                "": "x / POWER(y, z)",
+                "postgres": "x / y ^ z",
+            },
+        )
+        self.validate_all(
             "x # y",
             write={
                 "": "x ^ y",

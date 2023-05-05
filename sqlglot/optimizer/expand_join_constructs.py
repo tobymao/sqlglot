@@ -1,7 +1,4 @@
-import typing as t
-
 from sqlglot import exp
-from sqlglot.optimizer.scope import traverse_scope
 
 
 def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
@@ -16,6 +13,7 @@ def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
 
     (*) See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
     """
+
     def _expand_join_constructs(expression: exp.Expression) -> exp.Expression:
         if isinstance(expression, exp.Subquery):
             unnested = expression.unnest()

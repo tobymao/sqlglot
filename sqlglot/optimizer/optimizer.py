@@ -10,6 +10,7 @@ from sqlglot.optimizer.canonicalize import canonicalize
 from sqlglot.optimizer.eliminate_ctes import eliminate_ctes
 from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
+from sqlglot.optimizer.expand_join_constructs import expand_join_constructs
 from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.lower_identities import lower_identities
@@ -27,6 +28,7 @@ from sqlglot.schema import ensure_schema
 RULES = (
     lower_identities,
     qualify_tables,
+    expand_join_constructs,
     isolate_table_selects,
     qualify_columns,
     pushdown_projections,

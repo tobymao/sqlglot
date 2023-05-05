@@ -510,7 +510,7 @@ def _traverse_scope(scope):
         yield from _traverse_union(scope)
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
-    elif isinstance(scope.expression, exp.UDTF):
+    elif isinstance(scope.expression, (exp.UDTF, exp.Table)):
         pass
     else:
         raise OptimizeError(f"Unexpected expression type: {type(scope.expression)}")

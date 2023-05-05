@@ -1449,16 +1449,16 @@ class Generator:
         )
 
     def select_sql(self, expression: exp.Select) -> str:
-        kind = expression.args.get("kind")
-        kind = f" AS {kind}" if kind else ""
         hint = self.sql(expression, "hint")
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
+        kind = expression.args.get("kind")
+        kind = f" AS {kind}" if kind else ""
         expressions = self.expressions(expression)
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
         sql = self.query_modifiers(
             expression,
-            f"SELECT{kind}{hint}{distinct}{expressions}",
+            f"SELECT{hint}{distinct}{kind}{expressions}",
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )

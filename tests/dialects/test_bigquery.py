@@ -11,6 +11,7 @@ class TestBigQuery(Validator):
         )
         self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[1, 2])""")
         self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
+        self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
         self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")

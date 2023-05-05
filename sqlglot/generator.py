@@ -741,19 +741,19 @@ class Generator:
 
     def bitstring_sql(self, expression: exp.BitString) -> str:
         this = self.sql(expression, "this")
-        if self.bit_start or self.bit_end:
+        if self.bit_start:
             return f"{self.bit_start}{this}{self.bit_end}"
         return f"{int(this, 2)}"
 
     def hexstring_sql(self, expression: exp.HexString) -> str:
         this = self.sql(expression, "this")
-        if self.hex_start or self.hex_end:
+        if self.hex_start:
             return f"{self.hex_start}{this}{self.hex_end}"
         return f"{int(this, 16)}"
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")
-        if self.byte_start or self.byte_end:
+        if self.byte_start:
             return f"{self.byte_start}{this}{self.byte_end}"
         return this
 

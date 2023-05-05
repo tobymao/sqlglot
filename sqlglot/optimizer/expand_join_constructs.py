@@ -22,4 +22,4 @@ def expand_join_constructs(expression: exp.Expression) -> exp.Expression:
 
         return expression
 
-    return expression.transform(_expand_join_constructs)
+    return expression.transform(_expand_join_constructs, copy=False)

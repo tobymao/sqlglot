@@ -534,12 +534,12 @@ class Generator:
         position = self.sql(expression, "position")
         return f"{position}{this}"
 
-    def columndef_sql(self, expression: exp.ColumnDef) -> str:
+    def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
         column = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
         constraints = self.expressions(expression, key="constraints", sep=" ", flat=True)
         exists = "IF NOT EXISTS " if expression.args.get("exists") else ""
-        kind = f" {kind}" if kind else ""
+        kind = f"{sep}{kind}" if kind else ""
         constraints = f" {constraints}" if constraints else ""
         position = self.sql(expression, "position")
         position = f" {position}" if position else ""
@@ -1509,9 +1509,6 @@ class Generator:
         replace = self.expressions(expression, key="replace", flat=True)
         replace = f"{self.seg(self.STAR_MAPPING['replace'])} ({replace})" if replace else ""
         return f"*{except_}{replace}"
-
-    def structkwarg_sql(self, expression: exp.StructKwarg) -> str:
-        return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
         this = self.sql(expression, "this")

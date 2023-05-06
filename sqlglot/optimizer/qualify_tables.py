@@ -7,21 +7,29 @@ from sqlglot.optimizer.scope import Scope, traverse_scope
 
 def qualify_tables(expression, db=None, catalog=None, schema=None):
     """
-    Rewrite sqlglot AST to have fully qualified tables.
+    Rewrite sqlglot AST to have fully qualified tables. Additionally, this
+    replaces "join constructs" (*) by equivalent SELECT * subqueries.
 
-    Example:
+    Examples:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT 1 FROM tbl")
         >>> qualify_tables(expression, db="db").sql()
         'SELECT 1 FROM db.tbl AS tbl'
+        >>>
+        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl1 JOIN tbl2 ON id1 = id2)")
+        >>> qualify_tables(expression).sql()
+        'SELECT * FROM (SELECT * FROM tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2) AS _q_0'
 
     Args:
         expression (sqlglot.Expression): expression to qualify
         db (str): Database name
         catalog (str): Catalog name
         schema: A schema to populate
+
     Returns:
         sqlglot.Expression: qualified expression
+
+    (*) See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
     """
     sequence = itertools.count()
 
@@ -29,6 +37,12 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
+            # Expand join construct
+            if isinstance(derived_table, exp.Subquery):
+                unnested = derived_table.unnest()
+                if isinstance(unnested, exp.Table):
+                    derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
+
             if not derived_table.args.get("alias"):
                 alias_ = f"_q_{next(sequence)}"
                 derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))

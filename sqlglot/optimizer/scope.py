@@ -510,6 +510,9 @@ def _traverse_scope(scope):
         yield from _traverse_union(scope)
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
+    elif isinstance(scope.expression, exp.Table):
+        # This case corresponds to a "join construct", i.e. (tbl1 JOIN tbl2 ON ..)
+        yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
         pass
     else:
@@ -586,6 +589,9 @@ def _traverse_tables(scope):
 
     for join in scope.expression.args.get("joins") or []:
         expressions.append(join.this)
+
+    if isinstance(scope.expression, exp.Table):
+        expressions.append(scope.expression)
 
     expressions.extend(scope.expression.args.get("laterals") or [])
 

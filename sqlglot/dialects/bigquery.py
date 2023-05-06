@@ -163,7 +163,7 @@ class BigQuery(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_TRUNC": lambda args: exp.DateTrunc(
-                unit=exp.Literal.string(seq_get(args, 1).name),  # type: ignore
+                unit=exp.Literal.string(str(seq_get(args, 1))),
                 this=seq_get(args, 0),
             ),
             "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),

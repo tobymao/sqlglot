@@ -3097,10 +3097,6 @@ class PseudoType(Expression):
     pass
 
 
-class StructKwarg(Expression):
-    arg_types = {"this": True, "expression": True}
-
-
 # WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
 class SubqueryPredicate(Predicate):
     pass

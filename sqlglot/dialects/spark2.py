@@ -189,7 +189,6 @@ class Spark2(Hive):
             exp.Create: _create_sql,
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),
-            exp.StructKwarg: lambda self, e: f"{self.sql(e, 'this')}: {self.sql(e, 'expression')}",
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
             ),
@@ -221,6 +220,15 @@ class Spark2(Hive):
                 return self.func("TO_JSON", expression.this)
 
             return super(Hive.Generator, self).cast_sql(expression)
+
+        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
+            return super().columndef_sql(
+                expression,
+                sep=": "
+                if isinstance(expression.parent, exp.DataType)
+                and expression.parent.is_type(exp.DataType.Type.STRUCT)
+                else sep,
+            )
 
     class Tokenizer(Hive.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

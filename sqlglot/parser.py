@@ -1568,7 +1568,7 @@ class Parser(metaclass=_Parser):
                 value = self.expression(
                     exp.Schema,
                     this="TABLE",
-                    expressions=self._parse_csv(self._parse_struct_kwargs),
+                    expressions=self._parse_csv(self._parse_struct_types),
                 )
                 if not self._match(TokenType.GT):
                     self.raise_error("Expecting >")
@@ -2802,7 +2802,7 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.L_PAREN):
             if is_struct:
-                expressions = self._parse_csv(self._parse_struct_kwargs)
+                expressions = self._parse_csv(self._parse_struct_types)
             elif nested:
                 expressions = self._parse_csv(self._parse_types)
             else:
@@ -2837,7 +2837,7 @@ class Parser(metaclass=_Parser):
         values: t.Optional[t.List[t.Optional[exp.Expression]]] = None
         if nested and self._match(TokenType.LT):
             if is_struct:
-                expressions = self._parse_csv(self._parse_struct_kwargs)
+                expressions = self._parse_csv(self._parse_struct_types)
             else:
                 expressions = self._parse_csv(self._parse_types)
 
@@ -2895,16 +2895,10 @@ class Parser(metaclass=_Parser):
             prefix=prefix,
         )
 
-    def _parse_struct_kwargs(self) -> t.Optional[exp.Expression]:
-        index = self._index
-        this = self._parse_id_var()
+    def _parse_struct_types(self) -> t.Optional[exp.Expression]:
+        this = self._parse_type()
         self._match(TokenType.COLON)
-        data_type = self._parse_types()
-
-        if not data_type:
-            self._retreat(index)
-            return self._parse_types()
-        return self.expression(exp.StructKwarg, this=this, expression=data_type)
+        return self._parse_column_def(this)
 
     def _parse_at_time_zone(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.AT_TIME_ZONE):
@@ -3178,6 +3172,9 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Schema, this=this, expressions=args)
 
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        # column defs are not really columns, they're identifiers
+        if isinstance(this, exp.Column):
+            this = this.this
         kind = self._parse_types()
 
         if self._match_text_seq("FOR", "ORDINALITY"):

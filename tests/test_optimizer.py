@@ -235,11 +235,6 @@ class TestOptimizer(unittest.TestCase):
             execute=True,
         )
 
-    def test_expand_join_constructs(self):
-        self.check_file(
-            "expand_join_constructs", optimizer.expand_join_constructs.expand_join_constructs
-        )
-
     def test_expand_multi_table_selects(self):
         self.check_file(
             "expand_multi_table_selects",

@@ -210,6 +210,7 @@ class TestMySQL(Validator):
         self.validate_all("SELECT X'1A'", write={"mysql": "SELECT x'1A'"})
         self.validate_all("SELECT 0xz", write={"mysql": "SELECT `0xz`"})
         self.validate_all("SELECT 0xCC", write=write_CC)
+        self.validate_all("SELECT 0xCC ", write=write_CC)
         self.validate_all("SELECT x'CC'", write=write_CC)
         self.validate_all("SELECT 0x0000CC", write=write_CC_with_leading_zeros)
         self.validate_all("SELECT x'0000CC'", write=write_CC_with_leading_zeros)

@@ -46,7 +46,6 @@ class ClickHouse(Dialect):
             "INT256": TokenType.INT256,
             "UINT256": TokenType.UINT256,
             "TUPLE": TokenType.STRUCT,
-            # "MAP": TokenType.STRUCT,
         }
 
     class Parser(parser.Parser):

@@ -65,3 +65,24 @@ class TestClickhouse(Validator):
         self.validate_identity("WITH SUM(bytes) AS foo SELECT foo FROM system.parts")
         self.validate_identity("WITH (SELECT foo) AS bar SELECT bar + 5")
         self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")
+
+    def test_signed_and_unsigned_types(self):
+        data_types = [
+            "UInt8",
+            "UInt16",
+            "UInt32",
+            "UInt64",
+            "UInt128",
+            "UInt256",
+            "Int8",
+            "Int16",
+            "Int32",
+            "Int64",
+            "Int128",
+            "Int256",
+        ]
+        for data_type in data_types:
+            self.validate_all(
+                f"pow(2, 32)::{data_type}",
+                write={"clickhouse": f"CAST(POWER(2, 32) AS {data_type})"},
+            )

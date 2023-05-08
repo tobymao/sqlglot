@@ -2997,6 +2997,10 @@ class DataType(Expression):
         USMALLINT = auto()
         BIGINT = auto()
         UBIGINT = auto()
+        INT128 = auto()
+        UINT128 = auto()
+        INT256 = auto()
+        UINT256 = auto()
         FLOAT = auto()
         DOUBLE = auto()
         DECIMAL = auto()
@@ -3050,6 +3054,8 @@ class DataType(Expression):
         Type.TINYINT,
         Type.SMALLINT,
         Type.BIGINT,
+        Type.INT128,
+        Type.INT256,
     }
 
     FLOAT_TYPES = {

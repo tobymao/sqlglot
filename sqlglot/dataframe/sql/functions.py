@@ -747,11 +747,11 @@ def ascii(col: ColumnOrLiteral) -> Column:
 
 
 def base64(col: ColumnOrLiteral) -> Column:
-    return Column.invoke_anonymous_function(col, "BASE64")
+    return Column.invoke_expression_over_column(col, expression.ToBase64)
 
 
 def unbase64(col: ColumnOrLiteral) -> Column:
-    return Column.invoke_anonymous_function(col, "UNBASE64")
+    return Column.invoke_expression_over_column(col, expression.FromBase64)
 
 
 def ltrim(col: ColumnOrName) -> Column:

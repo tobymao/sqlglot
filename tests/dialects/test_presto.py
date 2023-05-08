@@ -7,6 +7,26 @@ class TestPresto(Validator):
 
     def test_cast(self):
         self.validate_all(
+            "FROM_BASE64(x)",
+            read={
+                "hive": "UNBASE64(x)",
+            },
+            write={
+                "hive": "UNBASE64(x)",
+                "presto": "FROM_BASE64(x)",
+            },
+        )
+        self.validate_all(
+            "TO_BASE64(x)",
+            read={
+                "hive": "BASE64(x)",
+            },
+            write={
+                "hive": "BASE64(x)",
+                "presto": "TO_BASE64(x)",
+            },
+        )
+        self.validate_all(
             "CAST(a AS ARRAY(INT))",
             write={
                 "bigquery": "CAST(a AS ARRAY<INT64>)",

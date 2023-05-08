@@ -102,3 +102,14 @@ x"""
                 (TokenType.SEMICOLON, ";"),
             ],
         )
+
+        tokens = tokenizer.tokenize("""'{{ var('x') }}'""")
+        tokens = [(token.token_type, token.text) for token in tokens]
+        self.assertEqual(
+            tokens,
+            [
+                (TokenType.STRING, "{{ var("),
+                (TokenType.VAR, "x"),
+                (TokenType.STRING, ") }}"),
+            ],
+        )

@@ -1961,6 +1961,15 @@ class Reference(Expression):
 class Tuple(Expression):
     arg_types = {"expressions": False}
 
+    def isin(
+        self, *expressions: t.Any, query: t.Optional[ExpOrStr] = None, copy=True, **opts
+    ) -> In:
+        return In(
+            this=_maybe_copy(self, copy),
+            expressions=[convert(e, copy=copy) for e in expressions],
+            query=maybe_parse(query, copy=copy, **opts) if query else None,
+        )
+
 
 class Subqueryable(Unionable):
     def subquery(self, alias=None, copy=True) -> Subquery:

@@ -227,6 +227,7 @@ class Hive(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
+            "BASE64": exp.ToBase64.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0),
@@ -264,6 +265,7 @@ class Hive(Dialect):
             "SPLIT": exp.RegexpSplit.from_arg_list,
             "TO_DATE": format_time_lambda(exp.TsOrDsToDate, "hive"),
             "TO_JSON": exp.JSONFormat.from_arg_list,
+            "UNBASE64": exp.FromBase64.from_arg_list,
             "UNIX_TIMESTAMP": format_time_lambda(exp.StrToUnix, "hive", True),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
@@ -315,6 +317,7 @@ class Hive(Dialect):
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
             exp.FileFormatProperty: lambda self, e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
+            exp.FromBase64: rename_func("UNBASE64"),
             exp.If: if_sql,
             exp.Index: _index_sql,
             exp.ILike: no_ilike_sql,
@@ -345,6 +348,7 @@ class Hive(Dialect):
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: _time_to_str,
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.ToBase64: rename_func("BASE64"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.TsOrDsToDate: _to_date_sql,

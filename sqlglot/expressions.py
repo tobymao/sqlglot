@@ -3799,6 +3799,14 @@ class Floor(Func):
     arg_types = {"this": True, "decimals": False}
 
 
+class FromBase64(Func):
+    pass
+
+
+class ToBase64(Func):
+    pass
+
+
 class Greatest(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

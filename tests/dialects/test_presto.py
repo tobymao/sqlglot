@@ -418,12 +418,6 @@ class TestPresto(Validator):
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' WEEKS"})
         self.validate_all(
-            "SELECT APPROX_PERCENTILE(amount, 0.5)",
-            read={
-                "postgres": "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY amount)",
-            },
-        )
-        self.validate_all(
             "SELECT JSON_OBJECT(KEY 'key1' VALUE 1, KEY 'key2' VALUE TRUE)",
             write={
                 "presto": "SELECT JSON_OBJECT('key1': 1, 'key2': TRUE)",

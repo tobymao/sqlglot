@@ -593,6 +593,11 @@ class TestBuild(unittest.TestCase):
                 "DELETE FROM tbl WHERE x = 1 RETURNING *",
                 "postgres",
             ),
+            (
+                lambda: exp.convert((exp.column("x"), exp.column("y"))).isin((1, 2), (3, 4)),
+                "(x, y) IN ((1, 2), (3, 4))",
+                "postgres",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

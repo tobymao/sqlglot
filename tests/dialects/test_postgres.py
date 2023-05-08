@@ -98,6 +98,21 @@ class TestPostgres(Validator):
         self.validate_identity("STRING_AGG(x, ',' ORDER BY y DESC)")
         self.validate_identity("STRING_AGG(DISTINCT x, ',' ORDER BY y DESC)")
         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
+        self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+        self.validate_identity("SELECT e'\\xDEADBEEF'")
+        self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+        self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
+        self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
+        self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
+        self.validate_identity("""SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)""")
+        self.validate_identity("x ~ 'y'")
+        self.validate_identity("x ~* 'y'")
+        self.validate_identity(
+            "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
+        )
+        self.validate_identity(
+            "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"
+        )
         self.validate_identity(
             "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END"
         )
@@ -107,37 +122,30 @@ class TestPostgres(Validator):
         self.validate_identity(
             'SELECT * FROM "x" WHERE SUBSTRING("x"."foo" FROM 1 FOR 2) IN (\'mas\')'
         )
-        self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
         self.validate_identity(
             "SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '%#\"o_a#\"_' FOR '#') IN ('mas')"
         )
         self.validate_identity(
             "SELECT SUBSTRING('bla' + 'foo' || 'bar' FROM 3 - 1 + 5 FOR 4 + SOME_FUNC(arg1, arg2))"
         )
-        self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
-        self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
         self.validate_identity(
             "SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')"
         )
-        self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
-        self.validate_identity("SELECT e'\\xDEADBEEF'")
-        self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+
+        self.validate_all(
+            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
+            write={
+                "presto": "SELECT APPROX_PERCENTILE(amount, 0.5)",
+                "spark": "SELECT PERCENTILE_APPROX(amount, 0.5)",
+                "trino": "SELECT APPROX_PERCENTILE(amount, 0.5)",
+            },
+        )
         self.validate_all(
             "e'x'",
             write={
                 "mysql": "x",
             },
         )
-        self.validate_identity("""SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)""")
-        self.validate_identity(
-            "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
-        )
-        self.validate_identity(
-            "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"
-        )
-        self.validate_identity("x ~ 'y'")
-        self.validate_identity("x ~* 'y'")
-
         self.validate_all(
             "SELECT DATE_PART('isodow'::varchar(6), current_date)",
             write={

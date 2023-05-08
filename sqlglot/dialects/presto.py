@@ -336,6 +336,9 @@ class Presto(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
             exp.VariancePop: rename_func("VAR_POP"),
+            exp.WithinGroup: transforms.preprocess(
+                [transforms.remove_within_group_for_percentiles]
+            ),
         }
 
         def interval_sql(self, expression: exp.Interval) -> str:
@@ -348,13 +351,3 @@ class Presto(Dialect):
             modes = expression.args.get("modes")
             modes = f" {', '.join(modes)}" if modes else ""
             return f"START TRANSACTION{modes}"
-
-        def withingroup_sql(self, expression: exp.WithinGroup) -> str:
-            if isinstance(expression.this, (exp.PercentileCont, exp.PercentileDisc)) and isinstance(
-                expression.expression, exp.Order
-            ):
-                # Unwrap an Order > Ordered > obj expression into just obj (e.g. a Column)
-                input_value = expression.expression.expressions[0].this
-                return self.func("APPROX_PERCENTILE", input_value, expression.this.this)
-
-            return super().withingroup_sql(expression)

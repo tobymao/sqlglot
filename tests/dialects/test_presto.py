@@ -420,12 +420,6 @@ class TestPresto(Validator):
         self.validate_all(
             "SELECT APPROX_PERCENTILE(amount, 0.5)",
             read={
-                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
-            },
-        )
-        self.validate_all(
-            "SELECT APPROX_PERCENTILE(amount, 0.5)",
-            read={
                 "postgres": "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY amount)",
             },
         )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, parser
+from sqlglot import exp, parser, transforms
 from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func, trim_sql
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
@@ -177,31 +177,34 @@ class Spark2(Hive):
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,  # type: ignore
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
-            exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
+            exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
-            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.args.get("unit")),
-            exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
-            exp.StrToDate: _str_to_date,
-            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.UnixToTime: _unix_to_time_sql,
             exp.Create: _create_sql,
+            exp.DateFromParts: rename_func("MAKE_DATE"),
+            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.args.get("unit")),
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
+            exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
+            exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
+            exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,
             exp.Reduce: rename_func("AGGREGATE"),
+            exp.StrToDate: _str_to_date,
+            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
             ),
             exp.Trim: trim_sql,
+            exp.UnixToTime: _unix_to_time_sql,
             exp.VariancePop: rename_func("VAR_POP"),
-            exp.DateFromParts: rename_func("MAKE_DATE"),
-            exp.LogicalOr: rename_func("BOOL_OR"),
-            exp.LogicalAnd: rename_func("BOOL_AND"),
-            exp.DayOfWeek: rename_func("DAYOFWEEK"),
-            exp.DayOfMonth: rename_func("DAYOFMONTH"),
-            exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
-            exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
+            exp.WithinGroup: transforms.preprocess(
+                [transforms.remove_within_group_for_percentiles]
+            ),
         }
         TRANSFORMS.pop(exp.ArrayJoin)
         TRANSFORMS.pop(exp.ArraySort)

@@ -229,12 +229,26 @@ def remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expression:
+    if (
+        isinstance(expression, exp.WithinGroup)
+        and isinstance(expression.this, (exp.PercentileCont, exp.PercentileDisc))
+        and isinstance(expression.expression, exp.Order)
+    ):
+        quantile = expression.this.this
+        input_value = t.cast(exp.Ordered, expression.find(exp.Ordered)).this
+        return expression.replace(exp.ApproxQuantile(this=input_value, quantile=quantile))
+
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:
     """
     Creates a new transform by chaining a sequence of transformations and converts the resulting
-    expression to SQL, using an appropriate `Generator.TRANSFORMS` function.
+    expression to SQL, using either the "_sql" method corresponding to the resulting expression,
+    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).
 
     Args:
         transforms: sequence of transform functions. These will be called in order.
@@ -244,9 +258,28 @@ def preprocess(
     """
 
     def _to_sql(self, expression: exp.Expression) -> str:
+        expression_type = type(expression)
+
         expression = transforms[0](expression.copy())
         for t in transforms[1:]:
             expression = t(expression)
-        return getattr(self, expression.key + "_sql")(expression)
+
+        _sql_handler = getattr(self, expression.key + "_sql", None)
+        if _sql_handler:
+            return _sql_handler(expression)
+
+        transforms_handler = self.TRANSFORMS.get(type(expression))
+        if transforms_handler:
+            # Ensures we don't enter an infinite loop. This can happen when the original expression
+            # has the same type as the final expression and there's no _sql method available for it,
+            # because then it'd re-enter _to_sql.
+            if expression_type is type(expression):
+                raise ValueError(
+                    f"Expression type {expression.__class__.__name__} requires a _sql method in order to be transformed."
+                )
+
+            return transforms_handler(self, expression)
+
+        raise ValueError(f"Unsupported expression type {expression.__class__.__name__}.")
 
     return _to_sql

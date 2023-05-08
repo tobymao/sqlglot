@@ -336,6 +336,9 @@ class Presto(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
             exp.VariancePop: rename_func("VAR_POP"),
+            exp.WithinGroup: transforms.preprocess(
+                [transforms.remove_within_group_for_percentiles]
+            ),
         }
 
         def interval_sql(self, expression: exp.Interval) -> str:

@@ -846,10 +846,14 @@ class DerivedTable(Expression):
 
     @property
     def selects(self):
+        # For EXPLODE
         alias = self.args.get("alias")
-
         if alias:
             return alias.columns
+
+        if self.this and isinstance(self.this, Subqueryable):
+            return self.this.selects
+
         return []
 
     @property

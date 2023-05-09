@@ -619,6 +619,12 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         expression = annotate_types(parse_one("CONCAT('A', 'B')"))
         self.assertEqual(expression.type.this, exp.DataType.Type.VARCHAR)
 
+    def test_root_subquery_annotation(self):
+        expression = annotate_types(parse_one("(SELECT 1, 2 FROM x) LIMIT 0"))
+        self.assertIsInstance(expression, exp.Subquery)
+        self.assertEqual(exp.DataType.Type.INT, expression.selects[0].type.this)
+        self.assertEqual(exp.DataType.Type.INT, expression.selects[1].type.this)
+
     def test_recursive_cte(self):
         query = parse_one(
             """

@@ -846,11 +846,6 @@ class DerivedTable(Expression):
 
     @property
     def selects(self):
-        # For EXPLODE
-        alias = self.args.get("alias")
-        if alias:
-            return alias.columns
-
         if self.this and isinstance(self.this, Subqueryable):
             return self.this.selects
 
@@ -924,7 +919,12 @@ class Unionable(Expression):
 
 
 class UDTF(DerivedTable, Unionable):
-    pass
+    @property
+    def selects(self):
+        alias = self.args.get("alias")
+        if alias:
+            return alias.columns
+        return []
 
 
 class Cache(Expression):

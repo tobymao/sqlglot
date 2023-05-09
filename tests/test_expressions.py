@@ -297,6 +297,9 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("SELECT a, b FROM x")
         self.assertEqual([s.sql() for s in expression.selects], ["a", "b"])
 
+        expression = parse_one("(SELECT a, b FROM x)")
+        self.assertEqual([s.sql() for s in expression.selects], ["a", "b"])
+
     def test_alias_column_names(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x) AS y")
         subquery = expression.find(exp.Subquery)

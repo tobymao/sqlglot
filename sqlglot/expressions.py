@@ -712,7 +712,7 @@ class Condition(Expression):
         """
         return not_(self, copy=copy)
 
-    def _binop(self, klass: t.Type[E], other: t.Any, reverse=False) -> E:
+    def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:
         this = self.copy()
         other = convert(other, copy=True)
         if not isinstance(this, klass) and not isinstance(other, klass):

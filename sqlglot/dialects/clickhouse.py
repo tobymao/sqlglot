@@ -237,7 +237,7 @@ class ClickHouse(Dialect):
             return super().cte_sql(expression)
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
-            placeholder_type = expression.args.get("type")
-            if not placeholder_type:
+            type_sql = self.sql(expression, "type")
+            if not type_sql:
                 self.unsupported("Cannot create a placeholder without a type.")
-            return f"{{{expression.name}: {self.sql(placeholder_type)}}}"
+            return f"{{{expression.name}: {type_sql}}}"

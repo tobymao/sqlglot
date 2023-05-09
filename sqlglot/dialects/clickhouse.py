@@ -84,6 +84,39 @@ class ClickHouse(Dialect):
 
         LOG_DEFAULTS_TO_LN = True
 
+        def _parse_placeholder(self) -> t.Optional[exp.Expression]:
+            """
+            Parse a placeholder expression like SELECT {abc: UInt32} or FROM {table: Identifier}
+            https://clickhouse.com/docs/en/sql-reference/syntax#defining-and-using-query-parameters
+            """
+            index = self._index
+
+            if self._match(TokenType.L_BRACE):
+                # We might be getting a variable from a SELECT clause, or potentially an identifier from a FROM clause
+                if not self._match_set({TokenType.VAR, TokenType.TABLE}):
+                    return None
+
+                this = self._prev.text
+                # Ensure we've got a colon delimiting the placeholder name and placeholder type
+                if not self._match(TokenType.COLON):
+                    return None
+                data_type: t.Optional[t.Union[str, exp.Expression]] = self._parse_types()
+                # If we couldn't get the type, we could be looking at the "Identifier" literal
+                if not data_type:
+                    identifier_seq = "Identifier"
+                    if not self._match_text_seq(identifier_seq.upper()):
+                        return None
+                    data_type = identifier_seq
+
+                placeholder = self.expression(exp.Placeholder, this=this, type=data_type)
+
+                # Ensure we've matched our closing brace and have a valid placeholder expression
+                if self._match(TokenType.R_BRACE) and placeholder:
+                    return placeholder
+                # At this point, it wasn't a valid placeholder. Go back to the saved start index and try to parse again
+                self._retreat(index)
+            return None
+
         def _parse_in(
             self, this: t.Optional[exp.Expression], is_global: bool = False
         ) -> exp.Expression:
@@ -94,6 +127,10 @@ class ClickHouse(Dialect):
         def _parse_table(
             self, schema: bool = False, alias_tokens: t.Optional[t.Collection[TokenType]] = None
         ) -> t.Optional[exp.Expression]:
+            placeholder = self._parse_placeholder()
+            if placeholder:
+                return placeholder
+
             this = super()._parse_table(schema=schema, alias_tokens=alias_tokens)
 
             if self._match(TokenType.FINAL):
@@ -198,3 +235,9 @@ class ClickHouse(Dialect):
                 return self.sql(expression, "this")
 
             return super().cte_sql(expression)
+
+        def placeholder_sql(self, expression: exp.Placeholder) -> str:
+            placeholder_type = expression.args.get("type")
+            if not placeholder_type:
+                self.unsupported("Cannot create a placeholder without a type.")
+            return f"{{{expression.name}: {self.sql(placeholder_type)}}}"

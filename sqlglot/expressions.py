@@ -2961,7 +2961,7 @@ class SessionParameter(Expression):
 
 
 class Placeholder(Expression):
-    arg_types = {"this": False}
+    arg_types = {"this": False, "type": False}
 
 
 class Null(Condition):

@@ -86,3 +86,18 @@ class TestClickhouse(Validator):
                 f"pow(2, 32)::{data_type}",
                 write={"clickhouse": f"CAST(POWER(2, 32) AS {data_type})"},
             )
+
+    def test_parameterization(self):
+        # Ensure we support parameterization within the select clause
+        self.validate_all(
+            "SELECT {abc: UInt32}, {b: String}, {c: DateTime},{d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",
+            write={
+                "clickhouse": "SELECT {abc: UInt32}, {b: TEXT}, {c: DateTime64}, {d: Map(TEXT, Array(UInt8))}, {e: Tuple(UInt8, String)}",
+                "": "SELECT :abc, :b, :c, :d, :e",
+            },
+        )
+        # Ensure we support parameterization for "Identity" parameters including those that can be used in a FROM clause
+        self.validate_all(
+            "SELECT * FROM {table: Identifier}",
+            write={"clickhouse": "SELECT * FROM {table: Identifier}"},
+        )

@@ -842,7 +842,7 @@ class Tokenizer(metaclass=_Tokenizer):
             return self.sql[start:end]
         return ""
 
-    def _advance(self, i: int = 1, alnum: str = "") -> None:
+    def _advance(self, i: int = 1, alnum=False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             self._col = 1
             self._line += 1
@@ -854,37 +854,23 @@ class Tokenizer(metaclass=_Tokenizer):
         self._char = self.sql[self._current - 1]
         self._peek = "" if self._end else self.sql[self._current]
 
-        if alnum:
+        if alnum and self._char.isalnum():
             _col = self._col
             _current = self._current
             _end = self._end
+            _peek = self._peek
 
-            if alnum == "curr":
-                _char = self._char
-
-                while not _end and _char.isalnum():
-                    _char = self.sql[_current]
-                    _col += 1
-                    _current += 1
-                    _end = _current >= self.size
-
-                self._char = _char
-                self._peek = "" if _end else self.sql[_current]
-            else:
-                _peek = self._peek
-
-                while _peek.isalnum():
-                    _col += 1
-                    _current += 1
-                    _end = _current >= self.size
-                    _peek = "" if _end else self.sql[_current]
-
-                self._char = self.sql[_current - 1]
-                self._peek = _peek
+            while _peek.isalnum():
+                _col += 1
+                _current += 1
+                _end = _current >= self.size
+                _peek = "" if _end else self.sql[_current]
 
             self._col = _col
             self._current = _current
             self._end = _end
+            self._peek = _peek
+            self._char = self.sql[_current - 1]
 
     @property
     def _text(self) -> str:
@@ -992,13 +978,13 @@ class Tokenizer(metaclass=_Tokenizer):
 
             comment_end_size = len(comment_end)
             while not self._end and self._chars(comment_end_size) != comment_end:
-                self._advance(alnum="peek")
+                self._advance(alnum=True)
 
             self._comments.append(self._text[comment_start_size : -comment_end_size + 1])
             self._advance(comment_end_size - 1)
         else:
             while not self._end and not self.WHITE_SPACE.get(self._peek) is TokenType.BREAK:
-                self._advance(alnum="peek")
+                self._advance(alnum=True)
             self._comments.append(self._text[comment_start_size:])
 
         # Leading comment is attached to the succeeding token, whilst trailing comment to the preceding.
@@ -1079,7 +1065,7 @@ class Tokenizer(metaclass=_Tokenizer):
         while True:
             char = self._peek.strip()
             if char and char not in self.SINGLE_TOKENS:
-                self._advance(alnum="peek")
+                self._advance(alnum=True)
             else:
                 break
 
@@ -1137,7 +1123,7 @@ class Tokenizer(metaclass=_Tokenizer):
         while True:
             char = self._peek.strip()
             if char and (char in self.VAR_SINGLE_TOKENS or char not in self.SINGLE_TOKENS):
-                self._advance(alnum="peek")
+                self._advance(alnum=True)
             else:
                 break
 
@@ -1173,7 +1159,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 current = self._current - 1
-                self._advance(alnum="curr")
+                self._advance(alnum=True)
                 text += self.sql[current : self._current - 1]
 
         return text

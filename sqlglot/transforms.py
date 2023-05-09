@@ -242,6 +242,16 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
     return expression
 
 
+def unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Pivot):
+        expression.args["field"].transform(
+            lambda node: exp.column(node.output_name) if isinstance(node, exp.Column) else node,
+            copy=False,
+        )
+
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

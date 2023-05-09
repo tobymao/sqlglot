@@ -749,79 +749,79 @@ class Condition(Expression):
     def ilike(self, other: ExpOrStr) -> ILike:
         return self._binop(ILike, other)
 
-    def eq(self, other: ExpOrStr) -> EQ:
+    def eq(self, other: t.Any) -> EQ:
         return self._binop(EQ, other)
 
-    def neq(self, other: ExpOrStr) -> NEQ:
+    def neq(self, other: t.Any) -> NEQ:
         return self._binop(NEQ, other)
 
     def rlike(self, other: ExpOrStr) -> RegexpLike:
         return self._binop(RegexpLike, other)
 
-    def __lt__(self, other: ExpOrStr) -> LT:
+    def __lt__(self, other: t.Any) -> LT:
         return self._binop(LT, other)
 
-    def __le__(self, other: ExpOrStr) -> LTE:
+    def __le__(self, other: t.Any) -> LTE:
         return self._binop(LTE, other)
 
-    def __gt__(self, other: ExpOrStr) -> GT:
+    def __gt__(self, other: t.Any) -> GT:
         return self._binop(GT, other)
 
-    def __ge__(self, other: ExpOrStr) -> GTE:
+    def __ge__(self, other: t.Any) -> GTE:
         return self._binop(GTE, other)
 
-    def __add__(self, other: ExpOrStr) -> Add:
+    def __add__(self, other: t.Any) -> Add:
         return self._binop(Add, other)
 
-    def __radd__(self, other: ExpOrStr) -> Add:
+    def __radd__(self, other: t.Any) -> Add:
         return self._binop(Add, other, reverse=True)
 
-    def __sub__(self, other: ExpOrStr) -> Sub:
+    def __sub__(self, other: t.Any) -> Sub:
         return self._binop(Sub, other)
 
-    def __rsub__(self, other: ExpOrStr) -> Sub:
+    def __rsub__(self, other: t.Any) -> Sub:
         return self._binop(Sub, other, reverse=True)
 
-    def __mul__(self, other: ExpOrStr) -> Mul:
+    def __mul__(self, other: t.Any) -> Mul:
         return self._binop(Mul, other)
 
-    def __rmul__(self, other: ExpOrStr) -> Mul:
+    def __rmul__(self, other: t.Any) -> Mul:
         return self._binop(Mul, other, reverse=True)
 
-    def __truediv__(self, other: ExpOrStr) -> Div:
+    def __truediv__(self, other: t.Any) -> Div:
         return self._binop(Div, other)
 
-    def __rtruediv__(self, other: ExpOrStr) -> Div:
+    def __rtruediv__(self, other: t.Any) -> Div:
         return self._binop(Div, other, reverse=True)
 
-    def __floordiv__(self, other: ExpOrStr) -> IntDiv:
+    def __floordiv__(self, other: t.Any) -> IntDiv:
         return self._binop(IntDiv, other)
 
-    def __rfloordiv__(self, other: ExpOrStr) -> IntDiv:
+    def __rfloordiv__(self, other: t.Any) -> IntDiv:
         return self._binop(IntDiv, other, reverse=True)
 
-    def __mod__(self, other: ExpOrStr) -> Mod:
+    def __mod__(self, other: t.Any) -> Mod:
         return self._binop(Mod, other)
 
-    def __rmod__(self, other: ExpOrStr) -> Mod:
+    def __rmod__(self, other: t.Any) -> Mod:
         return self._binop(Mod, other, reverse=True)
 
-    def __pow__(self, other: ExpOrStr) -> Pow:
+    def __pow__(self, other: t.Any) -> Pow:
         return self._binop(Pow, other)
 
-    def __rpow__(self, other: ExpOrStr) -> Pow:
+    def __rpow__(self, other: t.Any) -> Pow:
         return self._binop(Pow, other, reverse=True)
 
-    def __and__(self, other: ExpOrStr) -> And:
+    def __and__(self, other: t.Any) -> And:
         return self._binop(And, other)
 
-    def __rand__(self, other: ExpOrStr) -> And:
+    def __rand__(self, other: t.Any) -> And:
         return self._binop(And, other, reverse=True)
 
-    def __or__(self, other: ExpOrStr) -> Or:
+    def __or__(self, other: t.Any) -> Or:
         return self._binop(Or, other)
 
-    def __ror__(self, other: ExpOrStr) -> Or:
+    def __ror__(self, other: t.Any) -> Or:
         return self._binop(Or, other, reverse=True)
 
     def __neg__(self) -> Neg:

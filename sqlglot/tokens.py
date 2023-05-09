@@ -842,7 +842,7 @@ class Tokenizer(metaclass=_Tokenizer):
             return self.sql[start:end]
         return ""
 
-    def _advance(self, i: int = 1, alnum=False) -> None:
+    def _advance(self, i: int = 1, alnum: bool = False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             self._col = 1
             self._line += 1

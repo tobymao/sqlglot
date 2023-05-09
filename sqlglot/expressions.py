@@ -846,11 +846,7 @@ class DerivedTable(Expression):
 
     @property
     def selects(self):
-        alias = self.args.get("alias")
-
-        if alias:
-            return alias.columns
-        return []
+        return self.this.selects if isinstance(self.this, Subqueryable) else []
 
     @property
     def named_selects(self):
@@ -920,7 +916,10 @@ class Unionable(Expression):
 
 
 class UDTF(DerivedTable, Unionable):
-    pass
+    @property
+    def selects(self):
+        alias = self.args.get("alias")
+        return alias.columns if alias else []
 
 
 class Cache(Expression):

@@ -385,10 +385,13 @@ def _qualify_outputs(scope):
             if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
         elif not isinstance(selection, exp.Alias) and not selection.is_star:
-            alias_ = alias(exp.column(""), alias=selection.output_name or f"_col_{i}")
-            alias_.set("this", selection)
-            selection = alias_
-
+            selection = alias(
+                selection,
+                alias=selection.output_name or f"_col_{i}",
+                quoted=True
+                if isinstance(selection, exp.Column) and selection.this.quoted
+                else None,
+            )
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
 

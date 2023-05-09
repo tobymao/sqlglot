@@ -4,6 +4,9 @@
 SELECT a FROM x;
 SELECT x.a AS a FROM x AS x;
 
+SELECT "a" FROM x;
+SELECT x."a" AS "a" FROM x AS x;
+
 # execute: false
 SELECT a FROM zz GROUP BY a ORDER BY a;
 SELECT zz.a AS a FROM zz AS zz GROUP BY zz.a ORDER BY a;

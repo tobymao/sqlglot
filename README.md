@@ -283,9 +283,10 @@ print(
 ```sql
 SELECT
   (
-    "x"."a" OR "x"."b" OR "x"."c"
-  ) AND (
-    "x"."a" OR "x"."b" OR "x"."d"
+    "x"."a" <> 0 OR "x"."b" <> 0 OR "x"."c" <> 0
+  )
+  AND (
+    "x"."a" <> 0 OR "x"."b" <> 0 OR "x"."d" <> 0
   ) AS "_col_0"
 FROM "x" AS "x"
 WHERE

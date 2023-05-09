@@ -350,8 +350,8 @@
 </span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a>
 </span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">)]</span>
-</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>
-</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;0x&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;0X&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)]</span>
 </span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a>
 </span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
@@ -748,8 +748,8 @@
 </span><span id="TSQL-260"><a href="#TSQL-260"><span class="linenos">260</span></a>
 </span><span id="TSQL-261"><a href="#TSQL-261"><span class="linenos">261</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="TSQL-262"><a href="#TSQL-262"><span class="linenos">262</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">)]</span>
-</span><span id="TSQL-263"><a href="#TSQL-263"><span class="linenos">263</span></a>
-</span><span id="TSQL-264"><a href="#TSQL-264"><span class="linenos">264</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="TSQL-263"><a href="#TSQL-263"><span class="linenos">263</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="TSQL-264"><a href="#TSQL-264"><span class="linenos">264</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;0x&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;0X&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)]</span>
 </span><span id="TSQL-265"><a href="#TSQL-265"><span class="linenos">265</span></a>
 </span><span id="TSQL-266"><a href="#TSQL-266"><span class="linenos">266</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="TSQL-267"><a href="#TSQL-267"><span class="linenos">267</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
@@ -1035,8 +1035,8 @@
     <a class="headerlink" href="#TSQL.Tokenizer"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="TSQL.Tokenizer-261"><a href="#TSQL.Tokenizer-261"><span class="linenos">261</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="TSQL.Tokenizer-262"><a href="#TSQL.Tokenizer-262"><span class="linenos">262</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">)]</span>
-</span><span id="TSQL.Tokenizer-263"><a href="#TSQL.Tokenizer-263"><span class="linenos">263</span></a>
-</span><span id="TSQL.Tokenizer-264"><a href="#TSQL.Tokenizer-264"><span class="linenos">264</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="TSQL.Tokenizer-263"><a href="#TSQL.Tokenizer-263"><span class="linenos">263</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="TSQL.Tokenizer-264"><a href="#TSQL.Tokenizer-264"><span class="linenos">264</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;0x&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;0X&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)]</span>
 </span><span id="TSQL.Tokenizer-265"><a href="#TSQL.Tokenizer-265"><span class="linenos">265</span></a>
 </span><span id="TSQL.Tokenizer-266"><a href="#TSQL.Tokenizer-266"><span class="linenos">266</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="TSQL.Tokenizer-267"><a href="#TSQL.Tokenizer-267"><span class="linenos">267</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
@@ -1383,6 +1383,12 @@ represents a python time format and the output the target time format</li>
 <li><strong>quote_end (str):</strong>  specifies which ending character to use to delimit quotes. Default: '.</li>
 <li><strong>identifier_start (str):</strong>  specifies which starting character to use to delimit identifiers. Default: ".</li>
 <li><strong>identifier_end (str):</strong>  specifies which ending character to use to delimit identifiers. Default: ".</li>
+<li><strong>bit_start (str):</strong>  specifies which starting character to use to delimit bit literals. Default: None.</li>
+<li><strong>bit_end (str):</strong>  specifies which ending character to use to delimit bit literals. Default: None.</li>
+<li><strong>hex_start (str):</strong>  specifies which starting character to use to delimit hex literals. Default: None.</li>
+<li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
+<li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
+<li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
 <li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
@@ -1598,7 +1604,6 @@ Default: True</li>
                 <dd id="TSQL.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
                 <dd id="TSQL.Generator.schema_sql" class="function"><a href="../generator.html#Generator.schema_sql">schema_sql</a></dd>
                 <dd id="TSQL.Generator.star_sql" class="function"><a href="../generator.html#Generator.star_sql">star_sql</a></dd>
-                <dd id="TSQL.Generator.structkwarg_sql" class="function"><a href="../generator.html#Generator.structkwarg_sql">structkwarg_sql</a></dd>
                 <dd id="TSQL.Generator.parameter_sql" class="function"><a href="../generator.html#Generator.parameter_sql">parameter_sql</a></dd>
                 <dd id="TSQL.Generator.sessionparameter_sql" class="function"><a href="../generator.html#Generator.sessionparameter_sql">sessionparameter_sql</a></dd>
                 <dd id="TSQL.Generator.placeholder_sql" class="function"><a href="../generator.html#Generator.placeholder_sql">placeholder_sql</a></dd>

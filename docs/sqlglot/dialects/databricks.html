@@ -120,10 +120,12 @@
 </span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
 </span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>
 </span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>        <span class="p">}</span>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -173,10 +175,12 @@
 </span><span id="Databricks-42"><a href="#Databricks-42"><span class="linenos">42</span></a>        <span class="n">PARAMETER_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;$&quot;</span>
 </span><span id="Databricks-43"><a href="#Databricks-43"><span class="linenos">43</span></a>
 </span><span id="Databricks-44"><a href="#Databricks-44"><span class="linenos">44</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Databricks-45"><a href="#Databricks-45"><span class="linenos">45</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks-46"><a href="#Databricks-46"><span class="linenos">46</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="Databricks-47"><a href="#Databricks-47"><span class="linenos">47</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="Databricks-48"><a href="#Databricks-48"><span class="linenos">48</span></a>        <span class="p">}</span>
+</span><span id="Databricks-45"><a href="#Databricks-45"><span class="linenos">45</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Databricks-46"><a href="#Databricks-46"><span class="linenos">46</span></a>
+</span><span id="Databricks-47"><a href="#Databricks-47"><span class="linenos">47</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks-48"><a href="#Databricks-48"><span class="linenos">48</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="Databricks-49"><a href="#Databricks-49"><span class="linenos">49</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="Databricks-50"><a href="#Databricks-50"><span class="linenos">50</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -313,6 +317,12 @@ represents a python time format and the output the target time format</li>
 <li><strong>quote_end (str):</strong>  specifies which ending character to use to delimit quotes. Default: '.</li>
 <li><strong>identifier_start (str):</strong>  specifies which starting character to use to delimit identifiers. Default: ".</li>
 <li><strong>identifier_end (str):</strong>  specifies which ending character to use to delimit identifiers. Default: ".</li>
+<li><strong>bit_start (str):</strong>  specifies which starting character to use to delimit bit literals. Default: None.</li>
+<li><strong>bit_end (str):</strong>  specifies which ending character to use to delimit bit literals. Default: None.</li>
+<li><strong>hex_start (str):</strong>  specifies which starting character to use to delimit hex literals. Default: None.</li>
+<li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
+<li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
+<li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
 <li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
@@ -365,7 +375,6 @@ Default: True</li>
                 <dd id="Databricks.Generator.characterset_sql" class="function"><a href="../generator.html#Generator.characterset_sql">characterset_sql</a></dd>
                 <dd id="Databricks.Generator.column_sql" class="function"><a href="../generator.html#Generator.column_sql">column_sql</a></dd>
                 <dd id="Databricks.Generator.columnposition_sql" class="function"><a href="../generator.html#Generator.columnposition_sql">columnposition_sql</a></dd>
-                <dd id="Databricks.Generator.columndef_sql" class="function"><a href="../generator.html#Generator.columndef_sql">columndef_sql</a></dd>
                 <dd id="Databricks.Generator.columnconstraint_sql" class="function"><a href="../generator.html#Generator.columnconstraint_sql">columnconstraint_sql</a></dd>
                 <dd id="Databricks.Generator.autoincrementcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.autoincrementcolumnconstraint_sql">autoincrementcolumnconstraint_sql</a></dd>
                 <dd id="Databricks.Generator.compresscolumnconstraint_sql" class="function"><a href="../generator.html#Generator.compresscolumnconstraint_sql">compresscolumnconstraint_sql</a></dd>
@@ -454,7 +463,6 @@ Default: True</li>
                 <dd id="Databricks.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
                 <dd id="Databricks.Generator.schema_sql" class="function"><a href="../generator.html#Generator.schema_sql">schema_sql</a></dd>
                 <dd id="Databricks.Generator.star_sql" class="function"><a href="../generator.html#Generator.star_sql">star_sql</a></dd>
-                <dd id="Databricks.Generator.structkwarg_sql" class="function"><a href="../generator.html#Generator.structkwarg_sql">structkwarg_sql</a></dd>
                 <dd id="Databricks.Generator.parameter_sql" class="function"><a href="../generator.html#Generator.parameter_sql">parameter_sql</a></dd>
                 <dd id="Databricks.Generator.sessionparameter_sql" class="function"><a href="../generator.html#Generator.sessionparameter_sql">sessionparameter_sql</a></dd>
                 <dd id="Databricks.Generator.placeholder_sql" class="function"><a href="../generator.html#Generator.placeholder_sql">placeholder_sql</a></dd>
@@ -578,6 +586,7 @@ Default: True</li>
             </div>
             <div><dt><a href="spark2.html#Spark2.Generator">sqlglot.dialects.spark2.Spark2.Generator</a></dt>
                                 <dd id="Databricks.Generator.cast_sql" class="function"><a href="spark2.html#Spark2.Generator.cast_sql">cast_sql</a></dd>
+                <dd id="Databricks.Generator.columndef_sql" class="function"><a href="spark2.html#Spark2.Generator.columndef_sql">columndef_sql</a></dd>
 
             </div>
             <div><dt><a href="hive.html#Hive.Generator">sqlglot.dialects.hive.Hive.Generator</a></dt>
@@ -601,10 +610,12 @@ Default: True</li>
     </div>
     <a class="headerlink" href="#Databricks.Tokenizer"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Tokenizer-44"><a href="#Databricks.Tokenizer-44"><span class="linenos">44</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Databricks.Tokenizer-45"><a href="#Databricks.Tokenizer-45"><span class="linenos">45</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Databricks.Tokenizer-46"><a href="#Databricks.Tokenizer-46"><span class="linenos">46</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
-</span><span id="Databricks.Tokenizer-47"><a href="#Databricks.Tokenizer-47"><span class="linenos">47</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
-</span><span id="Databricks.Tokenizer-48"><a href="#Databricks.Tokenizer-48"><span class="linenos">48</span></a>        <span class="p">}</span>
+</span><span id="Databricks.Tokenizer-45"><a href="#Databricks.Tokenizer-45"><span class="linenos">45</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Databricks.Tokenizer-46"><a href="#Databricks.Tokenizer-46"><span class="linenos">46</span></a>
+</span><span id="Databricks.Tokenizer-47"><a href="#Databricks.Tokenizer-47"><span class="linenos">47</span></a>        <span class="n">SINGLE_TOKENS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Databricks.Tokenizer-48"><a href="#Databricks.Tokenizer-48"><span class="linenos">48</span></a>            <span class="o">**</span><span class="n">Spark</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">SINGLE_TOKENS</span><span class="p">,</span>
+</span><span id="Databricks.Tokenizer-49"><a href="#Databricks.Tokenizer-49"><span class="linenos">49</span></a>            <span class="s2">&quot;$&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PARAMETER</span><span class="p">,</span>
+</span><span id="Databricks.Tokenizer-50"><a href="#Databricks.Tokenizer-50"><span class="linenos">50</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 

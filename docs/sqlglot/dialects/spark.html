@@ -292,6 +292,12 @@ represents a python time format and the output the target time format</li>
 <li><strong>quote_end (str):</strong>  specifies which ending character to use to delimit quotes. Default: '.</li>
 <li><strong>identifier_start (str):</strong>  specifies which starting character to use to delimit identifiers. Default: ".</li>
 <li><strong>identifier_end (str):</strong>  specifies which ending character to use to delimit identifiers. Default: ".</li>
+<li><strong>bit_start (str):</strong>  specifies which starting character to use to delimit bit literals. Default: None.</li>
+<li><strong>bit_end (str):</strong>  specifies which ending character to use to delimit bit literals. Default: None.</li>
+<li><strong>hex_start (str):</strong>  specifies which starting character to use to delimit hex literals. Default: None.</li>
+<li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
+<li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
+<li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
 <li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
@@ -370,7 +376,6 @@ Default: True</li>
                 <dd id="Spark.Generator.characterset_sql" class="function"><a href="../generator.html#Generator.characterset_sql">characterset_sql</a></dd>
                 <dd id="Spark.Generator.column_sql" class="function"><a href="../generator.html#Generator.column_sql">column_sql</a></dd>
                 <dd id="Spark.Generator.columnposition_sql" class="function"><a href="../generator.html#Generator.columnposition_sql">columnposition_sql</a></dd>
-                <dd id="Spark.Generator.columndef_sql" class="function"><a href="../generator.html#Generator.columndef_sql">columndef_sql</a></dd>
                 <dd id="Spark.Generator.columnconstraint_sql" class="function"><a href="../generator.html#Generator.columnconstraint_sql">columnconstraint_sql</a></dd>
                 <dd id="Spark.Generator.autoincrementcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.autoincrementcolumnconstraint_sql">autoincrementcolumnconstraint_sql</a></dd>
                 <dd id="Spark.Generator.compresscolumnconstraint_sql" class="function"><a href="../generator.html#Generator.compresscolumnconstraint_sql">compresscolumnconstraint_sql</a></dd>
@@ -459,7 +464,6 @@ Default: True</li>
                 <dd id="Spark.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
                 <dd id="Spark.Generator.schema_sql" class="function"><a href="../generator.html#Generator.schema_sql">schema_sql</a></dd>
                 <dd id="Spark.Generator.star_sql" class="function"><a href="../generator.html#Generator.star_sql">star_sql</a></dd>
-                <dd id="Spark.Generator.structkwarg_sql" class="function"><a href="../generator.html#Generator.structkwarg_sql">structkwarg_sql</a></dd>
                 <dd id="Spark.Generator.parameter_sql" class="function"><a href="../generator.html#Generator.parameter_sql">parameter_sql</a></dd>
                 <dd id="Spark.Generator.sessionparameter_sql" class="function"><a href="../generator.html#Generator.sessionparameter_sql">sessionparameter_sql</a></dd>
                 <dd id="Spark.Generator.placeholder_sql" class="function"><a href="../generator.html#Generator.placeholder_sql">placeholder_sql</a></dd>
@@ -579,6 +583,7 @@ Default: True</li>
             </div>
             <div><dt><a href="spark2.html#Spark2.Generator">sqlglot.dialects.spark2.Spark2.Generator</a></dt>
                                 <dd id="Spark.Generator.cast_sql" class="function"><a href="spark2.html#Spark2.Generator.cast_sql">cast_sql</a></dd>
+                <dd id="Spark.Generator.columndef_sql" class="function"><a href="spark2.html#Spark2.Generator.columndef_sql">columndef_sql</a></dd>
 
             </div>
             <div><dt><a href="hive.html#Hive.Generator">sqlglot.dialects.hive.Hive.Generator</a></dt>

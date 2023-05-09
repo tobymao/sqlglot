@@ -192,6 +192,7 @@ class Spark2(Hive):
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,
+            exp.Pivot: transforms.preprocess([transforms.unqualify_pivot_columns]),
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",

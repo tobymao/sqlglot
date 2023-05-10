@@ -757,3 +757,27 @@ class TestPresto(Validator):
             "SELECT col, pos, pos_2, col_2 FROM _u CROSS JOIN UNNEST(SEQUENCE(2, 3)) WITH ORDINALITY AS _u_2(col_2, pos_2)",
             read={"spark": "SELECT col, pos, POSEXPLODE(SEQUENCE(2, 3)) FROM _u"},
         )
+
+    def test_match_recognize(self):
+        self.validate_identity(
+            """SELECT
+  *
+FROM orders
+MATCH_RECOGNIZE (
+  PARTITION BY custkey
+  ORDER BY
+    orderdate
+  MEASURES
+    A.totalprice AS starting_price,
+    LAST(B.totalprice) AS bottom_price,
+    LAST(C.totalprice) AS top_price
+  ONE ROW PER MATCH
+  AFTER MATCH SKIP PAST LAST ROW
+  PATTERN (A B+ C+ D+)
+  DEFINE
+    B AS totalprice < PREV(totalprice),
+    C AS totalprice > PREV(totalprice) AND totalprice <= A.totalprice,
+    D AS totalprice > PREV(totalprice)
+)""",
+            pretty=True,
+        )

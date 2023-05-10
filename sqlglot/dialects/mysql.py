@@ -199,11 +199,6 @@ class MySQL(Dialect):
             ),
         }
 
-        PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,  # type: ignore
-            "ENGINE": lambda self: self._parse_property_assignment(exp.EngineProperty),
-        }
-
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,  # type: ignore
             TokenType.SHOW: lambda self: self._parse_show(),

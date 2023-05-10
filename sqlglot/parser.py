@@ -587,6 +587,7 @@ class Parser(metaclass=_Parser):
         ),
         "DISTKEY": lambda self: self._parse_distkey(),
         "DISTSTYLE": lambda self: self._parse_property_assignment(exp.DistStyleProperty),
+        "ENGINE": lambda self: self._parse_property_assignment(exp.EngineProperty),
         "EXECUTE": lambda self: self._parse_property_assignment(exp.ExecuteAsProperty),
         "EXTERNAL": lambda self: self.expression(exp.ExternalProperty),
         "FALLBACK": lambda self: self._parse_fallback(no=self._prev.text.upper() == "NO"),
@@ -618,6 +619,7 @@ class Parser(metaclass=_Parser):
         "NO": lambda self: self._parse_noprimaryindex(),
         "NOT": lambda self: self._parse_afterjournal(no=False, dual=False, local=False),
         "ON": lambda self: self._parse_oncommit(),
+        "ORDER BY": lambda self: self._parse_order(skip_order_token=True),
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
@@ -1262,10 +1264,7 @@ class Parser(metaclass=_Parser):
     def _parse_property_assignment(self, exp_class: t.Type[exp.Expression]) -> exp.Expression:
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
-        return self.expression(
-            exp_class,
-            this=self._parse_var_or_string() or self._parse_number() or self._parse_id_var(),
-        )
+        return self.expression(exp_class, this=self._parse_field())
 
     def _parse_properties(self, before=None) -> t.Optional[exp.Expression]:
         properties = []

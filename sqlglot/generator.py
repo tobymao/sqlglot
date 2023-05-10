@@ -196,6 +196,7 @@ class Generator:
         exp.MergeBlockRatioProperty: exp.Properties.Location.POST_NAME,
         exp.NoPrimaryIndexProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.OnCommitProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.Order: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
         exp.Property: exp.Properties.Location.POST_WITH,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,

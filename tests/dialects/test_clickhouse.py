@@ -90,6 +90,10 @@ class TestClickhouse(Validator):
             )
 
     def test_ddl(self):
+        self.validate_identity(
+            "CREATE TABLE foo (x UInt32) TTL time_column + INTERVAL '1' MONTH DELETE WHERE column = 'value'"
+        )
+
         self.validate_all(
             """
             CREATE TABLE example1 (
@@ -133,9 +137,14 @@ ORDER BY tuple()""",
 )
 ENGINE=MergeTree
 PRIMARY KEY (id, toStartOfDay(timestamp), timestamp)
-TTL timestamp + INTERVAL '1' DAY
-GROUP BY id, toStartOfDay(timestamp)
-SET max_hits = MAX(max_hits), sum_hits = SUM(sum_hits)""",
+TTL
+  timestamp + INTERVAL '1' DAY
+GROUP BY
+  id,
+  toStartOfDay(timestamp)
+SET
+  max_hits = MAX(max_hits),
+  sum_hits = SUM(sum_hits)""",
             },
             pretty=True,
         )
@@ -154,8 +163,131 @@ SET max_hits = MAX(max_hits), sum_hits = SUM(sum_hits)""",
 )
 ENGINE=AggregatingMergeTree()
 ORDER BY tuple()
-SETTINGS   max_suspicious_broken_parts = 500,
+SETTINGS
+  max_suspicious_broken_parts = 500,
   parts_to_throw_insert = 100""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE TABLE example_table
+            (
+                d DateTime,
+                a Int
+            )
+            ENGINE = MergeTree
+            PARTITION BY toYYYYMM(d)
+            ORDER BY d
+            TTL d + INTERVAL 1 MONTH DELETE,
+                d + INTERVAL 1 WEEK TO VOLUME 'aaa',
+                d + INTERVAL 2 WEEK TO DISK 'bbb';
+            """,
+            write={
+                "clickhouse": """CREATE TABLE example_table (
+  d DATETIME,
+  a Int32
+)
+ENGINE=MergeTree
+PARTITION BY toYYYYMM(d)
+ORDER BY d
+TTL
+  d + INTERVAL '1' MONTH DELETE,
+  d + INTERVAL '1' WEEK TO VOLUME 'aaa',
+  d + INTERVAL '2' WEEK TO DISK 'bbb'""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE TABLE table_with_where
+            (
+                d DateTime,
+                a Int
+            )
+            ENGINE = MergeTree
+            PARTITION BY toYYYYMM(d)
+            ORDER BY d
+            TTL d + INTERVAL 1 MONTH DELETE WHERE toDayOfWeek(d) = 1;
+            """,
+            write={
+                "clickhouse": """CREATE TABLE table_with_where (
+  d DATETIME,
+  a Int32
+)
+ENGINE=MergeTree
+PARTITION BY toYYYYMM(d)
+ORDER BY d
+TTL
+  d + INTERVAL '1' MONTH DELETE
+WHERE
+  toDayOfWeek(d) = 1""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE TABLE table_for_recompression
+            (
+                d DateTime,
+                key UInt64,
+                value String
+            ) ENGINE MergeTree()
+            ORDER BY tuple()
+            PARTITION BY key
+            TTL d + INTERVAL 1 MONTH RECOMPRESS CODEC(ZSTD(17)), d + INTERVAL 1 YEAR RECOMPRESS CODEC(LZ4HC(10))
+            SETTINGS min_rows_for_wide_part = 0, min_bytes_for_wide_part = 0;
+            """,
+            write={
+                "clickhouse": """CREATE TABLE table_for_recompression (
+  d DATETIME,
+  key UInt64,
+  value TEXT
+)
+ENGINE=MergeTree()
+ORDER BY tuple()
+PARTITION BY key
+TTL
+  d + INTERVAL '1' MONTH RECOMPRESS CODEC(ZSTD(17)),
+  d + INTERVAL '1' YEAR RECOMPRESS CODEC(LZ4HC(10))
+SETTINGS
+  min_rows_for_wide_part = 0,
+  min_bytes_for_wide_part = 0""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE TABLE table_for_aggregation
+            (
+                d DateTime,
+                k1 Int,
+                k2 Int,
+                x Int,
+                y Int
+            )
+            ENGINE = MergeTree
+            ORDER BY (k1, k2)
+            TTL d + INTERVAL 1 MONTH GROUP BY k1, k2 SET x = max(x), y = min(y);
+            """,
+            write={
+                "clickhouse": """CREATE TABLE table_for_aggregation (
+  d DATETIME,
+  k1 Int32,
+  k2 Int32,
+  x Int32,
+  y Int32
+)
+ENGINE=MergeTree
+ORDER BY (k1, k2)
+TTL
+  d + INTERVAL '1' MONTH
+GROUP BY
+  k1,
+  k2
+SET
+  x = MAX(x),
+  y = MIN(y)""",
             },
             pretty=True,
         )

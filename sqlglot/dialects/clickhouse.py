@@ -156,6 +156,7 @@ class ClickHouse(Dialect):
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Quantile: lambda self, e: f"quantile{self._param_args_sql(e, 'quantile', 'this')}",
             exp.Quantiles: lambda self, e: f"quantiles{self._param_args_sql(e, 'parameters', 'expressions')}",
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.QuantileIf: lambda self, e: f"quantileIf{self._param_args_sql(e, 'parameters', 'expressions')}",
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
@@ -165,6 +166,7 @@ class ClickHouse(Dialect):
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         }
 
         JOIN_HINTS = False

@@ -79,7 +79,7 @@ class Generator:
         exp.OnCommitProperty: lambda self, e: "ON COMMIT PRESERVE ROWS",
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
-        exp.SettingsProperty: lambda self, e: f"SETTINGS {self.expressions(e)}",
+        exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.TemporaryProperty: lambda self, e: f"{'GLOBAL ' if e.args.get('global_') else ''}TEMPORARY",
         exp.TransientProperty: lambda self, e: "TRANSIENT",
@@ -186,7 +186,6 @@ class Generator:
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
-        exp.Group: exp.Properties.Location.POST_SCHEMA,
         exp.IsolatedLoadingProperty: exp.Properties.Location.POST_NAME,
         exp.JournalProperty: exp.Properties.Location.POST_NAME,
         exp.LanguageProperty: exp.Properties.Location.POST_SCHEMA,
@@ -217,7 +216,7 @@ class Generator:
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
-        exp.TTL: exp.Properties.Location.POST_SCHEMA,
+        exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -1918,8 +1917,27 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         return f"COMMENT{exists_sql}ON {kind} {this} IS {expression_sql}"
 
-    def ttl_sql(self, expression: exp.TTL) -> str:
-        return f"TTL {self.sql(expression, 'this')}"
+    def mergetreettlaction_sql(self, expression: exp.MergeTreeTTLAction) -> str:
+        this = self.sql(expression, "this")
+        delete = " DELETE" if expression.args.get("delete") else ""
+        recompress = self.sql(expression, "recompress")
+        recompress = f" RECOMPRESS {recompress}" if recompress else ""
+        to_disk = self.sql(expression, "to_disk")
+        to_disk = f" TO DISK {to_disk}" if to_disk else ""
+        to_volume = self.sql(expression, "to_volume")
+        to_volume = f" TO VOLUME {to_volume}" if to_volume else ""
+        return f"{this}{delete}{recompress}{to_disk}{to_volume}"
+
+    def mergetreettl_sql(self, expression: exp.MergeTreeTTL) -> str:
+        where = self.sql(expression, "where")
+        group = self.sql(expression, "group")
+        aggregates = self.expressions(expression, key="aggregates")
+        aggregates = self.seg("SET") + self.seg(aggregates) if aggregates else ""
+
+        if not (where or group or aggregates) and len(expression.expressions) == 1:
+            return f"TTL {self.expressions(expression, flat=True)}"
+
+        return f"TTL{self.seg(self.expressions(expression))}{where}{group}{aggregates}"
 
     def transaction_sql(self, expression: exp.Transaction) -> str:
         return "BEGIN"

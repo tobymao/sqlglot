@@ -3230,7 +3230,10 @@ class Parser(metaclass=_Parser):
 
     def _parse_generated_as_identity(self) -> exp.Expression:
         if self._match(TokenType.BY_DEFAULT):
-            this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=False)
+            on_null = self._match_pair(TokenType.ON, TokenType.NULL)
+            this = self.expression(
+                exp.GeneratedAsIdentityColumnConstraint, this=False, on_null=on_null
+            )
         else:
             self._match_text_seq("ALWAYS")
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)

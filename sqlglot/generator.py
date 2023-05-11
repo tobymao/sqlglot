@@ -1746,6 +1746,22 @@ class Generator:
         encoding = f" ENCODING {encoding}" if encoding else ""
         return f"JSON_OBJECT({expressions}{null_handling}{unique_keys}{return_type}{format_json}{encoding})"
 
+    def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        path = self.sql(expression, "path")
+        path = f" {path}" if path else ""
+        as_json = " AS JSON" if expression.args.get("as_json") else ""
+        return f"{this} {kind}{path}{as_json}"
+
+    def openjson_sql(self, expression: exp.OpenJSON) -> str:
+        this = self.sql(expression, "this")
+        path = self.sql(expression, "path")
+        path = f", {path}" if path else ""
+        expressions = self.expressions(expression)
+        with_ = f" WITH ({self.seg(self.indent(expressions))}{self.seg(')', sep='')}" if expressions else ""
+        return f"OPENJSON({this}{path}){with_}"
+
     def in_sql(self, expression: exp.In) -> str:
         query = expression.args.get("query")
         unnest = expression.args.get("unnest")

@@ -714,6 +714,7 @@ class Parser(metaclass=_Parser):
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "LOG": lambda self: self._parse_logarithm(),
         "MATCH": lambda self: self._parse_match_against(),
+        "OPENJSON": lambda self: self._parse_open_json(),
         "POSITION": lambda self: self._parse_position(),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
@@ -3672,6 +3673,27 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.MatchAgainst, this=this, expressions=expressions, modifier=modifier
         )
+
+    # https://learn.microsoft.com/en-us/sql/t-sql/functions/openjson-transact-sql?view=sql-server-ver16
+    def _parse_open_json(self) -> exp.Expression:
+        this = self._parse_bitwise()
+        path = self._match(TokenType.COMMA) and self._parse_string()
+
+        def _parse_open_json_column_def() -> exp.expression:
+            this = self._parse_field(any_token=True)
+            kind = self._parse_types()
+            path = self._parse_string()
+            as_json = self._match_pair(TokenType.ALIAS, TokenType.JSON)
+            return self.expression(
+                exp.OpenJSONColumnDef, this=this, kind=kind, path=path, as_json=as_json
+            )
+
+        expressions = None
+        if self._match_pair(TokenType.R_PAREN, TokenType.WITH):
+            self._match_l_paren()
+            expressions = self._parse_csv(_parse_open_json_column_def)
+
+        return self.expression(exp.OpenJSON, this=this, path=path, expressions=expressions)
 
     def _parse_position(self, haystack_first: bool = False) -> exp.Expression:
         args = self._parse_csv(self._parse_bitwise)

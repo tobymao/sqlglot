@@ -763,5 +763,5 @@ FROM OPENJSON(@json) WITH (
     "Order" TEXT AS JSON
 )"""
             },
-            pretty=True
+            pretty=True,
         )

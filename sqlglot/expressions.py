@@ -4092,6 +4092,10 @@ class Substring(Func):
     arg_types = {"this": True, "start": False, "length": False}
 
 
+class StandardHash(Func):
+    arg_types = {"this": True, "expression": False}
+
+
 class StrPosition(Func):
     arg_types = {
         "this": True,

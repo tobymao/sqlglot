@@ -405,7 +405,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.type.this, exp.DataType.Type.TIMESTAMPTZ)
         self.assertEqual(expression.this.type.this, exp.DataType.Type.VARCHAR)
         self.assertEqual(expression.args["to"].type.this, exp.DataType.Type.TIMESTAMPTZ)
-        self.assertEqual(expression.args["to"].expressions[0].type.this, exp.DataType.Type.INT)
+        self.assertEqual(expression.args["to"].expressions[0].this.type.this, exp.DataType.Type.INT)
 
         expression = annotate_types(parse_one("ARRAY(1)::ARRAY<INT>"))
         self.assertEqual(expression.type, parse_one("ARRAY<INT>", into=exp.DataType))

@@ -3872,6 +3872,14 @@ class JSONObject(Func):
     }
 
 
+class OpenJSONColumnDef(Expression):
+    arg_types = {"this": True, "kind": True, "path": False, "as_json": False}
+
+
+class OpenJSON(Func):
+    arg_types = {"this": True, "path": False, "expressions": False}
+
+
 class JSONBContains(Binary):
     _sql_names = ["JSONB_CONTAINS"]
 

@@ -1759,7 +1759,11 @@ class Generator:
         path = self.sql(expression, "path")
         path = f", {path}" if path else ""
         expressions = self.expressions(expression)
-        with_ = f" WITH ({self.seg(self.indent(expressions))}{self.seg(')', sep='')}" if expressions else ""
+        with_ = (
+            f" WITH ({self.seg(self.indent(expressions))}{self.seg(')', sep='')}"
+            if expressions
+            else ""
+        )
         return f"OPENJSON({this}{path}){with_}"
 
     def in_sql(self, expression: exp.In) -> str:

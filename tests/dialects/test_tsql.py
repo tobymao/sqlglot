@@ -727,12 +727,14 @@ WHERE
 
     def test_openjson(self):
         self.validate_identity("SELECT * FROM OPENJSON(@json)")
-        self.validate_identity('''SELECT [key], value FROM OPENJSON(@json,'$.path.to."sub-object"')''')
+        self.validate_identity(
+            """SELECT [key], value FROM OPENJSON(@json,'$.path.to."sub-object"')"""
+        )
 
         self.validate_all(
-            '''SELECT [key], value FROM OPENJSON(@json,'$.path.to."sub-object"')''',
+            """SELECT [key], value FROM OPENJSON(@json,'$.path.to."sub-object"')""",
             write={
-                "tsql": '''SELECT "key", value FROM OPENJSON(@json,'$.path.to."sub-object"')''',
+                "tsql": """SELECT "key", value FROM OPENJSON(@json,'$.path.to."sub-object"')""",
             },
         )
         self.validate_all(

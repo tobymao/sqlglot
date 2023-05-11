@@ -3679,7 +3679,7 @@ class Parser(metaclass=_Parser):
         this = self._parse_bitwise()
         path = self._match(TokenType.COMMA) and self._parse_string()
 
-        def _parse_open_json_column_def() -> exp.expression:
+        def _parse_open_json_column_def() -> exp.Expression:
             this = self._parse_field(any_token=True)
             kind = self._parse_types()
             path = self._parse_string()

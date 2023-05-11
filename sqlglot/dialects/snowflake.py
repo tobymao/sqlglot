@@ -17,7 +17,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_to_date_sql,
     var_map_sql,
 )
-from sqlglot.expressions import Literal
+from sqlglot.expressions import Literal, maybe_parse
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
@@ -143,6 +143,14 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
+def _parse_convert_timezone(args: t.Sequence) -> exp.Expression:
+    if len(args) == 3:
+        converted: t.List[exp.Expression] = [maybe_parse(arg, dialect=Snowflake) for arg in args]
+        return exp.Anonymous(this="CONVERT_TIMEZONE", expressions=converted)
+    else:
+        return exp.AtTimeZone(this=seq_get(args, 1), zone=seq_get(args, 0))
+
+
 class Snowflake(Dialect):
     null_ordering = "nulls_are_large"
     time_format = "'yyyy-mm-dd hh24:mi:ss'"
@@ -184,10 +192,7 @@ class Snowflake(Dialect):
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
-            "CONVERT_TIMEZONE": lambda args: exp.AtTimeZone(
-                this=seq_get(args, 1),
-                zone=seq_get(args, 0),
-            ),
+            "CONVERT_TIMEZONE": _parse_convert_timezone,
             "DATE_TRUNC": date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2),

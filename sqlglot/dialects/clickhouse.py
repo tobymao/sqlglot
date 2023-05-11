@@ -29,7 +29,7 @@ class ClickHouse(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "ASOF": TokenType.ASOF,
             "GLOBAL": TokenType.GLOBAL,
-            "DATETIME64": TokenType.DATETIME,
+            "DATETIME64": TokenType.DATETIME64,
             "FINAL": TokenType.FINAL,
             "FLOAT32": TokenType.FLOAT,
             "FLOAT64": TokenType.DOUBLE,
@@ -126,7 +126,7 @@ class ClickHouse(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
             exp.DataType.Type.NULLABLE: "Nullable",
-            exp.DataType.Type.DATETIME: "DateTime64",
+            exp.DataType.Type.DATETIME64: "DateTime64",
             exp.DataType.Type.MAP: "Map",
             exp.DataType.Type.ARRAY: "Array",
             exp.DataType.Type.STRUCT: "Tuple",

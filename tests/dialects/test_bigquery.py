@@ -470,3 +470,12 @@ class TestBigQuery(Validator):
                 "snowflake": "MERGE INTO dataset.Inventory AS T USING dataset.NewArrivals AS S ON FALSE WHEN NOT MATCHED AND product LIKE '%a%' THEN DELETE WHEN NOT MATCHED AND product LIKE '%b%' THEN DELETE",
             },
         )
+
+    def test_rename_table(self):
+        self.validate_all(
+            "ALTER TABLE db.t1 RENAME TO db.t2",
+            write={
+                "snowflake": "ALTER TABLE db.t1 RENAME TO db.t2",
+                "bigquery": "ALTER TABLE db.t1 RENAME TO t2",
+            },
+        )

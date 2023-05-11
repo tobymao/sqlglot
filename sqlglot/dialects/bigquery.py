@@ -333,3 +333,11 @@ class BigQuery(Dialect):
 
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, prefix=self.seg("OPTIONS"))
+
+        def renametable_sql(self, expression: exp.RenameTable) -> str:
+            """BigQuery only supports renaming a table in the same schema"""
+            return super().renametable_sql(
+                expression.transform(
+                    lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
+                )
+            )

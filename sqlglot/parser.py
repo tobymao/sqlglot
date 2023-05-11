@@ -2811,11 +2811,14 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_type_size_specifier(self) -> t.Optional[exp.Expression]:
-        this = self._parse_conjunction()
+    def _parse_type_size(self) -> t.Optional[exp.Expression]:
+        this = self._parse_type()
         if not this:
             return None
-        return self.expression(exp.DataTypeSizeSpecifier, this=this, expression=self._parse_type())
+
+        return self.expression(
+            exp.DataTypeSize, this=this, expression=self._parse_var(any_token=True)
+        )
 
     def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
         index = self._index
@@ -2841,7 +2844,7 @@ class Parser(metaclass=_Parser):
             elif nested:
                 expressions = self._parse_csv(self._parse_types)
             else:
-                expressions = self._parse_csv(self._parse_type_size_specifier)
+                expressions = self._parse_csv(self._parse_type_size)
 
             if not expressions or not self._match(TokenType.R_PAREN):
                 self._retreat(index)

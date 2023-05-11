@@ -2985,7 +2985,7 @@ class Boolean(Condition):
     pass
 
 
-class DataTypeSizeSpecifier(Expression):
+class DataTypeSize(Expression):
     arg_types = {"this": True, "expression": False}
 
 

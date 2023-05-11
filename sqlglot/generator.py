@@ -766,7 +766,7 @@ class Generator:
             return f"{self.byte_start}{this}{self.byte_end}"
         return this
 
-    def datatypesizespecifier_sql(self, expression: exp.DataTypeSizeSpecifier) -> str:
+    def datatypesize_sql(self, expression: exp.DataTypeSize) -> str:
         this = self.sql(expression, "this")
         specifier = self.sql(expression, "expression")
         specifier = f" {specifier}" if specifier else ""

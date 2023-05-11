@@ -240,3 +240,12 @@ class DuckDB(Dialect):
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
         ) -> str:
             return super().tablesample_sql(expression, seed_prefix="REPEATABLE", sep=sep)
+
+        def renametable_sql(self, expression: exp.RenameTable) -> str:
+            """DuckDB only supports renaming a table in the same schema"""
+            expression = expression.copy()
+            target_table = expression.this
+            for arg in target_table.args:
+                if arg != "this":
+                    target_table.set(arg, None)
+            return super().renametable_sql(expression)

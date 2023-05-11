@@ -481,3 +481,12 @@ class TestDuckDB(Validator):
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
             write={"duckdb": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
+
+    def test_rename_table(self):
+        self.validate_all(
+            "ALTER TABLE db.t1 RENAME TO db.t2",
+            write={
+                "snowflake": "ALTER TABLE db.t1 RENAME TO db.t2",
+                "duckdb": "ALTER TABLE db.t1 RENAME TO t2",
+            },
+        )

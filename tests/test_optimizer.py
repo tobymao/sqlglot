@@ -183,6 +183,15 @@ class TestOptimizer(unittest.TestCase):
         self.check_file("normalize", normalize)
 
     def test_qualify_columns(self):
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one("select y from x"),
+                schema={},
+                infer_schema=False,
+            ).sql(),
+            "SELECT y AS y FROM x",
+        )
+
         self.check_file("qualify_columns", qualify_columns, execute=True, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):

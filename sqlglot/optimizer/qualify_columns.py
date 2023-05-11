@@ -5,10 +5,15 @@ from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.optimizer.expand_laterals import expand_laterals as _expand_laterals
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import ensure_schema
+from sqlglot.schema import Schema, ensure_schema
 
 
-def qualify_columns(expression, schema, expand_laterals=True):
+def qualify_columns(
+    expression: exp.Expression,
+    schema: dict | Schema,
+    expand_laterals: bool = True,
+    infer_schema: bool = True,
+) -> exp.Expression:
     """
     Rewrite sqlglot AST to have fully qualified columns.
 
@@ -20,18 +25,20 @@ def qualify_columns(expression, schema, expand_laterals=True):
         'SELECT tbl.col AS col FROM tbl'
 
     Args:
-        expression (sqlglot.Expression): expression to qualify
-        schema (dict|sqlglot.optimizer.Schema): Database schema
+        expression: expression to qualify
+        schema: Database schema
+        expand_laterals: whether or not to expand laterals
+        infer_schema: whether or not to infer the schema if missing
     Returns:
         sqlglot.Expression: qualified expression
     """
     schema = ensure_schema(schema)
 
-    if not schema.mapping and expand_laterals:
+    if schema.empty and expand_laterals:
         expression = _expand_laterals(expression)
 
     for scope in traverse_scope(expression):
-        resolver = Resolver(scope, schema)
+        resolver = Resolver(scope, schema, infer_schema=infer_schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         using_column_tables = _expand_using(scope, resolver)
@@ -43,7 +50,7 @@ def qualify_columns(expression, schema, expand_laterals=True):
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
 
-    if schema.mapping and expand_laterals:
+    if not schema.empty and expand_laterals:
         expression = _expand_laterals(expression)
 
     return expression
@@ -407,12 +414,13 @@ class Resolver:
     This is a class so we can lazily load some things and easily share them across functions.
     """
 
-    def __init__(self, scope, schema):
+    def __init__(self, scope, schema, infer_schema: bool = True):
         self.scope = scope
         self.schema = schema
         self._source_columns = None
-        self._unambiguous_columns = None
+        self._unambiguous_columns: t.Optional[t.Dict[str, str]] = None
         self._all_columns = None
+        self._infer_schema = infer_schema
 
     def get_table(self, column_name: str) -> t.Optional[exp.Identifier]:
         """
@@ -430,7 +438,7 @@ class Resolver:
 
         table_name = self._unambiguous_columns.get(column_name)
 
-        if not table_name:
+        if not table_name and self._infer_schema:
             sources_without_schema = tuple(
                 source
                 for source, columns in self._get_all_source_columns().items()

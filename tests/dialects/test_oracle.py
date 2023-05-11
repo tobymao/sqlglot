@@ -5,6 +5,8 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("SELECT STANDARD_HASH('hello')")
+        self.validate_identity("SELECT STANDARD_HASH('hello', 'MD5')")
         self.validate_identity("SELECT * FROM table_name@dblink_name.database_link_domain")
         self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
         self.validate_identity("SELECT * FROM V$SESSION")

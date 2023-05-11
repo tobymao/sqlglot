@@ -594,6 +594,7 @@ class Parser(metaclass=_Parser):
         "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "FREESPACE": lambda self: self._parse_freespace(),
         "GLOBAL": lambda self: self._parse_temporary(global_=True),
+        "GROUP BY": lambda self: self._parse_group(skip_group_by_token=True),
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
@@ -623,10 +624,14 @@ class Parser(metaclass=_Parser):
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
+        "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
         "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
-        "SET": lambda self: self.expression(exp.SetProperty, multi=False),
+        "SET": lambda self: self._parse_set_property(),
+        "SETTINGS": lambda self: self.expression(
+            exp.SettingsProperty, expressions=self._parse_csv(self._parse_set_item)
+        ),
         "SORTKEY": lambda self: self._parse_sortkey(),
         "STABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("STABLE")
@@ -637,6 +642,7 @@ class Parser(metaclass=_Parser):
         "TEMP": lambda self: self._parse_temporary(global_=False),
         "TEMPORARY": lambda self: self._parse_temporary(global_=False),
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
+        "TTL": lambda self: self._parse_ttl(),
         "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         "VOLATILE": lambda self: self._parse_volatile_property(),
         "WITH": lambda self: self._parse_with_property(),
@@ -681,6 +687,7 @@ class Parser(metaclass=_Parser):
         "TITLE": lambda self: self.expression(
             exp.TitleColumnConstraint, this=self._parse_var_or_string()
         ),
+        "TTL": lambda self: self._parse_ttl(),
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }
@@ -1043,6 +1050,9 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists
         )
+
+    def _parse_ttl(self) -> exp.Expression:
+        return self.expression(exp.TTL, this=self._parse_bitwise())
 
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:
@@ -1554,6 +1564,14 @@ class Parser(metaclass=_Parser):
                 )
             )
         return self.expression(exp.LikeProperty, this=table, expressions=options)
+
+    def _parse_set_property(self) -> exp.Expression:
+        # In the case of "CREATE SET ..." we're currently at the third token, so we need to look
+        # back two tokens to decide whether we're returning a SetProperty or a Set expression.
+        if self._index >= 2 and self._tokens[self._index - 2].token_type == TokenType.CREATE:
+            return self.expression(exp.SetProperty, multi=False)
+
+        return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
 
     def _parse_sortkey(self, compound: bool = False) -> exp.Expression:
         return self.expression(
@@ -2486,7 +2504,7 @@ class Parser(metaclass=_Parser):
                 cube = with_ or self._parse_wrapped_csv(self._parse_column)
                 elements["cube"].extend(ensure_list(cube))
 
-            if not (expressions or grouping_sets or rollup or cube):
+            if not (grouping_sets or rollup or cube):
                 break
 
         return self.expression(exp.Group, **elements)  # type: ignore
@@ -3395,7 +3413,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(exp.PrimaryKeyColumnConstraint, desc=desc)
 
-        expressions = self._parse_wrapped_id_vars()
+        expressions = self._parse_wrapped_csv(self._parse_field)
         options = self._parse_key_constraint_options()
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 

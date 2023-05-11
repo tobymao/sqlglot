@@ -68,6 +68,11 @@ class Schema(abc.ABC):
         """
         raise NotImplementedError
 
+    @property
+    def empty(self) -> bool:
+        """Returns whether or not the schema is empty."""
+        return True
+
 
 class AbstractMappingSchema(t.Generic[T]):
     def __init__(
@@ -79,6 +84,10 @@ class AbstractMappingSchema(t.Generic[T]):
             tuple(reversed(t)) for t in flatten_schema(self.mapping, depth=self._depth())
         )
         self._supported_table_args: t.Tuple[str, ...] = tuple()
+
+    @property
+    def empty(self) -> bool:
+        return not self.mapping
 
     def _depth(self) -> int:
         return dict_depth(self.mapping)

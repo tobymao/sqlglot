@@ -2211,20 +2211,22 @@ class Parser(metaclass=_Parser):
         catalog = None
         db = None
 
-        table = (
-            (not schema and self._parse_function())
-            or self._parse_id_var(any_token=False)
-            or self._parse_string_as_identifier()
-        )
+        def _parse_table_part() -> t.Optional[exp.Expression]:
+            return (
+                (not schema and self._parse_function())
+                or self._parse_id_var(any_token=False)
+                or self._parse_string_as_identifier()
+            )
 
+        table = _parse_table_part()
         while self._match(TokenType.DOT):
             if catalog:
                 # This allows nesting the table in arbitrarily many dot expressions if needed
-                table = self.expression(exp.Dot, this=table, expression=self._parse_id_var())
+                table = self.expression(exp.Dot, this=table, expression=_parse_table_part())
             else:
                 catalog = db
                 db = table
-                table = self._parse_id_var()
+                table = _parse_table_part()
 
         if not table:
             self.raise_error(f"Expected table name but got {self._curr}")

@@ -568,7 +568,9 @@ class Generator:
     ) -> str:
         this = ""
         if expression.this is not None:
-            this = " ALWAYS " if expression.this else " BY DEFAULT "
+            on_null = "ON NULL " if expression.args.get("on_null") else ""
+            this = " ALWAYS " if expression.this else f" BY DEFAULT {on_null}"
+
         start = expression.args.get("start")
         start = f"START WITH {start}" if start else ""
         increment = expression.args.get("increment")

@@ -595,7 +595,6 @@ class Parser(metaclass=_Parser):
         "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "FREESPACE": lambda self: self._parse_freespace(),
         "GLOBAL": lambda self: self._parse_temporary(global_=True),
-        "GROUP BY": lambda self: self._parse_group(skip_group_by_token=True),
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
@@ -629,7 +628,7 @@ class Parser(metaclass=_Parser):
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
         "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
-        "SET": lambda self: self._parse_set_property(),
+        "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SETTINGS": lambda self: self.expression(
             exp.SettingsProperty, expressions=self._parse_csv(self._parse_set_item)
         ),
@@ -688,7 +687,7 @@ class Parser(metaclass=_Parser):
         "TITLE": lambda self: self.expression(
             exp.TitleColumnConstraint, this=self._parse_var_or_string()
         ),
-        "TTL": lambda self: self._parse_ttl(),
+        "TTL": lambda self: self.expression(exp.TTL, expressions=[self._parse_bitwise()]),
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }
@@ -1053,8 +1052,37 @@ class Parser(metaclass=_Parser):
             exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists
         )
 
+    # https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
     def _parse_ttl(self) -> exp.Expression:
-        return self.expression(exp.TTL, this=self._parse_bitwise())
+        def _parse_delete_recompress() -> t.Optional[exp.Expression]:
+            this = self._parse_bitwise()
+
+            if self._match_text_seq("DELETE"):
+                return self.expression(exp.TTLAction, this=this, delete=True)
+            if self._match_text_seq("RECOMPRESS"):
+                return self.expression(exp.TTLAction, this=this, recompress=self._parse_bitwise())
+            if self._match_text_seq("TO", "DISK"):
+                return self.expression(exp.TTLAction, this=this, to_disk=self._parse_string())
+            if self._match_text_seq("TO", "VOLUME"):
+                return self.expression(exp.TTLAction, this=this, to_volume=self._parse_string())
+
+            return this
+
+        expressions = self._parse_csv(_parse_delete_recompress)
+        where = self._parse_where()
+        group = self._parse_group()
+
+        aggregates = None
+        if group and self._match(TokenType.SET):
+            aggregates = self._parse_csv(self._parse_set_item)
+
+        return self.expression(
+            exp.TTL,
+            expressions=expressions,
+            where=where,
+            group=group,
+            aggregates=aggregates,
+        )
 
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:
@@ -1566,14 +1594,6 @@ class Parser(metaclass=_Parser):
                 )
             )
         return self.expression(exp.LikeProperty, this=table, expressions=options)
-
-    def _parse_set_property(self) -> exp.Expression:
-        # In the case of "CREATE SET ..." we're currently at the third token, so we need to look
-        # back two tokens to decide whether we're returning a SetProperty or a Set expression.
-        if self._index >= 2 and self._tokens[self._index - 2].token_type == TokenType.CREATE:
-            return self.expression(exp.SetProperty, multi=False)
-
-        return self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
 
     def _parse_sortkey(self, compound: bool = False) -> exp.Expression:
         return self.expression(

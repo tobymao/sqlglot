@@ -724,3 +724,44 @@ WHERE
             },
         )
         self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")
+
+    def test_openjson(self):
+        self.validate_identity("SELECT * FROM OPENJSON(@json)")
+
+        self.validate_all(
+            """SELECT [key], value FROM OPENJSON(@json,'$.path.to."sub-object"')""",
+            write={
+                "tsql": """SELECT "key", value FROM OPENJSON(@json, '$.path.to."sub-object"')""",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM OPENJSON(@array) WITH (month VARCHAR(3), temp int, month_id tinyint '$.sql:identity()') as months",
+            write={
+                "tsql": "SELECT * FROM OPENJSON(@array) WITH (month VARCHAR(3), temp INTEGER, month_id TINYINT '$.sql:identity()') AS months",
+            },
+        )
+        self.validate_all(
+            """
+            SELECT *
+            FROM OPENJSON ( @json )  
+            WITH (   
+                          Number   VARCHAR(200)   '$.Order.Number',  
+                          Date     DATETIME       '$.Order.Date',  
+                          Customer VARCHAR(200)   '$.AccountNumber',  
+                          Quantity INT            '$.Item.Quantity',  
+                          [Order]  NVARCHAR(MAX)  AS JSON  
+             )
+            """,
+            write={
+                "tsql": """SELECT
+  *
+FROM OPENJSON(@json) WITH (
+    Number VARCHAR(200) '$.Order.Number',
+    Date DATETIME2 '$.Order.Date',
+    Customer VARCHAR(200) '$.AccountNumber',
+    Quantity INTEGER '$.Item.Quantity',
+    "Order" TEXT AS JSON
+)"""
+            },
+            pretty=True,
+        )

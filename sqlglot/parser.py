@@ -687,7 +687,7 @@ class Parser(metaclass=_Parser):
         "TITLE": lambda self: self.expression(
             exp.TitleColumnConstraint, this=self._parse_var_or_string()
         ),
-        "TTL": lambda self: self.expression(exp.TTL, expressions=[self._parse_bitwise()]),
+        "TTL": lambda self: self.expression(exp.MergeTreeTTL, expressions=[self._parse_bitwise()]),
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
     }
@@ -1058,13 +1058,19 @@ class Parser(metaclass=_Parser):
             this = self._parse_bitwise()
 
             if self._match_text_seq("DELETE"):
-                return self.expression(exp.TTLAction, this=this, delete=True)
+                return self.expression(exp.MergeTreeTTLAction, this=this, delete=True)
             if self._match_text_seq("RECOMPRESS"):
-                return self.expression(exp.TTLAction, this=this, recompress=self._parse_bitwise())
+                return self.expression(
+                    exp.MergeTreeTTLAction, this=this, recompress=self._parse_bitwise()
+                )
             if self._match_text_seq("TO", "DISK"):
-                return self.expression(exp.TTLAction, this=this, to_disk=self._parse_string())
+                return self.expression(
+                    exp.MergeTreeTTLAction, this=this, to_disk=self._parse_string()
+                )
             if self._match_text_seq("TO", "VOLUME"):
-                return self.expression(exp.TTLAction, this=this, to_volume=self._parse_string())
+                return self.expression(
+                    exp.MergeTreeTTLAction, this=this, to_volume=self._parse_string()
+                )
 
             return this
 
@@ -1077,7 +1083,7 @@ class Parser(metaclass=_Parser):
             aggregates = self._parse_csv(self._parse_set_item)
 
         return self.expression(
-            exp.TTL,
+            exp.MergeTreeTTL,
             expressions=expressions,
             where=where,
             group=group,

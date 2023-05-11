@@ -1116,7 +1116,8 @@ class Comment(Expression):
     arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
 
 
-class TTLAction(Expression):
+# https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
+class MergeTreeTTLAction(Expression):
     arg_types = {
         "this": True,
         "delete": False,
@@ -1126,7 +1127,8 @@ class TTLAction(Expression):
     }
 
 
-class TTL(Expression):
+# https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
+class MergeTreeTTL(Expression):
     arg_types = {
         "expressions": True,
         "where": False,

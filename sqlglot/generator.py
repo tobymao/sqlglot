@@ -216,7 +216,7 @@ class Generator:
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
-        exp.TTL: exp.Properties.Location.POST_SCHEMA,
+        exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -1917,7 +1917,7 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         return f"COMMENT{exists_sql}ON {kind} {this} IS {expression_sql}"
 
-    def ttlaction_sql(self, expression: exp.TTLAction) -> str:
+    def mergetreettlaction_sql(self, expression: exp.MergeTreeTTLAction) -> str:
         this = self.sql(expression, "this")
         delete = " DELETE" if expression.args.get("delete") else ""
         recompress = self.sql(expression, "recompress")
@@ -1928,7 +1928,7 @@ class Generator:
         to_volume = f" TO VOLUME {to_volume}" if to_volume else ""
         return f"{this}{delete}{recompress}{to_disk}{to_volume}"
 
-    def ttl_sql(self, expression: exp.TTL) -> str:
+    def mergetreettl_sql(self, expression: exp.MergeTreeTTL) -> str:
         where = self.sql(expression, "where")
         group = self.sql(expression, "group")
         aggregates = self.expressions(expression, key="aggregates")

@@ -1172,6 +1172,7 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
     arg_types = {
         "this": False,
+        "on_null": False,
         "start": False,
         "increment": False,
         "minvalue": False,

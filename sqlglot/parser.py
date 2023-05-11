@@ -1054,7 +1054,7 @@ class Parser(metaclass=_Parser):
 
     # https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
     def _parse_ttl(self) -> exp.Expression:
-        def _parse_delete_recompress() -> t.Optional[exp.Expression]:
+        def _parse_ttl_action() -> t.Optional[exp.Expression]:
             this = self._parse_bitwise()
 
             if self._match_text_seq("DELETE"):
@@ -1068,7 +1068,7 @@ class Parser(metaclass=_Parser):
 
             return this
 
-        expressions = self._parse_csv(_parse_delete_recompress)
+        expressions = self._parse_csv(_parse_ttl_action)
         where = self._parse_where()
         group = self._parse_group()
 

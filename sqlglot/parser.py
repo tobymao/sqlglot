@@ -715,11 +715,6 @@ class Parser(metaclass=_Parser):
         "LOG": lambda self: self._parse_logarithm(),
         "MATCH": lambda self: self._parse_match_against(),
         "POSITION": lambda self: self._parse_position(),
-        "STANDARD_HASH": lambda self: self.expression(
-            exp.StandardHash,
-            this=self._parse_bitwise(),
-            expression=self._match(TokenType.COMMA) and self._parse_var_or_string(),
-        ),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
         "TRIM": lambda self: self._parse_trim(),

@@ -45,7 +45,7 @@ class Redshift(Postgres):
                 isinstance(this, exp.DataType)
                 and this.this == exp.DataType.Type.VARCHAR
                 and this.expressions
-                and this.expressions[0] == exp.column("MAX")
+                and this.expressions[0].this == exp.column("MAX")
             ):
                 this.set("expressions", [exp.Var(this="MAX")])
 

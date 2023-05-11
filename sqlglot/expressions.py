@@ -1116,6 +1116,10 @@ class Comment(Expression):
     arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
 
 
+class TTL(Expression):
+    pass
+
+
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 
@@ -1845,6 +1849,10 @@ class SerdeProperties(Property):
 
 class SetProperty(Property):
     arg_types = {"multi": True}
+
+
+class SettingsProperty(Property):
+    arg_types = {"expressions": True}
 
 
 class SortKeyProperty(Property):

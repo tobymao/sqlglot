@@ -79,6 +79,7 @@ class Generator:
         exp.OnCommitProperty: lambda self, e: "ON COMMIT PRESERVE ROWS",
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
+        exp.SettingsProperty: lambda self, e: f"SETTINGS {self.expressions(e)}",
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.TemporaryProperty: lambda self, e: f"{'GLOBAL ' if e.args.get('global_') else ''}TEMPORARY",
         exp.TransientProperty: lambda self, e: "TRANSIENT",
@@ -185,6 +186,7 @@ class Generator:
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
+        exp.Group: exp.Properties.Location.POST_SCHEMA,
         exp.IsolatedLoadingProperty: exp.Properties.Location.POST_NAME,
         exp.JournalProperty: exp.Properties.Location.POST_NAME,
         exp.LanguageProperty: exp.Properties.Location.POST_SCHEMA,
@@ -198,6 +200,7 @@ class Generator:
         exp.OnCommitProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.Order: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
+        exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
         exp.Property: exp.Properties.Location.POST_WITH,
         exp.ReturnsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowFormatProperty: exp.Properties.Location.POST_SCHEMA,
@@ -205,6 +208,8 @@ class Generator:
         exp.RowFormatSerdeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SchemaCommentProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SerdeProperties: exp.Properties.Location.POST_SCHEMA,
+        exp.Set: exp.Properties.Location.POST_SCHEMA,
+        exp.SettingsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.POST_CREATE,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
@@ -212,6 +217,7 @@ class Generator:
         exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
+        exp.TTL: exp.Properties.Location.POST_SCHEMA,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -1885,6 +1891,9 @@ class Generator:
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         expression_sql = self.sql(expression, "expression")
         return f"COMMENT{exists_sql}ON {kind} {this} IS {expression_sql}"
+
+    def ttl_sql(self, expression: exp.TTL) -> str:
+        return f"TTL {self.sql(expression, 'this')}"
 
     def transaction_sql(self, expression: exp.Transaction) -> str:
         return "BEGIN"

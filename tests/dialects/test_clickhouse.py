@@ -88,3 +88,74 @@ class TestClickhouse(Validator):
                 f"pow(2, 32)::{data_type}",
                 write={"clickhouse": f"CAST(POWER(2, 32) AS {data_type})"},
             )
+
+    def test_ddl(self):
+        self.validate_all(
+            """
+            CREATE TABLE example1 (
+               timestamp DateTime,
+               x UInt32 TTL now() + INTERVAL 1 MONTH,
+               y String TTL timestamp + INTERVAL 1 DAY,
+               z String
+            )
+            ENGINE = MergeTree
+            ORDER BY tuple()
+            """,
+            write={
+                "clickhouse": """CREATE TABLE example1 (
+  timestamp DateTime64,
+  x UInt32 TTL now() + INTERVAL '1' MONTH,
+  y TEXT TTL timestamp + INTERVAL '1' DAY,
+  z TEXT
+)
+ENGINE=MergeTree
+ORDER BY tuple()""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE TABLE test (id UInt64, timestamp DateTime64, data String, max_hits UInt64, sum_hits UInt64) ENGINE = MergeTree
+            PRIMARY KEY (id, toStartOfDay(timestamp), timestamp)
+            TTL timestamp + INTERVAL 1 DAY
+            GROUP BY id, toStartOfDay(timestamp)
+            SET
+               max_hits = max(max_hits),
+               sum_hits = sum(sum_hits)
+            """,
+            write={
+                "clickhouse": """CREATE TABLE test (
+  id UInt64,
+  timestamp DateTime64,
+  data TEXT,
+  max_hits UInt64,
+  sum_hits UInt64
+)
+ENGINE=MergeTree
+PRIMARY KEY (id, toStartOfDay(timestamp), timestamp)
+TTL timestamp + INTERVAL '1' DAY
+GROUP BY id, toStartOfDay(timestamp)
+SET max_hits = MAX(max_hits), sum_hits = SUM(sum_hits)""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE TABLE test (id String, data String) ENGINE = AggregatingMergeTree()
+                ORDER BY tuple()
+            SETTINGS
+                max_suspicious_broken_parts=500,
+                parts_to_throw_insert=100
+            """,
+            write={
+                "clickhouse": """CREATE TABLE test (
+  id TEXT,
+  data TEXT
+)
+ENGINE=AggregatingMergeTree()
+ORDER BY tuple()
+SETTINGS   max_suspicious_broken_parts = 500,
+  parts_to_throw_insert = 100""",
+            },
+            pretty=True,
+        )

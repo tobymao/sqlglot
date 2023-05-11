@@ -17,7 +17,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_to_date_sql,
     var_map_sql,
 )
-from sqlglot.expressions import Literal, maybe_parse
+from sqlglot.expressions import Literal
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
@@ -145,10 +145,8 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
 
 def _parse_convert_timezone(args: t.Sequence) -> exp.Expression:
     if len(args) == 3:
-        converted: t.List[exp.Expression] = [maybe_parse(arg, dialect=Snowflake) for arg in args]
-        return exp.Anonymous(this="CONVERT_TIMEZONE", expressions=converted)
-    else:
-        return exp.AtTimeZone(this=seq_get(args, 1), zone=seq_get(args, 0))
+        return exp.Anonymous(this="CONVERT_TIMEZONE", expressions=args)
+    return exp.AtTimeZone(this=seq_get(args, 1), zone=seq_get(args, 0))
 
 
 class Snowflake(Dialect):

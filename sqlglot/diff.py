@@ -240,7 +240,7 @@ class ChangeDistiller:
         return matching_set
 
     def _compute_leaf_matching_set(self) -> t.Set[t.Tuple[int, int]]:
-        candidate_matchings: t.List[t.Tuple[float, int, exp.Expression, exp.Expression]] = []
+        candidate_matchings: t.List[t.Tuple[float, int, int, exp.Expression, exp.Expression]] = []
         source_leaves = list(_get_leaves(self._source))
         target_leaves = list(_get_leaves(self._target))
         for source_leaf in source_leaves:
@@ -252,6 +252,7 @@ class ChangeDistiller:
                             candidate_matchings,
                             (
                                 -similarity_score,
+                                -_parent_similarity_score(source_leaf, target_leaf),
                                 len(candidate_matchings),
                                 source_leaf,
                                 target_leaf,
@@ -261,7 +262,7 @@ class ChangeDistiller:
         # Pick best matchings based on the highest score
         matching_set = set()
         while candidate_matchings:
-            _, _, source_leaf, target_leaf = heappop(candidate_matchings)
+            _, _, _, source_leaf, target_leaf = heappop(candidate_matchings)
             if (
                 id(source_leaf) in self._unmatched_source_nodes
                 and id(target_leaf) in self._unmatched_target_nodes
@@ -325,6 +326,15 @@ def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:
         return True
 
     return False
+
+
+def _parent_similarity_score(
+    source: t.Optional[exp.Expression], target: t.Optional[exp.Expression]
+) -> int:
+    if source is None or target is None or type(source) is not type(target):
+        return 0
+
+    return 1 + _parent_similarity_score(source.parent, target.parent)
 
 
 def _expression_only_args(expression: exp.Expression) -> t.List[exp.Expression]:

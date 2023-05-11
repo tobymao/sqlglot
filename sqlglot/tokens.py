@@ -110,6 +110,7 @@ class TokenType(AutoName):
     TIMESTAMPTZ = auto()
     TIMESTAMPLTZ = auto()
     DATETIME = auto()
+    DATETIME64 = auto()
     DATE = auto()
     UUID = auto()
     GEOGRAPHY = auto()

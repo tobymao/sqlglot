@@ -25,6 +25,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
         self.validate_identity("position(haystack, needle)")
         self.validate_identity("position(haystack, needle, position)")
+        self.validate_identity("CAST(x AS DateTime)")
         self.validate_identity(
             "CREATE TABLE test (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()"
         )
@@ -44,9 +45,7 @@ class TestClickhouse(Validator):
         )
         self.validate_all(
             "CAST(1 AS Nullable(DateTime64(6, 'UTC')))",
-            write={
-                "clickhouse": "CAST(1 AS Nullable(DateTime64(6, 'UTC')))",
-            },
+            write={"clickhouse": "CAST(1 AS Nullable(DateTime64(6, 'UTC')))"},
         )
         self.validate_all(
             "SELECT x #! comment",

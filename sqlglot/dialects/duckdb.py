@@ -243,9 +243,8 @@ class DuckDB(Dialect):
 
         def renametable_sql(self, expression: exp.RenameTable) -> str:
             """DuckDB only supports renaming a table in the same schema"""
-            expression = expression.copy()
-            target_table = expression.this
-            for arg in target_table.args:
-                if arg != "this":
-                    target_table.set(arg, None)
-            return super().renametable_sql(expression)
+            return super().renametable_sql(
+                expression.transform(
+                    lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
+                )
+            )

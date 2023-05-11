@@ -1116,8 +1116,25 @@ class Comment(Expression):
     arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
 
 
-class TTL(Expression):
-    pass
+# https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
+class MergeTreeTTLAction(Expression):
+    arg_types = {
+        "this": True,
+        "delete": False,
+        "recompress": False,
+        "to_disk": False,
+        "to_volume": False,
+    }
+
+
+# https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
+class MergeTreeTTL(Expression):
+    arg_types = {
+        "expressions": True,
+        "where": False,
+        "group": False,
+        "aggregates": False,
+    }
 
 
 class ColumnConstraint(Expression):

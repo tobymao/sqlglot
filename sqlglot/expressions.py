@@ -3024,6 +3024,7 @@ class DataType(Expression):
         TIMESTAMPLTZ = auto()
         DATE = auto()
         DATETIME = auto()
+        DATETIME64 = auto()
         ARRAY = auto()
         MAP = auto()
         UUID = auto()
@@ -3079,6 +3080,7 @@ class DataType(Expression):
         Type.TIMESTAMPLTZ,
         Type.DATE,
         Type.DATETIME,
+        Type.DATETIME64,
     }
 
     @classmethod

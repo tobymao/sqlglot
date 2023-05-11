@@ -103,7 +103,7 @@ class TestClickhouse(Validator):
             """,
             write={
                 "clickhouse": """CREATE TABLE example1 (
-  timestamp DateTime64,
+  timestamp DATETIME,
   x UInt32 TTL now() + INTERVAL '1' MONTH,
   y TEXT TTL timestamp + INTERVAL '1' DAY,
   z TEXT

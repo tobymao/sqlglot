@@ -731,13 +731,13 @@ WHERE
         self.validate_all(
             """SELECT [key], value FROM OPENJSON(@json,'$.path.to."sub-object"')""",
             write={
-                "tsql": """SELECT "key", value FROM OPENJSON(@json,'$.path.to."sub-object"')""",
+                "tsql": """SELECT "key", value FROM OPENJSON(@json, '$.path.to."sub-object"')""",
             },
         )
         self.validate_all(
             "SELECT * FROM OPENJSON(@array) WITH (month VARCHAR(3), temp int, month_id tinyint '$.sql:identity()') as months",
             write={
-                "tsql": "SELECT * FROM OPENJSON(@array) WITH (month VARCHAR(3), temp INTEGER, month_id TINYINT '$.sql:identity()') as months",
+                "tsql": "SELECT * FROM OPENJSON(@array) WITH (month VARCHAR(3), temp INTEGER, month_id TINYINT '$.sql:identity()') AS months",
             },
         )
         self.validate_all(
@@ -763,4 +763,5 @@ FROM OPENJSON(@json) WITH (
     "Order" TEXT AS JSON
 )"""
             },
+            pretty=True
         )

@@ -1760,7 +1760,7 @@ class Generator:
         path = f", {path}" if path else ""
         expressions = self.expressions(expression)
         with_ = (
-            f" WITH ({self.seg(self.indent(expressions))}{self.seg(')', sep='')}"
+            f" WITH ({self.seg(self.indent(expressions), sep='')}{self.seg(')', sep='')}"
             if expressions
             else ""
         )

@@ -183,6 +183,7 @@ USE schema x.y
 NOT 1
 NOT NOT 1
 SELECT * FROM test
+SELECT * FROM db.FOO()
 SELECT *, 1 FROM test
 SELECT * FROM a.b
 SELECT * FROM a.b.c

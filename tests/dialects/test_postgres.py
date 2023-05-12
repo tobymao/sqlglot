@@ -239,6 +239,7 @@ class TestPostgres(Validator):
                 "postgres": "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4) AS s",
                 "presto": "SELECT * FROM t CROSS JOIN UNNEST(SEQUENCE(2, 4)) AS _u(s)",
                 "trino": "SELECT * FROM t CROSS JOIN UNNEST(SEQUENCE(2, 4)) AS _u(s)",
+                "tsql": "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4) AS s",
             },
         )
         self.validate_all(

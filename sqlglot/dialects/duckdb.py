@@ -157,6 +157,7 @@ class DuckDB(Dialect):
         TABLE_HINTS = False
         LIMIT_FETCH = "LIMIT"
         STRUCT_DELIMITER = ("(", ")")
+        RENAME_TABLE_WITH_DB = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -240,11 +241,3 @@ class DuckDB(Dialect):
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
         ) -> str:
             return super().tablesample_sql(expression, seed_prefix="REPEATABLE", sep=sep)
-
-        def renametable_sql(self, expression: exp.RenameTable) -> str:
-            """DuckDB only supports renaming a table in the same schema"""
-            return super().renametable_sql(
-                expression.transform(
-                    lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
-                )
-            )

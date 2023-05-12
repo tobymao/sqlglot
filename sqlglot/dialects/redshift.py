@@ -77,6 +77,7 @@ class Redshift(Postgres):
     class Generator(Postgres.Generator):
         LOCKING_READS_SUPPORTED = False
         SINGLE_STRING_INTERVAL = True
+        RENAME_TABLE_WITH_DB = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,  # type: ignore
@@ -140,16 +141,6 @@ class Redshift(Postgres):
         def with_properties(self, properties: exp.Properties) -> str:
             """Redshift doesn't have `WITH` as part of their with_properties so we remove it"""
             return self.properties(properties, prefix=" ", suffix="")
-
-        def renametable_sql(self, expression: exp.RenameTable) -> str:
-            """Redshift only supports defining the table name itself (not the db) when renaming tables"""
-            expression = expression.copy()
-            target_table = expression.this
-            for arg in target_table.args:
-                if arg != "this":
-                    target_table.set(arg, None)
-            this = self.sql(expression, "this")
-            return f"RENAME TO {this}"
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             """

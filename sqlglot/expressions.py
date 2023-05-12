@@ -1060,7 +1060,11 @@ class Column(Condition):
     @property
     def parts(self) -> t.List[Identifier]:
         """Return the parts of a column in order catalog, db, table, name."""
-        return [part for part in reversed(list(self.args.values())) if part]
+        return [
+            t.cast(Identifier, self.args[part])
+            for part in ("catalog", "db", "table", "this")
+            if self.args.get(part)
+        ]
 
     def to_dot(self) -> Dot:
         """Converts the column into a dot expression."""
@@ -2136,6 +2140,15 @@ class Table(Expression):
     @property
     def catalog(self) -> str:
         return self.text("catalog")
+
+    @property
+    def parts(self) -> t.List[Identifier]:
+        """Return the parts of a column in order catalog, db, table."""
+        return [
+            t.cast(Identifier, self.args[part])
+            for part in ("catalog", "db", "this")
+            if self.args.get(part)
+        ]
 
 
 # See the TSQL "Querying data in a system-versioned temporal table" page

@@ -285,10 +285,12 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x").from_("tbl").cluster_by("y"),
                 "SELECT x FROM tbl CLUSTER BY y",
+                "hive",
             ),
             (
                 lambda: select("x").from_("tbl").sort_by("y"),
                 "SELECT x FROM tbl SORT BY y",
+                "hive",
             ),
             (
                 lambda: select("x").from_("tbl").order_by("x, y DESC"),
@@ -297,10 +299,12 @@ class TestBuild(unittest.TestCase):
             (
                 lambda: select("x").from_("tbl").cluster_by("x, y DESC"),
                 "SELECT x FROM tbl CLUSTER BY x, y DESC",
+                "hive",
             ),
             (
                 lambda: select("x").from_("tbl").sort_by("x, y DESC"),
                 "SELECT x FROM tbl SORT BY x, y DESC",
+                "hive",
             ),
             (
                 lambda: select("x", "y", "z", "a").from_("tbl").order_by("x, y", "z").order_by("a"),
@@ -312,10 +316,12 @@ class TestBuild(unittest.TestCase):
                 .cluster_by("x, y", "z")
                 .cluster_by("a"),
                 "SELECT x, y, z, a FROM tbl CLUSTER BY x, y, z, a",
+                "hive",
             ),
             (
                 lambda: select("x", "y", "z", "a").from_("tbl").sort_by("x, y", "z").sort_by("a"),
                 "SELECT x, y, z, a FROM tbl SORT BY x, y, z, a",
+                "hive",
             ),
             (lambda: select("x").from_("tbl").limit(10), "SELECT x FROM tbl LIMIT 10"),
             (

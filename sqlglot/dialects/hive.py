@@ -277,6 +277,13 @@ class Hive(Dialect):
             ),
         }
 
+        QUERY_MODIFIER_PARSERS = {
+            **parser.Parser.QUERY_MODIFIER_PARSERS,
+            "distribute": lambda self: self._parse_sort(TokenType.DISTRIBUTE_BY, exp.Distribute),
+            "sort": lambda self: self._parse_sort(TokenType.SORT_BY, exp.Sort),
+            "cluster": lambda self: self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
+        }
+
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"
         TABLESAMPLE_WITH_METHOD = False
@@ -396,3 +403,10 @@ class Hive(Dialect):
                 expression = exp.DataType.build(expression.this)
 
             return super().datatype_sql(expression)
+
+        def after_having_modifiers(self, expression):
+            return super().after_having_modifiers(expression) + [
+                self.sql(expression, "distribute"),
+                self.sql(expression, "sort"),
+                self.sql(expression, "cluster"),
+            ]

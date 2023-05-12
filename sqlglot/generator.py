@@ -1483,26 +1483,23 @@ class Generator:
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
-            *self.after_having(expression),
+            *self.after_having_modifiers(expression),
             self.sql(expression, "order"),
             self.sql(expression, "offset") if fetch else self.sql(limit),
             self.sql(limit) if fetch else self.sql(expression, "offset"),
-            *self.after_limit(expression),
+            *self.after_limit_modifiers(expression),
             sep="",
         )
 
-    def after_having(self, expression):
+    def after_having_modifiers(self, expression):
         return [
             self.sql(expression, "qualify"),
             self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
             if expression.args.get("windows")
             else "",
-            self.sql(expression, "distribute"),
-            self.sql(expression, "sort"),
-            self.sql(expression, "cluster"),
         ]
 
-    def after_limit(self, expression):
+    def after_limit_modifiers(self, expression):
         return [
             self.sql(expression, "lock"),
             self.sql(expression, "sample"),

@@ -2423,7 +2423,7 @@ class Select(Subqueryable):
         Set the SORT BY expression.
 
         Example:
-            >>> Select().from_("tbl").select("x").sort_by("x DESC").sql()
+            >>> Select().from_("tbl").select("x").sort_by("x DESC").sql(dialect="hive")
             'SELECT x FROM tbl SORT BY x DESC'
 
         Args:
@@ -2456,7 +2456,7 @@ class Select(Subqueryable):
         Set the CLUSTER BY expression.
 
         Example:
-            >>> Select().from_("tbl").select("x").cluster_by("x DESC").sql()
+            >>> Select().from_("tbl").select("x").cluster_by("x DESC").sql(dialect="hive")
             'SELECT x FROM tbl CLUSTER BY x DESC'
 
         Args:

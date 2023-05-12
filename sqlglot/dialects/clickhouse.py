@@ -28,6 +28,7 @@ class ClickHouse(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ASOF": TokenType.ASOF,
+            "ATTACH": TokenType.COMMAND,
             "GLOBAL": TokenType.GLOBAL,
             "DATETIME64": TokenType.DATETIME64,
             "FINAL": TokenType.FINAL,

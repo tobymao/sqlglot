@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import unittest
 
+import sqlglot
 from sqlglot.lineage import lineage
+from sqlglot.schema import MappingSchema
 
 
 class TestLineage(unittest.TestCase):
     maxDiff = None
+
+    @classmethod
+    def setUpClass(cls):
+        sqlglot.schema = MappingSchema()
 
     def test_lineage(self) -> None:
         node = lineage(

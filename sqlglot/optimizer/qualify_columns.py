@@ -5,16 +5,15 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.expand_laterals import expand_laterals as _expand_laterals
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 
 
 def qualify_columns(
     expression: exp.Expression,
     schema: dict | Schema,
-    expand_laterals: bool = True,
-    infer_schema: bool = True,
+    expand_alias_refs: bool = True,
+    infer_schema: t.Optional[bool] = None,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have fully qualified columns.
@@ -29,31 +28,33 @@ def qualify_columns(
     Args:
         expression: expression to qualify
         schema: Database schema
-        expand_laterals: whether or not to expand laterals
+        expand_alias_refs: whether or not to expand references to aliases
         infer_schema: whether or not to infer the schema if missing
     Returns:
         sqlglot.Expression: qualified expression
     """
     schema = ensure_schema(schema)
-
-    if schema.empty and expand_laterals:
-        expression = _expand_laterals(expression)
+    infer_schema = schema.empty if infer_schema is None else infer_schema
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         using_column_tables = _expand_using(scope, resolver)
+
+        if schema.empty and expand_alias_refs:
+            _expand_alias_refs(scope, resolver)
+
         _qualify_columns(scope, resolver)
+
+        if not schema.empty and expand_alias_refs:
+            _expand_alias_refs(scope, resolver)
+
         if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver, using_column_tables)
             _qualify_outputs(scope)
-        _expand_alias_refs(scope, resolver)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
-
-    if not schema.empty and expand_laterals:
-        expression = _expand_laterals(expression)
 
     return expression
 
@@ -66,7 +67,9 @@ def validate_qualify_columns(expression):
             unqualified_columns.extend(scope.unqualified_columns)
             if scope.external_columns and not scope.is_correlated_subquery:
                 column = scope.external_columns[0]
-                raise OptimizeError(f"Unknown table: '{column.table}' for column '{column}'")
+                raise OptimizeError(
+                    f"""Column '{column}' could not be resolved{" for table: '{column.table}'" if column.table else ''}"""
+                )
 
     if unqualified_columns:
         raise OptimizeError(f"Ambiguous columns: {unqualified_columns}")
@@ -158,45 +161,40 @@ def _expand_using(scope, resolver):
     return column_tables
 
 
-def _expand_alias_refs(scope, resolver):
-    selects = {}
+def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
+    expression = scope.expression
 
-    # Replace references to select aliases
-    def transform(node, source_first=True):
-        if isinstance(node, exp.Column) and not node.table:
-            table = resolver.get_table(node.name)
+    if not isinstance(expression, exp.Select):
+        return
 
-            # Source columns get priority over select aliases
-            if source_first and table:
-                node.set("table", table)
-                return node
+    alias_to_expression: t.Dict[str, exp.Expression] = {}
 
-            if not selects:
-                for s in scope.selects:
-                    selects[s.alias_or_name] = s
-            select = selects.get(node.name)
-
-            if select:
-                scope.clear_cache()
-                if isinstance(select, exp.Alias):
-                    select = select.this
-                return select.copy()
-
-            node.set("table", table)
-        elif isinstance(node, exp.Expression) and not isinstance(node, exp.Subqueryable):
-            exp.replace_children(node, transform, source_first)
-
-        return node
-
-    for select in scope.expression.selects:
-        transform(select)
-
-    for modifier, source_first in (
-        ("where", True),
-        ("group", True),
-        ("having", False),
+    def replace_columns(
+        node: t.Optional[exp.Expression], expand: bool = True, resolve_agg: bool = False
     ):
-        transform(scope.expression.args.get(modifier), source_first=source_first)
+        if not node:
+            return
+
+        for column, *_ in walk_in_scope(node):
+            if not isinstance(column, exp.Column):
+                continue
+            table = resolver.get_table(column.name) if resolve_agg and not column.table else None
+            if table and column.find_ancestor(exp.AggFunc):
+                column.set("table", table)
+            elif expand and not column.table and column.name in alias_to_expression:
+                column.replace(alias_to_expression[column.name].copy())
+
+    for projection in scope.selects:
+        replace_columns(projection)
+
+        if isinstance(projection, exp.Alias):
+            alias_to_expression[projection.alias] = projection.this
+
+    replace_columns(expression.args.get("where"))
+    replace_columns(expression.args.get("group"))
+    replace_columns(expression.args.get("having"), resolve_agg=True)
+    replace_columns(expression.args.get("order"), expand=False, resolve_agg=True)
+    scope.clear_cache()
 
 
 def _expand_group_by(scope, resolver):
@@ -273,39 +271,6 @@ def _qualify_columns(scope, resolver):
 
             if column_table:
                 column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
-
-    columns_missing_from_scope = []
-
-    # Determine whether each reference in the order by clause is to a column or an alias.
-    order = scope.expression.args.get("order")
-
-    if order:
-        for ordered in order.expressions:
-            for column in ordered.find_all(exp.Column):
-                if (
-                    not column.table
-                    and column.parent is not ordered
-                    and column.name in resolver.all_columns
-                ):
-                    columns_missing_from_scope.append(column)
-
-    # Determine whether each reference in the having clause is to a column or an alias.
-    having = scope.expression.args.get("having")
-
-    if having:
-        for column in having.find_all(exp.Column):
-            if (
-                not column.table
-                and column.find_ancestor(exp.AggFunc)
-                and column.name in resolver.all_columns
-            ):
-                columns_missing_from_scope.append(column)
-
-    for column in columns_missing_from_scope:
-        column_table = resolver.get_table(column.name)
-
-        if column_table:
-            column.set("table", column_table)
 
 
 def _expand_stars(scope, resolver, using_column_tables):
@@ -460,7 +425,7 @@ class Resolver:
 
         node_alias = node.args.get("alias")
         if node_alias:
-            return node_alias.this
+            return exp.to_identifier(node_alias.this)
 
         return exp.to_identifier(
             table_name, quoted=node.this.quoted if isinstance(node, exp.Table) else None

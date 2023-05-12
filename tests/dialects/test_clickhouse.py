@@ -8,6 +8,7 @@ class TestClickhouse(Validator):
     def test_clickhouse(self):
         self.validate_identity("ATTACH DATABASE DEFAULT ENGINE = ORDINARY")
         self.validate_identity("CAST(['hello'], 'Array(Enum8(''hello'' = 1))')")
+        self.validate_identity("SELECT x, COUNT() FROM y GROUP BY x WITH TOTALS")
         self.validate_identity("SELECT INTERVAL t.days day")
         self.validate_identity("SELECT match('abc', '([a-z]+)')")
         self.validate_identity("dictGet(x, 'y')")

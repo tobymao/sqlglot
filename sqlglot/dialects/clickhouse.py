@@ -223,6 +223,7 @@ class ClickHouse(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         EXPLICIT_UNION = True
+        GROUPINGS_SEP = ""
 
         def _param_args_sql(
             self,

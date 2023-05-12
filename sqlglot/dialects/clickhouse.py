@@ -7,7 +7,7 @@ from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
 from sqlglot.errors import ParseError
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import parse_var_map
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import Token, TokenType
 
 
 def _lower_func(sql: str) -> str:
@@ -152,6 +152,22 @@ class ClickHouse(Dialect):
                     self.raise_error("Expected CTE to have alias")
 
                 return self.expression(exp.CTE, this=statement, alias=statement and statement.this)
+
+        def _parse_join_side_and_kind(
+            self,
+        ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
+            return (
+                self._match(TokenType.GLOBAL) and self._prev,
+                self._match_set(self.JOIN_SIDES) and self._prev,
+                self._match_set(self.JOIN_KINDS) and self._prev,
+            )
+
+        def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Expression]:
+            join = super()._parse_join(skip_join_token)
+
+            if join:
+                join.set("global", join.args.pop("natural", None))
+            return join
 
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")

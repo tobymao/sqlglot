@@ -17,6 +17,8 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM foo LEFT ASOF JOIN bla")
         self.validate_identity("SELECT * FROM foo ASOF JOIN bla")
         self.validate_identity("SELECT * FROM foo ANY JOIN bla")
+        self.validate_identity("SELECT * FROM foo GLOBAL ANY JOIN bla")
+        self.validate_identity("SELECT * FROM foo GLOBAL LEFT ANY JOIN bla")
         self.validate_identity("SELECT quantile(0.5)(a)")
         self.validate_identity("SELECT quantiles(0.5)(a) AS x FROM t")
         self.validate_identity("SELECT quantiles(0.1, 0.2, 0.3)(a)")

@@ -96,7 +96,6 @@ class ClickHouse(Dialect):
             this = self._parse_conjunction()
 
             if self._match(TokenType.PLACEHOLDER):
-                # Parses a ternary operator
                 return self.expression(
                     exp.If,
                     this=this,

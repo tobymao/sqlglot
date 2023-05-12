@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v12.4.0] - 2023-05-12
+### :sparkles: New Features
+- [`f585eef`](https://github.com/tobymao/sqlglot/commit/f585eefe312531306ffadc223aac6ff3fd8c2d66) - **clickhouse**: parse ternary operator *(PR [#1603](https://github.com/tobymao/sqlglot/pull/1603) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#1602](undefined) opened by [@ArtjomKotkov](https://github.com/ArtjomKotkov)*
+
+### :bug: Bug Fixes
+- [`41b90be`](https://github.com/tobymao/sqlglot/commit/41b90bed8ed91a1ef7b8e737b508508d3abba9cf) - **snowflake**: Handle form of CONVERT_TIMEZONE with a source TZ *(PR [#1598](https://github.com/tobymao/sqlglot/pull/1598) by [@pmsanford](https://github.com/pmsanford))*
+- [`4dd413b`](https://github.com/tobymao/sqlglot/commit/4dd413bdcae63d21e72b26d6a448745ef3850fa9) - expand alias refs was buggy and did the samething expand lateral… *(PR [#1599](https://github.com/tobymao/sqlglot/pull/1599) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v12.2.0] - 2023-05-09
 ### :sparkles: New Features
 - [`1fa8ae9`](https://github.com/tobymao/sqlglot/commit/1fa8ae97491b9a2c69a8b6f9a7bfe804014e1666) - sqlite primary key transforms closes [#1557](https://github.com/tobymao/sqlglot/pull/1557) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -125,3 +135,4 @@ Changelog
 [v12.0.0]: https://github.com/tobymao/sqlglot/compare/v11.7.1...v12.0.0
 [v12.1.0]: https://github.com/tobymao/sqlglot/compare/v12.0.0...v12.1.0
 [v12.2.0]: https://github.com/tobymao/sqlglot/compare/v12.1.0...v12.2.0
+[v12.4.0]: https://github.com/tobymao/sqlglot/compare/v12.3.0...v12.4.0

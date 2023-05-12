@@ -4835,21 +4835,24 @@ SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 @t.overload
-def to_identifier(name: None, quoted: t.Optional[bool] = None) -> None:
+def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None:
     ...
 
 
 @t.overload
-def to_identifier(name: str | Identifier, quoted: t.Optional[bool] = None) -> Identifier:
+def to_identifier(
+    name: str | Identifier, quoted: t.Optional[bool] = None, copy: bool = True
+) -> Identifier:
     ...
 
 
-def to_identifier(name, quoted=None):
+def to_identifier(name, quoted=None, copy=True):
     """Builds an identifier.
 
     Args:
         name: The name to turn into an identifier.
         quoted: Whether or not force quote the identifier.
+        copy: Whether or not to copy a passed in Identefier node.
 
     Returns:
         The identifier ast node.
@@ -4859,7 +4862,7 @@ def to_identifier(name, quoted=None):
         return None
 
     if isinstance(name, Identifier):
-        identifier = name
+        identifier = _maybe_copy(name, copy)
     elif isinstance(name, str):
         identifier = Identifier(
             this=name,

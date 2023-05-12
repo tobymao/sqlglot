@@ -401,3 +401,31 @@ SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x 
 # dialect: bigquery
 SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY x.b ORDER BY x.a DESC) = 1;
 SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a DESC) = 1;
+
+
+--------------------------------------
+-- Expand laterals
+--------------------------------------
+# title: expand alias reference
+SELECT
+  x.a + 1 AS i,
+  i + 1 AS j,
+  j + 1 AS k
+FROM x;
+SELECT x.a + 1 AS i, x.a + 1 + 1 AS j, x.a + 1 + 1 + 1 AS k FROM x AS x;
+
+# title: noop - reference comes before alias
+# execute: false
+SELECT i + 1 AS j, x.a + 1 AS i FROM x;
+SELECT i + 1 AS j, x.a + 1 AS i FROM x AS x;
+
+# title: subquery
+SELECT
+  *
+FROM (
+  SELECT
+    x.a + 1 AS i,
+    i + 1 AS j
+  FROM x
+);
+SELECT _q_0.i AS i, _q_0.j AS j FROM (SELECT x.a + 1 AS i, x.a + 1 + 1 AS j FROM x AS x) AS _q_0;

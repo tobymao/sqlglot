@@ -68,6 +68,7 @@ class ClickHouse(Dialect):
             "QUANTILE": lambda params, args: exp.Quantile(this=args, quantile=params),
             "QUANTILES": lambda params, args: exp.Quantiles(parameters=params, expressions=args),
             "QUANTILEIF": lambda params, args: exp.QuantileIf(parameters=params, expressions=args),
+            "QUANTILETIMING": lambda params, args: exp.QuantileTiming(this=params, level=args),
         }
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
@@ -209,6 +210,7 @@ class ClickHouse(Dialect):
             exp.Quantiles: lambda self, e: f"quantiles{self._param_args_sql(e, 'parameters', 'expressions')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.QuantileIf: lambda self, e: f"quantileIf{self._param_args_sql(e, 'parameters', 'expressions')}",
+            exp.QuantileTiming: lambda self, e: f"quantileTiming{self._param_args_sql(e, 'this', 'level')}",
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),

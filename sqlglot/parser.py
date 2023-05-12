@@ -324,6 +324,7 @@ class Parser(metaclass=_Parser):
         TokenType.MERGE,
         TokenType.OFFSET,
         TokenType.PRIMARY_KEY,
+        TokenType.RANGE,
         TokenType.REPLACE,
         TokenType.ROW,
         TokenType.UNNEST,

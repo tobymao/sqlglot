@@ -3659,6 +3659,10 @@ class Cast(Func):
         return self.to.is_type(dtype)
 
 
+class CastToStrType(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Collate(Binary):
     pass
 

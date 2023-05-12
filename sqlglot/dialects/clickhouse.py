@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.dialect import Dialect, inline_array_sql, var_map_sql
+from sqlglot.dialects.dialect import Dialect, inline_array_sql, rename_func, var_map_sql
 from sqlglot.errors import ParseError
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import parse_var_map
@@ -199,6 +199,7 @@ class ClickHouse(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
+            exp.CastToStrType: rename_func("CAST"),
             exp.ExponentialTimeDecayedAvg: lambda self, e: f"exponentialTimeDecayedAvg{self._param_args_sql(e, 'decay', ['this', 'time'])}",
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.GroupUniqArray: lambda self, e: f"groupUniqArray{self._param_args_sql(e, 'size', 'this')}",

@@ -1518,6 +1518,7 @@ class Group(Expression):
         "grouping_sets": False,
         "cube": False,
         "rollup": False,
+        "totals": False,
     }
 
 

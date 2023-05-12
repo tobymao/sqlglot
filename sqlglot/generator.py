@@ -137,6 +137,9 @@ class Generator:
     # Whether a table is allowed to be renamed with a db
     RENAME_TABLE_WITH_DB = True
 
+    # The separator for grouping sets and rollups
+    GROUPINGS_SEP = ","
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1259,10 +1262,16 @@ class Generator:
             rollup_sql = self.expressions(expression, key="rollup", indent=False)
             rollup_sql = f"{self.seg('ROLLUP')} {self.wrap(rollup_sql)}" if rollup_sql else ""
 
-        groupings = csv(grouping_sets, cube_sql, rollup_sql, sep=",")
+        groupings = csv(
+            grouping_sets,
+            cube_sql,
+            rollup_sql,
+            self.seg("WITH TOTALS") if expression.args.get("totals") else "",
+            sep=self.GROUPINGS_SEP,
+        )
 
         if expression.args.get("expressions") and groupings:
-            group_by = f"{group_by},"
+            group_by = f"{group_by}{self.GROUPINGS_SEP}"
 
         return f"{group_by}{groupings}"
 

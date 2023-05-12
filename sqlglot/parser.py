@@ -2522,6 +2522,7 @@ class Parser(metaclass=_Parser):
 
             rollup = None
             cube = None
+            totals = None
 
             with_ = self._match(TokenType.WITH)
             if self._match(TokenType.ROLLUP):
@@ -2532,7 +2533,11 @@ class Parser(metaclass=_Parser):
                 cube = with_ or self._parse_wrapped_csv(self._parse_column)
                 elements["cube"].extend(ensure_list(cube))
 
-            if not (grouping_sets or rollup or cube):
+            if self._match_text_seq("TOTALS"):
+                totals = True
+                elements["totals"] = True  # type: ignore
+
+            if not (grouping_sets or rollup or cube or totals):
                 break
 
         return self.expression(exp.Group, **elements)  # type: ignore

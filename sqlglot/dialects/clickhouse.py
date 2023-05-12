@@ -85,9 +85,21 @@ class ClickHouse(Dialect):
 
         JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}
 
-        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}
+        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {
+            TokenType.ANY,
+            TokenType.SETTINGS,
+            TokenType.FORMAT,
+        }
 
         LOG_DEFAULTS_TO_LN = True
+
+        QUERY_MODIFIER_PARSERS = {
+            **parser.Parser.QUERY_MODIFIER_PARSERS,
+            "settings": lambda self: self._parse_csv(self._parse_conjunction)
+            if self._match(TokenType.SETTINGS)
+            else None,
+            "format": lambda self: self._parse_id_var() if self._match(TokenType.FORMAT) else None,
+        }
 
         def _parse_expression(self, explicit_alias: bool = False) -> t.Optional[exp.Expression]:
             return self._parse_alias(self._parse_ternary(), explicit=explicit_alias)
@@ -221,3 +233,13 @@ class ClickHouse(Dialect):
                 return self.sql(expression, "this")
 
             return super().cte_sql(expression)
+
+        def after_limit(self, expression):
+            return super().after_limit(expression) + [
+                self.seg("SETTINGS ") + self.expressions(expression, key="settings", flat=True)
+                if expression.args.get("settings")
+                else "",
+                self.seg("FORMAT ") + self.sql(expression, "format")
+                if expression.args.get("format")
+                else "",
+            ]

@@ -1483,6 +1483,16 @@ class Generator:
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
+            *self.after_having(expression),
+            self.sql(expression, "order"),
+            self.sql(expression, "offset") if fetch else self.sql(limit),
+            self.sql(limit) if fetch else self.sql(expression, "offset"),
+            *self.after_limit(expression),
+            sep="",
+        )
+
+    def after_having(self, expression):
+        return [
             self.sql(expression, "qualify"),
             self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
             if expression.args.get("windows")
@@ -1490,13 +1500,13 @@ class Generator:
             self.sql(expression, "distribute"),
             self.sql(expression, "sort"),
             self.sql(expression, "cluster"),
-            self.sql(expression, "order"),
-            self.sql(expression, "offset") if fetch else self.sql(limit),
-            self.sql(limit) if fetch else self.sql(expression, "offset"),
+        ]
+
+    def after_limit(self, expression):
+        return [
             self.sql(expression, "lock"),
             self.sql(expression, "sample"),
-            sep="",
-        )
+        ]
 
     def select_sql(self, expression: exp.Select) -> str:
         hint = self.sql(expression, "hint")

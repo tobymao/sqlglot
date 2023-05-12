@@ -268,6 +268,7 @@ class Parser(metaclass=_Parser):
         TokenType.SEED,
         TokenType.SEMI,
         TokenType.SET,
+        TokenType.SETTINGS,
         TokenType.SHOW,
         TokenType.SORTKEY,
         TokenType.TEMPORARY,

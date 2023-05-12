@@ -287,6 +287,7 @@ class TokenType(AutoName):
     SEPARATOR = auto()
     SERDE_PROPERTIES = auto()
     SET = auto()
+    SETTINGS = auto()
     SHOW = auto()
     SIMILAR_TO = auto()
     SOME = auto()
@@ -629,6 +630,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SELECT": TokenType.SELECT,
         "SEMI": TokenType.SEMI,
         "SET": TokenType.SET,
+        "SETTINGS": TokenType.SETTINGS,
         "SHOW": TokenType.SHOW,
         "SIMILAR TO": TokenType.SIMILAR_TO,
         "SOME": TokenType.SOME,

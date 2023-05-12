@@ -415,11 +415,9 @@ FROM x;
 SELECT x.a + 1 AS i, x.a + 1 + 1 AS j, x.a + 1 + 1 + 1 AS k FROM x AS x;
 
 # title: noop - reference comes before alias
-SELECT
-  b + 1 AS b,
-  b + 1 AS i
-FROM x;
-SELECT x.b + 1 AS b, x.b + 1 AS i FROM x AS x;
+# execute: false
+SELECT i + 1 AS j, x.a + 1 AS i FROM x;
+SELECT i + 1 AS j, x.a + 1 AS i FROM x AS x;
 
 # title: subquery
 SELECT

@@ -230,6 +230,7 @@ class BigQuery(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         LIMIT_FETCH = "LIMIT"
+        RENAME_TABLE_WITH_DB = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore

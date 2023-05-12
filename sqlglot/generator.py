@@ -134,6 +134,9 @@ class Generator:
     # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
+    # Whether a table is allowed to be renamed with a db
+    RENAME_TABLE_WITH_DB = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1975,6 +1978,11 @@ class Generator:
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
     def renametable_sql(self, expression: exp.RenameTable) -> str:
+        if not self.RENAME_TABLE_WITH_DB:
+            # Remove db from tables
+            expression = expression.transform(
+                lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
+            )
         this = self.sql(expression, "this")
         return f"RENAME TO {this}"
 

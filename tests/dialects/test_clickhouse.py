@@ -86,7 +86,7 @@ class TestClickhouse(Validator):
             },
         )
 
-        ternary = parse_one("x ? (y ? 1 : 2) : 3")
+        ternary = parse_one("x ? (y ? 1 : 2) : 3", read="clickhouse")
 
         self.assertIsInstance(ternary, exp.If)
         self.assertIsInstance(ternary.this, exp.Column)

@@ -234,8 +234,8 @@ class ClickHouse(Dialect):
 
             return super().cte_sql(expression)
 
-        def after_limit(self, expression):
-            return super().after_limit(expression) + [
+        def after_limit_modifiers(self, expression):
+            return super().after_limit_modifiers(expression) + [
                 self.seg("SETTINGS ") + self.expressions(expression, key="settings", flat=True)
                 if expression.args.get("settings")
                 else "",

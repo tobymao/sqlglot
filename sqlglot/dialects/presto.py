@@ -150,7 +150,10 @@ def _sequence_sql(self: generator.Generator, expression: exp.GenerateSeries) -> 
     sql = self.func("SEQUENCE", start, end, step)
     if isinstance(expression.parent, exp.Table):
         if expression.parent.alias:
-            expression.parent.args["alias"] = f"_u({expression.parent.alias})"
+            source_name = "_u"
+            expression.parent.set(
+                "alias", exp.TableAlias(this=source_name, columns=[expression.parent.alias])
+            )
         sql = f"UNNEST({sql})"
 
     return sql

@@ -1557,6 +1557,7 @@ class Join(Expression):
         "kind": False,
         "using": False,
         "natural": False,
+        "global": False,
         "hint": False,
     }
 

@@ -1276,6 +1276,7 @@ class Generator:
                 op
                 for op in (
                     "NATURAL" if expression.args.get("natural") else None,
+                    "GLOBAL" if expression.args.get("global") else None,
                     expression.side,
                     expression.kind,
                     expression.hint if self.JOIN_HINTS else None,

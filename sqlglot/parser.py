@@ -552,12 +552,12 @@ class Parser(metaclass=_Parser):
     RANGE_PARSERS = {
         TokenType.BETWEEN: lambda self, this: self._parse_between(this),
         TokenType.GLOB: binary_range_parser(exp.Glob),
-        TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
+        TokenType.ILIKE: binary_range_parser(exp.ILike),
         TokenType.IN: lambda self, this: self._parse_in(this),
+        TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: binary_range_parser(exp.Like),
-        TokenType.ILIKE: binary_range_parser(exp.ILike),
-        TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
+        TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
         TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
         TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
     }
@@ -775,6 +775,8 @@ class Parser(metaclass=_Parser):
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
+
+    TERNARY_OPERATOR_TOKENS = {TokenType.PLACEHOLDER, TokenType.COLON}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
@@ -2681,7 +2683,18 @@ class Parser(metaclass=_Parser):
         return self._parse_alias(self._parse_conjunction())
 
     def _parse_conjunction(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
+        this = self._parse_tokens(self._parse_equality, self.CONJUNCTION)
+
+        if self._match(TokenType.PLACEHOLDER):
+            # Parses a ternary operator
+            return self.expression(
+                exp.If,
+                this=this,
+                true=self._parse_conjunction(),
+                false=self._match(TokenType.COLON) and self._parse_conjunction(),
+            )
+
+        return this
 
     def _parse_equality(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_comparison, self.EQUALITY)
@@ -2977,6 +2990,7 @@ class Parser(metaclass=_Parser):
             return self._parse_bracket(this)
         this = self._parse_bracket(this)
 
+        index = self._index
         while self._match_set(self.COLUMN_OPERATORS):
             op_token = self._prev.token_type
             op = self.COLUMN_OPERATORS.get(op_token)
@@ -2985,8 +2999,18 @@ class Parser(metaclass=_Parser):
                 field = self._parse_types()
                 if not field:
                     self.raise_error("Expected type")
-            elif op:
+            elif op and self._curr:
                 self._advance()
+
+                # This lets us fall back to parsing a ternary operator (.. ? .. : ..) if needed:
+                # https://clickhouse.com/docs/en/sql-reference/functions/conditional-functions
+                if op_token == TokenType.PLACEHOLDER and (
+                    self._prev.token_type != TokenType.STRING
+                    or self._match_set(self.TERNARY_OPERATOR_TOKENS)
+                ):
+                    self._retreat(index)
+                    return this
+
                 value = self._prev.text
                 field = (
                     exp.Literal.number(value)

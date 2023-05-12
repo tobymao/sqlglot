@@ -1,3 +1,4 @@
+from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -67,6 +68,34 @@ class TestClickhouse(Validator):
         self.validate_identity("WITH SUM(bytes) AS foo SELECT foo FROM system.parts")
         self.validate_identity("WITH (SELECT foo) AS bar SELECT bar + 5")
         self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")
+
+    def test_ternary(self):
+        self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})
+        self.validate_all(
+            "x AND FOO() > 3 + 2 ? 1 : 2",
+            write={"clickhouse": "CASE WHEN x AND FOO() > 3 + 2 THEN 1 ELSE 2 END"}
+        )
+        self.validate_all(
+            "x ? (y ? 1 : 2) : 3",
+            write={"clickhouse": "CASE WHEN x THEN (CASE WHEN y THEN 1 ELSE 2 END) ELSE 3 END"}
+        )
+        self.validate_all(
+            "x AND (foo() ? FALSE : TRUE) ? (y ? 1 : 2) : 3",
+            write={"clickhouse": "CASE WHEN x AND (CASE WHEN foo() THEN FALSE ELSE TRUE END) THEN (CASE WHEN y THEN 1 ELSE 2 END) ELSE 3 END"}
+        )
+
+        ternary = parse_one("x ? (y ? 1 : 2) : 3")
+
+        self.assertIsInstance(ternary, exp.If)
+        self.assertIsInstance(ternary.this, exp.Column)
+        self.assertIsInstance(ternary.args["true"], exp.Paren)
+        self.assertIsInstance(ternary.args["false"], exp.Literal)
+
+        nested_ternary = ternary.args["true"].this
+
+        self.assertIsInstance(nested_ternary.this, exp.Column)
+        self.assertIsInstance(nested_ternary.args["true"], exp.Literal)
+        self.assertIsInstance(nested_ternary.args["false"], exp.Literal)
 
     def test_signed_and_unsigned_types(self):
         data_types = [

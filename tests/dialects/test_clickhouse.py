@@ -25,6 +25,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT quantile(0.5)(a)")
         self.validate_identity("SELECT quantiles(0.5)(a) AS x FROM t")
         self.validate_identity("SELECT quantiles(0.1, 0.2, 0.3)(a)")
+        self.validate_identity("SELECT quantileTiming(0.5)(RANGE(100))")
         self.validate_identity("SELECT histogram(5)(a)")
         self.validate_identity("SELECT groupUniqArray(2)(a)")
         self.validate_identity("SELECT exponentialTimeDecayedAvg(60)(a, b)")

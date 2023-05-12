@@ -4065,6 +4065,10 @@ class QuantileIf(AggFunc):
     arg_types = {"parameters": True, "expressions": True}
 
 
+class QuantileTiming(AggFunc):
+    arg_types = {"this": True, "level": False}
+
+
 class ApproxQuantile(Quantile):
     arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 

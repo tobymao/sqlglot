@@ -93,7 +93,7 @@ class ClickHouse(Dialect):
             return self._parse_alias(self._parse_ternary(), explicit=explicit_alias)
 
         def _parse_ternary(self) -> t.Optional[exp.Expression]:
-            this = self._parse_tokens(self._parse_equality, self.CONJUNCTION)
+            this = self._parse_conjunction()
 
             if self._match(TokenType.PLACEHOLDER):
                 # Parses a ternary operator

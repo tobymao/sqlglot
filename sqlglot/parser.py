@@ -552,12 +552,12 @@ class Parser(metaclass=_Parser):
     RANGE_PARSERS = {
         TokenType.BETWEEN: lambda self, this: self._parse_between(this),
         TokenType.GLOB: binary_range_parser(exp.Glob),
-        TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
+        TokenType.ILIKE: binary_range_parser(exp.ILike),
         TokenType.IN: lambda self, this: self._parse_in(this),
+        TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: binary_range_parser(exp.Like),
-        TokenType.ILIKE: binary_range_parser(exp.ILike),
-        TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
+        TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
         TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
         TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
     }
@@ -2677,8 +2677,8 @@ class Parser(metaclass=_Parser):
             expression=self._parse_set_operations(self._parse_select(nested=True)),
         )
 
-    def _parse_expression(self) -> t.Optional[exp.Expression]:
-        return self._parse_alias(self._parse_conjunction())
+    def _parse_expression(self, explicit_alias: bool = False) -> t.Optional[exp.Expression]:
+        return self._parse_alias(self._parse_conjunction(), explicit=explicit_alias)
 
     def _parse_conjunction(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
@@ -2985,7 +2985,7 @@ class Parser(metaclass=_Parser):
                 field = self._parse_types()
                 if not field:
                     self.raise_error("Expected type")
-            elif op:
+            elif op and self._curr:
                 self._advance()
                 value = self._prev.text
                 field = (
@@ -3045,9 +3045,7 @@ class Parser(metaclass=_Parser):
             if query:
                 expressions = [query]
             else:
-                expressions = self._parse_csv(
-                    lambda: self._parse_alias(self._parse_conjunction(), explicit=True)
-                )
+                expressions = self._parse_csv(lambda: self._parse_expression(explicit_alias=True))
 
             this = seq_get(expressions, 0)
             self._parse_query_modifiers(this)

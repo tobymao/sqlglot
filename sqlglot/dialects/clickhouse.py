@@ -78,11 +78,32 @@ class ClickHouse(Dialect):
             and self._parse_in(this, is_global=True),
         }
 
-        JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}  # type: ignore
+        # The PLACEHOLDER entry is popped because 1) it doesn't affect Clickhouse (it corresponds to
+        # the postgres-specific JSONBContains parser) and 2) it makes parsing the ternary op simpler.
+        COLUMN_OPERATORS = parser.Parser.COLUMN_OPERATORS.copy()
+        COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
-        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}  # type: ignore
+        JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}
+
+        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {TokenType.ANY}
 
         LOG_DEFAULTS_TO_LN = True
+
+        def _parse_expression(self, explicit_alias: bool = False) -> t.Optional[exp.Expression]:
+            return self._parse_alias(self._parse_ternary(), explicit=explicit_alias)
+
+        def _parse_ternary(self) -> t.Optional[exp.Expression]:
+            this = self._parse_conjunction()
+
+            if self._match(TokenType.PLACEHOLDER):
+                return self.expression(
+                    exp.If,
+                    this=this,
+                    true=self._parse_conjunction(),
+                    false=self._match(TokenType.COLON) and self._parse_conjunction(),
+                )
+
+            return this
 
         def _parse_in(
             self, this: t.Optional[exp.Expression], is_global: bool = False

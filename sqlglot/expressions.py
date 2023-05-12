@@ -2117,6 +2117,8 @@ QUERY_MODIFIERS = {
     "offset": False,
     "lock": False,
     "sample": False,
+    "settings": False,
+    "format": False,
 }
 
 

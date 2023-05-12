@@ -62,6 +62,14 @@ class TestClickhouse(Validator):
             "SELECT position(needle IN haystack)",
             write={"clickhouse": "SELECT position(haystack, needle)"},
         )
+        self.validate_identity(
+            "SELECT * FROM x LIMIT 10 SETTINGS max_results = 100, result = 'break'"
+        )
+        self.validate_identity("SELECT * FROM x LIMIT 10 SETTINGS max_results = 100, result_")
+        self.validate_identity("SELECT * FROM x FORMAT PrettyCompact")
+        self.validate_identity(
+            "SELECT * FROM x LIMIT 10 SETTINGS max_results = 100, result_ FORMAT PrettyCompact"
+        )
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

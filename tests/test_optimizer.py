@@ -26,13 +26,13 @@ def parse_and_optimize(func, sql, dialect, **kwargs):
 
 def qualify_columns(expression, **kwargs):
     expression = optimizer.qualify_tables.qualify_tables(expression)
-    expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+    expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
     return expression
 
 
 def pushdown_projections(expression, **kwargs):
     expression = optimizer.qualify_tables.qualify_tables(expression)
-    expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
+    expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
     expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
     return expression
 
@@ -147,7 +147,14 @@ class TestOptimizer(unittest.TestCase):
             "z": {"a": "INT", "c": "INT"},
         }
 
-        self.check_file("optimizer", optimizer.optimize, pretty=True, execute=True, schema=schema)
+        self.check_file(
+            "optimizer",
+            optimizer.optimize,
+            infer_schema=True,
+            pretty=True,
+            execute=True,
+            schema=schema,
+        )
 
     def test_isolate_table_selects(self):
         self.check_file(
@@ -230,18 +237,20 @@ class TestOptimizer(unittest.TestCase):
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 
-    def test_expand_laterals(self):
+    def test_expand_alias_refs(self):
         # check order of lateral expansion with no schema
         self.assertEqual(
-            optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x " "").sql(),
-            'SELECT "x"."a" + 1 AS "d", "x"."a" + 2 AS "e" FROM "x" AS "x"',
+            optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e").sql(),
+            'SELECT "x"."a" + 1 AS "d", "x"."a" + 2 AS "e" FROM "x" AS "x" WHERE "x"."a" + 2 > 1 GROUP BY "x"."a" + 2',
         )
 
-        self.check_file(
-            "expand_laterals",
-            optimizer.expand_laterals.expand_laterals,
-            pretty=True,
-            execute=True,
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one("SELECT CAST(x AS INT) AS y FROM z AS z"),
+                schema={"l": {"c": "int"}},
+                infer_schema=False,
+            ).sql(),
+            "SELECT CAST(x AS INT) AS y FROM z AS z",
         )
 
     def test_expand_multi_table_selects(self):

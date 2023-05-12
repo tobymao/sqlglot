@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.optimizer import Scope, build_scope, optimize
-from sqlglot.optimizer.expand_laterals import expand_laterals
+from sqlglot.optimizer.lower_identities import lower_identities
 from sqlglot.optimizer.qualify_columns import qualify_columns
 from sqlglot.optimizer.qualify_tables import qualify_tables
 
@@ -40,7 +40,7 @@ def lineage(
     sql: str | exp.Expression,
     schema: t.Optional[t.Dict | Schema] = None,
     sources: t.Optional[t.Dict[str, str | exp.Subqueryable]] = None,
-    rules: t.Sequence[t.Callable] = (qualify_tables, qualify_columns, expand_laterals),
+    rules: t.Sequence[t.Callable] = (lower_identities, qualify_tables, qualify_columns),
     dialect: DialectType = None,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.

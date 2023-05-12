@@ -4468,7 +4468,7 @@ ROLLUP (
 )
 ORDER BY
   "lochierarchy" DESC,
-  CASE WHEN "lochierarchy" = 0 THEN "item"."i_category" END,
+  CASE WHEN "lochierarchy" = 0 THEN "i_category" END,
   "rank_within_parent"
 LIMIT 100;
 
@@ -6145,7 +6145,7 @@ WITH web_v1 AS
 (
          SELECT   ws_item_sk item_sk,
                   d_date,
-                  sum(Sum(ws_sales_price)) OVER (partition BY ws_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW) cume_sales
+                  sum(Sum(ws_sales_price)) OVER (partition BY ws_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row) cume_sales
          FROM     web_sales ,
                   date_dim
          WHERE    ws_sold_date_sk=d_date_sk
@@ -6156,7 +6156,7 @@ WITH web_v1 AS
 (
          SELECT   ss_item_sk item_sk,
                   d_date,
-                  sum(sum(ss_sales_price)) OVER (partition BY ss_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW) cume_sales
+                  sum(sum(ss_sales_price)) OVER (partition BY ss_item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row) cume_sales
          FROM     store_sales ,
                   date_dim
          WHERE    ss_sold_date_sk=d_date_sk
@@ -6171,8 +6171,8 @@ FROM     (
                            d_date ,
                            web_sales ,
                            store_sales ,
-                           max(web_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW)   web_cumulative ,
-                           max(store_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT ROW) store_cumulative
+                           max(web_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row)   web_cumulative ,
+                           max(store_sales) OVER (partition BY item_sk ORDER BY d_date rows BETWEEN UNBOUNDED PRECEDING AND      CURRENT row) store_cumulative
                   FROM     (
                                            SELECT
                                                            CASE
@@ -9235,7 +9235,7 @@ ROLLUP (
 )
 ORDER BY
   "lochierarchy" DESC,
-  CASE WHEN "lochierarchy" = 0 THEN "store"."s_state" END,
+  CASE WHEN "lochierarchy" = 0 THEN "s_state" END,
   "rank_within_parent"
 LIMIT 100;
 
@@ -11437,7 +11437,7 @@ ROLLUP (
 )
 ORDER BY
   "lochierarchy" DESC,
-  CASE WHEN "lochierarchy" = 0 THEN "item"."i_category" END,
+  CASE WHEN "lochierarchy" = 0 THEN "i_category" END,
   "rank_within_parent"
 LIMIT 100;
 

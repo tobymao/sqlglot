@@ -261,12 +261,14 @@ class Scope:
 
             self._columns = []
             for column in columns + external_columns:
-                ancestor = column.find_ancestor(exp.Qualify, exp.Order, exp.Having, exp.Hint)
+                ancestor = column.find_ancestor(
+                    exp.Select, exp.Qualify, exp.Order, exp.Having, exp.Hint
+                )
                 if (
                     not ancestor
-                    # Window functions can have an ORDER BY clause
-                    or not isinstance(ancestor.parent, exp.Select)
                     or column.table
+                    or isinstance(ancestor, exp.Select)
+                    or (isinstance(ancestor, exp.Order) and isinstance(ancestor.parent, exp.Window))
                     or (column.name not in named_selects and not isinstance(ancestor, exp.Hint))
                 ):
                     self._columns.append(column)

@@ -73,15 +73,17 @@ class TestClickhouse(Validator):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})
         self.validate_all(
             "x AND FOO() > 3 + 2 ? 1 : 2",
-            write={"clickhouse": "CASE WHEN x AND FOO() > 3 + 2 THEN 1 ELSE 2 END"}
+            write={"clickhouse": "CASE WHEN x AND FOO() > 3 + 2 THEN 1 ELSE 2 END"},
         )
         self.validate_all(
             "x ? (y ? 1 : 2) : 3",
-            write={"clickhouse": "CASE WHEN x THEN (CASE WHEN y THEN 1 ELSE 2 END) ELSE 3 END"}
+            write={"clickhouse": "CASE WHEN x THEN (CASE WHEN y THEN 1 ELSE 2 END) ELSE 3 END"},
         )
         self.validate_all(
             "x AND (foo() ? FALSE : TRUE) ? (y ? 1 : 2) : 3",
-            write={"clickhouse": "CASE WHEN x AND (CASE WHEN foo() THEN FALSE ELSE TRUE END) THEN (CASE WHEN y THEN 1 ELSE 2 END) ELSE 3 END"}
+            write={
+                "clickhouse": "CASE WHEN x AND (CASE WHEN foo() THEN FALSE ELSE TRUE END) THEN (CASE WHEN y THEN 1 ELSE 2 END) ELSE 3 END"
+            },
         )
 
         ternary = parse_one("x ? (y ? 1 : 2) : 3")

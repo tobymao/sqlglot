@@ -3548,7 +3548,12 @@ class Parser(metaclass=_Parser):
         this = self._parse_conjunction()
 
         if not self._match(TokenType.ALIAS):
-            self.raise_error("Expected AS after CAST")
+            if self._match(TokenType.COMMA):
+                return self.expression(
+                    exp.CastToStrType, this=this, expression=self._parse_string()
+                )
+            else:
+                self.raise_error("Expected AS after CAST")
 
         to = self._parse_types()
 

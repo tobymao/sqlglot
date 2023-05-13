@@ -26,7 +26,7 @@ setup(
         "dev": [
             "autoflake",
             "black",
-            "duckdb",
+            "duckdb>=0.6",
             "isort",
             "mypy>=0.990",
             "pandas",

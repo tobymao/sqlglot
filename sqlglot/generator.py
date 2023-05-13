@@ -1160,13 +1160,13 @@ class Generator:
         alias = f"{sep}{alias}" if alias else ""
         hints = self.expressions(expression, key="hints", sep=", ", flat=True)
         hints = f" WITH ({hints})" if hints and self.TABLE_HINTS else ""
-        laterals = self.expressions(expression, key="laterals", sep="")
-        joins = self.expressions(expression, key="joins", sep="")
         pivots = self.expressions(expression, key="pivots", sep="")
+        joins = self.expressions(expression, key="joins", sep="")
+        laterals = self.expressions(expression, key="laterals", sep="")
         system_time = expression.args.get("system_time")
         system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
 
-        return f"{table}{system_time}{alias}{hints}{laterals}{joins}{pivots}"
+        return f"{table}{system_time}{alias}{hints}{pivots}{joins}{laterals}"
 
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "

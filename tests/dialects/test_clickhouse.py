@@ -76,6 +76,10 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT * FROM x LIMIT 10 SETTINGS max_results = 100, result_ FORMAT PrettyCompact"
         )
+        self.validate_all(
+            "SELECT * FROM foo JOIN bar USING id, name",
+            write={"clickhouse": "SELECT * FROM foo JOIN bar USING (id, name)"},
+        )
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

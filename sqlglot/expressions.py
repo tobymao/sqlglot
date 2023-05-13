@@ -3529,6 +3529,10 @@ class AggFunc(Func):
     pass
 
 
+class ParameterizedAgg(AggFunc):
+    arg_types = {"this": True, "expressions": True, "params": True}
+
+
 class Abs(Func):
     pass
 
@@ -3849,10 +3853,6 @@ class Explode(Func):
     pass
 
 
-class ExponentialTimeDecayedAvg(AggFunc):
-    arg_types = {"this": True, "time": False, "decay": False}
-
-
 class Floor(Func):
     arg_types = {"this": True, "decimals": False}
 
@@ -3874,16 +3874,8 @@ class GroupConcat(Func):
     arg_types = {"this": True, "separator": False}
 
 
-class GroupUniqArray(AggFunc):
-    arg_types = {"this": True, "size": False}
-
-
 class Hex(Func):
     pass
-
-
-class Histogram(AggFunc):
-    arg_types = {"this": True, "bins": False}
 
 
 class If(Func):
@@ -4052,21 +4044,6 @@ class PercentileDisc(AggFunc):
 
 class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
-
-
-# Clickhouse-specific:
-# https://clickhouse.com/docs/en/sql-reference/aggregate-functions/reference/quantiles/#quantiles
-class Quantiles(AggFunc):
-    arg_types = {"parameters": True, "expressions": True}
-    is_var_len_args = True
-
-
-class QuantileIf(AggFunc):
-    arg_types = {"parameters": True, "expressions": True}
-
-
-class QuantileTiming(AggFunc):
-    arg_types = {"this": True, "level": False}
 
 
 class ApproxQuantile(Quantile):

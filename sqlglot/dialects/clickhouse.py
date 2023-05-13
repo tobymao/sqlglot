@@ -5,7 +5,6 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect, inline_array_sql, rename_func, var_map_sql
 from sqlglot.errors import ParseError
-from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import parse_var_map
 from sqlglot.tokens import Token, TokenType
 
@@ -52,26 +51,15 @@ class ClickHouse(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "EXPONENTIALTIMEDECAYEDAVG": lambda params, args: exp.ExponentialTimeDecayedAvg(
-                this=seq_get(args, 0),
-                time=seq_get(args, 1),
-                decay=seq_get(params, 0),
-            ),
-            "GROUPUNIQARRAY": lambda params, args: exp.GroupUniqArray(
-                this=seq_get(args, 0), size=seq_get(params, 0)
-            ),
-            "HISTOGRAM": lambda params, args: exp.Histogram(
-                this=seq_get(args, 0), bins=seq_get(params, 0)
-            ),
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
-            "QUANTILE": lambda params, args: exp.Quantile(this=args, quantile=params),
-            "QUANTILES": lambda params, args: exp.Quantiles(parameters=params, expressions=args),
-            "QUANTILEIF": lambda params, args: exp.QuantileIf(parameters=params, expressions=args),
-            "QUANTILETIMING": lambda params, args: exp.QuantileTiming(this=params, level=args),
         }
 
-        FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "QUANTILE": lambda self: self._parse_quantile(),
+        }
+
         FUNCTION_PARSERS.pop("MATCH")
 
         RANGE_PARSERS = {
@@ -171,6 +159,42 @@ class ClickHouse(Dialect):
                 join.set("global", join.args.pop("natural", None))
             return join
 
+        def _parse_function(
+            self, functions: t.Optional[t.Dict[str, t.Callable]] = None, anonymous: bool = False
+        ) -> t.Optional[exp.Expression]:
+            func = super()._parse_function(functions, anonymous)
+
+            if isinstance(func, exp.Anonymous):
+                params = self._parse_func_params(func)
+
+                if params:
+                    return self.expression(
+                        exp.ParameterizedAgg,
+                        this=func.this,
+                        expressions=func.expressions,
+                        params=params,
+                    )
+
+            return func
+
+        def _parse_func_params(
+            self, this: t.Optional[exp.Func] = None
+        ) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
+            if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
+                return self._parse_csv(self._parse_lambda)
+            if self._match(TokenType.L_PAREN):
+                params = self._parse_csv(self._parse_lambda)
+                self._match_r_paren(this)
+                return params
+            return None
+
+        def _parse_quantile(self) -> exp.Quantile:
+            this = self._parse_lambda()
+            params = self._parse_func_params()
+            if params:
+                return self.expression(exp.Quantile, this=params[0], quantile=this)
+            return self.expression(exp.Quantile, this=this, quantile=exp.Literal.number(0.5))
+
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 
@@ -201,16 +225,11 @@ class ClickHouse(Dialect):
             **generator.Generator.TRANSFORMS,  # type: ignore
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
-            exp.ExponentialTimeDecayedAvg: lambda self, e: f"exponentialTimeDecayedAvg{self._param_args_sql(e, 'decay', ['this', 'time'])}",
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
-            exp.GroupUniqArray: lambda self, e: f"groupUniqArray{self._param_args_sql(e, 'size', 'this')}",
-            exp.Histogram: lambda self, e: f"histogram{self._param_args_sql(e, 'bins', 'this')}",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
-            exp.Quantile: lambda self, e: f"quantile{self._param_args_sql(e, 'quantile', 'this')}",
-            exp.Quantiles: lambda self, e: f"quantiles{self._param_args_sql(e, 'parameters', 'expressions')}",
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
-            exp.QuantileIf: lambda self, e: f"quantileIf{self._param_args_sql(e, 'parameters', 'expressions')}",
-            exp.QuantileTiming: lambda self, e: f"quantileTiming{self._param_args_sql(e, 'this', 'level')}",
+            exp.Quantile: lambda self, e: self.func("quantile", e.args.get("quantile"))
+            + f"({self.sql(e, 'this')})",
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
@@ -227,28 +246,6 @@ class ClickHouse(Dialect):
         EXPLICIT_UNION = True
         GROUPINGS_SEP = ""
 
-        def _param_args_sql(
-            self,
-            expression: exp.Expression,
-            param_names: str | t.List[str],
-            arg_names: str | t.List[str],
-        ) -> str:
-            params = self.format_args(
-                *(
-                    arg
-                    for name in ensure_list(param_names)
-                    for arg in ensure_list(expression.args.get(name))
-                )
-            )
-            args = self.format_args(
-                *(
-                    arg
-                    for name in ensure_list(arg_names)
-                    for arg in ensure_list(expression.args.get(name))
-                )
-            )
-            return f"({params})({args})"
-
         def cte_sql(self, expression: exp.CTE) -> str:
             if isinstance(expression.this, exp.Alias):
                 return self.sql(expression, "this")
@@ -264,3 +261,7 @@ class ClickHouse(Dialect):
                 if expression.args.get("format")
                 else "",
             ]
+
+        def parameterizedagg_sql(self, expression: exp.Anonymous) -> str:
+            params = self.expressions(expression, "params", flat=True)
+            return self.func(expression.name, *expression.expressions) + f"({params})"

@@ -6,13 +6,7 @@ from collections import defaultdict
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
-from sqlglot.helper import (
-    apply_index_offset,
-    count_params,
-    ensure_collection,
-    ensure_list,
-    seq_get,
-)
+from sqlglot.helper import apply_index_offset, ensure_collection, ensure_list, seq_get
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
@@ -3126,17 +3120,7 @@ class Parser(metaclass=_Parser):
             args = self._parse_csv(self._parse_lambda)
 
             if function and not anonymous:
-                # Clickhouse supports function calls like foo(x, y)(z), so for these we need to also parse the
-                # second parameter list (i.e. "(z)") and the corresponding function will receive both arg lists.
-                if count_params(function) == 2:
-                    params = None
-                    if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
-                        params = self._parse_csv(self._parse_lambda)
-
-                    this = function(args, params)
-                else:
-                    this = function(args)
-
+                this = function(args)
                 self.validate_expression(this, args)
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)

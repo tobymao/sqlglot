@@ -727,6 +727,7 @@ class Parser(metaclass=_Parser):
     }
 
     QUERY_MODIFIER_PARSERS = {
+        "laterals": lambda self: list(iter(self._parse_lateral, None)),
         "match": lambda self: self._parse_match_recognize(),
         "where": lambda self: self._parse_where(),
         "group": lambda self: self._parse_group(),
@@ -1979,25 +1980,12 @@ class Parser(metaclass=_Parser):
         if not isinstance(this, self.MODIFIABLES):
             return
 
-        table = isinstance(this, exp.Table)
-
-        while True:
-            join = self._parse_join()
-            if join:
-                this.append("joins", join)
-
-            lateral = None
-            if not join:
-                lateral = self._parse_lateral()
-                if lateral:
-                    this.append("laterals", lateral)
-
-            comma = None if table else self._match(TokenType.COMMA)
-            if comma:
+        join = self._parse_join()
+        while join:
+            this.append("joins", join)
+            while self._match(TokenType.COMMA):
                 this.args["from"].append("expressions", self._parse_table())
-
-            if not (lateral or join or comma):
-                break
+            join = self._parse_join()
 
         for key, parser in self.QUERY_MODIFIER_PARSERS.items():
             expression = parser(self)

@@ -164,6 +164,20 @@ def _from_unixtime(args: t.Sequence) -> exp.Expression:
     return exp.UnixToTime.from_arg_list(args)
 
 
+def unnest_sequence(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.GenerateSeries):
+        if isinstance(expression.parent, exp.Table):
+            unnest = exp.Unnest(expressions=[expression.copy()])
+            if expression.parent.alias:
+                source_name = "_u"
+                unnest_with_alias = exp.alias_(unnest, alias=source_name, table=[expression.parent.alias])
+                x = expression.parent.replace(unnest_with_alias) # ?
+                expression.parent = x
+                unnest.set("parent", x)
+                return unnest
+            return unnest
+    return expression
+
 class Presto(Dialect):
     index_offset = 1
     null_ordering = "nulls_are_last"
@@ -267,6 +281,7 @@ class Presto(Dialect):
             exp.Decode: _decode_sql,
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.dateint_format}) AS DATE)",
             exp.Encode: _encode_sql,
+            exp.GenerateSeries: transforms.preprocess([unnest_sequence]),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hex: rename_func("TO_HEX"),
             exp.If: if_sql,
@@ -346,12 +361,4 @@ class Presto(Dialect):
                     start = exp.Cast(this=start, to=to)
 
             sql = self.func("SEQUENCE", start, end, step)
-            if isinstance(expression.parent, exp.Table):
-                if expression.parent.alias:
-                    source_name = "_u"
-                    expression.parent.set(
-                        "alias", exp.TableAlias(this=source_name, columns=[expression.parent.alias])
-                    )
-                sql = f"UNNEST({sql})"
-
             return sql

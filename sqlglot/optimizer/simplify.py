@@ -388,14 +388,18 @@ def _simplify_binary(expression, a, b):
 
 
 def simplify_parens(expression):
-    if (
-        isinstance(expression, exp.Paren)
-        and not isinstance(expression.this, exp.Select)
-        and (
-            not isinstance(expression.parent, (exp.Condition, exp.Binary))
-            or isinstance(expression.this, exp.Predicate)
-            or not isinstance(expression.this, exp.Binary)
-        )
+    if not isinstance(expression, exp.Paren):
+        return expression
+
+    this = expression.this
+    parent = expression.parent
+
+    if not isinstance(this, exp.Select) and (
+        not isinstance(parent, (exp.Condition, exp.Binary))
+        or isinstance(this, exp.Predicate)
+        or not isinstance(this, exp.Binary)
+        or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
+        or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
     ):
         return expression.this
     return expression

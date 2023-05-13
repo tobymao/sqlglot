@@ -112,7 +112,7 @@ def _eliminate_union(scope, existing_ctes, taken):
     # Try to maintain the selections
     expressions = scope.selects
     selects = [
-        exp.alias_(exp.column(e.alias_or_name, table=alias), alias=e.alias_or_name)
+        exp.alias_(exp.column(e.alias_or_name, table=alias), alias=e.alias_or_name, copy=False)
         for e in expressions
         if e.alias_or_name
     ]
@@ -120,7 +120,9 @@ def _eliminate_union(scope, existing_ctes, taken):
     if len(selects) != len(expressions):
         selects = ["*"]
 
-    scope.expression.replace(exp.select(*selects).from_(exp.alias_(exp.table_(alias), alias=alias)))
+    scope.expression.replace(
+        exp.select(*selects).from_(exp.alias_(exp.table_(alias), alias=alias, copy=False))
+    )
 
     if not duplicate_cte_alias:
         existing_ctes[scope.expression] = alias
@@ -153,7 +155,7 @@ def _eliminate_cte(scope, existing_ctes, taken):
     for child_scope in scope.parent.traverse():
         for table, source in child_scope.selected_sources.values():
             if source is scope:
-                new_table = exp.alias_(exp.table_(name), alias=table.alias_or_name)
+                new_table = exp.alias_(exp.table_(name), alias=table.alias_or_name, copy=False)
                 table.replace(new_table)
 
     return cte

@@ -4070,18 +4070,23 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_wrapped_id_vars(self) -> t.List[t.Optional[exp.Expression]]:
-        return self._parse_wrapped_csv(self._parse_id_var)
+    def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[t.Optional[exp.Expression]]:
+        return self._parse_wrapped_csv(self._parse_id_var, optional=optional)
 
     def _parse_wrapped_csv(
-        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
+        self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA, optional: bool = False
     ) -> t.List[t.Optional[exp.Expression]]:
-        return self._parse_wrapped(lambda: self._parse_csv(parse_method, sep=sep))
+        return self._parse_wrapped(
+            lambda: self._parse_csv(parse_method, sep=sep), optional=optional
+        )
 
-    def _parse_wrapped(self, parse_method: t.Callable) -> t.Any:
-        self._match_l_paren()
+    def _parse_wrapped(self, parse_method: t.Callable, optional: bool = False) -> t.Any:
+        wrapped = self._match(TokenType.L_PAREN)
+        if not wrapped and not optional:
+            self.raise_error("Expecting (")
         parse_result = parse_method()
-        self._match_r_paren()
+        if wrapped:
+            self._match_r_paren()
         return parse_result
 
     def _parse_select_or_expression(self) -> t.Optional[exp.Expression]:

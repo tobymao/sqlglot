@@ -210,6 +210,11 @@ class ClickHouse(Dialect):
                 return self.expression(exp.Quantile, this=params[0], quantile=this)
             return self.expression(exp.Quantile, this=this, quantile=exp.Literal.number(0.5))
 
+        def _parse_wrapped_id_vars(
+            self, optional: bool = False
+        ) -> t.List[t.Optional[exp.Expression]]:
+            return super()._parse_wrapped_id_vars(optional=True)
+
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 

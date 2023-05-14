@@ -517,7 +517,7 @@ FROM (
     "tb"."b" AS "b",
     "tb"."c" AS "c"
   FROM "sc"."tb" AS "tb"
-) AS "_q_0"   PIVOT(  SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
+) AS "_q_0" PIVOT(SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
 
 # title: pivoted source with implicit selections
 # execute: false
@@ -532,7 +532,7 @@ FROM (
     "u"."g" AS "g",
     "u"."h" AS "h"
   FROM "u" AS "u"
-) AS "_q_0"   PIVOT(  SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "_q_1";
+) AS "_q_0" PIVOT(SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "_q_1";
 
 # title: selecting explicit qualified columns from pivoted source with explicit selections
 # execute: false
@@ -545,7 +545,7 @@ FROM (
     "u"."f" AS "f",
     "u"."h" AS "h"
   FROM "u" AS "u"
-) AS "_q_0"   PIVOT(  SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "piv";
+) AS "_q_0" PIVOT(SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "piv";
 
 # title: selecting explicit unqualified columns from pivoted source with implicit selections
 # execute: false
@@ -553,4 +553,4 @@ SELECT x, y FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
   "_q_0"."x" AS "x",
   "_q_0"."y" AS "y"
-FROM "u" AS "u"   PIVOT(  SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";
+FROM "u" AS "u" PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";

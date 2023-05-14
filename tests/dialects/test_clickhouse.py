@@ -76,6 +76,28 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT * FROM x LIMIT 10 SETTINGS max_results = 100, result_ FORMAT PrettyCompact"
         )
+        self.validate_all(
+            "SELECT * FROM foo ANY LEFT JOIN bla ON foo.c1 = bla.c2",
+            write={"clickhouse": "SELECT * FROM foo LEFT ANY JOIN bla ON foo.c1 = bla.c2"},
+        )
+        self.validate_all(
+            "SELECT * FROM foo GLOBAL ANY LEFT JOIN bla ON foo.c1 = bla.c2",
+            write={"clickhouse": "SELECT * FROM foo GLOBAL LEFT ANY JOIN bla ON foo.c1 = bla.c2"},
+        )
+        self.validate_all(
+            """
+            SELECT
+                loyalty,
+                count()
+            FROM hits SEMI LEFT JOIN users USING (UserID)
+            GROUP BY loyalty
+            ORDER BY loyalty ASC
+            """,
+            write={
+                "clickhouse": "SELECT loyalty, COUNT() FROM hits LEFT SEMI JOIN users USING (UserID)"
+                + " GROUP BY loyalty ORDER BY loyalty"
+            },
+        )
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

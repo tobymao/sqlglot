@@ -570,9 +570,9 @@ class DataFrame:
                     r_expressions.append(l_column)
                     r_columns_unused.remove(l_column)
                 else:
-                    r_expressions.append(exp.alias_(exp.Null(), l_column))
+                    r_expressions.append(exp.alias_(exp.Null(), l_column, copy=False))
             for r_column in r_columns_unused:
-                l_expressions.append(exp.alias_(exp.Null(), r_column))
+                l_expressions.append(exp.alias_(exp.Null(), r_column, copy=False))
                 r_expressions.append(r_column)
         r_df = (
             other.copy()._convert_leaf_to_cte().select(*self._ensure_list_of_columns(r_expressions))
@@ -761,7 +761,7 @@ class DataFrame:
             raise ValueError("Tried to rename a column that doesn't exist")
         for existing_column in existing_columns:
             if isinstance(existing_column, exp.Column):
-                existing_column.replace(exp.alias_(existing_column.copy(), new))
+                existing_column.replace(exp.alias_(existing_column, new))
             else:
                 existing_column.set("alias", exp.to_identifier(new))
         return self.copy(expression=expression)

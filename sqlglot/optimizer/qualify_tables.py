@@ -59,8 +59,9 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
                 if not source.alias:
                     source = source.replace(
                         alias(
-                            source.copy(),
+                            source,
                             name if name else next_name(),
+                            copy=True,
                             table=True,
                         )
                     )

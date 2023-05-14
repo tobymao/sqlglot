@@ -73,10 +73,19 @@ class ClickHouse(Dialect):
         COLUMN_OPERATORS = parser.Parser.COLUMN_OPERATORS.copy()
         COLUMN_OPERATORS.pop(TokenType.PLACEHOLDER)
 
-        JOIN_KINDS = {*parser.Parser.JOIN_KINDS, TokenType.ANY, TokenType.ASOF}
+        JOIN_KINDS = {
+            *parser.Parser.JOIN_KINDS,
+            TokenType.ANY,
+            TokenType.ASOF,
+            TokenType.ANTI,
+            TokenType.SEMI,
+        }
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {
             TokenType.ANY,
+            TokenType.ASOF,
+            TokenType.SEMI,
+            TokenType.ANTI,
             TokenType.SETTINGS,
             TokenType.FORMAT,
         }
@@ -146,8 +155,14 @@ class ClickHouse(Dialect):
         def _parse_join_side_and_kind(
             self,
         ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
+            is_global = self._match(TokenType.GLOBAL) and self._prev
+            kind_pre = self._match_set(self.JOIN_KINDS, advance=False) and self._prev
+            if kind_pre:
+                kind = self._match_set(self.JOIN_KINDS) and self._prev
+                side = self._match_set(self.JOIN_SIDES) and self._prev
+                return is_global, side, kind
             return (
-                self._match(TokenType.GLOBAL) and self._prev,
+                is_global,
                 self._match_set(self.JOIN_SIDES) and self._prev,
                 self._match_set(self.JOIN_KINDS) and self._prev,
             )

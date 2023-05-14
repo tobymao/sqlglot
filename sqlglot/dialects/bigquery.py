@@ -224,6 +224,12 @@ class BigQuery(Dialect):
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
 
+        def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+            table = super()._parse_table_parts(schema=schema)
+            if isinstance(table.this, exp.Identifier) and "." in table.name:
+                table = exp.to_table(table.name, dialect="bigquery")
+            return table
+
     class Generator(generator.Generator):
         EXPLICIT_UNION = True
         INTERVAL_ALLOWS_PLURAL_FORM = False

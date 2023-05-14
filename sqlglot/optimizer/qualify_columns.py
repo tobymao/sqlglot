@@ -6,7 +6,6 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
-from sqlglot.optimizer.expand_laterals import expand_laterals as _expand_laterals
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 

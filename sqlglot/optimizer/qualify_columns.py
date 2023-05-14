@@ -253,7 +253,7 @@ def _qualify_columns(scope, resolver):
             if scope.pivots and not column.find_ancestor(exp.Pivot):
                 # If the column is under the Pivot expression, we need to qualify it
                 # using the name of the pivoted source instead of the pivot's alias
-                column.set("table", scope.pivots[0].args["alias"])
+                column.set("table", exp.to_identifier(scope.pivots[0].alias))
                 continue
 
             column_table = resolver.get_table(column_name)

@@ -44,15 +44,13 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
                     derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
 
             if not derived_table.args.get("alias"):
-                alias_ = f"_q_{next(sequence)}"
+                alias_ = next_name()
                 derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))
                 scope.rename_source(None, alias_)
 
             pivots = derived_table.args.get("pivots")
             if pivots and not pivots[0].alias:
-                pivots[0].set(
-                    "alias", exp.TableAlias(this=exp.to_identifier(f"_q_{next(sequence)}"))
-                )
+                pivots[0].set("alias", exp.TableAlias(this=exp.to_identifier(next_name())))
 
         for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
@@ -74,7 +72,7 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
 
                 pivots = source.args.get("pivots")
                 if pivots and not pivots[0].alias:
-                    pivots[0].set("alias", exp.to_identifier(next_name()))
+                    pivots[0].set("alias", exp.TableAlias(this=exp.to_identifier(next_name())))
 
                 if schema and isinstance(source.this, exp.ReadCSV):
                     with csv_reader(source.this) as reader:

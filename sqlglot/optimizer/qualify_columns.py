@@ -154,7 +154,7 @@ def _expand_using(scope, resolver):
 
                 # Ensure selects keep their output name
                 if isinstance(column.parent, exp.Select):
-                    replacement = exp.alias_(replacement, alias=column.name)
+                    replacement = alias(replacement, alias=column.name, copy=False)
 
                 scope.replace(column, replacement)
 
@@ -311,14 +311,18 @@ def _expand_stars(scope, resolver, using_column_tables):
                         coalesce = [exp.column(name, table=table) for table in tables]
 
                         new_selections.append(
-                            exp.alias_(
-                                exp.Coalesce(this=coalesce[0], expressions=coalesce[1:]), alias=name
+                            alias(
+                                exp.Coalesce(this=coalesce[0], expressions=coalesce[1:]),
+                                alias=name,
+                                copy=False,
                             )
                         )
                     elif name not in except_columns.get(table_id, set()):
                         alias_ = replace_columns.get(table_id, {}).get(name, name)
                         column = exp.column(name, table)
-                        new_selections.append(alias(column, alias_) if alias_ != name else column)
+                        new_selections.append(
+                            alias(column, alias_, copy=False) if alias_ != name else column
+                        )
             else:
                 return
     scope.expression.set("expressions", new_selections)

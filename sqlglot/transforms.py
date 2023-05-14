@@ -93,7 +93,7 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
         for select in expression.selects:
             if not select.alias_or_name:
                 alias = find_new_name(taken, "_c")
-                select.replace(exp.alias_(select.copy(), alias))
+                select.replace(exp.alias_(select, alias))
                 taken.add(alias)
 
         outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
@@ -102,7 +102,7 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
         for expr in qualify_filters.find_all((exp.Window, exp.Column)):
             if isinstance(expr, exp.Window):
                 alias = find_new_name(expression.named_selects, "_w")
-                expression.select(exp.alias_(expr.copy(), alias), copy=False)
+                expression.select(exp.alias_(expr, alias), copy=False)
                 column = exp.column(alias)
                 if isinstance(expr.parent, exp.Qualify):
                     qualify_filters = column

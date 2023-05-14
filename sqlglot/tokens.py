@@ -932,6 +932,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 break
             if result == 2:
                 word = chars
+
             size += 1
             end = self._current - 1 + size
 
@@ -949,6 +950,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     skip = True
             else:
+                char = ""
                 chars = " "
 
         word = None if not single_token and chars[-1] not in self.WHITE_SPACE else word

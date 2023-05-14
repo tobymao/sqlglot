@@ -6,6 +6,7 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("x <> ''")
         self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
         self.validate_identity("SELECT b'abc'")
         self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[1, 2])""")
@@ -23,6 +24,9 @@ class TestBigQuery(Validator):
             "SELECT * FROM (SELECT * FROM `t`) AS a UNPIVOT((c) FOR c_name IN (v1, v2))"
         )
 
+        self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
+        self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
+        self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all(
             "CREATE TEMP TABLE foo AS SELECT 1",
             write={"bigquery": "CREATE TEMPORARY TABLE foo AS SELECT 1"},

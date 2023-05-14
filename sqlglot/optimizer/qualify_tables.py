@@ -48,6 +48,15 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
                 derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))
                 scope.rename_source(None, alias_)
 
+            # TODO: handle optimization of multiple PIVOTs (and possibly UNPIVOTs) in the future
+            pivots = derived_table.args.get("pivots")
+            if pivots:
+                pivot = pivots[0]
+                if not pivot.alias:
+                    pivot.set(
+                        "alias", exp.TableAlias(this=exp.to_identifier(f"_q_{next(sequence)}"))
+                    )
+
         for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
                 if isinstance(source.this, exp.Identifier):
@@ -65,6 +74,10 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
                             table=True,
                         )
                     )
+
+                pivots = source.args.get("pivots")
+                if pivots and not pivots[0].alias:
+                    pivots[0].set("alias", exp.to_identifier(next_name()))
 
                 if schema and isinstance(source.this, exp.ReadCSV):
                     with csv_reader(source.this) as reader:

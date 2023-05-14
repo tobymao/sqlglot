@@ -502,3 +502,55 @@ WHERE
   "unioned"."source_system" = 'bamboohr' OR "unioned"."source_system" = 'workday'
 QUALIFY
   ROW_NUMBER() OVER (PARTITION BY "unioned"."unique_filter_key" ORDER BY "unioned"."sort_order" DESC, 1) = 1;
+
+# title: pivoted source with explicit selections
+# execute: false
+SELECT * FROM (SELECT a, b, c FROM sc.tb) PIVOT (SUM(c) FOR b IN ('x','y','z'));
+SELECT
+  "_q_1"."a" AS "a",
+  "_q_1"."x" AS "x",
+  "_q_1"."y" AS "y",
+  "_q_1"."z" AS "z"
+FROM (
+  SELECT
+    "tb"."a" AS "a",
+    "tb"."b" AS "b",
+    "tb"."c" AS "c"
+  FROM "sc"."tb" AS "tb"
+) AS "_q_0"   PIVOT(  SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
+
+# title: pivoted source with implicit selections
+# execute: false
+SELECT * FROM (SELECT * FROM u) PIVOT (SUM(f) FOR h IN ('x', 'y'));
+SELECT
+  "_q_1"."g" AS "g",
+  "_q_1"."x" AS "x",
+  "_q_1"."y" AS "y"
+FROM (
+  SELECT
+    "u"."f" AS "f",
+    "u"."g" AS "g",
+    "u"."h" AS "h"
+  FROM "u" AS "u"
+) AS "_q_0"   PIVOT(  SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "_q_1";
+
+# title: selecting explicit qualified columns from pivoted source with explicit selections
+# execute: false
+SELECT piv.x, piv.y FROM (SELECT f, h FROM u) PIVOT (SUM(f) FOR h IN ('x', 'y')) AS piv;
+SELECT
+  "piv"."x" AS "x",
+  "piv"."y" AS "y"
+FROM (
+  SELECT
+    "u"."f" AS "f",
+    "u"."h" AS "h"
+  FROM "u" AS "u"
+) AS "_q_0"   PIVOT(  SUM("_q_0"."f") FOR "_q_0"."h" IN ('x', 'y')) AS "piv";
+
+# title: selecting explicit unqualified columns from pivoted source with implicit selections
+# execute: false
+SELECT x, y FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
+SELECT
+  "_q_0"."x" AS "x",
+  "_q_0"."y" AS "y"
+FROM "u" AS "u"   PIVOT(  SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";

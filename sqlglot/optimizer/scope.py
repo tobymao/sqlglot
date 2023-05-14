@@ -83,6 +83,7 @@ class Scope:
         self._columns = None
         self._external_columns = None
         self._join_hints = None
+        self._pivots = None
 
     def branch(self, expression, scope_type, chain_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
@@ -371,6 +372,17 @@ class Scope:
         if self._join_hints is None:
             return []
         return self._join_hints
+
+    @property
+    def pivots(self):
+        if not self._pivots:
+            self._pivots = [
+                pivot
+                for node in self.tables + self.derived_tables
+                for pivot in node.args.get("pivots", [])
+            ]
+
+        return self._pivots
 
     def source_columns(self, source_name):
         """

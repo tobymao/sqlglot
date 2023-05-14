@@ -777,8 +777,8 @@ class Parser(metaclass=_Parser):
 
     CONVERT_TYPE_FIRST = False
 
-    QUOTED_PIVOT_COLUMNS: t.Optional[bool] = None
     PREFIXED_PIVOT_COLUMNS = False
+    IDENTIFY_PIVOT_STRINGS = False
 
     LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
@@ -2465,14 +2465,15 @@ class Parser(metaclass=_Parser):
             names = self._pivot_column_names(t.cast(t.List[exp.Expression], expressions))
 
             columns: t.List[exp.Expression] = []
-            for col in pivot.args["field"].expressions:
+            for fld in pivot.args["field"].expressions:
+                field_name = fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
                 for name in names:
                     if self.PREFIXED_PIVOT_COLUMNS:
-                        name = f"{name}_{col.alias_or_name}" if name else col.alias_or_name
+                        name = f"{name}_{field_name}" if name else field_name
                     else:
-                        name = f"{col.alias_or_name}_{name}" if name else col.alias_or_name
+                        name = f"{field_name}_{name}" if name else field_name
 
-                    columns.append(exp.to_identifier(name, quoted=self.QUOTED_PIVOT_COLUMNS))
+                    columns.append(exp.to_identifier(name))
 
             pivot.set("columns", columns)
 

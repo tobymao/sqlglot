@@ -554,3 +554,13 @@ SELECT
   "_q_0"."x" AS "x",
   "_q_0"."y" AS "y"
 FROM "u" AS "u" PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";
+
+# title: selecting all columns from a pivoted source and generating snowflake
+# execute: false
+# dialect: snowflake
+SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
+SELECT
+  "_q_0"."g" AS "g",
+  "_q_0"."'x'" AS "'x'",
+  "_q_0"."'y'" AS "'y'"
+FROM "u" AS "u" PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";

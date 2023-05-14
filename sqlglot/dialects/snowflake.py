@@ -183,7 +183,7 @@ class Snowflake(Dialect):
     }
 
     class Parser(parser.Parser):
-        QUOTED_PIVOT_COLUMNS = True
+        IDENTIFY_PIVOT_STRINGS = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

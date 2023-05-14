@@ -64,7 +64,7 @@ def qualify_tables(expression, db=None, catalog=None, schema=None):
                     source = source.replace(
                         alias(
                             source,
-                            name if name else next_name(),
+                            name or source.name or next_name(),
                             copy=True,
                             table=True,
                         )

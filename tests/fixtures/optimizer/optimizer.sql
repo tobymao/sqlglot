@@ -555,6 +555,23 @@ SELECT
   "_q_0"."y" AS "y"
 FROM "u" AS "u" PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";
 
+# title: selecting all columns from a pivoted CTE source, using alias for the aggregation and generating bigquery
+# execute: false
+# dialect: bigquery
+WITH u_cte(f, g, h) AS (SELECT * FROM u) SELECT * FROM u_cte PIVOT(SUM(f) AS sum FOR h IN ('x', 'y'));
+WITH `u_cte` AS (
+  SELECT
+    `u`.`f` AS `f`,
+    `u`.`g` AS `g`,
+    `u`.`h` AS `h`
+  FROM `u` AS `u`
+)
+SELECT
+  `_q_0`.`g` AS `g`,
+  `_q_0`.`sum_x` AS `sum_x`,
+  `_q_0`.`sum_y` AS `sum_y`
+FROM `u_cte` AS `u_cte` PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x', 'y')) AS `_q_0`;
+
 # title: selecting all columns from a pivoted source and generating snowflake
 # execute: false
 # dialect: snowflake

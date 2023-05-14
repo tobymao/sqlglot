@@ -77,6 +77,10 @@ class TestClickhouse(Validator):
             "SELECT * FROM x LIMIT 10 SETTINGS max_results = 100, result_ FORMAT PrettyCompact"
         )
         self.validate_all(
+            "SELECT * FROM foo JOIN bar USING id, name",
+            write={"clickhouse": "SELECT * FROM foo JOIN bar USING (id, name)"},
+        )
+        self.validate_all(
             "SELECT * FROM foo ANY LEFT JOIN bla ON foo.c1 = bla.c2",
             write={"clickhouse": "SELECT * FROM foo LEFT ANY JOIN bla ON foo.c1 = bla.c2"},
         )

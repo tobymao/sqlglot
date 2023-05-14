@@ -210,7 +210,7 @@ def _rename_inner_sources(outer_scope, inner_scope, alias):
         elif isinstance(source, exp.Table) and source.alias:
             source.set("alias", new_alias)
         elif isinstance(source, exp.Table):
-            source.replace(exp.alias_(source.copy(), new_alias))
+            source.replace(exp.alias_(source, new_alias))
 
         for column in inner_scope.source_columns(conflict):
             column.set("table", exp.to_identifier(new_name))

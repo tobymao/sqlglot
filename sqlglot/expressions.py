@@ -4951,6 +4951,7 @@ def alias_(
     table: bool | t.Sequence[str | Identifier] = False,
     quoted: t.Optional[bool] = None,
     dialect: DialectType = None,
+    copy: bool = True,
     **opts,
 ):
     """Create an Alias expression.
@@ -4970,18 +4971,17 @@ def alias_(
         table: Whether or not to create a table alias, can also be a list of columns.
         quoted: whether or not to quote the alias
         dialect: the dialect used to parse the input expression.
+        copy: Whether or not to copy the expression.
         **opts: other options to use to parse the input expressions.
 
     Returns:
         Alias: the aliased expression
     """
-    exp = maybe_parse(expression, dialect=dialect, **opts)
+    exp = maybe_parse(expression, dialect=dialect, copy=copy, **opts)
     alias = to_identifier(alias, quoted=quoted)
 
     if table:
         table_alias = TableAlias(this=alias)
-
-        exp = exp.copy() if isinstance(expression, Expression) else exp
         exp.set("alias", table_alias)
 
         if not isinstance(table, bool):
@@ -4997,7 +4997,6 @@ def alias_(
     # [1]: https://cloud.google.com/bigquery/docs/reference/standard-sql/window-function-calls
 
     if "alias" in exp.arg_types and not isinstance(exp, Window):
-        exp = exp.copy()
         exp.set("alias", alias)
         return exp
     return Alias(this=exp, alias=alias)

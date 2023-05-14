@@ -27,6 +27,10 @@ class TestBigQuery(Validator):
             "CREATE TEMP TABLE foo AS SELECT 1",
             write={"bigquery": "CREATE TEMPORARY TABLE foo AS SELECT 1"},
         )
+        self.validate_all(
+            "SELECT * FROM `my-project.my-dataset.my-table`",
+            write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
+        )
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
         self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})

@@ -234,6 +234,15 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4) AS s",
+            write={
+                "postgres": "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4) AS s",
+                "presto": "SELECT * FROM t CROSS JOIN UNNEST(SEQUENCE(2, 4)) AS _u(s)",
+                "trino": "SELECT * FROM t CROSS JOIN UNNEST(SEQUENCE(2, 4)) AS _u(s)",
+                "tsql": "SELECT * FROM t CROSS JOIN GENERATE_SERIES(2, 4) AS s",
+            },
+        )
+        self.validate_all(
             "END WORK AND NO CHAIN",
             write={"postgres": "COMMIT AND NO CHAIN"},
         )

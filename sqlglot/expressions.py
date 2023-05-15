@@ -1404,7 +1404,13 @@ class Into(Expression):
 
 
 class From(Expression):
-    arg_types = {"expressions": True}
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+    @property
+    def alias_or_name(self) -> str:
+        return self.this.alias_or_name
 
 
 class Having(Expression):
@@ -2318,7 +2324,9 @@ class Select(Subqueryable):
         **QUERY_MODIFIERS,
     }
 
-    def from_(self, *expressions, append=True, dialect=None, copy=True, **opts) -> Select:
+    def from_(
+        self, expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Select:
         """
         Set the FROM expression.
 
@@ -2327,27 +2335,24 @@ class Select(Subqueryable):
             'SELECT x FROM tbl'
 
         Args:
-            *expressions (str | Expression): the SQL code strings to parse.
+            expression : the SQL code strings to parse.
                 If a `From` instance is passed, this is used as-is.
                 If another `Expression` instance is passed, it will be wrapped in a `From`.
-            append (bool): if `True`, add to any existing expressions.
-                Otherwise, this flattens all the `From` expression into a single expression.
-            dialect (str): the dialect used to parse the input expression.
-            copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
         """
-        return _apply_child_list_builder(
-            *expressions,
+        return _apply_builder(
+            expression=expression,
             instance=self,
             arg="from",
-            append=append,
-            copy=copy,
-            prefix="FROM",
             into=From,
+            prefix="FROM",
             dialect=dialect,
+            copy=copy,
             **opts,
         )
 
@@ -4624,7 +4629,7 @@ def select(*expressions: ExpOrStr, dialect: DialectType = None, **opts) -> Selec
     return Select().select(*expressions, dialect=dialect, **opts)
 
 
-def from_(*expressions, dialect=None, **opts) -> Select:
+def from_(expression: ExpOrStr, dialect: DialectType = None, **opts) -> Select:
     """
     Initializes a syntax tree from a FROM expression.
 
@@ -4633,9 +4638,9 @@ def from_(*expressions, dialect=None, **opts) -> Select:
         'SELECT col1, col2 FROM tbl'
 
     Args:
-        *expressions (str | Expression): the SQL code string to parse as the FROM expressions of a
+        *expression: the SQL code string to parse as the FROM expressions of a
             SELECT statement. If an Expression instance is passed, this is used as-is.
-        dialect (str): the dialect used to parse the input expression (in the case that the
+        dialect: the dialect used to parse the input expression (in the case that the
             input expression is a SQL string).
         **opts: other options to use to parse the input expressions (again, in the case
             that the input expression is a SQL string).
@@ -4643,7 +4648,7 @@ def from_(*expressions, dialect=None, **opts) -> Select:
     Returns:
         Select: the syntax tree for the SELECT statement.
     """
-    return Select().from_(*expressions, dialect=dialect, **opts)
+    return Select().from_(expression, dialect=dialect, **opts)
 
 
 def update(

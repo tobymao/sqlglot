@@ -99,19 +99,19 @@ order by
    p_partkey
 limit
    100;
-WITH "partsupp_2" AS (
-  SELECT
-    "partsupp"."ps_partkey" AS "ps_partkey",
-    "partsupp"."ps_suppkey" AS "ps_suppkey",
-    "partsupp"."ps_supplycost" AS "ps_supplycost"
-  FROM "partsupp" AS "partsupp"
-), "region_2" AS (
+WITH "region_2" AS (
   SELECT
     "region"."r_regionkey" AS "r_regionkey",
     "region"."r_name" AS "r_name"
   FROM "region" AS "region"
   WHERE
     "region"."r_name" = 'EUROPE'
+), "partsupp_2" AS (
+  SELECT
+    "partsupp"."ps_partkey" AS "ps_partkey",
+    "partsupp"."ps_suppkey" AS "ps_suppkey",
+    "partsupp"."ps_supplycost" AS "ps_supplycost"
+  FROM "partsupp" AS "partsupp"
 ), "_u_0" AS (
   SELECT
     MIN("partsupp"."ps_supplycost") AS "_col_0",
@@ -136,8 +136,6 @@ SELECT
   "supplier"."s_phone" AS "s_phone",
   "supplier"."s_comment" AS "s_comment"
 FROM "part" AS "part"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "part"."p_partkey" = "_u_0"."_u_1"
 CROSS JOIN "region_2" AS "region"
 JOIN "nation" AS "nation"
   ON "nation"."n_regionkey" = "region"."r_regionkey"
@@ -146,6 +144,8 @@ JOIN "partsupp_2" AS "partsupp"
 JOIN "supplier" AS "supplier"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
   AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "part"."p_partkey" = "_u_0"."_u_1"
 WHERE
   "part"."p_size" = 15
   AND "part"."p_type" LIKE '%BRASS'
@@ -681,11 +681,11 @@ SELECT
   "partsupp"."ps_partkey" AS "ps_partkey",
   SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") AS "value"
 FROM "partsupp" AS "partsupp"
-CROSS JOIN "_u_0" AS "_u_0"
 JOIN "supplier_2" AS "supplier"
   ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
 JOIN "nation_2" AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+CROSS JOIN "_u_0" AS "_u_0"
 GROUP BY
   "partsupp"."ps_partkey"
 HAVING
@@ -950,13 +950,13 @@ SELECT
   "part"."p_size" AS "p_size",
   COUNT(DISTINCT "partsupp"."ps_suppkey") AS "supplier_cnt"
 FROM "partsupp" AS "partsupp"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 JOIN "part" AS "part"
   ON "part"."p_brand" <> 'Brand#45'
   AND "part"."p_partkey" = "partsupp"."ps_partkey"
   AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
   AND NOT "part"."p_type" LIKE 'MEDIUM POLISHED%'
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 WHERE
   "_u_0"."s_suppkey" IS NULL
 GROUP BY
@@ -1066,10 +1066,10 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "orders"."o_orderkey" = "_u_0"."l_orderkey"
 JOIN "lineitem" AS "lineitem"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "orders"."o_orderkey" = "_u_0"."l_orderkey"
 WHERE
   NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
@@ -1260,10 +1260,10 @@ SELECT
   "supplier"."s_name" AS "s_name",
   "supplier"."s_address" AS "s_address"
 FROM "supplier" AS "supplier"
-LEFT JOIN "_u_4" AS "_u_4"
-  ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
 JOIN "nation" AS "nation"
   ON "nation"."n_name" = 'CANADA' AND "supplier"."s_nationkey" = "nation"."n_nationkey"
+LEFT JOIN "_u_4" AS "_u_4"
+  ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
 WHERE
   NOT "_u_4"."ps_suppkey" IS NULL
 ORDER BY
@@ -1337,15 +1337,15 @@ FROM "supplier" AS "supplier"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_receiptdate" > "lineitem"."l_commitdate"
   AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."l_orderkey" = "lineitem"."l_orderkey"
-LEFT JOIN "_u_2" AS "_u_2"
-  ON "_u_2"."l_orderkey" = "lineitem"."l_orderkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey" AND "orders"."o_orderstatus" = 'F'
 JOIN "nation" AS "nation"
   ON "nation"."n_name" = 'SAUDI ARABIA'
   AND "supplier"."s_nationkey" = "nation"."n_nationkey"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."l_orderkey" = "lineitem"."l_orderkey"
+LEFT JOIN "_u_2" AS "_u_2"
+  ON "_u_2"."l_orderkey" = "lineitem"."l_orderkey"
 WHERE
   (
     "_u_2"."l_orderkey" IS NULL

@@ -411,7 +411,7 @@ SELECT 1 AS delete, 2 AS alter
 SELECT * FROM (x)
 SELECT * FROM ((x))
 SELECT * FROM ((SELECT 1))
-SELECT * FROM (x JOIN foo LATERAL VIEW EXPLODE(y))
+SELECT * FROM (x CROSS JOIN foo LATERAL VIEW EXPLODE(y))
 SELECT * FROM (SELECT 1) AS x
 SELECT * FROM (SELECT 1 UNION SELECT 2) AS x
 SELECT * FROM (SELECT 1 UNION ALL SELECT 2) AS x
@@ -715,9 +715,9 @@ SELECT ((SELECT 1) + 1)
 SELECT * FROM project.dataset.INFORMATION_SCHEMA.TABLES
 SELECT * FROM (table1 AS t1 LEFT JOIN table2 AS t2 ON 1 = 1)
 SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)
-SELECT * FROM (tbl1 JOIN tbl2 JOIN tbl3)
-SELECT * FROM (tbl1 JOIN (tbl2 JOIN tbl3) ON bla = foo)
-SELECT * FROM (tbl1 JOIN LATERAL (SELECT * FROM bla) AS tbl)
+SELECT * FROM (tbl1, tbl2 JOIN tbl3 ON TRUE)
+SELECT * FROM (tbl1 JOIN (tbl2 CROSS JOIN tbl3) ON bla = foo)
+SELECT * FROM (tbl1, LATERAL (SELECT * FROM bla) AS tbl)
 SELECT CAST(x AS INT) /* comment */ FROM foo
 SELECT a /* x */, b /* x */
 SELECT a /* x */ /* y */ /* z */, b /* k */ /* m */

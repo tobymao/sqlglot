@@ -35,8 +35,8 @@ SELECT * FROM (SELECT * FROM (SELECT a FROM x) AS x) AS y JOIN (SELECT * FROM x)
 WITH x_2 AS (SELECT a FROM x), y AS (SELECT * FROM x_2 AS x), z AS (SELECT * FROM x) SELECT * FROM y AS y JOIN z AS z ON x.a = y.a;
 
 -- Name conflicts with table alias
-SELECT a FROM (SELECT a FROM (SELECT a FROM x) AS y) AS z JOIN q AS y;
-WITH y AS (SELECT a FROM x), z AS (SELECT a FROM y AS y) SELECT a FROM z AS z JOIN q AS y;
+SELECT a FROM (SELECT a FROM (SELECT a FROM x) AS y) AS z CROSS JOIN q AS y;
+WITH y AS (SELECT a FROM x), z AS (SELECT a FROM y AS y) SELECT a FROM z AS z CROSS JOIN q AS y;
 
 -- Name conflicts with existing CTE
 WITH y AS (SELECT a FROM (SELECT a FROM x) AS y) SELECT a FROM y;
@@ -63,12 +63,12 @@ SELECT a FROM x WHERE b = (SELECT c FROM y WHERE y.a = x.a);
 SELECT a FROM x WHERE b = (SELECT c FROM y WHERE y.a = x.a);
 
 -- Duplicate CTE
-SELECT a FROM (SELECT b FROM x) AS y JOIN (SELECT b FROM x) AS z;
-WITH y AS (SELECT b FROM x) SELECT a FROM y AS y JOIN y AS z;
+SELECT a FROM (SELECT b FROM x) AS y CROSS JOIN (SELECT b FROM x) AS z;
+WITH y AS (SELECT b FROM x) SELECT a FROM y AS y CROSS JOIN y AS z;
 
 -- Doubly duplicate CTE
 SELECT * FROM (SELECT * FROM x JOIN (SELECT * FROM x) AS y) AS z JOIN (SELECT * FROM x JOIN (SELECT * FROM x) AS y) AS q;
-WITH y AS (SELECT * FROM x), z AS (SELECT * FROM x JOIN y AS y) SELECT * FROM z AS z JOIN z AS q;
+WITH y AS (SELECT * FROM x), z AS (SELECT * FROM x, y AS y) SELECT * FROM z AS z, z AS q;
 
 -- Another duplicate...
 SELECT x.id FROM (SELECT * FROM x AS x JOIN y AS y ON x.id = y.id) AS x JOIN (SELECT * FROM x AS x JOIN y AS y ON x.id = y.id) AS y ON x.id = y.id;
@@ -79,8 +79,8 @@ WITH x_2 AS (SELECT * FROM x AS x JOIN y AS y ON x.id = y.id) SELECT x.id FROM x
 (WITH cte AS (SELECT * FROM x) SELECT * FROM cte AS cte) LIMIT 1;
 
 -- Existing duplicate CTE
-WITH y AS (SELECT a FROM x) SELECT a FROM (SELECT a FROM x) AS y JOIN y AS z;
-WITH y AS (SELECT a FROM x) SELECT a FROM y AS y JOIN y AS z;
+WITH y AS (SELECT a FROM x) SELECT a FROM (SELECT a FROM x) AS y CROSS JOIN y AS z;
+WITH y AS (SELECT a FROM x) SELECT a FROM y AS y CROSS JOIN y AS z;
 
 -- Nested CTE
 WITH cte1 AS (SELECT a FROM x) SELECT a FROM (WITH cte2 AS (SELECT a FROM cte1) SELECT a FROM cte2);

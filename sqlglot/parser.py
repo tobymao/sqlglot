@@ -768,6 +768,8 @@ class Parser(metaclass=_Parser):
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
+    CLONE_KINDS = {"TIMESTAMP", "OFFSET", "STATEMENT"}
+
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
 
@@ -1152,6 +1154,7 @@ class Parser(metaclass=_Parser):
         indexes = None
         no_schema_binding = None
         begin = None
+        clone = None
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
@@ -1234,6 +1237,20 @@ class Parser(metaclass=_Parser):
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
 
+            if self._match_text_seq("CLONE"):
+                clone = self._parse_table(schema=True)
+                when = self._match_texts({"AT", "BEFORE"}) and self._prev.text
+                clone_kind = (
+                    self._match(TokenType.L_PAREN)
+                    and self._match_texts(self.CLONE_KINDS)
+                    and self._prev.text
+                )
+                clone_expression = self._match(TokenType.FARROW) and self._parse_bitwise()
+                self._match(TokenType.R_PAREN)
+                clone = self.expression(
+                    exp.Clone, this=clone, when=when, kind=clone_kind, expression=clone_expression
+                )
+
         return self.expression(
             exp.Create,
             this=this,
@@ -1246,6 +1263,7 @@ class Parser(metaclass=_Parser):
             indexes=indexes,
             no_schema_binding=no_schema_binding,
             begin=begin,
+            clone=clone,
         )
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:

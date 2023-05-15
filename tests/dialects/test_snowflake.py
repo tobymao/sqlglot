@@ -555,11 +555,26 @@ class TestSnowflake(Validator):
         )
 
     def test_ddl(self):
+        self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
+        self.validate_identity("CREATE DATABASE mytestdb_clone CLONE mytestdb")
+        self.validate_identity("CREATE SCHEMA mytestschema_clone CLONE testschema")
+        self.validate_identity("CREATE TABLE orders_clone CLONE orders")
+        self.validate_identity(
+            "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))"
+        )
+        self.validate_identity(
+            "CREATE TABLE orders_clone_restore CLONE orders BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"
+        )
         self.validate_identity(
             "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
         )
-        self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
 
+        self.validate_all(
+            "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400))",
+            write={
+                "snowflake": "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400, 'yyyy-mm-dd hh24:mi:ss'))",
+            },
+        )
         self.validate_all(
             "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
             read={

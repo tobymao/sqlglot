@@ -725,8 +725,22 @@ class Generator:
             " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
         )
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}"
+        clone = self.sql(expression, "clone")
+        clone = f" {clone}" if clone else ""
+
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
         return self.prepend_ctes(expression, expression_sql)
+
+    def clone_sql(self, expression: exp.Clone) -> str:
+        this = self.sql(expression, "this")
+        when = self.sql(expression, "when")
+
+        if when:
+            kind = self.sql(expression, "kind")
+            expr = self.sql(expression, "expression")
+            return f"CLONE {this} {when} ({kind} => {expr})"
+
+        return f"CLONE {this}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
         return f"DESCRIBE {self.sql(expression, 'this')}"

@@ -782,8 +782,6 @@ class Parser(metaclass=_Parser):
     LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
 
-    TABLE_NAME_ALLOWS_DASHES = False
-
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2235,36 +2233,28 @@ class Parser(metaclass=_Parser):
             amp=amp,
         )
 
+    def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
+        return (
+            (not schema and self._parse_function())
+            or self._parse_id_var(any_token=False)
+            or self._parse_string_as_identifier()
+        )
+
     def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
         catalog = None
         db = None
-
-        def _parse_table_part() -> t.Optional[exp.Expression]:
-            return (
-                (not schema and self._parse_function())
-                or self._parse_id_var(any_token=False)
-                or self._parse_string_as_identifier()
-            )
-
-        table = _parse_table_part()
-
-        # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
-        if self.TABLE_NAME_ALLOWS_DASHES and isinstance(table, exp.Identifier):
-            table_name = table.name
-            while self._match(TokenType.DASH, advance=False) and self._next:
-                self._advance(2)
-                table_name += f"-{self._prev.text}"
-
-            table = exp.Identifier(this=table_name, quoted=table.args.get("quoted"))
+        table = self._parse_table_part(schema=schema)
 
         while self._match(TokenType.DOT):
             if catalog:
                 # This allows nesting the table in arbitrarily many dot expressions if needed
-                table = self.expression(exp.Dot, this=table, expression=_parse_table_part())
+                table = self.expression(
+                    exp.Dot, this=table, expression=self._parse_table_part(schema=schema)
+                )
             else:
                 catalog = db
                 db = table
-                table = _parse_table_part()
+                table = self._parse_table_part(schema=schema)
 
         if not table:
             self.raise_error(f"Expected table name but got {self._curr}")

@@ -160,8 +160,6 @@ class BigQuery(Dialect):
         LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
-        TABLE_NAME_ALLOWS_DASHES = True
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_TRUNC": lambda args: exp.DateTrunc(
@@ -225,6 +223,24 @@ class BigQuery(Dialect):
             **parser.Parser.CONSTRAINT_PARSERS,  # type: ignore
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
+
+        def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
+            this = (
+                (not schema and self._parse_function())
+                or self._parse_id_var(any_token=False)
+                or self._parse_string_as_identifier()
+            )
+
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
+            if isinstance(this, exp.Identifier):
+                table_name = this.name
+                while self._match(TokenType.DASH, advance=False) and self._next:
+                    self._advance(2)
+                    table_name += f"-{self._prev.text}"
+
+                this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
+
+            return this
 
         def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
             table = super()._parse_table_parts(schema=schema)

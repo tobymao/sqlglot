@@ -1239,11 +1239,11 @@ class Parser(metaclass=_Parser):
 
             if self._match_text_seq("CLONE"):
                 clone = self._parse_table(schema=True)
-                when = self._match_texts({"AT", "BEFORE"}) and self._prev.text
+                when = self._match_texts({"AT", "BEFORE"}) and self._prev.text.upper()
                 clone_kind = (
                     self._match(TokenType.L_PAREN)
                     and self._match_texts(self.CLONE_KINDS)
-                    and self._prev.text
+                    and self._prev.text.upper()
                 )
                 clone_expression = self._match(TokenType.FARROW) and self._parse_bitwise()
                 self._match(TokenType.R_PAREN)

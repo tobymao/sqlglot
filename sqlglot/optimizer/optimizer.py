@@ -10,7 +10,6 @@ from sqlglot.optimizer.canonicalize import canonicalize
 from sqlglot.optimizer.eliminate_ctes import eliminate_ctes
 from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
-from sqlglot.optimizer.expand_multi_table_selects import expand_multi_table_selects
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.lower_identities import lower_identities
 from sqlglot.optimizer.merge_subqueries import merge_subqueries
@@ -33,7 +32,6 @@ RULES = (
     validate_qualify_columns,
     normalize,
     unnest_subqueries,
-    expand_multi_table_selects,
     pushdown_predicates,
     optimize_joins,
     eliminate_subqueries,

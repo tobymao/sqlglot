@@ -106,7 +106,7 @@ class Teradata(Dialect):
                 exp.Update,
                 **{  # type: ignore
                     "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
-                    "from": self._parse_from(),
+                    "from": self._parse_from(modifiers=True),
                     "expressions": self._match(TokenType.SET)
                     and self._parse_csv(self._parse_equality),
                     "where": self._parse_where(),

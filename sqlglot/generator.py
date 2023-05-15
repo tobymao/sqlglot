@@ -1238,8 +1238,7 @@ class Generator:
         return f"{self.seg('INTO')}{temporary or unlogged} {self.sql(expression, 'this')}"
 
     def from_sql(self, expression: exp.From) -> str:
-        expressions = self.expressions(expression, flat=True)
-        return f"{self.seg('FROM')} {expressions}"
+        return f"{self.seg('FROM')} {self.sql(expression, 'this')}"
 
     def group_sql(self, expression: exp.Group) -> str:
         group_by = self.op_expressions("GROUP BY", expression)
@@ -1280,25 +1279,24 @@ class Generator:
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
     def join_sql(self, expression: exp.Join) -> str:
-        op_sql = self.seg(
-            " ".join(
-                op
-                for op in (
-                    "NATURAL" if expression.args.get("natural") else None,
-                    "GLOBAL" if expression.args.get("global") else None,
-                    expression.side,
-                    expression.kind,
-                    expression.hint if self.JOIN_HINTS else None,
-                    "JOIN",
-                )
-                if op
+        op_sql = " ".join(
+            op
+            for op in (
+                "NATURAL" if expression.args.get("natural") else None,
+                "GLOBAL" if expression.args.get("global") else None,
+                expression.side,
+                expression.kind,
+                expression.hint if self.JOIN_HINTS else None,
             )
+            if op
         )
         on_sql = self.sql(expression, "on")
         using = expression.args.get("using")
 
         if not on_sql and using:
             on_sql = csv(*(self.sql(column) for column in using))
+
+        this_sql = self.sql(expression, "this")
 
         if on_sql:
             on_sql = self.indent(on_sql, skip_first=True)
@@ -1307,10 +1305,11 @@ class Generator:
                 on_sql = f"{space}USING ({on_sql})"
             else:
                 on_sql = f"{space}ON {on_sql}"
+        elif not op_sql:
+            return f", {this_sql}"
 
-        expression_sql = self.sql(expression, "expression")
-        this_sql = self.sql(expression, "this")
-        return f"{expression_sql}{op_sql} {this_sql}{on_sql}"
+        op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
+        return f"{self.seg(op_sql)} {this_sql}{on_sql}"
 
     def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->") -> str:
         args = self.expressions(expression, flat=True)
@@ -1487,9 +1486,9 @@ class Generator:
 
         return csv(
             *sqls,
-            *[self.sql(sql) for sql in expression.args.get("joins") or []],
+            *[self.sql(join) for join in expression.args.get("joins") or []],
             self.sql(expression, "match"),
-            *[self.sql(sql) for sql in expression.args.get("laterals") or []],
+            *[self.sql(lateral) for lateral in expression.args.get("laterals") or []],
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),

@@ -523,10 +523,10 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM x TABLESAMPLE(10 PERCENT) y",
+            "SELECT * FROM x.z TABLESAMPLE(10 PERCENT) y",
             write={
-                "hive": "SELECT * FROM x TABLESAMPLE (10 PERCENT) AS y",
-                "spark": "SELECT * FROM x TABLESAMPLE (10 PERCENT) AS y",
+                "hive": "SELECT * FROM x.z TABLESAMPLE (10 PERCENT) AS y",
+                "spark": "SELECT * FROM x.z TABLESAMPLE (10 PERCENT) AS y",
             },
         )
         self.validate_all(

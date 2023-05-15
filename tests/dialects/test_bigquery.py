@@ -6,6 +6,7 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("SELECT * FROM a-b-c")
         self.validate_identity("SELECT * FROM my-table")
         self.validate_identity("SELECT * FROM my-project.mydataset.mytable")
         self.validate_identity("SELECT * FROM pro-ject_id.c.d CROSS JOIN foo-bar")

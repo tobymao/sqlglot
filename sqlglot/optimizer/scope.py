@@ -379,7 +379,7 @@ class Scope:
             self._pivots = [
                 pivot
                 for node in self.tables + self.derived_tables
-                for pivot in node.args.get("pivots", [])
+                for pivot in node.args.get("pivots") or []
             ]
 
         return self._pivots

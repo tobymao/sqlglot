@@ -302,7 +302,8 @@ def _expand_stars(scope, resolver, using_column_tables):
 
     has_pivoted_source = pivot and not pivot.args.get("unpivot")
     if has_pivoted_source:
-        pivot_columns = set(column.output_name for column in pivot.find_all(exp.Column))
+        # We're using a dictionary here in order to preserve order
+        pivot_columns = set(col.output_name for col in pivot.find_all(exp.Column))
 
         pivot_output_columns = [col.output_name for col in pivot.args.get("columns", [])]
         if not pivot_output_columns:
@@ -329,12 +330,10 @@ def _expand_stars(scope, resolver, using_column_tables):
 
             if columns and "*" not in columns:
                 if has_pivoted_source:
-                    implicit_columns = list(set(columns) - pivot_columns)
+                    implicit_columns = [col for col in columns if col not in pivot_columns]
                     new_selections.extend(
-                        [
-                            exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
-                            for name in implicit_columns + pivot_output_columns
-                        ]
+                        exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
+                        for name in implicit_columns + pivot_output_columns
                     )
                     continue
 

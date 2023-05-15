@@ -139,6 +139,19 @@ class TestClickhouse(Validator):
         self.assertIsInstance(nested_ternary.args["true"], exp.Literal)
         self.assertIsInstance(nested_ternary.args["false"], exp.Literal)
 
+    def test_parameterization(self):
+        self.validate_all(
+            "SELECT {abc: UInt32}, {b: String}, {c: DateTime},{d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",
+            write={
+                "clickhouse": "SELECT {abc: UInt32}, {b: TEXT}, {c: DATETIME}, {d: Map(TEXT, Array(UInt8))}, {e: Tuple(UInt8, String)}",
+                "": "SELECT :abc, :b, :c, :d, :e",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM {table: Identifier}",
+            write={"clickhouse": "SELECT * FROM {table: Identifier}"},
+        )
+
     def test_signed_and_unsigned_types(self):
         data_types = [
             "UInt8",

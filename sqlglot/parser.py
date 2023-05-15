@@ -2232,26 +2232,28 @@ class Parser(metaclass=_Parser):
             amp=amp,
         )
 
+    def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
+        return (
+            (not schema and self._parse_function())
+            or self._parse_id_var(any_token=False)
+            or self._parse_string_as_identifier()
+        )
+
     def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
         catalog = None
         db = None
+        table = self._parse_table_part(schema=schema)
 
-        def _parse_table_part() -> t.Optional[exp.Expression]:
-            return (
-                (not schema and self._parse_function())
-                or self._parse_id_var(any_token=False)
-                or self._parse_string_as_identifier()
-            )
-
-        table = _parse_table_part()
         while self._match(TokenType.DOT):
             if catalog:
                 # This allows nesting the table in arbitrarily many dot expressions if needed
-                table = self.expression(exp.Dot, this=table, expression=_parse_table_part())
+                table = self.expression(
+                    exp.Dot, this=table, expression=self._parse_table_part(schema=schema)
+                )
             else:
                 catalog = db
                 db = table
-                table = _parse_table_part()
+                table = self._parse_table_part(schema=schema)
 
         if not table:
             self.raise_error(f"Expected table name but got {self._curr}")

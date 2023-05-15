@@ -217,6 +217,20 @@ class BigQuery(Dialect):
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
 
+        def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
+            this = super()._parse_table_part(schema=schema)
+
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
+            if isinstance(this, exp.Identifier):
+                table_name = this.name
+                while self._match(TokenType.DASH, advance=False) and self._next:
+                    self._advance(2)
+                    table_name += f"-{self._prev.text}"
+
+                this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
+
+            return this
+
         def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
             table = super()._parse_table_parts(schema=schema)
             if isinstance(table.this, exp.Identifier) and "." in table.name:

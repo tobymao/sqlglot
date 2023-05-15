@@ -174,6 +174,8 @@ SET variable = value
 SET GLOBAL variable = value
 SET LOCAL variable = value
 SET @user OFF
+@x
+@"x"
 COMMIT
 USE db
 USE role x

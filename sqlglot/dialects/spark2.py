@@ -53,6 +53,52 @@ def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
     raise ValueError("Improper scale for timestamp")
 
 
+def _unalias_pivots(expression: exp.Expression) -> exp.Expression:
+    """
+    Spark doesn't allow PIVOT aliases, so we need to remove them and possibly wrap a
+    pivoted source in a subquery with the same alias to preserve the query's semantics.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("SELECT piv.x FROM tbl PIVOT (SUM(a) FOR b IN ('x')) piv")
+        >>> print(_unalias_pivots(expr).sql(dialect="spark"))
+        SELECT piv.x FROM (SELECT * FROM tbl PIVOT(SUM(a) FOR b IN ('x'))) AS piv
+    """
+    if isinstance(expression, exp.From) and expression.this.args.get("pivots"):
+        pivot = expression.this.args["pivots"][0]
+        if pivot.alias:
+            alias = pivot.args["alias"].pop()
+            return exp.From(
+                this=expression.this.replace(
+                    exp.select("*").from_(expression.this.copy()).subquery(alias=alias)
+                )
+            )
+
+    return expression
+
+
+def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
+    """
+    Spark doesn't allow the column referenced in the PIVOT's field to be qualified,
+    so we need to unqualify it.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("SELECT * FROM tbl PIVOT (SUM(tbl.sales) FOR tbl.quarter IN ('Q1', 'Q2'))")
+        >>> print(_unqualify_pivot_columns(expr).sql(dialect="spark"))
+        SELECT * FROM tbl PIVOT(SUM(tbl.sales) FOR quarter IN ('Q1', 'Q1'))
+    """
+    if isinstance(expression, exp.Pivot):
+        expression.args["field"].transform(
+            lambda node: exp.column(node.output_name, quoted=node.this.quoted)
+            if isinstance(node, exp.Column)
+            else node,
+            copy=False,
+        )
+
+    return expression
+
+
 class Spark2(Hive):
     class Parser(Hive.Parser):
         FUNCTIONS = {
@@ -188,11 +234,12 @@ class Spark2(Hive):
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
+            exp.From: transforms.preprocess([_unalias_pivots]),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,
-            exp.Pivot: transforms.preprocess([transforms.unqualify_pivot_columns]),
+            exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",

@@ -581,3 +581,18 @@ SELECT
   "_q_0"."'x'" AS "'x'",
   "_q_0"."'y'" AS "'y'"
 FROM "u" AS "u" PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";
+
+# title: selecting all columns from a pivoted source and generating spark
+# note: spark doesn't allow pivot aliases or qualified columns for the pivot's "field" (`h`)
+# execute: false
+# dialect: spark
+SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
+SELECT
+  `_q_0`.`g` AS `g`,
+  `_q_0`.`x` AS `x`,
+  `_q_0`.`y` AS `y`
+FROM (
+  SELECT
+    *
+  FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
+) AS `_q_0`;

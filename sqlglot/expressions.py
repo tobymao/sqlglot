@@ -2026,10 +2026,10 @@ class Subqueryable(Unionable):
             Alias: the subquery
         """
         instance = _maybe_copy(self, copy)
-        return Subquery(
-            this=instance,
-            alias=TableAlias(this=to_identifier(alias)) if alias else None,
-        )
+        if not isinstance(alias, Expression):
+            alias = TableAlias(this=to_identifier(alias)) if alias else None
+
+        return Subquery(this=instance, alias=alias)
 
     def limit(self, expression, dialect=None, copy=True, **opts) -> Select:
         raise NotImplementedError

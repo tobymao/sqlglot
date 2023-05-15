@@ -190,6 +190,13 @@ class TestExpressions(unittest.TestCase):
             ).sql(),
             "SELECT * FROM a1 AS a JOIN b.a JOIN c.a2 JOIN d2 JOIN e.a",
         )
+        self.assertEqual(
+            exp.replace_tables(
+                parse_one("select tbl.col, c from db.tbl, db.tbl_2"),
+                {"db.tbl": "new_db.new_tbl", "db.tbl_2": "new_db.new_tbl_2"},
+            ).sql(),
+            "SELECT new_tbl.col, c FROM new_db.new_tbl, new_db.new_tbl_2",
+        )
 
     def test_replace_placeholders(self):
         self.assertEqual(

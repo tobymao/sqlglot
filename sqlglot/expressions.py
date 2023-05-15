@@ -1479,6 +1479,88 @@ class Insert(Expression):
         "alternative": False,
     }
 
+    def insert(
+        self, expression: ExpOrStr, copy: bool = True, dialect: DialectType = None, **opts
+    ) -> Insert:
+        """
+        Set the INSERT's expression.
+
+        Example:
+            >>> Insert(this=Table(this=to_identifier("tbl"))).insert("SELECT * FROM tbl2").sql()
+            'INSERT INTO tbl SELECT * FROM tbl2'
+
+        Args:
+            expression: the SQL code string to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            copy: if `False`, modify this expression instance in-place.
+            dialect: the dialect used to parse the input expression.
+            other options to use to parse the input expressions.
+
+        Returns:
+            The modified expression.
+        """
+        return _apply_builder(
+            expression, self, arg="expression", dialect=dialect, copy=copy, **opts
+        )
+
+    def into(
+        self, expression: ExpOrStr, copy: bool = True, dialect: DialectType = None, **opts
+    ) -> Insert:
+        """
+        Set the INSERT's target table.
+
+        Example:
+            >>> Insert().insert("SELECT * FROM tbl").into("tbl2").sql()
+            'INSERT INTO tbl2 SELECT * FROM tbl'
+
+        Args:
+            expression: the SQL code string to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            copy: if `False`, modify this expression instance in-place.
+            dialect: the dialect used to parse the input expression.
+            other options to use to parse the input expressions.
+
+        Returns:
+            The modified expression.
+        """
+        return _apply_builder(expression, self, arg="this", dialect=dialect, copy=copy, **opts)
+
+    def with_(
+        self,
+        alias: ExpOrStr,
+        as_: ExpOrStr,
+        recursive: t.Optional[bool] = None,
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Insert:
+        """
+        Append to or set the common table expressions.
+
+        Example:
+            >>> Insert().with_("cte", as_="SELECT * FROM tbl").insert("SELECT x FROM cte").into("t").sql()
+            'WITH cte AS (SELECT * FROM tbl) INSERT INTO t SELECT x FROM cte'
+
+        Args:
+            alias: the SQL code string to parse as the table name.
+                If an `Expression` instance is passed, this is used as-is.
+            as_: the SQL code string to parse as the table expression.
+                If an `Expression` instance is passed, it will be used as-is.
+            recursive: set the RECURSIVE part of the expression. Defaults to `False`.
+            append: if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified expression.
+        """
+        return _apply_cte_builder(
+            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
+        )
+
 
 class OnConflict(Expression):
     arg_types = {
@@ -2062,14 +2144,14 @@ class Subqueryable(Unionable):
 
     def with_(
         self,
-        alias,
-        as_,
-        recursive=None,
-        append=True,
-        dialect=None,
-        copy=True,
+        alias: ExpOrStr,
+        as_: ExpOrStr,
+        recursive: t.Optional[bool] = None,
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
         **opts,
-    ):
+    ) -> Subqueryable:
         """
         Append to or set the common table expressions.
 
@@ -2078,43 +2160,22 @@ class Subqueryable(Unionable):
             'WITH tbl2 AS (SELECT * FROM tbl) SELECT x FROM tbl2'
 
         Args:
-            alias (str | Expression): the SQL code string to parse as the table name.
+            alias: the SQL code string to parse as the table name.
                 If an `Expression` instance is passed, this is used as-is.
-            as_ (str | Expression): the SQL code string to parse as the table expression.
+            as_: the SQL code string to parse as the table expression.
                 If an `Expression` instance is passed, it will be used as-is.
-            recursive (bool): set the RECURSIVE part of the expression. Defaults to `False`.
-            append (bool): if `True`, add to any existing expressions.
+            recursive: set the RECURSIVE part of the expression. Defaults to `False`.
+            append: if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
-            dialect (str): the dialect used to parse the input expression.
-            copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
 
         Returns:
-            Select: the modified expression.
+            The modified expression.
         """
-        alias_expression = maybe_parse(
-            alias,
-            dialect=dialect,
-            into=TableAlias,
-            **opts,
-        )
-        as_expression = maybe_parse(
-            as_,
-            dialect=dialect,
-            **opts,
-        )
-        cte = CTE(
-            this=as_expression,
-            alias=alias_expression,
-        )
-        return _apply_child_list_builder(
-            cte,
-            instance=self,
-            arg="with",
-            append=append,
-            copy=copy,
-            into=With,
-            properties={"recursive": recursive or False},
+        return _apply_cte_builder(
+            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
         )
 
 
@@ -4525,6 +4586,30 @@ def _apply_conjunction_builder(
     return inst
 
 
+def _apply_cte_builder(
+    instance: E,
+    alias: ExpOrStr,
+    as_: ExpOrStr,
+    recursive: t.Optional[bool] = None,
+    append: bool = True,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
+) -> E:
+    alias_expression = maybe_parse(alias, dialect=dialect, into=TableAlias, **opts)
+    as_expression = maybe_parse(as_, dialect=dialect, **opts)
+    cte = CTE(this=as_expression, alias=alias_expression)
+    return _apply_child_list_builder(
+        cte,
+        instance=instance,
+        arg="with",
+        append=append,
+        copy=copy,
+        into=With,
+        properties={"recursive": recursive or False},
+    )
+
+
 def _combine(expressions, operator, dialect=None, copy=True, **opts):
     expressions = [
         condition(expression, dialect=dialect, copy=copy, **opts) for expression in expressions
@@ -4740,6 +4825,37 @@ def delete(
     if returning:
         delete_expr = delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
     return delete_expr
+
+
+def insert(
+    expression: ExpOrStr,
+    into: ExpOrStr,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
+) -> Insert:
+    """
+    Builds an INSERT statement.
+
+    Example:
+        >>> insert("VALUES (1, 2, 3)", "tbl").sql()
+        'INSERT INTO tbl VALUES (1, 2, 3)'
+
+    Args:
+        expression: the sql string or expression of the INSERT statement
+        into: the tbl to insert data to.
+        dialect: the dialect used to parse the input expressions.
+        copy: whether or not to copy the expression.
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Insert: the syntax tree for the INSERT statement.
+    """
+    return (
+        Insert()
+        .insert(expression, dialect=dialect, copy=copy, **opts)
+        .into(into, dialect=dialect, copy=copy, **opts)
+    )
 
 
 def condition(expression, dialect=None, copy=True, **opts) -> Condition:

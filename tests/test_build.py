@@ -595,6 +595,18 @@ class TestBuild(unittest.TestCase):
                 "postgres",
             ),
             (
+                lambda: exp.insert("VALUES (1, 2)", "tbl").assert_is(exp.Insert),
+                "INSERT INTO tbl VALUES (1, 2)",
+            ),
+            (
+                lambda: exp.insert("SELECT * FROM tbl2", "tbl"),
+                "INSERT INTO tbl SELECT * FROM tbl2",
+            ),
+            (
+                lambda: exp.insert("SELECT * FROM cte", "t").with_("cte", as_="SELECT x FROM tbl"),
+                "WITH cte AS (SELECT x FROM tbl) INSERT INTO t SELECT * FROM cte",
+            ),
+            (
                 lambda: exp.convert((exp.column("x"), exp.column("y"))).isin((1, 2), (3, 4)),
                 "(x, y) IN ((1, 2), (3, 4))",
                 "postgres",

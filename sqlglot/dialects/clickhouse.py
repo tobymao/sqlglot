@@ -28,24 +28,25 @@ class ClickHouse(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "ASOF": TokenType.ASOF,
             "ATTACH": TokenType.COMMAND,
-            "GLOBAL": TokenType.GLOBAL,
             "DATETIME64": TokenType.DATETIME64,
             "FINAL": TokenType.FINAL,
             "FLOAT32": TokenType.FLOAT,
             "FLOAT64": TokenType.DOUBLE,
-            "INT8": TokenType.TINYINT,
-            "UINT8": TokenType.UTINYINT,
-            "INT16": TokenType.SMALLINT,
-            "UINT16": TokenType.USMALLINT,
-            "INT32": TokenType.INT,
-            "UINT32": TokenType.UINT,
-            "INT64": TokenType.BIGINT,
-            "UINT64": TokenType.UBIGINT,
+            "GLOBAL": TokenType.GLOBAL,
             "INT128": TokenType.INT128,
-            "UINT128": TokenType.UINT128,
+            "INT16": TokenType.SMALLINT,
             "INT256": TokenType.INT256,
-            "UINT256": TokenType.UINT256,
+            "INT32": TokenType.INT,
+            "INT64": TokenType.BIGINT,
+            "INT8": TokenType.TINYINT,
+            "MAP": TokenType.MAP,
             "TUPLE": TokenType.STRUCT,
+            "UINT128": TokenType.UINT128,
+            "UINT16": TokenType.USMALLINT,
+            "UINT256": TokenType.UINT256,
+            "UINT32": TokenType.UINT,
+            "UINT64": TokenType.UBIGINT,
+            "UINT8": TokenType.UTINYINT,
         }
 
     class Parser(parser.Parser):
@@ -115,6 +116,25 @@ class ClickHouse(Dialect):
                 )
 
             return this
+
+        def _parse_placeholder(self) -> t.Optional[exp.Expression]:
+            """
+            Parse a placeholder expression like SELECT {abc: UInt32} or FROM {table: Identifier}
+            https://clickhouse.com/docs/en/sql-reference/syntax#defining-and-using-query-parameters
+            """
+            if not self._match(TokenType.L_BRACE):
+                return None
+
+            this = self._parse_id_var()
+            self._match(TokenType.COLON)
+            kind = self._parse_types(check_func=False) or (self._match_text_seq("IDENTIFIER") and "Identifier")
+
+            if not kind:
+                self.raise_error("Expecting a placeholder type or 'Identifier' for tables")
+            elif not self._match(TokenType.R_BRACE):
+                self.raise_error("Expecting }")
+
+            return self.expression(exp.Placeholder, this=this, kind=kind)
 
         def _parse_in(
             self, this: t.Optional[exp.Expression], is_global: bool = False
@@ -220,25 +240,25 @@ class ClickHouse(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,  # type: ignore
-            exp.DataType.Type.NULLABLE: "Nullable",
-            exp.DataType.Type.DATETIME64: "DateTime64",
-            exp.DataType.Type.MAP: "Map",
             exp.DataType.Type.ARRAY: "Array",
+            exp.DataType.Type.BIGINT: "Int64",
+            exp.DataType.Type.DATETIME64: "DateTime64",
+            exp.DataType.Type.DOUBLE: "Float64",
+            exp.DataType.Type.FLOAT: "Float32",
+            exp.DataType.Type.INT: "Int32",
+            exp.DataType.Type.INT128: "Int128",
+            exp.DataType.Type.INT256: "Int256",
+            exp.DataType.Type.MAP: "Map",
+            exp.DataType.Type.NULLABLE: "Nullable",
+            exp.DataType.Type.SMALLINT: "Int16",
             exp.DataType.Type.STRUCT: "Tuple",
             exp.DataType.Type.TINYINT: "Int8",
-            exp.DataType.Type.UTINYINT: "UInt8",
-            exp.DataType.Type.SMALLINT: "Int16",
-            exp.DataType.Type.USMALLINT: "UInt16",
-            exp.DataType.Type.INT: "Int32",
-            exp.DataType.Type.UINT: "UInt32",
-            exp.DataType.Type.BIGINT: "Int64",
             exp.DataType.Type.UBIGINT: "UInt64",
-            exp.DataType.Type.INT128: "Int128",
+            exp.DataType.Type.UINT: "UInt32",
             exp.DataType.Type.UINT128: "UInt128",
-            exp.DataType.Type.INT256: "Int256",
             exp.DataType.Type.UINT256: "UInt256",
-            exp.DataType.Type.FLOAT: "Float32",
-            exp.DataType.Type.DOUBLE: "Float64",
+            exp.DataType.Type.USMALLINT: "UInt16",
+            exp.DataType.Type.UTINYINT: "UInt8",
         }
 
         TRANSFORMS = {
@@ -285,3 +305,6 @@ class ClickHouse(Dialect):
         def parameterizedagg_sql(self, expression: exp.Anonymous) -> str:
             params = self.expressions(expression, "params", flat=True)
             return self.func(expression.name, *expression.expressions) + f"({params})"
+
+        def placeholder_sql(self, expression: exp.Placeholder) -> str:
+            return f"{{{expression.name}: {self.sql(expression, 'kind')}}}"

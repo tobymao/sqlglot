@@ -112,8 +112,8 @@ class Parser(metaclass=_Parser):
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
         TokenType.MAP,
-        TokenType.STRUCT,
         TokenType.NULLABLE,
+        TokenType.STRUCT,
     }
 
     TYPE_TOKENS = {
@@ -2265,23 +2265,23 @@ class Parser(metaclass=_Parser):
     def _parse_table(
         self, schema: bool = False, alias_tokens: t.Optional[t.Collection[TokenType]] = None
     ) -> t.Optional[exp.Expression]:
-        lateral = self._parse_lateral()
+        placeholder = self._parse_placeholder()
+        if placeholder:
+            return placeholder
 
+        lateral = self._parse_lateral()
         if lateral:
             return lateral
 
         unnest = self._parse_unnest()
-
         if unnest:
             return unnest
 
         values = self._parse_derived_table_values()
-
         if values:
             return values
 
         subquery = self._parse_select(table=True)
-
         if subquery:
             if not subquery.args.get("pivots"):
                 subquery.set("pivots", self._parse_pivots())
@@ -2296,7 +2296,6 @@ class Parser(metaclass=_Parser):
             table_sample = self._parse_table_sample()
 
         alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
-
         if alias:
             this.set("alias", alias)
 
@@ -2817,7 +2816,7 @@ class Parser(metaclass=_Parser):
                 if parser:
                     return parser(self, this, data_type)
                 return self.expression(exp.Cast, this=this, to=data_type)
-            if not data_type.args.get("expressions"):
+            if not data_type.expressions:
                 self._retreat(index)
                 return self._parse_column()
             return data_type

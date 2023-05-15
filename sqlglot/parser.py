@@ -2237,6 +2237,7 @@ class Parser(metaclass=_Parser):
             (not schema and self._parse_function())
             or self._parse_id_var(any_token=False)
             or self._parse_string_as_identifier()
+            or self._parse_placeholder()
         )
 
     def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
@@ -2265,10 +2266,6 @@ class Parser(metaclass=_Parser):
     def _parse_table(
         self, schema: bool = False, alias_tokens: t.Optional[t.Collection[TokenType]] = None
     ) -> t.Optional[exp.Expression]:
-        placeholder = self._parse_placeholder()
-        if placeholder:
-            return placeholder
-
         lateral = self._parse_lateral()
         if lateral:
             return lateral

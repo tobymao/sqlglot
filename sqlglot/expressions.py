@@ -5295,6 +5295,32 @@ def replace_tables(expression, mapping):
         The mapped expression.
     """
 
+    def _replace_columns(node):
+        if isinstance(node, Column) and node.table:
+            # Find the table name in the mapping
+            to_replace = None
+            for name in mapping.keys():
+                if name == node.table or name.endswith(f".{node.table}"):
+                    if to_replace is not None:
+                        raise ValueError(
+                            f"{node.table} is ambiguous in table mapping: Multiple databases with table {node.table}"
+                        )
+                    to_replace = name
+            new_name = mapping.get(to_replace)
+            if new_name:
+                new_table = to_table(
+                    new_name,
+                    **{k: v for k, v in node.args.items() if k not in ("this", "db", "catalog")},
+                )
+                return column(
+                    col=node.name,
+                    table=new_table.this if node.this else None,
+                    db=new_table.db if node.db else None,
+                    catalog=new_table.catalog if node.catalog else None,
+                    quoted=any(p.quoted for p in node.parts),
+                )
+        return node
+
     def _replace_tables(node):
         if isinstance(node, Table):
             new_name = mapping.get(table_name(node))
@@ -5305,7 +5331,7 @@ def replace_tables(expression, mapping):
                 )
         return node
 
-    return expression.transform(_replace_tables)
+    return expression.transform(_replace_tables).transform(_replace_columns)
 
 
 def replace_placeholders(expression, *args, **kwargs):

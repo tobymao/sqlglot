@@ -225,11 +225,7 @@ class BigQuery(Dialect):
         }
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
-            this = (
-                (not schema and self._parse_function())
-                or self._parse_id_var(any_token=False)
-                or self._parse_string_as_identifier()
-            )
+            this = super()._parse_table_part(schema=schema)
 
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
             if isinstance(this, exp.Identifier):

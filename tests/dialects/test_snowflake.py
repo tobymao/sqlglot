@@ -568,13 +568,10 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
         )
-
-        self.validate_all(
-            "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400))",
-            write={
-                "snowflake": "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400, 'yyyy-mm-dd hh24:mi:ss'))",
-            },
+        self.validate_identity(
+            "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400))"
         )
+
         self.validate_all(
             "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
             read={

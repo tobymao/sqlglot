@@ -87,15 +87,13 @@ class SparkSession:
         select_kwargs = {
             "expressions": sel_columns,
             "from": exp.From(
-                expressions=[
-                    exp.Values(
-                        expressions=data_expressions,
-                        alias=exp.TableAlias(
-                            this=exp.to_identifier(self._auto_incrementing_name),
-                            columns=[exp.to_identifier(col_name) for col_name in column_mapping],
-                        ),
+                this=exp.Values(
+                    expressions=data_expressions,
+                    alias=exp.TableAlias(
+                        this=exp.to_identifier(self._auto_incrementing_name),
+                        columns=[exp.to_identifier(col_name) for col_name in column_mapping],
                     ),
-                ],
+                ),
             ),
         }
 

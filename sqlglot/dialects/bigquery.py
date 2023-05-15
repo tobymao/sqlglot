@@ -96,19 +96,12 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
     These are added by the optimizer's qualify_column step.
     """
     if isinstance(expression, exp.Select):
-        unnests = {
-            unnest.alias
-            for unnest in expression.args.get("from", exp.From(expressions=[])).expressions
-            if isinstance(unnest, exp.Unnest) and unnest.alias
-        }
-
-        if unnests:
-            expression = expression.copy()
-
-            for select in expression.expressions:
-                for column in select.find_all(exp.Column):
-                    if column.table in unnests:
-                        column.set("table", None)
+        for unnest in expression.find_all(exp.Unnest):
+            if isinstance(unnest.parent, (exp.From, exp.Join)) and unnest.alias:
+                for select in expression.selects:
+                    for column in select.find_all(exp.Column):
+                        if column.table == unnest.alias:
+                            column.set("table", None)
 
     return expression
 

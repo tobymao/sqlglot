@@ -75,7 +75,7 @@ class TestParser(unittest.TestCase):
 
     def test_table(self):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
-        self.assertEqual(tables, ["a", "b.c", "d"])
+        self.assertEqual(set(tables), {"a", "b.c", "d"})
 
     def test_union_order(self):
         self.assertIsInstance(parse_one("SELECT * FROM (SELECT 1) UNION SELECT 2"), exp.Union)
@@ -92,7 +92,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(parse_one("select * from (select 1) x cross join y").args["joins"]), 1)
         self.assertEqual(
             parse_one("""SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)""").sql(),
-            """SELECT * FROM x, z CROSS JOIN y LATERAL VIEW EXPLODE(y)""",
+            """SELECT * FROM x CROSS JOIN y, z LATERAL VIEW EXPLODE(y)""",
         )
         self.assertIsNone(
             parse_one("create table a as (select b from c) index").find(exp.TableAlias)
@@ -156,8 +156,8 @@ class TestParser(unittest.TestCase):
         assert expression.expressions[2].alias == "c"
         assert expression.expressions[3].alias == "D"
         assert expression.expressions[4].alias == "y|z'"
-        table = expression.args["from"].expressions[0]
-        assert table.this.name == "z"
+        table = expression.args["from"].this
+        assert table.name == "z"
         assert table.args["db"].name == "y"
 
     def test_multi(self):
@@ -168,8 +168,8 @@ class TestParser(unittest.TestCase):
         )
 
         assert len(expressions) == 2
-        assert expressions[0].args["from"].expressions[0].this.name == "a"
-        assert expressions[1].args["from"].expressions[0].this.name == "b"
+        assert expressions[0].args["from"].name == "a"
+        assert expressions[1].args["from"].name == "b"
 
         expressions = parse("SELECT 1; ; SELECT 2")
 
@@ -469,5 +469,5 @@ class TestParser(unittest.TestCase):
         for query, dialect_columns in query_to_column_names.items():
             for dialect, expected_columns in dialect_columns.items():
                 expr = parse_one(query, read=dialect)
-                columns = expr.args["from"].expressions[0].args["pivots"][0].args["columns"]
+                columns = expr.args["from"].this.args["pivots"][0].args["columns"]
                 self.assertEqual(expected_columns, [col.sql(dialect=dialect) for col in columns])

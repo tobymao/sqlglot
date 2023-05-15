@@ -68,7 +68,7 @@ def validate_qualify_columns(expression):
             if scope.external_columns and not scope.is_correlated_subquery:
                 column = scope.external_columns[0]
                 raise OptimizeError(
-                    f"""Column '{column}' could not be resolved{" for table: '{column.table}'" if column.table else ''}"""
+                    f"""Column '{column}' could not be resolved{f" for table: '{column.table}'" if column.table else ''}"""
                 )
 
     if unqualified_columns:

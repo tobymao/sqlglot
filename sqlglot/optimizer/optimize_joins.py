@@ -1,6 +1,8 @@
 from sqlglot import exp
 from sqlglot.helper import tsort
 
+JOIN_ATTRS = ("on", "side", "kind", "using", "natural")
+
 
 def optimize_joins(expression):
     """
@@ -45,7 +47,7 @@ def reorder_joins(expression):
     Reorder joins by topological sort order based on predicate references.
     """
     for from_ in expression.find_all(exp.From):
-        head = from_.expressions[0]
+        head = from_.this
         parent = from_.parent
         joins = {join.this.alias_or_name: join for join in parent.args.get("joins", [])}
         dag = {head.alias_or_name: []}
@@ -65,6 +67,9 @@ def normalize(expression):
     Remove INNER and OUTER from joins as they are optional.
     """
     for join in expression.find_all(exp.Join):
+        if not any(join.args.get(k) for k in JOIN_ATTRS):
+            join.set("kind", "CROSS")
+
         if join.kind != "CROSS":
             join.set("kind", None)
     return expression

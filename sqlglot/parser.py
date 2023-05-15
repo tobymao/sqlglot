@@ -727,6 +727,7 @@ class Parser(metaclass=_Parser):
     }
 
     QUERY_MODIFIER_PARSERS = {
+        "joins": lambda self: list(iter(self._parse_join, None)),
         "laterals": lambda self: list(iter(self._parse_lateral, None)),
         "match": lambda self: self._parse_match_recognize(),
         "where": lambda self: self._parse_where(),
@@ -1096,9 +1097,7 @@ class Parser(metaclass=_Parser):
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
-
-        self._parse_query_modifiers(expression)
-        return expression
+        return self._parse_query_modifiers(expression)
 
     def _parse_drop(self) -> t.Optional[exp.Drop | exp.Command]:
         start = self._prev
@@ -1774,7 +1773,7 @@ class Parser(metaclass=_Parser):
             **{  # type: ignore
                 "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
                 "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
-                "from": self._parse_from(),
+                "from": self._parse_from(modifiers=True),
                 "where": self._parse_where(),
                 "returning": self._parse_returning(),
             },
@@ -1890,11 +1889,10 @@ class Parser(metaclass=_Parser):
             if from_:
                 this.set("from", from_)
 
-            self._parse_query_modifiers(this)
+            this = self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
             this = self._parse_table() if table else self._parse_select(nested=True)
-            self._parse_query_modifiers(this)
-            this = self._parse_set_operations(this)
+            this = self._parse_set_operations(self._parse_query_modifiers(this))
             self._match_r_paren()
 
             # early return so that subquery unions aren't parsed again
@@ -1976,22 +1974,16 @@ class Parser(metaclass=_Parser):
             alias=self._parse_table_alias() if parse_alias else None,
         )
 
-    def _parse_query_modifiers(self, this: t.Optional[exp.Expression]) -> None:
-        if not isinstance(this, self.MODIFIABLES):
-            return
+    def _parse_query_modifiers(
+        self, this: t.Optional[exp.Expression]
+    ) -> t.Optional[exp.Expression]:
+        if isinstance(this, self.MODIFIABLES):
+            for key, parser in self.QUERY_MODIFIER_PARSERS.items():
+                expression = parser(self)
 
-        join = self._parse_join()
-        while join:
-            this.append("joins", join)
-            while self._match(TokenType.COMMA):
-                this.args["from"].append("expressions", self._parse_table())
-            join = self._parse_join()
-
-        for key, parser in self.QUERY_MODIFIER_PARSERS.items():
-            expression = parser(self)
-
-            if expression:
-                this.set(key, expression)
+                if expression:
+                    this.set(key, expression)
+        return this
 
     def _parse_hint(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.HINT):
@@ -2014,12 +2006,16 @@ class Parser(metaclass=_Parser):
             exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
         )
 
-    def _parse_from(self) -> t.Optional[exp.Expression]:
+    def _parse_from(self, modifiers: bool = False) -> t.Optional[exp.Expression]:
         if not self._match(TokenType.FROM):
             return None
 
+        this = self._parse_table()
+
         return self.expression(
-            exp.From, comments=self._prev_comments, expressions=self._parse_csv(self._parse_table)
+            exp.From,
+            comments=self._prev_comments,
+            this=self._parse_query_modifiers(this) if modifiers else this,
         )
 
     def _parse_match_recognize(self) -> t.Optional[exp.Expression]:
@@ -2162,6 +2158,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Expression]:
+        if self._match(TokenType.COMMA):
+            return self.expression(exp.Join, this=self._parse_table())
+
         index = self._index
         natural, side, kind = self._parse_join_side_and_kind()
         hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
@@ -3033,8 +3032,7 @@ class Parser(metaclass=_Parser):
             else:
                 expressions = self._parse_csv(lambda: self._parse_expression(explicit_alias=True))
 
-            this = seq_get(expressions, 0)
-            self._parse_query_modifiers(this)
+            this = self._parse_query_modifiers(seq_get(expressions, 0))
 
             if isinstance(this, exp.Subqueryable):
                 this = self._parse_set_operations(

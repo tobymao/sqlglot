@@ -5297,7 +5297,7 @@ def replace_tables(expression, mapping):
 
     def _replace_columns(node):
         if isinstance(node, Column) and node.table:
-            # Find the table name in the mapping
+            # Find node's table name in mapping. It may be `db.tbl` or it may be `tbl`.
             to_replace = None
             for name in mapping.keys():
                 if name == node.table or name.endswith(f".{node.table}"):

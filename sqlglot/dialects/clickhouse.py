@@ -127,7 +127,9 @@ class ClickHouse(Dialect):
 
             this = self._parse_id_var()
             self._match(TokenType.COLON)
-            kind = self._parse_types(check_func=False) or (self._match_text_seq("IDENTIFIER") and "Identifier")
+            kind = self._parse_types(check_func=False) or (
+                self._match_text_seq("IDENTIFIER") and "Identifier"
+            )
 
             if not kind:
                 self.raise_error("Expecting a placeholder type or 'Identifier' for tables")

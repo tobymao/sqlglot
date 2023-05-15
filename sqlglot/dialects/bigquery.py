@@ -160,6 +160,8 @@ class BigQuery(Dialect):
         LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
+        TABLE_NAME_ALLOWS_DASHES = True
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
             "DATE_TRUNC": lambda args: exp.DateTrunc(

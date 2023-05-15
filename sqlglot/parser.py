@@ -782,6 +782,8 @@ class Parser(metaclass=_Parser):
     LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
 
+    TABLE_NAME_ALLOWS_DASHES = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2245,6 +2247,16 @@ class Parser(metaclass=_Parser):
             )
 
         table = _parse_table_part()
+
+        # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
+        if self.TABLE_NAME_ALLOWS_DASHES and isinstance(table, exp.Identifier):
+            table_name = table.name
+            while self._match(TokenType.DASH, advance=False) and self._next:
+                self._advance(2)
+                table_name += f"-{self._prev.text}"
+
+            table = exp.Identifier(this=table_name, quoted=table.args.get("quoted"))
+
         while self._match(TokenType.DOT):
             if catalog:
                 # This allows nesting the table in arbitrarily many dot expressions if needed

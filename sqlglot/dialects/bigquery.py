@@ -340,3 +340,6 @@ class BigQuery(Dialect):
 
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, prefix=self.seg("OPTIONS"))
+
+        def parameter_sql(self, expression: exp.Parameter) -> str:
+            return f"{self.PARAMETER_TOKEN}`{expression.this.this}`"

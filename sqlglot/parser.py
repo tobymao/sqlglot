@@ -4015,7 +4015,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_parameter(self) -> exp.Expression:
         wrapped = self._match(TokenType.L_BRACE)
-        this = self._parse_var() or self._parse_primary()
+        this = self._parse_var() or self._parse_primary() or self._parse_id_var()
         self._match(TokenType.R_BRACE)
         return self.expression(exp.Parameter, this=this, wrapped=wrapped)
 

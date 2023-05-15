@@ -949,6 +949,17 @@ class Create(Expression):
         "indexes": False,
         "no_schema_binding": False,
         "begin": False,
+        "clone": False,
+    }
+
+
+# https://docs.snowflake.com/en/sql-reference/sql/create-clone
+class Clone(Expression):
+    arg_types = {
+        "this": True,
+        "when": False,
+        "kind": False,
+        "expression": False,
     }
 
 

@@ -52,8 +52,12 @@ def _snowflake_to_timestamp(args: t.Sequence) -> t.Union[exp.StrToTime, exp.Unix
 
         return exp.UnixToTime(this=first_arg, scale=timescale)
 
+    from sqlglot.optimizer.simplify import simplify_literals
+
+    # The first argument might be an expression like 40 * 365 * 86400, so we try to
+    # reduce it using `simplify_literals` first and then check if it's a Literal.
     first_arg = seq_get(args, 0)
-    if not isinstance(first_arg, Literal):
+    if not isinstance(simplify_literals(first_arg, root=True), Literal):
         # case: <variant_expr>
         return format_time_lambda(exp.StrToTime, "snowflake", default=True)(args)
 

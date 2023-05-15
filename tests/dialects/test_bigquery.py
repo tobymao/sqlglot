@@ -6,6 +6,8 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("SELECT * FROM a-b-c.mydataset.mytable")
+        self.validate_identity("SELECT * FROM abc-def-ghi")
         self.validate_identity("SELECT * FROM a-b-c")
         self.validate_identity("SELECT * FROM my-table")
         self.validate_identity("SELECT * FROM my-project.mydataset.mytable")

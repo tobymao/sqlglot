@@ -302,7 +302,6 @@ def _expand_stars(scope, resolver, using_column_tables):
 
     has_pivoted_source = pivot and not pivot.args.get("unpivot")
     if has_pivoted_source:
-        # We're using a dictionary here in order to preserve order
         pivot_columns = set(col.output_name for col in pivot.find_all(exp.Column))
 
         pivot_output_columns = [col.output_name for col in pivot.args.get("columns", [])]

@@ -525,7 +525,7 @@ WHERE
         self.validate_all(
             "SELECT x.a, x.b, t.v, t.y FROM x CROSS APPLY (SELECT v, y FROM t) t(v, y)",
             write={
-                "spark": "SELECT x.a, x.b, t.v, t.y FROM x JOIN LATERAL (SELECT v, y FROM t) AS t(v, y)",
+                "spark": "SELECT x.a, x.b, t.v, t.y FROM x, LATERAL (SELECT v, y FROM t) AS t(v, y)",
             },
         )
         self.validate_all(
@@ -545,7 +545,7 @@ WHERE
         self.validate_all(
             "SELECT t.x, y.z FROM x CROSS APPLY tvfTest(t.x)y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x JOIN LATERAL TVFTEST(t.x) AS y(z)",
+                "spark": "SELECT t.x, y.z FROM x, LATERAL TVFTEST(t.x) AS y(z)",
             },
         )
         self.validate_all(
@@ -637,7 +637,7 @@ WHERE
         self.assertIsInstance(expr.this, exp.Var)
         self.assertEqual(expr.sql("tsql"), "@x")
 
-        table = parse_one("select * from @x", read="tsql").args["from"].expressions[0]
+        table = parse_one("select * from @x", read="tsql").args["from"].this
         self.assertIsInstance(table, exp.Table)
         self.assertIsInstance(table.this, exp.Parameter)
         self.assertIsInstance(table.this.this, exp.Var)
@@ -743,13 +743,13 @@ WHERE
         self.validate_all(
             """
             SELECT *
-            FROM OPENJSON ( @json )  
-            WITH (   
-                          Number   VARCHAR(200)   '$.Order.Number',  
-                          Date     DATETIME       '$.Order.Date',  
-                          Customer VARCHAR(200)   '$.AccountNumber',  
-                          Quantity INT            '$.Item.Quantity',  
-                          [Order]  NVARCHAR(MAX)  AS JSON  
+            FROM OPENJSON ( @json )
+            WITH (
+                          Number   VARCHAR(200)   '$.Order.Number',
+                          Date     DATETIME       '$.Order.Date',
+                          Customer VARCHAR(200)   '$.AccountNumber',
+                          Quantity INT            '$.Item.Quantity',
+                          [Order]  NVARCHAR(MAX)  AS JSON
              )
             """,
             write={

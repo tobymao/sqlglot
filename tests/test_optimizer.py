@@ -253,12 +253,6 @@ class TestOptimizer(unittest.TestCase):
             "SELECT CAST(x AS INT) AS y FROM z AS z",
         )
 
-    def test_expand_multi_table_selects(self):
-        self.check_file(
-            "expand_multi_table_selects",
-            optimizer.expand_multi_table_selects.expand_multi_table_selects,
-        )
-
     def test_optimize_joins(self):
         self.check_file(
             "optimize_joins",
@@ -468,7 +462,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             expression.expressions[0].type.this, exp.DataType.Type.FLOAT
         )  # a.cola AS cola
 
-        addition_alias = expression.args["from"].expressions[0].this.expressions[0]
+        addition_alias = expression.args["from"].this.this.expressions[0]
         self.assertEqual(
             addition_alias.type.this, exp.DataType.Type.FLOAT
         )  # x.cola + y.cola AS cola

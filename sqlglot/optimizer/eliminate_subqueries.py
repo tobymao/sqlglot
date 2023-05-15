@@ -16,9 +16,9 @@ def eliminate_subqueries(expression):
         'WITH y AS (SELECT * FROM x) SELECT a FROM y AS y'
 
     This also deduplicates common subqueries:
-        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT * FROM x) AS y JOIN (SELECT * FROM x) AS z")
+        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT * FROM x) AS y CROSS JOIN (SELECT * FROM x) AS z")
         >>> eliminate_subqueries(expression).sql()
-        'WITH y AS (SELECT * FROM x) SELECT a FROM y AS y JOIN y AS z'
+        'WITH y AS (SELECT * FROM x) SELECT a FROM y AS y CROSS JOIN y AS z'
 
     Args:
         expression (sqlglot.Expression): expression

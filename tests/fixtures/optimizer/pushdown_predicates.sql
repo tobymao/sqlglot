@@ -4,8 +4,8 @@ SELECT x.a AS a FROM (SELECT x.a FROM x AS x WHERE x.a = 1 AND x.b = 1) AS x JOI
 WITH x AS (SELECT y.a FROM y) SELECT * FROM x WHERE x.a = 1;
 WITH x AS (SELECT y.a FROM y WHERE y.a = 1) SELECT * FROM x WHERE TRUE;
 
-SELECT x.a FROM (SELECT * FROM x) AS x JOIN y WHERE y.a = 1 OR (x.a = 1 AND x.b = 1);
-SELECT x.a FROM (SELECT * FROM x) AS x JOIN y WHERE (x.a = 1 AND x.b = 1) OR y.a = 1;
+SELECT x.a FROM (SELECT * FROM x) AS x CROSS JOIN y WHERE y.a = 1 OR (x.a = 1 AND x.b = 1);
+SELECT x.a FROM (SELECT * FROM x) AS x CROSS JOIN y WHERE (x.a = 1 AND x.b = 1) OR y.a = 1;
 
 SELECT x.a FROM (SELECT * FROM x) AS x JOIN y WHERE (x.a = y.a AND x.a = 1 AND x.b = 1) OR x.a = y.a;
 SELECT x.a FROM (SELECT * FROM x) AS x JOIN y ON x.a = y.a WHERE TRUE;

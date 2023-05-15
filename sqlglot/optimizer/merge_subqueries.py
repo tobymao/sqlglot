@@ -13,15 +13,15 @@ def merge_subqueries(expression, leave_tables_isolated=False):
 
     Example:
         >>> import sqlglot
-        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT x.a FROM x) JOIN y")
+        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y")
         >>> merge_subqueries(expression).sql()
-        'SELECT x.a FROM x JOIN y'
+        'SELECT x.a FROM x CROSS JOIN y'
 
     If `leave_tables_isolated` is True, this will not merge inner queries into outer
     queries if it would result in multiple table selects in a single query:
-        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT x.a FROM x) JOIN y")
+        >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y")
         >>> merge_subqueries(expression, leave_tables_isolated=True).sql()
-        'SELECT a FROM (SELECT x.a FROM x) JOIN y'
+        'SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y'
 
     Inspired by https://dev.mysql.com/doc/refman/8.0/en/derived-table-optimization.html
 
@@ -154,7 +154,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         inner_from = inner_scope.expression.args.get("from")
         if not inner_from:
             return False
-        inner_from_table = inner_from.expressions[0].alias_or_name
+        inner_from_table = inner_from.alias_or_name
         inner_projections = {s.alias_or_name: s for s in inner_scope.selects}
         return any(
             col.table != inner_from_table
@@ -228,7 +228,7 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
         node_to_replace (exp.Subquery|exp.Table)
         alias (str)
     """
-    new_subquery = inner_scope.expression.args.get("from").expressions[0]
+    new_subquery = inner_scope.expression.args["from"].this
     node_to_replace.replace(new_subquery)
     for join_hint in outer_scope.join_hints:
         tables = join_hint.find_all(exp.Table)
@@ -319,7 +319,7 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
         # Merge predicates from an outer join to the ON clause
         # if it only has columns that are already joined
         from_ = expression.args.get("from")
-        sources = {table.alias_or_name for table in from_.expressions} if from_ else {}
+        sources = {from_.alias_or_name} if from_ else {}
 
         for join in expression.args["joins"]:
             source = join.alias_or_name

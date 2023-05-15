@@ -147,8 +147,8 @@ class TestExpressions(unittest.TestCase):
             ["a", "B", "e", "*", "zz", "z"],
         )
         self.assertEqual(
-            [e.alias_or_name for e in expression.args["from"].expressions],
-            ["bar", "baz"],
+            {e.alias_or_name for e in expression.find_all(exp.Table)},
+            {"bar", "baz"},
         )
 
         expression = parse_one(
@@ -164,9 +164,10 @@ class TestExpressions(unittest.TestCase):
             ["first", "second"],
         )
 
+        self.assertEqual("first", expression.args["from"].alias_or_name)
         self.assertEqual(
-            [e.alias_or_name for e in expression.args["from"].expressions],
-            ["first", "second", "third"],
+            [e.alias_or_name for e in expression.args["joins"]],
+            ["second", "third"],
         )
 
         self.assertEqual(parse_one("x.*").name, "*")
@@ -185,10 +186,10 @@ class TestExpressions(unittest.TestCase):
     def test_replace_tables(self):
         self.assertEqual(
             exp.replace_tables(
-                parse_one("select * from a AS a join b join c.a join d.a join e.a"),
+                parse_one("select * from a AS a, b, c.a, d.a cross join e.a"),
                 {"a": "a1", "b": "b.a", "c.a": "c.a2", "d.a": "d2"},
             ).sql(),
-            "SELECT * FROM a1 AS a JOIN b.a JOIN c.a2 JOIN d2 JOIN e.a",
+            "SELECT * FROM a1 AS a, b.a, c.a2, d2 CROSS JOIN e.a",
         )
 
     def test_replace_placeholders(self):

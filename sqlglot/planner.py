@@ -5,7 +5,6 @@ import math
 import typing as t
 
 from sqlglot import alias, exp
-from sqlglot.errors import UnsupportedError
 from sqlglot.optimizer.eliminate_joins import join_condition
 
 
@@ -105,13 +104,7 @@ class Step:
         from_ = expression.args.get("from")
 
         if isinstance(expression, exp.Select) and from_:
-            from_ = from_.expressions
-            if len(from_) > 1:
-                raise UnsupportedError(
-                    "Multi-from statements are unsupported. Run it through the optimizer"
-                )
-
-            step = Scan.from_expression(from_[0], ctes)
+            step = Scan.from_expression(from_.this, ctes)
         elif isinstance(expression, exp.Union):
             step = SetOperation.from_expression(expression, ctes)
         else:

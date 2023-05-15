@@ -57,7 +57,7 @@ SELECT x.a AS a, y.c AS c FROM x AS x, y AS y;
 
 # title: Comma JOIN in inner query
 SELECT x.a, x.c FROM (SELECT x.a, z.c FROM x, y AS z) AS x;
-SELECT x.a AS a, z.c AS c FROM x AS x CROSS JOIN y AS z;
+SELECT x.a AS a, z.c AS c FROM x AS x, y AS z;
 
 # title: (Regression) Column in ORDER BY
 SELECT * FROM (SELECT * FROM (SELECT * FROM x)) ORDER BY a LIMIT 1;

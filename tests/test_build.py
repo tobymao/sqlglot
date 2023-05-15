@@ -86,13 +86,8 @@ class TestBuild(unittest.TestCase):
                 lambda: select("x").select("y", append=False).from_("tbl"),
                 "SELECT y FROM tbl",
             ),
-            (lambda: select("x").from_("tbl").from_("tbl2"), "SELECT x FROM tbl, tbl2"),
             (
-                lambda: select("x").from_("tbl, tbl2", "tbl3").from_("tbl4"),
-                "SELECT x FROM tbl, tbl2, tbl3, tbl4",
-            ),
-            (
-                lambda: select("x").from_("tbl").from_("tbl2", append=False),
+                lambda: select("x").from_("tbl").from_("tbl2"),
                 "SELECT x FROM tbl2",
             ),
             (lambda: select("SUM(x) AS y"), "SELECT SUM(x) AS y"),
@@ -399,7 +394,7 @@ class TestBuild(unittest.TestCase):
                 .with_("tbl", as_=select("x").from_("tbl2"))
                 .from_("tbl")
                 .join("tbl3"),
-                "WITH tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl JOIN tbl3",
+                "WITH tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl, tbl3",
             ),
             (
                 lambda: select("x")

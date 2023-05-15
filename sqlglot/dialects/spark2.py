@@ -53,7 +53,7 @@ def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
     raise ValueError("Improper scale for timestamp")
 
 
-def _unalias_pivots(expression: exp.Expression) -> exp.Expression:
+def _unalias_pivot(expression: exp.Expression) -> exp.Expression:
     """
     Spark doesn't allow PIVOT aliases, so we need to remove them and possibly wrap a
     pivoted source in a subquery with the same alias to preserve the query's semantics.
@@ -61,7 +61,7 @@ def _unalias_pivots(expression: exp.Expression) -> exp.Expression:
     Example:
         >>> from sqlglot import parse_one
         >>> expr = parse_one("SELECT piv.x FROM tbl PIVOT (SUM(a) FOR b IN ('x')) piv")
-        >>> print(_unalias_pivots(expr).sql(dialect="spark"))
+        >>> print(_unalias_pivot(expr).sql(dialect="spark"))
         SELECT piv.x FROM (SELECT * FROM tbl PIVOT(SUM(a) FOR b IN ('x'))) AS piv
     """
     if isinstance(expression, exp.From) and expression.this.args.get("pivots"):
@@ -234,7 +234,7 @@ class Spark2(Hive):
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
-            exp.From: transforms.preprocess([_unalias_pivots]),
+            exp.From: transforms.preprocess([_unalias_pivot]),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),

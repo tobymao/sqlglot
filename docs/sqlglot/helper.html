@@ -85,9 +85,6 @@
                     <a class="function" href="#flatten">flatten</a>
             </li>
             <li>
-                    <a class="function" href="#count_params">count_params</a>
-            </li>
-            <li>
                     <a class="function" href="#dict_depth">dict_depth</a>
             </li>
             <li>
@@ -502,70 +499,61 @@
 </span><span id="L-381"><a href="#L-381"><span class="linenos">381</span></a>            <span class="k">yield</span> <span class="n">value</span>
 </span><span id="L-382"><a href="#L-382"><span class="linenos">382</span></a>
 </span><span id="L-383"><a href="#L-383"><span class="linenos">383</span></a>
-</span><span id="L-384"><a href="#L-384"><span class="linenos">384</span></a><span class="k">def</span> <span class="nf">count_params</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="L-384"><a href="#L-384"><span class="linenos">384</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 </span><span id="L-385"><a href="#L-385"><span class="linenos">385</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a><span class="sd">    Returns the number of formal parameters expected by a function, without counting &quot;self&quot;</span>
-</span><span id="L-387"><a href="#L-387"><span class="linenos">387</span></a><span class="sd">    and &quot;cls&quot;, in case of instance and class methods, respectively.</span>
-</span><span id="L-388"><a href="#L-388"><span class="linenos">388</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a>    <span class="n">count</span> <span class="o">=</span> <span class="n">function</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">co_argcount</span>
-</span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a>    <span class="k">return</span> <span class="n">count</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">function</span><span class="p">)</span> <span class="k">else</span> <span class="n">count</span>
-</span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a>
-</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a>
-</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
-</span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a>
-</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a><span class="sd">    For example:</span>
-</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
-</span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a><span class="sd">        0</span>
-</span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
-</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a><span class="sd">        1</span>
-</span><span id="L-402"><a href="#L-402"><span class="linenos">402</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
-</span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a><span class="sd">        1</span>
-</span><span id="L-404"><a href="#L-404"><span class="linenos">404</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
-</span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a><span class="sd">        2</span>
-</span><span id="L-406"><a href="#L-406"><span class="linenos">406</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
-</span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a><span class="sd">        3</span>
-</span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a>
-</span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a><span class="sd">    Args:</span>
-</span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a><span class="sd">        d (dict): dictionary</span>
-</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a>
-</span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a><span class="sd">    Returns:</span>
-</span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a><span class="sd">        int: depth</span>
-</span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-415"><a href="#L-415"><span class="linenos">415</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-416"><a href="#L-416"><span class="linenos">416</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
-</span><span id="L-417"><a href="#L-417"><span class="linenos">417</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-</span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
-</span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a>        <span class="k">return</span> <span class="mi">0</span>
-</span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
-</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
-</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a>        <span class="k">return</span> <span class="mi">1</span>
+</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
+</span><span id="L-387"><a href="#L-387"><span class="linenos">387</span></a>
+</span><span id="L-388"><a href="#L-388"><span class="linenos">388</span></a><span class="sd">    For example:</span>
+</span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
+</span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a><span class="sd">        0</span>
+</span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
+</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a><span class="sd">        1</span>
+</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
+</span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a><span class="sd">        1</span>
+</span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
+</span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a><span class="sd">        2</span>
+</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
+</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a><span class="sd">        3</span>
+</span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a>
+</span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a><span class="sd">    Args:</span>
+</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a><span class="sd">        d (dict): dictionary</span>
+</span><span id="L-402"><a href="#L-402"><span class="linenos">402</span></a>
+</span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a><span class="sd">    Returns:</span>
+</span><span id="L-404"><a href="#L-404"><span class="linenos">404</span></a><span class="sd">        int: depth</span>
+</span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-406"><a href="#L-406"><span class="linenos">406</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+</span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+</span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
+</span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a>        <span class="k">return</span> <span class="mi">0</span>
+</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+</span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
+</span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a>        <span class="k">return</span> <span class="mi">1</span>
+</span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a>
+</span><span id="L-415"><a href="#L-415"><span class="linenos">415</span></a>
+</span><span id="L-416"><a href="#L-416"><span class="linenos">416</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+</span><span id="L-417"><a href="#L-417"><span class="linenos">417</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable.</span>
+</span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a>
+</span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a><span class="sd">    Useful for sets.</span>
+</span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
+</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a>
 </span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a>
-</span><span id="L-424"><a href="#L-424"><span class="linenos">424</span></a>
-</span><span id="L-425"><a href="#L-425"><span class="linenos">425</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-</span><span id="L-426"><a href="#L-426"><span class="linenos">426</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable.</span>
-</span><span id="L-427"><a href="#L-427"><span class="linenos">427</span></a>
-</span><span id="L-428"><a href="#L-428"><span class="linenos">428</span></a><span class="sd">    Useful for sets.</span>
-</span><span id="L-429"><a href="#L-429"><span class="linenos">429</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-430"><a href="#L-430"><span class="linenos">430</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
-</span><span id="L-431"><a href="#L-431"><span class="linenos">431</span></a>
-</span><span id="L-432"><a href="#L-432"><span class="linenos">432</span></a>
-</span><span id="L-433"><a href="#L-433"><span class="linenos">433</span></a><span class="k">def</span> <span class="nf">should_identify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if text should be identified given an identify option.</span>
-</span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a>
-</span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a><span class="sd">    Args:</span>
-</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a><span class="sd">        text: the text to check.</span>
-</span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a><span class="sd">        identify: &quot;always&quot; | True - always returns true, &quot;safe&quot; - true if no upper case</span>
-</span><span id="L-439"><a href="#L-439"><span class="linenos">439</span></a>
-</span><span id="L-440"><a href="#L-440"><span class="linenos">440</span></a><span class="sd">    Returns:</span>
-</span><span id="L-441"><a href="#L-441"><span class="linenos">441</span></a><span class="sd">        Whether or not a string should be identified.</span>
-</span><span id="L-442"><a href="#L-442"><span class="linenos">442</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-443"><a href="#L-443"><span class="linenos">443</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="L-444"><a href="#L-444"><span class="linenos">444</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="L-445"><a href="#L-445"><span class="linenos">445</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="L-446"><a href="#L-446"><span class="linenos">446</span></a>        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
-</span><span id="L-447"><a href="#L-447"><span class="linenos">447</span></a>    <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-424"><a href="#L-424"><span class="linenos">424</span></a><span class="k">def</span> <span class="nf">should_identify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-425"><a href="#L-425"><span class="linenos">425</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if text should be identified given an identify option.</span>
+</span><span id="L-426"><a href="#L-426"><span class="linenos">426</span></a>
+</span><span id="L-427"><a href="#L-427"><span class="linenos">427</span></a><span class="sd">    Args:</span>
+</span><span id="L-428"><a href="#L-428"><span class="linenos">428</span></a><span class="sd">        text: the text to check.</span>
+</span><span id="L-429"><a href="#L-429"><span class="linenos">429</span></a><span class="sd">        identify: &quot;always&quot; | True - always returns true, &quot;safe&quot; - true if no upper case</span>
+</span><span id="L-430"><a href="#L-430"><span class="linenos">430</span></a>
+</span><span id="L-431"><a href="#L-431"><span class="linenos">431</span></a><span class="sd">    Returns:</span>
+</span><span id="L-432"><a href="#L-432"><span class="linenos">432</span></a><span class="sd">        Whether or not a string should be identified.</span>
+</span><span id="L-433"><a href="#L-433"><span class="linenos">433</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a>        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
+</span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a>    <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1403,33 +1391,6 @@ type <code>str</code> and <code>bytes</code> are not regarded as iterables.</p>
 
 
                 </section>
-                <section id="count_params">
-                            <input id="count_params-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">count_params</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">function</span><span class="p">:</span> <span class="n">Callable</span></span><span class="return-annotation">) -> <span class="nb">int</span>:</span></span>
-
-                <label class="view-source-button" for="count_params-view-source"><span>View Source</span></label>
-
-    </div>
-    <a class="headerlink" href="#count_params"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="count_params-385"><a href="#count_params-385"><span class="linenos">385</span></a><span class="k">def</span> <span class="nf">count_params</span><span class="p">(</span><span class="n">function</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="count_params-386"><a href="#count_params-386"><span class="linenos">386</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="count_params-387"><a href="#count_params-387"><span class="linenos">387</span></a><span class="sd">    Returns the number of formal parameters expected by a function, without counting &quot;self&quot;</span>
-</span><span id="count_params-388"><a href="#count_params-388"><span class="linenos">388</span></a><span class="sd">    and &quot;cls&quot;, in case of instance and class methods, respectively.</span>
-</span><span id="count_params-389"><a href="#count_params-389"><span class="linenos">389</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="count_params-390"><a href="#count_params-390"><span class="linenos">390</span></a>    <span class="n">count</span> <span class="o">=</span> <span class="n">function</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">co_argcount</span>
-</span><span id="count_params-391"><a href="#count_params-391"><span class="linenos">391</span></a>    <span class="k">return</span> <span class="n">count</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">ismethod</span><span class="p">(</span><span class="n">function</span><span class="p">)</span> <span class="k">else</span> <span class="n">count</span>
-</span></pre></div>
-
-
-            <div class="docstring"><p>Returns the number of formal parameters expected by a function, without counting "self"
-and "cls", in case of instance and class methods, respectively.</p>
-</div>
-
-
-                </section>
                 <section id="dict_depth">
                             <input id="dict_depth-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1441,36 +1402,36 @@ and "cls", in case of instance and class methods, respectively.</p>
 
     </div>
     <a class="headerlink" href="#dict_depth"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="dict_depth-394"><a href="#dict_depth-394"><span class="linenos">394</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="dict_depth-395"><a href="#dict_depth-395"><span class="linenos">395</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="dict_depth-396"><a href="#dict_depth-396"><span class="linenos">396</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
-</span><span id="dict_depth-397"><a href="#dict_depth-397"><span class="linenos">397</span></a>
-</span><span id="dict_depth-398"><a href="#dict_depth-398"><span class="linenos">398</span></a><span class="sd">    For example:</span>
-</span><span id="dict_depth-399"><a href="#dict_depth-399"><span class="linenos">399</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
-</span><span id="dict_depth-400"><a href="#dict_depth-400"><span class="linenos">400</span></a><span class="sd">        0</span>
-</span><span id="dict_depth-401"><a href="#dict_depth-401"><span class="linenos">401</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
-</span><span id="dict_depth-402"><a href="#dict_depth-402"><span class="linenos">402</span></a><span class="sd">        1</span>
-</span><span id="dict_depth-403"><a href="#dict_depth-403"><span class="linenos">403</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
-</span><span id="dict_depth-404"><a href="#dict_depth-404"><span class="linenos">404</span></a><span class="sd">        1</span>
-</span><span id="dict_depth-405"><a href="#dict_depth-405"><span class="linenos">405</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
-</span><span id="dict_depth-406"><a href="#dict_depth-406"><span class="linenos">406</span></a><span class="sd">        2</span>
-</span><span id="dict_depth-407"><a href="#dict_depth-407"><span class="linenos">407</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
-</span><span id="dict_depth-408"><a href="#dict_depth-408"><span class="linenos">408</span></a><span class="sd">        3</span>
-</span><span id="dict_depth-409"><a href="#dict_depth-409"><span class="linenos">409</span></a>
-</span><span id="dict_depth-410"><a href="#dict_depth-410"><span class="linenos">410</span></a><span class="sd">    Args:</span>
-</span><span id="dict_depth-411"><a href="#dict_depth-411"><span class="linenos">411</span></a><span class="sd">        d (dict): dictionary</span>
-</span><span id="dict_depth-412"><a href="#dict_depth-412"><span class="linenos">412</span></a>
-</span><span id="dict_depth-413"><a href="#dict_depth-413"><span class="linenos">413</span></a><span class="sd">    Returns:</span>
-</span><span id="dict_depth-414"><a href="#dict_depth-414"><span class="linenos">414</span></a><span class="sd">        int: depth</span>
-</span><span id="dict_depth-415"><a href="#dict_depth-415"><span class="linenos">415</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="dict_depth-416"><a href="#dict_depth-416"><span class="linenos">416</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="dict_depth-417"><a href="#dict_depth-417"><span class="linenos">417</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
-</span><span id="dict_depth-418"><a href="#dict_depth-418"><span class="linenos">418</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-</span><span id="dict_depth-419"><a href="#dict_depth-419"><span class="linenos">419</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
-</span><span id="dict_depth-420"><a href="#dict_depth-420"><span class="linenos">420</span></a>        <span class="k">return</span> <span class="mi">0</span>
-</span><span id="dict_depth-421"><a href="#dict_depth-421"><span class="linenos">421</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
-</span><span id="dict_depth-422"><a href="#dict_depth-422"><span class="linenos">422</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
-</span><span id="dict_depth-423"><a href="#dict_depth-423"><span class="linenos">423</span></a>        <span class="k">return</span> <span class="mi">1</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="dict_depth-385"><a href="#dict_depth-385"><span class="linenos">385</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="dict_depth-386"><a href="#dict_depth-386"><span class="linenos">386</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="dict_depth-387"><a href="#dict_depth-387"><span class="linenos">387</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
+</span><span id="dict_depth-388"><a href="#dict_depth-388"><span class="linenos">388</span></a>
+</span><span id="dict_depth-389"><a href="#dict_depth-389"><span class="linenos">389</span></a><span class="sd">    For example:</span>
+</span><span id="dict_depth-390"><a href="#dict_depth-390"><span class="linenos">390</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
+</span><span id="dict_depth-391"><a href="#dict_depth-391"><span class="linenos">391</span></a><span class="sd">        0</span>
+</span><span id="dict_depth-392"><a href="#dict_depth-392"><span class="linenos">392</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
+</span><span id="dict_depth-393"><a href="#dict_depth-393"><span class="linenos">393</span></a><span class="sd">        1</span>
+</span><span id="dict_depth-394"><a href="#dict_depth-394"><span class="linenos">394</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
+</span><span id="dict_depth-395"><a href="#dict_depth-395"><span class="linenos">395</span></a><span class="sd">        1</span>
+</span><span id="dict_depth-396"><a href="#dict_depth-396"><span class="linenos">396</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
+</span><span id="dict_depth-397"><a href="#dict_depth-397"><span class="linenos">397</span></a><span class="sd">        2</span>
+</span><span id="dict_depth-398"><a href="#dict_depth-398"><span class="linenos">398</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
+</span><span id="dict_depth-399"><a href="#dict_depth-399"><span class="linenos">399</span></a><span class="sd">        3</span>
+</span><span id="dict_depth-400"><a href="#dict_depth-400"><span class="linenos">400</span></a>
+</span><span id="dict_depth-401"><a href="#dict_depth-401"><span class="linenos">401</span></a><span class="sd">    Args:</span>
+</span><span id="dict_depth-402"><a href="#dict_depth-402"><span class="linenos">402</span></a><span class="sd">        d (dict): dictionary</span>
+</span><span id="dict_depth-403"><a href="#dict_depth-403"><span class="linenos">403</span></a>
+</span><span id="dict_depth-404"><a href="#dict_depth-404"><span class="linenos">404</span></a><span class="sd">    Returns:</span>
+</span><span id="dict_depth-405"><a href="#dict_depth-405"><span class="linenos">405</span></a><span class="sd">        int: depth</span>
+</span><span id="dict_depth-406"><a href="#dict_depth-406"><span class="linenos">406</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="dict_depth-407"><a href="#dict_depth-407"><span class="linenos">407</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="dict_depth-408"><a href="#dict_depth-408"><span class="linenos">408</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+</span><span id="dict_depth-409"><a href="#dict_depth-409"><span class="linenos">409</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+</span><span id="dict_depth-410"><a href="#dict_depth-410"><span class="linenos">410</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
+</span><span id="dict_depth-411"><a href="#dict_depth-411"><span class="linenos">411</span></a>        <span class="k">return</span> <span class="mi">0</span>
+</span><span id="dict_depth-412"><a href="#dict_depth-412"><span class="linenos">412</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+</span><span id="dict_depth-413"><a href="#dict_depth-413"><span class="linenos">413</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
+</span><span id="dict_depth-414"><a href="#dict_depth-414"><span class="linenos">414</span></a>        <span class="k">return</span> <span class="mi">1</span>
 </span></pre></div>
 
 
@@ -1520,12 +1481,12 @@ and "cls", in case of instance and class methods, respectively.</p>
 
     </div>
     <a class="headerlink" href="#first"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="first-426"><a href="#first-426"><span class="linenos">426</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-</span><span id="first-427"><a href="#first-427"><span class="linenos">427</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable.</span>
-</span><span id="first-428"><a href="#first-428"><span class="linenos">428</span></a>
-</span><span id="first-429"><a href="#first-429"><span class="linenos">429</span></a><span class="sd">    Useful for sets.</span>
-</span><span id="first-430"><a href="#first-430"><span class="linenos">430</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="first-431"><a href="#first-431"><span class="linenos">431</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="first-417"><a href="#first-417"><span class="linenos">417</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+</span><span id="first-418"><a href="#first-418"><span class="linenos">418</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable.</span>
+</span><span id="first-419"><a href="#first-419"><span class="linenos">419</span></a>
+</span><span id="first-420"><a href="#first-420"><span class="linenos">420</span></a><span class="sd">    Useful for sets.</span>
+</span><span id="first-421"><a href="#first-421"><span class="linenos">421</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="first-422"><a href="#first-422"><span class="linenos">422</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1547,21 +1508,21 @@ and "cls", in case of instance and class methods, respectively.</p>
 
     </div>
     <a class="headerlink" href="#should_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="should_identify-434"><a href="#should_identify-434"><span class="linenos">434</span></a><span class="k">def</span> <span class="nf">should_identify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="should_identify-435"><a href="#should_identify-435"><span class="linenos">435</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if text should be identified given an identify option.</span>
-</span><span id="should_identify-436"><a href="#should_identify-436"><span class="linenos">436</span></a>
-</span><span id="should_identify-437"><a href="#should_identify-437"><span class="linenos">437</span></a><span class="sd">    Args:</span>
-</span><span id="should_identify-438"><a href="#should_identify-438"><span class="linenos">438</span></a><span class="sd">        text: the text to check.</span>
-</span><span id="should_identify-439"><a href="#should_identify-439"><span class="linenos">439</span></a><span class="sd">        identify: &quot;always&quot; | True - always returns true, &quot;safe&quot; - true if no upper case</span>
-</span><span id="should_identify-440"><a href="#should_identify-440"><span class="linenos">440</span></a>
-</span><span id="should_identify-441"><a href="#should_identify-441"><span class="linenos">441</span></a><span class="sd">    Returns:</span>
-</span><span id="should_identify-442"><a href="#should_identify-442"><span class="linenos">442</span></a><span class="sd">        Whether or not a string should be identified.</span>
-</span><span id="should_identify-443"><a href="#should_identify-443"><span class="linenos">443</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="should_identify-444"><a href="#should_identify-444"><span class="linenos">444</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="should_identify-445"><a href="#should_identify-445"><span class="linenos">445</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="should_identify-446"><a href="#should_identify-446"><span class="linenos">446</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="should_identify-447"><a href="#should_identify-447"><span class="linenos">447</span></a>        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
-</span><span id="should_identify-448"><a href="#should_identify-448"><span class="linenos">448</span></a>    <span class="k">return</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="should_identify-425"><a href="#should_identify-425"><span class="linenos">425</span></a><span class="k">def</span> <span class="nf">should_identify</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="should_identify-426"><a href="#should_identify-426"><span class="linenos">426</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if text should be identified given an identify option.</span>
+</span><span id="should_identify-427"><a href="#should_identify-427"><span class="linenos">427</span></a>
+</span><span id="should_identify-428"><a href="#should_identify-428"><span class="linenos">428</span></a><span class="sd">    Args:</span>
+</span><span id="should_identify-429"><a href="#should_identify-429"><span class="linenos">429</span></a><span class="sd">        text: the text to check.</span>
+</span><span id="should_identify-430"><a href="#should_identify-430"><span class="linenos">430</span></a><span class="sd">        identify: &quot;always&quot; | True - always returns true, &quot;safe&quot; - true if no upper case</span>
+</span><span id="should_identify-431"><a href="#should_identify-431"><span class="linenos">431</span></a>
+</span><span id="should_identify-432"><a href="#should_identify-432"><span class="linenos">432</span></a><span class="sd">    Returns:</span>
+</span><span id="should_identify-433"><a href="#should_identify-433"><span class="linenos">433</span></a><span class="sd">        Whether or not a string should be identified.</span>
+</span><span id="should_identify-434"><a href="#should_identify-434"><span class="linenos">434</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="should_identify-435"><a href="#should_identify-435"><span class="linenos">435</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="should_identify-436"><a href="#should_identify-436"><span class="linenos">436</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="should_identify-437"><a href="#should_identify-437"><span class="linenos">437</span></a>    <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="should_identify-438"><a href="#should_identify-438"><span class="linenos">438</span></a>        <span class="k">return</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">char</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
+</span><span id="should_identify-439"><a href="#should_identify-439"><span class="linenos">439</span></a>    <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 

@@ -77,15 +77,15 @@
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">    Example:</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) JOIN y&quot;)</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y&quot;)</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="sd">        &gt;&gt;&gt; merge_subqueries(expression).sql()</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">        &#39;SELECT x.a FROM x JOIN y&#39;</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">        &#39;SELECT x.a FROM x CROSS JOIN y&#39;</span>
 </span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a>
 </span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="sd">    If `leave_tables_isolated` is True, this will not merge inner queries into outer</span>
 </span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="sd">    queries if it would result in multiple table selects in a single query:</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) JOIN y&quot;)</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y&quot;)</span>
 </span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a><span class="sd">        &gt;&gt;&gt; merge_subqueries(expression, leave_tables_isolated=True).sql()</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="sd">        &#39;SELECT a FROM (SELECT x.a FROM x) JOIN y&#39;</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="sd">        &#39;SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y&#39;</span>
 </span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>
 </span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="sd">    Inspired by https://dev.mysql.com/doc/refman/8.0/en/derived-table-optimization.html</span>
 </span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>
@@ -218,7 +218,7 @@
 </span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>        <span class="n">inner_from</span> <span class="o">=</span> <span class="n">inner_scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;from&quot;</span><span class="p">)</span>
 </span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">inner_from</span><span class="p">:</span>
 </span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>            <span class="k">return</span> <span class="kc">False</span>
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>        <span class="n">inner_from_table</span> <span class="o">=</span> <span class="n">inner_from</span><span class="o">.</span><span class="n">expressions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">alias_or_name</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>        <span class="n">inner_from_table</span> <span class="o">=</span> <span class="n">inner_from</span><span class="o">.</span><span class="n">alias_or_name</span>
 </span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="n">inner_projections</span> <span class="o">=</span> <span class="p">{</span><span class="n">s</span><span class="o">.</span><span class="n">alias_or_name</span><span class="p">:</span> <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">inner_scope</span><span class="o">.</span><span class="n">selects</span><span class="p">}</span>
 </span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
 </span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>            <span class="n">col</span><span class="o">.</span><span class="n">table</span> <span class="o">!=</span> <span class="n">inner_from_table</span>
@@ -274,7 +274,7 @@
 </span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Table</span><span class="p">)</span> <span class="ow">and</span> <span class="n">source</span><span class="o">.</span><span class="n">alias</span><span class="p">:</span>
 </span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>            <span class="n">source</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;alias&quot;</span><span class="p">,</span> <span class="n">new_alias</span><span class="p">)</span>
 </span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Table</span><span class="p">):</span>
-</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>            <span class="n">source</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">alias_</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">new_alias</span><span class="p">))</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>            <span class="n">source</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">alias_</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">new_alias</span><span class="p">))</span>
 </span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>
 </span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">inner_scope</span><span class="o">.</span><span class="n">source_columns</span><span class="p">(</span><span class="n">conflict</span><span class="p">):</span>
 </span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>            <span class="n">column</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;table&quot;</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="n">new_name</span><span class="p">))</span>
@@ -292,7 +292,7 @@
 </span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">        node_to_replace (exp.Subquery|exp.Table)</span>
 </span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a><span class="sd">        alias (str)</span>
 </span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>    <span class="n">new_subquery</span> <span class="o">=</span> <span class="n">inner_scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;from&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">expressions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>    <span class="n">new_subquery</span> <span class="o">=</span> <span class="n">inner_scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;from&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">this</span>
 </span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>    <span class="n">node_to_replace</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">new_subquery</span><span class="p">)</span>
 </span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>    <span class="k">for</span> <span class="n">join_hint</span> <span class="ow">in</span> <span class="n">outer_scope</span><span class="o">.</span><span class="n">join_hints</span><span class="p">:</span>
 </span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a>        <span class="n">tables</span> <span class="o">=</span> <span class="n">join_hint</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Table</span><span class="p">)</span>
@@ -383,7 +383,7 @@
 </span><span id="L-319"><a href="#L-319"><span class="linenos">319</span></a>        <span class="c1"># Merge predicates from an outer join to the ON clause</span>
 </span><span id="L-320"><a href="#L-320"><span class="linenos">320</span></a>        <span class="c1"># if it only has columns that are already joined</span>
 </span><span id="L-321"><a href="#L-321"><span class="linenos">321</span></a>        <span class="n">from_</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;from&quot;</span><span class="p">)</span>
-</span><span id="L-322"><a href="#L-322"><span class="linenos">322</span></a>        <span class="n">sources</span> <span class="o">=</span> <span class="p">{</span><span class="n">table</span><span class="o">.</span><span class="n">alias_or_name</span> <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">from_</span><span class="o">.</span><span class="n">expressions</span><span class="p">}</span> <span class="k">if</span> <span class="n">from_</span> <span class="k">else</span> <span class="p">{}</span>
+</span><span id="L-322"><a href="#L-322"><span class="linenos">322</span></a>        <span class="n">sources</span> <span class="o">=</span> <span class="p">{</span><span class="n">from_</span><span class="o">.</span><span class="n">alias_or_name</span><span class="p">}</span> <span class="k">if</span> <span class="n">from_</span> <span class="k">else</span> <span class="p">{}</span>
 </span><span id="L-323"><a href="#L-323"><span class="linenos">323</span></a>
 </span><span id="L-324"><a href="#L-324"><span class="linenos">324</span></a>        <span class="k">for</span> <span class="n">join</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;joins&quot;</span><span class="p">]:</span>
 </span><span id="L-325"><a href="#L-325"><span class="linenos">325</span></a>            <span class="n">source</span> <span class="o">=</span> <span class="n">join</span><span class="o">.</span><span class="n">alias_or_name</span>
@@ -468,15 +468,15 @@
 </span><span id="merge_subqueries-14"><a href="#merge_subqueries-14"><span class="linenos">14</span></a>
 </span><span id="merge_subqueries-15"><a href="#merge_subqueries-15"><span class="linenos">15</span></a><span class="sd">    Example:</span>
 </span><span id="merge_subqueries-16"><a href="#merge_subqueries-16"><span class="linenos">16</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="merge_subqueries-17"><a href="#merge_subqueries-17"><span class="linenos">17</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) JOIN y&quot;)</span>
+</span><span id="merge_subqueries-17"><a href="#merge_subqueries-17"><span class="linenos">17</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y&quot;)</span>
 </span><span id="merge_subqueries-18"><a href="#merge_subqueries-18"><span class="linenos">18</span></a><span class="sd">        &gt;&gt;&gt; merge_subqueries(expression).sql()</span>
-</span><span id="merge_subqueries-19"><a href="#merge_subqueries-19"><span class="linenos">19</span></a><span class="sd">        &#39;SELECT x.a FROM x JOIN y&#39;</span>
+</span><span id="merge_subqueries-19"><a href="#merge_subqueries-19"><span class="linenos">19</span></a><span class="sd">        &#39;SELECT x.a FROM x CROSS JOIN y&#39;</span>
 </span><span id="merge_subqueries-20"><a href="#merge_subqueries-20"><span class="linenos">20</span></a>
 </span><span id="merge_subqueries-21"><a href="#merge_subqueries-21"><span class="linenos">21</span></a><span class="sd">    If `leave_tables_isolated` is True, this will not merge inner queries into outer</span>
 </span><span id="merge_subqueries-22"><a href="#merge_subqueries-22"><span class="linenos">22</span></a><span class="sd">    queries if it would result in multiple table selects in a single query:</span>
-</span><span id="merge_subqueries-23"><a href="#merge_subqueries-23"><span class="linenos">23</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) JOIN y&quot;)</span>
+</span><span id="merge_subqueries-23"><a href="#merge_subqueries-23"><span class="linenos">23</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&quot;SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y&quot;)</span>
 </span><span id="merge_subqueries-24"><a href="#merge_subqueries-24"><span class="linenos">24</span></a><span class="sd">        &gt;&gt;&gt; merge_subqueries(expression, leave_tables_isolated=True).sql()</span>
-</span><span id="merge_subqueries-25"><a href="#merge_subqueries-25"><span class="linenos">25</span></a><span class="sd">        &#39;SELECT a FROM (SELECT x.a FROM x) JOIN y&#39;</span>
+</span><span id="merge_subqueries-25"><a href="#merge_subqueries-25"><span class="linenos">25</span></a><span class="sd">        &#39;SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y&#39;</span>
 </span><span id="merge_subqueries-26"><a href="#merge_subqueries-26"><span class="linenos">26</span></a>
 </span><span id="merge_subqueries-27"><a href="#merge_subqueries-27"><span class="linenos">27</span></a><span class="sd">    Inspired by https://dev.mysql.com/doc/refman/8.0/en/derived-table-optimization.html</span>
 </span><span id="merge_subqueries-28"><a href="#merge_subqueries-28"><span class="linenos">28</span></a>
@@ -501,9 +501,9 @@
 <blockquote>
   <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sqlglot</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="s2">&quot;SELECT a FROM (SELECT x.a FROM x) JOIN y&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="s2">&quot;SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">merge_subqueries</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
-<span class="go">&#39;SELECT x.a FROM x JOIN y&#39;</span>
+<span class="go">&#39;SELECT x.a FROM x CROSS JOIN y&#39;</span>
 </code></pre>
   </div>
 </blockquote>
@@ -514,9 +514,9 @@ queries if it would result in multiple table selects in a single query:</p>
 <blockquote>
   <blockquote>
     <blockquote>
-      <p>expression = <a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a>("SELECT a FROM (SELECT x.a FROM x) JOIN y")
+      <p>expression = <a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a>("SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y")
       merge_subqueries(expression, leave_tables_isolated=True).sql()
-          'SELECT a FROM (SELECT x.a FROM x) JOIN y'</p>
+          'SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y'</p>
     </blockquote>
   </blockquote>
 </blockquote>

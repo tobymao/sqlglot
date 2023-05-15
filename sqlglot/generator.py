@@ -1186,7 +1186,9 @@ class Generator:
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
     ) -> str:
         if self.alias_post_tablesample and expression.this.alias:
-            this = self.sql(expression.this, "this")
+            table = expression.this.copy()
+            table.set("alias", None)
+            this = self.sql(table)
             alias = f"{sep}{self.sql(expression.this, 'alias')}"
         else:
             this = self.sql(expression, "this")

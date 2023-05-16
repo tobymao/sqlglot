@@ -247,6 +247,7 @@ class BigQuery(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "TIMESTAMP", self.func("DATETIME", e.this, e.args.get("zone"))

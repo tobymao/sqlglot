@@ -3566,6 +3566,7 @@ class Hll(AggFunc):
 
 class ApproxDistinct(AggFunc):
     arg_types = {"this": True, "accuracy": False}
+    _sql_names = ["APPROX_DISTINCT", "APPROX_COUNT_DISTINCT"]
 
 
 class Array(Func):

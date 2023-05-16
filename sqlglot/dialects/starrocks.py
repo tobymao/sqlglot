@@ -14,7 +14,6 @@ class StarRocks(MySQL):
     class Parser(MySQL.Parser):  # type: ignore
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
-            "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),

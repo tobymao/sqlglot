@@ -52,8 +52,10 @@ class ClickHouse(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
+            "ANY": exp.AnyValue.from_arg_list,
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
+            "UNIQ": exp.ApproxDistinct.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
@@ -62,6 +64,9 @@ class ClickHouse(Dialect):
         }
 
         FUNCTION_PARSERS.pop("MATCH")
+
+        NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
+        NO_PAREN_FUNCTION_PARSERS.pop(TokenType.ANY)
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
@@ -265,6 +270,8 @@ class ClickHouse(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,  # type: ignore
+            exp.AnyValue: rename_func("any"),
+            exp.ApproxDistinct: rename_func("uniq"),
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",

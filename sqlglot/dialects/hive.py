@@ -226,7 +226,6 @@ class Hive(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "BASE64": exp.ToBase64.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(

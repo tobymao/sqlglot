@@ -1176,9 +1176,10 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
-        hints = self.expressions(expression, key="hints", sep=", ", flat=True)
+        hints = self.expressions(expression, key="hints", flat=True)
         hints = f" WITH ({hints})" if hints and self.TABLE_HINTS else ""
-        pivots = self.expressions(expression, key="pivots", sep="")
+        pivots = self.expressions(expression, key="pivots", sep=" ", flat=True)
+        pivots = f" {pivots}" if pivots else ""
         joins = self.expressions(expression, key="joins", sep="")
         laterals = self.expressions(expression, key="laterals", sep="")
         system_time = expression.args.get("system_time")
@@ -1217,14 +1218,13 @@ class Generator:
         return f"{this} {kind} {method}({bucket}{percent}{rows}{size}){seed}{alias}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
-        this = self.sql(expression, "this")
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
         unpivot = expression.args.get("unpivot")
         direction = "UNPIVOT" if unpivot else "PIVOT"
-        expressions = self.expressions(expression, key="expressions")
+        expressions = self.expressions(expression, flat=True)
         field = self.sql(expression, "field")
-        return f"{this} {direction}({expressions} FOR {field}){alias}"
+        return f"{direction}({expressions} FOR {field}){alias}"
 
     def tuple_sql(self, expression: exp.Tuple) -> str:
         return f"({self.expressions(expression, flat=True)})"
@@ -1582,13 +1582,10 @@ class Generator:
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
 
-        sql = self.query_modifiers(
-            expression,
-            self.wrap(expression),
-            alias,
-            self.expressions(expression, key="pivots", sep=" "),
-        )
+        pivots = self.expressions(expression, key="pivots", sep=" ", flat=True)
+        pivots = f" {pivots}" if pivots else ""
 
+        sql = self.query_modifiers(expression, self.wrap(expression), alias, pivots)
         return self.prepend_ctes(expression, sql)
 
     def qualify_sql(self, expression: exp.Qualify) -> str:

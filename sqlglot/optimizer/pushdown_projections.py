@@ -39,8 +39,9 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
     for scope in reversed(traverse_scope(expression)):
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
 
-        if scope.expression.args.get("distinct"):
-            # We can't remove columns SELECT DISTINCT nor UNION DISTINCT
+        if scope.expression.args.get("distinct") or scope.parent and scope.parent.pivots:
+            # We can't remove columns SELECT DISTINCT nor UNION DISTINCT. The same holds if
+            # we select from a pivoted source in the parent scope.
             parent_selections = {SELECT_ALL}
 
         if isinstance(scope.expression, exp.Union):

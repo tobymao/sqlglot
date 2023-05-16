@@ -16,9 +16,12 @@ WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a;
 SELECT (SELECT y.c FROM y AS y) FROM x;
 SELECT (SELECT y.c FROM c.db.y AS y) FROM c.db.x AS x;
 
--------------------------
+SELECT * FROM x PIVOT (SUM(a) FOR b IN ('a', 'b'));
+SELECT * FROM c.db.x AS x PIVOT(SUM(a) FOR b IN ('a', 'b')) AS _q_0;
+
+----------------------------
 -- Expand join constructs
--------------------------
+----------------------------
 
 -- This is valid in Trino, so we treat the (tbl AS tbl) as a "join construct" per postgres' terminology.
 SELECT * FROM (tbl AS tbl) AS _q_0;

@@ -145,6 +145,7 @@ class TestOptimizer(unittest.TestCase):
             "x": {"a": "INT", "b": "INT"},
             "y": {"b": "INT", "c": "INT"},
             "z": {"a": "INT", "c": "INT"},
+            "u": {"f": "INT", "g": "INT", "h": "TEXT"},
         }
 
         self.check_file(

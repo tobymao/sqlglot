@@ -79,6 +79,7 @@ def optimize(
     schema = ensure_schema(schema or sqlglot.schema, dialect=dialect)
     possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, **kwargs}
     expression = exp.maybe_parse(expression, dialect=dialect, copy=True)
+
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
         rule_params = rule.__code__.co_varnames
@@ -86,4 +87,5 @@ def optimize(
             param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
         }
         expression = rule(expression, **rule_kwargs)
+
     return expression

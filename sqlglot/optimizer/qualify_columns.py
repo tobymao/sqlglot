@@ -5,6 +5,7 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
+from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 
@@ -65,7 +66,7 @@ def validate_qualify_columns(expression):
     for scope in traverse_scope(expression):
         if isinstance(scope.expression, exp.Select):
             unqualified_columns.extend(scope.unqualified_columns)
-            if scope.external_columns and not scope.is_correlated_subquery:
+            if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
                 column = scope.external_columns[0]
                 raise OptimizeError(
                     f"""Column '{column}' could not be resolved{f" for table: '{column.table}'" if column.table else ''}"""
@@ -249,6 +250,12 @@ def _qualify_columns(scope, resolver):
                 raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:
+            if scope.pivots and not column.find_ancestor(exp.Pivot):
+                # If the column is under the Pivot expression, we need to qualify it
+                # using the name of the pivoted source instead of the pivot's alias
+                column.set("table", exp.to_identifier(scope.pivots[0].alias))
+                continue
+
             column_table = resolver.get_table(column_name)
 
             # column_table can be a '' because bigquery unnest has no table alias
@@ -272,6 +279,13 @@ def _qualify_columns(scope, resolver):
             if column_table:
                 column.replace(exp.Dot.build([exp.column(root, table=column_table), *parts]))
 
+    for pivot in scope.pivots:
+        for column in pivot.find_all(exp.Column):
+            if not column.table and column.name in resolver.all_columns:
+                column_table = resolver.get_table(column.name)
+                if column_table:
+                    column.set("table", column_table)
+
 
 def _expand_stars(scope, resolver, using_column_tables):
     """Expand stars to lists of column selections"""
@@ -280,6 +294,19 @@ def _expand_stars(scope, resolver, using_column_tables):
     except_columns = {}
     replace_columns = {}
     coalesced_columns = set()
+
+    # TODO: handle optimization of multiple PIVOTs (and possibly UNPIVOTs) in the future
+    pivot_columns = None
+    pivot_output_columns = None
+    pivot = seq_get(scope.pivots, 0)
+
+    has_pivoted_source = pivot and not pivot.args.get("unpivot")
+    if has_pivoted_source:
+        pivot_columns = set(col.output_name for col in pivot.find_all(exp.Column))
+
+        pivot_output_columns = [col.output_name for col in pivot.args.get("columns", [])]
+        if not pivot_output_columns:
+            pivot_output_columns = [col.alias_or_name for col in pivot.expressions]
 
     for expression in scope.selects:
         if isinstance(expression, exp.Star):
@@ -297,9 +324,18 @@ def _expand_stars(scope, resolver, using_column_tables):
         for table in tables:
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
+
             columns = resolver.get_source_columns(table, only_visible=True)
 
             if columns and "*" not in columns:
+                if has_pivoted_source:
+                    implicit_columns = [col for col in columns if col not in pivot_columns]
+                    new_selections.extend(
+                        exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
+                        for name in implicit_columns + pivot_output_columns
+                    )
+                    continue
+
                 table_id = id(table)
                 for name in columns:
                     if name in using_column_tables and table in using_column_tables[name]:
@@ -319,12 +355,13 @@ def _expand_stars(scope, resolver, using_column_tables):
                         )
                     elif name not in except_columns.get(table_id, set()):
                         alias_ = replace_columns.get(table_id, {}).get(name, name)
-                        column = exp.column(name, table)
+                        column = exp.column(name, table=table)
                         new_selections.append(
                             alias(column, alias_, copy=False) if alias_ != name else column
                         )
             else:
                 return
+
     scope.expression.set("expressions", new_selections)
 
 

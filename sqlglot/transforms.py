@@ -63,16 +63,17 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         distinct_cols = expression.args["distinct"].pop().args["on"].expressions
         outer_selects = expression.selects
         row_number = find_new_name(expression.named_selects, "_row_number")
-        window = exp.Window(
-            this=exp.RowNumber(),
-            partition_by=distinct_cols,
-        )
+        window = exp.Window(this=exp.RowNumber(), partition_by=distinct_cols)
         order = expression.args.get("order")
+
         if order:
             window.set("order", order.pop().copy())
+
         window = exp.alias_(window, row_number)
         expression.select(window, copy=False)
+
         return exp.select(*outer_selects).from_(expression.subquery()).where(f'"{row_number}" = 1')
+
     return expression
 
 
@@ -104,6 +105,7 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(expr, alias), copy=False)
                 column = exp.column(alias)
+
                 if isinstance(expr.parent, exp.Qualify):
                     qualify_filters = column
                 else:
@@ -123,6 +125,7 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     """
     for node in expression.find_all(exp.DataType):
         node.set("expressions", [e for e in node.expressions if isinstance(e, exp.DataType)])
+
     return expression
 
 
@@ -147,6 +150,7 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
                             alias=exp.TableAlias(this=alias.this, columns=[column]),  # type: ignore
                         ),
                     )
+
     return expression
 
 
@@ -226,6 +230,7 @@ def remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
                 else node,
                 copy=False,
             )
+
     return expression
 
 
@@ -238,16 +243,6 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
         quantile = expression.this.this
         input_value = t.cast(exp.Ordered, expression.find(exp.Ordered)).this
         return expression.replace(exp.ApproxQuantile(this=input_value, quantile=quantile))
-
-    return expression
-
-
-def unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
-    if isinstance(expression, exp.Pivot):
-        expression.args["field"].transform(
-            lambda node: exp.column(node.output_name) if isinstance(node, exp.Column) else node,
-            copy=False,
-        )
 
     return expression
 

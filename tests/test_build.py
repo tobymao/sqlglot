@@ -599,6 +599,10 @@ class TestBuild(unittest.TestCase):
                 "INSERT INTO tbl SELECT * FROM tbl2",
             ),
             (
+                lambda: exp.insert("SELECT * FROM tbl2", "tbl", overwrite=True),
+                "INSERT OVERWRITE TABLE tbl SELECT * FROM tbl2",
+            ),
+            (
                 lambda: exp.insert("VALUES (1, 2), (3, 4)", "tbl", columns=["cola", "colb"]),
                 "INSERT INTO tbl (cola, colb) VALUES (1, 2), (3, 4)",
             ),

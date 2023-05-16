@@ -1480,7 +1480,12 @@ class Insert(Expression):
     }
 
     def insert(
-        self, expression: ExpOrStr, copy: bool = True, dialect: DialectType = None, **opts
+        self,
+        expression: ExpOrStr,
+        overwrite: t.Optional[bool] = None,
+        copy: bool = True,
+        dialect: DialectType = None,
+        **opts,
     ) -> Insert:
         """
         Set the INSERT's expression.
@@ -1492,6 +1497,7 @@ class Insert(Expression):
         Args:
             expression: the SQL code string to parse.
                 If an `Expression` instance is passed, it will be used as-is.
+            overwrite: whether to INSERT OVERWRITE or not.
             copy: if `False`, modify this expression instance in-place.
             dialect: the dialect used to parse the input expression.
             other options to use to parse the input expressions.
@@ -1499,9 +1505,14 @@ class Insert(Expression):
         Returns:
             The modified expression.
         """
-        return _apply_builder(
+        instance = _apply_builder(
             expression, self, arg="expression", dialect=dialect, copy=copy, **opts
         )
+
+        if overwrite:
+            instance.set("overwrite", True)
+
+        return instance
 
     def into(
         self,
@@ -4855,6 +4866,7 @@ def insert(
     expression: ExpOrStr,
     into: ExpOrStr,
     columns: t.Optional[t.Sequence[ExpOrStr]] = None,
+    overwrite: t.Optional[bool] = None,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
@@ -4870,6 +4882,7 @@ def insert(
         expression: the sql string or expression of the INSERT statement
         into: the tbl to insert data to.
         columns: optionally the table's column names.
+        overwrite: whether to INSERT OVERWRITE or not.
         dialect: the dialect used to parse the input expressions.
         copy: whether or not to copy the expression.
         **opts: other options to use to parse the input expressions.
@@ -4879,7 +4892,7 @@ def insert(
     """
     return (
         Insert()
-        .insert(expression, dialect=dialect, copy=copy, **opts)
+        .insert(expression, overwrite=overwrite, dialect=dialect, copy=copy, **opts)
         .into(into, columns=columns, dialect=dialect, copy=copy, **opts)
     )
 

@@ -1479,87 +1479,6 @@ class Insert(Expression):
         "alternative": False,
     }
 
-    def insert(
-        self,
-        expression: ExpOrStr,
-        overwrite: t.Optional[bool] = None,
-        copy: bool = True,
-        dialect: DialectType = None,
-        **opts,
-    ) -> Insert:
-        """
-        Set the INSERT's expression.
-
-        Example:
-            >>> Insert(this=Table(this=to_identifier("tbl"))).insert("SELECT * FROM tbl2").sql()
-            'INSERT INTO tbl SELECT * FROM tbl2'
-
-        Args:
-            expression: the SQL code string to parse.
-                If an `Expression` instance is passed, it will be used as-is.
-            overwrite: whether to INSERT OVERWRITE or not.
-            copy: if `False`, modify this expression instance in-place.
-            dialect: the dialect used to parse the input expression.
-            other options to use to parse the input expressions.
-
-        Returns:
-            The modified expression.
-        """
-        instance = _apply_builder(
-            expression, self, arg="expression", dialect=dialect, copy=copy, **opts
-        )
-
-        if overwrite:
-            instance.set("overwrite", True)
-
-        return instance
-
-    def into(
-        self,
-        expression: ExpOrStr,
-        columns: t.Optional[t.Sequence[ExpOrStr]] = None,
-        copy: bool = True,
-        dialect: DialectType = None,
-        **opts,
-    ) -> Insert:
-        """
-        Set the INSERT's target table.
-
-        Example:
-            >>> Insert().insert("SELECT * FROM tbl").into("tbl2").sql()
-            'INSERT INTO tbl2 SELECT * FROM tbl'
-
-        Args:
-            expression: the SQL code string to parse.
-                If an `Expression` instance is passed, it will be used as-is.
-            columns: the table's column names.
-                If an `Expression` instance is passed, it will be used as-is.
-            copy: if `False`, modify this expression instance in-place.
-            dialect: the dialect used to parse the input expression.
-            other options to use to parse the input expressions.
-
-        Returns:
-            The modified expression.
-        """
-        instance = _apply_builder(
-            expression, self, arg="this", dialect=dialect, into=Table, copy=copy, **opts
-        )
-
-        if columns:
-            schema = Schema(this=instance.this)
-            schema = _apply_list_builder(
-                *columns,
-                instance=schema,
-                arg="expressions",
-                into=Identifier,
-                copy=copy,
-                dialect=dialect,
-                **opts,
-            )
-            instance.set("this", schema)
-
-        return instance
-
     def with_(
         self,
         alias: ExpOrStr,
@@ -1574,7 +1493,7 @@ class Insert(Expression):
         Append to or set the common table expressions.
 
         Example:
-            >>> Insert().with_("cte", as_="SELECT * FROM tbl").insert("SELECT x FROM cte").into("t").sql()
+            >>> insert("SELECT x FROM cte", "t").with_("cte", as_="SELECT * FROM tbl").sql()
             'WITH cte AS (SELECT * FROM tbl) INSERT INTO t SELECT x FROM cte'
 
         Args:
@@ -4890,11 +4809,21 @@ def insert(
     Returns:
         Insert: the syntax tree for the INSERT statement.
     """
-    return (
-        Insert()
-        .insert(expression, overwrite=overwrite, dialect=dialect, copy=copy, **opts)
-        .into(into, columns=columns, dialect=dialect, copy=copy, **opts)
-    )
+    expr = maybe_parse(expression, dialect=dialect, copy=copy, **opts)
+    this: Table | Schema = maybe_parse(into, into=Table, dialect=dialect, copy=copy, **opts)
+
+    if columns:
+        this = _apply_list_builder(
+            *columns,
+            instance=Schema(this=this),
+            arg="expressions",
+            into=Identifier,
+            copy=False,
+            dialect=dialect,
+            **opts,
+        )
+
+    return Insert(this=this, expression=expr, overwrite=overwrite)
 
 
 def condition(expression, dialect=None, copy=True, **opts) -> Condition:

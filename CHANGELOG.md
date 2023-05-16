@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v13.0.2] - 2023-05-16
+### :sparkles: New Features
+- [`40820b1`](https://github.com/tobymao/sqlglot/commit/40820b1fa2da41b83e432746ce41e27822b1265b) - add is_ builder. *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`cc7a5de`](https://github.com/tobymao/sqlglot/commit/cc7a5de55ffc5fbb121c15900ba29d807e094f57) - ensure unit is a var in parse_date_delta *(PR [#1637](https://github.com/tobymao/sqlglot/pull/1637) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :recycle: Refactors
+- [`b9140b6`](https://github.com/tobymao/sqlglot/commit/b9140b6cb92b1a8a417896318cb0029fbedb2529) - **CI/CD**: make it so that deployment only requires tag push *(PR [#1638](https://github.com/tobymao/sqlglot/pull/1638) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v13.0.1] - 2023-05-16
 ### :sparkles: New Features
 - [`8610298`](https://github.com/tobymao/sqlglot/commit/86102989139a90f81316d794b967b283aaa763f6) - **snowflake**: add support for the CLONE clause in DDL statements *(PR [#1627](https://github.com/tobymao/sqlglot/pull/1627) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -180,3 +191,4 @@ Changelog
 [v12.4.0]: https://github.com/tobymao/sqlglot/compare/v12.3.0...v12.4.0
 [v13.0.0]: https://github.com/tobymao/sqlglot/compare/v12.4.0...v13.0.0
 [v13.0.1]: https://github.com/tobymao/sqlglot/compare/v13.0.0...v13.0.1
+[v13.0.2]: https://github.com/tobymao/sqlglot/compare/v13.0.1...v13.0.2

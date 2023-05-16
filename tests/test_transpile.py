@@ -224,7 +224,10 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
         )
         self.validate(
             """
-            select a from b
+            select a
+            -- from
+            from b
+            -- where
             where foo
             -- comment 1
             and bar
@@ -233,7 +236,9 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             """,
             """SELECT
   a
+/* from */
 FROM b
+/* where */
 WHERE
   foo /* comment 1 */ AND bar AND bla /* comment 2 */""",
             pretty=True,

@@ -2028,11 +2028,12 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.FROM):
             return None
 
+        comments = self._prev_comments
         this = self._parse_table()
 
         return self.expression(
             exp.From,
-            comments=self._prev_comments,
+            comments=comments,
             this=self._parse_query_modifiers(this) if modifiers else this,
         )
 

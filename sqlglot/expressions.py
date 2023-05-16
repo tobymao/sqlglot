@@ -1504,7 +1504,12 @@ class Insert(Expression):
         )
 
     def into(
-        self, expression: ExpOrStr, copy: bool = True, dialect: DialectType = None, **opts
+        self,
+        expression: ExpOrStr,
+        columns: t.Optional[t.Sequence[ExpOrStr]] = None,
+        copy: bool = True,
+        dialect: DialectType = None,
+        **opts,
     ) -> Insert:
         """
         Set the INSERT's target table.
@@ -1516,6 +1521,8 @@ class Insert(Expression):
         Args:
             expression: the SQL code string to parse.
                 If an `Expression` instance is passed, it will be used as-is.
+            columns: the table's column names.
+                If an `Expression` instance is passed, it will be used as-is.
             copy: if `False`, modify this expression instance in-place.
             dialect: the dialect used to parse the input expression.
             other options to use to parse the input expressions.
@@ -1523,7 +1530,24 @@ class Insert(Expression):
         Returns:
             The modified expression.
         """
-        return _apply_builder(expression, self, arg="this", dialect=dialect, copy=copy, **opts)
+        instance = _apply_builder(
+            expression, self, arg="this", dialect=dialect, into=Table, copy=copy, **opts
+        )
+
+        if columns:
+            schema = Schema(this=instance.this)
+            schema = _apply_list_builder(
+                *columns,
+                instance=schema,
+                arg="expressions",
+                into=Identifier,
+                copy=copy,
+                dialect=dialect,
+                **opts,
+            )
+            instance.set("this", schema)
+
+        return instance
 
     def with_(
         self,
@@ -4830,6 +4854,7 @@ def delete(
 def insert(
     expression: ExpOrStr,
     into: ExpOrStr,
+    columns: t.Optional[t.Sequence[ExpOrStr]] = None,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
@@ -4844,6 +4869,7 @@ def insert(
     Args:
         expression: the sql string or expression of the INSERT statement
         into: the tbl to insert data to.
+        columns: optionally the table's column names.
         dialect: the dialect used to parse the input expressions.
         copy: whether or not to copy the expression.
         **opts: other options to use to parse the input expressions.
@@ -4854,7 +4880,7 @@ def insert(
     return (
         Insert()
         .insert(expression, dialect=dialect, copy=copy, **opts)
-        .into(into, dialect=dialect, copy=copy, **opts)
+        .into(into, columns=columns, dialect=dialect, copy=copy, **opts)
     )
 
 

@@ -719,7 +719,7 @@ class Condition(Expression):
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> exp.Alias:
+    ) -> Alias:
         return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, **opts)
 
     def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:

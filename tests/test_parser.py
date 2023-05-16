@@ -426,7 +426,7 @@ class TestParser(unittest.TestCase):
             nothing_aliased: {
                 "bigquery": ["prop", "rudder"],
                 "redshift": ["prop", "rudder"],
-                "snowflake": ['"prop"', '"rudder"'],
+                "snowflake": ['''"'prop'"''', '''"'rudder'"'''],
                 "spark": ["prop", "rudder"],
             },
             everything_aliased: {

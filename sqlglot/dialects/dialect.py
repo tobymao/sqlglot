@@ -275,7 +275,7 @@ def no_tablesample_sql(self: Generator, expression: exp.TableSample) -> str:
 
 def no_pivot_sql(self: Generator, expression: exp.Pivot) -> str:
     self.unsupported("PIVOT unsupported")
-    return self.sql(expression)
+    return ""
 
 
 def no_trycast_sql(self: Generator, expression: exp.TryCast) -> str:

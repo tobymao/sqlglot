@@ -743,6 +743,9 @@ class Condition(Expression):
             high=convert(high, copy=copy, **opts),
         )
 
+    def is_(self, other: ExpOrStr) -> Is:
+        return self._binop(Is, other)
+
     def like(self, other: ExpOrStr) -> Like:
         return self._binop(Like, other)
 

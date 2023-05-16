@@ -263,17 +263,19 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "CHAR VARYING": TokenType.VARCHAR,
+            "NCHAR VARYING": TokenType.VARCHAR,
             "EXCLUDE": TokenType.EXCEPT,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
+            "MINUS": TokenType.EXCEPT,
             "PUT": TokenType.COMMAND,
             "RENAME": TokenType.REPLACE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
-            "MINUS": TokenType.EXCEPT,
             "SAMPLE": TokenType.TABLE_SAMPLE,
         }
 

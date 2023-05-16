@@ -467,6 +467,11 @@ WHERE
 
     def test_add_date(self):
         self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
+
+        self.validate_all(
+            "DATEADD(year, 50, '2006-07-31')",
+            write={"bigquery": "DATE_ADD('2006-07-31', INTERVAL 50 YEAR)"},
+        )
         self.validate_all(
             "SELECT DATEADD(year, 1, '2017/08/25')",
             write={"spark": "SELECT ADD_MONTHS('2017/08/25', 12)"},

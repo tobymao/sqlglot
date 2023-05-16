@@ -1,18 +1,7 @@
 from setuptools import find_packages, setup
 
-version = (
-    open("sqlglot/__init__.py")
-    .read()
-    .split("__version__ = ")[-1]
-    .split("\n")[0]
-    .strip("")
-    .strip("'")
-    .strip('"')
-)
-
 setup(
     name="sqlglot",
-    version=version,
     description="An easily customizable SQL parser and transpiler",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -22,6 +11,12 @@ setup(
     license="MIT",
     packages=find_packages(include=["sqlglot", "sqlglot.*"]),
     package_data={"sqlglot": ["py.typed"]},
+    use_scm_version={
+        "write_to": "sqlglot/_version.py",
+        "fallback_version": "0.0.0",
+        "local_scheme": "no-local-version",
+    },
+    setup_requires=["setuptools_scm"],
     extras_require={
         "dev": [
             "autoflake",

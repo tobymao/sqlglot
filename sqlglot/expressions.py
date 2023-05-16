@@ -712,6 +712,16 @@ class Condition(Expression):
         """
         return not_(self, copy=copy)
 
+    def as_(
+        self,
+        alias: str | Identifier,
+        quoted: t.Optional[bool] = None,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> exp.Alias:
+        return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, **opts)
+
     def _binop(self, klass: t.Type[E], other: t.Any, reverse: bool = False) -> E:
         this = self.copy()
         other = convert(other, copy=True)

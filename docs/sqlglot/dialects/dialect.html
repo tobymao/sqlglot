@@ -534,7 +534,7 @@
 </span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a>
 </span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a><span class="k">def</span> <span class="nf">no_pivot_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Pivot</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="s2">&quot;PIVOT unsupported&quot;</span><span class="p">)</span>
-</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a>    <span class="k">return</span> <span class="s2">&quot;&quot;</span>
 </span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>
 </span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a>
 </span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a><span class="k">def</span> <span class="nf">no_trycast_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">TryCast</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -1728,7 +1728,7 @@
     <a class="headerlink" href="#no_pivot_sql"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="no_pivot_sql-277"><a href="#no_pivot_sql-277"><span class="linenos">277</span></a><span class="k">def</span> <span class="nf">no_pivot_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Pivot</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="no_pivot_sql-278"><a href="#no_pivot_sql-278"><span class="linenos">278</span></a>    <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="s2">&quot;PIVOT unsupported&quot;</span><span class="p">)</span>
-</span><span id="no_pivot_sql-279"><a href="#no_pivot_sql-279"><span class="linenos">279</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="no_pivot_sql-279"><a href="#no_pivot_sql-279"><span class="linenos">279</span></a>    <span class="k">return</span> <span class="s2">&quot;&quot;</span>
 </span></pre></div>
 
 

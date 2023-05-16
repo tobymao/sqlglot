@@ -54,6 +54,7 @@ class TestBuild(unittest.TestCase):
             (lambda: 1 >= x, "x <= 1"),
             (lambda: x.eq(1), "x = 1"),
             (lambda: x.neq(1), "x <> 1"),
+            (lambda: x.is_(exp.Null()), "x IS NULL"),
             (lambda: x.isin(1, "2"), "x IN (1, '2')"),
             (lambda: x.isin(query="select 1"), "x IN (SELECT 1)"),
             (lambda: x.between(1, 2), "x BETWEEN 1 AND 2"),

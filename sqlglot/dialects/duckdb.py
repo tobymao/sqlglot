@@ -115,7 +115,6 @@ class DuckDB(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
-            "APPROX_COUNT_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_REVERSE_SORT": _sort_array_reverse,

@@ -38,6 +38,12 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "SELECT uniq(x) FROM (SELECT any(y) AS x FROM (SELECT 1 AS y))",
+            read={
+                "bigquery": "SELECT APPROX_COUNT_DISTINCT(x) FROM (SELECT ANY_VALUE(y) x FROM (SELECT 1 y))",
+            },
+        )
+        self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
                 "clickhouse": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",

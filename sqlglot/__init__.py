@@ -50,7 +50,11 @@ if t.TYPE_CHECKING:
     T = t.TypeVar("T", bound=Expression)
 
 
-__version__ = "13.0.1"
+try:
+    from sqlglot._version import __version__, __version_tuple__  # type: ignore
+except ImportError:
+    pass
+
 
 pretty = False
 """Whether to format generated SQL by default."""

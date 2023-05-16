@@ -3087,8 +3087,10 @@ class Parser(metaclass=_Parser):
 
         token_type = self._curr.token_type
 
-        if self._match_set(self.NO_PAREN_FUNCTION_PARSERS):
-            return self.NO_PAREN_FUNCTION_PARSERS[token_type](self)
+        if self._match_set(self.NO_PAREN_FUNCTION_PARSERS, advance=False):
+            if self._next and self._next.token_type != TokenType.L_PAREN:
+                self._advance()
+                return self.NO_PAREN_FUNCTION_PARSERS[token_type](self)
 
         if not self._next or self._next.token_type != TokenType.L_PAREN:
             if token_type in self.NO_PAREN_FUNCTIONS:

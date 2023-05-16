@@ -52,8 +52,10 @@ class ClickHouse(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,  # type: ignore
+            "ANY": exp.AnyValue.from_arg_list,
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
+            "UNIQ": exp.ApproxDistinct.from_arg_list,
         }
 
         FUNCTION_PARSERS = {

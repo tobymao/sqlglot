@@ -3085,18 +3085,12 @@ class Parser(metaclass=_Parser):
         if not self._curr:
             return None
 
-        this = self._curr.text
         token_type = self._curr.token_type
 
-        upper = this.upper()
-        next_is_paren = self._next and self._next.token_type == TokenType.L_PAREN
+        if self._match_set(self.NO_PAREN_FUNCTION_PARSERS):
+            return self.NO_PAREN_FUNCTION_PARSERS[token_type](self)
 
-        if self._match_set(self.NO_PAREN_FUNCTION_PARSERS, advance=False):
-            if not next_is_paren and upper not in self.FUNCTION_PARSERS:
-                self._advance()
-                return self.NO_PAREN_FUNCTION_PARSERS[token_type](self)
-
-        if not next_is_paren:
+        if not self._next or self._next.token_type != TokenType.L_PAREN:
             if token_type in self.NO_PAREN_FUNCTIONS:
                 self._advance()
                 return self.expression(self.NO_PAREN_FUNCTIONS[token_type])
@@ -3106,7 +3100,10 @@ class Parser(metaclass=_Parser):
         if token_type not in self.FUNC_TOKENS:
             return None
 
+        this = self._curr.text
+        upper = this.upper()
         self._advance(2)
+
         parser = self.FUNCTION_PARSERS.get(upper)
 
         if parser and not anonymous:

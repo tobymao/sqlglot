@@ -65,6 +65,9 @@ class ClickHouse(Dialect):
 
         FUNCTION_PARSERS.pop("MATCH")
 
+        NO_PAREN_FUNCTION_PARSERS = parser.Parser.NO_PAREN_FUNCTION_PARSERS.copy()
+        NO_PAREN_FUNCTION_PARSERS.pop(TokenType.ANY)
+
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.GLOBAL: lambda self, this: self._match(TokenType.IN)

@@ -382,7 +382,7 @@ def parse_date_delta(
         unit_based = len(args) == 3
         this = args[2] if unit_based else seq_get(args, 0)
         unit = args[0] if unit_based else exp.Literal.string("DAY")
-        unit = unit_mapping.get(unit.name.lower(), unit) if unit_mapping else unit
+        unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
         return exp_class(this=this, expression=seq_get(args, 1), unit=unit)
 
     return inner_func

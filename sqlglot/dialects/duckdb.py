@@ -89,11 +89,14 @@ def _regexp_extract_sql(self: generator.Generator, expression: exp.RegexpExtract
 
 
 class DuckDB(Dialect):
+    null_ordering = "nulls_are_last"
+
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "~": TokenType.RLIKE,
             ":=": TokenType.EQ,
+            "//": TokenType.DIV,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,
             "BPCHAR": TokenType.TEXT,
@@ -183,6 +186,7 @@ class DuckDB(Dialect):
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.dateint_format}) AS DATE)",
             exp.Explode: rename_func("UNNEST"),
+            exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: arrow_json_extract_sql,

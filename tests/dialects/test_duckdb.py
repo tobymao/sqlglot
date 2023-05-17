@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, UnsupportedError, transpile
+from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -124,6 +124,14 @@ class TestDuckDB(Validator):
         )
 
     def test_duckdb(self):
+        # https://github.com/duckdb/duckdb/releases/tag/v0.8.0
+        self.assertEqual(
+            parse_one("a / b", read="duckdb").assert_is(exp.Div).sql(dialect="duckdb"), "a / b"
+        )
+        self.assertEqual(
+            parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
+        )
+
         self.validate_identity("SELECT {'a': 1} AS x")
         self.validate_identity("SELECT {'a': {'b': {'c': 1}}, 'd': {'e': 2}} AS x")
         self.validate_identity("SELECT {'x': 1, 'y': 2, 'z': 3}")
@@ -341,7 +349,8 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
-                "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+                "": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
+                "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",
             },
         )
         self.validate_all(

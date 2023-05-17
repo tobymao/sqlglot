@@ -47,8 +47,11 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT TRIM(BOTH 'bla' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM('bla' FROM ' XXX ')")
         self.validate_identity("@@GLOBAL.max_connections")
-
         self.validate_identity("CREATE TABLE A LIKE B")
+        self.validate_identity("SELECT * FROM t1, t2 FOR SHARE OF t1, t2 SKIP LOCKED")
+        self.validate_identity(
+            "SELECT * FROM t1, t2, t3 FOR SHARE OF t1 NOWAIT FOR UPDATE OF t2, t3 SKIP LOCKED"
+        )
 
         # SET Commands
         self.validate_identity("SET @var_name = expr")
@@ -368,6 +371,9 @@ class TestMySQL(Validator):
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
 
     def test_mysql(self):
+        self.validate_all(
+            "SELECT * FROM t LOCK IN SHARE MODE", write={"mysql": "SELECT * FROM t FOR SHARE"}
+        )
         self.validate_all(
             "SELECT DATE(DATE_SUB(`dt`, INTERVAL DAYOFMONTH(`dt`) - 1 DAY)) AS __timestamp FROM tableT",
             write={

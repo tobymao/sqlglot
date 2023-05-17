@@ -551,6 +551,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
         "FROM": TokenType.FROM,
+        "GEOGRAPHY": TokenType.GEOGRAPHY,
+        "GEOMETRY": TokenType.GEOMETRY,
         "GLOB": TokenType.GLOB,
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,

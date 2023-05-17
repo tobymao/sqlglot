@@ -6,6 +6,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("CAST(x AS GEOMETRY)")
         self.validate_identity("OBJECT_CONSTRUCT(*)")
         self.validate_identity("SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'")
         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")
@@ -558,6 +559,7 @@ class TestSnowflake(Validator):
         )
 
     def test_ddl(self):
+        self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
         self.validate_identity("CREATE DATABASE mytestdb_clone CLONE mytestdb")
         self.validate_identity("CREATE SCHEMA mytestschema_clone CLONE testschema")

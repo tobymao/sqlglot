@@ -58,8 +58,6 @@ class Redshift(Postgres):
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,  # type: ignore
-            "GEOMETRY": TokenType.GEOMETRY,
-            "GEOGRAPHY": TokenType.GEOGRAPHY,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
             "SYSDATE": TokenType.CURRENT_TIMESTAMP,

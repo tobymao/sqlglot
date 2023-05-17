@@ -498,7 +498,7 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
     return _ts_or_ds_to_date_sql
 
 
-# Spark, DuckDB use a very similar naming scheme for the output columns of the PIVOT operator
+# Spark, DuckDB use (almost) the same naming scheme for the output columns of the PIVOT operator
 def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectType) -> t.List[str]:
     if len(aggregations) == 1:
         return [""]

@@ -416,39 +416,56 @@ class TestParser(unittest.TestCase):
             ) PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
-        multiple_aggregates_not_aliased_with_quoted_identifier = """
+        multiple_aggregates_not_aliased_with_quoted_identifier_spark = """
             SELECT * FROM (
                 SELECT partname, price, quality FROM part
             ) PIVOT (AVG(`PrIcE`), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
+        multiple_aggregates_not_aliased_with_quoted_identifier_duckdb = """
+            SELECT * FROM (
+                SELECT partname, price, quality FROM part
+            ) PIVOT (AVG("PrIcE"), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
+        """
+
         query_to_column_names = {
             nothing_aliased: {
                 "bigquery": ["prop", "rudder"],
+                "duckdb": ["prop", "rudder"],
                 "redshift": ["prop", "rudder"],
                 "snowflake": ['''"'prop'"''', '''"'rudder'"'''],
                 "spark": ["prop", "rudder"],
             },
             everything_aliased: {
                 "bigquery": ["avg_price_prop1", "avg_price_rudder1"],
+                "duckdb": ["prop1_avg_price", "rudder1_avg_price"],
                 "redshift": ["prop1_avg_price", "rudder1_avg_price"],
                 "spark": ["prop1", "rudder1"],
             },
             only_pivot_columns_aliased: {
                 "bigquery": ["prop1", "rudder1"],
+                "duckdb": ["prop1", "rudder1"],
                 "redshift": ["prop1", "rudder1"],
                 "spark": ["prop1", "rudder1"],
             },
             columns_partially_aliased: {
                 "bigquery": ["prop1", "rudder"],
+                "duckdb": ["prop1", "rudder"],
                 "redshift": ["prop1", "rudder"],
                 "spark": ["prop1", "rudder"],
             },
             multiple_aggregates_aliased: {
                 "bigquery": ["p_prop1", "q_prop1", "p_rudder", "q_rudder"],
+                "duckdb": ["prop1_p", "prop1_q", "rudder_p", "rudder_q"],
                 "spark": ["prop1_p", "prop1_q", "rudder_p", "rudder_q"],
             },
             multiple_aggregates_not_aliased: {
+                "duckdb": [
+                    '"prop1_avg(price)"',
+                    '"prop1_max(quality)"',
+                    '"rudder_avg(price)"',
+                    '"rudder_max(quality)"',
+                ],
                 "spark": [
                     "`prop1_avg(price)`",
                     "`prop1_max(quality)`",
@@ -456,12 +473,20 @@ class TestParser(unittest.TestCase):
                     "`rudder_max(quality)`",
                 ],
             },
-            multiple_aggregates_not_aliased_with_quoted_identifier: {
+            multiple_aggregates_not_aliased_with_quoted_identifier_spark: {
                 "spark": [
                     "`prop1_avg(PrIcE)`",
                     "`prop1_max(quality)`",
                     "`rudder_avg(PrIcE)`",
                     "`rudder_max(quality)`",
+                ],
+            },
+            multiple_aggregates_not_aliased_with_quoted_identifier_duckdb: {
+                "duckdb": [
+                    '"prop1_avg(PrIcE)"',
+                    '"prop1_max(quality)"',
+                    '"rudder_avg(PrIcE)"',
+                    '"rudder_max(quality)"',
                 ],
             },
         }

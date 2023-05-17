@@ -496,3 +496,29 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
         return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
     return _ts_or_ds_to_date_sql
+
+
+# Spark, DuckDB use a very similar naming scheme for the output columns of the PIVOT operator
+def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectType) -> t.List[str]:
+    if len(aggregations) == 1:
+        return [""]
+
+    names = []
+    for agg in aggregations:
+        if isinstance(agg, exp.Alias):
+            names.append(agg.alias)
+        else:
+            """
+            This case corresponds to aggregations without aliases being used as suffixes
+            (e.g. col_avg(foo)). We need to unquote identifiers because they're going to
+            be quoted in the base parser's `_parse_pivot` method, due to `to_identifier`.
+            Otherwise, we'd end up with `col_avg(`foo`)` (notice the double quotes).
+            """
+            agg_all_unquoted = agg.transform(
+                lambda node: exp.Identifier(this=node.name, quoted=False)
+                if isinstance(node, exp.Identifier)
+                else node
+            )
+            names.append(agg_all_unquoted.sql(dialect=dialect, normalize_functions="lower"))
+
+    return names

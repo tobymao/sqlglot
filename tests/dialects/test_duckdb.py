@@ -382,13 +382,6 @@ class TestDuckDB(Validator):
 
         with self.assertRaises(UnsupportedError):
             transpile(
-                "SELECT a FROM b PIVOT(SUM(x) FOR y IN ('z', 'q'))",
-                read="duckdb",
-                unsupported_level=ErrorLevel.IMMEDIATE,
-            )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
                 "SELECT REGEXP_EXTRACT(a, 'pattern', 1) from table",
                 read="bigquery",
                 write="duckdb",

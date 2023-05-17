@@ -2494,8 +2494,8 @@ class Parser(metaclass=_Parser):
 
         return pivot
 
-    def _pivot_column_names(self, pivot_columns: t.List[exp.Expression]) -> t.List[str]:
-        return [agg.alias for agg in pivot_columns]
+    def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
+        return [agg.alias for agg in aggregations]
 
     def _parse_where(self, skip_where_token: bool = False) -> t.Optional[exp.Expression]:
         if not skip_where_token and not self._match(TokenType.WHERE):

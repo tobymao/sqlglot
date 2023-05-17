@@ -11,9 +11,9 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     no_comment_column_constraint_sql,
-    no_pivot_sql,
     no_properties_sql,
     no_safe_divide_sql,
+    pivot_column_names,
     rename_func,
     str_position_sql,
     str_to_time_sql,
@@ -154,6 +154,11 @@ class DuckDB(Dialect):
             TokenType.UTINYINT,
         }
 
+        def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
+            if len(aggregations) == 1:
+                return super()._pivot_column_names(aggregations)
+            return pivot_column_names(aggregations, dialect="duckdb")
+
     class Generator(generator.Generator):
         JOIN_HINTS = False
         TABLE_HINTS = False
@@ -193,7 +198,6 @@ class DuckDB(Dialect):
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
-            exp.Pivot: no_pivot_sql,
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: _regexp_extract_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),

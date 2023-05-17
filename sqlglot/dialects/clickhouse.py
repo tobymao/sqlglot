@@ -3,7 +3,13 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens
-from sqlglot.dialects.dialect import Dialect, inline_array_sql, rename_func, var_map_sql
+from sqlglot.dialects.dialect import (
+    Dialect,
+    inline_array_sql,
+    no_pivot_sql,
+    rename_func,
+    var_map_sql,
+)
 from sqlglot.errors import ParseError
 from sqlglot.parser import parse_var_map
 from sqlglot.tokens import Token, TokenType
@@ -277,6 +283,7 @@ class ClickHouse(Dialect):
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.Pivot: no_pivot_sql,
             exp.Quantile: lambda self, e: self.func("quantile", e.args.get("quantile"))
             + f"({self.sql(e, 'this')})",
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",

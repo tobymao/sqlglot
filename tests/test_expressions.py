@@ -612,7 +612,6 @@ class TestExpressions(unittest.TestCase):
                     "FORMAT": "parquet",
                     "PARTITIONED_BY": (exp.to_identifier("a"), exp.to_identifier("b")),
                     "custom": 1,
-                    "TABLE_FORMAT": exp.to_identifier("test_format"),
                     "ENGINE": None,
                     "COLLATE": True,
                 }
@@ -624,7 +623,6 @@ class TestExpressions(unittest.TestCase):
                         this=exp.Tuple(expressions=[exp.to_identifier("a"), exp.to_identifier("b")])
                     ),
                     exp.Property(this=exp.Literal.string("custom"), value=exp.Literal.number(1)),
-                    exp.TableFormatProperty(this=exp.to_identifier("test_format")),
                     exp.EngineProperty(this=exp.null()),
                     exp.CollateProperty(this=exp.true()),
                 ]

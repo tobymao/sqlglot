@@ -634,7 +634,6 @@ class Parser(metaclass=_Parser):
             exp.StabilityProperty, this=exp.Literal.string("STABLE")
         ),
         "STORED": lambda self: self._parse_stored(),
-        "TABLE_FORMAT": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
         "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
         "TEMP": lambda self: self._parse_temporary(global_=False),
         "TEMPORARY": lambda self: self._parse_temporary(global_=False),

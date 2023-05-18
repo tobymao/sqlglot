@@ -219,7 +219,6 @@ class Generator:
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
         exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
-        exp.TableFormatProperty: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
         exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,

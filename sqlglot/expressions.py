@@ -1956,10 +1956,6 @@ class StabilityProperty(Property):
     arg_types = {"this": True}
 
 
-class TableFormatProperty(Property):
-    arg_types = {"this": True}
-
-
 class TemporaryProperty(Property):
     arg_types = {"global_": True}
 
@@ -2001,7 +1997,6 @@ class Properties(Expression):
         "RETURNS": ReturnsProperty,
         "ROW_FORMAT": RowFormatProperty,
         "SORTKEY": SortKeyProperty,
-        "TABLE_FORMAT": TableFormatProperty,
     }
 
     PROPERTY_TO_NAME = {v: k for k, v in NAME_TO_PROPERTY.items()}

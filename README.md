@@ -13,6 +13,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 ## Table of Contents
 
 * [Install](#install)
+* [Versioning](#versioning)
 * [Get in Touch](#get-in-touch)
 * [Examples](#examples)
    * [Formatting and Transpiling](#formatting-and-transpiling)
@@ -51,7 +52,16 @@ Requirements for development (optional):
 make install-dev
 ```
 
+## Versioning
+
+Given a version number `MAJOR`.`MINOR`.`PATCH`, SQLGlot uses the following versioning strategy:
+
+- The `PATCH` version is incremented when there are backwards-compatible fixes or feature additions.
+- The `MINOR` version is incremented when there are backwards-incompatible fixes or feature additions.
+- The `MAJOR` version is incremented when there are significant backwards-incompatible fixes or feature additions.
+
 ## Get in Touch
+
 We'd love to hear from you. Join our community [Slack channel](https://tobikodata.com/slack)!
 
 ## Examples
@@ -436,6 +446,7 @@ user_id price
 See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/sqlglot/blob/main/posts/python_sql_engine.md).
 
 ## Used By
+
 * [SQLMesh](https://github.com/TobikoData/sqlmesh)
 * [Fugue](https://github.com/fugue-project/fugue)
 * [ibis](https://github.com/ibis-project/ibis)

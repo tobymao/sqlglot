@@ -154,6 +154,8 @@ class TestClickhouse(Validator):
         self.assertIsInstance(nested_ternary.args["true"], exp.Literal)
         self.assertIsInstance(nested_ternary.args["false"], exp.Literal)
 
+        parse_one("a and b ? 1 : 2").assert_is(exp.If).this.assertIs(exp.And)
+
     def test_parameterization(self):
         self.validate_all(
             "SELECT {abc: UInt32}, {b: String}, {c: DateTime},{d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",

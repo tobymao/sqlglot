@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v13.2.0] - 2023-05-18
+### :wrench: Chores
+- [`95b29a1`](https://github.com/tobymao/sqlglot/commit/95b29a1e9389e88263d7cce015cca62f06d915d5) - remove unused tableformat property *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v13.1.0] - 2023-05-18
 ### :sparkles: New Features
 - [`51e8b1f`](https://github.com/tobymao/sqlglot/commit/51e8b1f0dfbec6a502d4a4f8c4efe75fc9c04dd8) - add as_ builder *(commit by [@tobymao](https://github.com/tobymao))*
@@ -211,3 +216,4 @@ Changelog
 [v13.0.1]: https://github.com/tobymao/sqlglot/compare/v13.0.0...v13.0.1
 [v13.0.2]: https://github.com/tobymao/sqlglot/compare/v13.0.1...v13.0.2
 [v13.1.0]: https://github.com/tobymao/sqlglot/compare/v13.0.2...v13.1.0
+[v13.2.0]: https://github.com/tobymao/sqlglot/compare/v13.1.0...v13.2.0

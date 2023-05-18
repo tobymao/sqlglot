@@ -121,21 +121,30 @@ class Redshift(Postgres):
             evaluate the expression. You may need to increase `sys.setrecursionlimit` to run and it can also be
             very slow.
             """
-            if not isinstance(expression.unnest().parent, exp.From):
+
+            # The VALUES clause is still valid in an `INSERT INTO ..` statement, for example
+            if not expression.find_ancestor(exp.From, exp.Join):
                 return super().values_sql(expression)
-            rows = [tuple_exp.expressions for tuple_exp in expression.expressions]
+
+            column_names = expression.alias and expression.args["alias"].columns
+
             selects = []
+            rows = [tuple_exp.expressions for tuple_exp in expression.expressions]
+
             for i, row in enumerate(rows):
-                if i == 0 and expression.alias:
+                if i == 0 and column_names:
                     row = [
                         exp.alias_(value, column_name)
-                        for value, column_name in zip(row, expression.args["alias"].args["columns"])
+                        for value, column_name in zip(row, column_names)
                     ]
+
                 selects.append(exp.Select(expressions=row))
+
             subquery_expression = selects[0]
             if len(selects) > 1:
                 for select in selects[1:]:
                     subquery_expression = exp.union(subquery_expression, select, distinct=False)
+
             return self.subquery_sql(subquery_expression.subquery(expression.alias))
 
         def with_properties(self, properties: exp.Properties) -> str:
@@ -153,6 +162,8 @@ class Redshift(Postgres):
                 expression = expression.copy()
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")
+
                 if not precision:
                     expression.append("expressions", exp.Var(this="MAX"))
+
             return super().datatype_sql(expression)

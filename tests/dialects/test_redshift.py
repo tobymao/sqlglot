@@ -182,6 +182,16 @@ class TestRedshift(Validator):
 
     def test_values(self):
         self.validate_all(
+            "SELECT * FROM (VALUES (1, 2)) AS t",
+            write={"redshift": "SELECT * FROM (SELECT 1, 2) AS t"},
+        )
+        self.validate_all(
+            "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",
+            write={
+                "redshift": "SELECT * FROM (SELECT 1 AS id) AS t1 CROSS JOIN (SELECT 1 AS id) AS t2",
+            },
+        )
+        self.validate_all(
             "SELECT a, b FROM (VALUES (1, 2)) AS t (a, b)",
             write={
                 "redshift": "SELECT a, b FROM (SELECT 1 AS a, 2 AS b) AS t",

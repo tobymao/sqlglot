@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import logging
 import typing as t
 
 from sqlglot import expressions as exp
@@ -49,11 +50,15 @@ if t.TYPE_CHECKING:
 
     T = t.TypeVar("T", bound=Expression)
 
+logger = logging.getLogger("sqlglot")
+
 
 try:
-    from sqlglot._version import __version__, __version_tuple__  # type: ignore
+    from sqlglot._version import __version__, __version_tuple__
 except ImportError:
-    pass
+    logger.error(
+        "Unable to set __version__, run `pip install -e .` or `python setup.py develop` first."
+    )
 
 
 pretty = False

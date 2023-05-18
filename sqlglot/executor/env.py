@@ -5,6 +5,7 @@ import statistics
 from functools import wraps
 
 from sqlglot import exp
+from sqlglot.generator import Generator
 from sqlglot.helper import PYTHON_VERSION
 
 
@@ -119,9 +120,11 @@ def ordered(this, desc, nulls_first):
 
 @null_if_any
 def interval(this, unit):
-    if unit == "DAY":
-        return datetime.timedelta(days=float(this))
-    raise NotImplementedError
+    unit = unit.lower()
+    plural = unit + "s"
+    if plural in Generator.TIME_PART_SINGULARS:
+        unit = plural
+    return datetime.timedelta(**{unit: float(this)})
 
 
 ENV = {

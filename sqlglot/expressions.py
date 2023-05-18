@@ -3509,6 +3509,10 @@ class TimeUnit(Expression):
 class Interval(TimeUnit):
     arg_types = {"this": False, "unit": False}
 
+    @property
+    def unit(self) -> t.Optional[Var]:
+        return self.args.get("unit")
+
 
 class IgnoreNulls(Expression):
     pass

@@ -121,6 +121,12 @@ class TestClickhouse(Validator):
     def test_ternary(self):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})
         self.validate_all(
+            "IF(BAR(col), sign > 0 ? FOO() : 0, 1)",
+            write={
+                "clickhouse": "CASE WHEN BAR(col) THEN CASE WHEN sign > 0 THEN FOO() ELSE 0 END ELSE 1 END"
+            },
+        )
+        self.validate_all(
             "x AND FOO() > 3 + 2 ? 1 : 2",
             write={"clickhouse": "CASE WHEN x AND FOO() > 3 + 2 THEN 1 ELSE 2 END"},
         )
@@ -147,6 +153,8 @@ class TestClickhouse(Validator):
         self.assertIsInstance(nested_ternary.this, exp.Column)
         self.assertIsInstance(nested_ternary.args["true"], exp.Literal)
         self.assertIsInstance(nested_ternary.args["false"], exp.Literal)
+
+        parse_one("a and b ? 1 : 2", read="clickhouse").assert_is(exp.If).this.assert_is(exp.And)
 
     def test_parameterization(self):
         self.validate_all(

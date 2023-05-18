@@ -121,6 +121,12 @@ class TestClickhouse(Validator):
     def test_ternary(self):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})
         self.validate_all(
+            "IF(BAR(col), sign > 0 ? FOO() : 0, 1)",
+            write={
+                "clickhouse": "CASE WHEN BAR(col) THEN CASE WHEN sign > 0 THEN FOO() ELSE 0 END ELSE 1 END"
+            },
+        )
+        self.validate_all(
             "x AND FOO() > 3 + 2 ? 1 : 2",
             write={"clickhouse": "CASE WHEN x AND FOO() > 3 + 2 THEN 1 ELSE 2 END"},
         )

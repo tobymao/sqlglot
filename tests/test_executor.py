@@ -566,6 +566,7 @@ class TestExecutor(unittest.TestCase):
             ("IF(false, 1, 0)", 0),
             ("CASE WHEN 0 = 1 THEN 'foo' ELSE 'bar' END", "bar"),
             ("CAST('2022-01-01' AS DATE) + INTERVAL '1' DAY", date(2022, 1, 2)),
+            ("INTERVAL '1' week", datetime.timedelta(weeks=1)),
             ("1 IN (1, 2, 3)", True),
             ("1 IN (2, 3)", False),
             ("NULL IS NULL", True),

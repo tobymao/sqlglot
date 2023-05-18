@@ -14,9 +14,10 @@ from sqlglot import maybe_parse
 from sqlglot.errors import ExecuteError
 from sqlglot.executor.python import PythonExecutor
 from sqlglot.executor.table import Table, ensure_tables
+from sqlglot.helper import dict_depth
 from sqlglot.optimizer import optimize
 from sqlglot.planner import Plan
-from sqlglot.schema import ensure_schema
+from sqlglot.schema import ensure_schema, flatten_schema, nested_get, nested_set
 
 logger = logging.getLogger("sqlglot")
 
@@ -52,10 +53,15 @@ def execute(
     tables_ = ensure_tables(tables)
 
     if not schema:
-        schema = {
-            name: {column: type(table[0][column]).__name__ for column in table.columns}
-            for name, table in tables_.mapping.items()
-        }
+        schema = {}
+        flattened_tables = flatten_schema(tables_.mapping, depth=dict_depth(tables_.mapping))
+
+        for keys in flattened_tables:
+            table = nested_get(tables_.mapping, *zip(keys, keys))
+            assert table is not None
+
+            for column in table.columns:
+                nested_set(schema, [*keys, column], type(table[0][column]).__name__)
 
     schema = ensure_schema(schema, dialect=read)
 

@@ -604,3 +604,21 @@ class TestExecutor(unittest.TestCase):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})
         self.assertEqual(result.columns, ("A",))
         self.assertEqual(result.rows, [(1,)])
+
+    def test_nested_table_reference(self):
+        tables = {
+            "some_catalog": {
+                "some_schema": {
+                    "some_table": [
+                        {"id": 1, "price": 1.0},
+                        {"id": 2, "price": 2.0},
+                        {"id": 3, "price": 3.0},
+                    ]
+                }
+            }
+        }
+
+        result = execute("SELECT * FROM some_catalog.some_schema.some_table s", tables=tables)
+
+        self.assertEqual(result.columns, ("id", "price"))
+        self.assertEqual(result.rows, [(1, 1.0), (2, 2.0), (3, 3.0)])

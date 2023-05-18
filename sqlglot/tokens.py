@@ -231,6 +231,7 @@ class TokenType(AutoName):
     LIMIT = auto()
     LOAD_DATA = auto()
     LOCAL = auto()
+    LOCK = auto()
     MAP = auto()
     MATCH_RECOGNIZE = auto()
     MATERIALIZED = auto()
@@ -580,6 +581,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "LIMIT": TokenType.LIMIT,
         "LOAD DATA": TokenType.LOAD_DATA,
         "LOCAL": TokenType.LOCAL,
+        "LOCK": TokenType.LOCK,
         "MATERIALIZED": TokenType.MATERIALIZED,
         "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,

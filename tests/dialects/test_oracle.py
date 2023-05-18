@@ -5,6 +5,13 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("SELECT * FROM t FOR UPDATE")
+        self.validate_identity("SELECT * FROM t FOR UPDATE WAIT 5")
+        self.validate_identity("SELECT * FROM t FOR UPDATE NOWAIT")
+        self.validate_identity("SELECT * FROM t FOR UPDATE SKIP LOCKED")
+        self.validate_identity("SELECT * FROM t FOR UPDATE OF s.t.c, s.t.v")
+        self.validate_identity("SELECT * FROM t FOR UPDATE OF s.t.c, s.t.v NOWAIT")
+        self.validate_identity("SELECT * FROM t FOR UPDATE OF s.t.c, s.t.v SKIP LOCKED")
         self.validate_identity("SELECT STANDARD_HASH('hello')")
         self.validate_identity("SELECT STANDARD_HASH('hello', 'MD5')")
         self.validate_identity("SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1")

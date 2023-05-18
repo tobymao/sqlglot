@@ -1382,12 +1382,22 @@ class Generator:
         return f"PRAGMA {self.sql(expression, 'this')}"
 
     def lock_sql(self, expression: exp.Lock) -> str:
-        if self.LOCKING_READS_SUPPORTED:
-            lock_type = "UPDATE" if expression.args["update"] else "SHARE"
-            return self.seg(f"FOR {lock_type}")
+        if not self.LOCKING_READS_SUPPORTED:
+            self.unsupported("Locking reads using 'FOR UPDATE/SHARE' are not supported")
+            return ""
 
-        self.unsupported("Locking reads using 'FOR UPDATE/SHARE' are not supported")
-        return ""
+        lock_type = "FOR UPDATE" if expression.args["update"] else "FOR SHARE"
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" OF {expressions}" if expressions else ""
+        wait = expression.args.get("wait")
+
+        if wait is not None:
+            if isinstance(wait, exp.Literal):
+                wait = f" WAIT {self.sql(wait)}"
+            else:
+                wait = " NOWAIT" if wait else " SKIP LOCKED"
+
+        return f"{lock_type}{expressions}{wait or ''}"
 
     def literal_sql(self, expression: exp.Literal) -> str:
         text = expression.this or ""
@@ -1529,10 +1539,9 @@ class Generator:
         ]
 
     def after_limit_modifiers(self, expression):
-        return [
-            self.sql(expression, "lock"),
-            self.sql(expression, "sample"),
-        ]
+        locks = self.expressions(expression, key="locks", sep=" ")
+        locks = f" {locks}" if locks else ""
+        return [locks, self.sql(expression, "sample")]
 
     def select_sql(self, expression: exp.Select) -> str:
         hint = self.sql(expression, "hint")

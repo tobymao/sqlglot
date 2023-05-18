@@ -287,6 +287,7 @@ class Parser(metaclass=_Parser):
         TokenType.APPLY,
         TokenType.FULL,
         TokenType.LEFT,
+        TokenType.LOCK,
         TokenType.NATURAL,
         TokenType.OFFSET,
         TokenType.RIGHT,
@@ -738,7 +739,7 @@ class Parser(metaclass=_Parser):
         "order": lambda self: self._parse_order(),
         "limit": lambda self: self._parse_limit(),
         "offset": lambda self: self._parse_offset(),
-        "lock": lambda self: self._parse_lock(),
+        "locks": lambda self: self._parse_locks(),
         "sample": lambda self: self._parse_table_sample(as_modifier=True),
     }
 
@@ -2652,13 +2653,37 @@ class Parser(metaclass=_Parser):
         self._match_set((TokenType.ROW, TokenType.ROWS))
         return self.expression(exp.Offset, this=this, expression=count)
 
-    def _parse_lock(self) -> t.Optional[exp.Expression]:
-        if self._match_text_seq("FOR", "UPDATE"):
-            return self.expression(exp.Lock, update=True)
-        if self._match_text_seq("FOR", "SHARE"):
-            return self.expression(exp.Lock, update=False)
+    def _parse_locks(self) -> t.List[exp.Expression]:
+        # Lists are invariant, so we need to use a type hint here
+        locks: t.List[exp.Expression] = []
 
-        return None
+        while True:
+            if self._match_text_seq("FOR", "UPDATE"):
+                update = True
+            elif self._match_text_seq("FOR", "SHARE") or self._match_text_seq(
+                "LOCK", "IN", "SHARE", "MODE"
+            ):
+                update = False
+            else:
+                break
+
+            expressions = None
+            if self._match_text_seq("OF"):
+                expressions = self._parse_csv(lambda: self._parse_table(schema=True))
+
+            wait: t.Optional[bool | exp.Expression] = None
+            if self._match_text_seq("NOWAIT"):
+                wait = True
+            elif self._match_text_seq("WAIT"):
+                wait = self._parse_primary()
+            elif self._match_text_seq("SKIP", "LOCKED"):
+                wait = False
+
+            locks.append(
+                self.expression(exp.Lock, update=update, expressions=expressions, wait=wait)
+            )
+
+        return locks
 
     def _parse_set_operations(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match_set(self.SET_OPERATIONS):

@@ -103,6 +103,8 @@ def cast(this, to):
         return datetime.date.fromisoformat(this)
     if to == exp.DataType.Type.DATETIME:
         return datetime.datetime.fromisoformat(this)
+    if to == exp.DataType.Type.BOOLEAN:
+        return bool(this)
     if to in exp.DataType.TEXT_TYPES:
         return str(this)
     if to in {exp.DataType.Type.FLOAT, exp.DataType.Type.DOUBLE}:

@@ -154,7 +154,7 @@ class TestClickhouse(Validator):
         self.assertIsInstance(nested_ternary.args["true"], exp.Literal)
         self.assertIsInstance(nested_ternary.args["false"], exp.Literal)
 
-        parse_one("a and b ? 1 : 2", read="clickhouse").assert_is(exp.If).this.assertIs(exp.And)
+        parse_one("a and b ? 1 : 2", read="clickhouse").assert_is(exp.If).this.assert_is(exp.And)
 
     def test_parameterization(self):
         self.validate_all(

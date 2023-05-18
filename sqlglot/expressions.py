@@ -2162,7 +2162,7 @@ QUERY_MODIFIERS = {
     "order": False,
     "limit": False,
     "offset": False,
-    "lock": False,
+    "locks": False,
     "sample": False,
     "settings": False,
     "format": False,
@@ -2343,10 +2343,10 @@ class Schema(Expression):
     arg_types = {"this": False, "expressions": False}
 
 
-# Used to represent the FOR UPDATE and FOR SHARE locking read types.
-# https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html
+# https://dev.mysql.com/doc/refman/8.0/en/select.html
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
 class Lock(Expression):
-    arg_types = {"update": True}
+    arg_types = {"update": True, "expressions": False, "wait": False}
 
 
 class Select(Subqueryable):
@@ -2922,7 +2922,7 @@ class Select(Subqueryable):
         """
 
         inst = _maybe_copy(self, copy)
-        inst.set("lock", Lock(update=update))
+        inst.set("locks", [Lock(update=update)])
 
         return inst
 

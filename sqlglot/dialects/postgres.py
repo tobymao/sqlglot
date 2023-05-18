@@ -304,7 +304,7 @@ class Postgres(Dialect):
             return self.expression(exp.Extract, this=part, expression=value)
 
     class Generator(generator.Generator):
-        INTERVAL_ALLOWS_PLURAL_FORM = False
+        SINGLE_STRING_INTERVAL = True
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
         TABLE_HINTS = False

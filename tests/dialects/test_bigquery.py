@@ -322,7 +322,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
             write={
-                "postgres": "CURRENT_DATE - INTERVAL '1' DAY",
+                "postgres": "CURRENT_DATE - INTERVAL '1 DAY'",
                 "bigquery": "DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY)",
             },
         )
@@ -332,7 +332,7 @@ class TestBigQuery(Validator):
                 "bigquery": "DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY)",
                 "duckdb": "CURRENT_DATE + INTERVAL 1 DAY",
                 "mysql": "DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY)",
-                "postgres": "CURRENT_DATE + INTERVAL '1' DAY",
+                "postgres": "CURRENT_DATE + INTERVAL '1 DAY'",
                 "presto": "DATE_ADD('DAY', 1, CURRENT_DATE)",
                 "hive": "DATE_ADD(CURRENT_DATE, 1)",
                 "spark": "DATE_ADD(CURRENT_DATE, 1)",

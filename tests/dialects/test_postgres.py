@@ -193,7 +193,7 @@ class TestPostgres(Validator):
         self.validate_all(
             "GENERATE_SERIES(a, b, '  2   days  ')",
             write={
-                "postgres": "GENERATE_SERIES(a, b, INTERVAL '2' day)",
+                "postgres": "GENERATE_SERIES(a, b, INTERVAL '2 days')",
                 "presto": "SEQUENCE(a, b, INTERVAL '2' day)",
                 "trino": "SEQUENCE(a, b, INTERVAL '2' day)",
             },
@@ -201,7 +201,7 @@ class TestPostgres(Validator):
         self.validate_all(
             "GENERATE_SERIES('2019-01-01'::TIMESTAMP, NOW(), '1day')",
             write={
-                "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1' day)",
+                "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1 day')",
                 "presto": "SEQUENCE(TRY_CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
                 "trino": "SEQUENCE(TRY_CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
             },

@@ -42,7 +42,7 @@ class TestRedshift(Validator):
                 "snowflake": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
             },
         )
-        self.validate_all("SELECT INTERVAL '5 day'", read={"": "SELECT INTERVAL '5' days"})
+        self.validate_all("SELECT INTERVAL '5 days'", read={"": "SELECT INTERVAL '5' days"})
         self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})
         self.validate_all(
             "DATEADD('day', ndays, caldate)", write={"redshift": "DATEADD(day, ndays, caldate)"}

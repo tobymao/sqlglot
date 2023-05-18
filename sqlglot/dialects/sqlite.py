@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_sql,
     count_if_to_sum,
     no_ilike_sql,
+    no_pivot_sql,
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
@@ -114,6 +115,7 @@ class SQLite(Dialect):
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
+            exp.Pivot: no_pivot_sql,
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_qualify]
             ),

@@ -3,7 +3,12 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser, transforms
-from sqlglot.dialects.dialect import create_with_partitions_sql, rename_func, trim_sql
+from sqlglot.dialects.dialect import (
+    create_with_partitions_sql,
+    pivot_column_names,
+    rename_func,
+    trim_sql,
+)
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 
@@ -177,32 +182,10 @@ class Spark2(Hive):
                 kind="COLUMNS",
             )
 
-        def _pivot_column_names(self, pivot_columns: t.List[exp.Expression]) -> t.List[str]:
-            # Spark doesn't add a suffix to the pivot columns when there's a single aggregation
-            if len(pivot_columns) == 1:
+        def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
+            if len(aggregations) == 1:
                 return [""]
-
-            names = []
-            for agg in pivot_columns:
-                if isinstance(agg, exp.Alias):
-                    names.append(agg.alias)
-                else:
-                    """
-                    This case corresponds to aggregations without aliases being used as suffixes
-                    (e.g. col_avg(foo)). We need to unquote identifiers because they're going to
-                    be quoted in the base parser's `_parse_pivot` method, due to `to_identifier`.
-                    Otherwise, we'd end up with `col_avg(`foo`)` (notice the double quotes).
-
-                    Moreover, function names are lowercased in order to mimic Spark's naming scheme.
-                    """
-                    agg_all_unquoted = agg.transform(
-                        lambda node: exp.Identifier(this=node.name, quoted=False)
-                        if isinstance(node, exp.Identifier)
-                        else node
-                    )
-                    names.append(agg_all_unquoted.sql(dialect="spark", normalize_functions="lower"))
-
-            return names
+            return pivot_column_names(aggregations, dialect="spark")
 
     class Generator(Hive.Generator):
         TYPE_MAPPING = {

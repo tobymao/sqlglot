@@ -11,9 +11,9 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     no_comment_column_constraint_sql,
-    no_pivot_sql,
     no_properties_sql,
     no_safe_divide_sql,
+    pivot_column_names,
     rename_func,
     str_position_sql,
     str_to_time_sql,
@@ -89,11 +89,14 @@ def _regexp_extract_sql(self: generator.Generator, expression: exp.RegexpExtract
 
 
 class DuckDB(Dialect):
+    null_ordering = "nulls_are_last"
+
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "~": TokenType.RLIKE,
             ":=": TokenType.EQ,
+            "//": TokenType.DIV,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,
             "BPCHAR": TokenType.TEXT,
@@ -151,6 +154,11 @@ class DuckDB(Dialect):
             TokenType.UTINYINT,
         }
 
+        def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
+            if len(aggregations) == 1:
+                return super()._pivot_column_names(aggregations)
+            return pivot_column_names(aggregations, dialect="duckdb")
+
     class Generator(generator.Generator):
         JOIN_HINTS = False
         TABLE_HINTS = False
@@ -183,13 +191,13 @@ class DuckDB(Dialect):
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.dateint_format}) AS DATE)",
             exp.Explode: rename_func("UNNEST"),
+            exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: arrow_json_extract_sql,
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
-            exp.Pivot: no_pivot_sql,
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: _regexp_extract_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),

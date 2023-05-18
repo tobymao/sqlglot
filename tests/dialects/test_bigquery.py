@@ -248,7 +248,7 @@ class TestBigQuery(Validator):
             "DIV(x, y)",
             write={
                 "bigquery": "DIV(x, y)",
-                "duckdb": "CAST(x / y AS INT)",
+                "duckdb": "x // y",
             },
         )
 

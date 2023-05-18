@@ -128,12 +128,12 @@ class AbstractMappingSchema(t.Generic[T]):
                 if raise_on_missing:
                     raise SchemaError(f"Ambiguous mapping for {table}: {message}.")
                 return None
-        return self._nested_get(parts, raise_on_missing=raise_on_missing)
+        return self.nested_get(parts, raise_on_missing=raise_on_missing)
 
-    def _nested_get(
+    def nested_get(
         self, parts: t.Sequence[str], d: t.Optional[t.Dict] = None, raise_on_missing=True
     ) -> t.Optional[t.Any]:
-        return _nested_get(
+        return nested_get(
             d or self.mapping,
             *zip(self.supported_table_args, reversed(parts)),
             raise_on_missing=raise_on_missing,
@@ -209,7 +209,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
 
         parts = self.table_parts(normalized_table)
 
-        _nested_set(
+        nested_set(
             self.mapping,
             tuple(reversed(parts)),
             normalized_column_mapping,
@@ -226,7 +226,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         if not only_visible or not self.visible:
             return list(schema)
 
-        visible = self._nested_get(self.table_parts(table_), self.visible)
+        visible = self.nested_get(self.table_parts(table_), self.visible)
         return [col for col in schema if col in visible]  # type: ignore
 
     def get_column_type(self, table: exp.Table | str, column: exp.Column | str) -> exp.DataType:
@@ -259,12 +259,12 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
 
         normalized_mapping: t.Dict = {}
         for keys in flattened_schema:
-            columns = _nested_get(schema, *zip(keys, keys))
+            columns = nested_get(schema, *zip(keys, keys))
             assert columns is not None
 
             normalized_keys = [self._normalize_name(key) for key in keys]
             for column_name, column_type in columns.items():
-                _nested_set(
+                nested_set(
                     normalized_mapping,
                     normalized_keys + [self._normalize_name(column_name)],
                     column_type,
@@ -365,7 +365,7 @@ def flatten_schema(
     return tables
 
 
-def _nested_get(
+def nested_get(
     d: t.Dict, *path: t.Tuple[str, str], raise_on_missing: bool = True
 ) -> t.Optional[t.Any]:
     """
@@ -390,15 +390,15 @@ def _nested_get(
     return d
 
 
-def _nested_set(d: t.Dict, keys: t.Sequence[str], value: t.Any) -> t.Dict:
+def nested_set(d: t.Dict, keys: t.Sequence[str], value: t.Any) -> t.Dict:
     """
     In-place set a value for a nested dictionary
 
     Example:
-        >>> _nested_set({}, ["top_key", "second_key"], "value")
+        >>> nested_set({}, ["top_key", "second_key"], "value")
         {'top_key': {'second_key': 'value'}}
 
-        >>> _nested_set({"top_key": {"third_key": "third_value"}}, ["top_key", "second_key"], "value")
+        >>> nested_set({"top_key": {"third_key": "third_value"}}, ["top_key", "second_key"], "value")
         {'top_key': {'third_key': 'third_value', 'second_key': 'value'}}
 
     Args:

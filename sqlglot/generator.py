@@ -1852,7 +1852,7 @@ class Generator:
 
         if self.SINGLE_STRING_INTERVAL:
             this = expression.this.name if expression.this else ""
-            return f"INTERVAL '{this}{unit}'"
+            return f"INTERVAL '{this}{unit}'" if this else f"INTERVAL{unit}"
 
         this = self.sql(expression, "this")
         if this:

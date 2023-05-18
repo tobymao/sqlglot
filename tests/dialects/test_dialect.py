@@ -574,7 +574,7 @@ class TestDialect(Validator):
                 "duckdb": "x + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
-                "postgres": "x + INTERVAL '1' DAY",
+                "postgres": "x + INTERVAL '1 DAY'",
                 "presto": "DATE_ADD('DAY', 1, x)",
                 "snowflake": "DATEADD(DAY, 1, x)",
                 "spark": "DATE_ADD(x, 1)",

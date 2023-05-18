@@ -112,11 +112,8 @@ class ClickHouse(Dialect):
             "format": lambda self: self._parse_id_var() if self._match(TokenType.FORMAT) else None,
         }
 
-        def _parse_expression(self, explicit_alias: bool = False) -> t.Optional[exp.Expression]:
-            return self._parse_alias(self._parse_ternary(), explicit=explicit_alias)
-
-        def _parse_ternary(self) -> t.Optional[exp.Expression]:
-            this = self._parse_conjunction()
+        def _parse_conjunction(self) -> t.Optional[exp.Expression]:
+            this = super()._parse_conjunction()
 
             if self._match(TokenType.PLACEHOLDER):
                 return self.expression(

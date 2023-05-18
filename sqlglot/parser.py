@@ -2705,8 +2705,8 @@ class Parser(metaclass=_Parser):
             expression=self._parse_set_operations(self._parse_select(nested=True)),
         )
 
-    def _parse_expression(self, explicit_alias: bool = False) -> t.Optional[exp.Expression]:
-        return self._parse_alias(self._parse_conjunction(), explicit=explicit_alias)
+    def _parse_expression(self) -> t.Optional[exp.Expression]:
+        return self._parse_alias(self._parse_conjunction())
 
     def _parse_conjunction(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
@@ -3073,7 +3073,7 @@ class Parser(metaclass=_Parser):
             if query:
                 expressions = [query]
             else:
-                expressions = self._parse_csv(lambda: self._parse_expression(explicit_alias=True))
+                expressions = self._parse_csv(self._parse_expression)
 
             this = self._parse_query_modifiers(seq_get(expressions, 0))
 

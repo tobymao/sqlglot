@@ -234,6 +234,9 @@
             <li>
                     <a class="function" href="#ts_or_ds_to_date_sql">ts_or_ds_to_date_sql</a>
             </li>
+            <li>
+                    <a class="function" href="#pivot_column_names">pivot_column_names</a>
+            </li>
     </ul>
 
 
@@ -755,6 +758,29 @@
 </span><span id="L-496"><a href="#L-496"><span class="linenos">496</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS DATE)&quot;</span>
 </span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a>
 </span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a>    <span class="k">return</span> <span class="n">_ts_or_ds_to_date_sql</span>
+</span><span id="L-499"><a href="#L-499"><span class="linenos">499</span></a>
+</span><span id="L-500"><a href="#L-500"><span class="linenos">500</span></a>
+</span><span id="L-501"><a href="#L-501"><span class="linenos">501</span></a><span class="c1"># Spark, DuckDB use (almost) the same naming scheme for the output columns of the PIVOT operator</span>
+</span><span id="L-502"><a href="#L-502"><span class="linenos">502</span></a><span class="k">def</span> <span class="nf">pivot_column_names</span><span class="p">(</span><span class="n">aggregations</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-503"><a href="#L-503"><span class="linenos">503</span></a>    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-504"><a href="#L-504"><span class="linenos">504</span></a>    <span class="k">for</span> <span class="n">agg</span> <span class="ow">in</span> <span class="n">aggregations</span><span class="p">:</span>
+</span><span id="L-505"><a href="#L-505"><span class="linenos">505</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">agg</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Alias</span><span class="p">):</span>
+</span><span id="L-506"><a href="#L-506"><span class="linenos">506</span></a>            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agg</span><span class="o">.</span><span class="n">alias</span><span class="p">)</span>
+</span><span id="L-507"><a href="#L-507"><span class="linenos">507</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-508"><a href="#L-508"><span class="linenos">508</span></a><span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-509"><a href="#L-509"><span class="linenos">509</span></a><span class="sd">            This case corresponds to aggregations without aliases being used as suffixes</span>
+</span><span id="L-510"><a href="#L-510"><span class="linenos">510</span></a><span class="sd">            (e.g. col_avg(foo)). We need to unquote identifiers because they&#39;re going to</span>
+</span><span id="L-511"><a href="#L-511"><span class="linenos">511</span></a><span class="sd">            be quoted in the base parser&#39;s `_parse_pivot` method, due to `to_identifier`.</span>
+</span><span id="L-512"><a href="#L-512"><span class="linenos">512</span></a><span class="sd">            Otherwise, we&#39;d end up with `col_avg(`foo`)` (notice the double quotes).</span>
+</span><span id="L-513"><a href="#L-513"><span class="linenos">513</span></a><span class="sd">            &quot;&quot;&quot;</span>
+</span><span id="L-514"><a href="#L-514"><span class="linenos">514</span></a>            <span class="n">agg_all_unquoted</span> <span class="o">=</span> <span class="n">agg</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
+</span><span id="L-515"><a href="#L-515"><span class="linenos">515</span></a>                <span class="k">lambda</span> <span class="n">node</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-516"><a href="#L-516"><span class="linenos">516</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Identifier</span><span class="p">)</span>
+</span><span id="L-517"><a href="#L-517"><span class="linenos">517</span></a>                <span class="k">else</span> <span class="n">node</span>
+</span><span id="L-518"><a href="#L-518"><span class="linenos">518</span></a>            <span class="p">)</span>
+</span><span id="L-519"><a href="#L-519"><span class="linenos">519</span></a>            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agg_all_unquoted</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">normalize_functions</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">))</span>
+</span><span id="L-520"><a href="#L-520"><span class="linenos">520</span></a>
+</span><span id="L-521"><a href="#L-521"><span class="linenos">521</span></a>    <span class="k">return</span> <span class="n">names</span>
 </span></pre></div>
 
 
@@ -2299,6 +2325,43 @@ columns are removed from the create statement.</p>
 </span><span id="ts_or_ds_to_date_sql-497"><a href="#ts_or_ds_to_date_sql-497"><span class="linenos">497</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;CAST(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> AS DATE)&quot;</span>
 </span><span id="ts_or_ds_to_date_sql-498"><a href="#ts_or_ds_to_date_sql-498"><span class="linenos">498</span></a>
 </span><span id="ts_or_ds_to_date_sql-499"><a href="#ts_or_ds_to_date_sql-499"><span class="linenos">499</span></a>    <span class="k">return</span> <span class="n">_ts_or_ds_to_date_sql</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="pivot_column_names">
+                            <input id="pivot_column_names-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">pivot_column_names</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">aggregations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n"><a href="../expressions.html#Expression">sqlglot.expressions.Expression</a></span><span class="p">]</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="pivot_column_names-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#pivot_column_names"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="pivot_column_names-503"><a href="#pivot_column_names-503"><span class="linenos">503</span></a><span class="k">def</span> <span class="nf">pivot_column_names</span><span class="p">(</span><span class="n">aggregations</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="pivot_column_names-504"><a href="#pivot_column_names-504"><span class="linenos">504</span></a>    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="pivot_column_names-505"><a href="#pivot_column_names-505"><span class="linenos">505</span></a>    <span class="k">for</span> <span class="n">agg</span> <span class="ow">in</span> <span class="n">aggregations</span><span class="p">:</span>
+</span><span id="pivot_column_names-506"><a href="#pivot_column_names-506"><span class="linenos">506</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">agg</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Alias</span><span class="p">):</span>
+</span><span id="pivot_column_names-507"><a href="#pivot_column_names-507"><span class="linenos">507</span></a>            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agg</span><span class="o">.</span><span class="n">alias</span><span class="p">)</span>
+</span><span id="pivot_column_names-508"><a href="#pivot_column_names-508"><span class="linenos">508</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="pivot_column_names-509"><a href="#pivot_column_names-509"><span class="linenos">509</span></a><span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="pivot_column_names-510"><a href="#pivot_column_names-510"><span class="linenos">510</span></a><span class="sd">            This case corresponds to aggregations without aliases being used as suffixes</span>
+</span><span id="pivot_column_names-511"><a href="#pivot_column_names-511"><span class="linenos">511</span></a><span class="sd">            (e.g. col_avg(foo)). We need to unquote identifiers because they&#39;re going to</span>
+</span><span id="pivot_column_names-512"><a href="#pivot_column_names-512"><span class="linenos">512</span></a><span class="sd">            be quoted in the base parser&#39;s `_parse_pivot` method, due to `to_identifier`.</span>
+</span><span id="pivot_column_names-513"><a href="#pivot_column_names-513"><span class="linenos">513</span></a><span class="sd">            Otherwise, we&#39;d end up with `col_avg(`foo`)` (notice the double quotes).</span>
+</span><span id="pivot_column_names-514"><a href="#pivot_column_names-514"><span class="linenos">514</span></a><span class="sd">            &quot;&quot;&quot;</span>
+</span><span id="pivot_column_names-515"><a href="#pivot_column_names-515"><span class="linenos">515</span></a>            <span class="n">agg_all_unquoted</span> <span class="o">=</span> <span class="n">agg</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
+</span><span id="pivot_column_names-516"><a href="#pivot_column_names-516"><span class="linenos">516</span></a>                <span class="k">lambda</span> <span class="n">node</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="pivot_column_names-517"><a href="#pivot_column_names-517"><span class="linenos">517</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Identifier</span><span class="p">)</span>
+</span><span id="pivot_column_names-518"><a href="#pivot_column_names-518"><span class="linenos">518</span></a>                <span class="k">else</span> <span class="n">node</span>
+</span><span id="pivot_column_names-519"><a href="#pivot_column_names-519"><span class="linenos">519</span></a>            <span class="p">)</span>
+</span><span id="pivot_column_names-520"><a href="#pivot_column_names-520"><span class="linenos">520</span></a>            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">agg_all_unquoted</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">normalize_functions</span><span class="o">=</span><span class="s2">&quot;lower&quot;</span><span class="p">))</span>
+</span><span id="pivot_column_names-521"><a href="#pivot_column_names-521"><span class="linenos">521</span></a>
+</span><span id="pivot_column_names-522"><a href="#pivot_column_names-522"><span class="linenos">522</span></a>    <span class="k">return</span> <span class="n">names</span>
 </span></pre></div>
 
 

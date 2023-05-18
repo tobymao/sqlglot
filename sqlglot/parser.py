@@ -640,7 +640,7 @@ class Parser(metaclass=_Parser):
         "TEMPORARY": lambda self: self._parse_temporary(global_=False),
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
         "TTL": lambda self: self._parse_ttl(),
-        "USING": lambda self: self._parse_property_assignment(exp.TableFormatProperty),
+        "USING": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "VOLATILE": lambda self: self._parse_volatile_property(),
         "WITH": lambda self: self._parse_with_property(),
     }

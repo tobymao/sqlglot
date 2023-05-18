@@ -39,8 +39,8 @@ class TestSpark(Validator):
             "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             write={
                 "duckdb": "CREATE TABLE x",
-                "presto": "CREATE TABLE x WITH (TABLE_FORMAT='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS'])",
-                "hive": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
+                "presto": "CREATE TABLE x WITH (FORMAT='ICEBERG', PARTITIONED_BY=ARRAY['MONTHS'])",
+                "hive": "CREATE TABLE x STORED AS ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
                 "spark": "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
             },
         )
@@ -111,6 +111,13 @@ TBLPROPERTIES (
             "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
             write={
                 "spark": "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
+            identify=True,
+            write={
+                "spark": "CREATE TABLE `x` USING ICEBERG PARTITIONED BY (MONTHS(`y`)) LOCATION 's3://z'",
             },
         )
 

@@ -348,7 +348,6 @@ class Hive(Dialect):
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: _str_to_unix_sql,
             exp.StructExtract: struct_extract_sql,
-            exp.TableFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
@@ -376,7 +375,6 @@ class Hive(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
             exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
-            exp.TableFormatProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 

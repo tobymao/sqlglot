@@ -31,7 +31,7 @@ class TestRedshift(Validator):
             write={
                 "postgres": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
                 "redshift": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
-                "snowflake": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DATE_PART(minute, CAST('2023-01-04 04:05:06.789' AS TIMESTAMPNTZ))",
             },
         )
         self.validate_all(
@@ -39,7 +39,7 @@ class TestRedshift(Validator):
             write={
                 "postgres": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
                 "redshift": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
-                "snowflake": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
+                "snowflake": "SELECT DATE_PART(month, CAST('20220502' AS DATE))",
             },
         )
         self.validate_all("SELECT INTERVAL '5 days'", read={"": "SELECT INTERVAL '5' days"})

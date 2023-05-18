@@ -113,7 +113,7 @@ class ClickHouse(Dialect):
         }
 
         def _parse_conjunction(self) -> t.Optional[exp.Expression]:
-            this = self._parse_tokens(self._parse_equality, self.CONJUNCTION)
+            this = super()._parse_conjunction()
 
             if self._match(TokenType.PLACEHOLDER):
                 return self.expression(

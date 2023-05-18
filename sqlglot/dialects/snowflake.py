@@ -119,6 +119,12 @@ def _parse_date_part(self: parser.Parser) -> t.Optional[exp.Expression]:
     return self.expression(exp.Extract, this=this, expression=expression)
 
 
+def _snowflake_generate_extract(self: Snowflake.Generator, expression: exp.Extract) -> str:
+    this = self.sql(expression, "this")
+    expression_sql = self.sql(expression, "expression")
+    return f"DATE_PART({this}, {expression_sql})"
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/div0
 def _div0_to_if(args: t.Sequence) -> exp.Expression:
     cond = exp.EQ(this=seq_get(args, 1), expression=exp.Literal.number(0))
@@ -309,6 +315,7 @@ class Snowflake(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.Extract: _snowflake_generate_extract,
             exp.If: rename_func("IFF"),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),

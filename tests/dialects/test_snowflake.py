@@ -463,7 +463,7 @@ class TestSnowflake(Validator):
         )
 
     def test_timestamps(self):
-        self.validate_identity("SELECT EXTRACT(month FROM a)")
+        self.validate_identity("SELECT DATE_PART(month, a)")
 
         self.validate_all(
             "SELECT CAST(a AS TIMESTAMP)",
@@ -492,19 +492,19 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT EXTRACT('month', a)",
             write={
-                "snowflake": "SELECT EXTRACT('month' FROM a)",
+                "snowflake": "SELECT DATE_PART('month', a)",
             },
         )
         self.validate_all(
             "SELECT DATE_PART('month', a)",
             write={
-                "snowflake": "SELECT EXTRACT('month' FROM a)",
+                "snowflake": "SELECT DATE_PART('month', a)",
             },
         )
         self.validate_all(
             "SELECT DATE_PART(month, a::DATETIME)",
             write={
-                "snowflake": "SELECT EXTRACT(month FROM CAST(a AS DATETIME))",
+                "snowflake": "SELECT DATE_PART(month, CAST(a AS DATETIME))",
             },
         )
         self.validate_all(

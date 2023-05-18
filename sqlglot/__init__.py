@@ -57,7 +57,7 @@ try:
     from sqlglot._version import __version__, __version_tuple__
 except ImportError:
     logger.error(
-        "Unable to set __version__, consider running `pip install -e .` or `python setup.py develop` first."
+        "Unable to set __version__, run `pip install -e .` or `python setup.py develop` first."
     )
 
 

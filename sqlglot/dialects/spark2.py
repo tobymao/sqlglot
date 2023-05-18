@@ -183,6 +183,8 @@ class Spark2(Hive):
             )
 
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
+            if len(aggregations) == 1:
+                return [""]
             return pivot_column_names(aggregations, dialect="spark")
 
     class Generator(Hive.Generator):

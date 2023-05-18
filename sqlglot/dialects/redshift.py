@@ -106,6 +106,9 @@ class Redshift(Postgres):
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
         }
 
+        # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots
+        TRANSFORMS.pop(exp.Pivot)
+
         # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
         TRANSFORMS.pop(exp.Pow)
 

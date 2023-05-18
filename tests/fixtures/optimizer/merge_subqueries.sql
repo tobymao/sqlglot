@@ -48,8 +48,8 @@ SELECT r.b FROM (SELECT b FROM x AS x) AS q JOIN (SELECT b FROM x) AS r ON q.b =
 SELECT x_2.b AS b FROM x AS x JOIN x AS x_2 ON x.b = x_2.b;
 
 # title: WHERE clause in joined derived table is merged to ON clause
-SELECT x.a, y.c FROM x JOIN (SELECT b, c FROM y WHERE c > 1) AS y ON x.b = y.b;
-SELECT x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b AND y.c > 1;
+SELECT x.a, y.c FROM x JOIN (SELECT b, c FROM y WHERE c > 1) AS y ON x.b = y.b ORDER BY x.a;
+SELECT x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b AND y.c > 1 ORDER BY x.a;
 
 # title: Comma JOIN in outer query
 SELECT x.a, y.c FROM (SELECT a FROM x) AS x, (SELECT c FROM y) AS y;

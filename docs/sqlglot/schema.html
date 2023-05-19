@@ -63,6 +63,9 @@
                         <li>
                                 <a class="function" href="#AbstractMappingSchema.find">find</a>
                         </li>
+                        <li>
+                                <a class="function" href="#AbstractMappingSchema.nested_get">nested_get</a>
+                        </li>
                 </ul>
 
             </li>
@@ -98,6 +101,12 @@
             </li>
             <li>
                     <a class="function" href="#flatten_schema">flatten_schema</a>
+            </li>
+            <li>
+                    <a class="function" href="#nested_get">nested_get</a>
+            </li>
+            <li>
+                    <a class="function" href="#nested_set">nested_set</a>
             </li>
     </ul>
 
@@ -252,12 +261,12 @@
 </span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>                <span class="k">if</span> <span class="n">raise_on_missing</span><span class="p">:</span>
 </span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>                    <span class="k">raise</span> <span class="n">SchemaError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ambiguous mapping for </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 </span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>                <span class="k">return</span> <span class="kc">None</span>
-</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nested_get</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">)</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nested_get</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">)</span>
 </span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>
-</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>    <span class="k">def</span> <span class="nf">_nested_get</span><span class="p">(</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>    <span class="k">def</span> <span class="nf">nested_get</span><span class="p">(</span>
 </span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">parts</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="kc">True</span>
 </span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>        <span class="k">return</span> <span class="n">_nested_get</span><span class="p">(</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>        <span class="k">return</span> <span class="n">nested_get</span><span class="p">(</span>
 </span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>            <span class="n">d</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">,</span>
 </span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>            <span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">supported_table_args</span><span class="p">,</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">parts</span><span class="p">)),</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>            <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">,</span>
@@ -333,7 +342,7 @@
 </span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>
 </span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>        <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">)</span>
 </span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>
-</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="n">_nested_set</span><span class="p">(</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="n">nested_set</span><span class="p">(</span>
 </span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">,</span>
 </span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>            <span class="nb">tuple</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">parts</span><span class="p">)),</span>
 </span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>            <span class="n">normalized_column_mapping</span><span class="p">,</span>
@@ -350,7 +359,7 @@
 </span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">only_visible</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">:</span>
 </span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a>            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
 </span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a>
-</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>        <span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nested_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table_</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>        <span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nested_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table_</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span>
 </span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>        <span class="k">return</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">schema</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">visible</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
 </span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>
 </span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>    <span class="k">def</span> <span class="nf">get_column_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Table</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">:</span>
@@ -383,12 +392,12 @@
 </span><span id="L-259"><a href="#L-259"><span class="linenos">259</span></a>
 </span><span id="L-260"><a href="#L-260"><span class="linenos">260</span></a>        <span class="n">normalized_mapping</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="L-261"><a href="#L-261"><span class="linenos">261</span></a>        <span class="k">for</span> <span class="n">keys</span> <span class="ow">in</span> <span class="n">flattened_schema</span><span class="p">:</span>
-</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>            <span class="n">columns</span> <span class="o">=</span> <span class="n">_nested_get</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">keys</span><span class="p">))</span>
+</span><span id="L-262"><a href="#L-262"><span class="linenos">262</span></a>            <span class="n">columns</span> <span class="o">=</span> <span class="n">nested_get</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">keys</span><span class="p">))</span>
 </span><span id="L-263"><a href="#L-263"><span class="linenos">263</span></a>            <span class="k">assert</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span><span id="L-264"><a href="#L-264"><span class="linenos">264</span></a>
 </span><span id="L-265"><a href="#L-265"><span class="linenos">265</span></a>            <span class="n">normalized_keys</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_normalize_name</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
 </span><span id="L-266"><a href="#L-266"><span class="linenos">266</span></a>            <span class="k">for</span> <span class="n">column_name</span><span class="p">,</span> <span class="n">column_type</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a>                <span class="n">_nested_set</span><span class="p">(</span>
+</span><span id="L-267"><a href="#L-267"><span class="linenos">267</span></a>                <span class="n">nested_set</span><span class="p">(</span>
 </span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a>                    <span class="n">normalized_mapping</span><span class="p">,</span>
 </span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a>                    <span class="n">normalized_keys</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_normalize_name</span><span class="p">(</span><span class="n">column_name</span><span class="p">)],</span>
 </span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>                    <span class="n">column_type</span><span class="p">,</span>
@@ -489,7 +498,7 @@
 </span><span id="L-365"><a href="#L-365"><span class="linenos">365</span></a>    <span class="k">return</span> <span class="n">tables</span>
 </span><span id="L-366"><a href="#L-366"><span class="linenos">366</span></a>
 </span><span id="L-367"><a href="#L-367"><span class="linenos">367</span></a>
-</span><span id="L-368"><a href="#L-368"><span class="linenos">368</span></a><span class="k">def</span> <span class="nf">_nested_get</span><span class="p">(</span>
+</span><span id="L-368"><a href="#L-368"><span class="linenos">368</span></a><span class="k">def</span> <span class="nf">nested_get</span><span class="p">(</span>
 </span><span id="L-369"><a href="#L-369"><span class="linenos">369</span></a>    <span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="o">*</span><span class="n">path</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">raise_on_missing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-370"><a href="#L-370"><span class="linenos">370</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
 </span><span id="L-371"><a href="#L-371"><span class="linenos">371</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -514,15 +523,15 @@
 </span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a>    <span class="k">return</span> <span class="n">d</span>
 </span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a>
 </span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a>
-</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="k">def</span> <span class="nf">_nested_set</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
+</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="k">def</span> <span class="nf">nested_set</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
 </span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a><span class="sd">    In-place set a value for a nested dictionary</span>
 </span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a>
 </span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a><span class="sd">    Example:</span>
-</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a><span class="sd">        &gt;&gt;&gt; _nested_set({}, [&quot;top_key&quot;, &quot;second_key&quot;], &quot;value&quot;)</span>
+</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a><span class="sd">        &gt;&gt;&gt; nested_set({}, [&quot;top_key&quot;, &quot;second_key&quot;], &quot;value&quot;)</span>
 </span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a><span class="sd">        {&#39;top_key&#39;: {&#39;second_key&#39;: &#39;value&#39;}}</span>
 </span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a>
-</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a><span class="sd">        &gt;&gt;&gt; _nested_set({&quot;top_key&quot;: {&quot;third_key&quot;: &quot;third_value&quot;}}, [&quot;top_key&quot;, &quot;second_key&quot;], &quot;value&quot;)</span>
+</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a><span class="sd">        &gt;&gt;&gt; nested_set({&quot;top_key&quot;: {&quot;third_key&quot;: &quot;third_value&quot;}}, [&quot;top_key&quot;, &quot;second_key&quot;], &quot;value&quot;)</span>
 </span><span id="L-402"><a href="#L-402"><span class="linenos">402</span></a><span class="sd">        {&#39;top_key&#39;: {&#39;third_key&#39;: &#39;third_value&#39;, &#39;second_key&#39;: &#39;value&#39;}}</span>
 </span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a>
 </span><span id="L-404"><a href="#L-404"><span class="linenos">404</span></a><span class="sd">    Args:</span>
@@ -843,12 +852,12 @@
 </span><span id="AbstractMappingSchema-129"><a href="#AbstractMappingSchema-129"><span class="linenos">129</span></a>                <span class="k">if</span> <span class="n">raise_on_missing</span><span class="p">:</span>
 </span><span id="AbstractMappingSchema-130"><a href="#AbstractMappingSchema-130"><span class="linenos">130</span></a>                    <span class="k">raise</span> <span class="n">SchemaError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ambiguous mapping for </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 </span><span id="AbstractMappingSchema-131"><a href="#AbstractMappingSchema-131"><span class="linenos">131</span></a>                <span class="k">return</span> <span class="kc">None</span>
-</span><span id="AbstractMappingSchema-132"><a href="#AbstractMappingSchema-132"><span class="linenos">132</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nested_get</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">)</span>
+</span><span id="AbstractMappingSchema-132"><a href="#AbstractMappingSchema-132"><span class="linenos">132</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nested_get</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">)</span>
 </span><span id="AbstractMappingSchema-133"><a href="#AbstractMappingSchema-133"><span class="linenos">133</span></a>
-</span><span id="AbstractMappingSchema-134"><a href="#AbstractMappingSchema-134"><span class="linenos">134</span></a>    <span class="k">def</span> <span class="nf">_nested_get</span><span class="p">(</span>
+</span><span id="AbstractMappingSchema-134"><a href="#AbstractMappingSchema-134"><span class="linenos">134</span></a>    <span class="k">def</span> <span class="nf">nested_get</span><span class="p">(</span>
 </span><span id="AbstractMappingSchema-135"><a href="#AbstractMappingSchema-135"><span class="linenos">135</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">parts</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="kc">True</span>
 </span><span id="AbstractMappingSchema-136"><a href="#AbstractMappingSchema-136"><span class="linenos">136</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
-</span><span id="AbstractMappingSchema-137"><a href="#AbstractMappingSchema-137"><span class="linenos">137</span></a>        <span class="k">return</span> <span class="n">_nested_get</span><span class="p">(</span>
+</span><span id="AbstractMappingSchema-137"><a href="#AbstractMappingSchema-137"><span class="linenos">137</span></a>        <span class="k">return</span> <span class="n">nested_get</span><span class="p">(</span>
 </span><span id="AbstractMappingSchema-138"><a href="#AbstractMappingSchema-138"><span class="linenos">138</span></a>            <span class="n">d</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">,</span>
 </span><span id="AbstractMappingSchema-139"><a href="#AbstractMappingSchema-139"><span class="linenos">139</span></a>            <span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">supported_table_args</span><span class="p">,</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">parts</span><span class="p">)),</span>
 </span><span id="AbstractMappingSchema-140"><a href="#AbstractMappingSchema-140"><span class="linenos">140</span></a>            <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">,</span>
@@ -951,7 +960,32 @@ For example, a generic mapping type might be defined as::</p>
 </span><span id="AbstractMappingSchema.find-129"><a href="#AbstractMappingSchema.find-129"><span class="linenos">129</span></a>                <span class="k">if</span> <span class="n">raise_on_missing</span><span class="p">:</span>
 </span><span id="AbstractMappingSchema.find-130"><a href="#AbstractMappingSchema.find-130"><span class="linenos">130</span></a>                    <span class="k">raise</span> <span class="n">SchemaError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ambiguous mapping for </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 </span><span id="AbstractMappingSchema.find-131"><a href="#AbstractMappingSchema.find-131"><span class="linenos">131</span></a>                <span class="k">return</span> <span class="kc">None</span>
-</span><span id="AbstractMappingSchema.find-132"><a href="#AbstractMappingSchema.find-132"><span class="linenos">132</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nested_get</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">)</span>
+</span><span id="AbstractMappingSchema.find-132"><a href="#AbstractMappingSchema.find-132"><span class="linenos">132</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nested_get</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div id="AbstractMappingSchema.nested_get" class="classattr">
+                                        <input id="AbstractMappingSchema.nested_get-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">nested_get</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">parts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>,</span><span class="param">	<span class="n">d</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">raise_on_missing</span><span class="o">=</span><span class="kc">True</span></span><span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="AbstractMappingSchema.nested_get-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#AbstractMappingSchema.nested_get"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="AbstractMappingSchema.nested_get-134"><a href="#AbstractMappingSchema.nested_get-134"><span class="linenos">134</span></a>    <span class="k">def</span> <span class="nf">nested_get</span><span class="p">(</span>
+</span><span id="AbstractMappingSchema.nested_get-135"><a href="#AbstractMappingSchema.nested_get-135"><span class="linenos">135</span></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">parts</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="AbstractMappingSchema.nested_get-136"><a href="#AbstractMappingSchema.nested_get-136"><span class="linenos">136</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
+</span><span id="AbstractMappingSchema.nested_get-137"><a href="#AbstractMappingSchema.nested_get-137"><span class="linenos">137</span></a>        <span class="k">return</span> <span class="n">nested_get</span><span class="p">(</span>
+</span><span id="AbstractMappingSchema.nested_get-138"><a href="#AbstractMappingSchema.nested_get-138"><span class="linenos">138</span></a>            <span class="n">d</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">,</span>
+</span><span id="AbstractMappingSchema.nested_get-139"><a href="#AbstractMappingSchema.nested_get-139"><span class="linenos">139</span></a>            <span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">supported_table_args</span><span class="p">,</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">parts</span><span class="p">)),</span>
+</span><span id="AbstractMappingSchema.nested_get-140"><a href="#AbstractMappingSchema.nested_get-140"><span class="linenos">140</span></a>            <span class="n">raise_on_missing</span><span class="o">=</span><span class="n">raise_on_missing</span><span class="p">,</span>
+</span><span id="AbstractMappingSchema.nested_get-141"><a href="#AbstractMappingSchema.nested_get-141"><span class="linenos">141</span></a>        <span class="p">)</span>
 </span></pre></div>
 
 
@@ -1039,7 +1073,7 @@ For example, a generic mapping type might be defined as::</p>
 </span><span id="MappingSchema-210"><a href="#MappingSchema-210"><span class="linenos">210</span></a>
 </span><span id="MappingSchema-211"><a href="#MappingSchema-211"><span class="linenos">211</span></a>        <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">)</span>
 </span><span id="MappingSchema-212"><a href="#MappingSchema-212"><span class="linenos">212</span></a>
-</span><span id="MappingSchema-213"><a href="#MappingSchema-213"><span class="linenos">213</span></a>        <span class="n">_nested_set</span><span class="p">(</span>
+</span><span id="MappingSchema-213"><a href="#MappingSchema-213"><span class="linenos">213</span></a>        <span class="n">nested_set</span><span class="p">(</span>
 </span><span id="MappingSchema-214"><a href="#MappingSchema-214"><span class="linenos">214</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">,</span>
 </span><span id="MappingSchema-215"><a href="#MappingSchema-215"><span class="linenos">215</span></a>            <span class="nb">tuple</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">parts</span><span class="p">)),</span>
 </span><span id="MappingSchema-216"><a href="#MappingSchema-216"><span class="linenos">216</span></a>            <span class="n">normalized_column_mapping</span><span class="p">,</span>
@@ -1056,7 +1090,7 @@ For example, a generic mapping type might be defined as::</p>
 </span><span id="MappingSchema-227"><a href="#MappingSchema-227"><span class="linenos">227</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">only_visible</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">:</span>
 </span><span id="MappingSchema-228"><a href="#MappingSchema-228"><span class="linenos">228</span></a>            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
 </span><span id="MappingSchema-229"><a href="#MappingSchema-229"><span class="linenos">229</span></a>
-</span><span id="MappingSchema-230"><a href="#MappingSchema-230"><span class="linenos">230</span></a>        <span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nested_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table_</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span>
+</span><span id="MappingSchema-230"><a href="#MappingSchema-230"><span class="linenos">230</span></a>        <span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nested_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table_</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span>
 </span><span id="MappingSchema-231"><a href="#MappingSchema-231"><span class="linenos">231</span></a>        <span class="k">return</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">schema</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">visible</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
 </span><span id="MappingSchema-232"><a href="#MappingSchema-232"><span class="linenos">232</span></a>
 </span><span id="MappingSchema-233"><a href="#MappingSchema-233"><span class="linenos">233</span></a>    <span class="k">def</span> <span class="nf">get_column_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Table</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">:</span>
@@ -1089,12 +1123,12 @@ For example, a generic mapping type might be defined as::</p>
 </span><span id="MappingSchema-260"><a href="#MappingSchema-260"><span class="linenos">260</span></a>
 </span><span id="MappingSchema-261"><a href="#MappingSchema-261"><span class="linenos">261</span></a>        <span class="n">normalized_mapping</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="MappingSchema-262"><a href="#MappingSchema-262"><span class="linenos">262</span></a>        <span class="k">for</span> <span class="n">keys</span> <span class="ow">in</span> <span class="n">flattened_schema</span><span class="p">:</span>
-</span><span id="MappingSchema-263"><a href="#MappingSchema-263"><span class="linenos">263</span></a>            <span class="n">columns</span> <span class="o">=</span> <span class="n">_nested_get</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">keys</span><span class="p">))</span>
+</span><span id="MappingSchema-263"><a href="#MappingSchema-263"><span class="linenos">263</span></a>            <span class="n">columns</span> <span class="o">=</span> <span class="n">nested_get</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="o">*</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">keys</span><span class="p">))</span>
 </span><span id="MappingSchema-264"><a href="#MappingSchema-264"><span class="linenos">264</span></a>            <span class="k">assert</span> <span class="n">columns</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span><span id="MappingSchema-265"><a href="#MappingSchema-265"><span class="linenos">265</span></a>
 </span><span id="MappingSchema-266"><a href="#MappingSchema-266"><span class="linenos">266</span></a>            <span class="n">normalized_keys</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_normalize_name</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
 </span><span id="MappingSchema-267"><a href="#MappingSchema-267"><span class="linenos">267</span></a>            <span class="k">for</span> <span class="n">column_name</span><span class="p">,</span> <span class="n">column_type</span> <span class="ow">in</span> <span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-</span><span id="MappingSchema-268"><a href="#MappingSchema-268"><span class="linenos">268</span></a>                <span class="n">_nested_set</span><span class="p">(</span>
+</span><span id="MappingSchema-268"><a href="#MappingSchema-268"><span class="linenos">268</span></a>                <span class="n">nested_set</span><span class="p">(</span>
 </span><span id="MappingSchema-269"><a href="#MappingSchema-269"><span class="linenos">269</span></a>                    <span class="n">normalized_mapping</span><span class="p">,</span>
 </span><span id="MappingSchema-270"><a href="#MappingSchema-270"><span class="linenos">270</span></a>                    <span class="n">normalized_keys</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_normalize_name</span><span class="p">(</span><span class="n">column_name</span><span class="p">)],</span>
 </span><span id="MappingSchema-271"><a href="#MappingSchema-271"><span class="linenos">271</span></a>                    <span class="n">column_type</span><span class="p">,</span>
@@ -1290,7 +1324,7 @@ are assumed to be visible. The nesting should mirror that of the schema:
 </span><span id="MappingSchema.add_table-210"><a href="#MappingSchema.add_table-210"><span class="linenos">210</span></a>
 </span><span id="MappingSchema.add_table-211"><a href="#MappingSchema.add_table-211"><span class="linenos">211</span></a>        <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">)</span>
 </span><span id="MappingSchema.add_table-212"><a href="#MappingSchema.add_table-212"><span class="linenos">212</span></a>
-</span><span id="MappingSchema.add_table-213"><a href="#MappingSchema.add_table-213"><span class="linenos">213</span></a>        <span class="n">_nested_set</span><span class="p">(</span>
+</span><span id="MappingSchema.add_table-213"><a href="#MappingSchema.add_table-213"><span class="linenos">213</span></a>        <span class="n">nested_set</span><span class="p">(</span>
 </span><span id="MappingSchema.add_table-214"><a href="#MappingSchema.add_table-214"><span class="linenos">214</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">,</span>
 </span><span id="MappingSchema.add_table-215"><a href="#MappingSchema.add_table-215"><span class="linenos">215</span></a>            <span class="nb">tuple</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">parts</span><span class="p">)),</span>
 </span><span id="MappingSchema.add_table-216"><a href="#MappingSchema.add_table-216"><span class="linenos">216</span></a>            <span class="n">normalized_column_mapping</span><span class="p">,</span>
@@ -1332,7 +1366,7 @@ are assumed to be visible. The nesting should mirror that of the schema:
 </span><span id="MappingSchema.column_names-227"><a href="#MappingSchema.column_names-227"><span class="linenos">227</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">only_visible</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">:</span>
 </span><span id="MappingSchema.column_names-228"><a href="#MappingSchema.column_names-228"><span class="linenos">228</span></a>            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
 </span><span id="MappingSchema.column_names-229"><a href="#MappingSchema.column_names-229"><span class="linenos">229</span></a>
-</span><span id="MappingSchema.column_names-230"><a href="#MappingSchema.column_names-230"><span class="linenos">230</span></a>        <span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nested_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table_</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span>
+</span><span id="MappingSchema.column_names-230"><a href="#MappingSchema.column_names-230"><span class="linenos">230</span></a>        <span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nested_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table_</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span>
 </span><span id="MappingSchema.column_names-231"><a href="#MappingSchema.column_names-231"><span class="linenos">231</span></a>        <span class="k">return</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">schema</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">visible</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
 </span></pre></div>
 
@@ -1410,6 +1444,7 @@ are assumed to be visible. The nesting should mirror that of the schema:
                 <dd id="MappingSchema.supported_table_args" class="variable"><a href="#AbstractMappingSchema.supported_table_args">supported_table_args</a></dd>
                 <dd id="MappingSchema.table_parts" class="function"><a href="#AbstractMappingSchema.table_parts">table_parts</a></dd>
                 <dd id="MappingSchema.find" class="function"><a href="#AbstractMappingSchema.find">find</a></dd>
+                <dd id="MappingSchema.nested_get" class="function"><a href="#AbstractMappingSchema.nested_get">nested_get</a></dd>
 
             </div>
                                 </dl>
@@ -1498,6 +1533,147 @@ are assumed to be visible. The nesting should mirror that of the schema:
 
 
     
+
+                </section>
+                <section id="nested_get">
+                            <input id="nested_get-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">nested_get</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">d</span><span class="p">:</span> <span class="n">Dict</span>,</span><span class="param">	<span class="o">*</span><span class="n">path</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>,</span><span class="param">	<span class="n">raise_on_missing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span></span><span class="return-annotation">) -> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="nested_get-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#nested_get"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="nested_get-369"><a href="#nested_get-369"><span class="linenos">369</span></a><span class="k">def</span> <span class="nf">nested_get</span><span class="p">(</span>
+</span><span id="nested_get-370"><a href="#nested_get-370"><span class="linenos">370</span></a>    <span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="o">*</span><span class="n">path</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">raise_on_missing</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="nested_get-371"><a href="#nested_get-371"><span class="linenos">371</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
+</span><span id="nested_get-372"><a href="#nested_get-372"><span class="linenos">372</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="nested_get-373"><a href="#nested_get-373"><span class="linenos">373</span></a><span class="sd">    Get a value for a nested dictionary.</span>
+</span><span id="nested_get-374"><a href="#nested_get-374"><span class="linenos">374</span></a>
+</span><span id="nested_get-375"><a href="#nested_get-375"><span class="linenos">375</span></a><span class="sd">    Args:</span>
+</span><span id="nested_get-376"><a href="#nested_get-376"><span class="linenos">376</span></a><span class="sd">        d: the dictionary to search.</span>
+</span><span id="nested_get-377"><a href="#nested_get-377"><span class="linenos">377</span></a><span class="sd">        *path: tuples of (name, key), where:</span>
+</span><span id="nested_get-378"><a href="#nested_get-378"><span class="linenos">378</span></a><span class="sd">            `key` is the key in the dictionary to get.</span>
+</span><span id="nested_get-379"><a href="#nested_get-379"><span class="linenos">379</span></a><span class="sd">            `name` is a string to use in the error if `key` isn&#39;t found.</span>
+</span><span id="nested_get-380"><a href="#nested_get-380"><span class="linenos">380</span></a>
+</span><span id="nested_get-381"><a href="#nested_get-381"><span class="linenos">381</span></a><span class="sd">    Returns:</span>
+</span><span id="nested_get-382"><a href="#nested_get-382"><span class="linenos">382</span></a><span class="sd">        The value or None if it doesn&#39;t exist.</span>
+</span><span id="nested_get-383"><a href="#nested_get-383"><span class="linenos">383</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="nested_get-384"><a href="#nested_get-384"><span class="linenos">384</span></a>    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+</span><span id="nested_get-385"><a href="#nested_get-385"><span class="linenos">385</span></a>        <span class="n">d</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+</span><span id="nested_get-386"><a href="#nested_get-386"><span class="linenos">386</span></a>        <span class="k">if</span> <span class="n">d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="nested_get-387"><a href="#nested_get-387"><span class="linenos">387</span></a>            <span class="k">if</span> <span class="n">raise_on_missing</span><span class="p">:</span>
+</span><span id="nested_get-388"><a href="#nested_get-388"><span class="linenos">388</span></a>                <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;table&quot;</span> <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;this&quot;</span> <span class="k">else</span> <span class="n">name</span>
+</span><span id="nested_get-389"><a href="#nested_get-389"><span class="linenos">389</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="nested_get-390"><a href="#nested_get-390"><span class="linenos">390</span></a>            <span class="k">return</span> <span class="kc">None</span>
+</span><span id="nested_get-391"><a href="#nested_get-391"><span class="linenos">391</span></a>    <span class="k">return</span> <span class="n">d</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Get a value for a nested dictionary.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>d:</strong>  the dictionary to search.</li>
+<li><strong>*path:</strong>  tuples of (name, key), where:
+<code>key</code> is the key in the dictionary to get.
+<code>name</code> is a string to use in the error if <code>key</code> isn't found.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>The value or None if it doesn't exist.</p>
+</blockquote>
+</div>
+
+
+                </section>
+                <section id="nested_set">
+                            <input id="nested_set-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">nested_set</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">d</span><span class="p">:</span> <span class="n">Dict</span>, </span><span class="param"><span class="n">keys</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>, </span><span class="param"><span class="n">value</span><span class="p">:</span> <span class="n">Any</span></span><span class="return-annotation">) -> <span class="n">Dict</span>:</span></span>
+
+                <label class="view-source-button" for="nested_set-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#nested_set"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="nested_set-394"><a href="#nested_set-394"><span class="linenos">394</span></a><span class="k">def</span> <span class="nf">nested_set</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
+</span><span id="nested_set-395"><a href="#nested_set-395"><span class="linenos">395</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="nested_set-396"><a href="#nested_set-396"><span class="linenos">396</span></a><span class="sd">    In-place set a value for a nested dictionary</span>
+</span><span id="nested_set-397"><a href="#nested_set-397"><span class="linenos">397</span></a>
+</span><span id="nested_set-398"><a href="#nested_set-398"><span class="linenos">398</span></a><span class="sd">    Example:</span>
+</span><span id="nested_set-399"><a href="#nested_set-399"><span class="linenos">399</span></a><span class="sd">        &gt;&gt;&gt; nested_set({}, [&quot;top_key&quot;, &quot;second_key&quot;], &quot;value&quot;)</span>
+</span><span id="nested_set-400"><a href="#nested_set-400"><span class="linenos">400</span></a><span class="sd">        {&#39;top_key&#39;: {&#39;second_key&#39;: &#39;value&#39;}}</span>
+</span><span id="nested_set-401"><a href="#nested_set-401"><span class="linenos">401</span></a>
+</span><span id="nested_set-402"><a href="#nested_set-402"><span class="linenos">402</span></a><span class="sd">        &gt;&gt;&gt; nested_set({&quot;top_key&quot;: {&quot;third_key&quot;: &quot;third_value&quot;}}, [&quot;top_key&quot;, &quot;second_key&quot;], &quot;value&quot;)</span>
+</span><span id="nested_set-403"><a href="#nested_set-403"><span class="linenos">403</span></a><span class="sd">        {&#39;top_key&#39;: {&#39;third_key&#39;: &#39;third_value&#39;, &#39;second_key&#39;: &#39;value&#39;}}</span>
+</span><span id="nested_set-404"><a href="#nested_set-404"><span class="linenos">404</span></a>
+</span><span id="nested_set-405"><a href="#nested_set-405"><span class="linenos">405</span></a><span class="sd">    Args:</span>
+</span><span id="nested_set-406"><a href="#nested_set-406"><span class="linenos">406</span></a><span class="sd">        d: dictionary to update.</span>
+</span><span id="nested_set-407"><a href="#nested_set-407"><span class="linenos">407</span></a><span class="sd">        keys: the keys that makeup the path to `value`.</span>
+</span><span id="nested_set-408"><a href="#nested_set-408"><span class="linenos">408</span></a><span class="sd">        value: the value to set in the dictionary for the given key path.</span>
+</span><span id="nested_set-409"><a href="#nested_set-409"><span class="linenos">409</span></a>
+</span><span id="nested_set-410"><a href="#nested_set-410"><span class="linenos">410</span></a><span class="sd">    Returns:</span>
+</span><span id="nested_set-411"><a href="#nested_set-411"><span class="linenos">411</span></a><span class="sd">        The (possibly) updated dictionary.</span>
+</span><span id="nested_set-412"><a href="#nested_set-412"><span class="linenos">412</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="nested_set-413"><a href="#nested_set-413"><span class="linenos">413</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">keys</span><span class="p">:</span>
+</span><span id="nested_set-414"><a href="#nested_set-414"><span class="linenos">414</span></a>        <span class="k">return</span> <span class="n">d</span>
+</span><span id="nested_set-415"><a href="#nested_set-415"><span class="linenos">415</span></a>
+</span><span id="nested_set-416"><a href="#nested_set-416"><span class="linenos">416</span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="nested_set-417"><a href="#nested_set-417"><span class="linenos">417</span></a>        <span class="n">d</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">value</span>
+</span><span id="nested_set-418"><a href="#nested_set-418"><span class="linenos">418</span></a>        <span class="k">return</span> <span class="n">d</span>
+</span><span id="nested_set-419"><a href="#nested_set-419"><span class="linenos">419</span></a>
+</span><span id="nested_set-420"><a href="#nested_set-420"><span class="linenos">420</span></a>    <span class="n">subd</span> <span class="o">=</span> <span class="n">d</span>
+</span><span id="nested_set-421"><a href="#nested_set-421"><span class="linenos">421</span></a>    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+</span><span id="nested_set-422"><a href="#nested_set-422"><span class="linenos">422</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">subd</span><span class="p">:</span>
+</span><span id="nested_set-423"><a href="#nested_set-423"><span class="linenos">423</span></a>            <span class="n">subd</span> <span class="o">=</span> <span class="n">subd</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">{})</span>
+</span><span id="nested_set-424"><a href="#nested_set-424"><span class="linenos">424</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="nested_set-425"><a href="#nested_set-425"><span class="linenos">425</span></a>            <span class="n">subd</span> <span class="o">=</span> <span class="n">subd</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+</span><span id="nested_set-426"><a href="#nested_set-426"><span class="linenos">426</span></a>
+</span><span id="nested_set-427"><a href="#nested_set-427"><span class="linenos">427</span></a>    <span class="n">subd</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">value</span>
+</span><span id="nested_set-428"><a href="#nested_set-428"><span class="linenos">428</span></a>    <span class="k">return</span> <span class="n">d</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>In-place set a value for a nested dictionary</p>
+
+<h6 id="example">Example:</h6>
+
+<blockquote>
+  <div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">nested_set</span><span class="p">({},</span> <span class="p">[</span><span class="s2">&quot;top_key&quot;</span><span class="p">,</span> <span class="s2">&quot;second_key&quot;</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span>
+<span class="go">{&#39;top_key&#39;: {&#39;second_key&#39;: &#39;value&#39;}}</span>
+</code></pre>
+  </div>
+  
+  <div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">nested_set</span><span class="p">({</span><span class="s2">&quot;top_key&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;third_key&quot;</span><span class="p">:</span> <span class="s2">&quot;third_value&quot;</span><span class="p">}},</span> <span class="p">[</span><span class="s2">&quot;top_key&quot;</span><span class="p">,</span> <span class="s2">&quot;second_key&quot;</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span>
+<span class="go">{&#39;top_key&#39;: {&#39;third_key&#39;: &#39;third_value&#39;, &#39;second_key&#39;: &#39;value&#39;}}</span>
+</code></pre>
+  </div>
+</blockquote>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>d:</strong>  dictionary to update.</li>
+<li><strong>keys:</strong>  the keys that makeup the path to <code>value</code>.</li>
+<li><strong>value:</strong>  the value to set in the dictionary for the given key path.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>The (possibly) updated dictionary.</p>
+</blockquote>
+</div>
+
 
                 </section>
     </main>

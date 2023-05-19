@@ -61,9 +61,13 @@ SELECT q.x AS x FROM (VALUES (1, 2)) AS q(x, y);
 SELECT i.a FROM x AS i LEFT JOIN (SELECT a, b FROM (SELECT a, b FROM x)) AS j ON i.a = j.a;
 SELECT i.a AS a FROM x AS i LEFT JOIN (SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0) AS j ON i.a = j.a;
 
+WITH cte AS (SELECT source.a AS a, ROW_NUMBER() OVER (PARTITION BY source.id, source.timestamp ORDER BY source.a DESC) AS index FROM source AS source QUALIFY index) SELECT cte.a AS a FROM cte;
+WITH cte AS (SELECT source.a AS a FROM source AS source QUALIFY ROW_NUMBER() OVER (PARTITION BY source.id, source.timestamp ORDER BY source.a DESC)) SELECT cte.a AS a FROM cte;
+
 --------------------------------------
 -- Unknown Star Expansion
 --------------------------------------
+
 SELECT a FROM (SELECT * FROM zz) WHERE b = 1;
 SELECT _q_0.a AS a FROM (SELECT zz.a AS a, zz.b AS b FROM zz AS zz) AS _q_0 WHERE _q_0.b = 1;
 

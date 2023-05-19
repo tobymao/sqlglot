@@ -2313,3 +2313,12 @@ class Generator:
             self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
 
         return self.sql(exp.cast(expression.this, "text"))
+
+
+def cached_generator(
+    cache: t.Optional[t.Dict[int, str]] = None
+) -> t.Callable[[exp.Expression], str]:
+    """Returns a cached generator."""
+    cache = {} if cache is None else cache
+    generator = Generator(normalize=True, identify="safe")
+    return lambda e: generator.generate(e, cache)

@@ -5,10 +5,8 @@ from collections import deque
 from decimal import Decimal
 
 from sqlglot import exp
-from sqlglot.generator import Generator
+from sqlglot.generator import cached_generator
 from sqlglot.helper import first, while_changing
-
-GENERATOR = Generator(normalize=True, identify="safe")
 
 
 def simplify(expression):
@@ -27,12 +25,12 @@ def simplify(expression):
         sqlglot.Expression: simplified expression
     """
 
-    cache = {}
+    generate = cached_generator()
 
     def _simplify(expression, root=True):
         node = expression
         node = rewrite_between(node)
-        node = uniq_sort(node, cache, root)
+        node = uniq_sort(node, generate, root)
         node = absorb_and_eliminate(node, root)
         exp.replace_children(node, lambda e: _simplify(e, False))
         node = simplify_not(node)
@@ -247,7 +245,7 @@ def remove_compliments(expression, root=True):
     return expression
 
 
-def uniq_sort(expression, cache=None, root=True):
+def uniq_sort(expression, generate, root=True):
     """
     Uniq and sort a connector.
 
@@ -256,7 +254,7 @@ def uniq_sort(expression, cache=None, root=True):
     if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
         result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
         flattened = tuple(expression.flatten())
-        deduped = {GENERATOR.generate(e, cache): e for e in flattened}
+        deduped = {generate(e): e for e in flattened}
         arr = tuple(deduped.items())
 
         # check if the operands are already sorted, if not sort them

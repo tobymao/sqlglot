@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v13.2.2] - 2023-05-19
+### :bug: Bug Fixes
+- [`bb20335`](https://github.com/tobymao/sqlglot/commit/bb20335f77652e8c78f6a3fed776c5ea8ecbeb3b) - make schema type handle UNKNOWN *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v13.2.1] - 2023-05-19
 ### :sparkles: New Features
 - [`e7f6455`](https://github.com/tobymao/sqlglot/commit/e7f64555469d54b28e7d898c3e2817608387acc7) - **executor**: add support for qualified table references *(PR [#1659](https://github.com/tobymao/sqlglot/pull/1659) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -238,3 +243,4 @@ Changelog
 [v13.1.0]: https://github.com/tobymao/sqlglot/compare/v13.0.2...v13.1.0
 [v13.2.0]: https://github.com/tobymao/sqlglot/compare/v13.1.0...v13.2.0
 [v13.2.1]: https://github.com/tobymao/sqlglot/compare/v13.2.0...v13.2.1
+[v13.2.2]: https://github.com/tobymao/sqlglot/compare/v13.2.1...v13.2.2

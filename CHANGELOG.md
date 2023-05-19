@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v13.3.0] - 2023-05-19
+### :boom: BREAKING CHANGES
+- due to [`8c9e5ec`](https://github.com/tobymao/sqlglot/commit/8c9e5ec0601140112cb282ab19108ec5ed4ccf06) - multi threading issues with simplify *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  multi threading issues with simplify
+
+
+### :bug: Bug Fixes
+- [`8c9e5ec`](https://github.com/tobymao/sqlglot/commit/8c9e5ec0601140112cb282ab19108ec5ed4ccf06) - multi threading issues with simplify *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v13.2.2] - 2023-05-19
 ### :bug: Bug Fixes
 - [`bb20335`](https://github.com/tobymao/sqlglot/commit/bb20335f77652e8c78f6a3fed776c5ea8ecbeb3b) - make schema type handle UNKNOWN *(commit by [@tobymao](https://github.com/tobymao))*
@@ -244,3 +255,4 @@ Changelog
 [v13.2.0]: https://github.com/tobymao/sqlglot/compare/v13.1.0...v13.2.0
 [v13.2.1]: https://github.com/tobymao/sqlglot/compare/v13.2.0...v13.2.1
 [v13.2.2]: https://github.com/tobymao/sqlglot/compare/v13.2.1...v13.2.2
+[v13.3.0]: https://github.com/tobymao/sqlglot/compare/v13.2.2...v13.3.0

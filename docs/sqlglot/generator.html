@@ -732,6 +732,9 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="function" href="#cached_generator">cached_generator</a>
+            </li>
     </ul>
 
 
@@ -3070,6 +3073,15 @@
 </span><span id="L-2313"><a href="#L-2313"><span class="linenos">2313</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="s2">&quot;Format argument unsupported for TO_CHAR/TO_VARCHAR function&quot;</span><span class="p">)</span>
 </span><span id="L-2314"><a href="#L-2314"><span class="linenos">2314</span></a>
 </span><span id="L-2315"><a href="#L-2315"><span class="linenos">2315</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">))</span>
+</span><span id="L-2316"><a href="#L-2316"><span class="linenos">2316</span></a>
+</span><span id="L-2317"><a href="#L-2317"><span class="linenos">2317</span></a>
+</span><span id="L-2318"><a href="#L-2318"><span class="linenos">2318</span></a><span class="k">def</span> <span class="nf">cached_generator</span><span class="p">(</span>
+</span><span id="L-2319"><a href="#L-2319"><span class="linenos">2319</span></a>    <span class="n">cache</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="L-2320"><a href="#L-2320"><span class="linenos">2320</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-2321"><a href="#L-2321"><span class="linenos">2321</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a cached generator.&quot;&quot;&quot;</span>
+</span><span id="L-2322"><a href="#L-2322"><span class="linenos">2322</span></a>    <span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cache</span>
+</span><span id="L-2323"><a href="#L-2323"><span class="linenos">2323</span></a>    <span class="n">generator</span> <span class="o">=</span> <span class="n">Generator</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">identify</span><span class="o">=</span><span class="s2">&quot;safe&quot;</span><span class="p">)</span>
+</span><span id="L-2324"><a href="#L-2324"><span class="linenos">2324</span></a>    <span class="k">return</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">cache</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -11201,6 +11213,32 @@ Default: True</li>
     
 
                             </div>
+                </section>
+                <section id="cached_generator">
+                            <input id="cached_generator-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">cached_generator</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">Callable</span><span class="p">[[</span><span class="n"><a href="expressions.html#Expression">sqlglot.expressions.Expression</a></span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="cached_generator-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#cached_generator"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="cached_generator-2319"><a href="#cached_generator-2319"><span class="linenos">2319</span></a><span class="k">def</span> <span class="nf">cached_generator</span><span class="p">(</span>
+</span><span id="cached_generator-2320"><a href="#cached_generator-2320"><span class="linenos">2320</span></a>    <span class="n">cache</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="cached_generator-2321"><a href="#cached_generator-2321"><span class="linenos">2321</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="cached_generator-2322"><a href="#cached_generator-2322"><span class="linenos">2322</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a cached generator.&quot;&quot;&quot;</span>
+</span><span id="cached_generator-2323"><a href="#cached_generator-2323"><span class="linenos">2323</span></a>    <span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cache</span>
+</span><span id="cached_generator-2324"><a href="#cached_generator-2324"><span class="linenos">2324</span></a>    <span class="n">generator</span> <span class="o">=</span> <span class="n">Generator</span><span class="p">(</span><span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">identify</span><span class="o">=</span><span class="s2">&quot;safe&quot;</span><span class="p">)</span>
+</span><span id="cached_generator-2325"><a href="#cached_generator-2325"><span class="linenos">2325</span></a>    <span class="k">return</span> <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">cache</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Returns a cached generator.</p>
+</div>
+
+
                 </section>
     </main>
 <script>

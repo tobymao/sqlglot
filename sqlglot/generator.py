@@ -232,7 +232,7 @@ class Generator:
 
     RESERVED_KEYWORDS: t.Set[str] = set()
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
-    UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren, exp.Column)
+    UNWRAPPED_INTERVAL_VALUES = (exp.Column, exp.Literal, exp.Neg, exp.Paren)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 

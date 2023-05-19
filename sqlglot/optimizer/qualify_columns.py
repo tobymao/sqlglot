@@ -194,6 +194,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
     replace_columns(expression.args.get("where"))
     replace_columns(expression.args.get("group"))
     replace_columns(expression.args.get("having"), resolve_agg=True)
+    replace_columns(expression.args.get("qualify"), resolve_agg=True)
     replace_columns(expression.args.get("order"), expand=False, resolve_agg=True)
     scope.clear_cache()
 

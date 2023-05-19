@@ -109,10 +109,7 @@ def lineage(
             # a version that has only the column we care about.
             #   "x", SELECT x, y FROM foo
             #     => "x", SELECT x FROM foo
-            source = optimize(
-                scope.expression.select(select, append=False), schema=schema, rules=rules
-            )
-            select = source.selects[0]
+            source = t.cast(exp.Expression, scope.expression.select(select, append=False))
         else:
             source = scope.expression
 

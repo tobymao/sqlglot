@@ -315,10 +315,8 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         """
         if schema_type not in self._type_mapping_cache:
             try:
-                expression = exp.maybe_parse(schema_type, into=exp.DataType, dialect=self.dialect)
-                if expression is None:
-                    raise ValueError(f"Could not parse {schema_type}")
-                self._type_mapping_cache[schema_type] = expression  # type: ignore
+                expression = exp.DataType.build(schema_type, dialect=self.dialect)
+                self._type_mapping_cache[schema_type] = expression
             except AttributeError:
                 raise SchemaError(f"Failed to convert type {schema_type}")
 

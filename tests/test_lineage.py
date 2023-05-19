@@ -146,17 +146,43 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.alias, "")
 
         downstream = node.downstream[0]
-        self.assertEqual(
-            downstream.source.sql(),
-            "SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)",
-        )
+        self.assertEqual(downstream.source.sql(), "SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)")
         self.assertEqual(downstream.expression.sql(), "t.a AS a")
         self.assertEqual(downstream.alias, "y")
 
         downstream = downstream.downstream[0]
-        self.assertEqual(
-            downstream.source.sql(),
-            "(VALUES (1), (2)) AS t(a)",
-        )
+        self.assertEqual(downstream.source.sql(), "(VALUES (1), (2)) AS t(a)")
         self.assertEqual(downstream.expression.sql(), "a")
         self.assertEqual(downstream.alias, "")
+
+    def test_lineage_cte_name_appears_in_schema(self) -> None:
+        schema = {"a": {"b": {"t1": {"c1": "int"}, "t2": {"c2": "int"}}}}
+
+        node = lineage(
+            "c2",
+            "WITH t1 AS (SELECT * FROM a.b.t2), inter AS (SELECT * FROM t1) SELECT * FROM inter",
+            schema=schema,
+        )
+
+        self.assertEqual(
+            node.source.sql(),
+            "WITH t1 AS (SELECT t2.c2 AS c2 FROM a.b.t2 AS t2), inter AS (SELECT t1.c2 AS c2 FROM t1) SELECT inter.c2 AS c2 FROM inter",
+        )
+        self.assertEqual(node.alias, "")
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.source.sql(), "SELECT t1.c2 AS c2 FROM t1")
+        self.assertEqual(downstream.expression.sql(), "t1.c2 AS c2")
+        self.assertEqual(downstream.alias, "")
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(downstream.source.sql(), "SELECT t2.c2 AS c2 FROM a.b.t2 AS t2")
+        self.assertEqual(downstream.expression.sql(), "t2.c2 AS c2")
+        self.assertEqual(downstream.alias, "")
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(downstream.source.sql(), "a.b.t2 AS t2")
+        self.assertEqual(downstream.expression.sql(), "a.b.t2 AS t2")
+        self.assertEqual(downstream.alias, "")
+
+        self.assertEqual(downstream.downstream, [])

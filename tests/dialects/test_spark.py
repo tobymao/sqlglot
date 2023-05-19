@@ -214,6 +214,7 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
+        self.validate_identity("INTERVAL -86 days")
         self.validate_identity("SELECT UNIX_TIMESTAMP()")
         self.validate_identity("TRIM('    SparkSQL   ')")
         self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")

@@ -429,8 +429,8 @@ def should_identify(text: str, identify: str | bool, dialect: DialectType = None
         text: the text to check.
         identify:
             "always" or True: always returns true
-            "safe": true if no upper case or lower case for Snowflake because
-                identifiers are resolved as uppercase in its case.
+            "safe": true if there is no upper case character in `text`, or lower case for Snowflake,
+                because its identifiers are resolved as uppercase.
         dialect: the dialect to use in order to decide whether a text should be identified.
 
     Returns:

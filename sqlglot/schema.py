@@ -334,7 +334,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         if identifier.quoted:
             return name
 
-        # Only Snowflake resolves unquoted identifiers as upper-cased.
+        # Only Snowflake resolves unquoted identifiers as uppercase.
         # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
         return name.upper() if dialect == "snowflake" else name.lower()
 

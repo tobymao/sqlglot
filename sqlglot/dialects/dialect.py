@@ -53,6 +53,7 @@ class _Dialect(type):
         return False
 
     def __hash__(cls) -> int:
+        # This will ensure that equal _Dialects have the same hashes
         return super().__hash__()
 
     @classmethod

@@ -221,8 +221,6 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             column_mapping: a column mapping that describes the structure of the table.
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
         """
-        dialect = dialect or self.dialect
-
         normalized_table = self._normalize_table(
             self._ensure_table(table, dialect=dialect), dialect=dialect
         )
@@ -246,8 +244,6 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         only_visible: bool = False,
         dialect: DialectType = None,
     ) -> t.List[str]:
-        dialect = dialect or self.dialect
-
         normalized_table = self._normalize_table(
             self._ensure_table(table, dialect=dialect), dialect=dialect
         )
@@ -268,8 +264,6 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         column: exp.Column,
         dialect: DialectType = None,
     ) -> exp.DataType:
-        dialect = dialect or self.dialect
-
         normalized_table = self._normalize_table(
             self._ensure_table(table, dialect=dialect), dialect=dialect
         )
@@ -318,7 +312,6 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         return normalized_mapping
 
     def _normalize_table(self, table: exp.Table, dialect: DialectType = None) -> exp.Table:
-        dialect = dialect or self.dialect
         normalized_table = table.copy()
 
         for arg in TABLE_ARGS:

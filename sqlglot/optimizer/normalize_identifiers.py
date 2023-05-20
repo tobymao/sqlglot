@@ -1,6 +1,5 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import DialectType
-from sqlglot.helper import dialects_match
 
 
 def normalize_identifiers(
@@ -98,7 +97,7 @@ def _normalize(node: exp.Expression, dialect: DialectType = None) -> exp.Express
     if isinstance(node, exp.Identifier) and not node.quoted:
         node.set(
             "this",
-            node.this.upper() if dialects_match(dialect, "snowflake") else node.this.lower(),
+            node.this.upper() if dialect == "snowflake" else node.this.lower(),
         )
 
     return node

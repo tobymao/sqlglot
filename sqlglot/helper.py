@@ -422,15 +422,6 @@ def first(it: t.Iterable[T]) -> T:
     return next(i for i in it)
 
 
-def dialects_match(this: DialectType, other: DialectType) -> bool:
-    from sqlglot.dialects import Dialect
-
-    this = Dialect.get(this.lower()) if isinstance(this, str) else this
-    other = Dialect.get(other.lower()) if isinstance(other, str) else other
-
-    return bool(this and other and this.__name__ == other.__name__)
-
-
 def should_identify(text: str, identify: str | bool, dialect: DialectType = None) -> bool:
     """Checks if text should be identified given an identify option.
 
@@ -449,7 +440,7 @@ def should_identify(text: str, identify: str | bool, dialect: DialectType = None
         return True
 
     if identify == "safe":
-        unsafe = str.islower if dialects_match(dialect, "snowflake") else str.isupper
+        unsafe = str.islower if dialect == "snowflake" else str.isupper
         return not any(unsafe(char) for char in text)
 
     return False

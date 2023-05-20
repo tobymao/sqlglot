@@ -1,7 +1,7 @@
 import unittest
 
 from sqlglot.dialects import BigQuery, Dialect, Snowflake
-from sqlglot.helper import dialects_match, tsort
+from sqlglot.helper import tsort
 
 
 class TestHelper(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestHelper(unittest.TestCase):
                 }
             )
 
-    def test_dialects_match(self):
+    def test_compare_dialects(self):
         bigquery_class = Dialect["bigquery"]
         bigquery_object = BigQuery()
         bigquery_string = "bigquery"
@@ -40,17 +40,14 @@ class TestHelper(unittest.TestCase):
         snowflake_object = Snowflake()
         snowflake_string = "snowflake"
 
-        assert dialects_match(snowflake_class, snowflake_class)
-        assert dialects_match(snowflake_class, snowflake_object)
-        assert dialects_match(snowflake_class, snowflake_string)
-        assert dialects_match(snowflake_object, snowflake_object)
-        assert dialects_match(snowflake_object, snowflake_string)
-        assert dialects_match(snowflake_string, snowflake_string)
+        self.assertEqual(snowflake_class, snowflake_class)
+        self.assertEqual(snowflake_class, snowflake_object)
+        self.assertEqual(snowflake_class, snowflake_string)
+        self.assertEqual(snowflake_object, snowflake_object)
+        self.assertEqual(snowflake_object, snowflake_string)
 
-        assert not dialects_match(snowflake_class, bigquery_class)
-        assert not dialects_match(snowflake_class, bigquery_object)
-        assert not dialects_match(snowflake_class, bigquery_string)
-        assert not dialects_match(snowflake_object, bigquery_object)
-        assert not dialects_match(snowflake_object, bigquery_string)
-        assert not dialects_match(snowflake_string, bigquery_string)
-        assert not dialects_match(snowflake_string, None)
+        self.assertNotEqual(snowflake_class, bigquery_class)
+        self.assertNotEqual(snowflake_class, bigquery_object)
+        self.assertNotEqual(snowflake_class, bigquery_string)
+        self.assertNotEqual(snowflake_object, bigquery_object)
+        self.assertNotEqual(snowflake_object, bigquery_string)

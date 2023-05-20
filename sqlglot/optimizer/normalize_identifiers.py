@@ -25,6 +25,7 @@ def normalize_identifiers(
 
     Args:
         expression: The expression to transform.
+        dialect: The dialect to use in order to decide how to normalize identifiers.
 
     Returns:
         The transformed expression.

@@ -110,6 +110,10 @@ class Dialect(metaclass=_Dialect):
     parser_class = None
     generator_class = None
 
+    @property
+    def __name__(self) -> str:
+        return type(self).__name__  # type: ignore
+
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> t.Type[Dialect]:
         if not dialect:

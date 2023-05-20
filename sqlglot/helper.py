@@ -12,6 +12,7 @@ from enum import Enum
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
+    from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions import Expression
 
     T = t.TypeVar("T")
@@ -421,18 +422,33 @@ def first(it: t.Iterable[T]) -> T:
     return next(i for i in it)
 
 
-def should_identify(text: str, identify: str | bool) -> bool:
+def dialects_match(this: DialectType, other: DialectType) -> bool:
+    from sqlglot.dialects import Dialect
+
+    this = Dialect.get(this.lower()) if isinstance(this, str) else this
+    other = Dialect.get(other.lower()) if isinstance(other, str) else other
+
+    return bool(this and other and this.__name__ == other.__name__)
+
+
+def should_identify(text: str, identify: str | bool, dialect: DialectType = None) -> bool:
     """Checks if text should be identified given an identify option.
 
     Args:
         text: the text to check.
-        identify: "always" | True - always returns true, "safe" - true if no upper case
+        identify:
+            "always" or True: always returns true
+            "safe": true if no upper case or lower case for Snowflake because
+                identifiers are resolved in upper case.
 
     Returns:
         Whether or not a string should be identified.
     """
     if identify is True or identify == "always":
         return True
+
     if identify == "safe":
-        return not any(char.isupper() for char in text)
+        unsafe = str.islower if dialects_match(dialect, "snowflake") else str.isupper
+        return not any(unsafe(char) for char in text)
+
     return False

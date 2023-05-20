@@ -3179,6 +3179,7 @@ class DataType(Expression):
                 data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type[dtype.upper()])
             else:
                 data_type_exp = parse_one(dtype, read=dialect, into=DataType)
+
             if data_type_exp is None:
                 raise ValueError(f"Unparsable data type value: {dtype}")
         elif isinstance(dtype, DataType.Type):
@@ -3187,6 +3188,7 @@ class DataType(Expression):
             return dtype
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
+
         return DataType(**{**data_type_exp.args, **kwargs})
 
     def is_type(self, dtype: DataType.Type) -> bool:

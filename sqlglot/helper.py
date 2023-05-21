@@ -438,9 +438,9 @@ def should_identify(text: str, identify: str | bool, dialect: DialectType = None
     if identify is True or identify == "always":
         return True
 
-    from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
-
     if identify == "safe":
+        from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
+
         unsafe = str.islower if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
         return not any(unsafe(char) for char in text)
 

@@ -5,6 +5,7 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
+from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
 from sqlglot.errors import ParseError, SchemaError
 from sqlglot.helper import dict_depth
 from sqlglot.trie import in_trie, new_trie
@@ -334,9 +335,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         if identifier.quoted:
             return name
 
-        # Only Snowflake resolves unquoted identifiers as uppercase.
-        # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
-        return name.upper() if dialect == "snowflake" else name.lower()
+        return name.upper() if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else name.lower()
 
     def _depth(self) -> int:
         # The columns themselves are a mapping, but we don't want to include those

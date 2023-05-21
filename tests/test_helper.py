@@ -51,3 +51,8 @@ class TestHelper(unittest.TestCase):
         self.assertNotEqual(snowflake_class, bigquery_string)
         self.assertNotEqual(snowflake_object, bigquery_object)
         self.assertNotEqual(snowflake_object, bigquery_string)
+
+        self.assertTrue(snowflake_class in {"snowflake", "bigquery"})
+        self.assertTrue(snowflake_object in {"snowflake", "bigquery"})
+        self.assertFalse(snowflake_class in {"bigquery", "redshift"})
+        self.assertFalse(snowflake_object in {"bigquery", "redshift"})

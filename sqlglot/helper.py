@@ -26,7 +26,7 @@ logger = logging.getLogger("sqlglot")
 class AutoName(Enum):
     """This is used for creating enum classes where `auto()` is the string form of the corresponding value's name."""
 
-    def _generate_next_value_(name, _start, _count, _last_values):  # type: ignore
+    def _generate_next_value_(name, _start, _count, _last_values):
         return name
 
 
@@ -429,8 +429,7 @@ def should_identify(text: str, identify: str | bool, dialect: DialectType = None
         text: the text to check.
         identify:
             "always" or `True`: always returns true.
-            "safe": true if there is no upper case character in `text`, or lower case for Snowflake,
-                because its identifiers are resolved as uppercase.
+            "safe": true if there is no uppercase or lowercase character in `text`, depending on `dialect`.
         dialect: the dialect to use in order to decide whether a text should be identified.
 
     Returns:
@@ -439,8 +438,10 @@ def should_identify(text: str, identify: str | bool, dialect: DialectType = None
     if identify is True or identify == "always":
         return True
 
+    from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
+
     if identify == "safe":
-        unsafe = str.islower if dialect == "snowflake" else str.isupper
+        unsafe = str.islower if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
         return not any(unsafe(char) for char in text)
 
     return False

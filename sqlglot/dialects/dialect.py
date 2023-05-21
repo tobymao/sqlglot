@@ -14,6 +14,11 @@ from sqlglot.trie import new_trie
 E = t.TypeVar("E", bound=exp.Expression)
 
 
+# Only Snowflake is currently known to resolve unquoted identifiers as uppercase.
+# https://docs.snowflake.com/en/sql-reference/identifiers-syntax
+RESOLVES_IDENTIFIERS_AS_UPPERCASE = {"snowflake"}
+
+
 class Dialects(str, Enum):
     DIALECT = ""
 
@@ -42,10 +47,6 @@ class Dialects(str, Enum):
 class _Dialect(type):
     classes: t.Dict[str, t.Type[Dialect]] = {}
 
-    # This will ensure that equal _Dialects have the same hashes
-    # See https://docs.python.org/3/reference/datamodel.html#object.__hash__
-    __hash__ = type.__hash__
-
     def __eq__(cls, other: t.Any) -> bool:
         if cls is other:
             return True
@@ -55,6 +56,9 @@ class _Dialect(type):
             return cls is type(other)
 
         return False
+
+    def __hash__(cls) -> int:
+        return hash(cls.__name__.lower())
 
     @classmethod
     def __getitem__(cls, key: str) -> t.Type[Dialect]:
@@ -126,6 +130,9 @@ class Dialect(metaclass=_Dialect):
 
     def __eq__(self, other: t.Any) -> bool:
         return type(self) == other
+
+    def __hash__(self) -> int:
+        return hash(type(self))
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> t.Type[Dialect]:

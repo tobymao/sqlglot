@@ -822,3 +822,5 @@ SELECT NEXT VALUE FOR db.schema.sequence_name OVER (ORDER BY foo), col
 SELECT PERCENTILE_CONT(x, 0.5) OVER ()
 SELECT PERCENTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()
 SELECT PERCENTILE_CONT(x, 0.5 IGNORE NULLS) OVER ()
+WITH my_cte AS (SELECT 'a' AS desc) SELECT desc AS description FROM my_cte
+WITH my_cte AS (SELECT 'a' AS asc) SELECT asc AS description FROM my_cte

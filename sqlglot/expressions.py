@@ -1896,7 +1896,7 @@ class NoPrimaryIndexProperty(Property):
 
 
 class OnCommitProperty(Property):
-    arg_type = {"this": False}
+    arg_type = {"delete": False}
 
 
 class PartitionedByProperty(Property):

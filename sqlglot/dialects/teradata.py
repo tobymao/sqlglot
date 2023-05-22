@@ -141,7 +141,9 @@ class Teradata(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            exp.OnCommitProperty: exp.Properties.Location.POST_INDEX,
             exp.PartitionedByProperty: exp.Properties.Location.POST_INDEX,
+            exp.StabilityProperty: exp.Properties.Location.POST_CREATE,
         }
 
         TRANSFORMS = {

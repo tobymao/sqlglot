@@ -12,6 +12,7 @@ from enum import Enum
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
+    from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions import Expression
 
     T = t.TypeVar("T")
@@ -25,7 +26,7 @@ logger = logging.getLogger("sqlglot")
 class AutoName(Enum):
     """This is used for creating enum classes where `auto()` is the string form of the corresponding value's name."""
 
-    def _generate_next_value_(name, _start, _count, _last_values):  # type: ignore
+    def _generate_next_value_(name, _start, _count, _last_values):
         return name
 
 
@@ -421,18 +422,26 @@ def first(it: t.Iterable[T]) -> T:
     return next(i for i in it)
 
 
-def should_identify(text: str, identify: str | bool) -> bool:
+def should_identify(text: str, identify: str | bool, dialect: DialectType = None) -> bool:
     """Checks if text should be identified given an identify option.
 
     Args:
         text: the text to check.
-        identify: "always" | True - always returns true, "safe" - true if no upper case
+        identify:
+            "always" or `True`: always returns true.
+            "safe": true if there is no uppercase or lowercase character in `text`, depending on `dialect`.
+        dialect: the dialect to use in order to decide whether a text should be identified.
 
     Returns:
         Whether or not a string should be identified.
     """
     if identify is True or identify == "always":
         return True
+
     if identify == "safe":
-        return not any(char.isupper() for char in text)
+        from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
+
+        unsafe = str.islower if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
+        return not any(unsafe(char) for char in text)
+
     return False

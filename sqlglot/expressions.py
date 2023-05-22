@@ -3931,7 +3931,7 @@ class IfNull(Func):
 
 
 class Initcap(Func):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class JSONKeyValue(Expression):

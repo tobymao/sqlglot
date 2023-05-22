@@ -1212,28 +1212,21 @@ class Parser(metaclass=_Parser):
             expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
-                # exp.Properties.Location.POST_EXPRESSION
-                temp_properties = self._parse_properties()
-                if properties and temp_properties:
-                    properties.expressions.extend(temp_properties.expressions)
-                elif temp_properties:
-                    properties = temp_properties
-
                 indexes = []
                 while True:
                     index = self._parse_create_table_index()
 
-                    # exp.Properties.Location.POST_INDEX
-                    if self._match(TokenType.PARTITION_BY, advance=False):
-                        temp_properties = self._parse_properties()
-                        if properties and temp_properties:
-                            properties.expressions.extend(temp_properties.expressions)
-                        elif temp_properties:
-                            properties = temp_properties
+                    # exp.Properties.Location.POST_EXPRESSION or exp.Properties.Location.POST_INDEX
+                    temp_properties = self._parse_properties()
+                    if properties and temp_properties:
+                        properties.expressions.extend(temp_properties.expressions)
+                    elif temp_properties:
+                        properties = temp_properties
 
                     if not index:
                         break
                     else:
+                        self._match(TokenType.COMMA)
                         indexes.append(index)
             elif create_token.token_type == TokenType.VIEW:
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
@@ -1589,8 +1582,9 @@ class Parser(metaclass=_Parser):
         return exp.NoPrimaryIndexProperty()
 
     def _parse_oncommit(self) -> exp.Expression:
-        self._match_text_seq("COMMIT", "PRESERVE", "ROWS")
-        return exp.OnCommitProperty()
+        if self._match_text_seq("COMMIT", "PRESERVE", "ROWS"):
+            return exp.OnCommitProperty()
+        return exp.OnCommitProperty(delete=self._match_text_seq("COMMIT", "DELETE", "ROWS"))
 
     def _parse_distkey(self) -> exp.Expression:
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))

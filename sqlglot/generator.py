@@ -76,7 +76,7 @@ class Generator:
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.MaterializedProperty: lambda self, e: "MATERIALIZED",
         exp.NoPrimaryIndexProperty: lambda self, e: "NO PRIMARY INDEX",
-        exp.OnCommitProperty: lambda self, e: "ON COMMIT PRESERVE ROWS",
+        exp.OnCommitProperty: lambda self, e: f"ON COMMIT {'DELETE' if e.args.get('delete') else 'PRESERVE'} ROWS",
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",

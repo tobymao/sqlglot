@@ -187,4 +187,5 @@ ENV = {
     "CURRENTTIMESTAMP": datetime.datetime.now,
     "CURRENTTIME": datetime.datetime.now,
     "CURRENTDATE": datetime.date.today,
+    "STRFTIME": null_if_any(lambda fmt, arg: datetime.datetime.fromisoformat(arg).strftime(fmt)),
 }

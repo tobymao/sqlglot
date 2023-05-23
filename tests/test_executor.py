@@ -596,6 +596,7 @@ class TestExecutor(unittest.TestCase):
             ("1::bool", True),
             ("0::bool", False),
             ("MAP(['a'], [1]).a", 1),
+            ("STRFTIME('%j', '2023-03-23 15:00:00')", "082"),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

@@ -797,7 +797,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._start = 0
         self._current = 0
         self._line = 1
-        self._col = 1
+        self._col = 0
         self._comments: t.List[str] = []
 
         self._char = ""

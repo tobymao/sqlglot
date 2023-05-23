@@ -797,7 +797,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._start = 0
         self._current = 0
         self._line = 1
-        self._col = 1
+        self._col = 0
         self._comments: t.List[str] = []
 
         self._char = ""
@@ -810,13 +810,12 @@ class Tokenizer(metaclass=_Tokenizer):
         self.reset()
         self.sql = sql
         self.size = len(sql)
+
         try:
             self._scan()
         except Exception as e:
-            start = self._current - 50
-            end = self._current + 50
-            start = start if start > 0 else 0
-            end = end if end < self.size else self.size - 1
+            start = max(self._current - 50, 0)
+            end = min(self._current + 50, self.size - 1)
             context = self.sql[start:end]
             raise ValueError(f"Error tokenizing '{context}'") from e
 
@@ -841,17 +840,17 @@ class Tokenizer(metaclass=_Tokenizer):
             if until and until():
                 break
 
-        if self.tokens:
+        if self.tokens and self._comments:
             self.tokens[-1].comments.extend(self._comments)
 
     def _chars(self, size: int) -> str:
         if size == 1:
             return self._char
+
         start = self._current - 1
         end = start + size
-        if end <= self.size:
-            return self.sql[start:end]
-        return ""
+
+        return self.sql[start:end] if end <= self.size else ""
 
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
@@ -866,6 +865,7 @@ class Tokenizer(metaclass=_Tokenizer):
         self._peek = "" if self._end else self.sql[self._current]
 
         if alnum and self._char.isalnum():
+            # Here we use local variables instead of attributes for better performance
             _col = self._col
             _current = self._current
             _end = self._end

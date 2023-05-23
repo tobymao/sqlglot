@@ -367,8 +367,7 @@ class Token:
     @property
     def start(self) -> int:
         """Returns the start of the token."""
-        start = self.end - len(self.text)
-        return start - 2 if self.token_type == TokenType.IDENTIFIER else start
+        return self.end - len(self.text)
 
     def __repr__(self) -> str:
         attributes = ", ".join(f"{k}: {getattr(self, k)}" for k in self.__slots__)

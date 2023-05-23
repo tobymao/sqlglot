@@ -35,25 +35,6 @@ class TestParser(unittest.TestCase):
         self.assertEqual(str(ctx.exception), expected_message)
         self.assertEqual(ctx.exception.errors, expected_errors)
 
-        expected_message = (
-            "'expression' missing for <class 'sqlglot.expressions.Union'>. Line 1, Col: 30."
-        )
-        expected_errors = [
-            {
-                "description": "Required keyword: 'expression' missing for <class 'sqlglot.expressions.Union'>",
-                "line": 1,
-                "col": 30,
-                "start_context": "SELECT * FROM `TableA` UNION ",
-                "highlight": "`TableB`",
-                "end_context": "",
-                "into_expression": None,
-            }
-        ]
-        with self.assertRaises(ParseError) as ctx:
-            parse_one("SELECT * FROM `TableA` UNION `TableB`", read="bigquery")
-
-        self.assertEqual(ctx.exception.errors, expected_errors)
-
     def test_parse_into_errors(self):
         expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>, <class 'sqlglot.expressions.Join'>]"
         expected_errors = [

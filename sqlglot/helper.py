@@ -12,7 +12,6 @@ from enum import Enum
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
-    from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions import Expression
 
     T = t.TypeVar("T")
@@ -422,26 +421,18 @@ def first(it: t.Iterable[T]) -> T:
     return next(i for i in it)
 
 
-def should_identify(text: str, identify: str | bool, dialect: DialectType = None) -> bool:
+def should_identify(text: str, identify: str | bool) -> bool:
     """Checks if text should be identified given an identify option.
 
     Args:
         text: the text to check.
-        identify:
-            "always" or `True`: always returns true.
-            "safe": true if there is no uppercase or lowercase character in `text`, depending on `dialect`.
-        dialect: the dialect to use in order to decide whether a text should be identified.
+        identify: "always" | True - always returns true, "safe" - true if no upper case
 
     Returns:
         Whether or not a string should be identified.
     """
     if identify is True or identify == "always":
         return True
-
     if identify == "safe":
-        from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
-
-        unsafe = str.islower if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
-        return not any(unsafe(char) for char in text)
-
+        return not any(char.isupper() for char in text)
     return False

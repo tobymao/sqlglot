@@ -6,7 +6,7 @@ from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.generator import cached_generator
 from sqlglot.helper import while_changing
-from sqlglot.optimizer.simplify import flatten, uniq_sort
+from sqlglot.optimizer.simplify import flatten, rewrite_between, uniq_sort
 
 logger = logging.getLogger("sqlglot")
 
@@ -34,7 +34,10 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
         if isinstance(node, exp.Connector):
             if normalized(node, dnf=dnf):
                 continue
+            root = node is expression
+            original = node.copy()
 
+            node.transform(rewrite_between, copy=False)
             distance = normalization_distance(node, dnf=dnf)
 
             if distance > max_distance:
@@ -43,8 +46,6 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
                 )
                 return expression
 
-            root = node is expression
-            original = node.copy()
             try:
                 node = node.replace(
                     while_changing(node, lambda e: distributive_law(e, dnf, max_distance, generate))

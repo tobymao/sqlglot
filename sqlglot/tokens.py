@@ -325,7 +325,7 @@ class TokenType(AutoName):
 
 
 class Token:
-    __slots__ = ("token_type", "text", "line", "col", "end", "comments")
+    __slots__ = ("token_type", "text", "line", "col", "start", "end", "comments")
 
     @classmethod
     def number(cls, number: int) -> Token:
@@ -353,21 +353,27 @@ class Token:
         text: str,
         line: int = 1,
         col: int = 1,
+        start: int = 0,
         end: int = 0,
         comments: t.List[str] = [],
     ) -> None:
+        """Token initializer.
+
+        Args:
+            token_type: The TokenType Enum.
+            text: The text of the token.
+            line: The line that the token ends on.
+            col: The column that the token ends on.
+            start: The start index of the token.
+            end: The ending index of the token.
+        """
         self.token_type = token_type
         self.text = text
         self.line = line
-        size = len(text)
         self.col = col
-        self.end = end if end else size
+        self.start = start
+        self.end = end
         self.comments = comments
-
-    @property
-    def start(self) -> int:
-        """Returns the start of the token."""
-        return self.end - len(self.text)
 
     def __repr__(self) -> str:
         attributes = ", ".join(f"{k}: {getattr(self, k)}" for k in self.__slots__)
@@ -892,11 +898,12 @@ class Tokenizer(metaclass=_Tokenizer):
         self.tokens.append(
             Token(
                 token_type,
-                self._text if text is None else text,
-                self._line,
-                self._col,
-                self._current,
-                self._comments,
+                text=self._text if text is None else text,
+                line=self._line,
+                col=self._col,
+                start=self._start,
+                end=self._current - 1,
+                comments=self._comments,
             )
         )
         self._comments = []

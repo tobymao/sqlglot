@@ -44,6 +44,10 @@ x"""
         self.assertEqual(tokens[1].line, 1)
         self.assertEqual(tokens[1].col, 8)
 
+        self.assertEqual(Tokenizer().tokenize("'''abc'")[0].start, 0)
+        self.assertEqual(Tokenizer().tokenize("'''abc'")[0].end, 6)
+        self.assertEqual(Tokenizer().tokenize("'abc'")[0].start, 0)
+
     def test_command(self):
         tokens = Tokenizer().tokenize("SHOW;")
         self.assertEqual(tokens[0].token_type, TokenType.SHOW)

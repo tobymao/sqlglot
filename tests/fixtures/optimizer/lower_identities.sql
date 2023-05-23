@@ -1,19 +1,11 @@
 SELECT a FROM x;
 SELECT a FROM x;
 
-# dialect: snowflake
-SELECT A FROM X;
-SELECT A FROM X;
-
 SELECT "A" FROM "X";
 SELECT "A" FROM "X";
 
 SELECT a AS A FROM x;
 SELECT a AS A FROM x;
-
-# dialect: snowflake
-SELECT A AS a FROM X;
-SELECT A AS a FROM X;
 
 SELECT * FROM x;
 SELECT * FROM x;
@@ -21,16 +13,8 @@ SELECT * FROM x;
 SELECT A FROM x;
 SELECT a FROM x;
 
-# dialect: snowflake
-SELECT a FROM X;
-SELECT A FROM X;
-
 SELECT a FROM X;
 SELECT a FROM x;
-
-# dialect: snowflake
-SELECT A FROM x;
-SELECT A FROM X;
 
 SELECT A AS A FROM (SELECT a AS A FROM x);
 SELECT a AS A FROM (SELECT a AS a FROM x);

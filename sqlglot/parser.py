@@ -942,7 +942,7 @@ class Parser(metaclass=_Parser):
         """
         token = token or self._curr or self._prev or Token.string("")
         start = token.start
-        end = token.end
+        end = token.end + 1
         start_context = self.sql[max(start - self.error_message_context, 0) : start]
         highlight = self.sql[start:end]
         end_context = self.sql[end : end + self.error_message_context]
@@ -1005,7 +1005,7 @@ class Parser(metaclass=_Parser):
             self.raise_error(error_message)
 
     def _find_sql(self, start: Token, end: Token) -> str:
-        return self.sql[start.start : end.end]
+        return self.sql[start.start : end.end + 1]
 
     def _advance(self, times: int = 1) -> None:
         self._index += times

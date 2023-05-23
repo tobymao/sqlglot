@@ -555,14 +555,14 @@ FROM v""",
     def test_error_level(self, logger):
         invalid = "x + 1. ("
         expected_messages = [
-            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 9.\n  x + 1. \033[4m(\033[0m",
-            "Expecting ). Line 1, Col: 9.\n  x + 1. \033[4m(\033[0m",
+            "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>. Line 1, Col: 8.\n  x + 1. \033[4m(\033[0m",
+            "Expecting ). Line 1, Col: 8.\n  x + 1. \033[4m(\033[0m",
         ]
         expected_errors = [
             {
                 "description": "Required keyword: 'expressions' missing for <class 'sqlglot.expressions.Aliases'>",
                 "line": 1,
-                "col": 9,
+                "col": 8,
                 "start_context": "x + 1. ",
                 "highlight": "(",
                 "end_context": "",
@@ -571,7 +571,7 @@ FROM v""",
             {
                 "description": "Expecting )",
                 "line": 1,
-                "col": 9,
+                "col": 8,
                 "start_context": "x + 1. ",
                 "highlight": "(",
                 "end_context": "",
@@ -585,26 +585,28 @@ FROM v""",
 
         with self.assertRaises(ParseError) as ctx:
             transpile(invalid, error_level=ErrorLevel.IMMEDIATE)
+
         self.assertEqual(str(ctx.exception), expected_messages[0])
         self.assertEqual(ctx.exception.errors[0], expected_errors[0])
 
         with self.assertRaises(ParseError) as ctx:
             transpile(invalid, error_level=ErrorLevel.RAISE)
+
         self.assertEqual(str(ctx.exception), "\n\n".join(expected_messages))
         self.assertEqual(ctx.exception.errors, expected_errors)
 
         more_than_max_errors = "(((("
         expected_messages = (
-            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Paren'>. Line 1, Col: 5.\n  (((\033[4m(\033[0m\n\n"
-            "Expecting ). Line 1, Col: 5.\n  (((\033[4m(\033[0m\n\n"
-            "Expecting ). Line 1, Col: 5.\n  (((\033[4m(\033[0m\n\n"
+            "Required keyword: 'this' missing for <class 'sqlglot.expressions.Paren'>. Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
+            "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
+            "Expecting ). Line 1, Col: 4.\n  (((\033[4m(\033[0m\n\n"
             "... and 2 more"
         )
         expected_errors = [
             {
                 "description": "Required keyword: 'this' missing for <class 'sqlglot.expressions.Paren'>",
                 "line": 1,
-                "col": 5,
+                "col": 4,
                 "start_context": "(((",
                 "highlight": "(",
                 "end_context": "",
@@ -613,7 +615,7 @@ FROM v""",
             {
                 "description": "Expecting )",
                 "line": 1,
-                "col": 5,
+                "col": 4,
                 "start_context": "(((",
                 "highlight": "(",
                 "end_context": "",
@@ -625,6 +627,7 @@ FROM v""",
 
         with self.assertRaises(ParseError) as ctx:
             transpile(more_than_max_errors, error_level=ErrorLevel.RAISE)
+
         self.assertEqual(str(ctx.exception), expected_messages)
         self.assertEqual(ctx.exception.errors, expected_errors)
 

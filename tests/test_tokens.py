@@ -20,7 +20,7 @@ class TestTokens(unittest.TestCase):
         for sql, comment in sql_comment:
             self.assertEqual(tokenizer.tokenize(sql)[0].comments, comment)
 
-    def test_token_line(self):
+    def test_token_line_col(self):
         tokens = Tokenizer().tokenize(
             """SELECT /*
 line break
@@ -30,10 +30,19 @@ line break
 x"""
         )
 
-        self.assertEqual(tokens[1].line, 5)
-        self.assertEqual(tokens[1].col, 3)
-        self.assertEqual(tokens[-1].line, 6)
-        self.assertEqual(tokens[-1].col, 1)
+        self.assertEqual(tokens[0].line, 1)
+        self.assertEqual(tokens[0].col, 1)
+        self.assertEqual(tokens[1].line, 4)
+        self.assertEqual(tokens[1].col, 1)
+        self.assertEqual(tokens[2].line, 5)
+        self.assertEqual(tokens[2].col, 3)
+        self.assertEqual(tokens[3].line, 6)
+        self.assertEqual(tokens[3].col, 1)
+
+        tokens = Tokenizer().tokenize("SELECT .")
+
+        self.assertEqual(tokens[1].line, 1)
+        self.assertEqual(tokens[1].col, 8)
 
     def test_command(self):
         tokens = Tokenizer().tokenize("SHOW;")
@@ -51,7 +60,7 @@ x"""
         self.assertEqual(tokens[3].token_type, TokenType.SEMICOLON)
 
     def test_error_msg(self):
-        with self.assertRaisesRegex(ValueError, "Error tokenizing 'select.*"):
+        with self.assertRaisesRegex(ValueError, "Error tokenizing 'select /'"):
             Tokenizer().tokenize("select /*")
 
     def test_jinja(self):

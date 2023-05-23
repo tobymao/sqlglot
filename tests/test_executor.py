@@ -595,6 +595,7 @@ class TestExecutor(unittest.TestCase):
             ("YEAR(CURRENT_DATE()) <> (YEAR(CURRENT_DATE()))", False),
             ("1::bool", True),
             ("0::bool", False),
+            ("MAP(['a'], [1]).a", 1),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

@@ -42,6 +42,19 @@ class Dialects(str, Enum):
 class _Dialect(type):
     classes: t.Dict[str, t.Type[Dialect]] = {}
 
+    def __eq__(cls, other: t.Any) -> bool:
+        if cls is other:
+            return True
+        if isinstance(other, str):
+            return cls is cls.get(other)
+        if isinstance(other, Dialect):
+            return cls is type(other)
+
+        return False
+
+    def __hash__(cls) -> int:
+        return hash(cls.__name__.lower())
+
     @classmethod
     def __getitem__(cls, key: str) -> t.Type[Dialect]:
         return cls.classes[key]
@@ -109,6 +122,12 @@ class Dialect(metaclass=_Dialect):
     tokenizer_class = None
     parser_class = None
     generator_class = None
+
+    def __eq__(self, other: t.Any) -> bool:
+        return type(self) == other
+
+    def __hash__(self) -> int:
+        return hash(type(self))
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> t.Type[Dialect]:

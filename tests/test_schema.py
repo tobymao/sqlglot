@@ -210,14 +210,10 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(schema.column_names(table_z), ["a", "B"])
         self.assertEqual(schema.column_names(table_w), ["c"])
 
-        # Clickhouse supports both `` and "" for identifier quotes; sqlglot uses "" when generating sql
         schema = MappingSchema(schema={"x": {"`y`": "INT"}}, dialect="clickhouse")
         self.assertEqual(schema.column_names(exp.Table(this="x")), ["y"])
 
-        # Check that add_table normalizes both the table and the column names to be added/updated
+        # Check that add_table normalizes both the table and the column names to be added / updated
         schema = MappingSchema()
         schema.add_table("Foo", {"SomeColumn": "INT", '"SomeColumn"': "DOUBLE"})
-
-        table_foo = exp.Table(this="fOO")
-
-        self.assertEqual(schema.column_names(table_foo), ["somecolumn", "SomeColumn"])
+        self.assertEqual(schema.column_names(exp.Table(this="fOO")), ["somecolumn", "SomeColumn"])

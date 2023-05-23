@@ -22,7 +22,7 @@ class TestParser(unittest.TestCase):
             {
                 "description": "Invalid expression / Unexpected token",
                 "line": 1,
-                "col": 7,
+                "col": 6,
                 "start_context": "",
                 "highlight": "SELECT",
                 "end_context": " 1;",
@@ -30,7 +30,8 @@ class TestParser(unittest.TestCase):
             }
         ]
         with self.assertRaises(ParseError) as ctx:
-            parse_one("SELECT 1;", "sqlite", [exp.From])
+            parse_one("SELECT 1;", read="sqlite", into=[exp.From])
+
         self.assertEqual(str(ctx.exception), expected_message)
         self.assertEqual(ctx.exception.errors, expected_errors)
 
@@ -40,7 +41,7 @@ class TestParser(unittest.TestCase):
             {
                 "description": "Invalid expression / Unexpected token",
                 "line": 1,
-                "col": 7,
+                "col": 6,
                 "start_context": "",
                 "highlight": "SELECT",
                 "end_context": " 1;",
@@ -49,7 +50,7 @@ class TestParser(unittest.TestCase):
             {
                 "description": "Invalid expression / Unexpected token",
                 "line": 1,
-                "col": 7,
+                "col": 6,
                 "start_context": "",
                 "highlight": "SELECT",
                 "end_context": " 1;",
@@ -58,6 +59,7 @@ class TestParser(unittest.TestCase):
         ]
         with self.assertRaises(ParseError) as ctx:
             parse_one("SELECT 1;", "sqlite", [exp.From, exp.Join])
+
         self.assertEqual(str(ctx.exception), expected_message)
         self.assertEqual(ctx.exception.errors, expected_errors)
 

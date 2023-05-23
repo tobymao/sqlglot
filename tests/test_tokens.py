@@ -31,9 +31,9 @@ x"""
         )
 
         self.assertEqual(tokens[0].line, 1)
-        self.assertEqual(tokens[0].col, 1)
-        self.assertEqual(tokens[1].line, 4)
-        self.assertEqual(tokens[1].col, 1)
+        self.assertEqual(tokens[0].col, 6)
+        self.assertEqual(tokens[1].line, 5)
+        self.assertEqual(tokens[1].col, 3)
         self.assertEqual(tokens[2].line, 5)
         self.assertEqual(tokens[2].col, 3)
         self.assertEqual(tokens[3].line, 6)

@@ -777,7 +777,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "size",
         "tokens",
         "_start",
-        "_start_col",
         "_current",
         "_line",
         "_col",
@@ -796,7 +795,6 @@ class Tokenizer(metaclass=_Tokenizer):
         self.size = 0
         self.tokens: t.List[Token] = []
         self._start = 0
-        self._start_col = 1
         self._current = 0
         self._line = 1
         self._col = 1
@@ -825,11 +823,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan(self, until: t.Optional[t.Callable] = None) -> None:
         while self.size and not self._end:
-            prev_col = self._col
             self._start = self._current
-
             self._advance()
-            self._start_col = prev_col if self._col != 1 else self._col
 
             if self._char is None:
                 break
@@ -892,16 +887,14 @@ class Tokenizer(metaclass=_Tokenizer):
     def _text(self) -> str:
         return self.sql[self._start : self._current]
 
-    def _add(
-        self, token_type: TokenType, text: t.Optional[str] = None, line: t.Optional[int] = None
-    ) -> None:
+    def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
         self._prev_token_line = self._line
         self.tokens.append(
             Token(
                 token_type,
                 self._text if text is None else text,
-                line or self._line,
-                self._start_col,
+                self._line,
+                self._col,
                 self._current,
                 self._comments,
             )
@@ -1096,15 +1089,10 @@ class Tokenizer(metaclass=_Tokenizer):
         if quote_end is None:
             return False
 
-        line = self._line
         self._advance(len(quote))
-
         text = self._extract_string(quote_end)
         text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
-
-        self._add(
-            TokenType.NATIONAL if quote[0].upper() == "N" else TokenType.STRING, text, line=line
-        )
+        self._add(TokenType.NATIONAL if quote[0].upper() == "N" else TokenType.STRING, text)
         return True
 
     # X'1234', b'0110', E'\\\\\' etc.
@@ -1133,7 +1121,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 int(text, base)
             except:
                 raise RuntimeError(
-                    f"Numeric string contains invalid characters from {self._line}:{self._start_col}"
+                    f"Numeric string contains invalid characters from {self._line}:{self._start}"
                 )
 
         self._add(token_type, text)
@@ -1181,7 +1169,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     break
 
                 if self._end:
-                    raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._start_col}")
+                    raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 current = self._current - 1
                 self._advance(alnum=True)

@@ -22,7 +22,7 @@ class TestParser(unittest.TestCase):
             {
                 "description": "Invalid expression / Unexpected token",
                 "line": 1,
-                "col": 1,
+                "col": 6,
                 "start_context": "",
                 "highlight": "SELECT",
                 "end_context": " 1;",
@@ -41,7 +41,7 @@ class TestParser(unittest.TestCase):
             {
                 "description": "Invalid expression / Unexpected token",
                 "line": 1,
-                "col": 1,
+                "col": 6,
                 "start_context": "",
                 "highlight": "SELECT",
                 "end_context": " 1;",
@@ -50,7 +50,7 @@ class TestParser(unittest.TestCase):
             {
                 "description": "Invalid expression / Unexpected token",
                 "line": 1,
-                "col": 1,
+                "col": 6,
                 "start_context": "",
                 "highlight": "SELECT",
                 "end_context": " 1;",

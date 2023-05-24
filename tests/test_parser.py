@@ -15,6 +15,14 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("left join foo", into=exp.Join), exp.Join)
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
+        self.assertIsInstance(parse_one("foo", into=exp.Table), exp.Table)
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one("SELECT * FROM tbl", into=exp.Table)
+
+        self.assertEqual(
+            str(ctx.exception), "Failed to parse into <class 'sqlglot.expressions.Table'>",
+        )
 
     def test_parse_into_error(self):
         expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>]"

@@ -469,7 +469,7 @@ class Parser(metaclass=_Parser):
         exp.Limit: lambda self: self._parse_limit(),
         exp.Offset: lambda self: self._parse_offset(),
         exp.TableAlias: lambda self: self._parse_table_alias(),
-        exp.Table: lambda self: self._parse_table(),
+        exp.Table: lambda self: self._parse_table_parts(),
         exp.Condition: lambda self: self._parse_conjunction(),
         exp.Expression: lambda self: self._parse_statement(),
         exp.Properties: lambda self: self._parse_properties(),
@@ -2255,7 +2255,7 @@ class Parser(metaclass=_Parser):
             or self._parse_placeholder()
         )
 
-    def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+    def _parse_table_parts(self, schema: bool = False) -> exp.Table:
         catalog = None
         db = None
         table = self._parse_table_part(schema=schema)

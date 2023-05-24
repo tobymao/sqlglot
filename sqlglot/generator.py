@@ -81,7 +81,7 @@ class Generator:
         exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
-        exp.TemporaryProperty: lambda self, e: f"{'GLOBAL ' if e.args.get('global_') else ''}TEMPORARY",
+        exp.TemporaryProperty: lambda self, e: f"TEMPORARY",
         exp.TransientProperty: lambda self, e: "TRANSIENT",
         exp.StabilityProperty: lambda self, e: e.name,
         exp.VolatileProperty: lambda self, e: "VOLATILE",
@@ -174,7 +174,6 @@ class Generator:
     PARAMETER_TOKEN = "@"
 
     PROPERTIES_LOCATION = {
-        exp.AfterJournalProperty: exp.Properties.Location.POST_NAME,
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
         exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA,
         exp.BlockCompressionProperty: exp.Properties.Location.POST_NAME,
@@ -992,22 +991,17 @@ class Generator:
 
     def journalproperty_sql(self, expression: exp.JournalProperty) -> str:
         no = "NO " if expression.args.get("no") else ""
+        local = expression.args.get("local")
+        local = f"{local} " if local else ""
         dual = "DUAL " if expression.args.get("dual") else ""
         before = "BEFORE " if expression.args.get("before") else ""
-        return f"{no}{dual}{before}JOURNAL"
+        after = "AFTER " if expression.args.get("after") else ""
+        return f"{no}{local}{dual}{before}{after}JOURNAL"
 
     def freespaceproperty_sql(self, expression: exp.FreespaceProperty) -> str:
         freespace = self.sql(expression, "this")
         percent = " PERCENT" if expression.args.get("percent") else ""
         return f"FREESPACE={freespace}{percent}"
-
-    def afterjournalproperty_sql(self, expression: exp.AfterJournalProperty) -> str:
-        no = "NO " if expression.args.get("no") else ""
-        dual = "DUAL " if expression.args.get("dual") else ""
-        local = ""
-        if expression.args.get("local") is not None:
-            local = "LOCAL " if expression.args.get("local") else "NOT LOCAL "
-        return f"{no}{dual}{local}AFTER JOURNAL"
 
     def checksumproperty_sql(self, expression: exp.ChecksumProperty) -> str:
         if expression.args.get("default"):
@@ -1029,19 +1023,19 @@ class Generator:
 
     def datablocksizeproperty_sql(self, expression: exp.DataBlocksizeProperty) -> str:
         default = expression.args.get("default")
-        min = expression.args.get("min")
-        if default is not None or min is not None:
+        minimum = expression.args.get("minimum")
+        maximum = expression.args.get("maximum")
+        if default or minimum or maximum:
             if default:
-                property = "DEFAULT"
-            elif min:
-                property = "MINIMUM"
+                prop = "DEFAULT"
+            elif minimum:
+                prop = "MINIMUM"
             else:
-                property = "MAXIMUM"
-            return f"{property} DATABLOCKSIZE"
-        else:
-            units = expression.args.get("units")
-            units = f" {units}" if units else ""
-            return f"DATABLOCKSIZE={self.sql(expression, 'size')}{units}"
+                prop = "MAXIMUM"
+            return f"{prop} DATABLOCKSIZE"
+        units = expression.args.get("units")
+        units = f" {units}" if units else ""
+        return f"DATABLOCKSIZE={self.sql(expression, 'size')}{units}"
 
     def blockcompressionproperty_sql(self, expression: exp.BlockCompressionProperty) -> str:
         autotemp = expression.args.get("autotemp")
@@ -1051,16 +1045,16 @@ class Generator:
         never = expression.args.get("never")
 
         if autotemp is not None:
-            property = f"AUTOTEMP({self.expressions(autotemp)})"
+            prop = f"AUTOTEMP({self.expressions(autotemp)})"
         elif always:
-            property = "ALWAYS"
+            prop = "ALWAYS"
         elif default:
-            property = "DEFAULT"
+            prop = "DEFAULT"
         elif manual:
-            property = "MANUAL"
+            prop = "MANUAL"
         elif never:
-            property = "NEVER"
-        return f"BLOCKCOMPRESSION={property}"
+            prop = "NEVER"
+        return f"BLOCKCOMPRESSION={prop}"
 
     def isolatedloadingproperty_sql(self, expression: exp.IsolatedLoadingProperty) -> str:
         no = expression.args.get("no")

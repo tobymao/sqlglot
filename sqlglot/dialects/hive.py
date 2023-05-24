@@ -278,9 +278,9 @@ class Hive(Dialect):
 
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
-            "distribute": lambda self: self._parse_sort(TokenType.DISTRIBUTE_BY, exp.Distribute),
-            "sort": lambda self: self._parse_sort(TokenType.SORT_BY, exp.Sort),
-            "cluster": lambda self: self._parse_sort(TokenType.CLUSTER_BY, exp.Cluster),
+            "distribute": lambda self: self._parse_sort(exp.Distribute, "DISTRIBUTE", "BY"),
+            "sort": lambda self: self._parse_sort(exp.Sort, "SORT", "BY"),
+            "cluster": lambda self: self._parse_sort(exp.Cluster, "CLUSTER", "BY"),
         }
 
     class Generator(generator.Generator):

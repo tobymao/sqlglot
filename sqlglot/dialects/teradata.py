@@ -75,12 +75,12 @@ class Teradata(Dialect):
         FUNC_TOKENS.remove(TokenType.REPLACE)
 
         STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,  # type: ignore
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.REPLACE: lambda self: self._parse_create(),
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,  # type: ignore
+            **parser.Parser.FUNCTION_PARSERS,
             "RANGE_N": lambda self: self._parse_rangen(),
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
@@ -135,12 +135,12 @@ class Teradata(Dialect):
         TABLE_HINTS = False
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.OnCommitProperty: exp.Properties.Location.POST_INDEX,
             exp.PartitionedByProperty: exp.Properties.Location.POST_INDEX,
             exp.StabilityProperty: exp.Properties.Location.POST_CREATE,

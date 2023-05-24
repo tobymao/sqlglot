@@ -225,7 +225,7 @@ class Hive(Dialect):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "BASE64": exp.ToBase64.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
@@ -270,7 +270,7 @@ class Hive(Dialect):
         }
 
         PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,  # type: ignore
+            **parser.Parser.PROPERTY_PARSERS,
             "WITH SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
@@ -291,7 +291,7 @@ class Hive(Dialect):
         TABLE_HINTS = False
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "BINARY",
@@ -300,7 +300,7 @@ class Hive(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Select: transforms.preprocess(
                 [
@@ -372,7 +372,7 @@ class Hive(Dialect):
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,

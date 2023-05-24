@@ -68,7 +68,7 @@ class SQLite(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
 
@@ -77,7 +77,7 @@ class SQLite(Dialect):
         TABLE_HINTS = False
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "INTEGER",
             exp.DataType.Type.TINYINT: "INTEGER",
             exp.DataType.Type.SMALLINT: "INTEGER",
@@ -99,7 +99,7 @@ class SQLite(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.CountIf: count_if_to_sum,
             exp.Create: transforms.preprocess([_transform_create]),
             exp.CurrentDate: lambda *_: "CURRENT_DATE",

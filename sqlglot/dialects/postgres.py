@@ -256,7 +256,7 @@ class Postgres(Dialect):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
@@ -272,7 +272,7 @@ class Postgres(Dialect):
         }
 
         BITWISE = {
-            **parser.Parser.BITWISE,  # type: ignore
+            **parser.Parser.BITWISE,
             TokenType.HASH: exp.BitwiseXor,
         }
 
@@ -281,7 +281,7 @@ class Postgres(Dialect):
         }
 
         RANGE_PARSERS = {
-            **parser.Parser.RANGE_PARSERS,  # type: ignore
+            **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
             TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
@@ -311,7 +311,7 @@ class Postgres(Dialect):
         PARAMETER_TOKEN = "$"
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "SMALLINT",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
@@ -321,7 +321,7 @@ class Postgres(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: transforms.preprocess(
                 [
@@ -371,7 +371,7 @@ class Postgres(Dialect):
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

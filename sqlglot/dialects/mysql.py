@@ -176,10 +176,10 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
-        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}  # type: ignore
+        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
             "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
@@ -192,7 +192,7 @@ class MySQL(Dialect):
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,  # type: ignore
+            **parser.Parser.FUNCTION_PARSERS,
             "GROUP_CONCAT": lambda self: self.expression(
                 exp.GroupConcat,
                 this=self._parse_lambda(),
@@ -201,7 +201,7 @@ class MySQL(Dialect):
         }
 
         STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,  # type: ignore
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
@@ -382,7 +382,7 @@ class MySQL(Dialect):
         TABLE_HINTS = False
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
             exp.DateAdd: _date_add_sql("ADD"),
@@ -419,7 +419,7 @@ class MySQL(Dialect):
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

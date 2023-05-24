@@ -117,7 +117,7 @@ class DuckDB(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_REVERSE_SORT": _sort_array_reverse,
@@ -240,7 +240,7 @@ class DuckDB(Dialect):
         STAR_MAPPING = {**generator.Generator.STAR_MAPPING, "except": "EXCLUDE"}
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 

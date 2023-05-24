@@ -57,7 +57,7 @@ class ClickHouse(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
@@ -249,7 +249,7 @@ class ClickHouse(Dialect):
         STRUCT_DELIMITER = ("(", ")")
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.ARRAY: "Array",
             exp.DataType.Type.BIGINT: "Int64",
             exp.DataType.Type.DATETIME64: "DateTime64",
@@ -272,7 +272,7 @@ class ClickHouse(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
             exp.Array: inline_array_sql,
@@ -289,7 +289,7 @@ class ClickHouse(Dialect):
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         }

@@ -107,7 +107,7 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
 class Spark2(Hive):
     class Parser(Hive.Parser):
         FUNCTIONS = {
-            **Hive.Parser.FUNCTIONS,  # type: ignore
+            **Hive.Parser.FUNCTIONS,
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "LEFT": lambda args: exp.Substring(
@@ -161,7 +161,7 @@ class Spark2(Hive):
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,  # type: ignore
+            **parser.Parser.FUNCTION_PARSERS,
             "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
             "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
             "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
@@ -189,14 +189,14 @@ class Spark2(Hive):
 
     class Generator(Hive.Generator):
         TYPE_MAPPING = {
-            **Hive.Generator.TYPE_MAPPING,  # type: ignore
+            **Hive.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "BYTE",
             exp.DataType.Type.SMALLINT: "SHORT",
             exp.DataType.Type.BIGINT: "LONG",
         }
 
         PROPERTIES_LOCATION = {
-            **Hive.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **Hive.Generator.PROPERTIES_LOCATION,
             exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,
             exp.AutoIncrementProperty: exp.Properties.Location.UNSUPPORTED,
             exp.CharacterSetProperty: exp.Properties.Location.UNSUPPORTED,
@@ -204,7 +204,7 @@ class Spark2(Hive):
         }
 
         TRANSFORMS = {
-            **Hive.Generator.TRANSFORMS,  # type: ignore
+            **Hive.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
             exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",

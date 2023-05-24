@@ -95,7 +95,7 @@ class Drill(Dialect):
         STRICT_CAST = False
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "drill"),
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "drill"),
@@ -108,7 +108,7 @@ class Drill(Dialect):
         TABLE_HINTS = False
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.SMALLINT: "INTEGER",
             exp.DataType.Type.TINYINT: "INTEGER",
@@ -121,13 +121,13 @@ class Drill(Dialect):
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),

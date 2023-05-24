@@ -231,7 +231,7 @@ class Snowflake(Dialect):
         }
 
         COLUMN_OPERATORS = {
-            **parser.Parser.COLUMN_OPERATORS,  # type: ignore
+            **parser.Parser.COLUMN_OPERATORS,
             TokenType.COLON: lambda self, this, path: self.expression(
                 exp.Bracket,
                 this=this,
@@ -239,14 +239,16 @@ class Snowflake(Dialect):
             ),
         }
 
+        TIMESTAMPS = parser.Parser.TIMESTAMPS.copy() - {TokenType.TIME}
+
         RANGE_PARSERS = {
-            **parser.Parser.RANGE_PARSERS,  # type: ignore
+            **parser.Parser.RANGE_PARSERS,
             TokenType.LIKE_ANY: binary_range_parser(exp.LikeAny),
             TokenType.ILIKE_ANY: binary_range_parser(exp.ILikeAny),
         }
 
         ALTER_PARSERS = {
-            **parser.Parser.ALTER_PARSERS,  # type: ignore
+            **parser.Parser.ALTER_PARSERS,
             "UNSET": lambda self: self._parse_alter_table_set_tag(unset=True),
             "SET": lambda self: self._parse_alter_table_set_tag(),
         }
@@ -295,7 +297,7 @@ class Snowflake(Dialect):
         TABLE_HINTS = False
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
@@ -337,7 +339,7 @@ class Snowflake(Dialect):
         }
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 
@@ -347,7 +349,7 @@ class Snowflake(Dialect):
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

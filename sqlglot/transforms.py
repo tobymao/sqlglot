@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import typing as t
 
 from sqlglot import expressions as exp
@@ -243,6 +244,25 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
         quantile = expression.this.this
         input_value = t.cast(exp.Ordered, expression.find(exp.Ordered)).this
         return expression.replace(exp.ApproxQuantile(this=input_value, quantile=quantile))
+
+    return expression
+
+
+def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.With) and expression.recursive:
+        sequence = itertools.count()
+        next_name = lambda: f"_c_{next(sequence)}"
+
+        for cte in expression.expressions:
+            if not cte.args["alias"].columns:
+                query = cte.this
+                if isinstance(query, exp.Union):
+                    query = query.this
+
+                cte.args["alias"].set(
+                    "columns",
+                    [exp.to_identifier(s.alias_or_name or next_name()) for s in query.selects],
+                )
 
     return expression
 

@@ -184,8 +184,8 @@ def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
 class Presto(Dialect):
     index_offset = 1
     null_ordering = "nulls_are_last"
-    time_format = MySQL.time_format  # type: ignore
-    time_mapping = MySQL.time_mapping  # type: ignore
+    time_format = MySQL.time_format
+    time_mapping = MySQL.time_mapping
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
@@ -197,7 +197,7 @@ class Presto(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "APPROX_PERCENTILE": _approx_percentile,
             "CARDINALITY": exp.ArraySize.from_arg_list,
@@ -243,13 +243,13 @@ class Presto(Dialect):
         STRUCT_DELIMITER = ("(", ")")
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.LocationProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.BINARY: "VARBINARY",
@@ -259,7 +259,7 @@ class Presto(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",

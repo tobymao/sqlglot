@@ -25,7 +25,7 @@ class Databricks(Spark):
 
     class Generator(Spark.Generator):
         TRANSFORMS = {
-            **Spark.Generator.TRANSFORMS,  # type: ignore
+            **Spark.Generator.TRANSFORMS,
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.JSONExtract: lambda self, e: self.binary(e, ":"),

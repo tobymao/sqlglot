@@ -292,7 +292,7 @@ class TSQL(Dialect):
 
     class Parser(parser.Parser):
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "CHARINDEX": lambda args: exp.StrPosition(
                 this=seq_get(args, 1),
                 substr=seq_get(args, 0),
@@ -332,13 +332,13 @@ class TSQL(Dialect):
             DataType.Type.NCHAR,
         }
 
-        RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {  # type: ignore
+        RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
-            *parser.Parser.TYPE_TOKENS,  # type: ignore
+            *parser.Parser.TYPE_TOKENS,
         }
 
         STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,  # type: ignore
+            **parser.Parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_command(),
         }
 
@@ -450,7 +450,7 @@ class TSQL(Dialect):
         LOCKING_READS_SUPPORTED = True
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.DECIMAL: "NUMERIC",
             exp.DataType.Type.DATETIME: "DATETIME2",
@@ -458,7 +458,7 @@ class TSQL(Dialect):
         }
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
@@ -480,7 +480,7 @@ class TSQL(Dialect):
         TRANSFORMS.pop(exp.ReturnsProperty)
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 

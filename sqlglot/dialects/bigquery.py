@@ -153,7 +153,7 @@ class BigQuery(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
         FUNCTIONS = {
-            **parser.Parser.FUNCTIONS,  # type: ignore
+            **parser.Parser.FUNCTIONS,
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=exp.Literal.string(str(seq_get(args, 1))),
                 this=seq_get(args, 0),
@@ -183,28 +183,28 @@ class BigQuery(Dialect):
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,  # type: ignore
+            **parser.Parser.FUNCTION_PARSERS,
             "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
         NO_PAREN_FUNCTIONS = {
-            **parser.Parser.NO_PAREN_FUNCTIONS,  # type: ignore
+            **parser.Parser.NO_PAREN_FUNCTIONS,
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
         }
 
         NESTED_TYPE_TOKENS = {
-            *parser.Parser.NESTED_TYPE_TOKENS,  # type: ignore
+            *parser.Parser.NESTED_TYPE_TOKENS,
             TokenType.TABLE,
         }
 
         ID_VAR_TOKENS = {
-            *parser.Parser.ID_VAR_TOKENS,  # type: ignore
+            *parser.Parser.ID_VAR_TOKENS,
             TokenType.VALUES,
         }
 
         PROPERTY_PARSERS = {
-            **parser.Parser.PROPERTY_PARSERS,  # type: ignore
+            **parser.Parser.PROPERTY_PARSERS,
             "NOT DETERMINISTIC": lambda self: self.expression(
                 exp.StabilityProperty, this=exp.Literal.string("VOLATILE")
             ),
@@ -212,7 +212,7 @@ class BigQuery(Dialect):
         }
 
         CONSTRAINT_PARSERS = {
-            **parser.Parser.CONSTRAINT_PARSERS,  # type: ignore
+            **parser.Parser.CONSTRAINT_PARSERS,
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
 
@@ -245,7 +245,7 @@ class BigQuery(Dialect):
         RENAME_TABLE_WITH_DB = False
 
         TRANSFORMS = {
-            **generator.Generator.TRANSFORMS,  # type: ignore
+            **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.AtTimeZone: lambda self, e: self.func(
@@ -288,7 +288,7 @@ class BigQuery(Dialect):
         }
 
         TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,  # type: ignore
+            **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BIGDECIMAL: "BIGNUMERIC",
             exp.DataType.Type.BIGINT: "INT64",
             exp.DataType.Type.BINARY: "BYTES",
@@ -311,7 +311,7 @@ class BigQuery(Dialect):
         }
 
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **generator.Generator.PROPERTIES_LOCATION,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

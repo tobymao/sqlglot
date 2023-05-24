@@ -464,6 +464,7 @@ class TestSnowflake(Validator):
         )
 
     def test_timestamps(self):
+        self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
         self.validate_identity("SELECT DATE_PART(month, a)")
 
         self.validate_all(

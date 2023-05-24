@@ -498,3 +498,8 @@ class TestParser(unittest.TestCase):
                 expr = parse_one(query, read=dialect)
                 columns = expr.args["from"].this.args["pivots"][0].args["columns"]
                 self.assertEqual(expected_columns, [col.sql(dialect=dialect) for col in columns])
+
+    def test_parse_properties(self):
+        self.assertEqual(
+            parse_one("create materialized table x").sql(), "CREATE MATERIALIZED TABLE x"
+        )

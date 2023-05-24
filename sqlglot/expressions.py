@@ -1772,10 +1772,6 @@ class Property(Expression):
     arg_types = {"this": True, "value": True}
 
 
-class AfterJournalProperty(Property):
-    arg_types = {"no": True, "dual": False, "local": False}
-
-
 class AlgorithmProperty(Property):
     arg_types = {"this": True}
 
@@ -1801,7 +1797,13 @@ class CollateProperty(Property):
 
 
 class DataBlocksizeProperty(Property):
-    arg_types = {"size": False, "units": False, "min": False, "default": False}
+    arg_types = {
+        "size": False,
+        "units": False,
+        "minimum": False,
+        "maximum": False,
+        "default": False,
+    }
 
 
 class DefinerProperty(Property):
@@ -1855,7 +1857,13 @@ class IsolatedLoadingProperty(Property):
 
 
 class JournalProperty(Property):
-    arg_types = {"no": True, "dual": False, "before": False}
+    arg_types = {
+        "no": False,
+        "dual": False,
+        "before": False,
+        "local": False,
+        "after": False,
+    }
 
 
 class LanguageProperty(Property):
@@ -1893,7 +1901,7 @@ class MergeBlockRatioProperty(Property):
 
 
 class NoPrimaryIndexProperty(Property):
-    arg_types = {"this": False}
+    arg_types = {}
 
 
 class OnCommitProperty(Property):
@@ -1958,7 +1966,7 @@ class StabilityProperty(Property):
 
 
 class TemporaryProperty(Property):
-    arg_types = {"global_": True}
+    arg_types = {}
 
 
 class TransientProperty(Property):

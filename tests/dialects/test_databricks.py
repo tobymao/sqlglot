@@ -9,6 +9,14 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE FUNCTION a.b(x INT) RETURNS INT RETURN x + 1")
         self.validate_identity("CREATE FUNCTION a AS b")
         self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
+        self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")
+
+        self.validate_all(
+            "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
+            write={
+                "databricks": "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(TO_DATE(y))))",
+            },
+        )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

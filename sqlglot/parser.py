@@ -3302,7 +3302,9 @@ class Parser(metaclass=_Parser):
             self._match_text_seq("ALWAYS")
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
 
-        self._match_text_seq("AS", "IDENTITY")
+        self._match_text_seq("AS")
+        identity = self._match_text_seq("IDENTITY")
+
         if self._match(TokenType.L_PAREN):
             if self._match_text_seq("START", "WITH"):
                 this.set("start", self._parse_bitwise())
@@ -3317,6 +3319,9 @@ class Parser(metaclass=_Parser):
                 this.set("cycle", True)
             elif self._match_text_seq("NO", "CYCLE"):
                 this.set("cycle", False)
+
+            if not identity:
+                this.set("expression", self._parse_bitwise())
 
             self._match_r_paren()
 

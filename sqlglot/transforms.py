@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import typing as t
 
 from sqlglot import expressions as exp
@@ -249,13 +250,16 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
 
 def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.With) and expression.recursive:
+        sequence = itertools.count()
+        next_name = lambda: f"_c_{next(sequence)}"
+
         for cte in expression.expressions:
             if not cte.args["alias"].columns:
                 query = cte.this
                 if isinstance(query, exp.Union):
                     query = query.this
 
-                cte.args["alias"].set("columns", [s.alias for s in query.selects if s.alias])
+                cte.args["alias"].set("columns", [s.alias or next_name() for s in query.selects])
 
     return expression
 

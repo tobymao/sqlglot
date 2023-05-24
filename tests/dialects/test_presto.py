@@ -456,6 +456,12 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "WITH RECURSIVE t(n, _c_0) AS (SELECT 1 AS n, 2) SELECT * FROM t",
+            read={
+                "postgres": "WITH RECURSIVE t AS (SELECT 1 AS n, 2) SELECT * FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_OBJECT(KEY 'key1' VALUE 1, KEY 'key2' VALUE TRUE)",
             write={
                 "presto": "SELECT JSON_OBJECT('key1': 1, 'key2': TRUE)",

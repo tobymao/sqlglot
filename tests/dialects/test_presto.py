@@ -456,9 +456,15 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "WITH RECURSIVE t(n, _c_0) AS (SELECT 1 AS n, 2) SELECT * FROM t",
+            "WITH RECURSIVE t(n, _c_0) AS (SELECT 1 AS n, (1 + 2)) SELECT * FROM t",
             read={
-                "postgres": "WITH RECURSIVE t AS (SELECT 1 AS n, 2) SELECT * FROM t",
+                "postgres": "WITH RECURSIVE t AS (SELECT 1 AS n, (1 + 2)) SELECT * FROM t",
+            },
+        )
+        self.validate_all(
+            'WITH RECURSIVE t(n, "1") AS (SELECT n, 1 FROM tbl) SELECT * FROM t',
+            read={
+                "postgres": "WITH RECURSIVE t AS (SELECT n, 1 FROM tbl) SELECT * FROM t",
             },
         )
         self.validate_all(

@@ -5039,11 +5039,11 @@ def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
         raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
 
     catalog, db, table_name, *rest = (
-        t.cast(Expression, to_identifier(x)) for x in split_num_words(sql_path, ".", 3)
+        t.cast(t.Optional[Expression], to_identifier(x)) for x in split_num_words(sql_path, ".", 3)
     )
 
-    if rest:
-        table_name = Dot.build([table_name, *rest])
+    if rest and table_name:
+        table_name = Dot.build(t.cast(t.List[Expression], [table_name, *rest]))
 
     return Table(this=table_name, db=db, catalog=catalog, **kwargs)
 

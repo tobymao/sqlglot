@@ -18,7 +18,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
 )
-from sqlglot.helper import seq_get
+from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
 
 E = t.TypeVar("E", bound=exp.Expression)
@@ -230,10 +230,19 @@ class BigQuery(Dialect):
 
             return this
 
-        def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+        def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             table = super()._parse_table_parts(schema=schema)
             if isinstance(table.this, exp.Identifier) and "." in table.name:
-                table = exp.to_table(table.name, dialect="bigquery")
+                catalog, db, this, *rest = (
+                    t.cast(t.Optional[exp.Expression], exp.to_identifier(x))
+                    for x in split_num_words(table.name, ".", 3)
+                )
+
+                if rest and this:
+                    this = exp.Dot.build(t.cast(t.List[exp.Expression], [this, *rest]))
+
+                table = exp.Table(this=this, db=db, catalog=catalog)
+
             return table
 
     class Generator(generator.Generator):

@@ -28,7 +28,6 @@ from sqlglot.helper import (
     ensure_collection,
     ensure_list,
     seq_get,
-    split_num_words,
     subclasses,
 )
 from sqlglot.tokens import Token
@@ -2196,7 +2195,7 @@ class Table(Expression):
 
     @property
     def parts(self) -> t.List[Identifier]:
-        """Return the parts of a column in order catalog, db, table."""
+        """Return the parts of a table in order catalog, db, table."""
         return [
             t.cast(Identifier, self.args[part])
             for part in ("catalog", "db", "this")
@@ -5030,13 +5029,17 @@ def to_table(sql_path: None, **kwargs) -> None:
     ...
 
 
-def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
+def to_table(
+    sql_path: t.Optional[str | Table], dialect: DialectType = None, **kwargs
+) -> t.Optional[Table]:
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
     If a table is passed in then that table is returned.
 
     Args:
         sql_path: a `[catalog].[schema].[table]` string.
+        dialect: the source dialect according to which the table name will be parsed.
+        kwargs: the kwargs to instantiate the resulting `Table` expression with.
 
     Returns:
         A table expression.
@@ -5046,8 +5049,12 @@ def to_table(sql_path: t.Optional[str | Table], **kwargs) -> t.Optional[Table]:
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
 
-    catalog, db, table_name = (to_identifier(x) for x in split_num_words(sql_path, ".", 3))
-    return Table(this=table_name, db=db, catalog=catalog, **kwargs)
+    table = maybe_parse(sql_path, into=Table, dialect=dialect)
+    if table:
+        for k, v in kwargs.items():
+            table.set(k, v)
+
+    return table
 
 
 def to_column(sql_path: str | Column, **kwargs) -> Column:

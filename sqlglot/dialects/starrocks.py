@@ -11,7 +11,7 @@ from sqlglot.helper import seq_get
 
 
 class StarRocks(MySQL):
-    class Parser(MySQL.Parser):  # type: ignore
+    class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
@@ -19,16 +19,16 @@ class StarRocks(MySQL):
             ),
         }
 
-    class Generator(MySQL.Generator):  # type: ignore
+    class Generator(MySQL.Generator):
         TYPE_MAPPING = {
-            **MySQL.Generator.TYPE_MAPPING,  # type: ignore
+            **MySQL.Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
         }
 
         TRANSFORMS = {
-            **MySQL.Generator.TRANSFORMS,  # type: ignore
+            **MySQL.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,

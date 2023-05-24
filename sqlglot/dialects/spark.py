@@ -36,7 +36,7 @@ def _parse_datediff(args: t.Sequence) -> exp.Expression:
 class Spark(Spark2):
     class Parser(Spark2.Parser):
         FUNCTIONS = {
-            **Spark2.Parser.FUNCTIONS,  # type: ignore
+            **Spark2.Parser.FUNCTIONS,
             "DATEDIFF": _parse_datediff,
         }
 

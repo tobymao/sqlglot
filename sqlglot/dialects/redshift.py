@@ -15,14 +15,14 @@ def _json_sql(self, e) -> str:
 class Redshift(Postgres):
     time_format = "'YYYY-MM-DD HH:MI:SS'"
     time_mapping = {
-        **Postgres.time_mapping,  # type: ignore
+        **Postgres.time_mapping,
         "MON": "%b",
         "HH": "%H",
     }
 
     class Parser(Postgres.Parser):
         FUNCTIONS = {
-            **Postgres.Parser.FUNCTIONS,  # type: ignore
+            **Postgres.Parser.FUNCTIONS,
             "DATEADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2),
                 expression=seq_get(args, 1),
@@ -57,7 +57,7 @@ class Redshift(Postgres):
         STRING_ESCAPES = ["\\"]
 
         KEYWORDS = {
-            **Postgres.Tokenizer.KEYWORDS,  # type: ignore
+            **Postgres.Tokenizer.KEYWORDS,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
             "SYSDATE": TokenType.CURRENT_TIMESTAMP,
@@ -77,19 +77,19 @@ class Redshift(Postgres):
         RENAME_TABLE_WITH_DB = False
 
         TYPE_MAPPING = {
-            **Postgres.Generator.TYPE_MAPPING,  # type: ignore
+            **Postgres.Generator.TYPE_MAPPING,
             exp.DataType.Type.BINARY: "VARBYTE",
             exp.DataType.Type.VARBINARY: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
         }
 
         PROPERTIES_LOCATION = {
-            **Postgres.Generator.PROPERTIES_LOCATION,  # type: ignore
+            **Postgres.Generator.PROPERTIES_LOCATION,
             exp.LikeProperty: exp.Properties.Location.POST_WITH,
         }
 
         TRANSFORMS = {
-            **Postgres.Generator.TRANSFORMS,  # type: ignore
+            **Postgres.Generator.TRANSFORMS,
             exp.CurrentTimestamp: lambda self, e: "SYSDATE",
             exp.DateAdd: lambda self, e: self.func(
                 "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this

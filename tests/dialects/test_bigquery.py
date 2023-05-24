@@ -38,6 +38,12 @@ class TestBigQuery(Validator):
             write={"bigquery": "CREATE TEMPORARY TABLE foo AS SELECT 1"},
         )
         self.validate_all(
+            "SELECT * FROM `SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW`",
+            write={
+                "bigquery": "SELECT * FROM SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM `my-project.my-dataset.my-table`",
             write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
         )

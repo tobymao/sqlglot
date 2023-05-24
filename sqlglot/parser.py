@@ -2299,7 +2299,7 @@ class Parser(metaclass=_Parser):
                 subquery.set("pivots", self._parse_pivots())
             return subquery
 
-        this = self._parse_table_parts(schema=schema)
+        this: exp.Expression = self._parse_table_parts(schema=schema)
 
         if schema:
             return self._parse_schema(this=this)

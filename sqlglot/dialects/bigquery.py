@@ -230,7 +230,7 @@ class BigQuery(Dialect):
 
             return this
 
-        def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+        def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             table = super()._parse_table_parts(schema=schema)
             if isinstance(table.this, exp.Identifier) and "." in table.name:
                 catalog, db, this, *rest = (

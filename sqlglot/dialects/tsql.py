@@ -377,7 +377,7 @@ class TSQL(Dialect):
 
             return system_time
 
-        def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+        def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             table = super()._parse_table_parts(schema=schema)
             table.set("system_time", self._parse_system_time())
             return table

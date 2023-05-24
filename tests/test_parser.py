@@ -21,7 +21,8 @@ class TestParser(unittest.TestCase):
             parse_one("SELECT * FROM tbl", into=exp.Table)
 
         self.assertEqual(
-            str(ctx.exception), "Failed to parse into <class 'sqlglot.expressions.Table'>",
+            str(ctx.exception),
+            "Failed to parse into <class 'sqlglot.expressions.Table'>",
         )
 
     def test_parse_into_error(self):

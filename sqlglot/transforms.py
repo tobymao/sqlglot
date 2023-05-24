@@ -247,6 +247,19 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
     return expression
 
 
+def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.With) and expression.recursive:
+        for cte in expression.expressions:
+            if not cte.args["alias"].columns:
+                query = cte.this
+                if isinstance(query, exp.Union):
+                    query = query.this
+
+                cte.args["alias"].set("columns", [s.alias for s in query.selects if s.alias])
+
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

@@ -3302,7 +3302,7 @@ class Parser(metaclass=_Parser):
             self._match_text_seq("ALWAYS")
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
 
-        self._match_text_seq("AS")
+        self._match(TokenType.ALIAS)
         identity = self._match_text_seq("IDENTITY")
 
         if self._match(TokenType.L_PAREN):

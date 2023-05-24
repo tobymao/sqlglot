@@ -231,9 +231,17 @@ class BigQuery(Dialect):
             return this
 
         def _parse_table_parts(self, schema: bool = False) -> exp.Expression:
+            def quote_unsafe_table_part(part: exp.Expression) -> exp.Expression:
+                if isinstance(part, exp.Identifier):
+                    part.set("quoted", not exp.SAFE_IDENTIFIER_RE.match(part.name))
+                return part
+
             table = super()._parse_table_parts(schema=schema)
             if isinstance(table.this, exp.Identifier) and "." in table.name:
                 table = exp.to_table(table.name, dialect="bigquery")
+                for part in table.parts:
+                    part.transform(quote_unsafe_table_part, copy=False)
+
             return table
 
     class Generator(generator.Generator):

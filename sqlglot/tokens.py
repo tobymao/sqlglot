@@ -143,30 +143,22 @@ class TokenType(AutoName):
     ARRAY = auto()
     ASC = auto()
     ASOF = auto()
-    AT_TIME_ZONE = auto()
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
-    BOTH = auto()
-    BUCKET = auto()
-    BY_DEFAULT = auto()
     CACHE = auto()
-    CASCADE = auto()
     CASE = auto()
     CHARACTER_SET = auto()
-    CLUSTER_BY = auto()
     COLLATE = auto()
     COMMAND = auto()
     COMMENT = auto()
     COMMIT = auto()
-    COMPOUND = auto()
     CONSTRAINT = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
     CURRENT_DATE = auto()
     CURRENT_DATETIME = auto()
-    CURRENT_ROW = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     CURRENT_USER = auto()
@@ -175,8 +167,6 @@ class TokenType(AutoName):
     DESC = auto()
     DESCRIBE = auto()
     DISTINCT = auto()
-    DISTINCT_FROM = auto()
-    DISTRIBUTE_BY = auto()
     DIV = auto()
     DROP = auto()
     ELSE = auto()
@@ -190,7 +180,6 @@ class TokenType(AutoName):
     FILTER = auto()
     FINAL = auto()
     FIRST = auto()
-    FOLLOWING = auto()
     FOR = auto()
     FOREIGN_KEY = auto()
     FORMAT = auto()
@@ -204,7 +193,6 @@ class TokenType(AutoName):
     HAVING = auto()
     HINT = auto()
     IF = auto()
-    IGNORE_NULLS = auto()
     ILIKE = auto()
     ILIKE_ANY = auto()
     IN = auto()
@@ -223,37 +211,27 @@ class TokenType(AutoName):
     KEEP = auto()
     LANGUAGE = auto()
     LATERAL = auto()
-    LAZY = auto()
-    LEADING = auto()
     LEFT = auto()
     LIKE = auto()
     LIKE_ANY = auto()
     LIMIT = auto()
-    LOAD_DATA = auto()
-    LOCAL = auto()
+    LOAD = auto()
     LOCK = auto()
     MAP = auto()
     MATCH_RECOGNIZE = auto()
-    MATERIALIZED = auto()
     MERGE = auto()
     MOD = auto()
     NATURAL = auto()
     NEXT = auto()
     NEXT_VALUE_FOR = auto()
-    NO_ACTION = auto()
     NOTNULL = auto()
     NULL = auto()
-    NULLS_FIRST = auto()
-    NULLS_LAST = auto()
     OFFSET = auto()
     ON = auto()
-    ONLY = auto()
-    OPTIONS = auto()
     ORDER_BY = auto()
     ORDERED = auto()
     ORDINALITY = auto()
     OUTER = auto()
-    OUT_OF = auto()
     OVER = auto()
     OVERLAPS = auto()
     OVERWRITE = auto()
@@ -263,7 +241,6 @@ class TokenType(AutoName):
     PIVOT = auto()
     PLACEHOLDER = auto()
     PRAGMA = auto()
-    PRECEDING = auto()
     PRIMARY_KEY = auto()
     PROCEDURE = auto()
     PROPERTIES = auto()
@@ -273,7 +250,6 @@ class TokenType(AutoName):
     RANGE = auto()
     RECURSIVE = auto()
     REPLACE = auto()
-    RESPECT_NULLS = auto()
     RETURNING = auto()
     REFERENCES = auto()
     RIGHT = auto()
@@ -282,7 +258,6 @@ class TokenType(AutoName):
     ROLLUP = auto()
     ROW = auto()
     ROWS = auto()
-    SEED = auto()
     SELECT = auto()
     SEMI = auto()
     SEPARATOR = auto()
@@ -292,19 +267,14 @@ class TokenType(AutoName):
     SHOW = auto()
     SIMILAR_TO = auto()
     SOME = auto()
-    SORTKEY = auto()
-    SORT_BY = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
     TOP = auto()
     THEN = auto()
-    TRAILING = auto()
     TRUE = auto()
-    UNBOUNDED = auto()
     UNCACHE = auto()
     UNION = auto()
-    UNLOGGED = auto()
     UNNEST = auto()
     UNPIVOT = auto()
     UPDATE = auto()
@@ -317,10 +287,6 @@ class TokenType(AutoName):
     WHERE = auto()
     WINDOW = auto()
     WITH = auto()
-    WITH_TIME_ZONE = auto()
-    WITH_LOCAL_TIME_ZONE = auto()
-    WITHIN_GROUP = auto()
-    WITHOUT_TIME_ZONE = auto()
     UNIQUE = auto()
 
 
@@ -402,14 +368,14 @@ class _Tokenizer(type):
 
         klass.KEYWORD_TRIE = new_trie(
             key.upper()
-            for key in {
-                **klass.KEYWORDS,
-                **{comment: TokenType.COMMENT for comment in klass._COMMENTS},
-                **{quote: TokenType.QUOTE for quote in klass._QUOTES},
-                **{bit_string: TokenType.BIT_STRING for bit_string in klass._BIT_STRINGS},
-                **{hex_string: TokenType.HEX_STRING for hex_string in klass._HEX_STRINGS},
-                **{byte_string: TokenType.BYTE_STRING for byte_string in klass._BYTE_STRINGS},
-            }
+            for key in (
+                *klass.KEYWORDS,
+                *klass._COMMENTS,
+                *klass._QUOTES,
+                *klass._BIT_STRINGS,
+                *klass._HEX_STRINGS,
+                *klass._BYTE_STRINGS,
+            )
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
@@ -504,30 +470,22 @@ class Tokenizer(metaclass=_Tokenizer):
         "ANY": TokenType.ANY,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
-        "AT TIME ZONE": TokenType.AT_TIME_ZONE,
         "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,
         "BETWEEN": TokenType.BETWEEN,
-        "BOTH": TokenType.BOTH,
-        "BUCKET": TokenType.BUCKET,
-        "BY DEFAULT": TokenType.BY_DEFAULT,
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
-        "CASCADE": TokenType.CASCADE,
         "CHARACTER SET": TokenType.CHARACTER_SET,
-        "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,
         "COMMIT": TokenType.COMMIT,
-        "COMPOUND": TokenType.COMPOUND,
         "CONSTRAINT": TokenType.CONSTRAINT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,
         "CURRENT_DATE": TokenType.CURRENT_DATE,
-        "CURRENT ROW": TokenType.CURRENT_ROW,
         "CURRENT_TIME": TokenType.CURRENT_TIME,
         "CURRENT_TIMESTAMP": TokenType.CURRENT_TIMESTAMP,
         "CURRENT_USER": TokenType.CURRENT_USER,
@@ -537,8 +495,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "DESC": TokenType.DESC,
         "DESCRIBE": TokenType.DESCRIBE,
         "DISTINCT": TokenType.DISTINCT,
-        "DISTINCT FROM": TokenType.DISTINCT_FROM,
-        "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
         "DIV": TokenType.DIV,
         "DROP": TokenType.DROP,
         "ELSE": TokenType.ELSE,
@@ -553,7 +509,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "FIRST": TokenType.FIRST,
         "FULL": TokenType.FULL,
         "FUNCTION": TokenType.FUNCTION,
-        "FOLLOWING": TokenType.FOLLOWING,
         "FOR": TokenType.FOR,
         "FOREIGN KEY": TokenType.FOREIGN_KEY,
         "FORMAT": TokenType.FORMAT,
@@ -566,7 +521,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "HAVING": TokenType.HAVING,
         "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
-        "IGNORE NULLS": TokenType.IGNORE_NULLS,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
         "INET": TokenType.INET,
@@ -580,35 +534,25 @@ class Tokenizer(metaclass=_Tokenizer):
         "JOIN": TokenType.JOIN,
         "KEEP": TokenType.KEEP,
         "LATERAL": TokenType.LATERAL,
-        "LAZY": TokenType.LAZY,
-        "LEADING": TokenType.LEADING,
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,
         "LIMIT": TokenType.LIMIT,
-        "LOAD DATA": TokenType.LOAD_DATA,
-        "LOCAL": TokenType.LOCAL,
+        "LOAD": TokenType.LOAD,
         "LOCK": TokenType.LOCK,
-        "MATERIALIZED": TokenType.MATERIALIZED,
         "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
         "NEXT VALUE FOR": TokenType.NEXT_VALUE_FOR,
-        "NO ACTION": TokenType.NO_ACTION,
         "NOT": TokenType.NOT,
         "NOTNULL": TokenType.NOTNULL,
         "NULL": TokenType.NULL,
-        "NULLS FIRST": TokenType.NULLS_FIRST,
-        "NULLS LAST": TokenType.NULLS_LAST,
         "OBJECT": TokenType.OBJECT,
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
-        "ONLY": TokenType.ONLY,
-        "OPTIONS": TokenType.OPTIONS,
         "OR": TokenType.OR,
         "ORDER BY": TokenType.ORDER_BY,
         "ORDINALITY": TokenType.ORDINALITY,
         "OUTER": TokenType.OUTER,
-        "OUT OF": TokenType.OUT_OF,
         "OVER": TokenType.OVER,
         "OVERLAPS": TokenType.OVERLAPS,
         "OVERWRITE": TokenType.OVERWRITE,
@@ -619,7 +563,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "PERCENT": TokenType.PERCENT,
         "PIVOT": TokenType.PIVOT,
         "PRAGMA": TokenType.PRAGMA,
-        "PRECEDING": TokenType.PRECEDING,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "PROCEDURE": TokenType.PROCEDURE,
         "QUALIFY": TokenType.QUALIFY,
@@ -627,7 +570,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
         "REPLACE": TokenType.REPLACE,
-        "RESPECT NULLS": TokenType.RESPECT_NULLS,
         "REFERENCES": TokenType.REFERENCES,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,
@@ -636,7 +578,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "ROW": TokenType.ROW,
         "ROWS": TokenType.ROWS,
         "SCHEMA": TokenType.SCHEMA,
-        "SEED": TokenType.SEED,
         "SELECT": TokenType.SELECT,
         "SEMI": TokenType.SEMI,
         "SET": TokenType.SET,
@@ -644,18 +585,13 @@ class Tokenizer(metaclass=_Tokenizer):
         "SHOW": TokenType.SHOW,
         "SIMILAR TO": TokenType.SIMILAR_TO,
         "SOME": TokenType.SOME,
-        "SORTKEY": TokenType.SORTKEY,
-        "SORT BY": TokenType.SORT_BY,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
-        "TRAILING": TokenType.TRAILING,
-        "UNBOUNDED": TokenType.UNBOUNDED,
         "UNION": TokenType.UNION,
-        "UNLOGGED": TokenType.UNLOGGED,
         "UNNEST": TokenType.UNNEST,
         "UNPIVOT": TokenType.UNPIVOT,
         "UPDATE": TokenType.UPDATE,
@@ -669,10 +605,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "WHERE": TokenType.WHERE,
         "WINDOW": TokenType.WINDOW,
         "WITH": TokenType.WITH,
-        "WITH TIME ZONE": TokenType.WITH_TIME_ZONE,
-        "WITH LOCAL TIME ZONE": TokenType.WITH_LOCAL_TIME_ZONE,
-        "WITHIN GROUP": TokenType.WITHIN_GROUP,
-        "WITHOUT TIME ZONE": TokenType.WITHOUT_TIME_ZONE,
         "APPLY": TokenType.APPLY,
         "ARRAY": TokenType.ARRAY,
         "BIT": TokenType.BIT,
@@ -731,15 +663,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "STRUCT": TokenType.STRUCT,
         "VARIANT": TokenType.VARIANT,
         "ALTER": TokenType.ALTER,
-        "ALTER AGGREGATE": TokenType.COMMAND,
-        "ALTER DEFAULT": TokenType.COMMAND,
-        "ALTER DOMAIN": TokenType.COMMAND,
-        "ALTER ROLE": TokenType.COMMAND,
-        "ALTER RULE": TokenType.COMMAND,
-        "ALTER SEQUENCE": TokenType.COMMAND,
-        "ALTER TYPE": TokenType.COMMAND,
-        "ALTER USER": TokenType.COMMAND,
-        "ALTER VIEW": TokenType.COMMAND,
         "ANALYZE": TokenType.COMMAND,
         "CALL": TokenType.COMMAND,
         "COMMENT": TokenType.COMMENT,

@@ -21,6 +21,7 @@ from collections import deque
 from copy import deepcopy
 from enum import auto
 
+from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.helper import (
     AutoName,
@@ -33,7 +34,6 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
     from sqlglot.dialects.dialect import DialectType
 
 

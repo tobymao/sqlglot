@@ -665,7 +665,11 @@ ExpOrStr = t.Union[str, Expression]
 
 class Condition(Expression):
     def and_(
-        self, *expressions: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Expression:
         """
         AND this condition with one or multiple expressions.
@@ -687,7 +691,11 @@ class Condition(Expression):
         return and_(self, *expressions, dialect=dialect, copy=copy, **opts)
 
     def or_(
-        self, *expressions: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Expression:
         """
         OR this condition with one or multiple expressions.

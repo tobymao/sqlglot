@@ -586,7 +586,7 @@ class Expression(metaclass=_Expression):
         self.replace(None)
         return self
 
-    def assert_is(self: E, type_: t.Type[E]) -> E:
+    def assert_is(self: Expression, type_: t.Type[E]) -> E:
         """
         Assert that this `Expression` is an instance of `type_`.
 

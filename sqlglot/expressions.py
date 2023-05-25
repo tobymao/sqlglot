@@ -4657,7 +4657,7 @@ def _apply_list_builder(
             **opts,
         )
         for expression in expressions
-        if expression
+        if expression is not None
     ]
 
     existing_expressions = inst.args.get(arg)
@@ -4728,7 +4728,7 @@ def _combine(
     conditions = [
         condition(expression, dialect=dialect, copy=copy, **opts)
         for expression in expressions
-        if expression
+        if expression is not None
     ]
 
     this, *rest = conditions

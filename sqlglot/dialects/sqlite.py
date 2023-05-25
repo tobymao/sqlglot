@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
-def _date_add_sql(self, expression):
+def _date_add_sql(self: generator.Generator, expression: exp.DateAdd) -> str:
     modifier = expression.expression
     modifier = modifier.name if modifier.is_string else self.sql(modifier)
     unit = expression.args.get("unit")
@@ -165,12 +165,15 @@ class SQLite(Dialect):
             return f"CAST({sql} AS INTEGER)"
 
         # https://www.sqlite.org/lang_aggfunc.html#group_concat
-        def groupconcat_sql(self, expression):
+        def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
             this = expression.this
             distinct = expression.find(exp.Distinct)
+
             if distinct:
                 this = distinct.expressions[0]
-                distinct = "DISTINCT "
+                distinct_sql = "DISTINCT "
+            else:
+                distinct_sql = ""
 
             if isinstance(expression.this, exp.Order):
                 self.unsupported("SQLite GROUP_CONCAT doesn't support ORDER BY.")
@@ -178,7 +181,7 @@ class SQLite(Dialect):
                     this = expression.this.this
 
             separator = expression.args.get("separator")
-            return f"GROUP_CONCAT({distinct or ''}{self.format_args(this, separator)})"
+            return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)})"
 
         def least_sql(self, expression: exp.Least) -> str:
             if len(expression.expressions) > 1:

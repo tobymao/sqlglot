@@ -50,11 +50,11 @@ def _sort_array_sql(self: generator.Generator, expression: exp.SortArray) -> str
     return f"ARRAY_SORT({this})"
 
 
-def _sort_array_reverse(args: t.Sequence) -> exp.Expression:
+def _sort_array_reverse(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
-def _parse_date_diff(args: t.Sequence) -> exp.Expression:
+def _parse_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(
         this=seq_get(args, 2),
         expression=seq_get(args, 1),
@@ -245,6 +245,6 @@ class DuckDB(Dialect):
         }
 
         def tablesample_sql(
-            self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
+            self, expression: exp.TableSample, seed_prefix: str = "SEED", sep: str = " AS "
         ) -> str:
             return super().tablesample_sql(expression, seed_prefix="REPEATABLE", sep=sep)

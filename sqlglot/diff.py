@@ -53,7 +53,8 @@ class Keep:
 
 
 if t.TYPE_CHECKING:
-    T = t.TypeVar("T")
+    from sqlglot._typing import T
+
     Edit = t.Union[Insert, Remove, Move, Update, Keep]
 
 

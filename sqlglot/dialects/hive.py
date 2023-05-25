@@ -401,7 +401,7 @@ class Hive(Dialect):
 
             return super().datatype_sql(expression)
 
-        def after_having_modifiers(self, expression):
+        def after_having_modifiers(self, expression: exp.Expression) -> t.List[str]:
             return super().after_having_modifiers(expression) + [
                 self.sql(expression, "distribute"),
                 self.sql(expression, "sort"),

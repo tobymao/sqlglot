@@ -303,7 +303,7 @@ class Join(Step):
         for join in joins:
             source_key, join_key, condition = join_condition(join)
             step.joins[join.this.alias_or_name] = {
-                "side": join.side,
+                "side": join.side,  # type: ignore
                 "join_key": join_key,
                 "source_key": source_key,
                 "condition": condition,

@@ -1,5 +1,3 @@
-"""Supports BigQuery Standard SQL."""
-
 from __future__ import annotations
 
 import re
@@ -20,8 +18,6 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
-
-E = t.TypeVar("E", bound=exp.Expression)
 
 
 def _date_add_sql(

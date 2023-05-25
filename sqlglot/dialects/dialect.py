@@ -11,7 +11,8 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer
 from sqlglot.trie import new_trie
 
-E = t.TypeVar("E", bound=exp.Expression)
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 
 class Dialects(str, Enum):
@@ -347,7 +348,7 @@ def var_map_sql(
 
 def format_time_lambda(
     exp_class: t.Type[E], dialect: str, default: t.Optional[bool | str] = None
-) -> t.Callable[[t.Sequence], E]:
+) -> t.Callable[[t.List], E]:
     """Helper used for time expressions.
 
     Args:
@@ -359,7 +360,7 @@ def format_time_lambda(
         A callable that can be used to return the appropriately formatted time expression.
     """
 
-    def _format_time(args: t.Sequence):
+    def _format_time(args: t.List):
         return exp_class(
             this=seq_get(args, 0),
             format=Dialect[dialect].format_time(
@@ -396,8 +397,8 @@ def create_with_partitions_sql(self: Generator, expression: exp.Create) -> str:
 
 def parse_date_delta(
     exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
-) -> t.Callable[[t.Sequence], E]:
-    def inner_func(args: t.Sequence) -> E:
+) -> t.Callable[[t.List], E]:
+    def inner_func(args: t.List) -> E:
         unit_based = len(args) == 3
         this = args[2] if unit_based else seq_get(args, 0)
         unit = args[0] if unit_based else exp.Literal.string("DAY")
@@ -409,8 +410,8 @@ def parse_date_delta(
 
 def parse_date_delta_with_interval(
     expression_class: t.Type[E],
-) -> t.Callable[[t.Sequence], t.Optional[E]]:
-    def func(args: t.Sequence) -> t.Optional[E]:
+) -> t.Callable[[t.List], t.Optional[E]]:
+    def func(args: t.List) -> t.Optional[E]:
         if len(args) < 2:
             return None
 
@@ -428,7 +429,7 @@ def parse_date_delta_with_interval(
     return func
 
 
-def date_trunc_to_time(args: t.Sequence) -> exp.DateTrunc | exp.TimestampTrunc:
+def date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
 
@@ -443,7 +444,7 @@ def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
     )
 
 
-def locate_to_strposition(args: t.Sequence) -> exp.Expression:
+def locate_to_strposition(args: t.List) -> exp.Expression:
     return exp.StrPosition(
         this=seq_get(args, 1),
         substr=seq_get(args, 0),
@@ -502,7 +503,7 @@ def trim_sql(self: Generator, expression: exp.Trim) -> str:
     return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
 
 
-def str_to_time_sql(self, expression: exp.Expression) -> str:
+def str_to_time_sql(self: Generator, expression: exp.Expression) -> str:
     return self.func("STRPTIME", expression.this, self.format_time(expression))
 
 

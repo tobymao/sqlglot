@@ -684,6 +684,7 @@ class Parser(metaclass=_Parser):
         "MATCH": lambda self: self._parse_match_against(),
         "OPENJSON": lambda self: self._parse_open_json(),
         "POSITION": lambda self: self._parse_position(),
+        "SAFE_CAST": lambda self: self._parse_cast(False),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
         "STRUCT": lambda self: self._parse_struct(),

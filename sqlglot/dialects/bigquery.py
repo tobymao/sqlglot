@@ -282,6 +282,7 @@ class BigQuery(Dialect):
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
+            exp.TryCast: lambda self, e: f"SAFE_CAST({self.sql(e, 'this')} AS {self.sql(e, 'to')})",
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.TsOrDsAdd: _date_add_sql("DATE", "ADD"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",

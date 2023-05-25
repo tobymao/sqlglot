@@ -574,7 +574,6 @@ FROM `u_cte` AS `u_cte` PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x',
 
 # title: selecting all columns from a pivoted source and generating snowflake
 # execute: false
-# dialect: snowflake
 SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
   "_q_0"."g" AS "g",

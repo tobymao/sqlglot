@@ -121,9 +121,7 @@ class BigQuery(Dialect):
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
 
-        HEX_STRINGS = [
-            (prefix + q, q) for q in [""] + t.cast(t.List[str], QUOTES) for prefix in ("0x", "0X")
-        ]
+        HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         BYTE_STRINGS = [
             (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("b", "B")

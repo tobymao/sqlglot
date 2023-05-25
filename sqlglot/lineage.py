@@ -5,6 +5,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 from sqlglot import Schema, exp, maybe_parse
+from sqlglot.errors import SqlglotError
 from sqlglot.optimizer import Scope, build_scope, optimize
 from sqlglot.optimizer.lower_identities import lower_identities
 from sqlglot.optimizer.qualify_columns import qualify_columns
@@ -70,6 +71,9 @@ def lineage(
 
     optimized = optimize(expression, schema=schema, rules=rules)
     scope = build_scope(optimized)
+
+    if not scope:
+        raise SqlglotError("Cannot build lineage, sql must be SELECT")
 
     def to_node(
         column_name: str,

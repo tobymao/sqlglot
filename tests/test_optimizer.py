@@ -141,6 +141,8 @@ class TestOptimizer(unittest.TestCase):
                     assert_frame_equal(df1, df2)
 
     def test_optimize(self):
+        self.assertEqual(optimizer.optimize("x = 1 + 1", identify=None).sql(), "x = 2")
+
         schema = {
             "x": {"a": "INT", "b": "INT"},
             "y": {"b": "INT", "c": "INT"},

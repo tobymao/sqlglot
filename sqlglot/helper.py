@@ -92,7 +92,7 @@ def ensure_collection(value):
     )
 
 
-def csv(*args, sep: str = ", ") -> str:
+def csv(*args: str, sep: str = ", ") -> str:
     """
     Formats any number of string arguments as CSV.
 

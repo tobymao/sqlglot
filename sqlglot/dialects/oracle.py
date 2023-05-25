@@ -8,7 +8,7 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _parse_xml_table(self) -> exp.XMLTable:
+def _parse_xml_table(self: parser.Parser) -> exp.XMLTable:
     this = self._parse_string()
 
     passing = None

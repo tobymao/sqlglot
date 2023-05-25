@@ -15,7 +15,7 @@ logger = logging.getLogger("sqlglot")
 E = t.TypeVar("E", bound=exp.Expression)
 
 
-def parse_var_map(args: t.Sequence) -> exp.Expression:
+def parse_var_map(args: t.List) -> exp.Expression:
     if len(args) == 1 and args[0].is_star:
         return exp.StarMap(this=args[0])
 
@@ -30,7 +30,7 @@ def parse_var_map(args: t.Sequence) -> exp.Expression:
     )
 
 
-def parse_like(args):
+def parse_like(args: t.List) -> exp.Expression:
     like = exp.Like(this=seq_get(args, 1), expression=seq_get(args, 0))
     return exp.Escape(this=like, expression=seq_get(args, 2)) if len(args) > 2 else like
 
@@ -1295,7 +1295,7 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.ALIAS)
         return self.expression(exp_class, this=self._parse_field())
 
-    def _parse_properties(self, before=None) -> t.Optional[exp.Expression]:
+    def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Expression]:
         properties = []
 
         while True:
@@ -1539,7 +1539,7 @@ class Parser(metaclass=_Parser):
             this=self._parse_schema() or self._parse_bracket(self._parse_field()),
         )
 
-    def _parse_withdata(self, no=False) -> exp.Expression:
+    def _parse_withdata(self, no: bool = False) -> exp.Expression:
         if self._match_text_seq("AND", "STATISTICS"):
             statistics = True
         elif self._match_text_seq("AND", "NO", "STATISTICS"):
@@ -3396,7 +3396,7 @@ class Parser(metaclass=_Parser):
 
         return options
 
-    def _parse_references(self, match=True) -> t.Optional[exp.Expression]:
+    def _parse_references(self, match: bool = True) -> t.Optional[exp.Expression]:
         if match and not self._match(TokenType.REFERENCES):
             return None
 
@@ -4476,11 +4476,11 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _match_l_paren(self, expression=None):
+    def _match_l_paren(self, expression: t.Optional[exp.Expression] = None) -> None:
         if not self._match(TokenType.L_PAREN, expression=expression):
             self.raise_error("Expecting (")
 
-    def _match_r_paren(self, expression=None):
+    def _match_r_paren(self, expression: t.Optional[exp.Expression] = None) -> None:
         if not self._match(TokenType.R_PAREN, expression=expression):
             self.raise_error("Expecting )")
 
@@ -4505,7 +4505,9 @@ class Parser(metaclass=_Parser):
 
         return True
 
-    def _replace_columns_with_dots(self, this):
+    def _replace_columns_with_dots(
+        self, this: t.Optional[exp.Expression]
+    ) -> t.Optional[exp.Expression]:
         if isinstance(this, exp.Dot):
             exp.replace_children(this, self._replace_columns_with_dots)
         elif isinstance(this, exp.Column):
@@ -4518,9 +4520,15 @@ class Parser(metaclass=_Parser):
             )
         elif isinstance(this, exp.Identifier):
             this = self.expression(exp.Var, this=this.name)
+
         return this
 
-    def _replace_lambda(self, node, lambda_variables):
+    def _replace_lambda(
+        self, node: t.Optional[exp.Expression], lambda_variables: t.Set[str]
+    ) -> t.Optional[exp.Expression]:
+        if not node:
+            return node
+
         for column in node.find_all(exp.Column):
             if column.parts[0].name in lambda_variables:
                 dot_or_id = column.to_dot() if column.table else column.this

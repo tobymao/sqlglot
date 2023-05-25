@@ -16,6 +16,8 @@ from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
+E = t.TypeVar("E", bound="exp.Expression")
+
 FULL_FORMAT_TIME_MAPPING = {
     "weekday": "%A",
     "dw": "%A",
@@ -50,13 +52,17 @@ DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{
 TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 
 
-def _format_time_lambda(exp_class, full_format_mapping=None, default=None):
-    def _format_time(args):
+def _format_time_lambda(
+    exp_class: t.Type[E], full_format_mapping: t.Optional[bool] = None
+) -> t.Callable[[t.List], E]:
+    def _format_time(args: t.List) -> E:
+        assert len(args) == 2
+
         return exp_class(
-            this=seq_get(args, 1),
+            this=args[1],
             format=exp.Literal.string(
                 format_time(
-                    seq_get(args, 0).name or (TSQL.time_format if default is True else default),
+                    args[0].name,
                     {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING}
                     if full_format_mapping
                     else TSQL.time_mapping,
@@ -67,13 +73,17 @@ def _format_time_lambda(exp_class, full_format_mapping=None, default=None):
     return _format_time
 
 
-def _parse_format(args):
-    fmt = seq_get(args, 1)
-    number_fmt = fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.this)
+def _parse_format(args: t.List) -> exp.Expression:
+    assert len(args) == 2
+
+    fmt = args[1]
+    number_fmt = fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name)
+
     if number_fmt:
-        return exp.NumberToStr(this=seq_get(args, 0), format=fmt)
+        return exp.NumberToStr(this=args[0], format=fmt)
+
     return exp.TimeToStr(
-        this=seq_get(args, 0),
+        this=args[0],
         format=exp.Literal.string(
             format_time(fmt.name, TSQL.format_time_mapping)
             if len(fmt.name) == 1
@@ -82,7 +92,7 @@ def _parse_format(args):
     )
 
 
-def _parse_eomonth(args):
+def _parse_eomonth(args: t.List) -> exp.Expression:
     date = seq_get(args, 0)
     month_lag = seq_get(args, 1)
     unit = DATE_DELTA_INTERVAL.get("month")
@@ -96,7 +106,7 @@ def _parse_eomonth(args):
     return exp.LastDateOfMonth(this=exp.DateAdd(this=date, expression=month_lag, unit=unit))
 
 
-def _parse_hashbytes(args):
+def _parse_hashbytes(args: t.List) -> exp.Expression:
     kind, data = args
     kind = kind.name.upper() if kind.is_string else ""
 
@@ -110,40 +120,47 @@ def _parse_hashbytes(args):
         return exp.SHA2(this=data, length=exp.Literal.number(256))
     if kind == "SHA2_512":
         return exp.SHA2(this=data, length=exp.Literal.number(512))
+
     return exp.func("HASHBYTES", *args)
 
 
-def generate_date_delta_with_unit_sql(self, e):
-    func = "DATEADD" if isinstance(e, exp.DateAdd) else "DATEDIFF"
-    return self.func(func, e.text("unit"), e.expression, e.this)
+def generate_date_delta_with_unit_sql(
+    self: generator.Generator, expression: exp.DateAdd | exp.DateDiff
+) -> str:
+    func = "DATEADD" if isinstance(expression, exp.DateAdd) else "DATEDIFF"
+    return self.func(func, expression.text("unit"), expression.expression, expression.this)
 
 
-def _format_sql(self, e):
+def _format_sql(self: generator.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
     fmt = (
-        e.args["format"]
-        if isinstance(e, exp.NumberToStr)
-        else exp.Literal.string(format_time(e.text("format"), TSQL.inverse_time_mapping))
+        expression.args["format"]
+        if isinstance(expression, exp.NumberToStr)
+        else exp.Literal.string(
+            format_time(
+                expression.text("format"), t.cast(t.Dict[str, str], TSQL.inverse_time_mapping)
+            )
+        )
     )
-    return self.func("FORMAT", e.this, fmt)
+    return self.func("FORMAT", expression.this, fmt)
 
 
-def _string_agg_sql(self, e):
-    e = e.copy()
+def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> str:
+    expression = expression.copy()
 
-    this = e.this
-    distinct = e.find(exp.Distinct)
+    this = expression.this
+    distinct = expression.find(exp.Distinct)
     if distinct:
         # exp.Distinct can appear below an exp.Order or an exp.GroupConcat expression
         self.unsupported("T-SQL STRING_AGG doesn't support DISTINCT.")
         this = distinct.pop().expressions[0]
 
     order = ""
-    if isinstance(e.this, exp.Order):
-        if e.this.this:
-            this = e.this.this.pop()
-        order = f" WITHIN GROUP ({self.sql(e.this)[1:]})"  # Order has a leading space
+    if isinstance(expression.this, exp.Order):
+        if expression.this.this:
+            this = expression.this.this.pop()
+        order = f" WITHIN GROUP ({self.sql(expression.this)[1:]})"  # Order has a leading space
 
-    separator = e.args.get("separator") or exp.Literal.string(",")
+    separator = expression.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 

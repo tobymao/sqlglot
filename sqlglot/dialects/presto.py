@@ -133,7 +133,7 @@ def _ensure_utf8(charset: exp.Literal) -> None:
         raise UnsupportedError(f"Unsupported charset {charset}")
 
 
-def _approx_percentile(args: t.Sequence) -> exp.Expression:
+def _approx_percentile(args: t.List) -> exp.Expression:
     if len(args) == 4:
         return exp.ApproxQuantile(
             this=seq_get(args, 0),
@@ -150,7 +150,7 @@ def _approx_percentile(args: t.Sequence) -> exp.Expression:
     return exp.ApproxQuantile.from_arg_list(args)
 
 
-def _from_unixtime(args: t.Sequence) -> exp.Expression:
+def _from_unixtime(args: t.List) -> exp.Expression:
     if len(args) == 3:
         return exp.UnixToTime(
             this=seq_get(args, 0),

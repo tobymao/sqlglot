@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -22,14 +24,14 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _show_parser(*args, **kwargs):
-    def _parse(self):
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[parser.Parser], exp.Show]:
+    def _parse(self) -> exp.Show:
         return self._parse_show_mysql(*args, **kwargs)
 
     return _parse
 
 
-def _date_trunc_sql(self, expression):
+def _date_trunc_sql(self: generator.Generator, expression: exp.DateTrunc) -> str:
     expr = self.sql(expression, "this")
     unit = expression.text("unit")
 
@@ -55,17 +57,17 @@ def _date_trunc_sql(self, expression):
     return f"STR_TO_DATE({concat}, '{date_format}')"
 
 
-def _str_to_date(args):
+def _str_to_date(args: t.List) -> exp.StrToDate:
     date_format = MySQL.format_time(seq_get(args, 1))
     return exp.StrToDate(this=seq_get(args, 0), format=date_format)
 
 
-def _str_to_date_sql(self, expression):
+def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate | exp.StrToTime) -> str:
     date_format = self.format_time(expression)
     return f"STR_TO_DATE({self.sql(expression.this)}, {date_format})"
 
 
-def _trim_sql(self, expression):
+def _trim_sql(self: generator.Generator, expression: exp.Trim) -> str:
     target = self.sql(expression, "this")
     trim_type = self.sql(expression, "position")
     remove_chars = self.sql(expression, "expression")
@@ -80,8 +82,8 @@ def _trim_sql(self, expression):
     return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
 
 
-def _date_add_sql(kind):
-    def func(self, expression):
+def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
+    def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
         return (
@@ -282,7 +284,13 @@ class MySQL(Dialect):
 
         LOG_DEFAULTS_TO_LN = True
 
-        def _parse_show_mysql(self, this, target=False, full=None, global_=None):
+        def _parse_show_mysql(
+            self,
+            this: str,
+            target: bool | str = False,
+            full: t.Optional[bool] = None,
+            global_: t.Optional[bool] = None,
+        ) -> exp.Show:
             if target:
                 if isinstance(target, str):
                     self._match_text_seq(target)
@@ -338,10 +346,12 @@ class MySQL(Dialect):
                 offset=offset,
                 limit=limit,
                 mutex=mutex,
-                **{"global": global_},
+                **{"global": global_},  # type: ignore
             )
 
-        def _parse_oldstyle_limit(self):
+        def _parse_oldstyle_limit(
+            self,
+        ) -> t.Tuple[t.Optional[exp.Expression], t.Optional[exp.Expression]]:
             limit = None
             offset = None
             if self._match_text_seq("LIMIT"):
@@ -351,23 +361,20 @@ class MySQL(Dialect):
                 elif len(parts) == 2:
                     limit = parts[1]
                     offset = parts[0]
+
             return offset, limit
 
-        def _parse_set_item_charset(self, kind):
+        def _parse_set_item_charset(self, kind: str) -> exp.Expression:
             this = self._parse_string() or self._parse_id_var()
+            return self.expression(exp.SetItem, this=this, kind=kind)
 
-            return self.expression(
-                exp.SetItem,
-                this=this,
-                kind=kind,
-            )
-
-        def _parse_set_item_names(self):
+        def _parse_set_item_names(self) -> exp.Expression:
             charset = self._parse_string() or self._parse_id_var()
             if self._match_text_seq("COLLATE"):
                 collate = self._parse_string() or self._parse_id_var()
             else:
                 collate = None
+
             return self.expression(
                 exp.SetItem,
                 this=charset,

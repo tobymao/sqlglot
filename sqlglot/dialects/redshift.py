@@ -8,8 +8,8 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _json_sql(self, e) -> str:
-    return f'{self.sql(e, "this")}."{e.expression.name}"'
+def _json_sql(self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar) -> str:
+    return f'{self.sql(expression, "this")}."{expression.expression.name}"'
 
 
 class Redshift(Postgres):
@@ -140,7 +140,7 @@ class Redshift(Postgres):
 
                 selects.append(exp.Select(expressions=row))
 
-            subquery_expression = selects[0]
+            subquery_expression: exp.Select | exp.Union = selects[0]
             if len(selects) > 1:
                 for select in selects[1:]:
                     subquery_expression = exp.union(subquery_expression, select, distinct=False)

@@ -7,10 +7,10 @@ from sqlglot.dialects.spark2 import Spark2
 from sqlglot.helper import seq_get
 
 
-def _parse_datediff(args: t.Sequence) -> exp.Expression:
+def _parse_datediff(args: t.List) -> exp.Expression:
     """
     Although Spark docs don't mention the "unit" argument, Spark3 added support for
-    it at some point. Databricks also supports this variation (see below).
+    it at some point. Databricks also supports this variant (see below).
 
     For example, in spark-sql (v3.3.1):
     - SELECT DATEDIFF('2020-01-01', '2020-01-05') results in -4

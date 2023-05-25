@@ -34,8 +34,8 @@ DATE_DIFF_FACTOR = {
 }
 
 
-def _date_add_sql(kind):
-    def func(self, expression):
+def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
+    def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         from sqlglot.optimizer.simplify import simplify
 
         this = self.sql(expression, "this")
@@ -52,7 +52,7 @@ def _date_add_sql(kind):
     return func
 
 
-def _date_diff_sql(self, expression):
+def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     unit = expression.text("unit").upper()
     factor = DATE_DIFF_FACTOR.get(unit)
 
@@ -78,7 +78,7 @@ def _date_diff_sql(self, expression):
     return f"CAST({unit} AS BIGINT)"
 
 
-def _substring_sql(self, expression):
+def _substring_sql(self: generator.Generator, expression: exp.Substring) -> str:
     this = self.sql(expression, "this")
     start = self.sql(expression, "start")
     length = self.sql(expression, "length")
@@ -89,7 +89,7 @@ def _substring_sql(self, expression):
     return f"SUBSTRING({this}{from_part}{for_part})"
 
 
-def _string_agg_sql(self, expression):
+def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> str:
     expression = expression.copy()
     separator = expression.args.get("separator") or exp.Literal.string(",")
 
@@ -103,13 +103,13 @@ def _string_agg_sql(self, expression):
     return f"STRING_AGG({self.format_args(this, separator)}{order})"
 
 
-def _datatype_sql(self, expression):
+def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     if expression.this == exp.DataType.Type.ARRAY:
         return f"{self.expressions(expression, flat=True)}[]"
     return self.datatype_sql(expression)
 
 
-def _auto_increment_to_serial(expression):
+def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
     auto = expression.find(exp.AutoIncrementColumnConstraint)
 
     if auto:
@@ -127,7 +127,7 @@ def _auto_increment_to_serial(expression):
     return expression
 
 
-def _serial_to_generated(expression):
+def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
     kind = expression.args["kind"]
 
     if kind.this == exp.DataType.Type.SERIAL:
@@ -145,6 +145,7 @@ def _serial_to_generated(expression):
         constraints = expression.args["constraints"]
         generated = exp.ColumnConstraint(kind=exp.GeneratedAsIdentityColumnConstraint(this=False))
         notnull = exp.ColumnConstraint(kind=exp.NotNullColumnConstraint())
+
         if notnull not in constraints:
             constraints.insert(0, notnull)
         if generated not in constraints:
@@ -153,7 +154,7 @@ def _serial_to_generated(expression):
     return expression
 
 
-def _generate_series(args):
+def _generate_series(args: t.List) -> exp.Expression:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
     step = seq_get(args, 2)
 
@@ -169,11 +170,12 @@ def _generate_series(args):
     return exp.GenerateSeries.from_arg_list(args)
 
 
-def _to_timestamp(args):
+def _to_timestamp(args: t.List) -> exp.Expression:
     # TO_TIMESTAMP accepts either a single double argument or (text, text)
     if len(args) == 1:
         # https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TABLE
         return exp.UnixToTime.from_arg_list(args)
+
     # https://www.postgresql.org/docs/current/functions-formatting.html
     return format_time_lambda(exp.StrToTime, "postgres")(args)
 
@@ -323,12 +325,7 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
-            exp.ColumnDef: transforms.preprocess(
-                [
-                    _auto_increment_to_serial,
-                    _serial_to_generated,
-                ],
-            ),
+            exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),

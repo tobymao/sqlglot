@@ -11,10 +11,10 @@ class TestRedshift(Validator):
         self.validate_identity("$foo")
 
         self.validate_all(
-            "SELECT SNAPSHOT",
+            "SELECT SNAPSHOT, type",
             write={
-                "": "SELECT SNAPSHOT",
-                "redshift": 'SELECT "SNAPSHOT"',
+                "": "SELECT SNAPSHOT, type",
+                "redshift": 'SELECT "SNAPSHOT", "type"',
             },
         )
 

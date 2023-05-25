@@ -10,14 +10,13 @@ from sqlglot.helper import dict_depth
 from sqlglot.trie import in_trie, new_trie
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import T
     from sqlglot.dataframe.sql.types import StructType
     from sqlglot.dialects.dialect import DialectType
 
     ColumnMapping = t.Union[t.Dict, str, StructType, t.List]
 
 TABLE_ARGS = ("this", "db", "catalog")
-
-T = t.TypeVar("T")
 
 
 class Schema(abc.ABC):

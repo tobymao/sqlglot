@@ -10,9 +10,10 @@ from sqlglot.helper import apply_index_offset, ensure_collection, ensure_list, s
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
-logger = logging.getLogger("sqlglot")
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
-E = t.TypeVar("E", bound=exp.Expression)
+logger = logging.getLogger("sqlglot")
 
 
 def parse_var_map(args: t.List) -> exp.Expression:

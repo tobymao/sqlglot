@@ -16,7 +16,8 @@ from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
-E = t.TypeVar("E", bound="exp.Expression")
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 FULL_FORMAT_TIME_MAPPING = {
     "weekday": "%A",

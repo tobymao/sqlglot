@@ -19,7 +19,8 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
 
-E = t.TypeVar("E", bound=exp.Expression)
+if t.TYPE_CHECKING:
+    pass
 
 
 def _date_add_sql(

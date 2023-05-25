@@ -46,9 +46,8 @@ from sqlglot.schema import MappingSchema as MappingSchema, Schema as Schema
 from sqlglot.tokens import Tokenizer as Tokenizer, TokenType as TokenType
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import E
     from sqlglot.dialects.dialect import DialectType as DialectType
-
-    T = t.TypeVar("T", bound=Expression)
 
 logger = logging.getLogger("sqlglot")
 
@@ -88,9 +87,9 @@ def parse(sql: str, read: DialectType = None, **opts) -> t.List[t.Optional[Expre
 def parse_one(
     sql: str,
     read: None = None,
-    into: t.Type[T] = ...,
+    into: t.Type[E] = ...,
     **opts,
-) -> T:
+) -> E:
     ...
 
 
@@ -98,9 +97,9 @@ def parse_one(
 def parse_one(
     sql: str,
     read: DialectType,
-    into: t.Type[T],
+    into: t.Type[E],
     **opts,
-) -> T:
+) -> E:
     ...
 
 

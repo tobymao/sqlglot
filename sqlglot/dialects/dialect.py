@@ -11,7 +11,8 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer
 from sqlglot.trie import new_trie
 
-E = t.TypeVar("E", bound=exp.Expression)
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 
 class Dialects(str, Enum):

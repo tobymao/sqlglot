@@ -33,9 +33,8 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import E
     from sqlglot.dialects.dialect import DialectType
-
-E = t.TypeVar("E", bound="Expression")
 
 
 class _Expression(type):

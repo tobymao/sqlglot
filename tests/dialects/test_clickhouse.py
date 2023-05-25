@@ -34,6 +34,9 @@ class TestClickhouse(Validator):
         self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)")
         self.validate_identity(
+            'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(TEXT))'
+        )
+        self.validate_identity(
             "CREATE TABLE test (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()"
         )
 

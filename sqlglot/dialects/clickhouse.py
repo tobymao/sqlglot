@@ -66,6 +66,9 @@ class ClickHouse(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
+            "TUPLE": lambda self: self._parse_function_with_aliased_args(
+                exp.Anonymous, name="tuple"
+            ),
             "QUANTILE": lambda self: self._parse_quantile(),
         }
 

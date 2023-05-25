@@ -11,7 +11,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
+    from sqlglot._typing import E, F
 
 logger = logging.getLogger("sqlglot")
 
@@ -690,8 +690,8 @@ class Parser(metaclass=_Parser):
         "POSITION": lambda self: self._parse_position(),
         "SAFE_CAST": lambda self: self._parse_cast(False),
         "STRING_AGG": lambda self: self._parse_string_agg(),
+        "STRUCT": lambda self: self._parse_function_with_aliased_args(exp.Struct),
         "SUBSTRING": lambda self: self._parse_substring(),
-        "STRUCT": lambda self: self._parse_struct(),
         "TRIM": lambda self: self._parse_trim(),
         "TRY_CAST": lambda self: self._parse_cast(False),
         "TRY_CONVERT": lambda self: self._parse_convert(False),
@@ -3790,8 +3790,15 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_struct(self) -> exp.Struct:
-        return exp.Struct.from_arg_list(self._parse_csv(lambda: self._parse_lambda(alias=True)))
+    def _parse_function_with_aliased_args(
+        self, expr_type: t.Type[F], name: t.Optional[str] = None
+    ) -> F:
+        args = self._parse_csv(lambda: self._parse_lambda(alias=True))
+
+        if name is not None and expr_type is exp.Anonymous:
+            return exp.Anonymous.from_arg_list([name, *args])
+
+        return expr_type.from_arg_list(args)
 
     def _parse_trim(self) -> exp.Expression:
         # https://www.w3resource.com/sql/character-functions/trim.php

@@ -317,26 +317,28 @@ class Expression(metaclass=_Expression):
                 if hasattr(vs, "parent"):
                     yield k, vs
 
-    def find(self, *expression_types: t.Type[E], bfs=True) -> E | None:
+    def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
         """
         Returns the first node in this tree which matches at least one of
         the specified types.
 
         Args:
             expression_types: the expression type(s) to match.
+            bfs: whether to search the AST using the BFS algorithm (DFS is used if false).
 
         Returns:
             The node which matches the criteria or None if no such node was found.
         """
         return next(self.find_all(*expression_types, bfs=bfs), None)
 
-    def find_all(self, *expression_types: t.Type[E], bfs=True) -> t.Iterator[E]:
+    def find_all(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Iterator[E]:
         """
         Returns a generator object which visits all nodes in this tree and only
         yields those that match at least one of the specified expression types.
 
         Args:
             expression_types: the expression type(s) to match.
+            bfs: whether to search the AST using the BFS algorithm (DFS is used if false).
 
         Returns:
             The generator object.
@@ -345,7 +347,7 @@ class Expression(metaclass=_Expression):
             if isinstance(expression, expression_types):
                 yield expression
 
-    def find_ancestor(self, *expression_types: t.Type[E]) -> E | None:
+    def find_ancestor(self, *expression_types: t.Type[E]) -> t.Optional[E]:
         """
         Returns a nearest parent matching expression_types.
 
@@ -716,10 +718,10 @@ class Condition(Expression):
             'NOT x = 1'
 
         Args:
-            copy (bool): whether or not to copy this object.
+            copy: whether or not to copy this object.
 
         Returns:
-            Not: the new condition.
+            The new Not instance.
         """
         return not_(self, copy=copy)
 
@@ -1326,7 +1328,7 @@ class Delete(Expression):
 
     def where(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -1667,7 +1669,7 @@ class Join(Expression):
 
     def on(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -1711,7 +1713,7 @@ class Join(Expression):
 
     def using(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2288,7 +2290,7 @@ class Union(Subqueryable):
 
     def select(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2439,7 +2441,7 @@ class Select(Subqueryable):
 
     def group_by(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2468,6 +2470,7 @@ class Select(Subqueryable):
         """
         if not expressions:
             return self if not copy else self.copy()
+
         return _apply_child_list_builder(
             *expressions,
             instance=self,
@@ -2482,7 +2485,7 @@ class Select(Subqueryable):
 
     def order_by(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2522,7 +2525,7 @@ class Select(Subqueryable):
 
     def sort_by(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2562,7 +2565,7 @@ class Select(Subqueryable):
 
     def cluster_by(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2668,7 +2671,7 @@ class Select(Subqueryable):
 
     def select(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2705,7 +2708,7 @@ class Select(Subqueryable):
 
     def lateral(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2744,14 +2747,14 @@ class Select(Subqueryable):
 
     def join(
         self,
-        expression,
-        on=None,
-        using=None,
-        append=True,
-        join_type=None,
-        join_alias=None,
-        dialect=None,
-        copy=True,
+        expression: ExpOrStr,
+        on: t.Optional[ExpOrStr] = None,
+        using: t.Optional[ExpOrStr | t.List[ExpOrStr]] = None,
+        append: bool = True,
+        join_type: t.Optional[str] = None,
+        join_alias: t.Optional[Identifier | str] = None,
+        dialect: DialectType = None,
+        copy: bool = True,
         **opts,
     ) -> Select:
         """
@@ -2770,18 +2773,19 @@ class Select(Subqueryable):
             'SELECT * FROM tbl LEFT OUTER JOIN tbl2 ON tbl1.y = tbl2.y'
 
         Args:
-            expression (str | Expression): the SQL code string to parse.
+            expression: the SQL code string to parse.
                 If an `Expression` instance is passed, it will be used as-is.
-            on (str | Expression): optionally specify the join "on" criteria as a SQL string.
+            on: optionally specify the join "on" criteria as a SQL string.
                 If an `Expression` instance is passed, it will be used as-is.
-            using (str | Expression): optionally specify the join "using" criteria as a SQL string.
+            using: optionally specify the join "using" criteria as a SQL string.
                 If an `Expression` instance is passed, it will be used as-is.
-            append (bool): if `True`, add to any existing expressions.
+            append: if `True`, add to any existing expressions.
                 Otherwise, this resets the expressions.
-            join_type (str): If set, alter the parsed join type
-            dialect (str): the dialect used to parse the input expressions.
-            copy (bool): if `False`, modify this expression instance in-place.
-            opts (kwargs): other options to use to parse the input expressions.
+            join_type: if set, alter the parsed join type.
+            join_alias: an optional alias for the joined source.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
 
         Returns:
             Select: the modified expression.
@@ -2789,9 +2793,9 @@ class Select(Subqueryable):
         parse_args = {"dialect": dialect, **opts}
 
         try:
-            expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)
+            expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)  # type: ignore
         except ParseError:
-            expression = maybe_parse(expression, into=(Join, Expression), **parse_args)
+            expression = maybe_parse(expression, into=(Join, Expression), **parse_args)  # type: ignore
 
         join = expression if isinstance(expression, Join) else Join(this=expression)
 
@@ -2813,12 +2817,12 @@ class Select(Subqueryable):
                 join.set("kind", kind.text)
 
         if on:
-            on = and_(*ensure_collection(on), dialect=dialect, copy=copy, **opts)
+            on = and_(*ensure_list(on), dialect=dialect, copy=copy, **opts)
             join.set("on", on)
 
         if using:
             join = _apply_list_builder(
-                *ensure_collection(using),
+                *ensure_list(using),
                 instance=join,
                 arg="using",
                 append=append,
@@ -2828,6 +2832,7 @@ class Select(Subqueryable):
 
         if join_alias:
             join.set("this", alias_(join.this, join_alias, table=True))
+
         return _apply_list_builder(
             join,
             instance=self,
@@ -2839,7 +2844,7 @@ class Select(Subqueryable):
 
     def where(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2878,7 +2883,7 @@ class Select(Subqueryable):
 
     def having(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2917,7 +2922,7 @@ class Select(Subqueryable):
 
     def window(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2936,7 +2941,7 @@ class Select(Subqueryable):
 
     def qualify(
         self,
-        *expressions: ExpOrStr,
+        *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
@@ -2953,7 +2958,9 @@ class Select(Subqueryable):
             **opts,
         )
 
-    def distinct(self, *ons: ExpOrStr, distinct: bool = True, copy: bool = True) -> Select:
+    def distinct(
+        self, *ons: t.Optional[ExpOrStr], distinct: bool = True, copy: bool = True
+    ) -> Select:
         """
         Set the OFFSET expression.
 
@@ -2970,7 +2977,7 @@ class Select(Subqueryable):
             Select: the modified expression.
         """
         instance = _maybe_copy(self, copy)
-        on = Tuple(expressions=[maybe_parse(on, copy=copy) for on in ons]) if ons else None
+        on = Tuple(expressions=[maybe_parse(on, copy=copy) for on in ons if on]) if ons else None
         instance.set("distinct", Distinct(on=on) if distinct else None)
         return instance
 
@@ -3621,6 +3628,7 @@ class TimeUnit(Expression):
             args["unit"] = Var(this=unit.name)
         elif isinstance(unit, Week):
             unit.set("this", Var(this=unit.this.name))
+
         super().__init__(**args)
 
 
@@ -4548,7 +4556,7 @@ def maybe_parse(
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 
-def _maybe_copy(instance, copy=True):
+def _maybe_copy(instance: E, copy: bool = True) -> E:
     return instance.copy() if copy else instance
 
 
@@ -4595,16 +4603,18 @@ def _apply_child_list_builder(
     instance = _maybe_copy(instance, copy)
     parsed = []
     for expression in expressions:
-        if _is_wrong_expression(expression, into):
-            expression = into(expressions=[expression])
-        expression = maybe_parse(
-            expression,
-            into=into,
-            dialect=dialect,
-            prefix=prefix,
-            **opts,
-        )
-        parsed.extend(expression.expressions)
+        if expression is not None:
+            if _is_wrong_expression(expression, into):
+                expression = into(expressions=[expression])
+
+            expression = maybe_parse(
+                expression,
+                into=into,
+                dialect=dialect,
+                prefix=prefix,
+                **opts,
+            )
+            parsed.extend(expression.expressions)
 
     existing = instance.args.get(arg)
     if append and existing:
@@ -4614,6 +4624,7 @@ def _apply_child_list_builder(
     for k, v in (properties or {}).items():
         child.set(k, v)
     instance.set(arg, child)
+
     return instance
 
 
@@ -4639,6 +4650,7 @@ def _apply_list_builder(
             **opts,
         )
         for expression in expressions
+        if expression
     ]
 
     existing_expressions = inst.args.get(arg)
@@ -4706,19 +4718,20 @@ def _combine(
     copy: bool = True,
     **opts,
 ) -> Expression:
-    expressions = [
+    conditions = [
         condition(expression, dialect=dialect, copy=copy, **opts) for expression in expressions
     ]
-    this = t.cast(Expression, expressions[0])
-    if expressions[1:]:
+
+    this, *rest = conditions
+    if rest:
         this = _wrap(this, Connector)
-    for expression in expressions[1:]:
+    for expression in rest:
         this = operator(this=this, expression=_wrap(expression, Connector))
 
     return this
 
 
-def _wrap(expression, kind):
+def _wrap(expression: Expression, kind: t.Type[Expression]):
     if isinstance(expression, kind):
         return Paren(this=expression)
     return expression

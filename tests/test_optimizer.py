@@ -20,8 +20,8 @@ from tests.helpers import (
 )
 
 
-def parse_and_optimize(func, sql, dialect, **kwargs):
-    return func(parse_one(sql, read=dialect), **kwargs)
+def parse_and_optimize(func, sql, read_dialect, **kwargs):
+    return func(parse_one(sql, read=read_dialect), **kwargs)
 
 
 def qualify_columns(expression, **kwargs):
@@ -98,7 +98,7 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
-    def check_file(self, file, func, pretty=False, execute=False, **kwargs):
+    def check_file(self, file, func, pretty=False, execute=False, set_dialect=False, **kwargs):
         with ProcessPoolExecutor() as pool:
             results = {}
 
@@ -112,6 +112,9 @@ class TestOptimizer(unittest.TestCase):
                 func_kwargs = {**kwargs}
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+
+                if set_dialect and dialect:
+                    func_kwargs["dialect"] = dialect
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -157,6 +160,7 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
             execute=True,
             schema=schema,
+            set_dialect=True,
         )
 
     def test_isolate_table_selects(self):
@@ -217,8 +221,12 @@ class TestOptimizer(unittest.TestCase):
                     )
                     optimizer.qualify_columns.validate_qualify_columns(expression)
 
-    def test_lower_identities(self):
-        self.check_file("lower_identities", optimizer.lower_identities.lower_identities)
+    def test_normalize_identifiers(self):
+        self.check_file(
+            "normalize_identifiers",
+            optimizer.normalize_identifiers.normalize_identifiers,
+            set_dialect=True,
+        )
 
     def test_pushdown_projection(self):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)

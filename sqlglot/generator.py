@@ -31,6 +31,8 @@ class Generator:
         hex_end (str): specifies which ending character to use to delimit hex literals. Default: None.
         byte_start (str): specifies which starting character to use to delimit byte literals. Default: None.
         byte_end (str): specifies which ending character to use to delimit byte literals. Default: None.
+        raw_start (str): specifies which starting character to use to delimit raw literals. Default: None.
+        raw_end (str): specifies which ending character to use to delimit raw literals. Default: None.
         identify (bool | str): 'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.
         normalize (bool): if set to True all identifiers will lower cased
         string_escape (str): specifies a string escape character. Default: '.
@@ -249,6 +251,8 @@ class Generator:
         "hex_end",
         "byte_start",
         "byte_end",
+        "raw_start",
+        "raw_end",
         "identify",
         "normalize",
         "string_escape",
@@ -286,6 +290,8 @@ class Generator:
         hex_end=None,
         byte_start=None,
         byte_end=None,
+        raw_start=None,
+        raw_end=None,
         identify=False,
         normalize=False,
         string_escape=None,
@@ -318,6 +324,8 @@ class Generator:
         self.hex_end = hex_end
         self.byte_start = byte_start
         self.byte_end = byte_end
+        self.raw_start = raw_start
+        self.raw_end = raw_end
         self.identify = identify
         self.normalize = normalize
         self.string_escape = string_escape or "'"
@@ -793,6 +801,11 @@ class Generator:
             return f"{self.byte_start}{this}{self.byte_end}"
         return this
 
+    def rawstring_sql(self, expression: exp.RawString) -> str:
+        if self.raw_start:
+            return f"{self.raw_start}{expression.name}{self.raw_end}"
+        return self.sql(exp.Literal.string(expression.name.replace("\\", "\\\\")))
+
     def datatypesize_sql(self, expression: exp.DataTypeSize) -> str:
         this = self.sql(expression, "this")
         specifier = self.sql(expression, "expression")
@@ -903,8 +916,9 @@ class Generator:
         output_format = f"OUTPUTFORMAT {output_format}" if output_format else ""
         return self.sep().join((input_format, output_format))
 
-    def national_sql(self, expression: exp.National) -> str:
-        return f"N{self.sql(expression, 'this')}"
+    def national_sql(self, expression: exp.National, prefix: str = "N") -> str:
+        string = self.sql(exp.Literal.string(expression.name))
+        return f"{prefix}{string}"
 
     def partition_sql(self, expression: exp.Partition) -> str:
         return f"PARTITION({self.expressions(expression)})"

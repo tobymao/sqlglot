@@ -8,7 +8,7 @@ from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
 from sqlglot.time import format_time
-from sqlglot.tokens import Token, Tokenizer
+from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
 E = t.TypeVar("E", bound=exp.Expression)
@@ -83,17 +83,20 @@ class _Dialect(type):
             klass.tokenizer_class._IDENTIFIERS.items()
         )[0]
 
-        klass.bit_start, klass.bit_end = seq_get(
-            list(klass.tokenizer_class._BIT_STRINGS.items()), 0
-        ) or (None, None)
+        def get_start_end(token_type: TokenType) -> t.Tuple[t.Optional[str], t.Optional[str]]:
+            return next(
+                (
+                    (s, e)
+                    for s, (e, t) in klass.tokenizer_class._FORMAT_STRINGS.items()
+                    if t == token_type
+                ),
+                (None, None),
+            )
 
-        klass.hex_start, klass.hex_end = seq_get(
-            list(klass.tokenizer_class._HEX_STRINGS.items()), 0
-        ) or (None, None)
-
-        klass.byte_start, klass.byte_end = seq_get(
-            list(klass.tokenizer_class._BYTE_STRINGS.items()), 0
-        ) or (None, None)
+        klass.bit_start, klass.bit_end = get_start_end(TokenType.BIT_STRING)
+        klass.hex_start, klass.hex_end = get_start_end(TokenType.HEX_STRING)
+        klass.byte_start, klass.byte_end = get_start_end(TokenType.BYTE_STRING)
+        klass.raw_start, klass.raw_end = get_start_end(TokenType.RAW_STRING)
 
         return klass
 
@@ -211,6 +214,8 @@ class Dialect(metaclass=_Dialect):
                 "hex_end": self.hex_end,
                 "byte_start": self.byte_start,
                 "byte_end": self.byte_end,
+                "raw_start": self.raw_start,
+                "raw_end": self.raw_end,
                 "identifier_start": self.identifier_start,
                 "identifier_end": self.identifier_end,
                 "string_escape": self.tokenizer_class.STRING_ESCAPES[0],

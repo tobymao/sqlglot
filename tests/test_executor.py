@@ -598,6 +598,8 @@ class TestExecutor(unittest.TestCase):
             ("MAP(['a'], [1]).a", 1),
             ("STRFTIME('%j', '2023-03-23 15:00:00')", "082"),
             ("STRFTIME('%j', NULL)", None),
+            ("DATESTRTODATE('2022-01-01')", date(2022, 1, 1)),
+            ("TIMESTRTOTIME('2022-01-01')", datetime.datetime(2022, 1, 1)),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

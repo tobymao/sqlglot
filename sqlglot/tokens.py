@@ -51,7 +51,6 @@ class TokenType(AutoName):
     DOLLAR = auto()
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
-    NATIONAL = auto()
     DAMP = auto()
 
     BLOCK_START = auto()
@@ -72,6 +71,8 @@ class TokenType(AutoName):
     BIT_STRING = auto()
     HEX_STRING = auto()
     BYTE_STRING = auto()
+    NATIONAL_STRING = auto()
+    RAW_STRING = auto()
 
     # types
     BIT = auto()
@@ -350,15 +351,31 @@ class _Tokenizer(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        klass._QUOTES = {
-            f"{prefix}{s}": e
-            for s, e in cls._delimeter_list_to_dict(klass.QUOTES).items()
-            for prefix in (("",) if s[0].isalpha() else ("", "n", "N"))
+        def _convert_quotes(arr: t.List[str | t.Tuple[str, str]]) -> t.Dict[str, str]:
+            return dict(
+                (item, item) if isinstance(item, str) else (item[0], item[1]) for item in arr
+            )
+
+        def _quotes_to_format(
+            token_type: TokenType, arr: t.List[str | t.Tuple[str, str]]
+        ) -> t.Dict[str, t.Tuple[str, TokenType]]:
+            return {k: (v, token_type) for k, v in _convert_quotes(arr).items()}
+
+        klass._QUOTES = _convert_quotes(klass.QUOTES)
+        klass._IDENTIFIERS = _convert_quotes(klass.IDENTIFIERS)
+
+        klass._FORMAT_STRINGS = {
+            **{
+                p + s: (e, TokenType.NATIONAL_STRING)
+                for s, e in klass._QUOTES.items()
+                for p in ("n", "N")
+            },
+            **_quotes_to_format(TokenType.BIT_STRING, klass.BIT_STRINGS),
+            **_quotes_to_format(TokenType.BYTE_STRING, klass.BYTE_STRINGS),
+            **_quotes_to_format(TokenType.HEX_STRING, klass.HEX_STRINGS),
+            **_quotes_to_format(TokenType.RAW_STRING, klass.RAW_STRINGS),
         }
-        klass._BIT_STRINGS = cls._delimeter_list_to_dict(klass.BIT_STRINGS)
-        klass._HEX_STRINGS = cls._delimeter_list_to_dict(klass.HEX_STRINGS)
-        klass._BYTE_STRINGS = cls._delimeter_list_to_dict(klass.BYTE_STRINGS)
-        klass._IDENTIFIERS = cls._delimeter_list_to_dict(klass.IDENTIFIERS)
+
         klass._STRING_ESCAPES = set(klass.STRING_ESCAPES)
         klass._IDENTIFIER_ESCAPES = set(klass.IDENTIFIER_ESCAPES)
         klass._COMMENTS = dict(
@@ -372,18 +389,12 @@ class _Tokenizer(type):
                 *klass.KEYWORDS,
                 *klass._COMMENTS,
                 *klass._QUOTES,
-                *klass._BIT_STRINGS,
-                *klass._HEX_STRINGS,
-                *klass._BYTE_STRINGS,
+                *klass._FORMAT_STRINGS,
             )
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
         return klass
-
-    @staticmethod
-    def _delimeter_list_to_dict(list: t.List[str | t.Tuple[str, str]]) -> t.Dict[str, str]:
-        return dict((item, item) if isinstance(item, str) else (item[0], item[1]) for item in list)
 
 
 class Tokenizer(metaclass=_Tokenizer):
@@ -425,6 +436,7 @@ class Tokenizer(metaclass=_Tokenizer):
     BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []
     BYTE_STRINGS: t.List[str | t.Tuple[str, str]] = []
     HEX_STRINGS: t.List[str | t.Tuple[str, str]] = []
+    RAW_STRINGS: t.List[str | t.Tuple[str, str]] = []
     IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
     IDENTIFIER_ESCAPES = ['"']
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
@@ -432,9 +444,7 @@ class Tokenizer(metaclass=_Tokenizer):
     VAR_SINGLE_TOKENS: t.Set[str] = set()
 
     _COMMENTS: t.Dict[str, str] = {}
-    _BIT_STRINGS: t.Dict[str, str] = {}
-    _BYTE_STRINGS: t.Dict[str, str] = {}
-    _HEX_STRINGS: t.Dict[str, str] = {}
+    _FORMAT_STRINGS: t.Dict[str, t.Tuple[str, TokenType]] = {}
     _IDENTIFIERS: t.Dict[str, str] = {}
     _IDENTIFIER_ESCAPES: t.Set[str] = set()
     _QUOTES: t.Dict[str, str] = {}
@@ -898,8 +908,6 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if self._scan_string(word):
             return
-        if self._scan_formatted_string(word):
-            return
         if self._scan_comment(word):
             return
 
@@ -943,9 +951,9 @@ class Tokenizer(metaclass=_Tokenizer):
         if self._char == "0":
             peek = self._peek.upper()
             if peek == "B":
-                return self._scan_bits() if self._BIT_STRINGS else self._add(TokenType.NUMBER)
+                return self._scan_bits() if self.BIT_STRINGS else self._add(TokenType.NUMBER)
             elif peek == "X":
-                return self._scan_hex() if self._HEX_STRINGS else self._add(TokenType.NUMBER)
+                return self._scan_hex() if self.HEX_STRINGS else self._add(TokenType.NUMBER)
 
         decimal = False
         scientific = 0
@@ -1014,37 +1022,24 @@ class Tokenizer(metaclass=_Tokenizer):
 
         return self._text
 
-    def _scan_string(self, quote: str) -> bool:
-        quote_end = self._QUOTES.get(quote)
-        if quote_end is None:
-            return False
+    def _scan_string(self, start: str) -> bool:
+        base = None
+        token_type = TokenType.STRING
 
-        self._advance(len(quote))
-        text = self._extract_string(quote_end)
-        text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
-        self._add(TokenType.NATIONAL if quote[0].upper() == "N" else TokenType.STRING, text)
-        return True
+        if start in self._QUOTES:
+            end = self._QUOTES[start]
+        elif start in self._FORMAT_STRINGS:
+            end, token_type = self._FORMAT_STRINGS[start]
 
-    # X'1234', b'0110', E'\\\\\' etc.
-    def _scan_formatted_string(self, string_start: str) -> bool:
-        if string_start in self._HEX_STRINGS:
-            delimiters = self._HEX_STRINGS
-            token_type = TokenType.HEX_STRING
-            base = 16
-        elif string_start in self._BIT_STRINGS:
-            delimiters = self._BIT_STRINGS
-            token_type = TokenType.BIT_STRING
-            base = 2
-        elif string_start in self._BYTE_STRINGS:
-            delimiters = self._BYTE_STRINGS
-            token_type = TokenType.BYTE_STRING
-            base = None
+            if token_type == TokenType.HEX_STRING:
+                base = 16
+            elif token_type == TokenType.BIT_STRING:
+                base = 2
         else:
             return False
 
-        self._advance(len(string_start))
-        string_end = delimiters[string_start]
-        text = self._extract_string(string_end)
+        self._advance(len(start))
+        text = self._extract_string(end)
 
         if base:
             try:
@@ -1053,6 +1048,8 @@ class Tokenizer(metaclass=_Tokenizer):
                 raise RuntimeError(
                     f"Numeric string contains invalid characters from {self._line}:{self._start}"
                 )
+        else:
+            text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
 
         self._add(token_type, text)
         return True

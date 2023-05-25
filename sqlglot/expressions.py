@@ -4740,10 +4740,8 @@ def _combine(
     return this
 
 
-def _wrap(expression: Expression, kind: t.Type[Expression]):
-    if isinstance(expression, kind):
-        return Paren(this=expression)
-    return expression
+def _wrap(expression: E, kind: t.Type[Expression]) -> E | Paren:
+    return Paren(this=expression) if isinstance(expression, kind) else expression
 
 
 def union(

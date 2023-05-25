@@ -32,6 +32,9 @@ def eliminate_subqueries(expression):
 
     root = build_scope(expression)
 
+    if not root:
+        return expression
+
     # Map of alias->Scope|Table
     # These are all aliases that are already used in the expression.
     # We don't want to create new CTEs that conflict with these names.

@@ -1,4 +1,5 @@
 import itertools
+import typing as t
 from collections import defaultdict
 from enum import Enum, auto
 
@@ -477,7 +478,7 @@ class Scope:
         return scope_ref_count
 
 
-def traverse_scope(expression):
+def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     """
     Traverse an expression by it's "scopes".
 
@@ -502,10 +503,12 @@ def traverse_scope(expression):
     Returns:
         list[Scope]: scope instances
     """
+    if not isinstance(expression, exp.Unionable):
+        return []
     return list(_traverse_scope(Scope(expression)))
 
 
-def build_scope(expression):
+def build_scope(expression: exp.Expression) -> t.Optional[Scope]:
     """
     Build a scope tree.
 
@@ -514,7 +517,10 @@ def build_scope(expression):
     Returns:
         Scope: root scope
     """
-    return traverse_scope(expression)[-1]
+    scopes = traverse_scope(expression)
+    if scopes:
+        return scopes[-1]
+    return None
 
 
 def _traverse_scope(scope):

@@ -21,26 +21,28 @@ def pushdown_predicates(expression):
         sqlglot.Expression: optimized expression
     """
     root = build_scope(expression)
-    scope_ref_count = root.ref_count()
 
-    for scope in reversed(list(root.traverse())):
-        select = scope.expression
-        where = select.args.get("where")
-        if where:
-            selected_sources = scope.selected_sources
-            # a right join can only push down to itself and not the source FROM table
-            for k, (node, source) in selected_sources.items():
-                parent = node.find_ancestor(exp.Join, exp.From)
-                if isinstance(parent, exp.Join) and parent.side == "RIGHT":
-                    selected_sources = {k: (node, source)}
-                    break
-            pushdown(where.this, selected_sources, scope_ref_count)
+    if root:
+        scope_ref_count = root.ref_count()
 
-        # joins should only pushdown into itself, not to other joins
-        # so we limit the selected sources to only itself
-        for join in select.args.get("joins") or []:
-            name = join.this.alias_or_name
-            pushdown(join.args.get("on"), {name: scope.selected_sources[name]}, scope_ref_count)
+        for scope in reversed(list(root.traverse())):
+            select = scope.expression
+            where = select.args.get("where")
+            if where:
+                selected_sources = scope.selected_sources
+                # a right join can only push down to itself and not the source FROM table
+                for k, (node, source) in selected_sources.items():
+                    parent = node.find_ancestor(exp.Join, exp.From)
+                    if isinstance(parent, exp.Join) and parent.side == "RIGHT":
+                        selected_sources = {k: (node, source)}
+                        break
+                pushdown(where.this, selected_sources, scope_ref_count)
+
+            # joins should only pushdown into itself, not to other joins
+            # so we limit the selected sources to only itself
+            for join in select.args.get("joins") or []:
+                name = join.this.alias_or_name
+                pushdown(join.args.get("on"), {name: scope.selected_sources[name]}, scope_ref_count)
 
     return expression
 

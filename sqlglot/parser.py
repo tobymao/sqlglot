@@ -521,7 +521,10 @@ class Parser(metaclass=_Parser):
         TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
         TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
         TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
-        TokenType.NATIONAL: lambda self, token: self._parse_national(token),
+        TokenType.NATIONAL_STRING: lambda self, token: self.expression(
+            exp.National, this=token.text
+        ),
+        TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, this=token.text),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
     }
 
@@ -3153,9 +3156,6 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Introducer, this=token.text, expression=literal)
 
         return self.expression(exp.Identifier, this=token.text)
-
-    def _parse_national(self, token: Token) -> exp.Expression:
-        return self.expression(exp.National, this=exp.Literal.string(token.text))
 
     def _parse_session_parameter(self) -> exp.Expression:
         kind = None

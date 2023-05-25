@@ -116,16 +116,22 @@ class BigQuery(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
-        QUOTES = [
-            (prefix + quote, quote) if prefix else quote
-            for quote in ["'", '"', '"""', "'''"]
-            for prefix in ["", "r", "R"]
-        ]
+        QUOTES = ["'", '"', '"""', "'''"]
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
-        HEX_STRINGS = [("0x", ""), ("0X", "")]
-        BYTE_STRINGS = [("b'", "'"), ("B'", "'")]
+
+        HEX_STRINGS = [
+            (prefix + q, q) for q in [""] + t.cast(t.List[str], QUOTES) for prefix in ("0x", "0X")
+        ]
+
+        BYTE_STRINGS = [
+            (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("b", "B")
+        ]
+
+        RAW_STRINGS = [
+            (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("r", "R")
+        ]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

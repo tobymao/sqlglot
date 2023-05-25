@@ -85,16 +85,6 @@ class TestBigQuery(Validator):
                 "spark": "'x\\''",
             },
         )
-        self.validate_all(
-            r'r"""/\*.*\*/"""',
-            write={
-                "bigquery": r"'/\*.*\*/'",
-                "duckdb": r"'/\*.*\*/'",
-                "presto": r"'/\*.*\*/'",
-                "hive": r"'/\*.*\*/'",
-                "spark": r"'/\*.*\*/'",
-            },
-        )
         with self.assertRaises(ValueError):
             transpile("'\\'", read="bigquery")
 
@@ -108,13 +98,23 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            r'r"""/\*.*\*/"""',
+            write={
+                "bigquery": r"r'/\*.*\*/'",
+                "duckdb": r"'/\\*.*\\*/'",
+                "presto": r"'/\\*.*\\*/'",
+                "hive": r"'/\\*.*\\*/'",
+                "spark": r"'/\\*.*\\*/'",
+            },
+        )
+        self.validate_all(
             r'R"""/\*.*\*/"""',
             write={
-                "bigquery": r"'/\*.*\*/'",
-                "duckdb": r"'/\*.*\*/'",
-                "presto": r"'/\*.*\*/'",
-                "hive": r"'/\*.*\*/'",
-                "spark": r"'/\*.*\*/'",
+                "bigquery": r"r'/\*.*\*/'",
+                "duckdb": r"'/\\*.*\\*/'",
+                "presto": r"'/\\*.*\\*/'",
+                "hive": r"'/\\*.*\\*/'",
+                "spark": r"'/\\*.*\\*/'",
             },
         )
         self.validate_all(

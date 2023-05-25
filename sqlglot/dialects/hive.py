@@ -368,7 +368,7 @@ class Hive(Dialect):
             exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
-            exp.National: lambda self, e: self.sql(e, "this"),
+            exp.National: lambda self, e: self.national_sql(e, prefix=""),
         }
 
         PROPERTIES_LOCATION = {

@@ -4711,14 +4711,16 @@ def _apply_cte_builder(
 
 
 def _combine(
-    expressions: t.Sequence[ExpOrStr],
+    expressions: t.Sequence[t.Optional[ExpOrStr]],
     operator: t.Type[Connector],
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
 ) -> Expression:
     conditions = [
-        condition(expression, dialect=dialect, copy=copy, **opts) for expression in expressions
+        condition(expression, dialect=dialect, copy=copy, **opts)
+        for expression in expressions
+        if expression
     ]
 
     this, *rest = conditions
@@ -5027,7 +5029,7 @@ def condition(
 
 
 def and_(
-    *expressions: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
 ) -> Expression:
     """
     Combine multiple conditions with an AND logical operator.
@@ -5050,7 +5052,7 @@ def and_(
 
 
 def or_(
-    *expressions: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
 ) -> Expression:
     """
     Combine multiple conditions with an OR logical operator.

@@ -12,10 +12,8 @@ from enum import Enum
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
+    from sqlglot._typing import E, T
     from sqlglot.expressions import Expression
-
-    T = t.TypeVar("T")
-    E = t.TypeVar("E", bound=Expression)
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 PYTHON_VERSION = sys.version_info[:2]
@@ -92,7 +90,7 @@ def ensure_collection(value):
     )
 
 
-def csv(*args, sep: str = ", ") -> str:
+def csv(*args: str, sep: str = ", ") -> str:
     """
     Formats any number of string arguments as CSV.
 

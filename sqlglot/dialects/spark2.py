@@ -31,7 +31,7 @@ def _map_sql(self: Hive.Generator, expression: exp.Map) -> str:
     return f"MAP_FROM_ARRAYS({keys}, {values})"
 
 
-def _parse_as_cast(to_type: str) -> t.Callable[[t.Sequence], exp.Expression]:
+def _parse_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expression]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
 
 

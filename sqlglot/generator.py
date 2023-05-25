@@ -1529,7 +1529,7 @@ class Generator:
             sep="",
         )
 
-    def after_having_modifiers(self, expression):
+    def after_having_modifiers(self, expression: exp.Expression) -> t.List[str]:
         return [
             self.sql(expression, "qualify"),
             self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
@@ -1537,7 +1537,7 @@ class Generator:
             else "",
         ]
 
-    def after_limit_modifiers(self, expression):
+    def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:
         locks = self.expressions(expression, key="locks", sep=" ")
         locks = f" {locks}" if locks else ""
         return [locks, self.sql(expression, "sample")]

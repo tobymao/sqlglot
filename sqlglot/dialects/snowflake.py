@@ -30,7 +30,7 @@ def _check_int(s: str) -> bool:
 
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
-def _snowflake_to_timestamp(args: t.Sequence) -> t.Union[exp.StrToTime, exp.UnixToTime]:
+def _snowflake_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime]:
     if len(args) == 2:
         first_arg, second_arg = args
         if second_arg.is_string:
@@ -120,7 +120,7 @@ def _parse_date_part(self: parser.Parser) -> t.Optional[exp.Expression]:
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/div0
-def _div0_to_if(args: t.Sequence) -> exp.Expression:
+def _div0_to_if(args: t.List) -> exp.Expression:
     cond = exp.EQ(this=seq_get(args, 1), expression=exp.Literal.number(0))
     true = exp.Literal.number(0)
     false = exp.Div(this=seq_get(args, 0), expression=seq_get(args, 1))
@@ -128,13 +128,13 @@ def _div0_to_if(args: t.Sequence) -> exp.Expression:
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
-def _zeroifnull_to_if(args: t.Sequence) -> exp.Expression:
+def _zeroifnull_to_if(args: t.List) -> exp.Expression:
     cond = exp.Is(this=seq_get(args, 0), expression=exp.Null())
     return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
-def _nullifzero_to_if(args: t.Sequence) -> exp.Expression:
+def _nullifzero_to_if(args: t.List) -> exp.Expression:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
@@ -147,7 +147,7 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
-def _parse_convert_timezone(args: t.Sequence) -> exp.Expression:
+def _parse_convert_timezone(args: t.List) -> exp.Expression:
     if len(args) == 3:
         return exp.Anonymous(this="CONVERT_TIMEZONE", expressions=args)
     return exp.AtTimeZone(this=seq_get(args, 1), zone=seq_get(args, 0))

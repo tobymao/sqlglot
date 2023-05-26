@@ -874,8 +874,7 @@ class DerivedTable(Expression):
         table_alias = self.args.get("alias")
         if not table_alias:
             return []
-        column_list = table_alias.assert_is(TableAlias).args.get("columns") or []
-        return [c.name for c in column_list]
+        return [c.name for c in table_alias.args.get("columns") or []]
 
     @property
     def selects(self):

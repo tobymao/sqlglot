@@ -23,6 +23,8 @@ TABLE_ARGS = ("this", "db", "catalog")
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 
+    dialect: DialectType
+
     @abc.abstractmethod
     def add_table(
         self,

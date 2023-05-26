@@ -13,7 +13,7 @@ def normalize_identifiers(
         >>> import sqlglot
         >>> expression = sqlglot.parse_one('SELECT Bar.A AS A FROM "Foo".Bar')
         >>> normalize_identifiers(expression).sql()
-        'SELECT bar.a AS A FROM "Foo".bar'
+        'SELECT bar.a AS a FROM "Foo".bar'
 
     Args:
         expression: The expression to transform.

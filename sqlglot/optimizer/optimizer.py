@@ -10,26 +10,19 @@ from sqlglot.optimizer.canonicalize import canonicalize
 from sqlglot.optimizer.eliminate_ctes import eliminate_ctes
 from sqlglot.optimizer.eliminate_joins import eliminate_joins
 from sqlglot.optimizer.eliminate_subqueries import eliminate_subqueries
-from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.merge_subqueries import merge_subqueries
 from sqlglot.optimizer.normalize import normalize
-from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
 from sqlglot.optimizer.pushdown_projections import pushdown_projections
-from sqlglot.optimizer.qualify_columns import qualify_columns, validate_qualify_columns
-from sqlglot.optimizer.qualify_tables import qualify_tables
+from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 from sqlglot.schema import ensure_schema
 
 RULES = (
-    normalize_identifiers,
-    qualify_tables,
-    isolate_table_selects,
-    qualify_columns,
+    qualify,
     pushdown_projections,
-    validate_qualify_columns,
     normalize,
     unnest_subqueries,
     pushdown_predicates,

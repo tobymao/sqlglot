@@ -686,3 +686,35 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             optimizer.optimize(parse_one("SELECT * FROM a"), schema=schema),
             parse_one('SELECT "a"."b c" AS "b c", "a"."d e" AS "d e" FROM "a" AS "a"'),
         )
+
+    def test_quotes(self):
+        schema = {
+            "example": {
+                '"source"': {
+                    "id": "text",
+                    '"name"': "text",
+                    '"payload"': "text",
+                }
+            }
+        }
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                  SELECT * FROM example."source"
+                """
+                ),
+                dialect="snowflake",
+                schema=schema,
+            ).sql(pretty=True),
+            parse_one(
+                """
+              SELECT
+                 "source".ID AS ID,
+                 "source"."name" AS "name",
+                 "source"."payload" AS "payload"
+               FROM EXAMPLE."source" AS "source"
+            """
+            ).sql(pretty=True),
+        )

@@ -609,6 +609,10 @@ class TestExecutor(unittest.TestCase):
 
     def test_case_sensitivity(self):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})
+        self.assertEqual(result.columns, ("a",))
+        self.assertEqual(result.rows, [(1,)])
+
+        result = execute('SELECT A AS "A" FROM X', tables={"x": [{"a": 1}]})
         self.assertEqual(result.columns, ("A",))
         self.assertEqual(result.rows, [(1,)])
 

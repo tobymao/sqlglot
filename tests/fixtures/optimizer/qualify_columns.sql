@@ -5,7 +5,7 @@ SELECT a FROM x;
 SELECT x.a AS a FROM x AS x;
 
 SELECT "a" FROM x;
-SELECT x."a" AS "a" FROM x AS x;
+SELECT x.a AS a FROM x AS x;
 
 # execute: false
 SELECT a FROM zz GROUP BY a ORDER BY a;

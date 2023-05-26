@@ -4,8 +4,9 @@ import itertools
 import typing as t
 
 from sqlglot import alias, exp
+from sqlglot.dialects.dialect import DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import seq_get
+from sqlglot.helper import seq_get, should_identify
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 
@@ -34,7 +35,7 @@ def qualify_columns(
     Returns:
         sqlglot.Expression: qualified expression
     """
-    schema = ensure_schema(schema)
+    schema = t.cast(Schema, ensure_schema(schema))
     infer_schema = schema.empty if infer_schema is None else infer_schema
 
     for scope in traverse_scope(expression):
@@ -56,6 +57,8 @@ def qualify_columns(
             _qualify_outputs(scope)
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
+
+    expression = expression.transform(_normalize_identifiers, schema.dialect, copy=False)
 
     return expression
 
@@ -404,9 +407,6 @@ def _qualify_outputs(scope):
             selection = alias(
                 selection,
                 alias=selection.output_name or f"_col_{i}",
-                quoted=True
-                if isinstance(selection, exp.Column) and selection.this.quoted
-                else None,
             )
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
@@ -414,6 +414,16 @@ def _qualify_outputs(scope):
         new_selections.append(selection)
 
     scope.expression.set("expressions", new_selections)
+
+
+def _normalize_identifiers(expression: exp.Expression, dialect: DialectType) -> exp.Expression:
+    if isinstance(expression, exp.Identifier):
+        name = expression.this
+        expression.set(
+            "quoted",
+            not exp.SAFE_IDENTIFIER_RE.match(name) or not should_identify(name, "safe", dialect),
+        )
+    return expression
 
 
 class Resolver:
@@ -469,9 +479,7 @@ class Resolver:
         if node_alias:
             return exp.to_identifier(node_alias.this)
 
-        return exp.to_identifier(
-            table_name, quoted=node.this.quoted if isinstance(node, exp.Table) else None
-        )
+        return exp.to_identifier(table_name)
 
     @property
     def all_columns(self):

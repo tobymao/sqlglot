@@ -686,7 +686,7 @@ class Generator:
                 prefix=" ",
             )
 
-        indexes = self.expressions(expression, "indexes", indent=False, sep=" ")
+        indexes = self.expressions(expression, key="indexes", indent=False, sep=" ")
         indexes = f" {indexes}" if indexes else ""
         index_sql = indexes + postindex_props_sql
 

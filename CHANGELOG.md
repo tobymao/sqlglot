@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v14.1.1] - 2023-05-26
+### :bug: Bug Fixes
+- [`8f0fbad`](https://github.com/tobymao/sqlglot/commit/8f0fbad89c87741b022406256b68bc81e5887a42) - make map gen more robust *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`425af88`](https://github.com/tobymao/sqlglot/commit/425af8899143b19fb942789b81606f522c1e08c9) - cleanup key call *(commit by [@tobymao](https://github.com/tobymao))*
+- [`57feaee`](https://github.com/tobymao/sqlglot/commit/57feaeee8159e119d7719ec554e42a8323015c2d) - types *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v14.1.0] - 2023-05-26
 ### :boom: BREAKING CHANGES
 - due to [`a6fdd59`](https://github.com/tobymao/sqlglot/commit/a6fdd59986a293be5b272a6e8f50f53482ddfd46) - improve python type hints *(PR [#1689](https://github.com/tobymao/sqlglot/pull/1689) by [@GeorgeSittas](https://github.com/GeorgeSittas))*:
@@ -322,3 +331,4 @@ Changelog
 [v13.3.1]: https://github.com/tobymao/sqlglot/compare/v13.3.0...v13.3.1
 [v14.0.0]: https://github.com/tobymao/sqlglot/compare/v13.3.1...v14.0.0
 [v14.1.0]: https://github.com/tobymao/sqlglot/compare/show...v14.1.0
+[v14.1.1]: https://github.com/tobymao/sqlglot/compare/v14.1.0...v14.1.1

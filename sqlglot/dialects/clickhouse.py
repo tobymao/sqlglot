@@ -64,11 +64,10 @@ class ClickHouse(Dialect):
             "UNIQ": exp.ApproxDistinct.from_arg_list,
         }
 
+        FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
+
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "TUPLE": lambda self: self._parse_function_with_aliased_args(
-                exp.Anonymous, name="tuple"
-            ),
             "QUANTILE": lambda self: self._parse_quantile(),
         }
 

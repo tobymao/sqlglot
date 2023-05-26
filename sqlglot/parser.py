@@ -678,6 +678,8 @@ class Parser(metaclass=_Parser):
         ),
     }
 
+    FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
+
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
@@ -690,7 +692,6 @@ class Parser(metaclass=_Parser):
         "POSITION": lambda self: self._parse_position(),
         "SAFE_CAST": lambda self: self._parse_cast(False),
         "STRING_AGG": lambda self: self._parse_string_agg(),
-        "STRUCT": lambda self: self._parse_function_with_aliased_args(exp.Struct),
         "SUBSTRING": lambda self: self._parse_substring(),
         "TRIM": lambda self: self._parse_trim(),
         "TRY_CAST": lambda self: self._parse_cast(False),
@@ -3119,7 +3120,9 @@ class Parser(metaclass=_Parser):
                 functions = self.FUNCTIONS
 
             function = functions.get(upper)
-            args = self._parse_csv(self._parse_lambda)
+            args = self._parse_csv(
+                lambda: self._parse_lambda(alias=upper in self.FUNCTIONS_WITH_ALIASED_ARGS)
+            )
 
             if function and not anonymous:
                 this = function(args)
@@ -3789,16 +3792,6 @@ class Parser(metaclass=_Parser):
         self.validate_expression(this, args)
 
         return this
-
-    def _parse_function_with_aliased_args(
-        self, expr_type: t.Type[F], name: t.Optional[str] = None
-    ) -> F:
-        args = self._parse_csv(lambda: self._parse_lambda(alias=True))
-
-        if name is not None and expr_type is exp.Anonymous:
-            return exp.Anonymous.from_arg_list([name, *args])
-
-        return expr_type.from_arg_list(args)
 
     def _parse_trim(self) -> exp.Expression:
         # https://www.w3resource.com/sql/character-functions/trim.php

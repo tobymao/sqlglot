@@ -3120,9 +3120,9 @@ class Parser(metaclass=_Parser):
                 functions = self.FUNCTIONS
 
             function = functions.get(upper)
-            args = self._parse_csv(
-                lambda: self._parse_lambda(alias=upper in self.FUNCTIONS_WITH_ALIASED_ARGS)
-            )
+
+            alias = upper in self.FUNCTIONS_WITH_ALIASED_ARGS
+            args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
             if function and not anonymous:
                 this = function(args)

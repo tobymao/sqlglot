@@ -670,7 +670,7 @@ class Condition(Expression):
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> Expression:
+    ) -> Condition:
         """
         AND this condition with one or multiple expressions.
 
@@ -696,7 +696,7 @@ class Condition(Expression):
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> Expression:
+    ) -> Condition:
         """
         OR this condition with one or multiple expressions.
 

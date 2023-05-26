@@ -360,11 +360,19 @@ def _ordered_py(self, expression):
 
 def _rename(self, e):
     try:
-        if "expressions" in e.args:
-            this = self.sql(e, "this")
-            this = f"{this}, " if this else ""
-            return f"{e.key.upper()}({this}{self.expressions(e)})"
-        return self.func(e.key, *e.args.values())
+        values = list(e.args.values())
+
+        if len(values) == 1:
+            values = values[0]
+            if not isinstance(values, list):
+                return self.func(e.key, values)
+            return self.func(e.key, *values)
+
+        if isinstance(e, exp.Func) and e.is_var_len_args:
+            *head, tail = values
+            return self.func(e.key, *head, *tail)
+
+        return self.func(e.key, *values)
     except Exception as ex:
         raise Exception(f"Could not rename {repr(e)}") from ex
 

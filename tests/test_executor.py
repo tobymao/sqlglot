@@ -58,6 +58,7 @@ class TestExecutor(unittest.TestCase):
 
     def test_py_dialect(self):
         self.assertEqual(Python().generate(parse_one("'x '''")), r"'x \''")
+        self.assertEqual(Python().generate(parse_one("MAP([1], [2])")), "MAP([1], [2])")
 
     def test_optimized_tpch(self):
         for i, (sql, optimized) in enumerate(self.sqls[:20], start=1):
@@ -596,6 +597,7 @@ class TestExecutor(unittest.TestCase):
             ("1::bool", True),
             ("0::bool", False),
             ("MAP(['a'], [1]).a", 1),
+            ("MAP()", {}),
             ("STRFTIME('%j', '2023-03-23 15:00:00')", "082"),
             ("STRFTIME('%j', NULL)", None),
             ("DATESTRTODATE('2022-01-01')", date(2022, 1, 1)),

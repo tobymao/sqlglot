@@ -169,7 +169,7 @@ ENV = {
     "LOWER": null_if_any(lambda arg: arg.lower()),
     "LT": null_if_any(lambda this, e: this < e),
     "LTE": null_if_any(lambda this, e: this <= e),
-    "MAP": null_if_any(lambda k, v: dict(zip(k, v))),
+    "MAP": null_if_any(lambda *args: dict(zip(*args))),  # type: ignore
     "MOD": null_if_any(lambda e, this: e % this),
     "MUL": null_if_any(lambda e, this: e * this),
     "NEQ": null_if_any(lambda this, e: this != e),

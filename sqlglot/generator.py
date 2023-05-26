@@ -878,7 +878,9 @@ class Generator:
         table = f"{self.INDEX_ON} {table} " if table else ""
         index = "INDEX " if not table else ""
         columns = self.expressions(expression, key="columns", flat=True)
-        return f"{unique}{primary}{amp}{index}{name}{table}({columns})"
+        partition_by = self.expressions(expression, key="partition_by", flat=True)
+        partition_by = f" PARTITION BY {partition_by}" if partition_by else ""
+        return f"{unique}{primary}{amp}{index}{name}{table}({columns}){partition_by}"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name

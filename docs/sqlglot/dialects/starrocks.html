@@ -115,7 +115,8 @@
 </span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">UnixToStr</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;FROM_UNIXTIME(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_time</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
 </span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">UnixToTime</span><span class="p">:</span> <span class="n">rename_func</span><span class="p">(</span><span class="s2">&quot;FROM_UNIXTIME&quot;</span><span class="p">),</span>
 </span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>        <span class="p">}</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateTrunc</span><span class="p">)</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateTrunc</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -163,7 +164,8 @@
 </span><span id="StarRocks-43"><a href="#StarRocks-43"><span class="linenos">43</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">UnixToStr</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;FROM_UNIXTIME(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_time</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
 </span><span id="StarRocks-44"><a href="#StarRocks-44"><span class="linenos">44</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">UnixToTime</span><span class="p">:</span> <span class="n">rename_func</span><span class="p">(</span><span class="s2">&quot;FROM_UNIXTIME&quot;</span><span class="p">),</span>
 </span><span id="StarRocks-45"><a href="#StarRocks-45"><span class="linenos">45</span></a>        <span class="p">}</span>
-</span><span id="StarRocks-46"><a href="#StarRocks-46"><span class="linenos">46</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateTrunc</span><span class="p">)</span>
+</span><span id="StarRocks-46"><a href="#StarRocks-46"><span class="linenos">46</span></a>
+</span><span id="StarRocks-47"><a href="#StarRocks-47"><span class="linenos">47</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateTrunc</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -288,7 +290,8 @@ Default: "nulls_are_small"</li>
 </span><span id="StarRocks.Generator-43"><a href="#StarRocks.Generator-43"><span class="linenos">43</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">UnixToStr</span><span class="p">:</span> <span class="k">lambda</span> <span class="bp">self</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;FROM_UNIXTIME(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">format_time</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span>
 </span><span id="StarRocks.Generator-44"><a href="#StarRocks.Generator-44"><span class="linenos">44</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">UnixToTime</span><span class="p">:</span> <span class="n">rename_func</span><span class="p">(</span><span class="s2">&quot;FROM_UNIXTIME&quot;</span><span class="p">),</span>
 </span><span id="StarRocks.Generator-45"><a href="#StarRocks.Generator-45"><span class="linenos">45</span></a>        <span class="p">}</span>
-</span><span id="StarRocks.Generator-46"><a href="#StarRocks.Generator-46"><span class="linenos">46</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateTrunc</span><span class="p">)</span>
+</span><span id="StarRocks.Generator-46"><a href="#StarRocks.Generator-46"><span class="linenos">46</span></a>
+</span><span id="StarRocks.Generator-47"><a href="#StarRocks.Generator-47"><span class="linenos">47</span></a>        <span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">DateTrunc</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -311,6 +314,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
 <li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
 <li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
+<li><strong>raw_start (str):</strong>  specifies which starting character to use to delimit raw literals. Default: None.</li>
+<li><strong>raw_end (str):</strong>  specifies which ending character to use to delimit raw literals. Default: None.</li>
 <li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
@@ -381,6 +386,7 @@ Default: True</li>
                 <dd id="StarRocks.Generator.bitstring_sql" class="function"><a href="../generator.html#Generator.bitstring_sql">bitstring_sql</a></dd>
                 <dd id="StarRocks.Generator.hexstring_sql" class="function"><a href="../generator.html#Generator.hexstring_sql">hexstring_sql</a></dd>
                 <dd id="StarRocks.Generator.bytestring_sql" class="function"><a href="../generator.html#Generator.bytestring_sql">bytestring_sql</a></dd>
+                <dd id="StarRocks.Generator.rawstring_sql" class="function"><a href="../generator.html#Generator.rawstring_sql">rawstring_sql</a></dd>
                 <dd id="StarRocks.Generator.datatypesize_sql" class="function"><a href="../generator.html#Generator.datatypesize_sql">datatypesize_sql</a></dd>
                 <dd id="StarRocks.Generator.datatype_sql" class="function"><a href="../generator.html#Generator.datatype_sql">datatype_sql</a></dd>
                 <dd id="StarRocks.Generator.directory_sql" class="function"><a href="../generator.html#Generator.directory_sql">directory_sql</a></dd>

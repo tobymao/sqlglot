@@ -116,7 +116,7 @@
 </span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;MAP_FROM_ARRAYS(</span><span class="si">{</span><span class="n">keys</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">values</span><span class="si">}</span><span class="s2">)&quot;</span>
 </span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>
 </span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="k">def</span> <span class="nf">_parse_as_cast</span><span class="p">(</span><span class="n">to_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]:</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="k">def</span> <span class="nf">_parse_as_cast</span><span class="p">(</span><span class="n">to_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]:</span>
 </span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a>    <span class="k">return</span> <span class="k">lambda</span> <span class="n">args</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Cast</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">seq_get</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">to</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">to_type</span><span class="p">))</span>
 </span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a>
 </span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a>
@@ -797,6 +797,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
 <li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
 <li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
+<li><strong>raw_start (str):</strong>  specifies which starting character to use to delimit raw literals. Default: None.</li>
+<li><strong>raw_end (str):</strong>  specifies which ending character to use to delimit raw literals. Default: None.</li>
 <li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
@@ -918,6 +920,7 @@ Default: True</li>
                 <dd id="Spark2.Generator.bitstring_sql" class="function"><a href="../generator.html#Generator.bitstring_sql">bitstring_sql</a></dd>
                 <dd id="Spark2.Generator.hexstring_sql" class="function"><a href="../generator.html#Generator.hexstring_sql">hexstring_sql</a></dd>
                 <dd id="Spark2.Generator.bytestring_sql" class="function"><a href="../generator.html#Generator.bytestring_sql">bytestring_sql</a></dd>
+                <dd id="Spark2.Generator.rawstring_sql" class="function"><a href="../generator.html#Generator.rawstring_sql">rawstring_sql</a></dd>
                 <dd id="Spark2.Generator.datatypesize_sql" class="function"><a href="../generator.html#Generator.datatypesize_sql">datatypesize_sql</a></dd>
                 <dd id="Spark2.Generator.directory_sql" class="function"><a href="../generator.html#Generator.directory_sql">directory_sql</a></dd>
                 <dd id="Spark2.Generator.delete_sql" class="function"><a href="../generator.html#Generator.delete_sql">delete_sql</a></dd>

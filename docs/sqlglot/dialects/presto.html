@@ -221,7 +221,7 @@
 </span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>        <span class="k">raise</span> <span class="n">UnsupportedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported charset </span><span class="si">{</span><span class="n">charset</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>
 </span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="k">def</span> <span class="nf">_approx_percentile</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a><span class="k">def</span> <span class="nf">_approx_percentile</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
 </span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
 </span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>        <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">ApproxQuantile</span><span class="p">(</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>            <span class="n">this</span><span class="o">=</span><span class="n">seq_get</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
@@ -238,7 +238,7 @@
 </span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a>    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">ApproxQuantile</span><span class="o">.</span><span class="n">from_arg_list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
 </span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>
-</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="k">def</span> <span class="nf">_from_unixtime</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a><span class="k">def</span> <span class="nf">_from_unixtime</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
 </span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
 </span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>        <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">UnixToTime</span><span class="p">(</span>
 </span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>            <span class="n">this</span><span class="o">=</span><span class="n">seq_get</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
@@ -967,6 +967,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
 <li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
 <li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
+<li><strong>raw_start (str):</strong>  specifies which starting character to use to delimit raw literals. Default: None.</li>
+<li><strong>raw_end (str):</strong>  specifies which ending character to use to delimit raw literals. Default: None.</li>
 <li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
@@ -1118,6 +1120,7 @@ Default: True</li>
                 <dd id="Presto.Generator.bitstring_sql" class="function"><a href="../generator.html#Generator.bitstring_sql">bitstring_sql</a></dd>
                 <dd id="Presto.Generator.hexstring_sql" class="function"><a href="../generator.html#Generator.hexstring_sql">hexstring_sql</a></dd>
                 <dd id="Presto.Generator.bytestring_sql" class="function"><a href="../generator.html#Generator.bytestring_sql">bytestring_sql</a></dd>
+                <dd id="Presto.Generator.rawstring_sql" class="function"><a href="../generator.html#Generator.rawstring_sql">rawstring_sql</a></dd>
                 <dd id="Presto.Generator.datatypesize_sql" class="function"><a href="../generator.html#Generator.datatypesize_sql">datatypesize_sql</a></dd>
                 <dd id="Presto.Generator.datatype_sql" class="function"><a href="../generator.html#Generator.datatype_sql">datatype_sql</a></dd>
                 <dd id="Presto.Generator.directory_sql" class="function"><a href="../generator.html#Generator.directory_sql">directory_sql</a></dd>

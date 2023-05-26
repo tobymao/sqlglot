@@ -678,6 +678,8 @@ class Parser(metaclass=_Parser):
         ),
     }
 
+    FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
+
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
@@ -691,7 +693,6 @@ class Parser(metaclass=_Parser):
         "SAFE_CAST": lambda self: self._parse_cast(False),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
-        "STRUCT": lambda self: self._parse_struct(),
         "TRIM": lambda self: self._parse_trim(),
         "TRY_CAST": lambda self: self._parse_cast(False),
         "TRY_CONVERT": lambda self: self._parse_convert(False),
@@ -3124,7 +3125,9 @@ class Parser(metaclass=_Parser):
                 functions = self.FUNCTIONS
 
             function = functions.get(upper)
-            args = self._parse_csv(self._parse_lambda)
+
+            alias = upper in self.FUNCTIONS_WITH_ALIASED_ARGS
+            args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
             if function and not anonymous:
                 this = function(args)
@@ -3794,9 +3797,6 @@ class Parser(metaclass=_Parser):
         self.validate_expression(this, args)
 
         return this
-
-    def _parse_struct(self) -> exp.Struct:
-        return exp.Struct.from_arg_list(self._parse_csv(lambda: self._parse_lambda(alias=True)))
 
     def _parse_trim(self) -> exp.Expression:
         # https://www.w3resource.com/sql/character-functions/trim.php

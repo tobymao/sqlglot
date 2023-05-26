@@ -11,7 +11,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E, F
+    from sqlglot._typing import E
 
 logger = logging.getLogger("sqlglot")
 

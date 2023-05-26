@@ -23,7 +23,12 @@ class TestTeradata(Validator):
         )
 
     def test_create(self):
-        self.validate_identity("CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)")
+        self.validate_all(
+            "CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)",
+            write={
+                "teradata": "CREATE TABLE x (y INT) PRIMARY INDEX (y) INDEX (y) PARTITION BY y",
+            },
+        )
         self.validate_identity(
             "CREATE MULTISET VOLATILE TABLE my_table (id INT) PRIMARY INDEX (id) ON COMMIT PRESERVE ROWS"
         )
@@ -37,7 +42,7 @@ class TestTeradata(Validator):
             "CREATE TABLE a (b INT) PARTITION BY RANGE_N(b BETWEEN 0, 1 AND 2 EACH 1)"
         )
         self.validate_identity(
-            "CREATE TABLE a (b INT) PARTITION BY RANGE_N(b BETWEEN *, 1 AND * EACH b) INDEX (a)"
+            "CREATE TABLE a (b INT) INDEX (a) PARTITION BY RANGE_N(b BETWEEN *, 1 AND * EACH b)"
         )
 
         self.validate_all(

@@ -142,6 +142,9 @@ class Generator:
     # The separator for grouping sets and rollups
     GROUPINGS_SEP = ","
 
+    # The string used for creating index on a table
+    INDEX_ON = "ON"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -683,33 +686,9 @@ class Generator:
                 prefix=" ",
             )
 
-        indexes = expression.args.get("indexes")
-        if indexes:
-            indexes_sql: t.List[str] = []
-            for index in indexes:
-                ind_unique = " UNIQUE" if index.args.get("unique") else ""
-                ind_primary = " PRIMARY" if index.args.get("primary") else ""
-                ind_amp = " AMP" if index.args.get("amp") else ""
-                ind_name = f" {index.name}" if index.name else ""
-                ind_columns = (
-                    f' ({self.expressions(index, key="columns", flat=True)})'
-                    if index.args.get("columns")
-                    else ""
-                )
-                ind_sql = f"{ind_unique}{ind_primary}{ind_amp} INDEX{ind_name}{ind_columns}"
-
-                if indexes_sql:
-                    indexes_sql.append(ind_sql)
-                else:
-                    indexes_sql.append(
-                        f"{ind_sql}{postindex_props_sql}"
-                        if index.args.get("primary")
-                        else f"{postindex_props_sql}{ind_sql}"
-                    )
-
-            index_sql = "".join(indexes_sql)
-        else:
-            index_sql = postindex_props_sql
+        indexes = self.expressions(expression, "indexes", indent=False, sep=" ")
+        indexes = f" {indexes}" if indexes else ""
+        index_sql = indexes + postindex_props_sql
 
         replace = " OR REPLACE" if expression.args.get("replace") else ""
         unique = " UNIQUE" if expression.args.get("unique") else ""
@@ -891,10 +870,15 @@ class Generator:
         return ""
 
     def index_sql(self, expression: exp.Index) -> str:
-        this = self.sql(expression, "this")
+        unique = "UNIQUE " if expression.args.get("unique") else ""
+        primary = "PRIMARY " if expression.args.get("primary") else ""
+        amp = "AMP " if expression.args.get("amp") else ""
+        name = f"{expression.name} " if expression.name else ""
         table = self.sql(expression, "table")
-        columns = self.sql(expression, "columns")
-        return f"{this} ON {table} {columns}"
+        table = f"{self.INDEX_ON} {table} " if table else ""
+        index = "INDEX " if not table else ""
+        columns = self.expressions(expression, key="columns", flat=True)
+        return f"{unique}{primary}{amp}{index}{name}{table}({columns})"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name

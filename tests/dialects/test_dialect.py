@@ -1354,7 +1354,7 @@ class TestDialect(Validator):
             },
             write={
                 "hive": "CREATE INDEX my_idx ON TABLE tbl (a, b)",
-                "postgres": "CREATE INDEX my_idx ON tbl (a, b)",
+                "postgres": "CREATE INDEX my_idx ON tbl (a NULLS FIRST, b NULLS FIRST)",
                 "sqlite": "CREATE INDEX my_idx ON tbl (a, b)",
             },
         )
@@ -1366,7 +1366,7 @@ class TestDialect(Validator):
             },
             write={
                 "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl (a, b)",
-                "postgres": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+                "postgres": "CREATE UNIQUE INDEX my_idx ON tbl (a NULLS FIRST, b NULLS FIRST)",
                 "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
             },
         )

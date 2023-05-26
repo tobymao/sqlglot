@@ -147,13 +147,6 @@ def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str
     return f"TO_DATE({this})"
 
 
-def _index_sql(self: generator.Generator, expression: exp.Index) -> str:
-    this = self.sql(expression, "this")
-    table = self.sql(expression, "table")
-    columns = self.sql(expression, "columns")
-    return f"{this} ON TABLE {table} {columns}"
-
-
 class Hive(Dialect):
     alias_post_tablesample = True
 
@@ -289,6 +282,7 @@ class Hive(Dialect):
         TABLESAMPLE_SIZE_IS_PERCENT = True
         JOIN_HINTS = False
         TABLE_HINTS = False
+        INDEX_ON = "ON TABLE"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -325,7 +319,6 @@ class Hive(Dialect):
             exp.FileFormatProperty: lambda self, e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
             exp.FromBase64: rename_func("UNBASE64"),
             exp.If: if_sql,
-            exp.Index: _index_sql,
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),

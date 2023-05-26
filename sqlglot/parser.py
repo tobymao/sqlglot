@@ -1143,7 +1143,7 @@ class Parser(metaclass=_Parser):
             if return_:
                 expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
-            this = self._parse_index()
+            this = self._parse_index(index=self._parse_id_var())
         elif create_token.token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(schema=True)
 
@@ -1183,7 +1183,7 @@ class Parser(metaclass=_Parser):
             if create_token.token_type == TokenType.TABLE:
                 indexes = []
                 while True:
-                    index = self._parse_create_table_index()
+                    index = self._parse_index()
 
                     # exp.Properties.Location.POST_EXPRESSION or exp.Properties.Location.POST_INDEX
                     temp_properties = self._parse_properties()
@@ -2193,31 +2193,36 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Join, **kwargs)  # type: ignore
 
-    def _parse_index(self) -> exp.Expression:
-        index = self._parse_id_var()
-        self._match(TokenType.ON)
-        self._match(TokenType.TABLE)  # hive
+    def _parse_index(
+        self,
+        index: t.Optional[exp.Expression] = None,
+    ) -> t.Optional[exp.Expression]:
+        if index:
+            unique = None
+            primary = None
+            amp = None
 
-        return self.expression(
-            exp.Index,
-            this=index,
-            table=self.expression(exp.Table, this=self._parse_id_var()),
-            columns=self._parse_expression(),
-        )
+            self._match(TokenType.ON)
+            self._match(TokenType.TABLE)  # hive
+            table = self._parse_table_parts(schema=True)
+        else:
+            unique = self._match(TokenType.UNIQUE)
+            primary = self._match_text_seq("PRIMARY")
+            amp = self._match_text_seq("AMP")
+            if not self._match(TokenType.INDEX):
+                return None
+            index = self._parse_id_var()
+            table = None
 
-    def _parse_create_table_index(self) -> t.Optional[exp.Expression]:
-        unique = self._match(TokenType.UNIQUE)
-        primary = self._match_text_seq("PRIMARY")
-        amp = self._match_text_seq("AMP")
-        if not self._match(TokenType.INDEX):
-            return None
-        index = self._parse_id_var()
-        columns = None
         if self._match(TokenType.L_PAREN, advance=False):
-            columns = self._parse_wrapped_csv(self._parse_column)
+            columns = self._parse_wrapped_csv(self._parse_ordered)
+        else:
+            columns = None
+
         return self.expression(
             exp.Index,
             this=index,
+            table=table,
             columns=columns,
             unique=unique,
             primary=primary,

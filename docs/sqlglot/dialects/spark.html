@@ -83,10 +83,10 @@
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">from</span> <span class="nn">sqlglot.helper</span> <span class="kn">import</span> <span class="n">seq_get</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
 </span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a>
-</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="k">def</span> <span class="nf">_parse_datediff</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="k">def</span> <span class="nf">_parse_datediff</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">    Although Spark docs don&#39;t mention the &quot;unit&quot; argument, Spark3 added support for</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">    it at some point. Databricks also supports this variation (see below).</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a><span class="sd">    it at some point. Databricks also supports this variant (see below).</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>
 </span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a><span class="sd">    For example, in spark-sql (v3.3.1):</span>
 </span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a><span class="sd">    - SELECT DATEDIFF(&#39;2020-01-01&#39;, &#39;2020-01-05&#39;) results in -4</span>
@@ -298,6 +298,8 @@ represents a python time format and the output the target time format</li>
 <li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
 <li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
 <li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
+<li><strong>raw_start (str):</strong>  specifies which starting character to use to delimit raw literals. Default: None.</li>
+<li><strong>raw_end (str):</strong>  specifies which ending character to use to delimit raw literals. Default: None.</li>
 <li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
 <li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
 <li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
@@ -393,6 +395,7 @@ Default: True</li>
                 <dd id="Spark.Generator.bitstring_sql" class="function"><a href="../generator.html#Generator.bitstring_sql">bitstring_sql</a></dd>
                 <dd id="Spark.Generator.hexstring_sql" class="function"><a href="../generator.html#Generator.hexstring_sql">hexstring_sql</a></dd>
                 <dd id="Spark.Generator.bytestring_sql" class="function"><a href="../generator.html#Generator.bytestring_sql">bytestring_sql</a></dd>
+                <dd id="Spark.Generator.rawstring_sql" class="function"><a href="../generator.html#Generator.rawstring_sql">rawstring_sql</a></dd>
                 <dd id="Spark.Generator.datatypesize_sql" class="function"><a href="../generator.html#Generator.datatypesize_sql">datatypesize_sql</a></dd>
                 <dd id="Spark.Generator.directory_sql" class="function"><a href="../generator.html#Generator.directory_sql">directory_sql</a></dd>
                 <dd id="Spark.Generator.delete_sql" class="function"><a href="../generator.html#Generator.delete_sql">delete_sql</a></dd>

@@ -59,8 +59,7 @@ def normalize_identifiers(
 
 def _normalize_selects(expression: exp.Expression, dialect: DialectType = None) -> None:
     for e in expression.expressions:
-        # Leave output aliases as-is
-        e.unalias().transform(lambda node: _normalize(node, dialect=dialect), copy=False)
+        e.transform(lambda node: _normalize(node, dialect=dialect), copy=False)
 
 
 def _normalize_order(expression: exp.Expression, dialect: DialectType = None) -> None:

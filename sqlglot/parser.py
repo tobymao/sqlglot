@@ -2228,6 +2228,7 @@ class Parser(metaclass=_Parser):
             unique=unique,
             primary=primary,
             amp=amp,
+            partition_by=self._parse_partition_by(),
         )
 
     def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:

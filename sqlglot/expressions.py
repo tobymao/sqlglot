@@ -1510,6 +1510,7 @@ class Index(Expression):
         "unique": False,
         "primary": False,
         "amp": False,  # teradata
+        "partition_by": False,  # teradata
     }
 
 

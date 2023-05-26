@@ -4559,6 +4559,9 @@ def maybe_parse(
             return sql_or_expression.copy()
         return sql_or_expression
 
+    if sql_or_expression is None:
+        raise ParseError(f"SQL cannot be None")
+
     import sqlglot
 
     sql = str(sql_or_expression)

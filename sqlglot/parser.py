@@ -60,7 +60,7 @@ class Parser(metaclass=_Parser):
 
     Args:
         error_level: the desired error level.
-            Default: ErrorLevel.RAISE
+            Default: ErrorLevel.IMMEDIATE
         error_message_context: determines the amount of context to capture from a
             query string when displaying the error message (in number of characters).
             Default: 50.
@@ -1958,7 +1958,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_subquery(
         self, this: t.Optional[exp.Expression], parse_alias: bool = True
-    ) -> exp.Expression:
+    ) -> t.Optional[exp.Expression]:
+        if not this:
+            return None
         return self.expression(
             exp.Subquery,
             this=this,
@@ -3211,13 +3213,15 @@ class Parser(metaclass=_Parser):
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         index = self._index
 
-        try:
-            if self._parse_select(nested=True):
-                return this
-        except Exception:
-            pass
-        finally:
-            self._retreat(index)
+        if not self.errors:
+            try:
+                if self._parse_select(nested=True):
+                    return this
+            except Exception:
+                pass
+            finally:
+                self.errors.clear()
+                self._retreat(index)
 
         if not self._match(TokenType.L_PAREN):
             return this

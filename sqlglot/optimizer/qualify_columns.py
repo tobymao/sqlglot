@@ -58,9 +58,7 @@ def qualify_columns(
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
 
-    expression = expression.transform(_normalize_identifiers, schema.dialect, copy=False)
-
-    return expression
+    return expression.transform(_normalize_identifiers, schema.dialect, copy=False)
 
 
 def validate_qualify_columns(expression):
@@ -421,7 +419,8 @@ def _normalize_identifiers(expression: exp.Expression, dialect: DialectType) -> 
         name = expression.this
         expression.set(
             "quoted",
-            not exp.SAFE_IDENTIFIER_RE.match(name) or not should_identify(name, "safe", dialect),
+            not exp.SAFE_IDENTIFIER_RE.match(name)
+            or not should_identify(name, "safe", dialect=dialect),
         )
     return expression
 

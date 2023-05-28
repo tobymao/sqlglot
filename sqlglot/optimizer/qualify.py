@@ -35,7 +35,7 @@ def qualify(
         'SELECT tbl.col AS col FROM tbl AS tbl'
 
     Args:
-        expression: expression to qualify
+        expression: Expression to qualify.
         db: Default database name for tables.
         catalog: Default catalog name for tables.
         schema: Schema to infer column names and types.
@@ -47,7 +47,7 @@ def qualify(
         The qualified expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
-    expression = normalize_identifiers(expression, dialect)
+    expression = normalize_identifiers(expression, dialect=dialect)
     expression = qualify_tables(expression, db=db, catalog=catalog, schema=schema)
 
     if isolate_tables:

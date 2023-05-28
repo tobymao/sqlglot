@@ -3217,7 +3217,7 @@ class Parser(metaclass=_Parser):
             try:
                 if self._parse_select(nested=True):
                     return this
-            except Exception:
+            except ParseError:
                 pass
             finally:
                 self.errors.clear()

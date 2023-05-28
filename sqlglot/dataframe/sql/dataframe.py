@@ -127,7 +127,7 @@ class DataFrame:
         sequence_id: t.Optional[str] = None,
         **kwargs,
     ) -> t.Tuple[exp.CTE, str]:
-        name = self.spark._random_name
+        name = self._create_hash_from_expression(expression)
         expression_to_cte = expression.copy()
         expression_to_cte.set("with", None)
         cte = exp.Select().with_(name, as_=expression_to_cte, **kwargs).ctes[0]
@@ -263,7 +263,7 @@ class DataFrame:
         return [Column(x) for x in (expression.find(exp.Select) or exp.Select()).expressions]
 
     @classmethod
-    def _create_hash_from_expression(cls, expression: exp.Select):
+    def _create_hash_from_expression(cls, expression: t.Union[exp.Select, exp.Expression]):
         value = expression.sql(dialect="spark").encode("utf-8")
         return f"t{zlib.crc32(value)}"[:6]
 

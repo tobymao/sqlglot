@@ -1155,8 +1155,9 @@ class TestDataframeFunc(DataFrameValidator):
         df, dfs = self.compare_spark_with_sqlglot(df_joined, dfs_joined)
         self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(df))
         self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(dfs))
-
-    # TODO: Add test to make sure with and without alias are the same once ids are deterministic
+        self.assertEqual(
+            "'UnresolvedHint BROADCAST, ['a2]", self.get_explain_plan(dfs).split("\n")[1]
+        )
 
     def test_broadcast_func(self):
         df_joined = self.df_spark_employee.join(
@@ -1188,6 +1189,9 @@ class TestDataframeFunc(DataFrameValidator):
         df, dfs = self.compare_spark_with_sqlglot(df_joined, dfs_joined)
         self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(df))
         self.assertIn("ResolvedHint (strategy=broadcast)", self.get_explain_plan(dfs))
+        self.assertEqual(
+            "'UnresolvedHint BROADCAST, ['a2]", self.get_explain_plan(dfs).split("\n")[1]
+        )
 
     def test_repartition_by_num(self):
         """

@@ -41,7 +41,7 @@ def operation(op: Operation):
                 self.last_op = Operation.NO_OP
             last_op = self.last_op
             new_op = op if op != Operation.NO_OP else last_op
-            if new_op < last_op or (last_op == new_op and new_op == Operation.SELECT):
+            if new_op < last_op or (last_op == new_op == Operation.SELECT):
                 self = self._convert_leaf_to_cte()
             df: t.Union[DataFrame, GroupedData] = func(self, *args, **kwargs)
             df.last_op = new_op  # type: ignore

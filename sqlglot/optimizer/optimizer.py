@@ -70,7 +70,15 @@ def optimize(
         sqlglot.Expression: optimized expression
     """
     schema = ensure_schema(schema or sqlglot.schema, dialect=dialect)
-    possible_kwargs = {"db": db, "catalog": catalog, "schema": schema, "dialect": dialect, **kwargs}
+    possible_kwargs = {
+        "db": db,
+        "catalog": catalog,
+        "schema": schema,
+        "dialect": dialect,
+        "isolate_tables": True,  # needed for other optimizations to perform well
+        "quote_identifiers": False,  # this happens in canonicalize
+        **kwargs,
+    }
     expression = exp.maybe_parse(expression, dialect=dialect, copy=True)
 
     for rule in rules:

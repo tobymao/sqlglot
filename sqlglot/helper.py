@@ -420,6 +420,14 @@ def first(it: t.Iterable[T]) -> T:
     return next(i for i in it)
 
 
+def case_sensitive(text: str, dialect: DialectType) -> bool:
+    """Checks if text contains any case sensitive charecters depending on dialect."""
+    from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
+
+    unsafe = str.islower if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
+    return any(unsafe(char) for char in text)
+
+
 def should_identify(text: str, identify: str | bool, dialect: DialectType = None) -> bool:
     """Checks if text should be identified given an identify option.
 
@@ -435,11 +443,6 @@ def should_identify(text: str, identify: str | bool, dialect: DialectType = None
     """
     if identify is True or identify == "always":
         return True
-
     if identify == "safe":
-        from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
-
-        unsafe = str.islower if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
-        return not any(unsafe(char) for char in text)
-
+        return not case_sensitive(text, dialect)
     return False

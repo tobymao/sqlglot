@@ -608,3 +608,14 @@ WITH "CTE1" AS (
 SELECT
   "CTE1"."id" AS "id"
 FROM "CTE1";
+
+# title: ensures proper quoting happens after all optimizations
+# execute: false
+SELECT "foO".x FROM (SELECT 1 AS x) AS "foO";
+WITH "foO" AS (
+  SELECT
+    1 AS "x"
+)
+SELECT
+  "foO"."x" AS "x"
+FROM "foO" AS "foO";

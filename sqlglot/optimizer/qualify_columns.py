@@ -6,7 +6,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import seq_get, should_identify
+from sqlglot.helper import case_sensitive, seq_get, should_identify
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 
@@ -35,7 +35,7 @@ def qualify_columns(
     Returns:
         sqlglot.Expression: qualified expression
     """
-    schema = t.cast(Schema, ensure_schema(schema))
+    schema = ensure_schema(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
 
     for scope in traverse_scope(expression):
@@ -58,7 +58,7 @@ def qualify_columns(
         _expand_group_by(scope, resolver)
         _expand_order_by(scope)
 
-    return expression.transform(_normalize_identifiers, schema.dialect, copy=False)
+    return expression
 
 
 def validate_qualify_columns(expression):
@@ -414,13 +414,17 @@ def _qualify_outputs(scope):
     scope.expression.set("expressions", new_selections)
 
 
-def _normalize_identifiers(expression: exp.Expression, dialect: DialectType) -> exp.Expression:
+def quote_identifiers(
+    expression: exp.Expression, dialect: DialectType, identify: str | bool
+) -> exp.Expression:
+    """Makes sure all identifiers that need to be quoted are quoted."""
     if isinstance(expression, exp.Identifier):
         name = expression.this
         expression.set(
             "quoted",
             not exp.SAFE_IDENTIFIER_RE.match(name)
-            or not should_identify(name, "safe", dialect=dialect),
+            or case_sensitive(name, dialect=dialect)
+            or should_identify(name, identify, dialect=dialect),
         )
     return expression
 

@@ -4,14 +4,14 @@ import itertools
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import should_identify
+from sqlglot.optimizer.qualify_columns import quote_identifiers
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
 
 def canonicalize(
-    expression: exp.Expression, identify: str = "safe", dialect: DialectType = None
+    expression: exp.Expression, identify: str | bool = "safe", dialect: DialectType = None
 ) -> exp.Expression:
     """Converts a sql expression into a standard form.
 
@@ -28,10 +28,7 @@ def canonicalize(
     expression = coerce_type(expression)
     expression = remove_redundant_casts(expression)
     expression = ensure_bool_predicates(expression)
-
-    if isinstance(expression, exp.Identifier):
-        if should_identify(expression.this, identify, dialect=dialect):
-            expression.set("quoted", True)
+    expression = quote_identifiers(expression, dialect=dialect, identify=identify)
 
     return expression
 

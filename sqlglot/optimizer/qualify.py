@@ -4,9 +4,9 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import DialectType
+from sqlglot.optimizer import qualify_columns
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
-from sqlglot.optimizer.qualify_columns import qualify_columns, validate_qualify_columns
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.schema import Schema, ensure_schema
 
@@ -19,8 +19,10 @@ def qualify(
     schema: t.Optional[dict | Schema] = None,
     expand_alias_refs: bool = True,
     infer_schema: t.Optional[bool] = None,
-    isolate_tables: bool = True,
-    validate_columns: bool = True,
+    isolate_tables: bool = False,
+    validate_qualify_columns: bool = True,
+    quote_identifiers: bool = True,
+    identify: str | bool = False,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have normalized and qualified tables and columns.
@@ -42,7 +44,14 @@ def qualify(
         expand_alias_refs: Whether or not to expand references to aliases.
         infer_schema: Whether or not to infer the schema if missing.
         isolate_tables: Whether or not to isolate table selects.
-        validate_columns: Whether or not to validate columns.
+        validate_qualify_columns: Whether or not to validate columns.
+        quote_identifiers: Whether or not to run the quote_identifiers step.
+            This step is necessary to ensure correctness for case sensitive queries.
+            But this flag is provided in case this step is performed at a later time.
+        identify:
+            "always" or True: always returns true.
+            "safe": true if there is no uppercase or lowercase character in `text`, depending on `dialect`.
+            False: always returns false.
     Returns:
         The qualified expression.
     """
@@ -53,14 +62,19 @@ def qualify(
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)
 
-    expression = qualify_columns(
+    expression = qualify_columns.qualify_columns(
         expression,
         schema,
         expand_alias_refs=expand_alias_refs,
         infer_schema=infer_schema,
     )
 
-    if validate_columns:
-        validate_qualify_columns(expression)
+    if quote_identifiers:
+        expression = expression.transform(
+            qualify_columns.quote_identifiers, dialect, identify, copy=False
+        )
+
+    if validate_qualify_columns:
+        qualify_columns.validate_qualify_columns(expression)
 
     return expression

@@ -25,8 +25,9 @@ def parse_and_optimize(func, sql, read_dialect, **kwargs):
 
 
 def qualify_columns(expression, **kwargs):
-    expression = optimizer.qualify_tables.qualify_tables(expression)
-    expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
+    expression = optimizer.qualify.qualify(
+        expression, infer_schema=True, validate_qualify_columns=False, **kwargs
+    )
     return expression
 
 

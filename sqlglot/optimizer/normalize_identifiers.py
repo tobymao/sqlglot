@@ -22,67 +22,7 @@ def normalize_identifiers(
     Returns:
         The transformed expression.
     """
-    # We need to leave the output aliases unchanged, so the selects need special handling
-    _normalize_selects(expression, dialect=dialect)
-
-    # These clauses can reference output aliases and also need special handling
-    _normalize_order(expression, dialect=dialect)
-    _normalize_having(expression, dialect=dialect)
-
-    # We've already handled these args, so don't traverse into them
-    traversed = {"expressions", "order", "having"}
-
-    if isinstance(expression, exp.Subquery):
-        # Root subquery, e.g. (SELECT A AS A FROM X) LIMIT 1
-        normalize_identifiers(expression.this, dialect=dialect)
-        traversed |= {"this"}
-
-    if isinstance(expression, exp.Union):
-        # Union, e.g. SELECT A AS A FROM X UNION SELECT A AS A FROM X
-        normalize_identifiers(expression.left, dialect=dialect)
-        normalize_identifiers(expression.right, dialect=dialect)
-        traversed |= {"this", "expression"}
-
-    for k, v in expression.iter_expressions():
-        if k in traversed:
-            continue
-        v.transform(lambda node: _normalize(node, dialect=dialect), copy=False)
-
-    return expression
-
-
-def _normalize_selects(expression: exp.Expression, dialect: DialectType = None) -> None:
-    for e in expression.expressions:
-        e.transform(lambda node: _normalize(node, dialect=dialect), copy=False)
-
-
-def _normalize_order(expression: exp.Expression, dialect: DialectType = None) -> None:
-    order = expression.args.get("order")
-
-    if not order:
-        return
-
-    output_aliases = {e.alias for e in expression.expressions if isinstance(e, exp.Alias)}
-
-    for ordered in order.expressions:
-        # Don't normalize references to output aliases
-        if not (
-            isinstance(ordered.this, exp.Column)
-            and not ordered.this.table
-            and ordered.this.name in output_aliases
-        ):
-            ordered.transform(lambda node: _normalize(node, dialect=dialect), copy=False)
-
-
-def _normalize_having(expression: exp.Expression, dialect: DialectType = None) -> None:
-    having = expression.args.get("having")
-
-    if not having:
-        return
-
-    # Don't normalize references to output aliases
-    for agg in having.find_all(exp.AggFunc):
-        agg.transform(lambda node: _normalize(node, dialect=dialect), copy=False)
+    return expression.transform(_normalize, dialect, copy=False)
 
 
 def _normalize(node: exp.Expression, dialect: DialectType = None) -> exp.Expression:

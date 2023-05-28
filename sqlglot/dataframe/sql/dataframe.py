@@ -263,7 +263,7 @@ class DataFrame:
         return [Column(x) for x in (expression.find(exp.Select) or exp.Select()).expressions]
 
     @classmethod
-    def _create_hash_from_expression(cls, expression: t.Union[exp.Select, exp.Expression]):
+    def _create_hash_from_expression(cls, expression: exp.Expression) -> str:
         value = expression.sql(dialect="spark").encode("utf-8")
         return f"t{zlib.crc32(value)}"[:6]
 

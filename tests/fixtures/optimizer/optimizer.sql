@@ -577,10 +577,11 @@ FROM `u_cte` AS `u_cte` PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x',
 # dialect: snowflake
 SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
-  "_q_0"."g" AS "g",
+  "_q_0"."G" AS "G",
   "_q_0"."'x'" AS "'x'",
   "_q_0"."'y'" AS "'y'"
-FROM "u" AS "u" PIVOT(SUM("u"."f") FOR "u"."h" IN ('x', 'y')) AS "_q_0";
+FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0"
+;
 
 # title: selecting all columns from a pivoted source and generating spark
 # note: spark doesn't allow pivot aliases or qualified columns for the pivot's "field" (`h`)
@@ -596,3 +597,25 @@ FROM (
     *
   FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
 ) AS `_q_0`;
+
+# title: quoting is maintained
+# dialect: snowflake
+with cte1("id", foo) as (select 1, 2) select "id" from cte1;
+WITH "CTE1" AS (
+  SELECT
+    1 AS "id"
+)
+SELECT
+  "CTE1"."id" AS "id"
+FROM "CTE1";
+
+# title: ensures proper quoting happens after all optimizations
+# execute: false
+SELECT "foO".x FROM (SELECT 1 AS x) AS "foO";
+WITH "foO" AS (
+  SELECT
+    1 AS "x"
+)
+SELECT
+  "foO"."x" AS "x"
+FROM "foO" AS "foO";

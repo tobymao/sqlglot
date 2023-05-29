@@ -6,10 +6,7 @@ from dataclasses import dataclass, field
 
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.errors import SqlglotError
-from sqlglot.optimizer import Scope, build_scope, optimize
-from sqlglot.optimizer.lower_identities import lower_identities
-from sqlglot.optimizer.qualify_columns import qualify_columns
-from sqlglot.optimizer.qualify_tables import qualify_tables
+from sqlglot.optimizer import Scope, build_scope, qualify
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -41,8 +38,8 @@ def lineage(
     sql: str | exp.Expression,
     schema: t.Optional[t.Dict | Schema] = None,
     sources: t.Optional[t.Dict[str, str | exp.Subqueryable]] = None,
-    rules: t.Sequence[t.Callable] = (lower_identities, qualify_tables, qualify_columns),
     dialect: DialectType = None,
+    **kwargs,
 ) -> Node:
     """Build the lineage graph for a column of a SQL query.
 
@@ -51,8 +48,8 @@ def lineage(
         sql: The SQL string or expression.
         schema: The schema of tables.
         sources: A mapping of queries which will be used to continue building lineage.
-        rules: Optimizer rules to apply, by default only qualifying tables and columns.
         dialect: The dialect of input SQL.
+        **kwargs: Qualification optimizer kwargs.
 
     Returns:
         A lineage node.
@@ -69,8 +66,14 @@ def lineage(
             },
         )
 
-    optimized = optimize(expression, schema=schema, rules=rules)
-    scope = build_scope(optimized)
+    qualified = qualify.qualify(
+        expression,
+        dialect=dialect,
+        schema=schema,
+        **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore
+    )
+
+    scope = build_scope(qualified)
 
     if not scope:
         raise SqlglotError("Cannot build lineage, sql must be SELECT")

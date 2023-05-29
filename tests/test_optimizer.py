@@ -20,13 +20,14 @@ from tests.helpers import (
 )
 
 
-def parse_and_optimize(func, sql, dialect, **kwargs):
-    return func(parse_one(sql, read=dialect), **kwargs)
+def parse_and_optimize(func, sql, read_dialect, **kwargs):
+    return func(parse_one(sql, read=read_dialect), **kwargs)
 
 
 def qualify_columns(expression, **kwargs):
-    expression = optimizer.qualify_tables.qualify_tables(expression)
-    expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
+    expression = optimizer.qualify.qualify(
+        expression, infer_schema=True, validate_qualify_columns=False, identify=False, **kwargs
+    )
     return expression
 
 
@@ -98,7 +99,7 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
-    def check_file(self, file, func, pretty=False, execute=False, **kwargs):
+    def check_file(self, file, func, pretty=False, execute=False, set_dialect=False, **kwargs):
         with ProcessPoolExecutor() as pool:
             results = {}
 
@@ -112,6 +113,9 @@ class TestOptimizer(unittest.TestCase):
                 func_kwargs = {**kwargs}
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+
+                if set_dialect and dialect:
+                    func_kwargs["dialect"] = dialect
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -157,6 +161,7 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
             execute=True,
             schema=schema,
+            set_dialect=True,
         )
 
     def test_isolate_table_selects(self):
@@ -217,8 +222,12 @@ class TestOptimizer(unittest.TestCase):
                     )
                     optimizer.qualify_columns.validate_qualify_columns(expression)
 
-    def test_lower_identities(self):
-        self.check_file("lower_identities", optimizer.lower_identities.lower_identities)
+    def test_normalize_identifiers(self):
+        self.check_file(
+            "normalize_identifiers",
+            optimizer.normalize_identifiers.normalize_identifiers,
+            set_dialect=True,
+        )
 
     def test_pushdown_projection(self):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
@@ -677,4 +686,36 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(
             optimizer.optimize(parse_one("SELECT * FROM a"), schema=schema),
             parse_one('SELECT "a"."b c" AS "b c", "a"."d e" AS "d e" FROM "a" AS "a"'),
+        )
+
+    def test_quotes(self):
+        schema = {
+            "example": {
+                '"source"': {
+                    "id": "text",
+                    '"name"': "text",
+                    '"payload"': "text",
+                }
+            }
+        }
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                  SELECT * FROM example."source"
+                """
+                ),
+                dialect="snowflake",
+                schema=schema,
+            ).sql(pretty=True),
+            parse_one(
+                """
+              SELECT
+                 "source"."ID" AS "ID",
+                 "source"."name" AS "name",
+                 "source"."payload" AS "payload"
+               FROM "EXAMPLE"."source" AS "source"
+            """
+            ).sql(pretty=True),
         )

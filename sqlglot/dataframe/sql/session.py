@@ -126,10 +126,6 @@ class SparkSession:
         return name
 
     @property
-    def _random_name(self) -> str:
-        return "r" + uuid.uuid4().hex
-
-    @property
     def _random_branch_id(self) -> str:
         id = self._random_id
         self.known_branch_ids.add(id)
@@ -143,7 +139,7 @@ class SparkSession:
 
     @property
     def _random_id(self) -> str:
-        id = self._random_name
+        id = "r" + uuid.uuid4().hex
         self.known_ids.add(id)
         return id
 

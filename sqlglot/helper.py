@@ -421,7 +421,7 @@ def first(it: t.Iterable[T]) -> T:
 
 
 def case_sensitive(text: str, dialect: DialectType) -> bool:
-    """Checks if text contains any case sensitive charecters depending on dialect."""
+    """Checks if text contains any case sensitive characters depending on dialect."""
     from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
 
     unsafe = str.islower if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper

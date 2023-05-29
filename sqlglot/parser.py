@@ -854,7 +854,7 @@ class Parser(metaclass=_Parser):
                 e.errors[0]["into_expression"] = expression_type
                 errors.append(e)
         raise ParseError(
-            f"Failed to parse into {expression_types}",
+            f"Failed to parse '{sql or raw_tokens}' into {expression_types}",
             errors=merge_errors(errors),
         ) from errors[-1]
 

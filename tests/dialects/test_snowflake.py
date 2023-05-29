@@ -33,6 +33,16 @@ class TestSnowflake(Validator):
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all(
+            "OBJECT_CONSTRUCT(a, b, c, d)",
+            read={
+                "": "STRUCT(a as b, c as d)",
+            },
+            write={
+                "duckdb": "{'a': b, 'c': d}",
+                "snowflake": "OBJECT_CONSTRUCT(a, b, c, d)",
+            },
+        )
+        self.validate_all(
             "SELECT i, p, o FROM qt QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1",
             write={
                 "": "SELECT i, p, o FROM qt QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o NULLS LAST) = 1",

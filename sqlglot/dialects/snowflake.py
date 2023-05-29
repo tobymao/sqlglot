@@ -73,6 +73,19 @@ def _snowflake_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTi
     return exp.UnixToTime.from_arg_list(args)
 
 
+def _parse_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
+    expression = parser.parse_var_map(args)
+
+    if isinstance(expression, exp.StarMap):
+        return expression
+
+    return exp.Struct(
+        expressions=[
+            t.cast(exp.Condition, k).eq(v) for k, v in zip(expression.keys, expression.values)
+        ]
+    )
+
+
 def _unix_to_time_sql(self: generator.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
@@ -209,7 +222,7 @@ class Snowflake(Dialect):
             "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
-            "OBJECT_CONSTRUCT": parser.parse_var_map,
+            "OBJECT_CONSTRUCT": _parse_object_construct,
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_ARRAY": exp.Array.from_arg_list,
@@ -325,6 +338,10 @@ class Snowflake(Dialect):
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.Struct: lambda self, e: self.func(
+                "OBJECT_CONSTRUCT",
+                *(arg for expression in e.expressions for arg in expression.flatten()),
+            ),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.TimeToStr: lambda self, e: self.func(

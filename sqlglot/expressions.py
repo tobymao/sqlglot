@@ -4183,6 +4183,14 @@ class VarMap(Func):
     arg_types = {"keys": True, "values": True}
     is_var_len_args = True
 
+    @property
+    def keys(self) -> t.List[Expression]:
+        return self.args["keys"].expressions
+
+    @property
+    def values(self) -> t.List[Expression]:
+        return self.args["values"].expressions
+
 
 # https://dev.mysql.com/doc/refman/8.0/en/fulltext-search.html
 class MatchAgainst(Func):

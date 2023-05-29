@@ -1,10 +1,6 @@
-import typing as t
-
 from sqlglot import exp
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE, DialectType
-
-if t.TYPE_CHECKING:
-    from sqlglot._typing import E
 
 
 def normalize_identifiers(expression: E, dialect: DialectType = None) -> E:

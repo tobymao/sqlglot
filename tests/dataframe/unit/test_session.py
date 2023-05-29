@@ -70,13 +70,12 @@ class TestDataframeSession(DataFrameSQLValidator):
 
     @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_select_only(self):
-        # TODO: Do exact matches once CTE names are deterministic
         query = "SELECT cola, colb FROM table"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"})
         df = self.spark.sql(query)
-        self.assertIn(
+        self.assertEqual(
             "SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`",
-            df.sql(pretty=False),
+            df.sql(pretty=False)[0],
         )
 
     @mock.patch("sqlglot.schema", MappingSchema())
@@ -90,14 +89,13 @@ class TestDataframeSession(DataFrameSQLValidator):
 
     @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_with_aggs(self):
-        # TODO: Do exact matches once CTE names are deterministic
         query = "SELECT cola, colb FROM table"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"})
         df = self.spark.sql(query).groupBy(F.col("cola")).agg(F.sum("colb"))
-        result = df.sql(pretty=False, optimize=False)[0]
-        self.assertIn("SELECT cola, colb FROM table", result)
-        self.assertIn("SUM(colb)", result)
-        self.assertIn("GROUP BY cola", result)
+        self.assertEqual(
+            "WITH t38189 AS (SELECT cola, colb FROM table), t42330 AS (SELECT cola, colb FROM t38189) SELECT cola, SUM(colb) FROM t42330 GROUP BY cola",
+            df.sql(pretty=False, optimize=False)[0],
+        )
 
     @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_create(self):

@@ -305,7 +305,10 @@ def find_new_name(taken: t.Collection[str], base: str) -> str:
 
 def object_to_dict(obj: t.Any, **kwargs) -> t.Dict:
     """Returns a dictionary created from an object's attributes."""
-    return {**{k: copy(v) for k, v in vars(obj).copy().items()}, **kwargs}
+    return {
+        **{k: v.copy() if hasattr(v, "copy") else copy(v) for k, v in vars(obj).items()},
+        **kwargs,
+    }
 
 
 def split_num_words(

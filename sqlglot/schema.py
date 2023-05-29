@@ -177,6 +177,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             2. {db: {table: set(*cols)}}}
             3. {catalog: {db: {table: set(*cols)}}}}
         dialect: The dialect to be used for custom type mappings & parsing string arguments.
+        normalize: Whether to normalize identifier names according to the given dialect or not.
     """
 
     def __init__(
@@ -184,9 +185,11 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         schema: t.Optional[t.Dict] = None,
         visible: t.Optional[t.Dict] = None,
         dialect: DialectType = None,
+        normalize: bool = True,
     ) -> None:
         self.dialect = dialect
         self.visible = visible or {}
+        self.normalize = normalize
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
 
         super().__init__(self._normalize(schema or {}))
@@ -333,7 +336,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
 
         name = identifier.name
 
-        if identifier.quoted:
+        if not self.normalize or identifier.quoted:
             return name
 
         return name.upper() if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else name.lower()

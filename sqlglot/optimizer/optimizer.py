@@ -45,7 +45,7 @@ def optimize(
     dialect: DialectType = None,
     rules: t.Sequence[t.Callable] = RULES,
     **kwargs,
-):
+) -> exp.Expression:
     """
     Rewrite a sqlglot AST into an optimized form.
 
@@ -63,11 +63,11 @@ def optimize(
         dialect: The dialect to parse the sql string.
         rules: sequence of optimizer rules to use.
             Many of the rules require tables and columns to be qualified.
-            Do not remove qualify_tables or qualify_columns from the sequence of rules unless you know
-            what you're doing!
+            Do not remove `qualify` from the sequence of rules unless you know what you're doing!
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
+
     Returns:
-        sqlglot.Expression: optimized expression
+        The optimized expression.
     """
     schema = ensure_schema(schema or sqlglot.schema, dialect=dialect)
     possible_kwargs = {
@@ -76,11 +76,10 @@ def optimize(
         "schema": schema,
         "dialect": dialect,
         "isolate_tables": True,  # needed for other optimizations to perform well
-        "quote_identifiers": False,  # this happens in canonicalize
         **kwargs,
     }
-    expression = exp.maybe_parse(expression, dialect=dialect, copy=True)
 
+    expression = exp.maybe_parse(expression, dialect=dialect, copy=True)
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
         rule_params = rule.__code__.co_varnames
@@ -89,4 +88,4 @@ def optimize(
         }
         expression = rule(expression, **rule_kwargs)
 
-    return expression
+    return t.cast(exp.Expression, expression)

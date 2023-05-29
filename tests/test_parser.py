@@ -22,11 +22,11 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(
             str(ctx.exception),
-            "Failed to parse into <class 'sqlglot.expressions.Table'>",
+            "Failed to parse 'SELECT * FROM tbl' into <class 'sqlglot.expressions.Table'>",
         )
 
     def test_parse_into_error(self):
-        expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>]"
+        expected_message = "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expressions.From'>]"
         expected_errors = [
             {
                 "description": "Invalid expression / Unexpected token",
@@ -45,7 +45,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(ctx.exception.errors, expected_errors)
 
     def test_parse_into_errors(self):
-        expected_message = "Failed to parse into [<class 'sqlglot.expressions.From'>, <class 'sqlglot.expressions.Join'>]"
+        expected_message = "Failed to parse 'SELECT 1;' into [<class 'sqlglot.expressions.From'>, <class 'sqlglot.expressions.Join'>]"
         expected_errors = [
             {
                 "description": "Invalid expression / Unexpected token",

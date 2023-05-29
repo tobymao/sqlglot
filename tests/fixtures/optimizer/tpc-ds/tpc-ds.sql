@@ -12011,10 +12011,10 @@ GROUP  BY cc_call_center_id,
           cd_education_status
 ORDER  BY Sum(cr_net_loss) DESC;
 SELECT
-  "call_center"."cc_call_center_id" AS Call_Center,
-  "call_center"."cc_name" AS Call_Center_Name,
-  "call_center"."cc_manager" AS Manager,
-  SUM("catalog_returns"."cr_net_loss") AS Returns_Loss
+  "call_center"."cc_call_center_id" AS "call_center",
+  "call_center"."cc_name" AS "call_center_name",
+  "call_center"."cc_manager" AS "manager",
+  SUM("catalog_returns"."cr_net_loss") AS "returns_loss"
 FROM "call_center" AS "call_center"
 JOIN "catalog_returns" AS "catalog_returns"
   ON "catalog_returns"."cr_call_center_sk" = "call_center"."cc_call_center_sk"

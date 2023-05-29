@@ -15,6 +15,11 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
+# Only Snowflake is currently known to resolve unquoted identifiers as uppercase.
+# https://docs.snowflake.com/en/sql-reference/identifiers-syntax
+RESOLVES_IDENTIFIERS_AS_UPPERCASE = {"snowflake"}
+
+
 class Dialects(str, Enum):
     DIALECT = ""
 

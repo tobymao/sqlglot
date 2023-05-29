@@ -1,3 +1,5 @@
+import typing as t
+
 from sqlglot import exp
 from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE, DialectType
 

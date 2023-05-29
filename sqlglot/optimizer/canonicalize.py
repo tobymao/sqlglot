@@ -11,7 +11,7 @@ if t.TYPE_CHECKING:
 
 
 def canonicalize(
-    expression: exp.Expression, identify: str | bool = "safe", dialect: DialectType = None
+    expression: exp.Expression, identify: bool = True, dialect: DialectType = None
 ) -> exp.Expression:
     """Converts a sql expression into a standard form.
 

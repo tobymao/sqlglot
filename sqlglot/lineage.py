@@ -70,7 +70,7 @@ def lineage(
         expression,
         dialect=dialect,
         schema=schema,
-        **{"validate_qualify_columns": False, **kwargs},  # type: ignore
+        **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore
     )
 
     scope = build_scope(qualified)

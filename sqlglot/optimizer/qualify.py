@@ -22,7 +22,7 @@ def qualify(
     isolate_tables: bool = False,
     validate_qualify_columns: bool = True,
     quote_identifiers: bool = True,
-    identify: str | bool = False,
+    identify: bool = True,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have normalized and qualified tables and columns.
@@ -34,7 +34,7 @@ def qualify(
         >>> schema = {"tbl": {"col": "INT"}}
         >>> expression = sqlglot.parse_one("SELECT col FROM tbl")
         >>> qualify(expression, schema=schema).sql()
-        'SELECT tbl.col AS col FROM tbl AS tbl'
+        'SELECT "tbl"."col" AS "col" FROM "tbl" AS "tbl"'
 
     Args:
         expression: Expression to qualify.
@@ -48,10 +48,7 @@ def qualify(
         quote_identifiers: Whether or not to run the quote_identifiers step.
             This step is necessary to ensure correctness for case sensitive queries.
             But this flag is provided in case this step is performed at a later time.
-        identify:
-            "always" or True: always returns true.
-            "safe": true if there is no uppercase or lowercase character in `text`, depending on `dialect`.
-            False: always returns false.
+        identify: If True, quote all identifiers, else only necessary ones.
     Returns:
         The qualified expression.
     """

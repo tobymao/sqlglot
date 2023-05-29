@@ -26,7 +26,7 @@ def parse_and_optimize(func, sql, read_dialect, **kwargs):
 
 def qualify_columns(expression, **kwargs):
     expression = optimizer.qualify.qualify(
-        expression, infer_schema=True, validate_qualify_columns=False, **kwargs
+        expression, infer_schema=True, validate_qualify_columns=False, identify=False, **kwargs
     )
     return expression
 
@@ -712,10 +712,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             parse_one(
                 """
               SELECT
-                 "source".ID AS ID,
+                 "source"."ID" AS "ID",
                  "source"."name" AS "name",
                  "source"."payload" AS "payload"
-               FROM EXAMPLE."source" AS "source"
+               FROM "EXAMPLE"."source" AS "source"
             """
             ).sql(pretty=True),
         )

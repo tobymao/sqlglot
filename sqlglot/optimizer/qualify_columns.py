@@ -6,7 +6,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import case_sensitive, seq_get, should_identify
+from sqlglot.helper import case_sensitive, seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 
@@ -415,16 +415,16 @@ def _qualify_outputs(scope):
 
 
 def quote_identifiers(
-    expression: exp.Expression, dialect: DialectType, identify: str | bool
+    expression: exp.Expression, dialect: DialectType, identify: bool
 ) -> exp.Expression:
     """Makes sure all identifiers that need to be quoted are quoted."""
     if isinstance(expression, exp.Identifier):
         name = expression.this
         expression.set(
             "quoted",
-            not exp.SAFE_IDENTIFIER_RE.match(name)
+            identify
             or case_sensitive(name, dialect=dialect)
-            or should_identify(name, identify, dialect=dialect),
+            or not exp.SAFE_IDENTIFIER_RE.match(name),
         )
     return expression
 

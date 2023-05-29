@@ -137,10 +137,11 @@ class BigQuery(Dialect):
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
+            "BYTES": TokenType.BINARY,
             "DECLARE": TokenType.COMMAND,
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,
-            "BYTES": TokenType.BINARY,
+            "RECORD": TokenType.STRUCT,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "UNKNOWN": TokenType.NULL,
         }

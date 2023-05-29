@@ -54,6 +54,7 @@ class TestBigQuery(Validator):
         self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS TIMESTAMP)", write={"bigquery": "CAST(x AS DATETIME)"})
         self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
+        self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
         self.validate_all(
             "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
             write={

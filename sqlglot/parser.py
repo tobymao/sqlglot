@@ -16,7 +16,7 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("sqlglot")
 
 
-def parse_var_map(args: t.List) -> exp.Expression:
+def parse_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
     if len(args) == 1 and args[0].is_star:
         return exp.StarMap(this=args[0])
 

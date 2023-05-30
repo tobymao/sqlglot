@@ -4135,8 +4135,8 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_ddl_select(self) -> t.Optional[exp.Expression]:
-        return self._parse_set_operations(
-            self._parse_select(nested=True, parse_subquery_alias=False)
+        return self._parse_query_modifiers(
+            self._parse_set_operations(self._parse_select(nested=True, parse_subquery_alias=False))
         )
 
     def _parse_transaction(self) -> exp.Expression:

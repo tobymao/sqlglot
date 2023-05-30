@@ -1,7 +1,7 @@
 from sqlglot import exp
-from sqlglot.helper import case_sensitive
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import DialectType as DialectType
+from sqlglot.helper import case_sensitive
 
 
 def quote_identifiers(

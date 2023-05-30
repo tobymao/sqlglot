@@ -802,7 +802,8 @@ class Generator:
                 nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
                 if expression.args.get("values") is not None:
                     delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")
-                    values = f"{delimiters[0]}{self.expressions(expression, key='values')}{delimiters[1]}"
+                    values = self.expressions(expression, key="values", flat=True)
+                    values = f"{delimiters[0]}{values}{delimiters[1]}"
             else:
                 nested = f"({interior})"
 

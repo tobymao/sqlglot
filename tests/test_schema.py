@@ -221,3 +221,7 @@ class TestSchema(unittest.TestCase):
         # Check that names are normalized to uppercase for Snowflake
         schema = MappingSchema(schema={"x": {"foo": "int", '"bLa"': "int"}}, dialect="snowflake")
         self.assertEqual(schema.column_names(exp.Table(this="x")), ["FOO", "bLa"])
+
+        # Check that switching off the normalization logic works as expected
+        schema = MappingSchema(schema={"x": {"foo": "int"}}, normalize=False, dialect="snowflake")
+        self.assertEqual(schema.column_names(exp.Table(this="x")), ["foo"])

@@ -1,10 +1,9 @@
 from sqlglot import exp
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE, DialectType
 
 
-def normalize_identifiers(
-    expression: exp.Expression, dialect: DialectType = None
-) -> exp.Expression:
+def normalize_identifiers(expression: E, dialect: DialectType = None) -> E:
     """
     Normalize all unquoted identifiers to either lower or upper case, depending on
     the dialect. This essentially makes those identifiers case-insensitive.

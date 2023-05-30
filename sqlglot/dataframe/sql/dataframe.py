@@ -299,7 +299,7 @@ class DataFrame:
         for expression_type, select_expression in select_expressions:
             select_expression = select_expression.transform(replace_id_value, replacement_mapping)
             if optimize:
-                select_expression = optimize_func(select_expression, identify="always")
+                select_expression = t.cast(exp.Select, optimize_func(select_expression))
             select_expression = df._replace_cte_names_with_hashes(select_expression)
             expression: t.Union[exp.Select, exp.Cache, exp.Drop]
             if expression_type == exp.Cache:

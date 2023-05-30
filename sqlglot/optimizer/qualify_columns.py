@@ -4,6 +4,7 @@ import itertools
 import typing as t
 
 from sqlglot import alias, exp
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import case_sensitive, seq_get
@@ -414,19 +415,21 @@ def _qualify_outputs(scope):
     scope.expression.set("expressions", new_selections)
 
 
-def quote_identifiers(
-    expression: exp.Expression, dialect: DialectType, identify: bool
-) -> exp.Expression:
+def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool = True) -> E:
     """Makes sure all identifiers that need to be quoted are quoted."""
-    if isinstance(expression, exp.Identifier):
-        name = expression.this
-        expression.set(
-            "quoted",
-            identify
-            or case_sensitive(name, dialect=dialect)
-            or not exp.SAFE_IDENTIFIER_RE.match(name),
-        )
-    return expression
+
+    def _quote(expression: E) -> E:
+        if isinstance(expression, exp.Identifier):
+            name = expression.this
+            expression.set(
+                "quoted",
+                identify
+                or case_sensitive(name, dialect=dialect)
+                or not exp.SAFE_IDENTIFIER_RE.match(name),
+            )
+        return expression
+
+    return expression.transform(_quote, copy=False)
 
 
 class Resolver:

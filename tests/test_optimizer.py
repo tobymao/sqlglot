@@ -304,8 +304,8 @@ class TestOptimizer(unittest.TestCase):
         optimize = partial(
             optimizer.optimize,
             rules=[
-                optimizer.qualify_tables.qualify_tables,
-                optimizer.qualify_columns.qualify_columns,
+                optimizer.qualify.qualify,
+                optimizer.qualify_columns.quote_identifiers,
                 annotate_types,
                 optimizer.canonicalize.canonicalize,
             ],
@@ -699,23 +699,18 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             }
         }
 
-        self.assertEqual(
-            optimizer.qualify.qualify(
-                parse_one(
-                    """
-                  SELECT * FROM example."source"
-                """
-                ),
-                dialect="snowflake",
-                schema=schema,
-            ).sql(pretty=True),
-            parse_one(
-                """
-              SELECT
-                 "source"."ID" AS "ID",
-                 "source"."name" AS "name",
-                 "source"."payload" AS "payload"
-               FROM "EXAMPLE"."source" AS "source"
+        expected = parse_one(
             """
-            ).sql(pretty=True),
-        )
+            SELECT
+             "source"."ID" AS "ID",
+             "source"."name" AS "name",
+             "source"."payload" AS "payload"
+            FROM "EXAMPLE"."source" AS "source"
+            """,
+            read="snowflake",
+        ).sql(pretty=True, dialect="snowflake")
+
+        for func in (optimizer.qualify.qualify, optimizer.optimize):
+            source_query = parse_one('SELECT * FROM example."source"', read="snowflake")
+            transformed = func(source_query, dialect="snowflake", schema=schema)
+            self.assertEqual(transformed.sql(pretty=True, dialect="snowflake"), expected)

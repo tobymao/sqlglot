@@ -307,7 +307,7 @@ class TestOptimizer(unittest.TestCase):
                 optimizer.qualify.qualify,
                 optimizer.quote_identifiers.quote_identifiers,
                 annotate_types,
-                optimizer.canonicalize.canonicalize
+                optimizer.canonicalize.canonicalize,
             ],
         )
         self.check_file("canonicalize", optimize, schema=self.schema)

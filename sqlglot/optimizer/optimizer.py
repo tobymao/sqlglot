@@ -78,6 +78,7 @@ def optimize(
         "schema": schema,
         "dialect": dialect,
         "isolate_tables": True,  # needed for other optimizations to perform well
+        "quote_identifiers": False,  # this happens in canonicalize
         **kwargs,
     }
 

@@ -303,12 +303,7 @@ class TestOptimizer(unittest.TestCase):
     def test_canonicalize(self):
         optimize = partial(
             optimizer.optimize,
-            rules=[
-                optimizer.qualify_tables.qualify_tables,
-                optimizer.qualify_columns.qualify_columns,
-                annotate_types,
-                optimizer.canonicalize.canonicalize,
-            ],
+            rules=[optimizer.qualify.qualify, annotate_types, optimizer.canonicalize.canonicalize],
         )
         self.check_file("canonicalize", optimize, schema=self.schema)
 

@@ -1,18 +1,11 @@
 from __future__ import annotations
 
 import itertools
-import typing as t
 
 from sqlglot import exp
-from sqlglot.optimizer.qualify_columns import quote_identifiers
-
-if t.TYPE_CHECKING:
-    from sqlglot.dialects.dialect import DialectType
 
 
-def canonicalize(
-    expression: exp.Expression, identify: bool = True, dialect: DialectType = None
-) -> exp.Expression:
+def canonicalize(expression: exp.Expression) -> exp.Expression:
     """Converts a sql expression into a standard form.
 
     This method relies on annotate_types because many of the
@@ -20,15 +13,13 @@ def canonicalize(
 
     Args:
         expression: The expression to canonicalize.
-        identify: Whether or not to force identify identifier.
     """
-    exp.replace_children(expression, canonicalize, identify=identify, dialect=dialect)
+    exp.replace_children(expression, canonicalize)
 
     expression = add_text_to_concat(expression)
     expression = coerce_type(expression)
     expression = remove_redundant_casts(expression)
     expression = ensure_bool_predicates(expression)
-    expression = quote_identifiers(expression, dialect=dialect, identify=identify)
 
     return expression
 

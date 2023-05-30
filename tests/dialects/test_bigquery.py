@@ -21,6 +21,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
         self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
+        self.validate_identity("SELECT STRUCT<STRING>((SELECT a FROM b.c LIMIT 1)).*")
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")

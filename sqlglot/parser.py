@@ -2842,7 +2842,7 @@ class Parser(metaclass=_Parser):
             if not data_type.expressions:
                 self._retreat(index)
                 return self._parse_column()
-            return data_type
+            return self._parse_column_ops(data_type)
 
         return this
 
@@ -2985,6 +2985,9 @@ class Parser(metaclass=_Parser):
             this = self.expression(exp.Column, this=this)
         elif not this:
             return self._parse_bracket(this)
+        return self._parse_column_ops(this)
+
+    def _parse_column_ops(self, this: exp.Expression) -> exp.Expression:
         this = self._parse_bracket(this)
 
         while self._match_set(self.COLUMN_OPERATORS):
@@ -3029,7 +3032,6 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Dot, this=this, expression=field)
             this = self._parse_bracket(this)
-
         return this
 
     def _parse_primary(self) -> t.Optional[exp.Expression]:
@@ -3462,7 +3464,15 @@ class Parser(metaclass=_Parser):
         options = self._parse_key_constraint_options()
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 
+    @t.overload
+    def _parse_bracket(self, this: exp.Expression) -> exp.Expression:
+        ...
+
+    @t.overload
     def _parse_bracket(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        ...
+
+    def _parse_bracket(self, this):
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
@@ -4516,9 +4526,17 @@ class Parser(metaclass=_Parser):
 
         return True
 
+    @t.overload
+    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression:
+        ...
+
+    @t.overload
     def _replace_columns_with_dots(
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
+        ...
+
+    def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):
             exp.replace_children(this, self._replace_columns_with_dots)
         elif isinstance(this, exp.Column):

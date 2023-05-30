@@ -305,7 +305,7 @@ class TestOptimizer(unittest.TestCase):
             optimizer.optimize,
             rules=[
                 optimizer.qualify.qualify,
-                optimizer.quote_identifiers.quote_identifiers,
+                optimizer.qualify_columns.quote_identifiers,
                 annotate_types,
                 optimizer.canonicalize.canonicalize,
             ],

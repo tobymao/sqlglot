@@ -16,7 +16,7 @@ from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
 from sqlglot.optimizer.pushdown_projections import pushdown_projections
 from sqlglot.optimizer.qualify import qualify
-from sqlglot.optimizer.quote_identifiers import quote_identifiers
+from sqlglot.optimizer.qualify_columns import quote_identifiers
 from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 from sqlglot.schema import ensure_schema

@@ -415,9 +415,7 @@ def _qualify_outputs(scope):
     scope.expression.set("expressions", new_selections)
 
 
-def quote_identifiers(
-    expression: E, dialect: DialectType = None, identify: bool = True, copy: bool = True
-) -> E:
+def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool = True) -> E:
     """Makes sure all identifiers that need to be quoted are quoted."""
 
     def _quote(expression: E) -> E:
@@ -431,7 +429,7 @@ def quote_identifiers(
             )
         return expression
 
-    return expression.transform(_quote, copy=copy)
+    return expression.transform(_quote, copy=False)
 
 
 class Resolver:

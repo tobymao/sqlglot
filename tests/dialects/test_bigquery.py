@@ -31,6 +31,9 @@ class TestBigQuery(Validator):
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM `t`) AS a UNPIVOT((c) FOR c_name IN (v1, v2))"
         )
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS foo AS SELECT * FROM bla EXCEPT DISTINCT (SELECT * FROM bar) LIMIT 0"
+        )
 
         self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
         self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})

@@ -31,10 +31,11 @@ def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> s
     return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 
 
-def _date_add_sql(self: generator.Generator, expression: exp.DateAdd) -> str:
+def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
-    return f"{this} + {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
+    op = "+" if isinstance(expression, exp.DateAdd) else "-"
+    return f"{this} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 
 
 def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
@@ -183,7 +184,8 @@ class DuckDB(Dialect):
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.DataType: _datatype_sql,
-            exp.DateAdd: _date_add_sql,
+            exp.DateAdd: _date_delta_sql,
+            exp.DateSub: _date_delta_sql,
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", f"'{e.args.get('unit', 'day')}'", e.expression, e.this
             ),

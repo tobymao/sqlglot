@@ -227,7 +227,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
         """
         normalized_table = self._normalize_table(
-            exp.maybe_parse(table, into=exp.Table, dialect=dialect), dialect=dialect
+            self._ensure_table(table, dialect=dialect), dialect=dialect
         )
         normalized_column_mapping = {
             self._normalize_name(key, dialect=dialect): value
@@ -250,7 +250,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         dialect: DialectType = None,
     ) -> t.List[str]:
         normalized_table = self._normalize_table(
-            exp.maybe_parse(table, into=exp.Table, dialect=dialect), dialect=dialect
+            self._ensure_table(table, dialect=dialect), dialect=dialect
         )
 
         schema = self.find(normalized_table)
@@ -270,7 +270,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         dialect: DialectType = None,
     ) -> exp.DataType:
         normalized_table = self._normalize_table(
-            exp.maybe_parse(table, into=exp.Table, dialect=dialect), dialect=dialect
+            self._ensure_table(table, dialect=dialect), dialect=dialect
         )
         normalized_column_name = self._normalize_name(
             column if isinstance(column, str) else column.this, dialect=dialect
@@ -322,7 +322,9 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         for arg in TABLE_ARGS:
             value = normalized_table.args.get(arg)
             if isinstance(value, (str, exp.Identifier)):
-                normalized_table.set(arg, self._normalize_name(value, dialect=dialect))
+                normalized_table.set(
+                    arg, exp.to_identifier(self._normalize_name(value, dialect=dialect))
+                )
 
         return normalized_table
 
@@ -344,6 +346,9 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
     def _depth(self) -> int:
         # The columns themselves are a mapping, but we don't want to include those
         return super()._depth() - 1
+
+    def _ensure_table(self, table: exp.Table | str, dialect: DialectType = None) -> exp.Table:
+        return exp.maybe_parse(table, into=exp.Table, dialect=dialect or self.dialect)
 
     def _to_data_type(self, schema_type: str, dialect: DialectType = None) -> exp.DataType:
         """

@@ -6,6 +6,10 @@ class TestMySQL(Validator):
     dialect = "mysql"
 
     def test_ddl(self):
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE SET x.id = 1"
+        )
+
         self.validate_all(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
             write={
@@ -21,10 +25,6 @@ class TestMySQL(Validator):
                 "mysql": "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
             },
         )
-        self.validate_identity(
-            "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE SET x.id = 1"
-        )
-
         self.validate_all(
             "CREATE TABLE x (id int not null auto_increment, primary key (id))",
             write={
@@ -35,6 +35,12 @@ class TestMySQL(Validator):
             "CREATE TABLE x (id int not null auto_increment)",
             write={
                 "sqlite": "CREATE TABLE x (id INTEGER NOT NULL)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
+            write={
+                "mysql": "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
             },
         )
 

@@ -225,3 +225,7 @@ class TestSchema(unittest.TestCase):
         # Check that switching off the normalization logic works as expected
         schema = MappingSchema(schema={"x": {"foo": "int"}}, normalize=False, dialect="snowflake")
         self.assertEqual(schema.column_names(exp.Table(this="x")), ["foo"])
+
+        # Check that the correct dialect is used when calling schema methods
+        schema = MappingSchema(schema={"[Fo]": {"x": "int"}}, dialect="tsql")
+        self.assertEqual(schema.column_names("[Fo]"), schema.column_names("`Fo`", dialect="spark"))

@@ -3371,9 +3371,11 @@ class Parser(metaclass=_Parser):
         return self.CONSTRAINT_PARSERS[constraint](self)
 
     def _parse_unique(self) -> exp.Expression:
+        this = self._match_text_seq("KEY") and self._parse_id_var()
         if not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(exp.UniqueColumnConstraint)
-        return self.expression(exp.Unique, expressions=self._parse_wrapped_id_vars())
+
+        return self.expression(exp.Unique, this=this, expressions=self._parse_wrapped_id_vars())
 
     def _parse_key_constraint_options(self) -> t.List[str]:
         options = []

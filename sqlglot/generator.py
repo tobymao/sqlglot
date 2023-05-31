@@ -1772,8 +1772,10 @@ class Generator:
         return f"PRIMARY KEY ({expressions}){options}"
 
     def unique_sql(self, expression: exp.Unique) -> str:
+        this = self.sql(expression, "this")
+        this = f"{this} " if this else ""
         columns = self.expressions(expression, key="expressions")
-        return f"UNIQUE ({columns})"
+        return f"UNIQUE {this}({columns})"
 
     def if_sql(self, expression: exp.If) -> str:
         return self.case_sql(

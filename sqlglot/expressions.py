@@ -1451,7 +1451,7 @@ class PrimaryKey(Expression):
 
 
 class Unique(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"this": False, "expressions": True}
 
 
 # https://www.postgresql.org/docs/9.1/sql-selectinto.html

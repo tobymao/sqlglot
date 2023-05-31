@@ -629,8 +629,10 @@ class Generator:
             return f"PRIMARY KEY{' DESC' if desc else ' ASC'}"
         return f"PRIMARY KEY"
 
-    def uniquecolumnconstraint_sql(self, _) -> str:
-        return "UNIQUE"
+    def uniquecolumnconstraint_sql(self, expression: exp.UniqueColumnConstraint) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        return f"UNIQUE{this}"
 
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
@@ -1770,10 +1772,6 @@ class Generator:
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
         return f"PRIMARY KEY ({expressions}){options}"
-
-    def unique_sql(self, expression: exp.Unique) -> str:
-        columns = self.expressions(expression, key="expressions")
-        return f"UNIQUE ({columns})"
 
     def if_sql(self, expression: exp.If) -> str:
         return self.case_sql(

@@ -379,6 +379,14 @@ class TestDuckDB(Validator):
                 "hive": "SELECT DATE_ADD(TO_DATE(x), 1)",
             },
         )
+        self.validate_all(
+            "SELECT CAST('2020-05-06' AS DATE) - INTERVAL 5 DAY",
+            read={"bigquery": "SELECT DATE_SUB(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
+        )
+        self.validate_all(
+            "SELECT CAST('2020-05-06' AS DATE) + INTERVAL 5 DAY",
+            read={"bigquery": "SELECT DATE_ADD(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
+        )
 
         with self.assertRaises(UnsupportedError):
             transpile(

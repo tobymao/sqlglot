@@ -1285,7 +1285,7 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    arg_types: t.Dict[str, t.Any] = {}
+    arg_types = {"this": False}
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
@@ -1448,10 +1448,6 @@ class ForeignKey(Expression):
 
 class PrimaryKey(Expression):
     arg_types = {"expressions": True, "options": False}
-
-
-class Unique(Expression):
-    arg_types = {"this": False, "expressions": True}
 
 
 # https://www.postgresql.org/docs/9.1/sql-selectinto.html

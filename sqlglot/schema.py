@@ -227,7 +227,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
         """
         normalized_table = self._normalize_table(
-            self._ensure_table(table, dialect=dialect), dialect=dialect
+            exp.maybe_parse(table, into=exp.Table, dialect=dialect), dialect=dialect
         )
         normalized_column_mapping = {
             self._normalize_name(key, dialect=dialect): value
@@ -250,7 +250,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         dialect: DialectType = None,
     ) -> t.List[str]:
         normalized_table = self._normalize_table(
-            self._ensure_table(table, dialect=dialect), dialect=dialect
+            exp.maybe_parse(table, into=exp.Table, dialect=dialect), dialect=dialect
         )
 
         schema = self.find(normalized_table)
@@ -270,7 +270,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         dialect: DialectType = None,
     ) -> exp.DataType:
         normalized_table = self._normalize_table(
-            self._ensure_table(table, dialect=dialect), dialect=dialect
+            exp.maybe_parse(table, into=exp.Table, dialect=dialect), dialect=dialect
         )
         normalized_column_name = self._normalize_name(
             column if isinstance(column, str) else column.this, dialect=dialect
@@ -344,19 +344,6 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
     def _depth(self) -> int:
         # The columns themselves are a mapping, but we don't want to include those
         return super()._depth() - 1
-
-    def _ensure_table(self, table: exp.Table | str, dialect: DialectType = None) -> exp.Table:
-        if isinstance(table, exp.Table):
-            return table
-
-        dialect = dialect or self.dialect
-        parsed_table = sqlglot.parse_one(table, read=dialect, into=exp.Table)
-
-        if not parsed_table:
-            in_dialect = f" in dialect {dialect}" if dialect else ""
-            raise SchemaError(f"Failed to parse table '{table}'{in_dialect}.")
-
-        return parsed_table
 
     def _to_data_type(self, schema_type: str, dialect: DialectType = None) -> exp.DataType:
         """

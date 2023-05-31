@@ -4575,6 +4575,7 @@ def maybe_parse(
     sql = str(sql_or_expression)
     if prefix:
         sql = f"{prefix} {sql}"
+
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 

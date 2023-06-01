@@ -3120,12 +3120,17 @@ class Tag(Expression):
     }
 
 
+# Represents both the standard SQL PIVOT operator and DuckDB's "simplified" PIVOT syntax
+# https://duckdb.org/docs/sql/statements/pivot
 class Pivot(Expression):
     arg_types = {
+        "this": False,
         "alias": False,
         "expressions": True,
-        "field": True,
-        "unpivot": True,
+        "field": False,
+        "unpivot": False,
+        "using": False,
+        "group": False,
         "columns": False,
     }
 

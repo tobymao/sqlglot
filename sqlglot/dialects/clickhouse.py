@@ -148,9 +148,7 @@ class ClickHouse(Dialect):
 
             return self.expression(exp.Placeholder, this=this, kind=kind)
 
-        def _parse_in(
-            self, this: t.Optional[exp.Expression], is_global: bool = False
-        ) -> exp.Expression:
+        def _parse_in(self, this: t.Optional[exp.Expression], is_global: bool = False) -> exp.In:
             this = super()._parse_in(this)
             this.set("is_global", is_global)
             return this

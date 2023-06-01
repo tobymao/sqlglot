@@ -108,6 +108,7 @@ class DuckDB(Dialect):
             "INT1": TokenType.TINYINT,
             "LOGICAL": TokenType.BOOLEAN,
             "NUMERIC": TokenType.DOUBLE,
+            "PIVOT_WIDER": TokenType.PIVOT,
             "SIGNED": TokenType.INT,
             "STRING": TokenType.VARCHAR,
             "UBIGINT": TokenType.UBIGINT,

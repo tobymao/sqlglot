@@ -158,7 +158,9 @@ class DuckDB(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
-            TokenType.FROM: lambda self: self._parse_from(skip_from_token=True),
+            TokenType.FROM: lambda self: exp.select("*").from_(
+                self._parse_from(skip_from_token=True)
+            ),
             TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
         }
 

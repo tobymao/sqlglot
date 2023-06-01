@@ -1897,7 +1897,7 @@ class Parser(metaclass=_Parser):
                 expressions=self._parse_csv(self._parse_value),
                 alias=self._parse_table_alias(),
             )
-        elif self._match_texts({"PIVOT", "PIVOT_WIDER"}):
+        elif self._match(TokenType.PIVOT):
             this = self._parse_simplified_pivot()
         else:
             this = None

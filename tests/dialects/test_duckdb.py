@@ -132,7 +132,6 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
-        self.validate_identity("FROM tbl")
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")
         self.validate_identity("PIVOT Cities ON Year USING FIRST(Population)")
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country")
@@ -166,6 +165,7 @@ class TestDuckDB(Validator):
             "SELECT * FROM (PIVOT Cities ON Year USING SUM(Population) GROUP BY Country) AS pivot_alias"
         )
 
+        self.validate_all("FROM tbl", write={"duckdb": "SELECT * FROM tbl"})
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
@@ -173,6 +173,10 @@ class TestDuckDB(Validator):
         self.validate_all(
             "PIVOT_WIDER Cities ON Year USING SUM(Population)",
             write={"duckdb": "PIVOT Cities ON Year USING SUM(Population)"},
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1) FROM t",
+            write={"duckdb": "WITH t AS (SELECT 1) SELECT * FROM t"}
         )
         self.validate_all(
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",

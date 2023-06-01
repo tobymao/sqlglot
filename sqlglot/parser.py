@@ -480,9 +480,13 @@ class Parser(metaclass=_Parser):
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.END: lambda self: self._parse_commit_or_rollback(),
+        TokenType.FROM: lambda self: exp.select("*").from_(
+            t.cast(exp.From, self._parse_from(skip_from_token=True))
+        ),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.LOAD: lambda self: self._parse_load(),
         TokenType.MERGE: lambda self: self._parse_merge(),
+        TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
         TokenType.PRAGMA: lambda self: self.expression(exp.Pragma, this=self._parse_expression()),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.SET: lambda self: self._parse_set(),
@@ -2006,7 +2010,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_from(
         self, modifiers: bool = False, skip_from_token: bool = False
-    ) -> t.Optional[exp.Expression]:
+    ) -> t.Optional[exp.From]:
         if not self._match(TokenType.FROM) and not skip_from_token:
             return None
 
@@ -2423,7 +2427,7 @@ class Parser(metaclass=_Parser):
         return list(iter(self._parse_pivot, None))
 
     # https://duckdb.org/docs/sql/statements/pivot
-    def _parse_simplified_pivot(self) -> exp.Expression:
+    def _parse_simplified_pivot(self) -> exp.Pivot:
         def _parse_on() -> t.Optional[exp.Expression]:
             this = self._parse_bitwise()
             return self._parse_in(this) if self._match(TokenType.IN) else this
@@ -2762,7 +2766,7 @@ class Parser(metaclass=_Parser):
         this = self.expression(exp.Is, this=this, expression=expression)
         return self.expression(exp.Not, this=this) if negate else this
 
-    def _parse_in(self, this: t.Optional[exp.Expression], alias: bool = False) -> exp.Expression:
+    def _parse_in(self, this: t.Optional[exp.Expression], alias: bool = False) -> exp.In:
         unnest = self._parse_unnest()
         if unnest:
             this = self.expression(exp.In, this=this, unnest=unnest)

@@ -156,14 +156,6 @@ class DuckDB(Dialect):
             TokenType.UTINYINT,
         }
 
-        STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
-            TokenType.FROM: lambda self: exp.select("*").from_(
-                t.cast(exp.From, self._parse_from(skip_from_token=True))
-            ),
-            TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
-        }
-
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
             if len(aggregations) == 1:
                 return super()._pivot_column_names(aggregations)

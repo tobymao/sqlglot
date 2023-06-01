@@ -1899,6 +1899,8 @@ class Parser(metaclass=_Parser):
             )
         elif self._match(TokenType.PIVOT):
             this = self._parse_simplified_pivot()
+        elif self._match(TokenType.FROM):
+            this = exp.select("*").from_(t.cast(exp.From, self._parse_from(skip_from_token=True)))
         else:
             this = None
 

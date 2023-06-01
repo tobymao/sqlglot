@@ -165,6 +165,7 @@ class TestDuckDB(Validator):
             "SELECT * FROM (PIVOT Cities ON Year USING SUM(Population) GROUP BY Country) AS pivot_alias"
         )
 
+        self.validate_all("FROM (FROM tbl)", write={"duckdb": "SELECT * FROM (SELECT * FROM tbl)"})
         self.validate_all("FROM tbl", write={"duckdb": "SELECT * FROM tbl"})
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
@@ -175,8 +176,11 @@ class TestDuckDB(Validator):
             write={"duckdb": "PIVOT Cities ON Year USING SUM(Population)"},
         )
         self.validate_all(
-            "WITH t AS (SELECT 1) FROM t",
-            write={"duckdb": "WITH t AS (SELECT 1) SELECT * FROM t"}
+            "WITH t AS (SELECT 1) FROM t", write={"duckdb": "WITH t AS (SELECT 1) SELECT * FROM t"}
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1) SELECT * FROM (FROM t)",
+            write={"duckdb": "WITH t AS (SELECT 1) SELECT * FROM (SELECT * FROM t)"},
         )
         self.validate_all(
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",

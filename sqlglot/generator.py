@@ -1220,11 +1220,20 @@ class Generator:
         return f"{this} {kind} {method}({bucket}{percent}{rows}{size}){seed}{alias}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
+        expressions = self.expressions(expression, flat=True)
+
+        if expression.this:
+            this = self.sql(expression, "this")
+            on = f"{self.seg('ON')} {expressions}"
+            using = self.expressions(expression, key="using", flat=True)
+            using = f"{self.seg('USING')} {using}" if using else ""
+            group = self.sql(expression, "group")
+            return f"PIVOT {this}{on}{using}{group}"
+
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
         unpivot = expression.args.get("unpivot")
         direction = "UNPIVOT" if unpivot else "PIVOT"
-        expressions = self.expressions(expression, flat=True)
         field = self.sql(expression, "field")
         return f"{direction}({expressions} FOR {field}){alias}"
 

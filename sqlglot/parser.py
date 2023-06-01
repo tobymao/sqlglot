@@ -440,31 +440,31 @@ class Parser(metaclass=_Parser):
     }
 
     EXPRESSION_PARSERS = {
+        exp.Cluster: lambda self: self._parse_sort(exp.Cluster, "CLUSTER", "BY"),
         exp.Column: lambda self: self._parse_column(),
+        exp.Condition: lambda self: self._parse_conjunction(),
         exp.DataType: lambda self: self._parse_types(),
+        exp.Expression: lambda self: self._parse_statement(),
         exp.From: lambda self: self._parse_from(),
         exp.Group: lambda self: self._parse_group(),
+        exp.Having: lambda self: self._parse_having(),
         exp.Identifier: lambda self: self._parse_id_var(),
-        exp.Lateral: lambda self: self._parse_lateral(),
         exp.Join: lambda self: self._parse_join(),
-        exp.Order: lambda self: self._parse_order(),
-        exp.Cluster: lambda self: self._parse_sort(exp.Cluster, "CLUSTER", "BY"),
-        exp.Sort: lambda self: self._parse_sort(exp.Sort, "SORT", "BY"),
         exp.Lambda: lambda self: self._parse_lambda(),
+        exp.Lateral: lambda self: self._parse_lateral(),
         exp.Limit: lambda self: self._parse_limit(),
         exp.Offset: lambda self: self._parse_offset(),
-        exp.TableAlias: lambda self: self._parse_table_alias(),
-        exp.Table: lambda self: self._parse_table_parts(),
-        exp.Condition: lambda self: self._parse_conjunction(),
-        exp.Expression: lambda self: self._parse_statement(),
-        exp.Properties: lambda self: self._parse_properties(),
-        exp.Where: lambda self: self._parse_where(),
+        exp.Order: lambda self: self._parse_order(),
         exp.Ordered: lambda self: self._parse_ordered(),
-        exp.Having: lambda self: self._parse_having(),
-        exp.With: lambda self: self._parse_with(),
-        exp.Window: lambda self: self._parse_named_window(),
+        exp.Properties: lambda self: self._parse_properties(),
         exp.Qualify: lambda self: self._parse_qualify(),
         exp.Returning: lambda self: self._parse_returning(),
+        exp.Sort: lambda self: self._parse_sort(exp.Sort, "SORT", "BY"),
+        exp.Table: lambda self: self._parse_table_parts(),
+        exp.TableAlias: lambda self: self._parse_table_alias(),
+        exp.Where: lambda self: self._parse_where(),
+        exp.Window: lambda self: self._parse_named_window(),
+        exp.With: lambda self: self._parse_with(),
         "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
     }
 
@@ -480,9 +480,13 @@ class Parser(metaclass=_Parser):
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.END: lambda self: self._parse_commit_or_rollback(),
+        TokenType.FROM: lambda self: exp.select("*").from_(
+            t.cast(exp.From, self._parse_from(skip_from_token=True))
+        ),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.LOAD: lambda self: self._parse_load(),
         TokenType.MERGE: lambda self: self._parse_merge(),
+        TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
         TokenType.PRAGMA: lambda self: self.expression(exp.Pragma, this=self._parse_expression()),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.SET: lambda self: self._parse_set(),
@@ -1897,6 +1901,10 @@ class Parser(metaclass=_Parser):
                 expressions=self._parse_csv(self._parse_value),
                 alias=self._parse_table_alias(),
             )
+        elif self._match(TokenType.PIVOT):
+            this = self._parse_simplified_pivot()
+        elif self._match(TokenType.FROM):
+            this = exp.select("*").from_(t.cast(exp.From, self._parse_from(skip_from_token=True)))
         else:
             this = None
 
@@ -2000,8 +2008,10 @@ class Parser(metaclass=_Parser):
             exp.Into, this=self._parse_table(schema=True), temporary=temp, unlogged=unlogged
         )
 
-    def _parse_from(self, modifiers: bool = False) -> t.Optional[exp.Expression]:
-        if not self._match(TokenType.FROM):
+    def _parse_from(
+        self, modifiers: bool = False, skip_from_token: bool = False
+    ) -> t.Optional[exp.From]:
+        if not skip_from_token and not self._match(TokenType.FROM):
             return None
 
         comments = self._prev_comments
@@ -2416,6 +2426,22 @@ class Parser(metaclass=_Parser):
     def _parse_pivots(self) -> t.List[t.Optional[exp.Expression]]:
         return list(iter(self._parse_pivot, None))
 
+    # https://duckdb.org/docs/sql/statements/pivot
+    def _parse_simplified_pivot(self) -> exp.Pivot:
+        def _parse_on() -> t.Optional[exp.Expression]:
+            this = self._parse_bitwise()
+            return self._parse_in(this) if self._match(TokenType.IN) else this
+
+        this = self._parse_table()
+        expressions = self._match(TokenType.ON) and self._parse_csv(_parse_on)
+        using = self._match(TokenType.USING) and self._parse_csv(
+            lambda: self._parse_alias(self._parse_function())
+        )
+        group = self._parse_group()
+        return self.expression(
+            exp.Pivot, this=this, expressions=expressions, using=using, group=group
+        )
+
     def _parse_pivot(self) -> t.Optional[exp.Expression]:
         index = self._index
 
@@ -2740,7 +2766,7 @@ class Parser(metaclass=_Parser):
         this = self.expression(exp.Is, this=this, expression=expression)
         return self.expression(exp.Not, this=this) if negate else this
 
-    def _parse_in(self, this: t.Optional[exp.Expression], alias: bool = False) -> exp.Expression:
+    def _parse_in(self, this: t.Optional[exp.Expression], alias: bool = False) -> exp.In:
         unnest = self._parse_unnest()
         if unnest:
             this = self.expression(exp.In, this=this, unnest=unnest)

@@ -1225,7 +1225,7 @@ class Generator:
         if expression.this:
             this = self.sql(expression, "this")
             on = f"{self.seg('ON')} {expressions}"
-            using = self.expressions(expression, "using", flat=True)
+            using = self.expressions(expression, key="using", flat=True)
             using = f"{self.seg('USING')} {using}" if using else ""
             group = self.sql(expression, "group")
             return f"PIVOT {this}{on}{using}{group}"

@@ -108,6 +108,7 @@ class DuckDB(Dialect):
             "INT1": TokenType.TINYINT,
             "LOGICAL": TokenType.BOOLEAN,
             "NUMERIC": TokenType.DOUBLE,
+            "PIVOT_WIDER": TokenType.PIVOT,
             "SIGNED": TokenType.INT,
             "STRING": TokenType.VARCHAR,
             "UBIGINT": TokenType.UBIGINT,
@@ -153,6 +154,12 @@ class DuckDB(Dialect):
             TokenType.UINT,
             TokenType.USMALLINT,
             TokenType.UTINYINT,
+        }
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.FROM: lambda self: self._parse_from(skip_from_token=True),
+            TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
         }
 
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:

@@ -2011,7 +2011,7 @@ class Parser(metaclass=_Parser):
     def _parse_from(
         self, modifiers: bool = False, skip_from_token: bool = False
     ) -> t.Optional[exp.From]:
-        if not self._match(TokenType.FROM) and not skip_from_token:
+        if not skip_from_token and not self._match(TokenType.FROM):
             return None
 
         comments = self._prev_comments

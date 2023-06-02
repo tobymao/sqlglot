@@ -1,7 +1,7 @@
 import unittest
 
 from sqlglot.dialects import BigQuery, Dialect, Snowflake
-from sqlglot.helper import tsort, name_sequence
+from sqlglot.helper import name_sequence, tsort
 
 
 class TestHelper(unittest.TestCase):

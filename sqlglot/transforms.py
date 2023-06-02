@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import itertools
 import typing as t
 
 from sqlglot import expressions as exp
-from sqlglot.helper import find_new_name
+from sqlglot.helper import find_new_name, name_sequence
 
 if t.TYPE_CHECKING:
     from sqlglot.generator import Generator
@@ -253,8 +252,7 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
 
 def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.With) and expression.recursive:
-        sequence = itertools.count()
-        next_name = lambda: f"_c_{next(sequence)}"
+        next_name = name_sequence("_c_")
 
         for cte in expression.expressions:
             if not cte.args["alias"].columns:

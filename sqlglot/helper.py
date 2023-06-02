@@ -9,6 +9,7 @@ from collections.abc import Collection
 from contextlib import contextmanager
 from copy import copy
 from enum import Enum
+from itertools import count
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
@@ -301,6 +302,12 @@ def find_new_name(taken: t.Collection[str], base: str) -> str:
         new = f"{base}_{i}"
 
     return new
+
+
+def name_sequence(prefix: str) -> t.Callable[[], str]:
+    """Returns a name generator given a prefix (e.g. a0, a1, a2, ... if the prefix is "a")."""
+    sequence = count()
+    return lambda: f"{prefix}{next(sequence)}"
 
 
 def object_to_dict(obj: t.Any, **kwargs) -> t.Dict:

@@ -85,6 +85,9 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
+        self.validate_identity(
+            """LAST_VALUE("col1") OVER (ORDER BY "col2" RANGE BETWEEN INTERVAL '1 day' PRECEDING AND '1 month' FOLLOWING)"""
+        )
         self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
         self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
         self.validate_identity("SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]")

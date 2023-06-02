@@ -748,6 +748,7 @@ class Parser(metaclass=_Parser):
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
+    WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
@@ -2804,15 +2805,19 @@ class Parser(metaclass=_Parser):
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
-        if this and isinstance(this, exp.Literal):
-            if this.is_number:
-                this = exp.Literal.string(this.name)
-
-            # Try to not clutter Snowflake's multi-part intervals like INTERVAL '1 day, 1 year'
+        if this and this.is_number:
+            this = exp.Literal.string(this.name)
+        elif this and this.is_string:
             parts = this.name.split()
-            if not unit and len(parts) <= 2:
-                this = exp.Literal.string(seq_get(parts, 0))
-                unit = self.expression(exp.Var, this=seq_get(parts, 1))
+
+            if len(parts) == 2:
+                if unit:
+                    # this is not actually a unit, it's something else
+                    unit = None
+                    self._retreat(self._index - 1)
+                else:
+                    this = exp.Literal.string(parts[0])
+                    unit = self.expression(exp.Var, this=parts[1])
 
         return self.expression(exp.Interval, this=this, unit=unit)
 
@@ -3975,7 +3980,7 @@ class Parser(metaclass=_Parser):
                 or (self._match_text_seq("CURRENT", "ROW") and "CURRENT ROW")
                 or self._parse_bitwise()
             ),
-            "side": self._match_texts(("PRECEDING", "FOLLOWING")) and self._prev.text,
+            "side": self._match_texts(self.WINDOW_SIDES) and self._prev.text,
         }
 
     def _parse_alias(

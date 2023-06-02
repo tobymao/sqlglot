@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import itertools
 import math
 import typing as t
 
 from sqlglot import alias, exp
+from sqlglot.helper import name_sequence
 from sqlglot.optimizer.eliminate_joins import join_condition
 
 
@@ -121,7 +121,7 @@ class Step:
         projections = []  # final selects in this chain of steps representing a select
         operands = {}  # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
         aggregations = []
-        sequence = itertools.count()
+        next_operand_name = name_sequence("_a_")
 
         def extract_agg_operands(expression):
             for agg in expression.find_all(exp.AggFunc):
@@ -129,7 +129,7 @@ class Step:
                     if isinstance(operand, exp.Column):
                         continue
                     if operand not in operands:
-                        operands[operand] = f"_a_{next(sequence)}"
+                        operands[operand] = next_operand_name()
                     operand.replace(exp.column(operands[operand], quoted=True))
 
         for e in expression.expressions:

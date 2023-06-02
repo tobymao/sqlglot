@@ -1,7 +1,7 @@
 import unittest
 
 from sqlglot.dialects import BigQuery, Dialect, Snowflake
-from sqlglot.helper import tsort
+from sqlglot.helper import tsort, name_sequence
 
 
 class TestHelper(unittest.TestCase):
@@ -56,3 +56,14 @@ class TestHelper(unittest.TestCase):
         self.assertTrue(snowflake_object in {"snowflake", "bigquery"})
         self.assertFalse(snowflake_class in {"bigquery", "redshift"})
         self.assertFalse(snowflake_object in {"bigquery", "redshift"})
+
+    def test_name_sequence(self):
+        s1 = name_sequence("a")
+        s2 = name_sequence("b")
+
+        self.assertEqual(s1(), "a0")
+        self.assertEqual(s1(), "a1")
+        self.assertEqual(s2(), "b0")
+        self.assertEqual(s1(), "a2")
+        self.assertEqual(s2(), "b1")
+        self.assertEqual(s2(), "b2")

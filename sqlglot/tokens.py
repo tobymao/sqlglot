@@ -113,6 +113,18 @@ class TokenType(AutoName):
     DATETIME = auto()
     DATETIME64 = auto()
     DATE = auto()
+    INT4RANGE = auto()
+    INT4MULTIRANGE = auto()
+    INT8RANGE = auto()
+    INT8MULTIRANGE = auto()
+    NUMRANGE = auto()
+    NUMMULTIRANGE = auto()
+    TSRANGE = auto()
+    TSMULTIRANGE = auto()
+    TSTZRANGE = auto()
+    TSTZMULTIRANGE = auto()
+    DATERANGE = auto()
+    DATEMULTIRANGE = auto()
     UUID = auto()
     GEOGRAPHY = auto()
     NULLABLE = auto()
@@ -669,6 +681,18 @@ class Tokenizer(metaclass=_Tokenizer):
         "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
+        "INT4RANGE": TokenType.INT4RANGE,
+        "INT4MULTIRANGE": TokenType.INT4MULTIRANGE,
+        "INT8RANGE": TokenType.INT8RANGE,
+        "INT8MULTIRANGE": TokenType.INT8MULTIRANGE,
+        "NUMRANGE": TokenType.NUMRANGE,
+        "NUMMULTIRANGE": TokenType.NUMMULTIRANGE,
+        "TSRANGE": TokenType.TSRANGE,
+        "TSMULTIRANGE": TokenType.TSMULTIRANGE,
+        "TSTZRANGE": TokenType.TSTZRANGE,
+        "TSTZMULTIRANGE": TokenType.TSTZMULTIRANGE,
+        "DATERANGE": TokenType.DATERANGE,
+        "DATEMULTIRANGE": TokenType.DATEMULTIRANGE,
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
         "VARIANT": TokenType.VARIANT,

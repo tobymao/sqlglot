@@ -7,6 +7,7 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_ddl(self):
+        self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
         self.validate_identity("CREATE TABLE test (foo HSTORE)")
         self.validate_identity("CREATE TABLE test (foo JSONB)")
         self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
@@ -85,6 +86,18 @@ class TestPostgres(Validator):
             )
 
     def test_postgres(self):
+        self.validate_identity("CAST(x AS INT4RANGE)")
+        self.validate_identity("CAST(x AS INT4MULTIRANGE)")
+        self.validate_identity("CAST(x AS INT8RANGE)")
+        self.validate_identity("CAST(x AS INT8MULTIRANGE)")
+        self.validate_identity("CAST(x AS NUMRANGE)")
+        self.validate_identity("CAST(x AS NUMMULTIRANGE)")
+        self.validate_identity("CAST(x AS TSRANGE)")
+        self.validate_identity("CAST(x AS TSMULTIRANGE)")
+        self.validate_identity("CAST(x AS TSTZRANGE)")
+        self.validate_identity("CAST(x AS TSTZMULTIRANGE)")
+        self.validate_identity("CAST(x AS DATERANGE)")
+        self.validate_identity("CAST(x AS DATEMULTIRANGE)")
         self.validate_identity(
             """LAST_VALUE("col1") OVER (ORDER BY "col2" RANGE BETWEEN INTERVAL '1 day' PRECEDING AND '1 month' FOLLOWING)"""
         )

@@ -41,6 +41,9 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            r"'Enum8(\'Sunday\' = 0)'", write={"clickhouse": "'Enum8(''Sunday'' = 0)'"}
+        )
+        self.validate_all(
             "SELECT uniq(x) FROM (SELECT any(y) AS x FROM (SELECT 1 AS y))",
             read={
                 "bigquery": "SELECT APPROX_COUNT_DISTINCT(x) FROM (SELECT ANY_VALUE(y) x FROM (SELECT 1 y))",

@@ -250,7 +250,9 @@ class ClickHouse(Dialect):
         def _parse_primary_key(
             self, wrapped_optional: bool = False, in_props: bool = False
         ) -> exp.Expression:
-            return super()._parse_primary_key(wrapped_optional=wrapped_optional or in_props, in_props=in_props)
+            return super()._parse_primary_key(
+                wrapped_optional=wrapped_optional or in_props, in_props=in_props
+            )
 
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")

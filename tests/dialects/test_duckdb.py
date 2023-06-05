@@ -172,6 +172,10 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "DATEDIFF('day', ds, CURRENT_DATE)",
+            write={"duckdb": "DATE_DIFF('day', CAST(ds AS DATE), CURRENT_DATE)"},
+        )
+        self.validate_all(
             "PIVOT_WIDER Cities ON Year USING SUM(Population)",
             write={"duckdb": "PIVOT Cities ON Year USING SUM(Population)"},
         )
@@ -185,7 +189,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             write={
-                "duckdb": """SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1""",
+                "duckdb": """SELECT DATE_DIFF('day', CAST(t1."A" AS DATE), CAST(t1."B" AS DATE)) FROM "table" AS t1""",
                 "trino": """SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             },
         )

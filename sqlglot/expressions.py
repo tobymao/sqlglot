@@ -5406,6 +5406,30 @@ def cast(expression: ExpOrStr, to: str | DataType | DataType.Type, **opts) -> Ca
     return Cast(this=expression, to=DataType.build(to, **opts))
 
 
+def ensure_type(
+    expression: ExpOrStr, target_type: str | DataType | DataType.Type, **opts
+) -> Expression:
+    """Ensures that an expression is of a given type.
+
+    Args:
+        expression: The expression of interest.
+        target_type: The type to check for.
+
+    Returns:
+        The expression of the target type.
+    """
+    expr = maybe_parse(expression, **opts)
+    type_ = DataType.build(target_type, **opts).this
+
+    if not expr.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        annotate_types(expr)
+
+    # Maybe we can also check if `expr.type.this` can be coerced to `type_` here?
+    return expr if expr.type.this == type_ else cast(expr, type_)
+
+
 def table_(
     table: Identifier | str,
     db: t.Optional[Identifier | str] = None,

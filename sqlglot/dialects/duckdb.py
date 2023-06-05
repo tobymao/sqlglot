@@ -56,11 +56,7 @@ def _sort_array_reverse(args: t.List) -> exp.Expression:
 
 
 def _parse_date_diff(args: t.List) -> exp.Expression:
-    return exp.DateDiff(
-        this=seq_get(args, 2),
-        expression=seq_get(args, 1),
-        unit=seq_get(args, 0),
-    )
+    return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
 def _struct_sql(self: generator.Generator, expression: exp.Struct) -> str:
@@ -187,9 +183,6 @@ class DuckDB(Dialect):
             exp.DataType: _datatype_sql,
             exp.DateAdd: _date_delta_sql,
             exp.DateSub: _date_delta_sql,
-            exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", f"'{e.args.get('unit', 'day')}'", e.expression, e.this
-            ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.dateint_format}) AS DATE)",
@@ -246,6 +239,14 @@ class DuckDB(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def datediff_sql(self, expression: exp.DateDiff) -> str:
+            return self.func(
+                "DATE_DIFF",
+                f"'{expression.args.get('unit', 'day')}'",
+                exp.ensure_type(expression.expression, "date"),
+                exp.ensure_type(expression.this, "date"),
+            )
 
         def tablesample_sql(
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep: str = " AS "

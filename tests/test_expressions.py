@@ -856,3 +856,20 @@ FROM foo""",
 
         ast.meta["some_other_meta_key"] = "some_other_meta_value"
         self.assertEqual(ast.meta.get("some_other_meta_key"), "some_other_meta_value")
+
+    def test_ensure_type(self):
+        self.assertEqual(exp.ensure_type("CURRENT_DATE", "date").sql(), "CURRENT_DATE")
+        self.assertEqual(
+            exp.ensure_type("CURRENT_DATE", "TEXT").sql(), "CAST(CURRENT_DATE AS TEXT)"
+        )
+
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        ast = parse_one("SELECT t.c FROM t")
+
+        select = ast.selects[0]
+        annotated_select = annotate_types(ast.copy(), schema={"t": {"c": "double"}}).selects[0]
+
+        # This showcases that ensure_type is more accurate if we annotate the whole query
+        self.assertEqual(exp.ensure_type(select, "double").sql(), "CAST(t.c AS DOUBLE)")
+        self.assertEqual(exp.ensure_type(annotated_select, "double").sql(), "t.c")

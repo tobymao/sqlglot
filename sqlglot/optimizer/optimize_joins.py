@@ -1,7 +1,7 @@
 from sqlglot import exp
 from sqlglot.helper import tsort
 
-JOIN_ATTRS = ("on", "side", "kind", "using", "natural")
+JOIN_ATTRS = ("on", "side", "kind", "using", "method")
 
 
 def optimize_joins(expression):

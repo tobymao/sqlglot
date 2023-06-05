@@ -492,6 +492,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ANY": TokenType.ANY,
         "ASC": TokenType.ASC,
         "AS": TokenType.ALIAS,
+        "ASOF": TokenType.ASOF,
         "AUTOINCREMENT": TokenType.AUTO_INCREMENT,
         "AUTO_INCREMENT": TokenType.AUTO_INCREMENT,
         "BEGIN": TokenType.BEGIN,

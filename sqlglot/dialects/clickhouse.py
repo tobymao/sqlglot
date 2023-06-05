@@ -33,7 +33,6 @@ class ClickHouse(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "ASOF": TokenType.ASOF,
             "ATTACH": TokenType.COMMAND,
             "DATETIME64": TokenType.DATETIME64,
             "FINAL": TokenType.FINAL,
@@ -98,7 +97,6 @@ class ClickHouse(Dialect):
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {
             TokenType.ANY,
-            TokenType.ASOF,
             TokenType.SEMI,
             TokenType.ANTI,
             TokenType.SETTINGS,
@@ -183,7 +181,7 @@ class ClickHouse(Dialect):
 
                 return self.expression(exp.CTE, this=statement, alias=statement and statement.this)
 
-        def _parse_join_side_and_kind(
+        def _parse_join_parts(
             self,
         ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
             is_global = self._match(TokenType.GLOBAL) and self._prev
@@ -202,7 +200,7 @@ class ClickHouse(Dialect):
             join = super()._parse_join(skip_join_token)
 
             if join:
-                join.set("global", join.args.pop("natural", None))
+                join.set("global", join.args.pop("method", None))
             return join
 
         def _parse_function(

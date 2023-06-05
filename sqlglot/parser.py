@@ -284,6 +284,7 @@ class Parser(metaclass=_Parser):
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
         TokenType.APPLY,
+        TokenType.ASOF,
         TokenType.FULL,
         TokenType.LEFT,
         TokenType.LOCK,
@@ -387,6 +388,11 @@ class Parser(metaclass=_Parser):
         TokenType.EXCEPT,
     }
 
+    JOIN_METHODS = {
+        TokenType.NATURAL,
+        TokenType.ASOF,
+    }
+
     JOIN_SIDES = {
         TokenType.LEFT,
         TokenType.RIGHT,
@@ -477,7 +483,7 @@ class Parser(metaclass=_Parser):
         exp.Where: lambda self: self._parse_where(),
         exp.Window: lambda self: self._parse_named_window(),
         exp.With: lambda self: self._parse_with(),
-        "JOIN_TYPE": lambda self: self._parse_join_side_and_kind(),
+        "JOIN_TYPE": lambda self: self._parse_join_parts(),
     }
 
     STATEMENT_PARSERS = {
@@ -2166,11 +2172,11 @@ class Parser(metaclass=_Parser):
 
         return expression
 
-    def _parse_join_side_and_kind(
+    def _parse_join_parts(
         self,
     ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
         return (
-            self._match(TokenType.NATURAL) and self._prev,
+            self._match_set(self.JOIN_METHODS) and self._prev,
             self._match_set(self.JOIN_SIDES) and self._prev,
             self._match_set(self.JOIN_KINDS) and self._prev,
         )
@@ -2180,14 +2186,14 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Join, this=self._parse_table())
 
         index = self._index
-        natural, side, kind = self._parse_join_side_and_kind()
+        method, side, kind = self._parse_join_parts()
         hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
         join = self._match(TokenType.JOIN)
 
         if not skip_join_token and not join:
             self._retreat(index)
             kind = None
-            natural = None
+            method = None
             side = None
 
         outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY, False)
@@ -2199,12 +2205,10 @@ class Parser(metaclass=_Parser):
         if outer_apply:
             side = Token(TokenType.LEFT, "LEFT")
 
-        kwargs: t.Dict[
-            str, t.Optional[exp.Expression] | bool | str | t.List[t.Optional[exp.Expression]]
-        ] = {"this": self._parse_table()}
+        kwargs: t.Dict[str, t.Any] = {"this": self._parse_table()}
 
-        if natural:
-            kwargs["natural"] = True
+        if method:
+            kwargs["method"] = method.text
         if side:
             kwargs["side"] = side.text
         if kind:
@@ -2217,7 +2221,7 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.USING):
             kwargs["using"] = self._parse_wrapped_id_vars()
 
-        return self.expression(exp.Join, **kwargs)  # type: ignore
+        return self.expression(exp.Join, **kwargs)
 
     def _parse_index(
         self,

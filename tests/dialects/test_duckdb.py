@@ -132,6 +132,7 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("SELECT * FROM foo ASOF LEFT JOIN bar ON a = b")
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")
         self.validate_identity("PIVOT Cities ON Year USING FIRST(Population)")
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population) GROUP BY Country")

@@ -1653,10 +1653,14 @@ class Join(Expression):
         "side": False,
         "kind": False,
         "using": False,
-        "natural": False,
+        "method": False,
         "global": False,
         "hint": False,
     }
+
+    @property
+    def method(self) -> str:
+        return self.text("method").upper()
 
     @property
     def kind(self) -> str:
@@ -2797,12 +2801,12 @@ class Select(Subqueryable):
         Returns:
             Select: the modified expression.
         """
-        parse_args = {"dialect": dialect, **opts}
+        parse_args: t.Dict[str, t.Any] = {"dialect": dialect, **opts}
 
         try:
-            expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)  # type: ignore
+            expression = maybe_parse(expression, into=Join, prefix="JOIN", **parse_args)
         except ParseError:
-            expression = maybe_parse(expression, into=(Join, Expression), **parse_args)  # type: ignore
+            expression = maybe_parse(expression, into=(Join, Expression), **parse_args)
 
         join = expression if isinstance(expression, Join) else Join(this=expression)
 
@@ -2810,14 +2814,14 @@ class Select(Subqueryable):
             join.this.replace(join.this.subquery())
 
         if join_type:
-            natural: t.Optional[Token]
+            method: t.Optional[Token]
             side: t.Optional[Token]
             kind: t.Optional[Token]
 
-            natural, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)  # type: ignore
+            method, side, kind = maybe_parse(join_type, into="JOIN_TYPE", **parse_args)  # type: ignore
 
-            if natural:
-                join.set("natural", True)
+            if method:
+                join.set("method", method.text)
             if side:
                 join.set("side", side.text)
             if kind:

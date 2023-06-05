@@ -233,6 +233,7 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE,
         TokenType.DESC,
         TokenType.DESCRIBE,
+        TokenType.DICTIONARY,
         TokenType.DIV,
         TokenType.END,
         TokenType.EXECUTE,
@@ -4494,14 +4495,13 @@ class Parser(metaclass=_Parser):
     def _parse_dict_property(self, this: str) -> exp.DictProperty:
         settings = []
 
-        self._match(TokenType.L_PAREN)
+        self._match_l_paren()
         kind = self._parse_id_var()
         if not kind:
             self.raise_error(f"Unexpected token: {self._curr.text}")
         assert kind
-        wrapped = self._match(TokenType.L_PAREN)
 
-        if wrapped:
+        if self._match(TokenType.L_PAREN):
             while True:
                 key = self._parse_id_var()
                 value = self._parse_primary()
@@ -4511,7 +4511,7 @@ class Parser(metaclass=_Parser):
                 settings.append(self.expression(exp.Property, this=key, value=value))
             self._match(TokenType.R_PAREN)
 
-        self._match(TokenType.R_PAREN)
+        self._match_r_paren()
 
         return self.expression(
             exp.DictProperty,
@@ -4521,7 +4521,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_dict_range(self, this: str) -> exp.DictRange:
-        self._match(TokenType.L_PAREN)
+        self._match_l_paren()
         has_min = self._match_text_seq("MIN")
         min = self._parse_var() or self._parse_primary()
         if has_min:
@@ -4529,7 +4529,7 @@ class Parser(metaclass=_Parser):
             max = self._parse_var() or self._parse_primary()
         else:
             max = min
-        self._match(TokenType.R_PAREN)
+        self._match_r_paren()
         return self.expression(exp.DictRange, this=this, min=min, max=max)
 
     def _find_parser(

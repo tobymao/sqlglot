@@ -1913,6 +1913,14 @@ class LanguageProperty(Property):
     arg_types = {"this": True}
 
 
+class DictProperty(Property):
+    arg_types = {"this": True, "kind": True, "settings": False}
+
+
+class DictRange(Property):
+    arg_types = {"this": True, "min": True, "max": True}
+
+
 class LikeProperty(Property):
     arg_types = {"this": True, "expressions": False}
 

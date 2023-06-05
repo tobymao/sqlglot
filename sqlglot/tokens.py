@@ -179,6 +179,7 @@ class TokenType(AutoName):
     DELETE = auto()
     DESC = auto()
     DESCRIBE = auto()
+    DICTIONARY = auto()
     DISTINCT = auto()
     DIV = auto()
     DROP = auto()

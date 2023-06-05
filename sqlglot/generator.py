@@ -188,6 +188,8 @@ class Generator:
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
+        exp.DictRange: exp.Properties.Location.POST_SCHEMA,
+        exp.DictProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA,
@@ -1082,7 +1084,7 @@ class Generator:
 
     def lockingproperty_sql(self, expression: exp.LockingProperty) -> str:
         kind = expression.args.get("kind")
-        this: str = f" {this}" if expression.this else ""
+        this: str = f" {expression.this}" if expression.this else ""
         for_or_in = expression.args.get("for_or_in")
         lock_type = expression.args.get("lock_type")
         override = " OVERRIDE" if expression.args.get("override") else ""
@@ -2321,6 +2323,33 @@ class Generator:
             self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
 
         return self.sql(exp.cast(expression.this, "text"))
+
+    def dictproperty_sql(self, expression: exp.DictProperty) -> str:
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        settings = []
+        for s in expression.args["settings"]:
+            key = self.sql(s, "this")
+            value = self.sql(s, "value")
+            settings.append(f"{key} {value}")
+        if self.pretty and settings:
+            settings_sql = self.indent(
+                self.sep().join([""] + settings + [""]), skip_first=True, skip_last=True
+            )
+        else:
+            settings_sql = self.sep().join(settings)
+        return f"{this}({kind}({settings_sql}))"
+
+    def dictrange_sql(self, expression: exp.DictRange) -> str:
+        this = self.sql(expression, "this")
+        max = expression.args.get("max")
+        min = expression.args.get("min")
+        min_value = self.sql(min, "this")
+        if min == max:
+            return f"{this}({min_value})"
+        else:
+            max_value = self.sql(max, "this")
+            return f"{this}(MIN {min_value} MAX {max_value})"
 
 
 def cached_generator(

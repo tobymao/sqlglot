@@ -398,3 +398,91 @@ SET
             },
             pretty=True,
         )
+        self.validate_all(
+            """
+            CREATE DICTIONARY discounts_dict (
+                advertiser_id UInt64,
+                discount_start_date Date,
+                discount_end_date Date,
+                amount Float64
+            )
+            PRIMARY KEY id
+            SOURCE(CLICKHOUSE(TABLE 'discounts'))
+            LIFETIME(MIN 1 MAX 1000)
+            LAYOUT(RANGE_HASHED(range_lookup_strategy 'max'))
+            RANGE(MIN discount_start_date MAX discount_end_date)
+            """,
+            write={
+                "clickhouse": """CREATE DICTIONARY discounts_dict (
+  advertiser_id UInt64,
+  discount_start_date DATE,
+  discount_end_date DATE,
+  amount Float64
+)
+PRIMARY KEY (id)
+SOURCE(CLICKHOUSE(
+  TABLE 'discounts'
+))
+LIFETIME(MIN 1 MAX 1000)
+LAYOUT(RANGE_HASHED(
+  range_lookup_strategy 'max'
+))
+RANGE(MIN discount_start_date MAX discount_end_date)""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE DICTIONARY my_ip_trie_dictionary (
+                prefix String,
+                asn UInt32,
+                cca2 String DEFAULT '??'
+            )
+            PRIMARY KEY prefix
+            SOURCE(CLICKHOUSE(TABLE 'my_ip_addresses'))
+            LAYOUT(IP_TRIE)
+            LIFETIME(3600);
+            """,
+            write={
+                "clickhouse": """CREATE DICTIONARY my_ip_trie_dictionary (
+  prefix TEXT,
+  asn UInt32,
+  cca2 TEXT DEFAULT '??'
+)
+PRIMARY KEY (prefix)
+SOURCE(CLICKHOUSE(
+  TABLE 'my_ip_addresses'
+))
+LAYOUT(IP_TRIE())
+LIFETIME(3600)""",
+            },
+            pretty=True,
+        )
+        self.validate_all(
+            """
+            CREATE DICTIONARY polygons_test_dictionary
+            (
+                key Array(Array(Array(Tuple(Float64, Float64)))),
+                name String
+            )
+            PRIMARY KEY key
+            SOURCE(CLICKHOUSE(TABLE 'polygons_test_table'))
+            LAYOUT(POLYGON(STORE_POLYGON_KEY_COLUMN 1))
+            LIFETIME(0);
+            """,
+            write={
+                "clickhouse": """CREATE DICTIONARY polygons_test_dictionary (
+  key Array(Array(Array(Tuple(Float64, Float64)))),
+  name TEXT
+)
+PRIMARY KEY (key)
+SOURCE(CLICKHOUSE(
+  TABLE 'polygons_test_table'
+))
+LAYOUT(POLYGON(
+  STORE_POLYGON_KEY_COLUMN 1
+))
+LIFETIME(0)""",
+            },
+            pretty=True,
+        )

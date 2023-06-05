@@ -1917,6 +1917,10 @@ class DictProperty(Property):
     arg_types = {"this": True, "kind": True, "settings": False}
 
 
+class DictSubProperty(Property):
+    pass
+
+
 class DictRange(Property):
     arg_types = {"this": True, "min": True, "max": True}
 

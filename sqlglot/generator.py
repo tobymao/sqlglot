@@ -2327,18 +2327,9 @@ class Generator:
     def dictproperty_sql(self, expression: exp.DictProperty) -> str:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
-        settings = []
-        for s in expression.args["settings"]:
-            key = self.sql(s, "this")
-            value = self.sql(s, "value")
-            settings.append(f"{key} {value}")
-        if self.pretty and settings:
-            settings_sql = self.indent(
-                self.sep().join([""] + settings + [""]), skip_first=True, skip_last=True
-            )
-        else:
-            settings_sql = self.sep().join(settings)
-        return f"{this}({kind}({settings_sql}))"
+        settings_sql = self.expressions(expression, key="settings", sep=" ")
+        args = f"({self.sep('')}{settings_sql}{self.seg(')', sep='')}" if settings_sql else "()"
+        return f"{this}({kind}{args})"
 
     def dictrange_sql(self, expression: exp.DictRange) -> str:
         this = self.sql(expression, "this")
@@ -2350,6 +2341,9 @@ class Generator:
         else:
             max_value = self.sql(max, "this")
             return f"{this}(MIN {min_value} MAX {max_value})"
+
+    def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
+        return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"
 
 
 def cached_generator(

@@ -4498,7 +4498,7 @@ class Parser(metaclass=_Parser):
         self._match_l_paren()
         kind = self._parse_id_var()
         if not kind:
-            self.raise_error(f"Unexpected token: {self._curr.text}")
+            self.raise_error(f"Unexpected token")
         assert kind
 
         if self._match(TokenType.L_PAREN):
@@ -4508,7 +4508,7 @@ class Parser(metaclass=_Parser):
 
                 if not key and value is None:
                     break
-                settings.append(self.expression(exp.Property, this=key, value=value))
+                settings.append(self.expression(exp.DictSubProperty, this=key, value=value))
             self._match(TokenType.R_PAREN)
 
         self._match_r_paren()

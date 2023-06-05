@@ -1313,7 +1313,7 @@ class Generator:
         op_sql = " ".join(
             op
             for op in (
-                "NATURAL" if expression.args.get("natural") else None,
+                expression.method,
                 "GLOBAL" if expression.args.get("global") else None,
                 expression.side,
                 expression.kind,

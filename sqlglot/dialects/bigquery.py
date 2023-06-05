@@ -327,6 +327,8 @@ class BigQuery(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        RESERVED_KEYWORDS = {*generator.Generator.RESERVED_KEYWORDS, "hash"}
+
         def array_sql(self, expression: exp.Array) -> str:
             first_arg = seq_get(expression.expressions, 0)
             if isinstance(first_arg, exp.Subqueryable):

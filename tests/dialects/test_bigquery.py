@@ -35,6 +35,7 @@ class TestBigQuery(Validator):
             "CREATE TABLE IF NOT EXISTS foo AS SELECT * FROM bla EXCEPT DISTINCT (SELECT * FROM bar) LIMIT 0"
         )
 
+        self.validate_all("SELECT 1 AS hash", write={"bigquery": "SELECT 1 AS `hash`"})
         self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
         self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})

@@ -1413,7 +1413,7 @@ class Generator:
         return f"{lock_type}{expressions}{wait or ''}"
 
     def literal_sql(self, expression: exp.Literal) -> str:
-        text = expression.this or ""
+        text = expression.this if expression.this is not None else ""
         if expression.is_string:
             text = text.replace(self.quote_end, self._escaped_quote_end)
             if self.pretty:
@@ -2335,10 +2335,7 @@ class Generator:
         this = self.sql(expression, "this")
         max = self.sql(expression, "max")
         min = self.sql(expression, "min")
-        if min == max:
-            return f"{this}({min})"
-        else:
-            return f"{this}(MIN {min} MAX {max})"
+        return f"{this}(MIN {min} MAX {max})"
 
     def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"

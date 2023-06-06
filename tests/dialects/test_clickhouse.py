@@ -454,7 +454,7 @@ SOURCE(CLICKHOUSE(
   TABLE 'my_ip_addresses'
 ))
 LAYOUT(IP_TRIE())
-LIFETIME(3600)""",
+LIFETIME(MIN 0 MAX 3600)""",
             },
             pretty=True,
         )
@@ -482,7 +482,7 @@ SOURCE(CLICKHOUSE(
 LAYOUT(POLYGON(
   STORE_POLYGON_KEY_COLUMN 1
 ))
-LIFETIME(0)""",
+LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )

@@ -4520,12 +4520,13 @@ class Parser(metaclass=_Parser):
     def _parse_dict_range(self, this: str) -> exp.DictRange:
         self._match_l_paren()
         has_min = self._match_text_seq("MIN")
-        min = self._parse_var() or self._parse_primary()
         if has_min:
+            min = self._parse_var() or self._parse_primary()
             self._match_text_seq("MAX")
             max = self._parse_var() or self._parse_primary()
         else:
-            max = min
+            max = self._parse_var() or self._parse_primary()
+            min = self.expression(exp.Literal, this=0, is_string=False)
         self._match_r_paren()
         return self.expression(exp.DictRange, this=this, min=min, max=max)
 

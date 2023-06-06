@@ -412,6 +412,7 @@ class TestHive(Validator):
             "SELECT 1_a AS a FROM test_table",
             write={
                 "spark": "SELECT 1_a AS a FROM test_table",
+                "trino": 'SELECT "1_a" AS a FROM test_table',
             },
         )
         self.validate_all(

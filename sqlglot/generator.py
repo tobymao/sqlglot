@@ -133,6 +133,9 @@ class Generator:
     # Whether or not to treat the number in TABLESAMPLE (50) as a percentage
     TABLESAMPLE_SIZE_IS_PERCENT = False
 
+    # Whether or not unquoted identifiers are allowed to start with a digit
+    IDENTIFIER_CAN_START_WITH_DIGIT = False
+
     # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
@@ -896,6 +899,7 @@ class Generator:
             expression.quoted
             or should_identify(text, self.identify)
             or lower in self.RESERVED_KEYWORDS
+            or (not self.IDENTIFIER_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):
             text = f"{self.identifier_start}{text}{self.identifier_end}"
         return text

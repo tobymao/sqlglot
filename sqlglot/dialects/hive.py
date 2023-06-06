@@ -283,6 +283,7 @@ class Hive(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         INDEX_ON = "ON TABLE"
+        IDENTIFIER_CAN_START_WITH_DIGIT = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

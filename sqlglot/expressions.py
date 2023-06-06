@@ -3359,8 +3359,8 @@ class DataType(Expression):
 
         return DataType(**{**data_type_exp.args, **kwargs})
 
-    def is_type(self, dtype: DataType.Type) -> bool:
-        return self.this == dtype
+    def is_type(self, *dtypes: DataType.Type) -> bool:
+        return any(self.this == dtype for dtype in dtypes)
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html

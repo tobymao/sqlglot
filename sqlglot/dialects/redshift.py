@@ -38,8 +38,10 @@ class Redshift(Postgres):
 
         CONVERT_TYPE_FIRST = True
 
-        def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
-            this = super()._parse_types(check_func=check_func)
+        def _parse_types(
+            self, check_func: bool = False, schema: bool = False
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_types(check_func=check_func, schema=schema)
 
             if (
                 isinstance(this, exp.DataType)

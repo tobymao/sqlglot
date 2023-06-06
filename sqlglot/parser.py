@@ -2908,7 +2908,9 @@ class Parser(metaclass=_Parser):
             exp.DataTypeSize, this=this, expression=self._parse_var(any_token=True)
         )
 
-    def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
+    def _parse_types(
+        self, check_func: bool = False, schema: bool = False
+    ) -> t.Optional[exp.Expression]:
         index = self._index
 
         prefix = self._match_text_seq("SYSUDTLIB", ".")
@@ -3292,7 +3294,7 @@ class Parser(metaclass=_Parser):
         # column defs are not really columns, they're identifiers
         if isinstance(this, exp.Column):
             this = this.this
-        kind = self._parse_types()
+        kind = self._parse_types(schema=True)
 
         if self._match_text_seq("FOR", "ORDINALITY"):
             return self.expression(exp.ColumnDef, this=this, ordinality=True)

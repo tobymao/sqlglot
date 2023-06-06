@@ -735,8 +735,6 @@ class Tokenizer(metaclass=_Tokenizer):
     COMMENTS = ["--", ("/*", "*/"), ("{#", "#}")]
     KEYWORD_TRIE: t.Dict = {}  # autofilled
 
-    IDENTIFIER_CAN_START_WITH_DIGIT = False
-
     __slots__ = (
         "sql",
         "size",
@@ -750,6 +748,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "_end",
         "_peek",
         "_prev_token_line",
+        "identifiers_can_start_with_digit",
     )
 
     def __init__(self) -> None:
@@ -1010,7 +1009,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                elif self.IDENTIFIER_CAN_START_WITH_DIGIT:
+                elif self.identifiers_can_start_with_digit:  # type: ignore
                     return self._add(TokenType.VAR)
 
                 self._add(TokenType.NUMBER, number_text)

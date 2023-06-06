@@ -149,6 +149,7 @@ def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str
 
 class Hive(Dialect):
     alias_post_tablesample = True
+    identifiers_can_start_with_digit = True
 
     time_mapping = {
         "y": "%Y",
@@ -190,7 +191,6 @@ class Hive(Dialect):
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
         ENCODE = "utf-8"
-        IDENTIFIER_CAN_START_WITH_DIGIT = True
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

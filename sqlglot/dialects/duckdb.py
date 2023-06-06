@@ -71,7 +71,7 @@ def _struct_sql(self: generator.Generator, expression: exp.Struct) -> str:
 
 
 def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
-    if expression.this == exp.DataType.Type.ARRAY:
+    if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[]"
     return self.datatype_sql(expression)
 

@@ -89,7 +89,7 @@ def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> s
 
         annotate_types(this)
 
-    if this.type.is_type(exp.DataType.Type.JSON):
+    if this.type.is_type("json"):
         return self.sql(this)
     return self.func("TO_JSON", this, expression.args.get("options"))
 
@@ -275,6 +275,39 @@ class Hive(Dialect):
             "sort": lambda self: self._parse_sort(exp.Sort, "SORT", "BY"),
             "cluster": lambda self: self._parse_sort(exp.Cluster, "CLUSTER", "BY"),
         }
+
+        def _parse_types(
+            self, check_func: bool = False, schema: bool = False
+        ) -> t.Optional[exp.Expression]:
+            """
+            Spark (and most likely Hive) treats casts to CHAR(length) and VARCHAR(length) as casts to
+            STRING in all contexts except for schema definitions. For example, this is in Spark v3.4.0:
+
+                spark-sql (default)> select cast(1234 as varchar(2));
+                23/06/06 15:51:18 WARN CharVarcharUtils: The Spark cast operator does not support
+                char/varchar type and simply treats them as string type. Please use string type
+                directly to avoid confusion. Otherwise, you can set spark.sql.legacy.charVarcharAsString
+                to true, so that Spark treat them as string type as same as Spark 3.0 and earlier
+
+                1234
+                Time taken: 4.265 seconds, Fetched 1 row(s)
+
+            This shows that Spark doesn't truncate the value into '12', which is inconsistent with
+            what other dialects (e.g. postgres) do, so we need to drop the length to transpile correctly.
+
+            Reference: https://spark.apache.org/docs/latest/sql-ref-datatypes.html
+            """
+            this = super()._parse_types(check_func=check_func, schema=schema)
+
+            if this and not schema:
+                return this.transform(
+                    lambda node: node.replace(exp.DataType.build("text"))
+                    if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
+                    else node,
+                    copy=False,
+                )
+
+            return this
 
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"

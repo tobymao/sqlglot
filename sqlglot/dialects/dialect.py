@@ -449,7 +449,7 @@ def date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     unit = seq_get(args, 0)
     this = seq_get(args, 1)
 
-    if isinstance(this, exp.Cast) and this.is_type(exp.DataType.Type.DATE):
+    if isinstance(this, exp.Cast) and this.is_type("date"):
         return exp.DateTrunc(unit=unit, this=this)
     return exp.TimestampTrunc(this=this, unit=unit)
 

@@ -751,8 +751,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "identifiers_can_start_with_digit",
     )
 
-    def __init__(self, identifiers_can_start_with_digit: bool = False) -> None:
-        self.identifiers_can_start_with_digit = identifiers_can_start_with_digit
+    def __init__(self) -> None:
         self.reset()
 
     def reset(self) -> None:
@@ -1010,7 +1009,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                elif self.identifiers_can_start_with_digit:
+                elif self.identifiers_can_start_with_digit:  # type: ignore
                     return self._add(TokenType.VAR)
 
                 self._add(TokenType.NUMBER, number_text)

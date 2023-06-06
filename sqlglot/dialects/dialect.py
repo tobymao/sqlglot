@@ -104,6 +104,10 @@ class _Dialect(type):
         klass.byte_start, klass.byte_end = get_start_end(TokenType.BYTE_STRING)
         klass.raw_start, klass.raw_end = get_start_end(TokenType.RAW_STRING)
 
+        klass.tokenizer_class.identifiers_can_start_with_digit = (
+            klass.identifiers_can_start_with_digit
+        )
+
         return klass
 
 
@@ -196,9 +200,7 @@ class Dialect(metaclass=_Dialect):
     @property
     def tokenizer(self) -> Tokenizer:
         if not hasattr(self, "_tokenizer"):
-            self._tokenizer = self.tokenizer_class(  # type: ignore
-                identifiers_can_start_with_digit=self.identifiers_can_start_with_digit
-            )
+            self._tokenizer = self.tokenizer_class()  # type: ignore
         return self._tokenizer
 
     def parser(self, **opts) -> Parser:

@@ -3359,8 +3359,8 @@ class DataType(Expression):
 
         return DataType(**{**data_type_exp.args, **kwargs})
 
-    def is_type(self, *dtypes: DataType.Type) -> bool:
-        return any(self.this == dtype for dtype in dtypes)
+    def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
+        return any(self.this == DataType.build(dtype).this for dtype in dtypes)
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -3874,8 +3874,8 @@ class Cast(Func):
     def output_name(self) -> str:
         return self.name
 
-    def is_type(self, dtype: DataType.Type) -> bool:
-        return self.to.is_type(dtype)
+    def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
+        return self.to.is_type(*dtypes)
 
 
 class CastToStrType(Func):

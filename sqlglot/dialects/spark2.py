@@ -195,12 +195,13 @@ class Spark2(Hive):
             """
             this = super()._parse_types(check_func=check_func, schema=schema)
 
-            if (
-                not schema
-                and isinstance(this, exp.DataType)
-                and this.is_type(exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR)
-            ):
-                return exp.DataType.build("text")
+            if this and not schema:
+                return this.transform(
+                    lambda node: node.replace(exp.DataType.build("text"))
+                    if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
+                    else node,
+                    copy=False,
+                )
 
             return this
 
@@ -277,12 +278,10 @@ class Spark2(Hive):
         CREATE_FUNCTION_RETURN_AS = False
 
         def cast_sql(self, expression: exp.Cast) -> str:
-            if isinstance(expression.this, exp.Cast) and expression.this.is_type(
-                exp.DataType.Type.JSON
-            ):
+            if isinstance(expression.this, exp.Cast) and expression.this.is_type("json"):
                 schema = f"'{self.sql(expression, 'to')}'"
                 return self.func("FROM_JSON", expression.this.this, schema)
-            if expression.to.is_type(exp.DataType.Type.JSON):
+            if expression.is_type("json"):
                 return self.func("TO_JSON", expression.this)
 
             return super(Hive.Generator, self).cast_sql(expression)
@@ -292,7 +291,7 @@ class Spark2(Hive):
                 expression,
                 sep=": "
                 if isinstance(expression.parent, exp.DataType)
-                and expression.parent.is_type(exp.DataType.Type.STRUCT)
+                and expression.parent.is_type("struct")
                 else sep,
             )
 

@@ -226,6 +226,10 @@ TBLPROPERTIES (
         self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
+            "SELECT CAST(STRUCT('fooo') AS STRUCT<a: VARCHAR(2)>)",
+            write={"spark": "SELECT CAST(STRUCT('fooo') AS STRUCT<a: STRING>)"},
+        )
+        self.validate_all(
             "SELECT CAST(123456 AS VARCHAR(3))",
             write={
                 "": "SELECT TRY_CAST(123456 AS TEXT)",

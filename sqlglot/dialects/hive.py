@@ -89,7 +89,7 @@ def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> s
 
         annotate_types(this)
 
-    if this.type.is_type(exp.DataType.Type.JSON):
+    if this.type.is_type("json"):
         return self.sql(this)
     return self.func("TO_JSON", this, expression.args.get("options"))
 

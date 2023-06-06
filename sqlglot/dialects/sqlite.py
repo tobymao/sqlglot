@@ -132,7 +132,7 @@ class SQLite(Dialect):
         LIMIT_FETCH = "LIMIT"
 
         def cast_sql(self, expression: exp.Cast) -> str:
-            if expression.is_type(exp.DataType.Type.DATE):
+            if expression.is_type("date"):
                 return self.func("DATE", expression.this)
 
             return super().cast_sql(expression)

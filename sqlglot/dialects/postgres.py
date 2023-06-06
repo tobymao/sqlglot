@@ -104,7 +104,7 @@ def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> s
 
 
 def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
-    if expression.this == exp.DataType.Type.ARRAY:
+    if expression.is_type(exp.DataType.Type.ARRAY):
         return f"{self.expressions(expression, flat=True)}[]"
     return self.datatype_sql(expression)
 

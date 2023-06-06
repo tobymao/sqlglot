@@ -6,6 +6,7 @@ class TestSpark(Validator):
 
     def test_ddl(self):
         self.validate_identity("CREATE TABLE foo (col VARCHAR(50))")
+        self.validate_identity("CREATE TABLE foo (col STRUCT<struct_col_a: VARCHAR((50))>)")
 
         self.validate_all(
             "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
@@ -227,7 +228,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT CAST(123456 AS VARCHAR(3))",
             write={
-                "": "SELECT CAST(123456 AS TEXT)",
+                "": "SELECT TRY_CAST(123456 AS TEXT)",
                 "spark": "SELECT CAST(123456 AS STRING)",
             },
         )

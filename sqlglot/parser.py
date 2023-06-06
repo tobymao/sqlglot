@@ -2932,7 +2932,9 @@ class Parser(metaclass=_Parser):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_types)
             elif nested:
-                expressions = self._parse_csv(self._parse_types)
+                expressions = self._parse_csv(
+                    lambda: self._parse_types(check_func=check_func, schema=schema)
+                )
             else:
                 expressions = self._parse_csv(self._parse_type_size)
 
@@ -2967,7 +2969,9 @@ class Parser(metaclass=_Parser):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_types)
             else:
-                expressions = self._parse_csv(self._parse_types)
+                expressions = self._parse_csv(
+                    lambda: self._parse_types(check_func=check_func, schema=schema)
+                )
 
             if not self._match(TokenType.GT):
                 self.raise_error("Expecting >")

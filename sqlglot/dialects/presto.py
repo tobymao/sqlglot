@@ -30,7 +30,7 @@ def _approx_distinct_sql(self: generator.Generator, expression: exp.ApproxDistin
 
 def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     sql = self.datatype_sql(expression)
-    if expression.this == exp.DataType.Type.TIMESTAMPTZ:
+    if expression.is_type(exp.DataType.Type.TIMESTAMPTZ):
         sql = f"{sql} WITH TIME ZONE"
     return sql
 

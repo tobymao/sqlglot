@@ -153,9 +153,9 @@ def _nullifzero_to_if(args: t.List) -> exp.Expression:
 
 
 def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
-    if expression.this == exp.DataType.Type.ARRAY:
+    if expression.is_type(exp.DataType.Type.ARRAY):
         return "ARRAY"
-    elif expression.this == exp.DataType.Type.MAP:
+    elif expression.is_type(exp.DataType.Type.MAP):
         return "OBJECT"
     return self.datatype_sql(expression)
 

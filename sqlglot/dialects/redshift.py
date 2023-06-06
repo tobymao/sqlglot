@@ -45,7 +45,7 @@ class Redshift(Postgres):
 
             if (
                 isinstance(this, exp.DataType)
-                and this.this == exp.DataType.Type.VARCHAR
+                and this.is_type(exp.DataType.Type.VARCHAR)
                 and this.expressions
                 and this.expressions[0].this == exp.column("MAX")
             ):
@@ -160,7 +160,7 @@ class Redshift(Postgres):
             without precision we convert it to `VARCHAR(max)` and if it does have precision then we just convert
             `TEXT` to `VARCHAR`.
             """
-            if expression.this == exp.DataType.Type.TEXT:
+            if expression.is_type(exp.DataType.Type.TEXT):
                 expression = expression.copy()
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")

@@ -6,6 +6,7 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        self.validate_identity("SELECT * FROM pivot CROSS JOIN foo")
         self.validate_identity("SAFE_CAST(x AS STRING)")
         self.validate_identity("SELECT * FROM a-b-c.mydataset.mytable")
         self.validate_identity("SELECT * FROM abc-def-ghi")

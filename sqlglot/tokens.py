@@ -411,15 +411,6 @@ class _Tokenizer(type):
 
 
 class Tokenizer(metaclass=_Tokenizer):
-    """
-    Tokenizer consumes the input SQL code string and outputs a sequence of
-    tokens that can be processed by the Parser to produce the corresponding AST.
-
-    Args:
-        identifiers_can_start_with_digit: if an unquoted identifier can start with a digit.
-            Default: False
-    """
-
     SINGLE_TOKENS = {
         "(": TokenType.L_PAREN,
         ")": TokenType.R_PAREN,

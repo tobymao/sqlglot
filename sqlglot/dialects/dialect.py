@@ -194,10 +194,12 @@ class Dialect(metaclass=_Dialect):
         return self.tokenizer.tokenize(sql)
 
     @property
-    def tokenizer(self, **opts) -> Tokenizer:
-        return self.tokenizer_class(  # type: ignore
-            **{"identifiers_can_start_with_digit": self.identifiers_can_start_with_digit, **opts}
-        )
+    def tokenizer(self) -> Tokenizer:
+        if not hasattr(self, "_tokenizer"):
+            self._tokenizer = self.tokenizer_class(  # type: ignore
+                identifiers_can_start_with_digit=self.identifiers_can_start_with_digit
+            )
+        return self._tokenizer
 
     def parser(self, **opts) -> Parser:
         return self.parser_class(  # type: ignore

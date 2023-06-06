@@ -268,6 +268,17 @@ def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression
     return expression
 
 
+def epoch_cast_to_ts(expression: exp.Expression) -> exp.Expression:
+    if (
+        isinstance(expression, (exp.Cast, exp.TryCast))
+        and expression.name.lower() == "epoch"
+        and expression.to.this in exp.DataType.TEMPORAL_TYPES
+    ):
+        expression.this.replace(exp.Literal.string("1970-01-01 00:00:00"))
+
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

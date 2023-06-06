@@ -7,6 +7,10 @@ class TestPresto(Validator):
 
     def test_cast(self):
         self.validate_all(
+            "SELECT TRY_CAST('1970-01-01 00:00:00' AS TIMESTAMP)",
+            read={"postgres": "SELECT 'epoch'::TIMESTAMP"},
+        )
+        self.validate_all(
             "FROM_BASE64(x)",
             read={
                 "hive": "UNBASE64(x)",

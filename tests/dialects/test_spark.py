@@ -385,10 +385,10 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT LEFT(x, 2), RIGHT(x, 2)",
             write={
-                "duckdb": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - 2 + 1, 2)",
-                "presto": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - 2 + 1, 2)",
-                "hive": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - 2 + 1, 2)",
-                "spark": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - 2 + 1, 2)",
+                "duckdb": "SELECT LEFT(x, 2), RIGHT(x, 2)",
+                "presto": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - (2 - 1))",
+                "hive": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - (2 - 1))",
+                "spark": "SELECT LEFT(x, 2), RIGHT(x, 2)",
             },
         )
         self.validate_all(

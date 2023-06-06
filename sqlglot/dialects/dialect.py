@@ -474,6 +474,25 @@ def strposition_to_locate_sql(self: Generator, expression: exp.StrPosition) -> s
     )
 
 
+def left_to_substring_sql(self: Generator, expression: exp.Left) -> str:
+    expression = expression.copy()
+    return self.sql(
+        exp.Substring(
+            this=expression.this, start=exp.Literal.number(1), length=expression.expression
+        )
+    )
+
+
+def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
+    expression = expression.copy()
+    return self.sql(
+        exp.Substring(
+            this=expression.this,
+            start=exp.Length(this=expression.this) - exp.paren(expression.expression - 1),
+        )
+    )
+
+
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
     return f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
 

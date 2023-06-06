@@ -186,9 +186,6 @@ class MySQL(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
             "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
-            "LEFT": lambda args: exp.Substring(
-                this=seq_get(args, 0), start=exp.Literal.number(1), length=seq_get(args, 1)
-            ),
             "LOCATE": locate_to_strposition,
             "STR_TO_DATE": _str_to_date,
         }

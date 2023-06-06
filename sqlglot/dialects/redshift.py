@@ -38,12 +38,14 @@ class Redshift(Postgres):
 
         CONVERT_TYPE_FIRST = True
 
-        def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
-            this = super()._parse_types(check_func=check_func)
+        def _parse_types(
+            self, check_func: bool = False, schema: bool = False
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_types(check_func=check_func, schema=schema)
 
             if (
                 isinstance(this, exp.DataType)
-                and this.this == exp.DataType.Type.VARCHAR
+                and this.is_type("varchar")
                 and this.expressions
                 and this.expressions[0].this == exp.column("MAX")
             ):
@@ -158,7 +160,7 @@ class Redshift(Postgres):
             without precision we convert it to `VARCHAR(max)` and if it does have precision then we just convert
             `TEXT` to `VARCHAR`.
             """
-            if expression.this == exp.DataType.Type.TEXT:
+            if expression.is_type("text"):
                 expression = expression.copy()
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")

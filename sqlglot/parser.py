@@ -2908,7 +2908,9 @@ class Parser(metaclass=_Parser):
             exp.DataTypeSize, this=this, expression=self._parse_var(any_token=True)
         )
 
-    def _parse_types(self, check_func: bool = False) -> t.Optional[exp.Expression]:
+    def _parse_types(
+        self, check_func: bool = False, schema: bool = False
+    ) -> t.Optional[exp.Expression]:
         index = self._index
 
         prefix = self._match_text_seq("SYSUDTLIB", ".")
@@ -2930,7 +2932,9 @@ class Parser(metaclass=_Parser):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_types)
             elif nested:
-                expressions = self._parse_csv(self._parse_types)
+                expressions = self._parse_csv(
+                    lambda: self._parse_types(check_func=check_func, schema=schema)
+                )
             else:
                 expressions = self._parse_csv(self._parse_type_size)
 
@@ -2965,7 +2969,9 @@ class Parser(metaclass=_Parser):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_types)
             else:
-                expressions = self._parse_csv(self._parse_types)
+                expressions = self._parse_csv(
+                    lambda: self._parse_types(check_func=check_func, schema=schema)
+                )
 
             if not self._match(TokenType.GT):
                 self.raise_error("Expecting >")
@@ -3289,7 +3295,7 @@ class Parser(metaclass=_Parser):
         # column defs are not really columns, they're identifiers
         if isinstance(this, exp.Column):
             this = this.this
-        kind = self._parse_types()
+        kind = self._parse_types(schema=True)
 
         if self._match_text_seq("FOR", "ORDINALITY"):
             return self.expression(exp.ColumnDef, this=this, ordinality=True)

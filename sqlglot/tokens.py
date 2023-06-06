@@ -416,7 +416,7 @@ class Tokenizer(metaclass=_Tokenizer):
     tokens that can be processed by the Parser to produce the corresponding AST.
 
     Args:
-        identifiers_can_start_with_digit: if an unquoted identifier can start with digit
+        identifiers_can_start_with_digit: if an unquoted identifier can start with a digit.
             Default: False
     """
 

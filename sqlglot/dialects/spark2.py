@@ -110,11 +110,6 @@ class Spark2(Hive):
             **Hive.Parser.FUNCTIONS,
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
-            "LEFT": lambda args: exp.Substring(
-                this=seq_get(args, 0),
-                start=exp.Literal.number(1),
-                length=seq_get(args, 1),
-            ),
             "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
@@ -122,14 +117,6 @@ class Spark2(Hive):
             "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
-            ),
-            "RIGHT": lambda args: exp.Substring(
-                this=seq_get(args, 0),
-                start=exp.Sub(
-                    this=exp.Length(this=seq_get(args, 0)),
-                    expression=exp.Add(this=seq_get(args, 1), expression=exp.Literal.number(1)),
-                ),
-                length=seq_get(args, 1),
             ),
             "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "IIF": exp.If.from_arg_list,
@@ -240,6 +227,8 @@ class Spark2(Hive):
         TRANSFORMS.pop(exp.ArrayJoin)
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
+        TRANSFORMS.pop(exp.Left)
+        TRANSFORMS.pop(exp.Right)
 
         WRAP_DERIVED_VALUES = False
         CREATE_FUNCTION_RETURN_AS = False

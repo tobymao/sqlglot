@@ -4158,6 +4158,14 @@ class Least(Func):
     is_var_len_args = True
 
 
+class Left(Func):
+    arg_types = {"this": True, "expression": True}
+
+
+class Right(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Length(Func):
     pass
 

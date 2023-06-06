@@ -3060,11 +3060,7 @@ class Parser(metaclass=_Parser):
                     else exp.Literal.string(value)
                 )
             else:
-                field = (
-                    self._parse_star()
-                    or self._parse_function(anonymous=True)
-                    or self._parse_id_var()
-                )
+                field = self._parse_field(anonymous_func=True)
 
             if isinstance(field, exp.Func):
                 # bigquery allows function calls like x.y.count(...)
@@ -3135,10 +3131,11 @@ class Parser(metaclass=_Parser):
         self,
         any_token: bool = False,
         tokens: t.Optional[t.Collection[TokenType]] = None,
+        anonymous_func: bool = False,
     ) -> t.Optional[exp.Expression]:
         return (
             self._parse_primary()
-            or self._parse_function()
+            or self._parse_function(anonymous=anonymous_func)
             or self._parse_id_var(any_token=any_token, tokens=tokens)
         )
 

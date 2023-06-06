@@ -1912,8 +1912,16 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
-            this = self._parse_table() if table else self._parse_select(nested=True)
-            this = self._parse_set_operations(self._parse_query_modifiers(this))
+            if self._match(TokenType.PIVOT):
+                this = self._parse_simplified_pivot()
+            elif self._match(TokenType.FROM):
+                this = exp.select("*").from_(
+                    t.cast(exp.From, self._parse_from(skip_from_token=True))
+                )
+            else:
+                this = self._parse_table() if table else self._parse_select(nested=True)
+                this = self._parse_set_operations(self._parse_query_modifiers(this))
+
             self._match_r_paren()
 
             # early return so that subquery unions aren't parsed again
@@ -1926,10 +1934,6 @@ class Parser(metaclass=_Parser):
                 expressions=self._parse_csv(self._parse_value),
                 alias=self._parse_table_alias(),
             )
-        elif self._match(TokenType.PIVOT):
-            this = self._parse_simplified_pivot()
-        elif self._match(TokenType.FROM):
-            this = exp.select("*").from_(t.cast(exp.From, self._parse_from(skip_from_token=True)))
         else:
             this = None
 

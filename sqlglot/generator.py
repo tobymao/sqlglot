@@ -1413,7 +1413,7 @@ class Generator:
         return f"{lock_type}{expressions}{wait or ''}"
 
     def literal_sql(self, expression: exp.Literal) -> str:
-        text = expression.this if expression.this is not None else ""
+        text = expression.this or ""
         if expression.is_string:
             text = text.replace(self.quote_end, self._escaped_quote_end)
             if self.pretty:

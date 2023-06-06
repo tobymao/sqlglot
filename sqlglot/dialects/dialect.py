@@ -111,6 +111,7 @@ class Dialect(metaclass=_Dialect):
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False
+    identifiers_can_start_with_digit = False
     normalize_functions: t.Optional[str] = "upper"
     null_ordering = "nulls_are_small"
 
@@ -193,10 +194,10 @@ class Dialect(metaclass=_Dialect):
         return self.tokenizer.tokenize(sql)
 
     @property
-    def tokenizer(self) -> Tokenizer:
-        if not hasattr(self, "_tokenizer"):
-            self._tokenizer = self.tokenizer_class()  # type: ignore
-        return self._tokenizer
+    def tokenizer(self, **opts) -> Tokenizer:
+        return self.tokenizer_class(  # type: ignore
+            **{"identifiers_can_start_with_digit": self.identifiers_can_start_with_digit, **opts}
+        )
 
     def parser(self, **opts) -> Parser:
         return self.parser_class(  # type: ignore
@@ -231,6 +232,7 @@ class Dialect(metaclass=_Dialect):
                 "time_trie": self.inverse_time_trie,
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
+                "identifiers_can_start_with_digit": self.identifiers_can_start_with_digit,
                 "normalize_functions": self.normalize_functions,
                 "null_ordering": self.null_ordering,
                 **opts,

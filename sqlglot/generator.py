@@ -188,6 +188,8 @@ class Generator:
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
+        exp.DictRange: exp.Properties.Location.POST_SCHEMA,
+        exp.DictProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA,
@@ -1082,7 +1084,7 @@ class Generator:
 
     def lockingproperty_sql(self, expression: exp.LockingProperty) -> str:
         kind = expression.args.get("kind")
-        this: str = f" {this}" if expression.this else ""
+        this = f" {self.sql(expression, 'this')}" if expression.this else ""
         for_or_in = expression.args.get("for_or_in")
         lock_type = expression.args.get("lock_type")
         override = " OVERRIDE" if expression.args.get("override") else ""
@@ -2321,6 +2323,22 @@ class Generator:
             self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
 
         return self.sql(exp.cast(expression.this, "text"))
+
+    def dictproperty_sql(self, expression: exp.DictProperty) -> str:
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        settings_sql = self.expressions(expression, key="settings", sep=" ")
+        args = f"({self.sep('')}{settings_sql}{self.seg(')', sep='')}" if settings_sql else "()"
+        return f"{this}({kind}{args})"
+
+    def dictrange_sql(self, expression: exp.DictRange) -> str:
+        this = self.sql(expression, "this")
+        max = self.sql(expression, "max")
+        min = self.sql(expression, "min")
+        return f"{this}(MIN {min} MAX {max})"
+
+    def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
+        return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"
 
 
 def cached_generator(

@@ -2333,14 +2333,12 @@ class Generator:
 
     def dictrange_sql(self, expression: exp.DictRange) -> str:
         this = self.sql(expression, "this")
-        max = expression.args.get("max")
-        min = expression.args.get("min")
-        min_value = self.sql(min, "this")
+        max = self.sql(expression, "max")
+        min = self.sql(expression, "min")
         if min == max:
-            return f"{this}({min_value})"
+            return f"{this}({min})"
         else:
-            max_value = self.sql(max, "this")
-            return f"{this}(MIN {min_value} MAX {max_value})"
+            return f"{this}(MIN {min} MAX {max})"
 
     def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"

@@ -4497,9 +4497,6 @@ class Parser(metaclass=_Parser):
 
         self._match_l_paren()
         kind = self._parse_id_var()
-        if not kind:
-            self.raise_error(f"Unexpected token")
-        assert kind
 
         if self._match(TokenType.L_PAREN):
             while True:
@@ -4516,7 +4513,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.DictProperty,
             this=this,
-            kind=kind.this,
+            kind=kind.this if kind else None,
             settings=settings,
         )
 

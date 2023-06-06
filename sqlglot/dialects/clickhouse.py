@@ -35,6 +35,7 @@ class ClickHouse(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "ATTACH": TokenType.COMMAND,
             "DATETIME64": TokenType.DATETIME64,
+            "DICTIONARY": TokenType.DICTIONARY,
             "FINAL": TokenType.FINAL,
             "FLOAT32": TokenType.FLOAT,
             "FLOAT64": TokenType.DOUBLE,
@@ -243,6 +244,13 @@ class ClickHouse(Dialect):
             self, optional: bool = False
         ) -> t.List[t.Optional[exp.Expression]]:
             return super()._parse_wrapped_id_vars(optional=True)
+
+        def _parse_primary_key(
+            self, wrapped_optional: bool = False, in_props: bool = False
+        ) -> exp.Expression:
+            return super()._parse_primary_key(
+                wrapped_optional=wrapped_optional or in_props, in_props=in_props
+            )
 
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")

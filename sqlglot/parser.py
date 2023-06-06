@@ -205,6 +205,7 @@ class Parser(metaclass=_Parser):
         TokenType.SCHEMA,
         TokenType.TABLE,
         TokenType.VIEW,
+        TokenType.DICTIONARY,
     }
 
     CREATABLES = {
@@ -232,6 +233,7 @@ class Parser(metaclass=_Parser):
         TokenType.DELETE,
         TokenType.DESC,
         TokenType.DESCRIBE,
+        TokenType.DICTIONARY,
         TokenType.DIV,
         TokenType.END,
         TokenType.EXECUTE,
@@ -598,6 +600,8 @@ class Parser(metaclass=_Parser):
         ),
         "JOURNAL": lambda self, **kwargs: self._parse_journal(**kwargs),
         "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
+        "LAYOUT": lambda self: self._parse_dict_property(this="LAYOUT"),
+        "LIFETIME": lambda self: self._parse_dict_range(this="LIFETIME"),
         "LIKE": lambda self: self._parse_create_like(),
         "LOCATION": lambda self: self._parse_property_assignment(exp.LocationProperty),
         "LOCK": lambda self: self._parse_locking(),
@@ -612,7 +616,8 @@ class Parser(metaclass=_Parser):
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
-        "PRIMARY KEY": lambda self: self._parse_primary_key(),
+        "PRIMARY KEY": lambda self: self._parse_primary_key(in_props=True),
+        "RANGE": lambda self: self._parse_dict_range(this="RANGE"),
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
         "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
@@ -621,6 +626,7 @@ class Parser(metaclass=_Parser):
             exp.SettingsProperty, expressions=self._parse_csv(self._parse_set_item)
         ),
         "SORTKEY": lambda self: self._parse_sortkey(),
+        "SOURCE": lambda self: self._parse_dict_property(this="SOURCE"),
         "STABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("STABLE")
         ),
@@ -3499,16 +3505,18 @@ class Parser(metaclass=_Parser):
             exp.ForeignKey, expressions=expressions, reference=reference, **options  # type: ignore
         )
 
-    def _parse_primary_key(self) -> exp.Expression:
+    def _parse_primary_key(
+        self, wrapped_optional: bool = False, in_props: bool = False
+    ) -> exp.Expression:
         desc = (
             self._match_set((TokenType.ASC, TokenType.DESC))
             and self._prev.token_type == TokenType.DESC
         )
 
-        if not self._match(TokenType.L_PAREN, advance=False):
+        if not in_props and not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(exp.PrimaryKeyColumnConstraint, desc=desc)
 
-        expressions = self._parse_wrapped_csv(self._parse_field)
+        expressions = self._parse_wrapped_csv(self._parse_field, optional=wrapped_optional)
         options = self._parse_key_constraint_options()
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 
@@ -4487,6 +4495,44 @@ class Parser(metaclass=_Parser):
         text = self._find_sql(start, self._prev)
         size = len(start.text)
         return exp.Command(this=text[:size], expression=text[size:])
+
+    def _parse_dict_property(self, this: str) -> exp.DictProperty:
+        settings = []
+
+        self._match_l_paren()
+        kind = self._parse_id_var()
+
+        if self._match(TokenType.L_PAREN):
+            while True:
+                key = self._parse_id_var()
+                value = self._parse_primary()
+
+                if not key and value is None:
+                    break
+                settings.append(self.expression(exp.DictSubProperty, this=key, value=value))
+            self._match(TokenType.R_PAREN)
+
+        self._match_r_paren()
+
+        return self.expression(
+            exp.DictProperty,
+            this=this,
+            kind=kind.this if kind else None,
+            settings=settings,
+        )
+
+    def _parse_dict_range(self, this: str) -> exp.DictRange:
+        self._match_l_paren()
+        has_min = self._match_text_seq("MIN")
+        if has_min:
+            min = self._parse_var() or self._parse_primary()
+            self._match_text_seq("MAX")
+            max = self._parse_var() or self._parse_primary()
+        else:
+            max = self._parse_var() or self._parse_primary()
+            min = exp.Literal.number(0)
+        self._match_r_paren()
+        return self.expression(exp.DictRange, this=this, min=min, max=max)
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

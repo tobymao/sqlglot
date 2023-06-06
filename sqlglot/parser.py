@@ -4526,7 +4526,7 @@ class Parser(metaclass=_Parser):
             max = self._parse_var() or self._parse_primary()
         else:
             max = self._parse_var() or self._parse_primary()
-            min = self.expression(exp.Literal, this=0, is_string=False)
+            min = exp.Literal.number(0)
         self._match_r_paren()
         return self.expression(exp.DictRange, this=this, min=min, max=max)
 

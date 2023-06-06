@@ -104,6 +104,10 @@ class _Dialect(type):
         klass.byte_start, klass.byte_end = get_start_end(TokenType.BYTE_STRING)
         klass.raw_start, klass.raw_end = get_start_end(TokenType.RAW_STRING)
 
+        klass.tokenizer_class.identifiers_can_start_with_digit = (
+            klass.identifiers_can_start_with_digit
+        )
+
         return klass
 
 
@@ -111,6 +115,7 @@ class Dialect(metaclass=_Dialect):
     index_offset = 0
     unnest_column_only = False
     alias_post_tablesample = False
+    identifiers_can_start_with_digit = False
     normalize_functions: t.Optional[str] = "upper"
     null_ordering = "nulls_are_small"
 
@@ -231,6 +236,7 @@ class Dialect(metaclass=_Dialect):
                 "time_trie": self.inverse_time_trie,
                 "unnest_column_only": self.unnest_column_only,
                 "alias_post_tablesample": self.alias_post_tablesample,
+                "identifiers_can_start_with_digit": self.identifiers_can_start_with_digit,
                 "normalize_functions": self.normalize_functions,
                 "null_ordering": self.null_ordering,
                 **opts,

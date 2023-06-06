@@ -4038,22 +4038,15 @@ class Parser(metaclass=_Parser):
         self,
         any_token: bool = True,
         tokens: t.Optional[t.Collection[TokenType]] = None,
-        prefix_tokens: t.Optional[t.Collection[TokenType]] = None,
     ) -> t.Optional[exp.Expression]:
         identifier = self._parse_identifier()
 
         if identifier:
             return identifier
 
-        prefix = ""
-
-        if prefix_tokens:
-            while self._match_set(prefix_tokens):
-                prefix += self._prev.text
-
         if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
             quoted = self._prev.token_type == TokenType.STRING
-            return exp.Identifier(this=prefix + self._prev.text, quoted=quoted)
+            return exp.Identifier(this=self._prev.text, quoted=quoted)
 
         return None
 

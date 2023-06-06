@@ -195,7 +195,7 @@ class Spark2(Hive):
             """
             this = super()._parse_types(check_func=check_func, schema=schema)
 
-            if isinstance(this, exp.DataType) and this.is_type(
+            if not schema and isinstance(this, exp.DataType) and this.is_type(
                 exp.DataType.Type.VARCHAR, exp.DataType.Type.CHAR
             ):
                 return exp.DataType.build("text")

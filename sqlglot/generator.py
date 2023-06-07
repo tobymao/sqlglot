@@ -1651,32 +1651,26 @@ class Generator:
 
     def window_sql(self, expression: exp.Window) -> str:
         this = self.sql(expression, "this")
-
         partition = self.partition_by_sql(expression)
-
         order = expression.args.get("order")
-        order_sql = self.order_sql(order, flat=True) if order else ""
-
-        partition_sql = partition + " " if partition and order else partition
-
-        spec = expression.args.get("spec")
-        spec_sql = " " + self.windowspec_sql(spec) if spec else ""
-
+        order = self.order_sql(order, flat=True) if order else ""
+        spec = self.sql(expression, "spec")
         alias = self.sql(expression, "alias")
         over = self.sql(expression, "over") or "OVER"
+
         this = f"{this} {'AS' if expression.arg_key == 'windows' else over}"
 
         first = expression.args.get("first")
-        if first is not None:
-            first = " FIRST " if first else " LAST "
-        first = first or ""
+        if first is None:
+            first = ""
+        else:
+            first = "FIRST" if first else "LAST"
 
         if not partition and not order and not spec and alias:
             return f"{this} {alias}"
 
-        window_args = alias + first + partition_sql + order_sql + spec_sql
-
-        return f"{this} ({window_args.strip()})"
+        args = " ".join(arg for arg in (alias, first, partition, order, spec) if arg)
+        return f"{this} ({args})"
 
     def partition_by_sql(self, expression: exp.Window | exp.MatchRecognize) -> str:
         partition = self.expressions(expression, key="partition_by", flat=True)

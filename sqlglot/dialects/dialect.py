@@ -538,6 +538,14 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
     return _ts_or_ds_to_date_sql
 
 
+def concat_to_dpipe_sql(self: Generator, expression: exp.Concat | exp.SafeConcat) -> str:
+    this, *rest_args = expression.expressions
+    for arg in rest_args:
+        this = exp.DPipe(this=this, expression=arg)
+
+    return self.sql(this)
+
+
 # Spark, DuckDB use (almost) the same naming scheme for the output columns of the PIVOT operator
 def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectType) -> t.List[str]:
     names = []

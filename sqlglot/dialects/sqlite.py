@@ -5,6 +5,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    concat_to_dpipe_sql,
     count_if_to_sum,
     no_ilike_sql,
     no_pivot_sql,
@@ -96,6 +97,7 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.Concat: concat_to_dpipe_sql,
             exp.CountIf: count_if_to_sum,
             exp.Create: transforms.preprocess([_transform_create]),
             exp.CurrentDate: lambda *_: "CURRENT_DATE",
@@ -112,6 +114,7 @@ class SQLite(Dialect):
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Pivot: no_pivot_sql,
+            exp.SafeConcat: concat_to_dpipe_sql,
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_qualify]
             ),

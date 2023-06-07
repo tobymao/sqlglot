@@ -1278,7 +1278,7 @@ class TestFunctions(unittest.TestCase):
         col = SF.concat(SF.col("cola"), SF.col("colb"))
         self.assertEqual("CONCAT(cola, colb)", col.sql())
         col_single = SF.concat("cola")
-        self.assertEqual("cola", col_single.sql())
+        self.assertEqual("CONCAT(cola)", col_single.sql())
 
     def test_array_position(self):
         col_str = SF.array_position("cola", SF.col("colb"))

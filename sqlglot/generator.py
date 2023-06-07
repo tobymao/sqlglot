@@ -1741,16 +1741,11 @@ class Generator:
         else:
             return self.func("TRIM", expression.this, expression.expression)
 
-    def concat_sql(self, expression: exp.Concat) -> str:
-        if len(expression.expressions) == 1:
-            return self.sql(expression.expressions[0])
-        return self.func("CONCAT", *expression.expressions)
-
     def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
+        expressions = expression.expressions
         if self.STRICT_STRING_CONCAT:
-            expression = expression.copy()
-            expression.set("expressions", [exp.cast(e, "text") for e in expression.expressions])
-        return self.concat_sql(expression)
+            expressions = [exp.cast(e, "text") for e in expressions]
+        return self.func("CONCAT", *expressions)
 
     def check_sql(self, expression: exp.Check) -> str:
         this = self.sql(expression, key="this")

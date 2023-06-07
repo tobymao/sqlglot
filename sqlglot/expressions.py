@@ -4167,7 +4167,7 @@ class Right(Func):
 
 
 class Length(Func):
-    pass
+    _sql_names = ["LENGTH", "LEN"]
 
 
 class Levenshtein(Func):

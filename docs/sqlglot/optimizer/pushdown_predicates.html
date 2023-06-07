@@ -83,10 +83,10 @@
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="sd">    Example:</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">        &gt;&gt;&gt; sql = &quot;SELECT * FROM (SELECT * FROM x AS x) AS y WHERE y.a = 1&quot;</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">        &gt;&gt;&gt; sql = &quot;SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y WHERE y.a = 1&quot;</span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(sql)</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">        &gt;&gt;&gt; pushdown_predicates(expression).sql()</span>
-</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="sd">        &#39;SELECT * FROM (SELECT * FROM x AS x WHERE y.a = 1) AS y WHERE TRUE&#39;</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a><span class="sd">        &#39;SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x WHERE x.a = 1) AS y WHERE TRUE&#39;</span>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a>
 </span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">    Args:</span>
 </span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="sd">        expression (sqlglot.Expression): expression to optimize</span>
@@ -291,10 +291,10 @@
 </span><span id="pushdown_predicates-11"><a href="#pushdown_predicates-11"><span class="linenos">11</span></a>
 </span><span id="pushdown_predicates-12"><a href="#pushdown_predicates-12"><span class="linenos">12</span></a><span class="sd">    Example:</span>
 </span><span id="pushdown_predicates-13"><a href="#pushdown_predicates-13"><span class="linenos">13</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="pushdown_predicates-14"><a href="#pushdown_predicates-14"><span class="linenos">14</span></a><span class="sd">        &gt;&gt;&gt; sql = &quot;SELECT * FROM (SELECT * FROM x AS x) AS y WHERE y.a = 1&quot;</span>
+</span><span id="pushdown_predicates-14"><a href="#pushdown_predicates-14"><span class="linenos">14</span></a><span class="sd">        &gt;&gt;&gt; sql = &quot;SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y WHERE y.a = 1&quot;</span>
 </span><span id="pushdown_predicates-15"><a href="#pushdown_predicates-15"><span class="linenos">15</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(sql)</span>
 </span><span id="pushdown_predicates-16"><a href="#pushdown_predicates-16"><span class="linenos">16</span></a><span class="sd">        &gt;&gt;&gt; pushdown_predicates(expression).sql()</span>
-</span><span id="pushdown_predicates-17"><a href="#pushdown_predicates-17"><span class="linenos">17</span></a><span class="sd">        &#39;SELECT * FROM (SELECT * FROM x AS x WHERE y.a = 1) AS y WHERE TRUE&#39;</span>
+</span><span id="pushdown_predicates-17"><a href="#pushdown_predicates-17"><span class="linenos">17</span></a><span class="sd">        &#39;SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x WHERE x.a = 1) AS y WHERE TRUE&#39;</span>
 </span><span id="pushdown_predicates-18"><a href="#pushdown_predicates-18"><span class="linenos">18</span></a>
 </span><span id="pushdown_predicates-19"><a href="#pushdown_predicates-19"><span class="linenos">19</span></a><span class="sd">    Args:</span>
 </span><span id="pushdown_predicates-20"><a href="#pushdown_predicates-20"><span class="linenos">20</span></a><span class="sd">        expression (sqlglot.Expression): expression to optimize</span>
@@ -336,10 +336,10 @@
 <blockquote>
   <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sqlglot</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;SELECT * FROM (SELECT * FROM x AS x) AS y WHERE y.a = 1&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y WHERE y.a = 1&quot;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">expression</span> <span class="o">=</span> <span class="n"><a href="../../sqlglot.html#parse_one">sqlglot.parse_one</a></span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pushdown_predicates</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span><span class="o">.</span><span class="n">sql</span><span class="p">()</span>
-<span class="go">&#39;SELECT * FROM (SELECT * FROM x AS x WHERE y.a = 1) AS y WHERE TRUE&#39;</span>
+<span class="go">&#39;SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x WHERE x.a = 1) AS y WHERE TRUE&#39;</span>
 </code></pre>
   </div>
 </blockquote>

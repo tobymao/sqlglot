@@ -18,7 +18,9 @@ from sqlglot.dialects.dialect import (
     rename_func,
     str_position_sql,
     timestamptrunc_sql,
+    timestrtotime_sql,
     trim_sql,
+    ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
@@ -353,12 +355,13 @@ class Postgres(Dialect):
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,
             exp.TimestampTrunc: timestamptrunc_sql,
-            exp.TimeStrToTime: lambda self, e: f"CAST({self.sql(e, 'this')} AS TIMESTAMP)",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TableSample: no_tablesample_sql,
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
+            exp.TsOrDsToDate: ts_or_ds_to_date_sql("postgres"),
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.DataType: _datatype_sql,
             exp.GroupConcat: _string_agg_sql,

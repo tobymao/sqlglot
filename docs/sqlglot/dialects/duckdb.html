@@ -153,7 +153,7 @@
 </span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>
 </span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>
 </span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="k">def</span> <span class="nf">_datatype_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">generator</span><span class="o">.</span><span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="k">if</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span> <span class="o">==</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">ARRAY</span><span class="p">:</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="k">if</span> <span class="n">expression</span><span class="o">.</span><span class="n">is_type</span><span class="p">(</span><span class="s2">&quot;array&quot;</span><span class="p">):</span>
 </span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expressions</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="si">}</span><span class="s2">[]&quot;</span>
 </span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">datatype_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>
@@ -819,6 +819,8 @@ represents a python time format and the output the target time format</li>
 Default: "upper"</li>
 <li><strong>alias_post_tablesample (bool):</strong>  if the table alias comes after tablesample
 Default: False</li>
+<li><strong>identifiers_can_start_with_digit (bool):</strong>  if an unquoted identifier can start with digit
+Default: False</li>
 <li><strong>unsupported_level (ErrorLevel):</strong>  determines the generator's behavior when it encounters
 unsupported expressions. Default ErrorLevel.WARN.</li>
 <li><strong>null_ordering (str):</strong>  Indicates the default null ordering method to use if not explicitly set.
@@ -1094,6 +1096,9 @@ Default: True</li>
                 <dd id="DuckDB.Generator.when_sql" class="function"><a href="../generator.html#Generator.when_sql">when_sql</a></dd>
                 <dd id="DuckDB.Generator.merge_sql" class="function"><a href="../generator.html#Generator.merge_sql">merge_sql</a></dd>
                 <dd id="DuckDB.Generator.tochar_sql" class="function"><a href="../generator.html#Generator.tochar_sql">tochar_sql</a></dd>
+                <dd id="DuckDB.Generator.dictproperty_sql" class="function"><a href="../generator.html#Generator.dictproperty_sql">dictproperty_sql</a></dd>
+                <dd id="DuckDB.Generator.dictrange_sql" class="function"><a href="../generator.html#Generator.dictrange_sql">dictrange_sql</a></dd>
+                <dd id="DuckDB.Generator.dictsubproperty_sql" class="function"><a href="../generator.html#Generator.dictsubproperty_sql">dictsubproperty_sql</a></dd>
 
             </div>
                                 </dl>

@@ -58,6 +58,9 @@
                     <a class="function" href="#add_recursive_cte_column_names">add_recursive_cte_column_names</a>
             </li>
             <li>
+                    <a class="function" href="#epoch_cast_to_ts">epoch_cast_to_ts</a>
+            </li>
+            <li>
                     <a class="function" href="#preprocess">preprocess</a>
             </li>
     </ul>
@@ -353,47 +356,58 @@
 </span><span id="L-268"><a href="#L-268"><span class="linenos">268</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-269"><a href="#L-269"><span class="linenos">269</span></a>
 </span><span id="L-270"><a href="#L-270"><span class="linenos">270</span></a>
-</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
-</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
-</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
-</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
-</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
+</span><span id="L-271"><a href="#L-271"><span class="linenos">271</span></a><span class="k">def</span> <span class="nf">epoch_cast_to_ts</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-272"><a href="#L-272"><span class="linenos">272</span></a>    <span class="k">if</span> <span class="p">(</span>
+</span><span id="L-273"><a href="#L-273"><span class="linenos">273</span></a>        <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Cast</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">TryCast</span><span class="p">))</span>
+</span><span id="L-274"><a href="#L-274"><span class="linenos">274</span></a>        <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;epoch&quot;</span>
+</span><span id="L-275"><a href="#L-275"><span class="linenos">275</span></a>        <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">to</span><span class="o">.</span><span class="n">this</span> <span class="ow">in</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">TEMPORAL_TYPES</span>
+</span><span id="L-276"><a href="#L-276"><span class="linenos">276</span></a>    <span class="p">):</span>
+</span><span id="L-277"><a href="#L-277"><span class="linenos">277</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">string</span><span class="p">(</span><span class="s2">&quot;1970-01-01 00:00:00&quot;</span><span class="p">))</span>
 </span><span id="L-278"><a href="#L-278"><span class="linenos">278</span></a>
-</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a><span class="sd">    Args:</span>
-</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
+</span><span id="L-279"><a href="#L-279"><span class="linenos">279</span></a>    <span class="k">return</span> <span class="n">expression</span>
+</span><span id="L-280"><a href="#L-280"><span class="linenos">280</span></a>
 </span><span id="L-281"><a href="#L-281"><span class="linenos">281</span></a>
-</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a><span class="sd">    Returns:</span>
-</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a><span class="sd">        Function that can be used as a generator transform.</span>
-</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a>
-</span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a>
-</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
-</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-282"><a href="#L-282"><span class="linenos">282</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
+</span><span id="L-283"><a href="#L-283"><span class="linenos">283</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
+</span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
+</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
+</span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
+</span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a>
+</span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a><span class="sd">    Args:</span>
+</span><span id="L-291"><a href="#L-291"><span class="linenos">291</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
 </span><span id="L-292"><a href="#L-292"><span class="linenos">292</span></a>
-</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
-</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-293"><a href="#L-293"><span class="linenos">293</span></a><span class="sd">    Returns:</span>
+</span><span id="L-294"><a href="#L-294"><span class="linenos">294</span></a><span class="sd">        Function that can be used as a generator transform.</span>
+</span><span id="L-295"><a href="#L-295"><span class="linenos">295</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-296"><a href="#L-296"><span class="linenos">296</span></a>
-</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
-</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
-</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a>            <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
-</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a>            <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
-</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a>            <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
-</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
-</span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>                <span class="p">)</span>
-</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>
-</span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
-</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>
-</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-</span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>
-</span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
+</span><span id="L-297"><a href="#L-297"><span class="linenos">297</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-298"><a href="#L-298"><span class="linenos">298</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-299"><a href="#L-299"><span class="linenos">299</span></a>
+</span><span id="L-300"><a href="#L-300"><span class="linenos">300</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+</span><span id="L-301"><a href="#L-301"><span class="linenos">301</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="L-302"><a href="#L-302"><span class="linenos">302</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>
+</span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
+</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>
+</span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
+</span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
+</span><span id="L-310"><a href="#L-310"><span class="linenos">310</span></a>            <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
+</span><span id="L-311"><a href="#L-311"><span class="linenos">311</span></a>            <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
+</span><span id="L-312"><a href="#L-312"><span class="linenos">312</span></a>            <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
+</span><span id="L-313"><a href="#L-313"><span class="linenos">313</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-314"><a href="#L-314"><span class="linenos">314</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="L-315"><a href="#L-315"><span class="linenos">315</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
+</span><span id="L-316"><a href="#L-316"><span class="linenos">316</span></a>                <span class="p">)</span>
+</span><span id="L-317"><a href="#L-317"><span class="linenos">317</span></a>
+</span><span id="L-318"><a href="#L-318"><span class="linenos">318</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
+</span><span id="L-319"><a href="#L-319"><span class="linenos">319</span></a>
+</span><span id="L-320"><a href="#L-320"><span class="linenos">320</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="L-321"><a href="#L-321"><span class="linenos">321</span></a>
+</span><span id="L-322"><a href="#L-322"><span class="linenos">322</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
 </span></pre></div>
 
 
@@ -852,6 +866,32 @@ other expressions. This transforms removes the precision from parameterized type
     
 
                 </section>
+                <section id="epoch_cast_to_ts">
+                            <input id="epoch_cast_to_ts-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">epoch_cast_to_ts</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="expressions.html#Expression">sqlglot.expressions.Expression</a></span></span><span class="return-annotation">) -> <span class="n"><a href="expressions.html#Expression">sqlglot.expressions.Expression</a></span>:</span></span>
+
+                <label class="view-source-button" for="epoch_cast_to_ts-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#epoch_cast_to_ts"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="epoch_cast_to_ts-272"><a href="#epoch_cast_to_ts-272"><span class="linenos">272</span></a><span class="k">def</span> <span class="nf">epoch_cast_to_ts</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="epoch_cast_to_ts-273"><a href="#epoch_cast_to_ts-273"><span class="linenos">273</span></a>    <span class="k">if</span> <span class="p">(</span>
+</span><span id="epoch_cast_to_ts-274"><a href="#epoch_cast_to_ts-274"><span class="linenos">274</span></a>        <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Cast</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">TryCast</span><span class="p">))</span>
+</span><span id="epoch_cast_to_ts-275"><a href="#epoch_cast_to_ts-275"><span class="linenos">275</span></a>        <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;epoch&quot;</span>
+</span><span id="epoch_cast_to_ts-276"><a href="#epoch_cast_to_ts-276"><span class="linenos">276</span></a>        <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">to</span><span class="o">.</span><span class="n">this</span> <span class="ow">in</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">TEMPORAL_TYPES</span>
+</span><span id="epoch_cast_to_ts-277"><a href="#epoch_cast_to_ts-277"><span class="linenos">277</span></a>    <span class="p">):</span>
+</span><span id="epoch_cast_to_ts-278"><a href="#epoch_cast_to_ts-278"><span class="linenos">278</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">string</span><span class="p">(</span><span class="s2">&quot;1970-01-01 00:00:00&quot;</span><span class="p">))</span>
+</span><span id="epoch_cast_to_ts-279"><a href="#epoch_cast_to_ts-279"><span class="linenos">279</span></a>
+</span><span id="epoch_cast_to_ts-280"><a href="#epoch_cast_to_ts-280"><span class="linenos">280</span></a>    <span class="k">return</span> <span class="n">expression</span>
+</span></pre></div>
+
+
+    
+
+                </section>
                 <section id="preprocess">
                             <input id="preprocess-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -863,47 +903,47 @@ other expressions. This transforms removes the precision from parameterized type
 
     </div>
     <a class="headerlink" href="#preprocess"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="preprocess-272"><a href="#preprocess-272"><span class="linenos">272</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
-</span><span id="preprocess-273"><a href="#preprocess-273"><span class="linenos">273</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
-</span><span id="preprocess-274"><a href="#preprocess-274"><span class="linenos">274</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="preprocess-275"><a href="#preprocess-275"><span class="linenos">275</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="preprocess-276"><a href="#preprocess-276"><span class="linenos">276</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
-</span><span id="preprocess-277"><a href="#preprocess-277"><span class="linenos">277</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
-</span><span id="preprocess-278"><a href="#preprocess-278"><span class="linenos">278</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
-</span><span id="preprocess-279"><a href="#preprocess-279"><span class="linenos">279</span></a>
-</span><span id="preprocess-280"><a href="#preprocess-280"><span class="linenos">280</span></a><span class="sd">    Args:</span>
-</span><span id="preprocess-281"><a href="#preprocess-281"><span class="linenos">281</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
-</span><span id="preprocess-282"><a href="#preprocess-282"><span class="linenos">282</span></a>
-</span><span id="preprocess-283"><a href="#preprocess-283"><span class="linenos">283</span></a><span class="sd">    Returns:</span>
-</span><span id="preprocess-284"><a href="#preprocess-284"><span class="linenos">284</span></a><span class="sd">        Function that can be used as a generator transform.</span>
-</span><span id="preprocess-285"><a href="#preprocess-285"><span class="linenos">285</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="preprocess-286"><a href="#preprocess-286"><span class="linenos">286</span></a>
-</span><span id="preprocess-287"><a href="#preprocess-287"><span class="linenos">287</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="preprocess-288"><a href="#preprocess-288"><span class="linenos">288</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="preprocess-289"><a href="#preprocess-289"><span class="linenos">289</span></a>
-</span><span id="preprocess-290"><a href="#preprocess-290"><span class="linenos">290</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
-</span><span id="preprocess-291"><a href="#preprocess-291"><span class="linenos">291</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="preprocess-292"><a href="#preprocess-292"><span class="linenos">292</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="preprocess-283"><a href="#preprocess-283"><span class="linenos">283</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
+</span><span id="preprocess-284"><a href="#preprocess-284"><span class="linenos">284</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
+</span><span id="preprocess-285"><a href="#preprocess-285"><span class="linenos">285</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="preprocess-286"><a href="#preprocess-286"><span class="linenos">286</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="preprocess-287"><a href="#preprocess-287"><span class="linenos">287</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
+</span><span id="preprocess-288"><a href="#preprocess-288"><span class="linenos">288</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
+</span><span id="preprocess-289"><a href="#preprocess-289"><span class="linenos">289</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
+</span><span id="preprocess-290"><a href="#preprocess-290"><span class="linenos">290</span></a>
+</span><span id="preprocess-291"><a href="#preprocess-291"><span class="linenos">291</span></a><span class="sd">    Args:</span>
+</span><span id="preprocess-292"><a href="#preprocess-292"><span class="linenos">292</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
 </span><span id="preprocess-293"><a href="#preprocess-293"><span class="linenos">293</span></a>
-</span><span id="preprocess-294"><a href="#preprocess-294"><span class="linenos">294</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="preprocess-295"><a href="#preprocess-295"><span class="linenos">295</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
-</span><span id="preprocess-296"><a href="#preprocess-296"><span class="linenos">296</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-294"><a href="#preprocess-294"><span class="linenos">294</span></a><span class="sd">    Returns:</span>
+</span><span id="preprocess-295"><a href="#preprocess-295"><span class="linenos">295</span></a><span class="sd">        Function that can be used as a generator transform.</span>
+</span><span id="preprocess-296"><a href="#preprocess-296"><span class="linenos">296</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="preprocess-297"><a href="#preprocess-297"><span class="linenos">297</span></a>
-</span><span id="preprocess-298"><a href="#preprocess-298"><span class="linenos">298</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
-</span><span id="preprocess-299"><a href="#preprocess-299"><span class="linenos">299</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
-</span><span id="preprocess-300"><a href="#preprocess-300"><span class="linenos">300</span></a>            <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
-</span><span id="preprocess-301"><a href="#preprocess-301"><span class="linenos">301</span></a>            <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
-</span><span id="preprocess-302"><a href="#preprocess-302"><span class="linenos">302</span></a>            <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
-</span><span id="preprocess-303"><a href="#preprocess-303"><span class="linenos">303</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="preprocess-304"><a href="#preprocess-304"><span class="linenos">304</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="preprocess-305"><a href="#preprocess-305"><span class="linenos">305</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
-</span><span id="preprocess-306"><a href="#preprocess-306"><span class="linenos">306</span></a>                <span class="p">)</span>
-</span><span id="preprocess-307"><a href="#preprocess-307"><span class="linenos">307</span></a>
-</span><span id="preprocess-308"><a href="#preprocess-308"><span class="linenos">308</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
-</span><span id="preprocess-309"><a href="#preprocess-309"><span class="linenos">309</span></a>
-</span><span id="preprocess-310"><a href="#preprocess-310"><span class="linenos">310</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-</span><span id="preprocess-311"><a href="#preprocess-311"><span class="linenos">311</span></a>
-</span><span id="preprocess-312"><a href="#preprocess-312"><span class="linenos">312</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
+</span><span id="preprocess-298"><a href="#preprocess-298"><span class="linenos">298</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="preprocess-299"><a href="#preprocess-299"><span class="linenos">299</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-300"><a href="#preprocess-300"><span class="linenos">300</span></a>
+</span><span id="preprocess-301"><a href="#preprocess-301"><span class="linenos">301</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+</span><span id="preprocess-302"><a href="#preprocess-302"><span class="linenos">302</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="preprocess-303"><a href="#preprocess-303"><span class="linenos">303</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-304"><a href="#preprocess-304"><span class="linenos">304</span></a>
+</span><span id="preprocess-305"><a href="#preprocess-305"><span class="linenos">305</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="preprocess-306"><a href="#preprocess-306"><span class="linenos">306</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
+</span><span id="preprocess-307"><a href="#preprocess-307"><span class="linenos">307</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-308"><a href="#preprocess-308"><span class="linenos">308</span></a>
+</span><span id="preprocess-309"><a href="#preprocess-309"><span class="linenos">309</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
+</span><span id="preprocess-310"><a href="#preprocess-310"><span class="linenos">310</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
+</span><span id="preprocess-311"><a href="#preprocess-311"><span class="linenos">311</span></a>            <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
+</span><span id="preprocess-312"><a href="#preprocess-312"><span class="linenos">312</span></a>            <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
+</span><span id="preprocess-313"><a href="#preprocess-313"><span class="linenos">313</span></a>            <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
+</span><span id="preprocess-314"><a href="#preprocess-314"><span class="linenos">314</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="preprocess-315"><a href="#preprocess-315"><span class="linenos">315</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="preprocess-316"><a href="#preprocess-316"><span class="linenos">316</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
+</span><span id="preprocess-317"><a href="#preprocess-317"><span class="linenos">317</span></a>                <span class="p">)</span>
+</span><span id="preprocess-318"><a href="#preprocess-318"><span class="linenos">318</span></a>
+</span><span id="preprocess-319"><a href="#preprocess-319"><span class="linenos">319</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-320"><a href="#preprocess-320"><span class="linenos">320</span></a>
+</span><span id="preprocess-321"><a href="#preprocess-321"><span class="linenos">321</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="preprocess-322"><a href="#preprocess-322"><span class="linenos">322</span></a>
+</span><span id="preprocess-323"><a href="#preprocess-323"><span class="linenos">323</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
 </span></pre></div>
 
 

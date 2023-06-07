@@ -14,6 +14,8 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     rename_func,
     right_to_substring_sql,
+    safeconcat_sql,
+    safedpipe_sql,
     struct_extract_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
@@ -223,6 +225,8 @@ class Presto(Dialect):
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("TRIM")
 
+        STRICT_STRING_CONCAT = True
+
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
@@ -288,7 +292,9 @@ class Presto(Dialect):
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
             exp.Right: right_to_substring_sql,
+            exp.SafeConcat: safeconcat_sql,
             exp.SafeDivide: no_safe_divide_sql,
+            exp.SafeDPipe: safedpipe_sql,
             exp.Schema: _schema_sql,
             exp.Select: transforms.preprocess(
                 [

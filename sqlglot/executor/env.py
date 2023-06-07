@@ -151,6 +151,7 @@ ENV = {
     "CAST": cast,
     "COALESCE": lambda *args: next((a for a in args if a is not None), None),
     "CONCAT": null_if_any(lambda *args: "".join(args)),
+    "SAFECONCAT": null_if_any(lambda *args: "".join(args)),
     "CONCATWS": null_if_any(lambda this, *args: this.join(args)),
     "DATESTRTODATE": null_if_any(lambda arg: datetime.date.fromisoformat(arg)),
     "DIV": null_if_any(lambda e, this: e / this),

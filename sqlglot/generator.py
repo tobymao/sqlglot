@@ -1745,6 +1745,11 @@ class Generator:
             return self.sql(expression.expressions[0])
         return self.function_fallback_sql(expression)
 
+    def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
+        if len(expression.expressions) == 1:
+            return self.sql(expression.expressions[0])
+        return self.func("CONCAT", *expression.expressions)
+
     def check_sql(self, expression: exp.Check) -> str:
         this = self.sql(expression, key="this")
         return f"CHECK ({this})"
@@ -2073,6 +2078,9 @@ class Generator:
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         return self.binary(expression, "||")
+
+    def safedpipe_sql(self, expression: exp.SafeDPipe) -> str:
+        return self.dpipe_sql(expression)
 
     def div_sql(self, expression: exp.Div) -> str:
         return self.binary(expression, "/")

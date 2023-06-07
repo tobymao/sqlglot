@@ -263,6 +263,14 @@ def inline_array_sql(self: Generator, expression: exp.Array) -> str:
     return f"[{self.expressions(expression)}]"
 
 
+def safeconcat_sql(self: Generator, expression: exp.SafeConcat) -> str:
+    return self.func("CONCAT", *[exp.cast(e, "text") for e in expression.expressions])
+
+
+def safedpipe_sql(self: Generator, expression: exp.SafeDPipe) -> str:
+    return self.func("CONCAT", *[exp.cast(e, "text") for e in expression.flatten()])
+
+
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
     return self.like_sql(
         exp.Like(this=exp.Lower(this=expression.this), expression=expression.expression)

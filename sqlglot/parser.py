@@ -708,6 +708,10 @@ class Parser(metaclass=_Parser):
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
+        "CONCAT": lambda self: self.expression(
+            exp.Concat if self.STRICT_STRING_CONCAT else exp.SafeConcat,
+            expressions=self._parse_csv(self._parse_conjunction),
+        ),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
@@ -778,6 +782,7 @@ class Parser(metaclass=_Parser):
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
     STRICT_CAST = True
+    STRICT_STRING_CONCAT = False
 
     CONVERT_TYPE_FIRST = False
 

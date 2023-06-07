@@ -8,6 +8,8 @@ from sqlglot.dialects.dialect import (
     inline_array_sql,
     no_pivot_sql,
     rename_func,
+    safeconcat_sql,
+    safedpipe_sql,
     var_map_sql,
 )
 from sqlglot.errors import ParseError
@@ -105,6 +107,7 @@ class ClickHouse(Dialect):
         }
 
         LOG_DEFAULTS_TO_LN = True
+        STRICT_STRING_CONCAT = True
 
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
@@ -305,6 +308,8 @@ class ClickHouse(Dialect):
             exp.Quantile: lambda self, e: self.func("quantile", e.args.get("quantile"))
             + f"({self.sql(e, 'this')})",
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
+            exp.SafeConcat: safeconcat_sql,
+            exp.SafeDPipe: safedpipe_sql,
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
         }

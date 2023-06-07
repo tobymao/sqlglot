@@ -237,6 +237,7 @@ class Generator:
 
     JOIN_HINTS = True
     TABLE_HINTS = True
+    IS_BOOL = True
 
     RESERVED_KEYWORDS: t.Set[str] = set()
     WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
@@ -2127,6 +2128,10 @@ class Generator:
         return self.binary(expression, "ILIKE ANY")
 
     def is_sql(self, expression: exp.Is) -> str:
+        if not self.IS_BOOL and isinstance(expression.expression, exp.Boolean):
+            return self.sql(
+                expression.this if expression.expression.this else exp.not_(expression.this)
+            )
         return self.binary(expression, "IS")
 
     def like_sql(self, expression: exp.Like) -> str:

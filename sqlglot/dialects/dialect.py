@@ -138,6 +138,9 @@ class Dialect(metaclass=_Dialect):
     # Determines whether or not an unquoted identifier can start with a digit
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
 
+    # Determines whether or not CONCAT's arguments must be strings
+    STRICT_STRING_CONCAT = False
+
     # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
 
@@ -261,14 +264,6 @@ def arrow_json_extract_scalar_sql(
 
 def inline_array_sql(self: Generator, expression: exp.Array) -> str:
     return f"[{self.expressions(expression)}]"
-
-
-def safeconcat_sql(self: Generator, expression: exp.SafeConcat) -> str:
-    return self.func("CONCAT", *[exp.cast(e, "text") for e in expression.expressions])
-
-
-def safedpipe_sql(self: Generator, expression: exp.SafeDPipe) -> str:
-    return self.func("CONCAT", *[exp.cast(e, "text") for e in expression.flatten()])
 
 
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:

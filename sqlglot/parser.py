@@ -782,7 +782,6 @@ class Parser(metaclass=_Parser):
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
     STRICT_CAST = True
-    STRICT_STRING_CONCAT = False
 
     CONVERT_TYPE_FIRST = False
 
@@ -810,6 +809,7 @@ class Parser(metaclass=_Parser):
     INDEX_OFFSET: int = 0
     UNNEST_COLUMN_ONLY: bool = False
     ALIAS_POST_TABLESAMPLE: bool = False
+    STRICT_STRING_CONCAT = False
     NULL_ORDERING: str = "nulls_are_small"
     SHOW_TRIE: t.Dict = {}
     SET_TRIE: t.Dict = {}

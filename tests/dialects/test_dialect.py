@@ -1177,7 +1177,8 @@ class TestDialect(Validator):
         self.validate_all(
             "CONCAT(a)",
             write={
-                "mysql": "a",
+                "presto": "CAST(a AS VARCHAR)",
+                "trino": "CAST(a AS VARCHAR)",
                 "tsql": "a",
             },
         )

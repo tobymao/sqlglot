@@ -546,7 +546,6 @@ class TestPostgres(Validator):
             "CONCAT(a, b)",
             write={
                 "": "CONCAT(a, b)",
-                "clickhouse": "CONCAT(CAST(a AS TEXT), CAST(b AS TEXT))",
                 "duckdb": "CONCAT(a, b)",
                 "postgres": "CONCAT(a, b)",
                 "presto": "CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR))",

@@ -19,6 +19,29 @@ class TestRedshift(Validator):
         )
 
         self.validate_all(
+            "x is true",
+            write={
+                "redshift": "x IS TRUE",
+                "presto": "x",
+            },
+        )
+        self.validate_all(
+            "x is false",
+            write={
+                "redshift": "x IS FALSE",
+                "presto": "NOT x",
+            },
+        )
+
+        self.validate_all(
+            "x is not false",
+            write={
+                "redshift": "NOT x IS FALSE",
+                "presto": "NOT NOT x",
+            },
+        )
+
+        self.validate_all(
             "SELECT SYSDATE",
             write={
                 "": "SELECT CURRENT_TIMESTAMP()",

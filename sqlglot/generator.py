@@ -1746,7 +1746,9 @@ class Generator:
         return self.function_fallback_sql(expression)
 
     def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
-        return self.concat_sql(expression)
+        if len(expression.expressions) == 1:
+            return self.sql(expression.expressions[0])
+        return self.func("CONCAT", *expression.expressions)
 
     def check_sql(self, expression: exp.Check) -> str:
         this = self.sql(expression, key="this")

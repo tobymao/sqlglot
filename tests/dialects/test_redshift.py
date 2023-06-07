@@ -32,12 +32,18 @@ class TestRedshift(Validator):
                 "presto": "NOT x",
             },
         )
-
         self.validate_all(
             "x is not false",
             write={
                 "redshift": "NOT x IS FALSE",
                 "presto": "NOT NOT x",
+            },
+        )
+        self.validate_all(
+            "LEN(x)",
+            write={
+                "redshift": "LENGTH(x)",
+                "presto": "LENGTH(x)",
             },
         )
 

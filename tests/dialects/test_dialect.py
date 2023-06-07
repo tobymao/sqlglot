@@ -484,6 +484,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(x AS DATE)",
                 "duckdb": "CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
+                "postgres": "CAST(x AS DATE)",
                 "presto": "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
                 "snowflake": "CAST(x AS DATE)",
             },

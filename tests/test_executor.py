@@ -496,6 +496,7 @@ class TestExecutor(unittest.TestCase):
             ("SELECT 1", ["1"], [(1,)]),
             ("SELECT 1 + 2 AS x", ["x"], [(3,)]),
             ("SELECT CONCAT('a', 'b') AS x", ["x"], [("ab",)]),
+            ("SELECT CONCAT('a', 1) AS x", ["x"], [("a1",)]),
             ("SELECT 1 AS x, 2 AS y", ["x", "y"], [(1, 2)]),
             ("SELECT 'foo' LIMIT 1", ["foo"], [("foo",)]),
             (

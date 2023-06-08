@@ -1157,13 +1157,16 @@ class Parser(metaclass=_Parser):
         begin = None
         clone = None
 
+        def extend_props(temp_props: t.Optional[exp.Expression]) -> None:
+            nonlocal properties
+            if properties and temp_props:
+                properties.expressions.extend(temp_props.expressions)
+            elif temp_props:
+                properties = temp_props
+
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
-            temp_properties = self._parse_properties()
-            if properties and temp_properties:
-                properties.expressions.extend(temp_properties.expressions)
-            elif temp_properties:
-                properties = temp_properties
+            extend_props(self._parse_properties())
 
             self._match(TokenType.ALIAS)
             begin = self._match(TokenType.BEGIN)
@@ -1179,20 +1182,12 @@ class Parser(metaclass=_Parser):
 
             # exp.Properties.Location.POST_NAME
             if self._match(TokenType.COMMA):
-                temp_properties = self._parse_properties(before=True)
-                if properties and temp_properties:
-                    properties.expressions.extend(temp_properties.expressions)
-                elif temp_properties:
-                    properties = temp_properties
+                extend_props(self._parse_properties(before=True))
 
             this = self._parse_schema(this=table_parts)
 
             # exp.Properties.Location.POST_SCHEMA and POST_WITH
-            temp_properties = self._parse_properties()
-            if properties and temp_properties:
-                properties.expressions.extend(temp_properties.expressions)
-            elif temp_properties:
-                properties = temp_properties
+            extend_props(self._parse_properties())
 
             self._match(TokenType.ALIAS)
 
@@ -1202,11 +1197,7 @@ class Parser(metaclass=_Parser):
                 or self._match(TokenType.WITH, advance=False)
                 or self._match(TokenType.L_PAREN, advance=False)
             ):
-                temp_properties = self._parse_properties()
-                if properties and temp_properties:
-                    properties.expressions.extend(temp_properties.expressions)
-                elif temp_properties:
-                    properties = temp_properties
+                extend_props(self._parse_properties())
 
             expression = self._parse_ddl_select()
 
@@ -1216,11 +1207,7 @@ class Parser(metaclass=_Parser):
                     index = self._parse_index()
 
                     # exp.Properties.Location.POST_EXPRESSION or exp.Properties.Location.POST_INDEX
-                    temp_properties = self._parse_properties()
-                    if properties and temp_properties:
-                        properties.expressions.extend(temp_properties.expressions)
-                    elif temp_properties:
-                        properties = temp_properties
+                    extend_props(self._parse_properties())
 
                     if not index:
                         break

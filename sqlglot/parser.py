@@ -3615,13 +3615,13 @@ class Parser(metaclass=_Parser):
 
     def _parse_concat(self) -> t.Optional[exp.Expression]:
         args = self._parse_csv(self._parse_conjunction)
+        if self.CONCAT_NULL_OUTPUTS_STRING:
+            args = [exp.func("COALESCE", arg, exp.Literal.string("")) for arg in args]
 
         # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call, so when
         # we find such a call we replace it with its argument.
         if len(args) == 1:
             this = args[0]
-            if self.CONCAT_NULL_OUTPUTS_STRING:
-                this = exp.func("COALESCE", this, exp.Literal.string(""))
         else:
             this = self.expression(
                 exp.Concat if self.strict_string_concat else exp.SafeConcat, expressions=args  # type: ignore

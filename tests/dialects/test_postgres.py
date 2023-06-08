@@ -545,10 +545,10 @@ class TestPostgres(Validator):
         self.validate_all(
             "CONCAT(a, b)",
             write={
-                "": "CONCAT(a, b)",
-                "duckdb": "CONCAT(a, b)",
-                "postgres": "CONCAT(a, b)",
-                "presto": "CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR))",
+                "": "CONCAT(COALESCE(a, ''), COALESCE(b, ''))",
+                "duckdb": "CONCAT(COALESCE(a, ''), COALESCE(b, ''))",
+                "postgres": "CONCAT(COALESCE(a, ''), COALESCE(b, ''))",
+                "presto": "CONCAT(CAST(COALESCE(a, '') AS VARCHAR), CAST(COALESCE(b, '') AS VARCHAR))",
             },
         )
         self.validate_all(

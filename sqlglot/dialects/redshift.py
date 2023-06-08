@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
+from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -34,6 +35,7 @@ class Redshift(Postgres):
                 unit=seq_get(args, 0),
             ),
             "NVL": exp.Coalesce.from_arg_list,
+            "STRTOL": exp.FromBase.from_arg_list,
         }
 
         CONVERT_TYPE_FIRST = True
@@ -105,6 +107,7 @@ class Redshift(Postgres):
             exp.JSONExtractScalar: _json_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.FromBase: rename_func("STRTOL"),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots

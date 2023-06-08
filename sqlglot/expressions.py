@@ -4392,6 +4392,10 @@ class NumberToStr(Func):
     arg_types = {"this": True, "format": True}
 
 
+class FromBase(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Struct(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

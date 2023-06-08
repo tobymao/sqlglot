@@ -183,3 +183,25 @@ class Teradata(Dialect):
             each_sql = f" EACH {each_sql}" if each_sql else ""
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"
+
+        def createable_sql(
+            self,
+            expression: exp.Create,
+            locations: dict[exp.Properties.Location, list[exp.Property]],
+        ) -> str:
+            kind = self.sql(expression, "kind").upper()
+            if kind == "TABLE" and locations.get(exp.Properties.Location.POST_NAME):
+                this_name = self.sql(expression.this, "this")
+                this_properties = self.properties(
+                    exp.Properties(expressions=locations[exp.Properties.Location.POST_NAME]),
+                    wrapped=False,
+                    prefix=",",
+                )
+                schema_exp = self.expressions(expression.this)
+                if self.pretty:
+                    this_schema = f"{self.sep()}({self.seg(schema_exp)}{self.sep()})"
+                else:
+                    this_schema = f"({schema_exp})"
+                return f"{this_name}{this_properties} {this_schema}"
+            else:
+                return super().createable_sql(expression, locations)

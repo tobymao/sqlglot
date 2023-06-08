@@ -1181,7 +1181,7 @@ class Parser(metaclass=_Parser):
             table_parts = self._parse_table_parts(schema=True)
 
             # exp.Properties.Location.POST_NAME
-            if self._match(TokenType.COMMA):
+            if self._match(TokenType.COMMA) or self._match(TokenType.ON, advance=False):
                 extend_props(self._parse_properties(before=True))
 
             this = self._parse_schema(this=table_parts)

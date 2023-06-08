@@ -252,6 +252,17 @@ class ClickHouse(Dialect):
                 wrapped_optional=wrapped_optional or in_props, in_props=in_props
             )
 
+        def _parse_on_property(self) -> t.Optional[exp.Property]:
+            if self._match_text_seq("CLUSTER"):
+                return self._parse_on_cluster()
+            return None
+
+        def _parse_on_cluster(self) -> t.Optional[exp.Property]:
+            this = self._parse_id_var()
+            if this:
+                return self.expression(exp.OnCluster, this=this)
+            return None
+
     class Generator(generator.Generator):
         STRUCT_DELIMITER = ("(", ")")
 
@@ -299,12 +310,25 @@ class ClickHouse(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+            exp.OnCluster: exp.Properties.Location.POST_NAME,
         }
 
         JOIN_HINTS = False
         TABLE_HINTS = False
         EXPLICIT_UNION = True
         GROUPINGS_SEP = ""
+
+        # there's no list in docs, but it can be found in Clickhouse code
+        # see `ClickHouse/src/Parsers/ParserCreate*.cpp`
+        ON_CLUSTER_TARGETS = {
+            "DATABASE",
+            "TABLE",
+            "VIEW",
+            "DICTIONARY",
+            "INDEX",
+            "FUNCTION",
+            "NAMED COLLECTION",
+        }
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if isinstance(expression.this, exp.Alias):
@@ -328,3 +352,27 @@ class ClickHouse(Dialect):
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
             return f"{{{expression.name}: {self.sql(expression, 'kind')}}}"
+
+        def oncluster_sql(self, expression: exp.OnCluster) -> str:
+            return f"ON CLUSTER {self.sql(expression, 'this')}"
+
+        def createable_sql(
+            self,
+            expression: exp.Create,
+            locations: dict[exp.Properties.Location, list[exp.Property]],
+        ) -> str:
+            kind = self.sql(expression, "kind").upper()
+            if kind in self.ON_CLUSTER_TARGETS and locations.get(exp.Properties.Location.POST_NAME):
+                this_name = self.sql(expression.this, "this")
+                this_properties = self.properties(
+                    exp.Properties(expressions=locations[exp.Properties.Location.POST_NAME]),
+                    wrapped=False,
+                )
+                schema_exp = self.expressions(expression.this)
+                if self.pretty:
+                    this_schema = f"{self.sep()}({self.seg(schema_exp)}{self.sep()})"
+                else:
+                    this_schema = f"({schema_exp})"
+                return f"{this_name} {this_properties} {this_schema}"
+            else:
+                return super().createable_sql(expression, locations)

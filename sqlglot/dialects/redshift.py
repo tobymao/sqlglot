@@ -3,8 +3,8 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
-from sqlglot.dialects.postgres import Postgres
 from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 

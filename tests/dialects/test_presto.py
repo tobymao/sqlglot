@@ -7,6 +7,14 @@ class TestPresto(Validator):
 
     def test_cast(self):
         self.validate_all(
+            "SELECT DATE_DIFF('week', CAST(SUBSTR(CAST('2009-01-01' AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST('2009-12-31' AS VARCHAR), 1, 10) AS DATE))",
+            read={"redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD('month', 18, CAST(SUBSTR(CAST('2008-02-28' AS VARCHAR), 1, 10) AS DATE))",
+            read={"redshift": "SELECT DATEADD(month, 18, '2008-02-28')"},
+        )
+        self.validate_all(
             "SELECT TRY_CAST('1970-01-01 00:00:00' AS TIMESTAMP)",
             read={"postgres": "SELECT 'epoch'::TIMESTAMP"},
         )

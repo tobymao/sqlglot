@@ -25,13 +25,13 @@ class Redshift(Postgres):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
             "DATEADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2),
+                this=exp.TsOrDsToDate(this=seq_get(args, 2)),
                 expression=seq_get(args, 1),
                 unit=seq_get(args, 0),
             ),
             "DATEDIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2),
-                expression=seq_get(args, 1),
+                this=exp.TsOrDsToDate(this=seq_get(args, 2)),
+                expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
                 unit=seq_get(args, 0),
             ),
             "NVL": exp.Coalesce.from_arg_list,
@@ -103,11 +103,12 @@ class Redshift(Postgres):
             ),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
+            exp.FromBase: rename_func("STRTOL"),
             exp.JSONExtract: _json_sql,
             exp.JSONExtractScalar: _json_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
-            exp.FromBase: rename_func("STRTOL"),
+            exp.TsOrDsToDate: lambda self, e: self.sql(e.this),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots

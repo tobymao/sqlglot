@@ -3621,13 +3621,11 @@ class Parser(metaclass=_Parser):
         # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call, so when
         # we find such a call we replace it with its argument.
         if len(args) == 1:
-            this = args[0]
-        else:
-            this = self.expression(
-                exp.Concat if self.strict_string_concat else exp.SafeConcat, expressions=args  # type: ignore
-            )
+            return args[0]
 
-        return this
+        return self.expression(
+            exp.Concat if self.strict_string_concat else exp.SafeConcat, expressions=args  # type: ignore
+        )
 
     def _parse_string_agg(self) -> exp.Expression:
         expression: t.Optional[exp.Expression]

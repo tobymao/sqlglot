@@ -11,6 +11,16 @@ class TestRedshift(Validator):
         self.validate_identity("$foo")
 
         self.validate_all(
+            "SELECT STRTOL('abc', 16)",
+            read={
+                "trino": "SELECT FROM_BASE('abc', 16)",
+            },
+            write={
+                "redshift": "SELECT STRTOL('abc', 16)",
+                "trino": "SELECT FROM_BASE('abc', 16)",
+            },
+        )
+        self.validate_all(
             "SELECT SNAPSHOT, type",
             write={
                 "": "SELECT SNAPSHOT, type",

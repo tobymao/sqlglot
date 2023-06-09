@@ -80,12 +80,12 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
     multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""
     diff_sql = f"{sql_func}({self.format_args(expression.this, expression.expression)})"
+
     return f"{diff_sql}{multiplier_sql}"
 
 
 def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
     this = expression.this
-
     if not this.type:
         from sqlglot.optimizer.annotate_types import annotate_types
 
@@ -113,7 +113,7 @@ def _str_to_unix_sql(self: generator.Generator, expression: exp.StrToUnix) -> st
 def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format not in (Hive.time_format, Hive.date_format):
+    if time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS DATE)"
 
@@ -121,7 +121,7 @@ def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> st
 def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format not in (Hive.time_format, Hive.date_format):
+    if time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS TIMESTAMP)"
 
@@ -130,7 +130,7 @@ def _time_format(
     self: generator.Generator, expression: exp.UnixToStr | exp.StrToUnix
 ) -> t.Optional[str]:
     time_format = self.format_time(expression)
-    if time_format == Hive.time_format:
+    if time_format == Hive.TIME_FORMAT:
         return None
     return time_format
 
@@ -144,16 +144,16 @@ def _time_to_str(self: generator.Generator, expression: exp.TimeToStr) -> str:
 def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format and time_format not in (Hive.time_format, Hive.date_format):
+    if time_format and time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
         return f"TO_DATE({this}, {time_format})"
     return f"TO_DATE({this})"
 
 
 class Hive(Dialect):
-    alias_post_tablesample = True
-    identifiers_can_start_with_digit = True
+    ALIAS_POST_TABLESAMPLE = True
+    IDENTIFIERS_CAN_START_WITH_DIGIT = True
 
-    time_mapping = {
+    TIME_MAPPING = {
         "y": "%Y",
         "Y": "%Y",
         "YYYY": "%Y",
@@ -184,9 +184,9 @@ class Hive(Dialect):
         "EEEE": "%A",
     }
 
-    date_format = "'yyyy-MM-dd'"
-    dateint_format = "'yyyyMMdd'"
-    time_format = "'yyyy-MM-dd HH:mm:ss'"
+    DATE_FORMAT = "'yyyy-MM-dd'"
+    DATEINT_FORMAT = "'yyyyMMdd'"
+    TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
@@ -224,9 +224,7 @@ class Hive(Dialect):
             "BASE64": exp.ToBase64.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-                unit=exp.Literal.string("DAY"),
+                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
             ),
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
@@ -234,10 +232,7 @@ class Hive(Dialect):
             ),
             "DATE_SUB": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0),
-                expression=exp.Mul(
-                    this=seq_get(args, 1),
-                    expression=exp.Literal.number(-1),
-                ),
+                expression=exp.Mul(this=seq_get(args, 1), expression=exp.Literal.number(-1)),
                 unit=exp.Literal.string("DAY"),
             ),
             "DATE_FORMAT": lambda args: format_time_lambda(exp.TimeToStr, "hive")(
@@ -349,8 +344,8 @@ class Hive(Dialect):
             exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: rename_func("TO_DATE"),
             exp.DateSub: _add_date_sql,
-            exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.dateint_format}) AS INT)",
-            exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.dateint_format})",
+            exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Hive.DATEINT_FORMAT}) AS INT)",
+            exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {Hive.DATEINT_FORMAT})",
             exp.FileFormatProperty: lambda self, e: f"STORED AS {self.sql(e, 'this') if isinstance(e.this, exp.InputOutputFormat) else e.name.upper()}",
             exp.FromBase64: rename_func("UNBASE64"),
             exp.If: if_sql,
@@ -415,10 +410,7 @@ class Hive(Dialect):
             )
 
         def with_properties(self, properties: exp.Properties) -> str:
-            return self.properties(
-                properties,
-                prefix=self.seg("TBLPROPERTIES"),
-            )
+            return self.properties(properties, prefix=self.seg("TBLPROPERTIES"))
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             if (

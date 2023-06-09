@@ -590,7 +590,7 @@ class TestExpressions(unittest.TestCase):
         unit = parse_one("timestamp_trunc(current_timestamp, week(thursday))")
         self.assertIsNotNone(unit.find(exp.CurrentTimestamp))
         week = unit.find(exp.Week)
-        self.assertEqual(week.this, exp.Var(this="thursday"))
+        self.assertEqual(week.this, exp.var("thursday"))
 
     def test_identifier(self):
         self.assertTrue(exp.to_identifier('"x"').quoted)
@@ -601,7 +601,7 @@ class TestExpressions(unittest.TestCase):
     def test_function_normalizer(self):
         self.assertEqual(parse_one("HELLO()").sql(normalize_functions="lower"), "hello()")
         self.assertEqual(parse_one("hello()").sql(normalize_functions="upper"), "HELLO()")
-        self.assertEqual(parse_one("heLLO()").sql(normalize_functions=None), "heLLO()")
+        self.assertEqual(parse_one("heLLO()").sql(normalize_functions=False), "heLLO()")
         self.assertEqual(parse_one("SUM(x)").sql(normalize_functions="lower"), "sum(x)")
         self.assertEqual(parse_one("sum(x)").sql(normalize_functions="upper"), "SUM(x)")
 

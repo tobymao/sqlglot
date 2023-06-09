@@ -396,7 +396,7 @@ class _Tokenizer(type):
             for comment in klass.COMMENTS
         )
 
-        klass.KEYWORD_TRIE = new_trie(
+        klass._KEYWORD_TRIE = new_trie(
             key.upper()
             for key in (
                 *klass.KEYWORDS,
@@ -456,20 +456,22 @@ class Tokenizer(metaclass=_Tokenizer):
     STRING_ESCAPES = ["'"]
     VAR_SINGLE_TOKENS: t.Set[str] = set()
 
+    # Autofilled
+    IDENTIFIERS_CAN_START_WITH_DIGIT: bool = False
+
     _COMMENTS: t.Dict[str, str] = {}
     _FORMAT_STRINGS: t.Dict[str, t.Tuple[str, TokenType]] = {}
     _IDENTIFIERS: t.Dict[str, str] = {}
     _IDENTIFIER_ESCAPES: t.Set[str] = set()
     _QUOTES: t.Dict[str, str] = {}
     _STRING_ESCAPES: t.Set[str] = set()
+    _KEYWORD_TRIE: t.Dict = {}
 
     KEYWORDS: t.Dict[t.Optional[str], TokenType] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
         **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
-        "{{+": TokenType.BLOCK_START,
-        "{{-": TokenType.BLOCK_START,
-        "+}}": TokenType.BLOCK_END,
-        "-}}": TokenType.BLOCK_END,
+        **{f"{{{{{postfix}": TokenType.BLOCK_START for postfix in ("+", "-")},
+        **{f"{prefix}}}}}": TokenType.BLOCK_END for prefix in ("+", "-")},
         "/*+": TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
@@ -733,7 +735,6 @@ class Tokenizer(metaclass=_Tokenizer):
     ENCODE: t.Optional[str] = None
 
     COMMENTS = ["--", ("/*", "*/"), ("{#", "#}")]
-    KEYWORD_TRIE: t.Dict = {}  # autofilled
 
     __slots__ = (
         "sql",
@@ -748,7 +749,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "_end",
         "_peek",
         "_prev_token_line",
-        "identifiers_can_start_with_digit",
     )
 
     def __init__(self) -> None:
@@ -894,7 +894,7 @@ class Tokenizer(metaclass=_Tokenizer):
         char = chars
         prev_space = False
         skip = False
-        trie = self.KEYWORD_TRIE
+        trie = self._KEYWORD_TRIE
         single_token = char in self.SINGLE_TOKENS
 
         while chars:
@@ -1019,7 +1019,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                elif self.identifiers_can_start_with_digit:  # type: ignore
+                elif self.IDENTIFIERS_CAN_START_WITH_DIGIT:
                     return self._add(TokenType.VAR)
 
                 self._add(TokenType.NUMBER, number_text)

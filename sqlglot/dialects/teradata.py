@@ -31,7 +31,7 @@ class Teradata(Dialect):
             "ST_GEOMETRY": TokenType.GEOMETRY,
         }
 
-        # teradata does not support % for modulus
+        # Teradata does not support % as a modulo operator
         SINGLE_TOKENS = {**tokens.Tokenizer.SINGLE_TOKENS}
         SINGLE_TOKENS.pop("%")
 
@@ -101,7 +101,7 @@ class Teradata(Dialect):
 
         # FROM before SET in Teradata UPDATE syntax
         # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
-        def _parse_update(self) -> exp.Expression:
+        def _parse_update(self) -> exp.Update:
             return self.expression(
                 exp.Update,
                 **{  # type: ignore

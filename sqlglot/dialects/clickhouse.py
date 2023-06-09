@@ -21,8 +21,8 @@ def _lower_func(sql: str) -> str:
 
 
 class ClickHouse(Dialect):
-    normalize_functions = None
-    null_ordering = "nulls_are_last"
+    NORMALIZE_FUNCTIONS: bool | str = False
+    NULL_ORDERING = "nulls_are_last"
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
@@ -163,11 +163,11 @@ class ClickHouse(Dialect):
 
             return this
 
-        def _parse_position(self, haystack_first: bool = False) -> exp.Expression:
+        def _parse_position(self, haystack_first: bool = False) -> exp.StrPosition:
             return super()._parse_position(haystack_first=True)
 
         # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
-        def _parse_cte(self) -> exp.Expression:
+        def _parse_cte(self) -> exp.CTE:
             index = self._index
             try:
                 # WITH <identifier> AS <subquery expression>
@@ -187,17 +187,19 @@ class ClickHouse(Dialect):
         ) -> t.Tuple[t.Optional[Token], t.Optional[Token], t.Optional[Token]]:
             is_global = self._match(TokenType.GLOBAL) and self._prev
             kind_pre = self._match_set(self.JOIN_KINDS, advance=False) and self._prev
+
             if kind_pre:
                 kind = self._match_set(self.JOIN_KINDS) and self._prev
                 side = self._match_set(self.JOIN_SIDES) and self._prev
                 return is_global, side, kind
+
             return (
                 is_global,
                 self._match_set(self.JOIN_SIDES) and self._prev,
                 self._match_set(self.JOIN_KINDS) and self._prev,
             )
 
-        def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Expression]:
+        def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Join]:
             join = super()._parse_join(skip_join_token)
 
             if join:
@@ -227,10 +229,12 @@ class ClickHouse(Dialect):
         ) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
             if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
                 return self._parse_csv(self._parse_lambda)
+
             if self._match(TokenType.L_PAREN):
                 params = self._parse_csv(self._parse_lambda)
                 self._match_r_paren(this)
                 return params
+
             return None
 
         def _parse_quantile(self) -> exp.Quantile:
@@ -247,7 +251,7 @@ class ClickHouse(Dialect):
 
         def _parse_primary_key(
             self, wrapped_optional: bool = False, in_props: bool = False
-        ) -> exp.Expression:
+        ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
             return super()._parse_primary_key(
                 wrapped_optional=wrapped_optional or in_props, in_props=in_props
             )

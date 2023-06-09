@@ -38,7 +38,7 @@ def _parse_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expression]:
 def _str_to_date(self: Hive.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format == Hive.date_format:
+    if time_format == Hive.DATE_FORMAT:
         return f"TO_DATE({this})"
     return f"TO_DATE({this}, {time_format})"
 
@@ -162,11 +162,9 @@ class Spark2(Hive):
         def _parse_add_column(self) -> t.Optional[exp.Expression]:
             return self._match_text_seq("ADD", "COLUMNS") and self._parse_schema()
 
-        def _parse_drop_column(self) -> t.Optional[exp.Expression]:
+        def _parse_drop_column(self) -> t.Optional[exp.Drop | exp.Command]:
             return self._match_text_seq("DROP", "COLUMNS") and self.expression(
-                exp.Drop,
-                this=self._parse_schema(),
-                kind="COLUMNS",
+                exp.Drop, this=self._parse_schema(), kind="COLUMNS"
             )
 
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:

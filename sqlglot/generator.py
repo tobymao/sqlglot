@@ -38,7 +38,7 @@ class Generator:
         max_unsupported: Maximum number of unsupported messages to include in a raised UnsupportedError.
             This is only relevant if unsupported_level is ErrorLevel.RAISE.
             Default: 3
-        leading_comma: Determines whether the comma is leading or trailing in select expressions.
+        leading_comma: Determines whether or not the comma is leading or trailing in select expressions.
             This is only relevant when generating in pretty mode.
             Default: False
         max_text_width: The max number of characters in a segment before creating new lines in pretty mode.

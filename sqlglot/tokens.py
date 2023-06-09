@@ -851,6 +851,12 @@ class Tokenizer(metaclass=_Tokenizer):
     def _text(self) -> str:
         return self.sql[self._start : self._current]
 
+    def peek(self, i: int = 0) -> str:
+        i = self._current + i
+        if i < self.size:
+            return self.sql[i]
+        return ""
+
     def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
         self._prev_token_line = self._line
         self.tokens.append(
@@ -987,8 +993,12 @@ class Tokenizer(metaclass=_Tokenizer):
             if self._peek.isdigit():
                 self._advance()
             elif self._peek == "." and not decimal:
-                decimal = True
-                self._advance()
+                after = self.peek(1)
+                if after.isdigit() or not after.strip():
+                    decimal = True
+                    self._advance()
+                else:
+                    return self._add(TokenType.VAR)
             elif self._peek in ("-", "+") and scientific == 1:
                 scientific += 1
                 self._advance()

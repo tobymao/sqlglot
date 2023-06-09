@@ -1500,6 +1500,7 @@ class Index(Expression):
     arg_types = {
         "this": False,
         "table": False,
+        "using": False,
         "where": False,
         "columns": False,
         "unique": False,

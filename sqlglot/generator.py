@@ -310,7 +310,7 @@ class Generator:
         self.max_text_width = max_text_width
         self.comments = comments
 
-        # This is both a Dialect property and a generator argument, so we prioritize the latter
+        # This is both a Dialect property and a Generator argument, so we prioritize the latter
         self.normalize_functions = (
             self.NORMALIZE_FUNCTIONS if normalize_functions is None else normalize_functions
         )

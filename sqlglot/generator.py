@@ -642,35 +642,31 @@ class Generator:
         this = f" {this}" if this else ""
         return f"UNIQUE{this}"
 
+    def createable_sql(
+        self, expression: exp.Create, locations: dict[exp.Properties.Location, list[exp.Property]]
+    ) -> str:
+        return self.sql(expression, "this")
+
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
         properties = expression.args.get("properties")
-        properties_exp = expression.copy()
         properties_locs = self.locate_properties(properties) if properties else {}
+
+        this = self.createable_sql(expression, properties_locs)
+
+        properties_sql = ""
         if properties_locs.get(exp.Properties.Location.POST_SCHEMA) or properties_locs.get(
             exp.Properties.Location.POST_WITH
         ):
-            properties_exp.set(
-                "properties",
+            properties_sql = self.sql(
                 exp.Properties(
                     expressions=[
                         *properties_locs[exp.Properties.Location.POST_SCHEMA],
                         *properties_locs[exp.Properties.Location.POST_WITH],
                     ]
-                ),
+                )
             )
-        if kind == "TABLE" and properties_locs.get(exp.Properties.Location.POST_NAME):
-            this_name = self.sql(expression.this, "this")
-            this_properties = self.properties(
-                exp.Properties(expressions=properties_locs[exp.Properties.Location.POST_NAME]),
-                wrapped=False,
-            )
-            this_schema = f"({self.expressions(expression.this)})"
-            this = f"{this_name}, {this_properties} {this_schema}"
-            properties_sql = ""
-        else:
-            this = self.sql(expression, "this")
-            properties_sql = self.sql(properties_exp, "properties")
+
         begin = " BEGIN" if expression.args.get("begin") else ""
         expression_sql = self.sql(expression, "expression")
         if expression_sql:
@@ -1582,8 +1578,11 @@ class Generator:
     def schema_sql(self, expression: exp.Schema) -> str:
         this = self.sql(expression, "this")
         this = f"{this} " if this else ""
-        sql = f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
+        sql = self.schema_columns_sql(expression)
         return f"{this}{sql}"
+
+    def schema_columns_sql(self, expression: exp.Schema) -> str:
+        return f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
 
     def star_sql(self, expression: exp.Star) -> str:
         except_ = self.expressions(expression, key="except", flat=True)
@@ -2344,6 +2343,9 @@ class Generator:
 
     def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"
+
+    def oncluster_sql(self, expression: exp.OnCluster) -> str:
+        return ""
 
 
 def cached_generator(

@@ -284,7 +284,6 @@ class TokenType(AutoName):
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
-    TO = auto()
     TOP = auto()
     THEN = auto()
     TRUE = auto()
@@ -615,7 +614,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "TEMP": TokenType.TEMPORARY,
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
-        "TO": TokenType.TO,
         "TRUE": TokenType.TRUE,
         "UNION": TokenType.UNION,
         "UNNEST": TokenType.UNNEST,

@@ -634,6 +634,7 @@ class Parser(metaclass=_Parser):
         "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
         "TEMP": lambda self: self.expression(exp.TemporaryProperty),
         "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty),
+        "TO": lambda self: self._parse_to_table(),
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
         "TTL": lambda self: self._parse_ttl(),
         "USING": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
@@ -1049,6 +1050,12 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists
         )
+
+    def _parse_to_table(
+        self,
+    ) -> exp.ToTableProperty:
+        table = self._parse_table_parts(schema=True)
+        return self.expression(exp.ToTableProperty, this=table)
 
     # https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
     def _parse_ttl(self) -> exp.Expression:

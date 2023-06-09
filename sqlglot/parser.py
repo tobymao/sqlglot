@@ -3740,7 +3740,7 @@ class Parser(metaclass=_Parser):
             encoding=encoding,
         )
 
-    def _parse_logarithm(self) -> exp.Log | exp.Ln:
+    def _parse_logarithm(self) -> exp.Func:
         # Default argument order is base, expression
         args = self._parse_csv(self._parse_range)
 
@@ -3749,9 +3749,8 @@ class Parser(metaclass=_Parser):
                 args.reverse()
             return exp.Log.from_arg_list(args)
 
-        return t.cast(
-            exp.Log | exp.Ln,
-            self.expression(exp.Ln if self.LOG_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)),
+        return self.expression(
+            exp.Ln if self.LOG_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)
         )
 
     def _parse_match_against(self) -> exp.MatchAgainst:

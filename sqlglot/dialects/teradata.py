@@ -197,11 +197,6 @@ class Teradata(Dialect):
                     wrapped=False,
                     prefix=",",
                 )
-                schema_exp = self.expressions(expression.this)
-                if self.pretty:
-                    this_schema = f"{self.sep()}({self.seg(schema_exp)}{self.sep()})"
-                else:
-                    this_schema = f"({schema_exp})"
-                return f"{this_name}{this_properties} {this_schema}"
-            else:
-                return super().createable_sql(expression, locations)
+                this_schema = self.columns_sql(expression.this)
+                return f"{this_name}{this_properties}{self.sep()}{this_schema}"
+            return super().createable_sql(expression, locations)

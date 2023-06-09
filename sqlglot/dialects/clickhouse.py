@@ -253,14 +253,13 @@ class ClickHouse(Dialect):
             )
 
         def _parse_on_property(self) -> t.Optional[exp.Property]:
+            index = self._index
             if self._match_text_seq("CLUSTER"):
-                return self._parse_on_cluster()
-            return None
-
-        def _parse_on_cluster(self) -> t.Optional[exp.Property]:
-            this = self._parse_id_var()
-            if this:
-                return self.expression(exp.OnCluster, this=this)
+                this = self._parse_id_var()
+                if this:
+                    return self.expression(exp.OnCluster, this=this)
+                else:
+                    self._retreat(index)
             return None
 
     class Generator(generator.Generator):
@@ -364,15 +363,9 @@ class ClickHouse(Dialect):
             kind = self.sql(expression, "kind").upper()
             if kind in self.ON_CLUSTER_TARGETS and locations.get(exp.Properties.Location.POST_NAME):
                 this_name = self.sql(expression.this, "this")
-                this_properties = self.properties(
-                    exp.Properties(expressions=locations[exp.Properties.Location.POST_NAME]),
-                    wrapped=False,
+                this_properties = " ".join(
+                    [self.sql(prop) for prop in locations[exp.Properties.Location.POST_NAME]]
                 )
-                schema_exp = self.expressions(expression.this)
-                if self.pretty:
-                    this_schema = f"{self.sep()}({self.seg(schema_exp)}{self.sep()})"
-                else:
-                    this_schema = f"({schema_exp})"
-                return f"{this_name} {this_properties} {this_schema}"
-            else:
-                return super().createable_sql(expression, locations)
+                this_schema = self.columns_sql(expression.this)
+                return f"{this_name}{self.sep()}{this_properties}{self.sep()}{this_schema}"
+            return super().createable_sql(expression, locations)

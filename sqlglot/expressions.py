@@ -1869,6 +1869,10 @@ class EngineProperty(Property):
     arg_types = {"this": True}
 
 
+class ToTableProperty(Property):
+    arg_types = {"this": True}
+
+
 class ExecuteAsProperty(Property):
     arg_types = {"this": True}
 

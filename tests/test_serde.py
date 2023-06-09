@@ -27,7 +27,7 @@ class TestSerDe(unittest.TestCase):
         self.assertEqual(before, after)
 
     def test_type_annotations(self):
-        before = annotate_types(parse_one("CAST('1' AS INT)"))
+        before = annotate_types(parse_one("CAST('1' AS STRUCT<x ARRAY<INT>>)"))
         after = self.dump_load(before)
         self.assertEqual(before.type, after.type)
         self.assertEqual(before.this.type, after.this.type)

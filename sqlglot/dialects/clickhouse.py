@@ -256,7 +256,7 @@ class ClickHouse(Dialect):
                 wrapped_optional=wrapped_optional or in_props, in_props=in_props
             )
 
-        def _parse_on_property(self) -> t.Optional[exp.Property]:
+        def _parse_on_property(self) -> t.Optional[exp.Expression]:
             index = self._index
             if self._match_text_seq("CLUSTER"):
                 this = self._parse_id_var()

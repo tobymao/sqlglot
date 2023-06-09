@@ -1566,7 +1566,7 @@ class Parser(metaclass=_Parser):
             return exp.NoPrimaryIndexProperty()
         return None
 
-    def _parse_on_property(self) -> t.Optional[exp.OnCommitProperty]:
+    def _parse_on_property(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("COMMIT", "PRESERVE", "ROWS"):
             return exp.OnCommitProperty()
         elif self._match_text_seq("COMMIT", "DELETE", "ROWS"):

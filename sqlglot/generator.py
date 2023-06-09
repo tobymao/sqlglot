@@ -139,7 +139,7 @@ class Generator:
     # Whether or not table hints should be generated
     TABLE_HINTS = True
 
-    # Whether or not comparing against booleans (e.g. x IS TRUE) is supported 
+    # Whether or not comparing against booleans (e.g. x IS TRUE) is supported
     IS_BOOLEAN_ALLOWED = True
 
     TYPE_MAPPING = {

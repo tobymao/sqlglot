@@ -126,16 +126,31 @@ class _Dialect(type):
 
 
 class Dialect(metaclass=_Dialect):
+    # Determines the base index offset for arrays
     INDEX_OFFSET = 0
+
+    # If true unnest table aliases are considered only as column aliases
     UNNEST_COLUMN_ONLY = False
+
+    # Determines whether or not the table alias comes after tablesample
     ALIAS_POST_TABLESAMPLE = False
+
+    # Determines whether or not an unquoted identifier can start with a digit
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
+
+    # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
+
+    # Indicates the default null ordering method to use if not explicitly set
+    # Options are: "nulls_are_small", "nulls_are_large", "nulls_are_last"
     NULL_ORDERING = "nulls_are_small"
 
     DATE_FORMAT = "'%Y-%m-%d'"
     DATEINT_FORMAT = "'%Y%m%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
+
+    # Custom time mappings in which the key represents a python time format
+    # and the value the target time format
     TIME_MAPPING: t.Dict[str, str] = {}
 
     # autofilled
@@ -143,11 +158,9 @@ class Dialect(metaclass=_Dialect):
     parser_class = None
     generator_class = None
 
-    QUOTE_START: t.Optional[str] = None
-    QUOTE_END: t.Optional[str] = None
-    IDENTIFIER_START: t.Optional[str] = None
-    IDENTIFIER_END: t.Optional[str] = None
+    # A trie of the time_mapping keys
     TIME_TRIE: t.Optional[t.Dict] = None
+
     INVERSE_TIME_MAPPING: t.Optional[t.Dict[str, str]] = None
     INVERSE_TIME_TRIE: t.Optional[t.Dict] = None
 

@@ -243,12 +243,6 @@ class Generator:
     # Autofilled
     TIME_MAPPING: t.Dict[str, str] = {}
     TIME_TRIE: t.Dict = {}
-    QUOTE_START = "'"
-    QUOTE_END = "'"
-    IDENTIFIER_START = '"'
-    IDENTIFIER_END = '"'
-    STRING_ESCAPE = "'"
-    IDENTIFIER_ESCAPE = '"'
     INDEX_OFFSET = 0
     UNNEST_COLUMN_ONLY = False
     ALIAS_POST_TABLESAMPLE = False
@@ -256,6 +250,15 @@ class Generator:
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
 
+    # Delimiters for quotes, identifiers and the corresponding escape characters
+    QUOTE_START = "'"
+    QUOTE_END = "'"
+    IDENTIFIER_START = '"'
+    IDENTIFIER_END = '"'
+    STRING_ESCAPE = "'"
+    IDENTIFIER_ESCAPE = '"'
+
+    # Delimiters for bit, hex, byte and raw literals
     BIT_START: t.Optional[str] = None
     BIT_END: t.Optional[str] = None
     HEX_START: t.Optional[str] = None

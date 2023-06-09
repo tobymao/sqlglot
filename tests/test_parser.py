@@ -521,3 +521,6 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             parse_one("create materialized table x").sql(), "CREATE MATERIALIZED TABLE x"
         )
+
+    def test_parse_floats(self):
+        self.assertTrue(parse_one("1. ").is_number)

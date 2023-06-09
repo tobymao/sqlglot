@@ -140,7 +140,7 @@ class Generator:
     TABLE_HINTS = True
 
     # Whether or not comparing against booleans (e.g. x IS TRUE) is supported
-    IS_BOOLEAN_ALLOWED = True
+    IS_BOOL_ALLOWED = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2105,7 +2105,7 @@ class Generator:
         return self.binary(expression, "ILIKE ANY")
 
     def is_sql(self, expression: exp.Is) -> str:
-        if not self.IS_BOOLEAN_ALLOWED and isinstance(expression.expression, exp.Boolean):
+        if not self.IS_BOOL_ALLOWED and isinstance(expression.expression, exp.Boolean):
             return self.sql(
                 expression.this if expression.expression.this else exp.not_(expression.this)
             )

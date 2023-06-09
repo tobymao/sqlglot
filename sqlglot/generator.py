@@ -1578,10 +1578,10 @@ class Generator:
     def schema_sql(self, expression: exp.Schema) -> str:
         this = self.sql(expression, "this")
         this = f"{this} " if this else ""
-        sql = self.columns_sql(expression)
+        sql = self.schema_columns_sql(expression)
         return f"{this}{sql}"
 
-    def columns_sql(self, expression: exp.Schema) -> str:
+    def schema_columns_sql(self, expression: exp.Schema) -> str:
         return f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
 
     def star_sql(self, expression: exp.Star) -> str:

@@ -366,6 +366,6 @@ class ClickHouse(Dialect):
                 this_properties = " ".join(
                     [self.sql(prop) for prop in locations[exp.Properties.Location.POST_NAME]]
                 )
-                this_schema = self.columns_sql(expression.this)
+                this_schema = self.schema_columns_sql(expression.this)
                 return f"{this_name}{self.sep()}{this_properties}{self.sep()}{this_schema}"
             return super().createable_sql(expression, locations)

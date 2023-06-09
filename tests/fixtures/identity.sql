@@ -601,6 +601,7 @@ CREATE FUNCTION a.b.c()
 CREATE INDEX abc ON t (a)
 CREATE INDEX abc ON t (a, b, b)
 CREATE INDEX abc ON t (a NULLS LAST)
+CREATE INDEX pointloc ON points USING GIST(BOX(location, location))
 CREATE UNIQUE INDEX abc ON t (a, b, b)
 CREATE UNIQUE INDEX IF NOT EXISTS my_idx ON tbl (a, b)
 CREATE SCHEMA x

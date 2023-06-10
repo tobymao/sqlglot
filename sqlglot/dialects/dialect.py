@@ -159,7 +159,7 @@ class Dialect(metaclass=_Dialect):
     generator_class = Generator
 
     # A trie of the time_mapping keys
-    TIME_TRIE: t.Optional[t.Dict] = None
+    TIME_TRIE: t.Dict = {}
 
     INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
     INVERSE_TIME_TRIE: t.Dict = {}

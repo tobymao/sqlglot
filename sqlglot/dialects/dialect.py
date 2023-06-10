@@ -154,15 +154,15 @@ class Dialect(metaclass=_Dialect):
     TIME_MAPPING: t.Dict[str, str] = {}
 
     # autofilled
-    tokenizer_class = None
-    parser_class = None
-    generator_class = None
+    tokenizer_class = Tokenizer
+    parser_class = Parser
+    generator_class = Generator
 
     # A trie of the time_mapping keys
     TIME_TRIE: t.Optional[t.Dict] = None
 
-    INVERSE_TIME_MAPPING: t.Optional[t.Dict[str, str]] = None
-    INVERSE_TIME_TRIE: t.Optional[t.Dict] = None
+    INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
+    INVERSE_TIME_TRIE: t.Dict = {}
 
     def __eq__(self, other: t.Any) -> bool:
         return type(self) == other
@@ -220,14 +220,14 @@ class Dialect(metaclass=_Dialect):
     @property
     def tokenizer(self) -> Tokenizer:
         if not hasattr(self, "_tokenizer"):
-            self._tokenizer = t.cast(t.Type[Tokenizer], self.tokenizer_class)()
+            self._tokenizer = self.tokenizer_class()
         return self._tokenizer
 
     def parser(self, **opts) -> Parser:
-        return t.cast(t.Type[Parser], self.parser_class)(**opts)
+        return self.parser_class(**opts)
 
     def generator(self, **opts) -> Generator:
-        return t.cast(t.Type[Generator], self.generator_class)(**opts)
+        return self.generator_class(**opts)
 
 
 DialectType = t.Union[str, Dialect, t.Type[Dialect], None]

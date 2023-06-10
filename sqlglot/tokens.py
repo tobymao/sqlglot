@@ -467,7 +467,7 @@ class Tokenizer(metaclass=_Tokenizer):
     _STRING_ESCAPES: t.Set[str] = set()
     _KEYWORD_TRIE: t.Dict = {}
 
-    KEYWORDS: t.Dict[t.Optional[str], TokenType] = {
+    KEYWORDS: t.Dict[str, TokenType] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
         **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
         **{f"{{{{{postfix}": TokenType.BLOCK_START for postfix in ("+", "-")},
@@ -1013,7 +1013,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     literal += self._peek.upper()
                     self._advance()
 
-                token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal))
+                token_type = self.KEYWORDS.get(self.NUMERIC_LITERALS.get(literal, ""))
 
                 if token_type:
                     self._add(TokenType.NUMBER, number_text)

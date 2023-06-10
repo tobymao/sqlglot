@@ -16,17 +16,6 @@ from sqlglot.dialects.dialect import (
 )
 
 
-def _str_to_time_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
-    return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
-
-
-def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
-    time_format = self.format_time(expression)
-    if time_format and time_format not in (Drill.TIME_FORMAT, Drill.DATE_FORMAT):
-        return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
-    return f"CAST({self.sql(expression, 'this')} AS DATE)"
-
-
 def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")

@@ -931,7 +931,7 @@ ORDER  BY cnt
 LIMIT 100;
 WITH "_u_0" AS (
   SELECT DISTINCT
-    "date_dim"."d_month_seq" AS "_col_0"
+    "date_dim"."d_month_seq" AS "d_month_seq"
   FROM "date_dim" AS "date_dim"
   WHERE
     "date_dim"."d_moy" = 7 AND "date_dim"."d_year" = 1998
@@ -949,7 +949,7 @@ SELECT
 FROM "customer_address" AS "customer_address"
 CROSS JOIN "_u_0" AS "_u_0"
 JOIN "date_dim" AS "date_dim"
-  ON "date_dim"."d_month_seq" = "_u_0"."_col_0"
+  ON "date_dim"."d_month_seq" = "_u_0"."d_month_seq"
 JOIN "store_sales" AS "store_sales"
   ON "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
 JOIN "customer" AS "customer"
@@ -4890,7 +4890,7 @@ WHERE  i_manufact_id BETWEEN 765 AND 765 + 40
 ORDER  BY i_product_name
 LIMIT 100;
 SELECT DISTINCT
-  "i1"."i_product_name" AS "_col_0"
+  "i1"."i_product_name" AS "i_product_name"
 FROM "item" AS "i1"
 WHERE
   "i1"."i_manufact_id" <= 805

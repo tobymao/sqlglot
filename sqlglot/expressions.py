@@ -3620,6 +3620,10 @@ class Not(Unary):
 class Paren(Unary):
     arg_types = {"this": True, "with": False}
 
+    @property
+    def output_name(self) -> str:
+        return self.this.name
+
 
 class Neg(Unary):
     pass

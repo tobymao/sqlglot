@@ -3812,8 +3812,8 @@ class Parser(metaclass=_Parser):
             needle = seq_get(args, 0)
             haystack = seq_get(args, 1)
 
-        return self.validate_expression(
-            exp.StrPosition(this=haystack, substr=needle, position=seq_get(args, 2)), args
+        return self.expression(
+            exp.StrPosition, this=haystack, substr=needle, position=seq_get(args, 2)
         )
 
     def _parse_join_hint(self, func_name: str) -> exp.JoinHint:

@@ -285,8 +285,6 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             elif isinstance(column_type, str):
                 return self._to_data_type(column_type.upper(), dialect=dialect)
 
-            raise SchemaError(f"Unknown column type '{column_type}'")
-
         return exp.DataType.build("unknown")
 
     def _normalize(self, schema: t.Dict) -> t.Dict:

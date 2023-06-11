@@ -372,3 +372,11 @@ class Presto(Dialect):
                     start = exp.Cast(this=start, to=to)
 
             return self.func("SEQUENCE", start, end, step)
+
+        def offset_limit_modifiers(
+            self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
+        ) -> t.List[str]:
+            return [
+                self.sql(expression, "offset"),
+                self.sql(limit),
+            ]

@@ -3539,9 +3539,7 @@ class Parser(metaclass=_Parser):
         bracket_kind = self._prev.token_type
 
         if self._match(TokenType.COLON):
-            expressions: t.List[t.Optional[exp.Expression]] = [
-                self.expression(exp.Slice, expression=self._parse_conjunction())
-            ]
+            expressions = [self.expression(exp.Slice, expression=self._parse_conjunction())]
         else:
             expressions = self._parse_csv(lambda: self._parse_slice(self._parse_conjunction()))
 

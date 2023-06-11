@@ -64,9 +64,9 @@ def _format_time_lambda(
             format=exp.Literal.string(
                 format_time(
                     args[0].name,
-                    {**TSQL.time_mapping, **FULL_FORMAT_TIME_MAPPING}
+                    {**TSQL.TIME_MAPPING, **FULL_FORMAT_TIME_MAPPING}
                     if full_format_mapping
-                    else TSQL.time_mapping,
+                    else TSQL.TIME_MAPPING,
                 )
             ),
         )
@@ -86,9 +86,9 @@ def _parse_format(args: t.List) -> exp.Expression:
     return exp.TimeToStr(
         this=args[0],
         format=exp.Literal.string(
-            format_time(fmt.name, TSQL.format_time_mapping)
+            format_time(fmt.name, TSQL.FORMAT_TIME_MAPPING)
             if len(fmt.name) == 1
-            else format_time(fmt.name, TSQL.time_mapping)
+            else format_time(fmt.name, TSQL.TIME_MAPPING)
         ),
     )
 
@@ -138,7 +138,7 @@ def _format_sql(self: generator.Generator, expression: exp.NumberToStr | exp.Tim
         if isinstance(expression, exp.NumberToStr)
         else exp.Literal.string(
             format_time(
-                expression.text("format"), t.cast(t.Dict[str, str], TSQL.inverse_time_mapping)
+                expression.text("format"), t.cast(t.Dict[str, str], TSQL.INVERSE_TIME_MAPPING)
             )
         )
     )
@@ -166,10 +166,10 @@ def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> s
 
 
 class TSQL(Dialect):
-    null_ordering = "nulls_are_small"
-    time_format = "'yyyy-mm-dd hh:mm:ss'"
+    NULL_ORDERING = "nulls_are_small"
+    TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
 
-    time_mapping = {
+    TIME_MAPPING = {
         "year": "%Y",
         "qq": "%q",
         "q": "%q",
@@ -213,7 +213,7 @@ class TSQL(Dialect):
         "yy": "%y",
     }
 
-    convert_format_mapping = {
+    CONVERT_FORMAT_MAPPING = {
         "0": "%b %d %Y %-I:%M%p",
         "1": "%m/%d/%y",
         "2": "%y.%m.%d",
@@ -253,8 +253,8 @@ class TSQL(Dialect):
         "120": "%Y-%m-%d %H:%M:%S",
         "121": "%Y-%m-%d %H:%M:%S.%f",
     }
-    # not sure if complete
-    format_time_mapping = {
+
+    FORMAT_TIME_MAPPING = {
         "y": "%B %Y",
         "d": "%m/%d/%Y",
         "H": "%-H",
@@ -312,9 +312,7 @@ class TSQL(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CHARINDEX": lambda args: exp.StrPosition(
-                this=seq_get(args, 1),
-                substr=seq_get(args, 0),
-                position=seq_get(args, 2),
+                this=seq_get(args, 1), substr=seq_get(args, 0), position=seq_get(args, 2)
             ),
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
             "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
@@ -400,7 +398,7 @@ class TSQL(Dialect):
             table.set("system_time", self._parse_system_time())
             return table
 
-        def _parse_returns(self) -> exp.Expression:
+        def _parse_returns(self) -> exp.ReturnsProperty:
             table = self._parse_id_var(any_token=False, tokens=self.RETURNS_TABLE_TOKENS)
             returns = super()._parse_returns()
             returns.set("table", table)
@@ -423,12 +421,12 @@ class TSQL(Dialect):
                 format_val = self._parse_number()
                 format_val_name = format_val.name if format_val else ""
 
-                if format_val_name not in TSQL.convert_format_mapping:
+                if format_val_name not in TSQL.CONVERT_FORMAT_MAPPING:
                     raise ValueError(
                         f"CONVERT function at T-SQL does not support format style {format_val_name}"
                     )
 
-                format_norm = exp.Literal.string(TSQL.convert_format_mapping[format_val_name])
+                format_norm = exp.Literal.string(TSQL.CONVERT_FORMAT_MAPPING[format_val_name])
 
                 # Check whether the convert entails a string to date format
                 if to.this == DataType.Type.DATE:

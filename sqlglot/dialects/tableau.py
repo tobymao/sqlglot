@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp, generator, parser, transforms
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, rename_func
 
 
 class Tableau(Dialect):
@@ -11,6 +11,7 @@ class Tableau(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.Coalesce: rename_func("IFNULL"),
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
         }
 
@@ -24,9 +25,6 @@ class Tableau(Dialect):
             true = self.sql(expression, "true")
             false = self.sql(expression, "false")
             return f"IF {this} THEN {true} ELSE {false} END"
-
-        def coalesce_sql(self, expression: exp.Coalesce) -> str:
-            return f"IFNULL({self.sql(expression, 'this')}, {self.expressions(expression)})"
 
         def count_sql(self, expression: exp.Count) -> str:
             this = expression.this

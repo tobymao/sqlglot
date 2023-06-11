@@ -394,7 +394,7 @@ def _lambda_sql(self, e: exp.Lambda) -> str:
     names = {e.name.lower() for e in e.expressions}
 
     e = e.transform(
-        lambda n: exp.Var(this=n.name)
+        lambda n: exp.var(n.name)
         if isinstance(n, exp.Identifier) and n.name.lower() in names
         else n
     )

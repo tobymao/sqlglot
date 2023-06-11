@@ -16,21 +16,10 @@ from sqlglot.dialects.dialect import (
 )
 
 
-def _str_to_time_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
-    return f"STRPTIME({self.sql(expression, 'this')}, {self.format_time(expression)})"
-
-
-def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
-    time_format = self.format_time(expression)
-    if time_format and time_format not in (Drill.time_format, Drill.date_format):
-        return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
-    return f"CAST({self.sql(expression, 'this')} AS DATE)"
-
-
 def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
-        unit = exp.Var(this=expression.text("unit").upper() or "DAY")
+        unit = exp.var(expression.text("unit").upper() or "DAY")
         return (
             f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
         )
@@ -41,19 +30,19 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
 def _str_to_date(self: generator.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format == Drill.date_format:
+    if time_format == Drill.DATE_FORMAT:
         return f"CAST({this} AS DATE)"
     return f"TO_DATE({this}, {time_format})"
 
 
 class Drill(Dialect):
-    normalize_functions = None
-    null_ordering = "nulls_are_last"
-    date_format = "'yyyy-MM-dd'"
-    dateint_format = "'yyyyMMdd'"
-    time_format = "'yyyy-MM-dd HH:mm:ss'"
+    NORMALIZE_FUNCTIONS: bool | str = False
+    NULL_ORDERING = "nulls_are_last"
+    DATE_FORMAT = "'yyyy-MM-dd'"
+    DATEINT_FORMAT = "'yyyyMMdd'"
+    TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
-    time_mapping = {
+    TIME_MAPPING = {
         "y": "%Y",
         "Y": "%Y",
         "YYYY": "%Y",
@@ -135,8 +124,8 @@ class Drill(Dialect):
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("SUB"),
-            exp.DateToDi: lambda self, e: f"CAST(TO_DATE({self.sql(e, 'this')}, {Drill.dateint_format}) AS INT)",
-            exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS VARCHAR), {Drill.dateint_format})",
+            exp.DateToDi: lambda self, e: f"CAST(TO_DATE({self.sql(e, 'this')}, {Drill.DATEINT_FORMAT}) AS INT)",
+            exp.DiToDate: lambda self, e: f"TO_DATE(CAST({self.sql(e, 'this')} AS VARCHAR), {Drill.DATEINT_FORMAT})",
             exp.If: lambda self, e: f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})",
             exp.ILike: lambda self, e: f" {self.sql(e, 'this')} `ILIKE` {self.sql(e, 'expression')}",
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
@@ -154,7 +143,7 @@ class Drill(Dialect):
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.TryCast: no_trycast_sql,
-            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD(CAST({self.sql(e, 'this')} AS DATE), {self.sql(exp.Interval(this=e.expression, unit=exp.Var(this='DAY')))})",
+            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD(CAST({self.sql(e, 'this')} AS DATE), {self.sql(exp.Interval(this=e.expression, unit=exp.var('DAY')))})",
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("drill"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         }

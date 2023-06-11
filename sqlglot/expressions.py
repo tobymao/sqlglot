@@ -3913,6 +3913,7 @@ class Ceil(Func):
 class Coalesce(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
+    _sql_names = ["COALESCE", "IFNULL", "NVL"]
 
 
 class Concat(Func):
@@ -4109,11 +4110,6 @@ class Hex(Func):
 
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
-
-
-class IfNull(Func):
-    arg_types = {"this": True, "expression": False}
-    _sql_names = ["IFNULL", "NVL"]
 
 
 class Initcap(Func):

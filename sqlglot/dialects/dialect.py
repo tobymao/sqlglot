@@ -122,7 +122,7 @@ class _Dialect(type):
                 if hasattr(subclass, name):
                     setattr(subclass, name, value)
 
-        if klass.STRICT_STRING_CONCAT:
+        if not klass.STRICT_STRING_CONCAT:
             klass.parser_class.BITWISE[TokenType.DPIPE] = exp.SafeDPipe
 
         return klass

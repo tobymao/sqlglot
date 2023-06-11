@@ -440,6 +440,8 @@ class TestPresto(Validator):
         )
 
     def test_presto(self):
+        self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
+        self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
         self.validate_identity("SELECT * FROM (VALUES (1))")
         self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")

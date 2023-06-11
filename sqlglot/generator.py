@@ -1526,7 +1526,7 @@ class Generator:
         return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}"
 
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
-        limit = expression.args.get("limit")
+        limit: t.Optional[exp.Fetch | exp.Limit] = expression.args.get("limit")
 
         if self.LIMIT_FETCH == "LIMIT" and isinstance(limit, exp.Fetch):
             limit = exp.Limit(expression=limit.args.get("count"))
@@ -1545,11 +1545,18 @@ class Generator:
             self.sql(expression, "having"),
             *self.after_having_modifiers(expression),
             self.sql(expression, "order"),
-            self.sql(expression, "offset") if fetch else self.sql(limit),
-            self.sql(limit) if fetch else self.sql(expression, "offset"),
+            *self.offset_limit_modifiers(expression, fetch, limit),
             *self.after_limit_modifiers(expression),
             sep="",
         )
+
+    def offset_limit_modifiers(
+        self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]
+    ) -> t.List[str]:
+        return [
+            self.sql(expression, "offset") if fetch else self.sql(limit),
+            self.sql(limit) if fetch else self.sql(expression, "offset"),
+        ]
 
     def after_having_modifiers(self, expression: exp.Expression) -> t.List[str]:
         return [

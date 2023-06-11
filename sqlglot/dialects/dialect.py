@@ -153,7 +153,7 @@ class Dialect(metaclass=_Dialect):
     # and the value the target time format
     TIME_MAPPING: t.Dict[str, str] = {}
 
-    # autofilled
+    # Autofilled
     tokenizer_class = Tokenizer
     parser_class = Parser
     generator_class = Generator

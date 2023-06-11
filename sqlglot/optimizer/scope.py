@@ -620,7 +620,7 @@ def _traverse_tables(scope):
             table_name = expression.name
             source_name = expression.alias_or_name
 
-            if table_name in scope.sources:
+            if table_name in scope.sources and not expression.db:
                 # This is a reference to a parent source (e.g. a CTE), not an actual table, unless
                 # it is pivoted, because then we get back a new table and hence a new source.
                 pivots = expression.args.get("pivots")

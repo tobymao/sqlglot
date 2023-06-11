@@ -23,6 +23,7 @@ def _lower_func(sql: str) -> str:
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
+    STRICT_STRING_CONCAT = True
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
@@ -332,6 +333,16 @@ class ClickHouse(Dialect):
             "FUNCTION",
             "NAMED COLLECTION",
         }
+
+        def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
+            # Clickhouse errors out if we try to cast a NULL value to TEXT
+            return self.func(
+                "CONCAT",
+                *[
+                    exp.func("if", e.is_(exp.null()), e, exp.cast(e, "text"))
+                    for e in expression.expressions
+                ],
+            )
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if isinstance(expression.this, exp.Alias):

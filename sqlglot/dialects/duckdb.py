@@ -114,6 +114,8 @@ class DuckDB(Dialect):
         }
 
     class Parser(parser.Parser):
+        CONCAT_NULL_OUTPUTS_STRING = True
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAY_LENGTH": exp.ArraySize.from_arg_list,

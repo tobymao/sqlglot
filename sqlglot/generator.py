@@ -247,6 +247,7 @@ class Generator:
     UNNEST_COLUMN_ONLY = False
     ALIAS_POST_TABLESAMPLE = False
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
+    STRICT_STRING_CONCAT = False
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
 
@@ -1740,10 +1741,11 @@ class Generator:
         else:
             return self.func("TRIM", expression.this, expression.expression)
 
-    def concat_sql(self, expression: exp.Concat) -> str:
-        if len(expression.expressions) == 1:
-            return self.sql(expression.expressions[0])
-        return self.function_fallback_sql(expression)
+    def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
+        expressions = expression.expressions
+        if self.STRICT_STRING_CONCAT:
+            expressions = (exp.cast(e, "text") for e in expressions)
+        return self.func("CONCAT", *expressions)
 
     def check_sql(self, expression: exp.Check) -> str:
         this = self.sql(expression, key="this")
@@ -1766,9 +1768,7 @@ class Generator:
         return f"PRIMARY KEY ({expressions}){options}"
 
     def if_sql(self, expression: exp.If) -> str:
-        return self.case_sql(
-            exp.Case(ifs=[expression.copy()], default=expression.args.get("false"))
-        )
+        return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
 
     def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
         modifier = expression.args.get("modifier")
@@ -2073,6 +2073,11 @@ class Generator:
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         return self.binary(expression, "||")
+
+    def safedpipe_sql(self, expression: exp.SafeDPipe) -> str:
+        if self.STRICT_STRING_CONCAT:
+            return self.func("CONCAT", *(exp.cast(e, "text") for e in expression.flatten()))
+        return self.dpipe_sql(expression)
 
     def div_sql(self, expression: exp.Div) -> str:
         return self.binary(expression, "/")

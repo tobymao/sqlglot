@@ -53,6 +53,14 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "CONCAT(CASE WHEN COALESCE(a, '') IS NULL THEN COALESCE(a, '') ELSE CAST(COALESCE(a, '') AS TEXT) END, CASE WHEN COALESCE(b, '') IS NULL THEN COALESCE(b, '') ELSE CAST(COALESCE(b, '') AS TEXT) END)",
+            read={"postgres": "CONCAT(a, b)"},
+        )
+        self.validate_all(
+            "CONCAT(CASE WHEN a IS NULL THEN a ELSE CAST(a AS TEXT) END, CASE WHEN b IS NULL THEN b ELSE CAST(b AS TEXT) END)",
+            read={"mysql": "CONCAT(a, b)"},
+        )
+        self.validate_all(
             r"'Enum8(\'Sunday\' = 0)'", write={"clickhouse": "'Enum8(''Sunday'' = 0)'"}
         )
         self.validate_all(

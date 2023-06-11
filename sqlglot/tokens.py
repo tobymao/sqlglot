@@ -346,6 +346,7 @@ class Token:
             col: The column that the token ends on.
             start: The start index of the token.
             end: The ending index of the token.
+            comments: The comments to attach to the token.
         """
         self.token_type = token_type
         self.text = text

@@ -3507,6 +3507,10 @@ class DPipe(Binary):
     pass
 
 
+class SafeDPipe(DPipe):
+    pass
+
+
 class EQ(Binary, Predicate):
     pass
 
@@ -3919,6 +3923,10 @@ class Coalesce(Func):
 class Concat(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True
+
+
+class SafeConcat(Concat):
+    pass
 
 
 class ConcatWs(Concat):

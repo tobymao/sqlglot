@@ -540,3 +540,24 @@ class TestPostgres(Validator):
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
             write={"postgres": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
+
+    def test_string_concat(self):
+        self.validate_all(
+            "CONCAT(a, b)",
+            write={
+                "": "CONCAT(COALESCE(a, ''), COALESCE(b, ''))",
+                "duckdb": "CONCAT(COALESCE(a, ''), COALESCE(b, ''))",
+                "postgres": "CONCAT(COALESCE(a, ''), COALESCE(b, ''))",
+                "presto": "CONCAT(CAST(COALESCE(a, '') AS VARCHAR), CAST(COALESCE(b, '') AS VARCHAR))",
+            },
+        )
+        self.validate_all(
+            "a || b",
+            write={
+                "": "a || b",
+                "clickhouse": "CONCAT(CAST(a AS TEXT), CAST(b AS TEXT))",
+                "duckdb": "a || b",
+                "postgres": "a || b",
+                "presto": "CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR))",
+            },
+        )

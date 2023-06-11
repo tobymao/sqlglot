@@ -1744,7 +1744,7 @@ class Generator:
     def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
         expressions = expression.expressions
         if self.STRICT_STRING_CONCAT:
-            expressions = [exp.cast(e, "text") for e in expressions]
+            expressions = (exp.cast(e, "text") for e in expressions)
         return self.func("CONCAT", *expressions)
 
     def check_sql(self, expression: exp.Check) -> str:
@@ -2076,7 +2076,7 @@ class Generator:
 
     def safedpipe_sql(self, expression: exp.SafeDPipe) -> str:
         if self.STRICT_STRING_CONCAT:
-            return self.func("CONCAT", *[exp.cast(e, "text") for e in expression.flatten()])
+            return self.func("CONCAT", *(exp.cast(e, "text") for e in expression.flatten()))
         return self.dpipe_sql(expression)
 
     def div_sql(self, expression: exp.Div) -> str:

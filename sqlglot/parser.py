@@ -3624,7 +3624,7 @@ class Parser(metaclass=_Parser):
             return args[0]
 
         return self.expression(
-            exp.Concat if self.STRICT_STRING_CONCAT else exp.SafeConcat, expressions=args  # type: ignore
+            exp.Concat if self.STRICT_STRING_CONCAT else exp.SafeConcat, expressions=args
         )
 
     def _parse_string_agg(self) -> exp.Expression:

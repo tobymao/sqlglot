@@ -361,6 +361,8 @@ class TSQL(Dialect):
         LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
+        CONCAT_NULL_OUTPUTS_STRING = True
+
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
                 return None

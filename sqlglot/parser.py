@@ -708,6 +708,7 @@ class Parser(metaclass=_Parser):
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
+        "CONCAT": lambda self: self._parse_concat(),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
@@ -779,6 +780,8 @@ class Parser(metaclass=_Parser):
 
     STRICT_CAST = True
 
+    CONCAT_NULL_OUTPUTS_STRING = False  # A NULL arg in CONCAT yields NULL by default
+
     CONVERT_TYPE_FIRST = False
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -805,6 +808,7 @@ class Parser(metaclass=_Parser):
     INDEX_OFFSET: int = 0
     UNNEST_COLUMN_ONLY: bool = False
     ALIAS_POST_TABLESAMPLE: bool = False
+    STRICT_STRING_CONCAT = False
     NULL_ORDERING: str = "nulls_are_small"
     SHOW_TRIE: t.Dict = {}
     SET_TRIE: t.Dict = {}
@@ -3609,7 +3613,21 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 
-    def _parse_string_agg(self) -> exp.GroupConcat:
+    def _parse_concat(self) -> t.Optional[exp.Expression]:
+        args = self._parse_csv(self._parse_conjunction)
+        if self.CONCAT_NULL_OUTPUTS_STRING:
+            args = [exp.func("COALESCE", arg, exp.Literal.string("")) for arg in args]
+
+        # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call, so when
+        # we find such a call we replace it with its argument.
+        if len(args) == 1:
+            return args[0]
+
+        return self.expression(
+            exp.Concat if self.STRICT_STRING_CONCAT else exp.SafeConcat, expressions=args
+        )
+
+    def _parse_string_agg(self) -> exp.Expression:
         expression: t.Optional[exp.Expression]
 
         if self._match(TokenType.DISTINCT):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
-from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.dialect import concat_to_dpipe_sql, rename_func
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -94,6 +94,7 @@ class Redshift(Postgres):
 
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
+            exp.Concat: concat_to_dpipe_sql,
             exp.CurrentTimestamp: lambda self, e: "SYSDATE",
             exp.DateAdd: lambda self, e: self.func(
                 "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this
@@ -106,6 +107,7 @@ class Redshift(Postgres):
             exp.FromBase: rename_func("STRTOL"),
             exp.JSONExtract: _json_sql,
             exp.JSONExtractScalar: _json_sql,
+            exp.SafeConcat: concat_to_dpipe_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.TsOrDsToDate: lambda self, e: self.sql(e.this),

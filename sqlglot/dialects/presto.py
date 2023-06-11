@@ -179,6 +179,7 @@ class Presto(Dialect):
     NULL_ORDERING = "nulls_are_last"
     TIME_FORMAT = MySQL.TIME_FORMAT
     TIME_MAPPING = MySQL.TIME_MAPPING
+    STRICT_STRING_CONCAT = True
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {

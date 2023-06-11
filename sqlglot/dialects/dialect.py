@@ -122,6 +122,9 @@ class _Dialect(type):
                 if hasattr(subclass, name):
                     setattr(subclass, name, value)
 
+        if not klass.STRICT_STRING_CONCAT:
+            klass.parser_class.BITWISE[TokenType.DPIPE] = exp.SafeDPipe
+
         return klass
 
 
@@ -137,6 +140,9 @@ class Dialect(metaclass=_Dialect):
 
     # Determines whether or not an unquoted identifier can start with a digit
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
+
+    # Determines whether or not CONCAT's arguments must be strings
+    STRICT_STRING_CONCAT = False
 
     # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
@@ -533,6 +539,14 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
         return f"CAST({self.sql(expression, 'this')} AS DATE)"
 
     return _ts_or_ds_to_date_sql
+
+
+def concat_to_dpipe_sql(self: Generator, expression: exp.Concat | exp.SafeConcat) -> str:
+    this, *rest_args = expression.expressions
+    for arg in rest_args:
+        this = exp.DPipe(this=this, expression=arg)
+
+    return self.sql(this)
 
 
 # Spark, DuckDB use (almost) the same naming scheme for the output columns of the PIVOT operator

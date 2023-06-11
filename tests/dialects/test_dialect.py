@@ -1085,6 +1085,14 @@ class TestDialect(Validator):
 
         self.validate_all("LIKE(x, 'z')", write={"": "'z' LIKE x"})
         self.validate_all(
+            "CONCAT(a, b, c)",
+            write={
+                "": "CONCAT(a, b, c)",
+                "redshift": "a || b || c",
+                "sqlite": "a || b || c",
+            },
+        )
+        self.validate_all(
             "x ILIKE '%y'",
             read={
                 "clickhouse": "x ILIKE '%y'",
@@ -1177,8 +1185,19 @@ class TestDialect(Validator):
         self.validate_all(
             "CONCAT(a)",
             write={
-                "mysql": "a",
+                "clickhouse": "a",
+                "presto": "a",
+                "trino": "a",
                 "tsql": "a",
+            },
+        )
+        self.validate_all(
+            "COALESCE(a, '')",
+            read={
+                "drill": "CONCAT(a)",
+                "duckdb": "CONCAT(a)",
+                "postgres": "CONCAT(a)",
+                "tsql": "CONCAT(a)",
             },
         )
         self.validate_all(

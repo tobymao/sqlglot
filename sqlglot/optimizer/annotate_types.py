@@ -108,6 +108,9 @@ class TypeAnnotator:
         exp.If: lambda self, expr: self._annotate_by_args(expr, "true", "false"),
         exp.Coalesce: lambda self, expr: self._annotate_by_args(expr, "this", "expressions"),
         exp.Concat: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
+        exp.SafeConcat: lambda self, expr: self._annotate_with_type(
+            expr, exp.DataType.Type.VARCHAR
+        ),
         exp.ConcatWs: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
         exp.GroupConcat: lambda self, expr: self._annotate_with_type(
             expr, exp.DataType.Type.VARCHAR

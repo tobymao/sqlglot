@@ -26,7 +26,7 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
 
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:
     if isinstance(node, exp.Add) and node.type and node.type.this in exp.DataType.TEXT_TYPES:
-        node = exp.Concat(this=node.this, expression=node.expression)
+        node = exp.Concat(expressions=[node.left, node.right])
     return node
 
 

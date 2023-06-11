@@ -102,7 +102,7 @@ def _str_to_time_sql(
 
 def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
-    if time_format and time_format not in (Presto.time_format, Presto.date_format):
+    if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
         return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
     return f"CAST(SUBSTR(CAST({self.sql(expression, 'this')} AS VARCHAR), 1, 10) AS DATE)"
 
@@ -119,7 +119,7 @@ def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> s
                 exp.Literal.number(1),
                 exp.Literal.number(10),
             ),
-            Presto.date_format,
+            Presto.DATE_FORMAT,
         )
 
     return self.func(
@@ -145,9 +145,7 @@ def _approx_percentile(args: t.List) -> exp.Expression:
         )
     if len(args) == 3:
         return exp.ApproxQuantile(
-            this=seq_get(args, 0),
-            quantile=seq_get(args, 1),
-            accuracy=seq_get(args, 2),
+            this=seq_get(args, 0), quantile=seq_get(args, 1), accuracy=seq_get(args, 2)
         )
     return exp.ApproxQuantile.from_arg_list(args)
 
@@ -160,10 +158,8 @@ def _from_unixtime(args: t.List) -> exp.Expression:
             minutes=seq_get(args, 2),
         )
     if len(args) == 2:
-        return exp.UnixToTime(
-            this=seq_get(args, 0),
-            zone=seq_get(args, 1),
-        )
+        return exp.UnixToTime(this=seq_get(args, 0), zone=seq_get(args, 1))
+
     return exp.UnixToTime.from_arg_list(args)
 
 
@@ -173,21 +169,16 @@ def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
             unnest = exp.Unnest(expressions=[expression.this])
 
             if expression.alias:
-                return exp.alias_(
-                    unnest,
-                    alias="_u",
-                    table=[expression.alias],
-                    copy=False,
-                )
+                return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
             return unnest
     return expression
 
 
 class Presto(Dialect):
-    index_offset = 1
-    null_ordering = "nulls_are_last"
-    time_format = MySQL.time_format
-    time_mapping = MySQL.time_mapping
+    INDEX_OFFSET = 1
+    NULL_ORDERING = "nulls_are_last"
+    TIME_FORMAT = MySQL.TIME_FORMAT
+    TIME_MAPPING = MySQL.TIME_MAPPING
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
@@ -205,14 +196,10 @@ class Presto(Dialect):
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "CONTAINS": exp.ArrayContains.from_arg_list,
             "DATE_ADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2),
-                expression=seq_get(args, 1),
-                unit=seq_get(args, 0),
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
             "DATE_DIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2),
-                expression=seq_get(args, 1),
-                unit=seq_get(args, 0),
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
@@ -225,9 +212,7 @@ class Presto(Dialect):
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "STRPOS": lambda args: exp.StrPosition(
-                this=seq_get(args, 0),
-                substr=seq_get(args, 1),
-                instance=seq_get(args, 2),
+                this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
             ),
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "TO_HEX": exp.Hex.from_arg_list,
@@ -242,7 +227,7 @@ class Presto(Dialect):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
         TABLE_HINTS = False
-        IS_BOOL = False
+        IS_BOOL_ALLOWED = False
         STRUCT_DELIMITER = ("(", ")")
 
         PROPERTIES_LOCATION = {
@@ -284,10 +269,10 @@ class Presto(Dialect):
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
             ),
-            exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.date_format}) AS DATE)",
-            exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.dateint_format}) AS INT)",
+            exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.DATE_FORMAT}) AS DATE)",
+            exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
             exp.Decode: _decode_sql,
-            exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.dateint_format}) AS DATE)",
+            exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: _encode_sql,
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.Group: transforms.preprocess([transforms.unalias_group]),
@@ -322,7 +307,7 @@ class Presto(Dialect):
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToDate: timestrtotime_sql,
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.time_format}))",
+            exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",
             exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),
             exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
@@ -367,9 +352,9 @@ class Presto(Dialect):
                 to = target_type.copy()
 
                 if target_type is start.to:
-                    end = exp.Cast(this=end, to=to)
+                    end = exp.cast(end, to)
                 else:
-                    start = exp.Cast(this=start, to=to)
+                    start = exp.cast(start, to)
 
             return self.func("SEQUENCE", start, end, step)
 

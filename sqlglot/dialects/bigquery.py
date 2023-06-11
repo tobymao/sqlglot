@@ -103,8 +103,8 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 
 
 class BigQuery(Dialect):
-    unnest_column_only = True
-    time_mapping = {
+    UNNEST_COLUMN_ONLY = True
+    TIME_MAPPING = {
         "%M": "%-M",
         "%d": "%-d",
         "%m": "%-m",

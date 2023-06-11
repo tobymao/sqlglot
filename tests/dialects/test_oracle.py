@@ -26,8 +26,8 @@ class TestOracle(Validator):
         self.validate_all(
             "NVL(NULL, 1)",
             write={
+                "": "COALESCE(NULL, 1)",
                 "oracle": "NVL(NULL, 1)",
-                "": "IFNULL(NULL, 1)",
             },
         )
         self.validate_all(

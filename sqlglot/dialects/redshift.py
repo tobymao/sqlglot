@@ -14,9 +14,9 @@ def _json_sql(self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONEx
 
 
 class Redshift(Postgres):
-    time_format = "'YYYY-MM-DD HH:MI:SS'"
-    time_mapping = {
-        **Postgres.time_mapping,
+    TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
+    TIME_MAPPING = {
+        **Postgres.TIME_MAPPING,
         "MON": "%b",
         "HH": "%H",
     }
@@ -51,7 +51,7 @@ class Redshift(Postgres):
                 and this.expressions
                 and this.expressions[0].this == exp.column("MAX")
             ):
-                this.set("expressions", [exp.Var(this="MAX")])
+                this.set("expressions", [exp.var("MAX")])
 
             return this
 
@@ -170,6 +170,6 @@ class Redshift(Postgres):
                 precision = expression.args.get("expressions")
 
                 if not precision:
-                    expression.append("expressions", exp.Var(this="MAX"))
+                    expression.append("expressions", exp.var("MAX"))
 
             return super().datatype_sql(expression)

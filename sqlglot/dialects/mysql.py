@@ -94,10 +94,10 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
 
 
 class MySQL(Dialect):
-    time_format = "'%Y-%m-%d %T'"
+    TIME_FORMAT = "'%Y-%m-%d %T'"
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
-    time_mapping = {
+    TIME_MAPPING = {
         "%M": "%B",
         "%c": "%-m",
         "%e": "%-d",
@@ -372,12 +372,7 @@ class MySQL(Dialect):
             else:
                 collate = None
 
-            return self.expression(
-                exp.SetItem,
-                this=charset,
-                collate=collate,
-                kind="NAMES",
-            )
+            return self.expression(exp.SetItem, this=charset, collate=collate, kind="NAMES")
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
@@ -472,9 +467,7 @@ class MySQL(Dialect):
 
         def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
             sql = self.sql(expression, arg)
-            if not sql:
-                return ""
-            return f" {prefix} {sql}"
+            return f" {prefix} {sql}" if sql else ""
 
         def _oldstyle_limit_sql(self, expression: exp.Show) -> str:
             limit = self.sql(expression, "limit")

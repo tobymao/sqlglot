@@ -56,11 +56,7 @@ def _sort_array_reverse(args: t.List) -> exp.Expression:
 
 
 def _parse_date_diff(args: t.List) -> exp.Expression:
-    return exp.DateDiff(
-        this=seq_get(args, 2),
-        expression=seq_get(args, 1),
-        unit=seq_get(args, 0),
-    )
+    return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
 def _struct_sql(self: generator.Generator, expression: exp.Struct) -> str:
@@ -90,7 +86,7 @@ def _regexp_extract_sql(self: generator.Generator, expression: exp.RegexpExtract
 
 
 class DuckDB(Dialect):
-    null_ordering = "nulls_are_last"
+    NULL_ORDERING = "nulls_are_last"
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
@@ -127,10 +123,7 @@ class DuckDB(Dialect):
             "DATE_DIFF": _parse_date_diff,
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
-                this=exp.Div(
-                    this=seq_get(args, 0),
-                    expression=exp.Literal.number(1000),
-                )
+                this=exp.Div(this=seq_get(args, 0), expression=exp.Literal.number(1000))
             ),
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
@@ -191,8 +184,8 @@ class DuckDB(Dialect):
                 "DATE_DIFF", f"'{e.args.get('unit', 'day')}'", e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.dateint_format}) AS INT)",
-            exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.dateint_format}) AS DATE)",
+            exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
+            exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.JSONExtract: arrow_json_extract_sql,

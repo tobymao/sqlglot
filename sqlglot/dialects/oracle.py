@@ -24,21 +24,15 @@ def _parse_xml_table(self: parser.Parser) -> exp.XMLTable:
     if self._match_text_seq("COLUMNS"):
         columns = self._parse_csv(lambda: self._parse_column_def(self._parse_field(any_token=True)))
 
-    return self.expression(
-        exp.XMLTable,
-        this=this,
-        passing=passing,
-        columns=columns,
-        by_ref=by_ref,
-    )
+    return self.expression(exp.XMLTable, this=this, passing=passing, columns=columns, by_ref=by_ref)
 
 
 class Oracle(Dialect):
-    alias_post_tablesample = True
+    ALIAS_POST_TABLESAMPLE = True
 
     # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
-    time_mapping = {
+    TIME_MAPPING = {
         "AM": "%p",  # Meridian indicator with or without periods
         "A.M.": "%p",  # Meridian indicator with or without periods
         "PM": "%p",  # Meridian indicator with or without periods
@@ -87,7 +81,7 @@ class Oracle(Dialect):
                 column.set("join_mark", self._match(TokenType.JOIN_MARKER))
             return column
 
-        def _parse_hint(self) -> t.Optional[exp.Expression]:
+        def _parse_hint(self) -> t.Optional[exp.Hint]:
             if self._match(TokenType.HINT):
                 start = self._curr
                 while self._curr and not self._match_pair(TokenType.STAR, TokenType.SLASH):
@@ -129,7 +123,7 @@ class Oracle(Dialect):
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.ILike: no_ilike_sql,
-            exp.IfNull: rename_func("NVL"),
+            exp.Coalesce: rename_func("NVL"),
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),

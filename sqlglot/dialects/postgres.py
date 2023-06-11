@@ -183,9 +183,9 @@ def _to_timestamp(args: t.List) -> exp.Expression:
 
 
 class Postgres(Dialect):
-    null_ordering = "nulls_are_large"
-    time_format = "'YYYY-MM-DD HH24:MI:SS'"
-    time_mapping = {
+    NULL_ORDERING = "nulls_are_large"
+    TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
+    TIME_MAPPING = {
         "AM": "%p",
         "PM": "%p",
         "D": "%u",  # 1-based day of week
@@ -303,7 +303,7 @@ class Postgres(Dialect):
             value = self._parse_bitwise()
 
             if part and part.is_string:
-                part = exp.Var(this=part.name)
+                part = exp.var(part.name)
 
             return self.expression(exp.Extract, this=part, expression=value)
 

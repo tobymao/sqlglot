@@ -107,7 +107,6 @@ class TypeAnnotator:
         exp.Case: lambda self, expr: self._annotate_by_args(expr, "default", "ifs"),
         exp.If: lambda self, expr: self._annotate_by_args(expr, "true", "false"),
         exp.Coalesce: lambda self, expr: self._annotate_by_args(expr, "this", "expressions"),
-        exp.IfNull: lambda self, expr: self._annotate_by_args(expr, "this", "expression"),
         exp.Concat: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
         exp.ConcatWs: lambda self, expr: self._annotate_with_type(expr, exp.DataType.Type.VARCHAR),
         exp.GroupConcat: lambda self, expr: self._annotate_with_type(

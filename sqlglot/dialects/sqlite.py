@@ -62,10 +62,6 @@ class SQLite(Dialect):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-        }
-
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

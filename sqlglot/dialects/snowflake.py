@@ -167,10 +167,10 @@ def _parse_convert_timezone(args: t.List) -> exp.Expression:
 
 
 class Snowflake(Dialect):
-    null_ordering = "nulls_are_large"
-    time_format = "'yyyy-mm-dd hh24:mi:ss'"
+    NULL_ORDERING = "nulls_are_large"
+    TIME_FORMAT = "'yyyy-mm-dd hh24:mi:ss'"
 
-    time_mapping = {
+    TIME_MAPPING = {
         "YYYY": "%Y",
         "yyyy": "%Y",
         "YY": "%y",
@@ -210,14 +210,10 @@ class Snowflake(Dialect):
             "CONVERT_TIMEZONE": _parse_convert_timezone,
             "DATE_TRUNC": date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2),
-                expression=seq_get(args, 1),
-                unit=seq_get(args, 0),
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
             "DATEDIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2),
-                expression=seq_get(args, 1),
-                unit=seq_get(args, 0),
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
             "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
@@ -246,9 +242,7 @@ class Snowflake(Dialect):
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
             TokenType.COLON: lambda self, this, path: self.expression(
-                exp.Bracket,
-                this=this,
-                expressions=[path],
+                exp.Bracket, this=this, expressions=[path]
             ),
         }
 

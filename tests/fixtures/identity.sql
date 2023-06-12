@@ -809,6 +809,7 @@ PRAGMA schema.synchronous = 2
 PRAGMA schema.synchronous = FULL
 PRAGMA schema.memory_limit = '1GB'
 JSON_OBJECT()
+JSON_OBJECT(*)
 JSON_OBJECT('key1': 1, 'key2': TRUE)
 JSON_OBJECT('id': '5', 'fld1': 'bla', 'fld2': 'bar')
 JSON_OBJECT('x': NULL, 'y': 1 NULL ON NULL)

@@ -1779,7 +1779,6 @@ class Generator:
         return f"{self.sql(expression, 'this')}: {self.sql(expression, 'expression')}"
 
     def jsonobject_sql(self, expression: exp.JSONObject) -> str:
-        expressions = self.expressions(expression)
         null_handling = expression.args.get("null_handling")
         null_handling = f" {null_handling}" if null_handling else ""
         unique_keys = expression.args.get("unique_keys")
@@ -1792,7 +1791,11 @@ class Generator:
         format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
         encoding = self.sql(expression, "encoding")
         encoding = f" ENCODING {encoding}" if encoding else ""
-        return f"JSON_OBJECT({expressions}{null_handling}{unique_keys}{return_type}{format_json}{encoding})"
+        return self.func(
+            "JSON_OBJECT",
+            *expression.expressions,
+            suffix=f"{null_handling}{unique_keys}{return_type}{format_json}{encoding})",
+        )
 
     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
         this = self.sql(expression, "this")
@@ -2183,8 +2186,14 @@ class Generator:
 
         return self.func(expression.sql_name(), *args)
 
-    def func(self, name: str, *args: t.Optional[exp.Expression | str]) -> str:
-        return f"{self.normalize_func(name)}({self.format_args(*args)})"
+    def func(
+        self,
+        name: str,
+        *args: t.Optional[exp.Expression | str],
+        prefix: str = "(",
+        suffix: str = ")",
+    ) -> str:
+        return f"{self.normalize_func(name)}{prefix}{self.format_args(*args)}{suffix}"
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
         arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)

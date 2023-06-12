@@ -3750,7 +3750,8 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.JSONKeyValue, this=key, expression=value)
 
     def _parse_json_object(self) -> exp.JSONObject:
-        expressions = self._parse_csv(self._parse_json_key_value)
+        star = self._parse_star()
+        expressions = [star] if star else self._parse_csv(self._parse_json_key_value)
 
         null_handling = None
         if self._match_text_seq("NULL", "ON", "NULL"):

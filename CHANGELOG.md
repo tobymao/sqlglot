@@ -1,7 +1,7 @@
 Changelog
 =========
 
-## [v15.3.0] - 2023-06-12
+## [v16.0.0] - 2023-06-12
 ### :boom: BREAKING CHANGES
 - due to [`e00647a`](https://github.com/tobymao/sqlglot/commit/e00647af4b5998ee2c6799dd44be268a56dfde7c) - output name for parens *(commit by [@tobymao](https://github.com/tobymao))*:
 
@@ -456,3 +456,4 @@ Changelog
 [v15.1.0]: https://github.com/tobymao/sqlglot/compare/v15.0.0...v15.1.0
 [v15.2.0]: https://github.com/tobymao/sqlglot/compare/v15.1.0...v15.2.0
 [v15.3.0]: https://github.com/tobymao/sqlglot/compare/v15.2.0...v15.3.0
+[v16.0.0]: https://github.com/tobymao/sqlglot/compare/v15.2.0...v16.0.0

@@ -521,7 +521,7 @@
 </span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a>    <span class="n">names</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">expressions</span><span class="p">}</span>
 </span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a>
 </span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a>    <span class="n">e</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
-</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a>        <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Var</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a>        <span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Identifier</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">names</span>
 </span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a>        <span class="k">else</span> <span class="n">n</span>
 </span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a>    <span class="p">)</span>
@@ -1622,49 +1622,34 @@
 </span></pre></div>
 
 
-            <div class="docstring"><p>Generator interprets the given syntax tree and produces a SQL string as an output.</p>
+            <div class="docstring"><p>Generator converts a given syntax tree to the corresponding SQL string.</p>
 
 <h6 id="arguments">Arguments:</h6>
 
 <ul>
-<li><strong>time_mapping (dict):</strong>  the dictionary of custom time mappings in which the key
-represents a python time format and the output the target time format</li>
-<li><strong>time_trie (trie):</strong>  a trie of the time_mapping keys</li>
-<li><strong>pretty (bool):</strong>  if set to True the returned string will be formatted. Default: False.</li>
-<li><strong>quote_start (str):</strong>  specifies which starting character to use to delimit quotes. Default: '.</li>
-<li><strong>quote_end (str):</strong>  specifies which ending character to use to delimit quotes. Default: '.</li>
-<li><strong>identifier_start (str):</strong>  specifies which starting character to use to delimit identifiers. Default: ".</li>
-<li><strong>identifier_end (str):</strong>  specifies which ending character to use to delimit identifiers. Default: ".</li>
-<li><strong>bit_start (str):</strong>  specifies which starting character to use to delimit bit literals. Default: None.</li>
-<li><strong>bit_end (str):</strong>  specifies which ending character to use to delimit bit literals. Default: None.</li>
-<li><strong>hex_start (str):</strong>  specifies which starting character to use to delimit hex literals. Default: None.</li>
-<li><strong>hex_end (str):</strong>  specifies which ending character to use to delimit hex literals. Default: None.</li>
-<li><strong>byte_start (str):</strong>  specifies which starting character to use to delimit byte literals. Default: None.</li>
-<li><strong>byte_end (str):</strong>  specifies which ending character to use to delimit byte literals. Default: None.</li>
-<li><strong>raw_start (str):</strong>  specifies which starting character to use to delimit raw literals. Default: None.</li>
-<li><strong>raw_end (str):</strong>  specifies which ending character to use to delimit raw literals. Default: None.</li>
-<li><strong>identify (bool | str):</strong>  'always': always quote, 'safe': quote identifiers if they don't contain an upcase, True defaults to always.</li>
-<li><strong>normalize (bool):</strong>  if set to True all identifiers will lower cased</li>
-<li><strong>string_escape (str):</strong>  specifies a string escape character. Default: '.</li>
-<li><strong>identifier_escape (str):</strong>  specifies an identifier escape character. Default: ".</li>
-<li><strong>pad (int):</strong>  determines padding in a formatted string. Default: 2.</li>
-<li><strong>indent (int):</strong>  determines the size of indentation in a formatted string. Default: 4.</li>
-<li><strong>unnest_column_only (bool):</strong>  if true unnest table aliases are considered only as column aliases</li>
-<li><strong>normalize_functions (str):</strong>  normalize function names, "upper", "lower", or None
-Default: "upper"</li>
-<li><strong>alias_post_tablesample (bool):</strong>  if the table alias comes after tablesample
-Default: False</li>
-<li><strong>identifiers_can_start_with_digit (bool):</strong>  if an unquoted identifier can start with digit
-Default: False</li>
-<li><strong>unsupported_level (ErrorLevel):</strong>  determines the generator's behavior when it encounters
-unsupported expressions. Default ErrorLevel.WARN.</li>
-<li><strong>null_ordering (str):</strong>  Indicates the default null ordering method to use if not explicitly set.
-Options are "nulls_are_small", "nulls_are_large", "nulls_are_last".
-Default: "nulls_are_small"</li>
-<li><strong>max_unsupported (int):</strong>  Maximum number of unsupported messages to include in a raised UnsupportedError.
+<li><strong>pretty:</strong>  Whether or not to format the produced SQL string.
+Default: False.</li>
+<li><strong>identify:</strong>  Determines when an identifier should be quoted. Possible values are:
+False (default): Never quote, except in cases where it's mandatory by the dialect.
+True or 'always': Always quote.
+'safe': Only quote identifiers that are case insensitive.</li>
+<li><strong>normalize:</strong>  Whether or not to normalize identifiers to lowercase.
+Default: False.</li>
+<li><strong>pad:</strong>  Determines the pad size in a formatted string.
+Default: 2.</li>
+<li><strong>indent:</strong>  Determines the indentation size in a formatted string.
+Default: 2.</li>
+<li><strong>normalize_functions:</strong>  Whether or not to normalize all function names. Possible values are:
+"upper" or True (default): Convert names to uppercase.
+"lower": Convert names to lowercase.
+False: Disables function name normalization.</li>
+<li><strong>unsupported_level:</strong>  Determines the generator's behavior when it encounters unsupported expressions.
+Default ErrorLevel.WARN.</li>
+<li><strong>max_unsupported:</strong>  Maximum number of unsupported messages to include in a raised UnsupportedError.
 This is only relevant if unsupported_level is ErrorLevel.RAISE.
 Default: 3</li>
-<li><strong>leading_comma (bool):</strong>  if the the comma is leading or trailing in select statements
+<li><strong>leading_comma:</strong>  Determines whether or not the comma is leading or trailing in select expressions.
+This is only relevant when generating in pretty mode.
 Default: False</li>
 <li><strong>max_text_width:</strong>  The max number of characters in a segment before creating new lines in pretty mode.
 The default is on the smaller end because the length only represents a segment and not the true
@@ -1788,6 +1773,7 @@ Default: True</li>
                 <dd id="Python.Generator.ordered_sql" class="function"><a href="../generator.html#Generator.ordered_sql">ordered_sql</a></dd>
                 <dd id="Python.Generator.matchrecognize_sql" class="function"><a href="../generator.html#Generator.matchrecognize_sql">matchrecognize_sql</a></dd>
                 <dd id="Python.Generator.query_modifiers" class="function"><a href="../generator.html#Generator.query_modifiers">query_modifiers</a></dd>
+                <dd id="Python.Generator.offset_limit_modifiers" class="function"><a href="../generator.html#Generator.offset_limit_modifiers">offset_limit_modifiers</a></dd>
                 <dd id="Python.Generator.after_having_modifiers" class="function"><a href="../generator.html#Generator.after_having_modifiers">after_having_modifiers</a></dd>
                 <dd id="Python.Generator.after_limit_modifiers" class="function"><a href="../generator.html#Generator.after_limit_modifiers">after_limit_modifiers</a></dd>
                 <dd id="Python.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
@@ -1817,7 +1803,7 @@ Default: True</li>
                 <dd id="Python.Generator.nextvaluefor_sql" class="function"><a href="../generator.html#Generator.nextvaluefor_sql">nextvaluefor_sql</a></dd>
                 <dd id="Python.Generator.extract_sql" class="function"><a href="../generator.html#Generator.extract_sql">extract_sql</a></dd>
                 <dd id="Python.Generator.trim_sql" class="function"><a href="../generator.html#Generator.trim_sql">trim_sql</a></dd>
-                <dd id="Python.Generator.concat_sql" class="function"><a href="../generator.html#Generator.concat_sql">concat_sql</a></dd>
+                <dd id="Python.Generator.safeconcat_sql" class="function"><a href="../generator.html#Generator.safeconcat_sql">safeconcat_sql</a></dd>
                 <dd id="Python.Generator.check_sql" class="function"><a href="../generator.html#Generator.check_sql">check_sql</a></dd>
                 <dd id="Python.Generator.foreignkey_sql" class="function"><a href="../generator.html#Generator.foreignkey_sql">foreignkey_sql</a></dd>
                 <dd id="Python.Generator.primarykey_sql" class="function"><a href="../generator.html#Generator.primarykey_sql">primarykey_sql</a></dd>
@@ -1868,6 +1854,7 @@ Default: True</li>
                 <dd id="Python.Generator.respectnulls_sql" class="function"><a href="../generator.html#Generator.respectnulls_sql">respectnulls_sql</a></dd>
                 <dd id="Python.Generator.intdiv_sql" class="function"><a href="../generator.html#Generator.intdiv_sql">intdiv_sql</a></dd>
                 <dd id="Python.Generator.dpipe_sql" class="function"><a href="../generator.html#Generator.dpipe_sql">dpipe_sql</a></dd>
+                <dd id="Python.Generator.safedpipe_sql" class="function"><a href="../generator.html#Generator.safedpipe_sql">safedpipe_sql</a></dd>
                 <dd id="Python.Generator.div_sql" class="function"><a href="../generator.html#Generator.div_sql">div_sql</a></dd>
                 <dd id="Python.Generator.overlaps_sql" class="function"><a href="../generator.html#Generator.overlaps_sql">overlaps_sql</a></dd>
                 <dd id="Python.Generator.distance_sql" class="function"><a href="../generator.html#Generator.distance_sql">distance_sql</a></dd>

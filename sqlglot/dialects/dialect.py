@@ -25,6 +25,8 @@ class Dialects(str, Enum):
 
     BIGQUERY = "bigquery"
     CLICKHOUSE = "clickhouse"
+    DATABRICKS = "databricks"
+    DRILL = "drill"
     DUCKDB = "duckdb"
     HIVE = "hive"
     MYSQL = "mysql"
@@ -38,11 +40,9 @@ class Dialects(str, Enum):
     SQLITE = "sqlite"
     STARROCKS = "starrocks"
     TABLEAU = "tableau"
+    TERADATA = "teradata"
     TRINO = "trino"
     TSQL = "tsql"
-    DATABRICKS = "databricks"
-    DRILL = "drill"
-    TERADATA = "teradata"
 
 
 class _Dialect(type):
@@ -434,9 +434,7 @@ def parse_date_delta_with_interval(
             expression = exp.Literal.number(expression.this)
 
         return expression_class(
-            this=args[0],
-            expression=expression,
-            unit=exp.Literal.string(interval.text("unit")),
+            this=args[0], expression=expression, unit=exp.Literal.string(interval.text("unit"))
         )
 
     return func

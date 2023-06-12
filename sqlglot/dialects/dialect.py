@@ -77,6 +77,9 @@ class _Dialect(type):
         cls.classes[enum.value if enum is not None else clsname.lower()] = klass
 
         klass.TIME_TRIE = new_trie(klass.TIME_MAPPING)
+        klass.FORMAT_TRIE = (
+            new_trie(klass.FORMAT_MAPPING) if klass.FORMAT_MAPPING else klass.TIME_TRIE
+        )
         klass.INVERSE_TIME_MAPPING = {v: k for k, v in klass.TIME_MAPPING.items()}
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
 
@@ -112,8 +115,6 @@ class _Dialect(type):
             },
             "STRING_ESCAPE": klass.tokenizer_class.STRING_ESCAPES[0],
             "IDENTIFIER_ESCAPE": klass.tokenizer_class.IDENTIFIER_ESCAPES[0],
-            "TIME_MAPPING": klass.INVERSE_TIME_MAPPING,
-            "TIME_TRIE": klass.INVERSE_TIME_TRIE,
         }
 
         # Pass required dialect properties to the tokenizer, parser and generator classes
@@ -155,9 +156,14 @@ class Dialect(metaclass=_Dialect):
     DATEINT_FORMAT = "'%Y%m%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
-    # Custom time mappings in which the key represents a python time format
-    # and the value the target time format
+    # Custom time mappings in which the key represents dialect time format
+    # and the value represents a python time format
     TIME_MAPPING: t.Dict[str, str] = {}
+
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_model_rules_date_time
+    # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Expressions-and-Predicates/March-2017/Data-Type-Conversions/Character-to-DATE-Conversion/Forcing-a-FORMAT-on-CAST-for-Converting-Character-to-DATE
+    # special syntax cast(x as date format 'yyyy') defaults to time_mapping
+    FORMAT_MAPPING: t.Dict[str, str] = {}
 
     # Autofilled
     tokenizer_class = Tokenizer
@@ -166,6 +172,7 @@ class Dialect(metaclass=_Dialect):
 
     # A trie of the time_mapping keys
     TIME_TRIE: t.Dict = {}
+    FORMAT_TRIE: t.Dict = {}
 
     INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
     INVERSE_TIME_TRIE: t.Dict = {}

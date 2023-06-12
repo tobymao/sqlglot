@@ -241,8 +241,8 @@ class Generator:
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     # Autofilled
-    TIME_MAPPING: t.Dict[str, str] = {}
-    TIME_TRIE: t.Dict = {}
+    INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
+    INVERSE_TIME_TRIE: t.Dict = {}
     INDEX_OFFSET = 0
     UNNEST_COLUMN_ONLY = False
     ALIAS_POST_TABLESAMPLE = False
@@ -2196,7 +2196,9 @@ class Generator:
         return sum(len(arg) for arg in args)
 
     def format_time(self, expression: exp.Expression) -> t.Optional[str]:
-        return format_time(self.sql(expression, "format"), self.TIME_MAPPING, self.TIME_TRIE)
+        return format_time(
+            self.sql(expression, "format"), self.INVERSE_TIME_MAPPING, self.INVERSE_TIME_TRIE
+        )
 
     def expressions(
         self,

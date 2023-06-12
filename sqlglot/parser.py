@@ -7,6 +7,7 @@ from collections import defaultdict
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
 from sqlglot.helper import apply_index_offset, ensure_list, seq_get
+from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import in_trie, new_trie
 
@@ -812,6 +813,10 @@ class Parser(metaclass=_Parser):
     NULL_ORDERING: str = "nulls_are_small"
     SHOW_TRIE: t.Dict = {}
     SET_TRIE: t.Dict = {}
+    FORMAT_MAPPING: t.Dict[str, str] = {}
+    FORMAT_TRIE: t.Dict = {}
+    TIME_MAPPING: t.Dict[str, str] = {}
+    TIME_TRIE: t.Dict = {}
 
     def __init__(
         self,
@@ -3610,6 +3615,20 @@ class Parser(metaclass=_Parser):
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
+        elif to.this in exp.DataType.TEMPORAL_TYPES and self._match(TokenType.FORMAT):
+            fmt = self._parse_string()
+
+            return self.expression(
+                exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
+                this=this,
+                format=exp.Literal.string(
+                    format_time(
+                        fmt.this if fmt else "",
+                        self.FORMAT_MAPPING or self.TIME_MAPPING,
+                        self.FORMAT_TRIE or self.TIME_TRIE,
+                    )
+                ),
+            )
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 

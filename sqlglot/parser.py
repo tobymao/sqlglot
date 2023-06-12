@@ -270,6 +270,7 @@ class Parser(metaclass=_Parser):
         TokenType.TRUE,
         TokenType.UNIQUE,
         TokenType.UNPIVOT,
+        TokenType.UPDATE,
         TokenType.VOLATILE,
         TokenType.WINDOW,
         *CREATABLES,
@@ -3044,7 +3045,7 @@ class Parser(metaclass=_Parser):
                     else exp.Literal.string(value)
                 )
             else:
-                field = self._parse_field(anonymous_func=True)
+                field = self._parse_field(anonymous_func=True, any_token=True)
 
             if isinstance(field, exp.Func):
                 # bigquery allows function calls like x.y.count(...)

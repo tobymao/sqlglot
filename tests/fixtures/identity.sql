@@ -69,6 +69,8 @@ a.B()
 a['x'].C()
 int.x
 map.x
+SELECT update
+SELECT x.update
 SELECT call.x
 a.b.INT(1.234)
 INT(x / 100)

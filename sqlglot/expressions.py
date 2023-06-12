@@ -3093,7 +3093,7 @@ class Select(Subqueryable):
         Args:
             hints: The SQL code strings to parse as the hints.
                 If an `Expression` instance is passed, it will be used as-is.
-            dialect: The dialect used to parse the hint.
+            dialect: The dialect used to parse the hints.
             copy: If `False`, modify this expression instance in-place.
 
         Returns:

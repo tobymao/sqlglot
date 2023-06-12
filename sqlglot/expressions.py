@@ -3101,8 +3101,7 @@ class Select(Subqueryable):
         """
         inst = _maybe_copy(self, copy)
         inst.set(
-            "hint",
-            Hint(expressions=[maybe_parse(h, copy=copy, dialect=dialect) for h in hints if h]),
+            "hint", Hint(expressions=[maybe_parse(h, copy=copy, dialect=dialect) for h in hints])
         )
 
         return inst

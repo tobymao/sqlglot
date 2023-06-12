@@ -3077,9 +3077,33 @@ class Select(Subqueryable):
         Returns:
             The modified expression.
         """
-
         inst = _maybe_copy(self, copy)
         inst.set("locks", [Lock(update=update)])
+
+        return inst
+
+    def hint(self, *hints: ExpOrStr, dialect: DialectType = None, copy: bool = True) -> Select:
+        """
+        Set hints for this expression.
+
+        Examples:
+            >>> Select().select("x").from_("tbl").hint("BROADCAST(y)").sql(dialect="spark")
+            'SELECT /*+ BROADCAST(y) */ x FROM tbl'
+
+        Args:
+            hints: The SQL code strings to parse as the hints.
+                If another `Expression` instance is passed, it will be used as-is.
+            copy: If `False`, modify this expression instance in-place.
+            dialect: The dialect used to parse the hint.
+
+        Returns:
+            The modified expression.
+        """
+        inst = _maybe_copy(self, copy)
+        inst.set(
+            "hint",
+            Hint(expressions=[maybe_parse(h, copy=copy, dialect=dialect) for h in hints if h]),
+        )
 
         return inst
 

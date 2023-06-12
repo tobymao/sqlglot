@@ -128,6 +128,16 @@ class TestBuild(unittest.TestCase):
                 "postgres",
             ),
             (
+                lambda: select("x").from_("tbl").hint("repartition(100)"),
+                "SELECT /*+ REPARTITION(100) */ x FROM tbl",
+                "spark",
+            ),
+            (
+                lambda: select("x").from_("tbl").hint("coalesce(3)", "broadcast(x)"),
+                "SELECT /*+ COALESCE(3), BROADCAST(x) */ x FROM tbl",
+                "spark",
+            ),
+            (
                 lambda: select("x", "y").from_("tbl").group_by("x"),
                 "SELECT x, y FROM tbl GROUP BY x",
             ),

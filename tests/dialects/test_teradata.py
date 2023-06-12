@@ -138,11 +138,15 @@ class TestTeradata(Validator):
     def test_cast(self):
         self.validate_all(
             "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",
+            read={
+                "bigquery": "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",
+            },
             write={
                 "teradata": "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",
-                "databricks": "DATE_FORMAT('1992-01', 'YYYY-DD')",
-                "mysql": "DATE_FORMAT('1992-01', 'YYYY-DD')",
-                "spark": "DATE_FORMAT('1992-01', 'YYYY-DD')",
-                "": "TIME_TO_STR('1992-01', 'YYYY-DD')",
+                "bigquery": "PARSE_DATE('%Y-%d', '1992-01')",
+                "databricks": "TO_DATE('1992-01', 'yyyy-dd')",
+                "mysql": "STR_TO_DATE('1992-01', '%Y-%d')",
+                "spark": "TO_DATE('1992-01', 'yyyy-dd')",
+                "": "STR_TO_DATE('1992-01', '%Y-%d')",
             },
         )

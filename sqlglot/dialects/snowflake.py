@@ -168,7 +168,7 @@ def _parse_convert_timezone(args: t.List) -> exp.Expression:
 
 class Snowflake(Dialect):
     NULL_ORDERING = "nulls_are_large"
-    TIME_FORMAT = "'yyyy-mm-dd hh24:mi:ss'"
+    TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
 
     TIME_MAPPING = {
         "YYYY": "%Y",

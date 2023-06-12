@@ -7,6 +7,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
+    format_time_lambda,
     inline_array_sql,
     max_or_greatest,
     min_or_least,
@@ -104,15 +105,25 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
+
     TIME_MAPPING = {
-        "%M": "%-M",
-        "%d": "%-d",
-        "%m": "%-m",
-        "%y": "%-y",
-        "%H": "%-H",
-        "%I": "%-I",
-        "%S": "%-S",
-        "%j": "%-j",
+        "%D": "%m/%d/%y",
+    }
+
+    FORMAT_MAPPING = {
+        "DD": "%d",
+        "MM": "%m",
+        "MON": "%b",
+        "MONTH": "%B",
+        "YYYY": "%Y",
+        "YY": "%y",
+        "HH": "%I",
+        "HH12": "%I",
+        "HH24": "%H",
+        "MI": "%M",
+        "SS": "%S",
+        "SSSSS": "%f",
+        "TZH": "%z",
     }
 
     class Tokenizer(tokens.Tokenizer):
@@ -178,8 +189,17 @@ class BigQuery(Dialect):
             "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
             "TIME_SUB": parse_date_delta_with_interval(exp.TimeSub),
             "TIMESTAMP_SUB": parse_date_delta_with_interval(exp.TimestampSub),
-            "PARSE_TIMESTAMP": lambda args: exp.StrToTime(
-                this=seq_get(args, 1), format=seq_get(args, 0)
+            "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
+                [
+                    seq_get(args, 1),
+                    seq_get(args, 0),
+                ]
+            ),
+            "PARSE_TIMESTAMP": lambda args: format_time_lambda(exp.StrToTime, "bigquery")(
+                [
+                    seq_get(args, 1),
+                    seq_get(args, 0),
+                ]
             ),
         }
 
@@ -277,6 +297,7 @@ class BigQuery(Dialect):
             exp.Select: transforms.preprocess(
                 [_unqualify_unnest, transforms.eliminate_distinct_on]
             ),
+            exp.StrToDate: lambda self, e: f"PARSE_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),

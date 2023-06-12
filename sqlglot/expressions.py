@@ -3934,7 +3934,8 @@ class ConcatWs(Concat):
 
 
 class Count(AggFunc):
-    arg_types = {"this": False}
+    arg_types = {"this": False, "expressions": False}
+    is_var_len_args = True
 
 
 class CountIf(AggFunc):

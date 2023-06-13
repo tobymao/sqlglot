@@ -197,8 +197,8 @@ class BigQuery(Dialect):
                 expression=seq_get(args, 1) or exp.Literal.string(","),
             ),
             "TIME_ADD": parse_date_delta_with_interval(exp.TimeAdd),
-            "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
             "TIME_SUB": parse_date_delta_with_interval(exp.TimeSub),
+            "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
             "TIMESTAMP_SUB": parse_date_delta_with_interval(exp.TimestampSub),
         }
 

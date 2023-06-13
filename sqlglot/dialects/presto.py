@@ -295,7 +295,7 @@ class Presto(Dialect):
                 [
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
-                    transforms.to_unnest_cross_join,
+                    transforms.explode_to_unnest,
                 ]
             ),
             exp.SortArray: _no_sort_array,
@@ -319,7 +319,6 @@ class Presto(Dialect):
             exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
-            exp.Unnest: transforms.preprocess([transforms.to_unnest_cross_join]),
             exp.VariancePop: rename_func("VAR_POP"),
             exp.With: transforms.preprocess([transforms.add_recursive_cte_column_names]),
             exp.WithinGroup: transforms.preprocess(

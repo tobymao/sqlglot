@@ -89,12 +89,14 @@ class TestPostgres(Validator):
         self.validate_all(
             "SELECT UNNEST(c) FROM t",
             write={
+                "hive": "SELECT EXPLODE(c) FROM t",
                 "presto": "SELECT col FROM t CROSS JOIN UNNEST(c) AS _u(col)",
             },
         )
         self.validate_all(
             "SELECT UNNEST(ARRAY[1])",
             write={
+                "hive": "SELECT EXPLODE(ARRAY(1))",
                 "presto": "SELECT col FROM UNNEST(ARRAY[1]) AS _u(col)",
             },
         )

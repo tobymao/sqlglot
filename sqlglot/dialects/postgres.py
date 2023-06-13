@@ -269,7 +269,7 @@ class Postgres(Dialect):
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
             "TO_TIMESTAMP": _to_timestamp,
-            "UNNEST": lambda args: exp.Unnest(expressions=[seq_get(args, 0)]),
+            "UNNEST": exp.Explode.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
@@ -330,6 +330,7 @@ class Postgres(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
+            exp.Explode: rename_func("UNNEST"),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),

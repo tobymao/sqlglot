@@ -154,8 +154,8 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def to_unnest_cross_join(expression: exp.Expression) -> exp.Expression:
-    """Convert unnest/explode/posexplode into unnest cross join (Presto requires it to be a cross join)."""
+def explode_to_unnest(expression: exp.Expression) -> exp.Expression:
+    """Convert explode/posexplode into unnest (used in hive -> presto)."""
     if isinstance(expression, exp.Select):
         from sqlglot.optimizer.scope import build_scope
 
@@ -179,12 +179,10 @@ def to_unnest_cross_join(expression: exp.Expression) -> exp.Expression:
                 explode_alias = select.aliases[1].name
                 select = select.this
 
-            if isinstance(select, (exp.Unnest, exp.Explode, exp.Posexplode)):
+            if isinstance(select, (exp.Explode, exp.Posexplode)):
                 is_posexplode = isinstance(select, exp.Posexplode)
 
-                explode_arg = (
-                    select.expressions[0] if isinstance(select, exp.Unnest) else select.this
-                )
+                explode_arg = select.this
                 unnest = exp.Unnest(expressions=[explode_arg.copy()], ordinality=is_posexplode)
 
                 # This ensures that we won't use [POS]EXPLODE's argument as a new selection

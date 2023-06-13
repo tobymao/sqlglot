@@ -220,6 +220,7 @@ class Parser(metaclass=_Parser):
         TokenType.AUTO_INCREMENT,
         TokenType.BEGIN,
         TokenType.CACHE,
+        TokenType.CASE,
         TokenType.COLLATE,
         TokenType.COMMAND,
         TokenType.COMMENT,
@@ -2261,7 +2262,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
         return (
-            (not schema and self._parse_function())
+            (not schema and self._parse_function(optional_parens=False))
             or self._parse_id_var(any_token=False)
             or self._parse_string_as_identifier()
             or self._parse_placeholder()
@@ -3137,18 +3138,21 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_function(
-        self, functions: t.Optional[t.Dict[str, t.Callable]] = None, anonymous: bool = False
+        self,
+        functions: t.Optional[t.Dict[str, t.Callable]] = None,
+        anonymous: bool = False,
+        optional_parens: bool = True,
     ) -> t.Optional[exp.Expression]:
         if not self._curr:
             return None
 
         token_type = self._curr.token_type
 
-        if self._match_set(self.NO_PAREN_FUNCTION_PARSERS):
+        if optional_parens and self._match_set(self.NO_PAREN_FUNCTION_PARSERS):
             return self.NO_PAREN_FUNCTION_PARSERS[token_type](self)
 
         if not self._next or self._next.token_type != TokenType.L_PAREN:
-            if token_type in self.NO_PAREN_FUNCTIONS:
+            if optional_parens and token_type in self.NO_PAREN_FUNCTIONS:
                 self._advance()
                 return self.expression(self.NO_PAREN_FUNCTIONS[token_type])
 

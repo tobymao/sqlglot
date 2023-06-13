@@ -6,18 +6,6 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
-        self.validate_all(
-            "cast(x as date format 'MM/DD/YYYY')",
-            write={
-                "bigquery": "PARSE_DATE('%m/%d/%Y', x)",
-            },
-        )
-        self.validate_all(
-            "cast(x as time format 'YYYY.MM.DD HH:MI:SSTZH')",
-            write={
-                "bigquery": "PARSE_TIMESTAMP('%Y.%m.%d %I:%M:%S%z', x)",
-            },
-        )
         self.validate_identity("SELECT * FROM x-0.a")
         self.validate_identity("SELECT * FROM pivot CROSS JOIN foo")
         self.validate_identity("SAFE_CAST(x AS STRING)")
@@ -49,6 +37,19 @@ class TestBigQuery(Validator):
             "CREATE TABLE IF NOT EXISTS foo AS SELECT * FROM bla EXCEPT DISTINCT (SELECT * FROM bar) LIMIT 0"
         )
 
+        self.validate_all("SELECT SPLIT(foo)", write={"bigquery": "SELECT SPLIT(foo, ',')"})
+        self.validate_all(
+            "cast(x as date format 'MM/DD/YYYY')",
+            write={
+                "bigquery": "PARSE_DATE('%m/%d/%Y', x)",
+            },
+        )
+        self.validate_all(
+            "cast(x as time format 'YYYY.MM.DD HH:MI:SSTZH')",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%Y.%m.%d %I:%M:%S%z', x)",
+            },
+        )
         self.validate_all("SELECT 1 AS hash", write={"bigquery": "SELECT 1 AS `hash`"})
         self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
         self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})

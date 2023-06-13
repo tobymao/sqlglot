@@ -166,13 +166,21 @@ class BigQuery(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
+            "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
                 unit=exp.Literal.string(str(seq_get(args, 1))),
                 this=seq_get(args, 0),
             ),
-            "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
             "DATETIME_ADD": parse_date_delta_with_interval(exp.DatetimeAdd),
+            "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
+            "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
+                [seq_get(args, 1), seq_get(args, 0)]
+            ),
+            "PARSE_TIMESTAMP": lambda args: format_time_lambda(exp.StrToTime, "bigquery")(
+                [seq_get(args, 1), seq_get(args, 0)]
+            ),
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0),
@@ -183,24 +191,15 @@ class BigQuery(Dialect):
                 if re.compile(str(seq_get(args, 1))).groups == 1
                 else None,
             ),
+            "SPLIT": lambda args: exp.Split(
+                # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1) or exp.Literal.string(","),
+            ),
             "TIME_ADD": parse_date_delta_with_interval(exp.TimeAdd),
-            "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
-            "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
-            "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
             "TIME_SUB": parse_date_delta_with_interval(exp.TimeSub),
+            "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
             "TIMESTAMP_SUB": parse_date_delta_with_interval(exp.TimestampSub),
-            "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
-                [
-                    seq_get(args, 1),
-                    seq_get(args, 0),
-                ]
-            ),
-            "PARSE_TIMESTAMP": lambda args: format_time_lambda(exp.StrToTime, "bigquery")(
-                [
-                    seq_get(args, 1),
-                    seq_get(args, 0),
-                ]
-            ),
         }
 
         FUNCTION_PARSERS = {

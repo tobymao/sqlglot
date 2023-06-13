@@ -91,10 +91,8 @@ def qualify_tables(
                         )
             elif isinstance(source, Scope) and source.is_udtf:
                 udtf = source.expression
-                table_alias = (
-                    udtf.args.get("alias")
-                    or (udtf.this and udtf.this.args.get("alias"))
-                    or exp.TableAlias(this=exp.to_identifier(next_alias_name()))
+                table_alias = udtf.args.get("alias") or exp.TableAlias(
+                    this=exp.to_identifier(next_alias_name())
                 )
                 udtf.set("alias", table_alias)
 

@@ -2157,6 +2157,8 @@ class Parser(metaclass=_Parser):
             table_alias: t.Optional[exp.TableAlias] = self.expression(
                 exp.TableAlias, this=table, columns=columns
             )
+        elif isinstance(this, exp.Subquery) and this.alias:
+            table_alias = this.args["alias"].copy()
         else:
             table_alias = self._parse_table_alias()
 

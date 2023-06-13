@@ -1996,6 +1996,10 @@ class Parser(metaclass=_Parser):
                 expression = parser(self)
 
                 if expression:
+                    if key == "limit":
+                        offset = expression.args.pop("offset", None)
+                        if offset:
+                            this.set("offset", exp.Offset(expression=offset))
                     this.set(key, expression)
         return this
 
@@ -2627,9 +2631,15 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         if self._match(TokenType.TOP if top else TokenType.LIMIT):
             limit_paren = self._match(TokenType.L_PAREN)
-            limit_exp = self.expression(
-                exp.Limit, this=this, expression=self._parse_number() if top else self._parse_term()
-            )
+            expression = self._parse_number() if top else self._parse_term()
+
+            if self._match(TokenType.COMMA):
+                offset = expression
+                expression = self._parse_term()
+            else:
+                offset = None
+
+            limit_exp = self.expression(exp.Limit, this=this, expression=expression, offset=offset)
 
             if limit_paren:
                 self._match_r_paren()
@@ -2662,7 +2672,7 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_offset(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
-        if not self._match_set((TokenType.OFFSET, TokenType.COMMA)):
+        if not self._match(TokenType.OFFSET):
             return this
 
         count = self._parse_number()

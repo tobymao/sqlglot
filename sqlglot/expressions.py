@@ -1624,7 +1624,7 @@ class Lambda(Expression):
 
 
 class Limit(Expression):
-    arg_types = {"this": False, "expression": True}
+    arg_types = {"this": False, "expression": True, "offset": False}
 
 
 class Literal(Condition):

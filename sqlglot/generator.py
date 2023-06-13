@@ -1347,7 +1347,15 @@ class Generator:
 
     def limit_sql(self, expression: exp.Limit) -> str:
         this = self.sql(expression, "this")
-        return f"{this}{self.seg('LIMIT')} {self.sql(expression, 'expression')}"
+        args = ", ".join(
+            sql
+            for sql in (
+                self.sql(expression, "offset"),
+                self.sql(expression, "expression"),
+            )
+            if sql
+        )
+        return f"{this}{self.seg('LIMIT')} {args}"
 
     def offset_sql(self, expression: exp.Offset) -> str:
         this = self.sql(expression, "this")

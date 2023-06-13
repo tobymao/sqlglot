@@ -208,9 +208,14 @@ class ClickHouse(Dialect):
             return join
 
         def _parse_function(
-            self, functions: t.Optional[t.Dict[str, t.Callable]] = None, anonymous: bool = False
+            self,
+            functions: t.Optional[t.Dict[str, t.Callable]] = None,
+            anonymous: bool = False,
+            optional_parens: bool = True,
         ) -> t.Optional[exp.Expression]:
-            func = super()._parse_function(functions, anonymous)
+            func = super()._parse_function(
+                functions=functions, anonymous=anonymous, optional_parens=optional_parens
+            )
 
             if isinstance(func, exp.Anonymous):
                 params = self._parse_func_params(func)

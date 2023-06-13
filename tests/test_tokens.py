@@ -1,5 +1,6 @@
 import unittest
 
+from sqlglot.dialects import BigQuery
 from sqlglot.tokens import Tokenizer, TokenType
 
 
@@ -68,7 +69,8 @@ x"""
             Tokenizer().tokenize("select /*")
 
     def test_jinja(self):
-        tokenizer = Tokenizer()
+        # Check that {#, #} are treated as token delimiters, even though BigQuery overrides COMMENTS
+        tokenizer = BigQuery.Tokenizer()
 
         tokens = tokenizer.tokenize(
             """

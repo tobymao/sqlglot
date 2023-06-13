@@ -21,7 +21,7 @@ def isolate_table_selects(expression, schema=None):
             source.replace(
                 exp.select("*")
                 .from_(
-                    alias(source, source.name or source.alias, table=True),
+                    alias(source, source.alias_or_name, table=True),
                     copy=False,
                 )
                 .subquery(source.alias, copy=False)

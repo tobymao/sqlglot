@@ -373,14 +373,6 @@ order by
         supp_nation,
         cust_nation,
         l_year;
-WITH "n1" AS (
-  SELECT
-    "nation"."n_nationkey" AS "n_nationkey",
-    "nation"."n_name" AS "n_name"
-  FROM "nation" AS "nation"
-  WHERE
-    "nation"."n_name" = 'FRANCE' OR "nation"."n_name" = 'GERMANY'
-)
 SELECT
   "n1"."n_name" AS "supp_nation",
   "n2"."n_name" AS "cust_nation",
@@ -397,15 +389,21 @@ JOIN "orders" AS "orders"
   ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 JOIN "customer" AS "customer"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-JOIN "n1" AS "n1"
-  ON "supplier"."s_nationkey" = "n1"."n_nationkey"
-JOIN "n1" AS "n2"
+JOIN "nation" AS "n1"
+  ON (
+    "n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY'
+  )
+  AND "supplier"."s_nationkey" = "n1"."n_nationkey"
+JOIN "nation" AS "n2"
   ON "customer"."c_nationkey" = "n2"."n_nationkey"
   AND (
     "n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE'
   )
   AND (
     "n1"."n_name" = 'GERMANY' OR "n2"."n_name" = 'GERMANY'
+  )
+  AND (
+    "n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY'
   )
 GROUP BY
   "n1"."n_name",
@@ -460,7 +458,7 @@ SELECT
   EXTRACT(year FROM CAST("orders"."o_orderdate" AS DATE)) AS "o_year",
   SUM(
     CASE
-      WHEN "nation_2"."n_name" = 'BRAZIL'
+      WHEN "n2"."n_name" = 'BRAZIL'
       THEN "lineitem"."l_extendedprice" * (
         1 - "lineitem"."l_discount"
       )
@@ -472,10 +470,10 @@ SELECT
 FROM "part" AS "part"
 JOIN "region" AS "region"
   ON "region"."r_name" = 'AMERICA'
-JOIN "nation" AS "nation"
-  ON "nation"."n_regionkey" = "region"."r_regionkey"
+JOIN "nation" AS "n1"
+  ON "n1"."n_regionkey" = "region"."r_regionkey"
 JOIN "customer" AS "customer"
-  ON "customer"."c_nationkey" = "nation"."n_nationkey"
+  ON "customer"."c_nationkey" = "n1"."n_nationkey"
 JOIN "orders" AS "orders"
   ON "orders"."o_custkey" = "customer"."c_custkey"
   AND CAST("orders"."o_orderdate" AS DATE) <= CAST('1996-12-31' AS DATE)
@@ -485,8 +483,8 @@ JOIN "lineitem" AS "lineitem"
   AND "part"."p_partkey" = "lineitem"."l_partkey"
 JOIN "supplier" AS "supplier"
   ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
-JOIN "nation" AS "nation_2"
-  ON "supplier"."s_nationkey" = "nation_2"."n_nationkey"
+JOIN "nation" AS "n2"
+  ON "supplier"."s_nationkey" = "n2"."n_nationkey"
 WHERE
   "part"."p_type" = 'ECONOMY ANODIZED STEEL'
 GROUP BY
@@ -1334,24 +1332,24 @@ SELECT
   "supplier"."s_name" AS "s_name",
   COUNT(*) AS "numwait"
 FROM "supplier" AS "supplier"
-JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_receiptdate" > "lineitem"."l_commitdate"
-  AND "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+JOIN "lineitem" AS "l1"
+  ON "l1"."l_receiptdate" > "l1"."l_commitdate"
+  AND "supplier"."s_suppkey" = "l1"."l_suppkey"
 JOIN "orders" AS "orders"
-  ON "orders"."o_orderkey" = "lineitem"."l_orderkey" AND "orders"."o_orderstatus" = 'F'
+  ON "orders"."o_orderkey" = "l1"."l_orderkey" AND "orders"."o_orderstatus" = 'F'
 JOIN "nation" AS "nation"
   ON "nation"."n_name" = 'SAUDI ARABIA'
   AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."l_orderkey" = "lineitem"."l_orderkey"
+  ON "_u_0"."l_orderkey" = "l1"."l_orderkey"
 LEFT JOIN "_u_2" AS "_u_2"
-  ON "_u_2"."l_orderkey" = "lineitem"."l_orderkey"
+  ON "_u_2"."l_orderkey" = "l1"."l_orderkey"
 WHERE
   (
     "_u_2"."l_orderkey" IS NULL
-    OR NOT ARRAY_ANY("_u_2"."_u_3", "_x" -> "_x" <> "lineitem"."l_suppkey")
+    OR NOT ARRAY_ANY("_u_2"."_u_3", "_x" -> "_x" <> "l1"."l_suppkey")
   )
-  AND ARRAY_ANY("_u_0"."_u_1", "_x" -> "_x" <> "lineitem"."l_suppkey")
+  AND ARRAY_ANY("_u_0"."_u_1", "_x" -> "_x" <> "l1"."l_suppkey")
   AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "supplier"."s_name"

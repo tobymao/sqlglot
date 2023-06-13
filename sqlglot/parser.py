@@ -2158,6 +2158,7 @@ class Parser(metaclass=_Parser):
                 exp.TableAlias, this=table, columns=columns
             )
         elif isinstance(this, exp.Subquery) and this.alias:
+            # Ensures parity between the Subquery's and the Lateral's "alias" args
             table_alias = this.args["alias"].copy()
         else:
             table_alias = self._parse_table_alias()

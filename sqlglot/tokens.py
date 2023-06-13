@@ -392,10 +392,13 @@ class _Tokenizer(type):
 
         klass._STRING_ESCAPES = set(klass.STRING_ESCAPES)
         klass._IDENTIFIER_ESCAPES = set(klass.IDENTIFIER_ESCAPES)
-        klass._COMMENTS = dict(
-            (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
-            for comment in klass.COMMENTS
-        )
+        klass._COMMENTS = {
+            **dict(
+                (comment, None) if isinstance(comment, str) else (comment[0], comment[1])
+                for comment in klass.COMMENTS
+            ),
+            "{#": "#}",  # Ensure Jinja comments are tokenized correctly in all dialects
+        }
 
         klass._KEYWORD_TRIE = new_trie(
             key.upper()
@@ -735,7 +738,7 @@ class Tokenizer(metaclass=_Tokenizer):
     NUMERIC_LITERALS: t.Dict[str, str] = {}
     ENCODE: t.Optional[str] = None
 
-    COMMENTS = ["--", ("/*", "*/"), ("{#", "#}")]
+    COMMENTS = ["--", ("/*", "*/")]
 
     __slots__ = (
         "sql",

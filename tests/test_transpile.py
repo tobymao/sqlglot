@@ -280,6 +280,11 @@ FROM v""",
             "select * from t where ((condition = 1)/*test*/)",
             "SELECT * FROM t WHERE ((condition = 1) /* test */)",
         )
+        self.validate(
+            "SELECT 1 // hi this is a comment",
+            "SELECT 1 /* hi this is a comment */",
+            read="snowflake",
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

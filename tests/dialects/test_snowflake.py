@@ -30,6 +30,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
 
         self.validate_all("CAST(x AS CHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
+        self.validate_all(
+            "SELECT * FROM (VALUES (0) foo(bar))",
+            write={"snowflake": "SELECT * FROM (VALUES (0)) AS foo(bar)"},
+        )
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all(

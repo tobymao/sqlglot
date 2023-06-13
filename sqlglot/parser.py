@@ -2373,11 +2373,14 @@ class Parser(metaclass=_Parser):
             return None
 
         expressions = self._parse_csv(self._parse_value)
+        alias = self._parse_table_alias()
 
         if is_derived:
             self._match_r_paren()
 
-        return self.expression(exp.Values, expressions=expressions, alias=self._parse_table_alias())
+        return self.expression(
+            exp.Values, expressions=expressions, alias=alias or self._parse_table_alias()
+        )
 
     def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
         if not self._match(TokenType.TABLE_SAMPLE) and not (

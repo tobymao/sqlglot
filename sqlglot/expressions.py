@@ -5686,12 +5686,13 @@ def table_name(table: Table | str) -> str:
     return ".".join(part for part in (table.text("catalog"), table.text("db"), table.name) if part)
 
 
-def replace_tables(expression: E, mapping: t.Dict[str, str]) -> E:
+def replace_tables(expression: E, mapping: t.Dict[str, str], copy: bool = True) -> E:
     """Replace all tables in expression according to the mapping.
 
     Args:
         expression: expression node to be transformed and replaced.
         mapping: mapping of table names.
+        copy: whether or not to copy the expression.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -5712,7 +5713,7 @@ def replace_tables(expression: E, mapping: t.Dict[str, str]) -> E:
                 )
         return node
 
-    return expression.transform(_replace_tables)
+    return expression.transform(_replace_tables, copy=copy)
 
 
 def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:

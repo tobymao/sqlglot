@@ -269,6 +269,7 @@ class Postgres(Dialect):
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),
             "TO_TIMESTAMP": _to_timestamp,
+            "UNNEST": lambda args: exp.Unnest(expressions=[seq_get(args, 0)]),
         }
 
         FUNCTION_PARSERS = {

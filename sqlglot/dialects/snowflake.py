@@ -269,6 +269,7 @@ class Snowflake(Dialect):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
+        COMMENTS = ["--", "//", ("/*", "*/")]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

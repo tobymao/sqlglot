@@ -91,11 +91,15 @@ def qualify_tables(
                         )
             elif isinstance(source, Scope) and source.is_udtf:
                 udtf = source.expression
-                table_alias = udtf.args.get("alias") or exp.TableAlias(this=next_alias_name())
+                table_alias = (
+                    udtf.args.get("alias")
+                    or (udtf.this and udtf.this.args.get("alias"))
+                    or exp.TableAlias(this=exp.to_identifier(next_alias_name()))
+                )
                 udtf.set("alias", table_alias)
 
                 if not table_alias.name:
-                    table_alias.set("this", next_alias_name())
+                    table_alias.set("this", exp.to_identifier(next_alias_name()))
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
                     for i, e in enumerate(udtf.expressions[0].expressions):
                         table_alias.append("columns", exp.to_identifier(f"_col_{i}"))

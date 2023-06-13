@@ -826,3 +826,7 @@ SELECT PERCENTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()
 SELECT PERCENTILE_CONT(x, 0.5 IGNORE NULLS) OVER ()
 WITH my_cte AS (SELECT 'a' AS desc) SELECT desc AS description FROM my_cte
 WITH my_cte AS (SELECT 'a' AS asc) SELECT asc AS description FROM my_cte
+SELECT * FROM case
+SELECT * FROM schema.case
+SELECT * FROM current_date
+SELECT * FROM schema.current_date

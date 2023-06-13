@@ -38,7 +38,7 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
 
 
 def _explode_to_unnest_sql(self: generator.Generator, expression: exp.Lateral) -> str:
-    if isinstance(expression.this, (exp.Unnest, exp.Explode, exp.Posexplode)):
+    if isinstance(expression.this, (exp.Explode, exp.Posexplode)):
         return self.sql(
             exp.Join(
                 this=exp.Unnest(

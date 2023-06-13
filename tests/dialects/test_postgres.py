@@ -85,6 +85,28 @@ class TestPostgres(Validator):
                 read="postgres",
             )
 
+    def test_unnest(self):
+        self.validate_identity(
+            "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
+        )
+
+        self.validate_all(
+            "SELECT UNNEST(c) FROM t",
+            write={
+                "hive": "SELECT EXPLODE(c) FROM t",
+                "postgres": "SELECT UNNEST(c) FROM t",
+                "presto": "SELECT col FROM t CROSS JOIN UNNEST(c) AS _u(col)",
+            },
+        )
+        self.validate_all(
+            "SELECT UNNEST(ARRAY[1])",
+            write={
+                "hive": "SELECT EXPLODE(ARRAY(1))",
+                "postgres": "SELECT UNNEST(ARRAY[1])",
+                "presto": "SELECT col FROM UNNEST(ARRAY[1]) AS _u(col)",
+            },
+        )
+
     def test_postgres(self):
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")

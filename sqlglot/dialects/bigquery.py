@@ -193,7 +193,8 @@ class BigQuery(Dialect):
             ),
             "SPLIT": lambda args: exp.Split(
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split
-                this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string(",")
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1) or exp.Literal.string(","),
             ),
             "TIME_ADD": parse_date_delta_with_interval(exp.TimeAdd),
             "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),

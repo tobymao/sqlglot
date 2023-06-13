@@ -1295,7 +1295,7 @@ class TestDialect(Validator):
     def test_limit(self):
         self.validate_all(
             "SELECT * FROM data LIMIT 10, 20",
-            write={"sqlite": "SELECT * FROM data LIMIT 10 OFFSET 20"},
+            write={"sqlite": "SELECT * FROM data LIMIT 20 OFFSET 10"},
         )
         self.validate_all(
             "SELECT x FROM y LIMIT 10",

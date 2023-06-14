@@ -2346,13 +2346,14 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_unnest(self) -> t.Optional[exp.Unnest]:
+    def _parse_unnest(self, with_alias: bool = True) -> t.Optional[exp.Unnest]:
         if not self._match(TokenType.UNNEST):
             return None
 
         expressions = self._parse_wrapped_csv(self._parse_type)
         ordinality = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
-        alias = self._parse_table_alias()
+
+        alias = self._parse_table_alias() if with_alias else None
 
         if alias and self.UNNEST_COLUMN_ONLY:
             if alias.args.get("columns"):
@@ -2792,7 +2793,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Not, this=this) if negate else this
 
     def _parse_in(self, this: t.Optional[exp.Expression], alias: bool = False) -> exp.In:
-        unnest = self._parse_unnest()
+        unnest = self._parse_unnest(with_alias=False)
         if unnest:
             this = self.expression(exp.In, this=this, unnest=unnest)
         elif self._match(TokenType.L_PAREN):

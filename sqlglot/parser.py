@@ -290,7 +290,6 @@ class Parser(metaclass=_Parser):
         TokenType.LOCK,
         TokenType.NATURAL,
         TokenType.OFFSET,
-        TokenType.RETURNING,
         TokenType.RIGHT,
         TokenType.WINDOW,
     }

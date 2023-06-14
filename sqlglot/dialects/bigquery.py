@@ -293,6 +293,14 @@ class BigQuery(Dialect):
             exp.IntDiv: rename_func("DIV"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
+            exp.RegexpExtract: lambda self, e: self.func(
+                "REGEXP_EXTRACT",
+                e.this,
+                e.expression,
+                e.args.get("position"),
+                e.args.get("occurrence"),
+            ),
+            exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.Select: transforms.preprocess(
                 [_unqualify_unnest, transforms.eliminate_distinct_on]
             ),
@@ -315,7 +323,6 @@ class BigQuery(Dialect):
             exp.StabilityProperty: lambda self, e: f"DETERMINISTIC"
             if e.name == "IMMUTABLE"
             else "NOT DETERMINISTIC",
-            exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
         }
 
         TYPE_MAPPING = {

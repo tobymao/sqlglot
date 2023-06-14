@@ -432,9 +432,11 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
             write={
+                "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
                 "duckdb": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
             },
         )
+        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
         self.validate_identity("BEGIN A B C D E F")
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")

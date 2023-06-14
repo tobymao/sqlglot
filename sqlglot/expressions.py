@@ -3511,6 +3511,10 @@ class Dot(Binary):
     def name(self) -> str:
         return self.expression.name
 
+    @property
+    def output_name(self) -> str:
+        return self.name
+
     @classmethod
     def build(self, expressions: t.Sequence[Expression]) -> Dot:
         """Build a Dot object with a sequence of expressions."""

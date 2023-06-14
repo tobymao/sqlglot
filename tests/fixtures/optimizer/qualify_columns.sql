@@ -296,6 +296,10 @@ SELECT x.b AS b FROM x AS x;
 SELECT x.b FROM x JOIN y USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
+# execute: false
+WITH cte AS (SELECT a.b.c.d.f.g FROM tbl1) SELECT g FROM (SELECT g FROM tbl2) tbl2 JOIN cte USING(g);
+WITH cte AS (SELECT tbl1.a.b.c.d.f.g AS g FROM tbl1 AS tbl1) SELECT COALESCE(tbl2.g, cte.g) AS g FROM (SELECT tbl2.g AS g FROM tbl2 AS tbl2) AS tbl2 JOIN cte ON tbl2.g = cte.g;
+
 SELECT x.b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
 

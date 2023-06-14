@@ -93,7 +93,7 @@ def _pop_table_column_aliases(derived_tables):
 
 def _expand_using(scope, resolver):
     joins = list(scope.find_all(exp.Join))
-    names = {join.this.alias for join in joins}
+    names = {join.this.alias_or_name for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
     # Mapping of automatically joined column names to an ordered set of source names (dict).

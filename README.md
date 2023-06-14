@@ -8,6 +8,8 @@ You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) qu
 
 Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, it should be noted that SQL validation is not SQLGlot’s goal, so some syntax errors may go unnoticed.
 
+Learn more about the SQLGlot API in the [documentation](https://sqlglot.com/).
+
 Contributions are very welcome in SQLGlot; read the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) to get started!
 
 ## Table of Contents
@@ -457,7 +459,9 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 
 ## Documentation
 
-SQLGlot uses [pdoc](https://pdoc.dev/) to serve its API documentation:
+SQLGlot uses [pdoc](https://pdoc.dev/) to serve its API documentation.
+
+A hosted version is on the [SQLGlot website](https://sqlglot.com/), or you can build locally with:
 
 ```
 make docs-serve

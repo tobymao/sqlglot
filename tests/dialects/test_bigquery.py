@@ -31,7 +31,7 @@ class TestBigQuery(Validator):
         self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
         self.validate_identity(
-            "DATE(CAST('2016-12-25 05:30:00+07' AS TIMESTAMP), 'America/Los_Angeles')"
+            "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
         )
         self.validate_identity(
             """CREATE TABLE x (a STRING OPTIONS (description='x')) OPTIONS (table_expiration_days=1)"""

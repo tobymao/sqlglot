@@ -600,6 +600,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "RECURSIVE": TokenType.RECURSIVE,
         "REGEXP": TokenType.RLIKE,
         "REPLACE": TokenType.REPLACE,
+        "RETURNING": TokenType.RETURNING,
         "REFERENCES": TokenType.REFERENCES,
         "RIGHT": TokenType.RIGHT,
         "RLIKE": TokenType.RLIKE,

@@ -173,7 +173,6 @@ class Oracle(Dialect):
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "NVARCHAR2": TokenType.NVARCHAR,
-            "RETURNING": TokenType.RETURNING,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
             "TOP": TokenType.TOP,

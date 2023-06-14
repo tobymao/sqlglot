@@ -534,6 +534,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("HLL(a)"), exp.Hll)
         self.assertIsInstance(parse_one("ARRAY(time, foo)"), exp.Array)
         self.assertIsInstance(parse_one("STANDARD_HASH('hello', 'sha256')"), exp.StandardHash)
+        self.assertIsInstance(parse_one("DATE(foo)"), exp.Date)
 
     def test_column(self):
         column = parse_one("a.b.c.d")

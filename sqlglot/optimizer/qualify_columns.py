@@ -14,7 +14,7 @@ from sqlglot.schema import Schema, ensure_schema
 
 def qualify_columns(
     expression: exp.Expression,
-    schema: dict | Schema,
+    schema: t.Dict | Schema,
     expand_alias_refs: bool = True,
     infer_schema: t.Optional[bool] = None,
 ) -> exp.Expression:

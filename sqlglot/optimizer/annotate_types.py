@@ -10,7 +10,6 @@ from sqlglot.schema import Schema, ensure_schema
 
 if t.TYPE_CHECKING:
     B = t.TypeVar("B", bound=exp.Binary)
-    U = t.TypeVar("U", bound=exp.Unary)
 
 
 def annotate_types(
@@ -341,7 +340,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     @t.no_type_check
-    def _annotate_unary(self, expression: U) -> U:
+    def _annotate_unary(self, expression: E) -> E:
         self._annotate_args(expression)
 
         if isinstance(expression, exp.Condition) and not isinstance(expression, exp.Paren):

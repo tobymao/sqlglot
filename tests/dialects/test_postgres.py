@@ -107,6 +107,16 @@ class TestPostgres(Validator):
             },
         )
 
+    def test_array_offset(self):
+        self.validate_all(
+            "SELECT col[1]",
+            write={
+                "hive": "SELECT col[0]",
+                "postgres": "SELECT col[1]",
+                "presto": "SELECT col[1]",
+            },
+        )
+
     def test_postgres(self):
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")

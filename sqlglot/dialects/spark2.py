@@ -133,13 +133,13 @@ class Spark2(Hive):
             "WEEKOFYEAR": lambda args: exp.WeekOfYear(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
             ),
-            "DATE": lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("date")),
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1),
                 unit=exp.var(seq_get(args, 0)),
             ),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
             "BOOLEAN": _parse_as_cast("boolean"),
+            "DATE": _parse_as_cast("date"),
             "DOUBLE": _parse_as_cast("double"),
             "FLOAT": _parse_as_cast("float"),
             "INT": _parse_as_cast("int"),

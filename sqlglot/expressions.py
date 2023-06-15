@@ -4095,6 +4095,11 @@ class DateToDi(Func):
     pass
 
 
+class Date(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 class Day(Func):
     pass
 

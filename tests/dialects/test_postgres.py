@@ -1,3 +1,5 @@
+from unittest import mock
+
 from sqlglot import ParseError, exp, parse_one, transpile
 from tests.dialects.test_dialect import Validator
 
@@ -107,7 +109,8 @@ class TestPostgres(Validator):
             },
         )
 
-    def test_array_offset(self):
+    @mock.patch("sqlglot.helper.logger")
+    def test_array_offset(self, mock_logger):
         self.validate_all(
             "SELECT col[1]",
             write={

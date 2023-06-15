@@ -3364,6 +3364,7 @@ class DataType(Expression):
     NUMERIC_TYPES = {*INTEGER_TYPES, *FLOAT_TYPES}
 
     TEMPORAL_TYPES = {
+        Type.TIME,
         Type.TIMESTAMP,
         Type.TIMESTAMPTZ,
         Type.TIMESTAMPLTZ,
@@ -3379,9 +3380,8 @@ class DataType(Expression):
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
-            data_type = cls.Type.__members__.get(dtype.upper())
-            if not dialect and data_type:
-                data_type_exp: t.Optional[Expression] = DataType(this=data_type)
+            if dtype.upper() == "UNKNOWN":
+                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type.UNKNOWN)
             else:
                 data_type_exp = parse_one(dtype, read=dialect, into=DataType)
 

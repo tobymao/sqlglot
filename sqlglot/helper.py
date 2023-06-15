@@ -14,7 +14,6 @@ from itertools import count
 if t.TYPE_CHECKING:
     from sqlglot import exp
     from sqlglot._typing import E, T
-    from sqlglot.dialects.dialect import DialectType
     from sqlglot.expressions import Expression
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
@@ -430,27 +429,3 @@ def first(it: t.Iterable[T]) -> T:
     Useful for sets.
     """
     return next(i for i in it)
-
-
-def can_identify(text: str, identify: str | bool, dialect: DialectType = None) -> bool:
-    """Checks if text can be identified given an identify option.
-
-    Args:
-        text: the text to check.
-        identify:
-            "always" or `True`: always returns true.
-            "safe": true if there is no uppercase or lowercase character in `text`, depending on `dialect`.
-        dialect: the dialect to use in order to decide whether a text can be identified.
-
-    Returns:
-        Whether or not a string can be identified.
-    """
-    if identify is True or identify == "always":
-        return True
-
-    if identify == "safe":
-        from sqlglot.dialects.dialect import Dialect
-
-        return not Dialect.get_or_raise(dialect).case_sensitive(text)
-
-    return False

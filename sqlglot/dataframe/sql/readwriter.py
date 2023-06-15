@@ -4,7 +4,8 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot.helper import can_identify, object_to_dict
+from sqlglot.dialects import Spark
+from sqlglot.helper import object_to_dict
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.dataframe import DataFrame
@@ -26,7 +27,7 @@ class DataFrameReader:
             .from_(tableName)
             .select(
                 *(
-                    column if can_identify(column, "safe") else f'"{column}"'
+                    column if Spark.can_identify(column, "safe") else f'"{column}"'
                     for column in sqlglot.schema.column_names(tableName)
                 )
             ),

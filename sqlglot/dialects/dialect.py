@@ -108,6 +108,7 @@ class _Dialect(type):
             },
             "STRING_ESCAPE": klass.tokenizer_class.STRING_ESCAPES[0],
             "IDENTIFIER_ESCAPE": klass.tokenizer_class.IDENTIFIER_ESCAPES[0],
+            "can_identify": klass.can_identify,
         }
 
         if enum not in ("", "bigquery"):
@@ -215,6 +216,11 @@ class Dialect(metaclass=_Dialect):
 
     @classmethod
     def normalize_identifier(cls, expression: E) -> E:
+        """
+        Normalizes an unquoted identifier to either lower or upper case, thus essentially
+        making it case-insensitive. If a dialect treats all identifiers as case-insensitive,
+        they will be normalized regardless of being quoted or not.
+        """
         if isinstance(expression, exp.Identifier) and (
             not expression.quoted or cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None
         ):
@@ -229,11 +235,33 @@ class Dialect(metaclass=_Dialect):
 
     @classmethod
     def case_sensitive(cls, text: str) -> bool:
+        """Checks if text contains any case sensitive characters, based on the dialect's rules."""
         if cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None:
             return False
 
         unsafe = str.islower if cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
         return any(unsafe(char) for char in text)
+
+    @classmethod
+    def can_identify(cls, text: str, identify: str | bool = "safe") -> bool:
+        """Checks if text can be identified given an identify option.
+
+        Args:
+            text: The text to check.
+            identify:
+                "always" or `True`: Always returns true.
+                "safe": True if the identifier is case-insensitive.
+
+        Returns:
+            Whether or not the given text can be identified.
+        """
+        if identify is True or identify == "always":
+            return True
+
+        if identify == "safe":
+            return not cls.case_sensitive(text)
+
+        return False
 
     @classmethod
     def quote_identifier(cls, expression: E, identify: bool = True) -> E:

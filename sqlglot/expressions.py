@@ -3379,8 +3379,9 @@ class DataType(Expression):
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
-            if dtype.upper() in cls.Type.__members__:
-                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type[dtype.upper()])
+            dtype = dtype.upper()
+            if not dialect and dtype in cls.Type.__members__:
+                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type[dtype])
             else:
                 data_type_exp = parse_one(dtype, read=dialect, into=DataType)
 

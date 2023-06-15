@@ -253,10 +253,6 @@ def _merge_joins(outer_scope, inner_scope, from_or_join):
     """
 
     new_joins = []
-    comma_joins = inner_scope.expression.args.get("from").expressions[1:]
-    for subquery in comma_joins:
-        new_joins.append(exp.Join(this=subquery, kind="CROSS"))
-        outer_scope.add_source(subquery.alias_or_name, inner_scope.sources[subquery.alias_or_name])
 
     joins = inner_scope.expression.args.get("joins") or []
     for join in joins:
@@ -334,7 +330,6 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
             return
 
     expression.where(where.this, copy=False)
-    expression.set("where", expression.args.get("where"))
 
 
 def _merge_order(outer_scope, inner_scope):

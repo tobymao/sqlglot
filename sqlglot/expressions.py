@@ -5657,22 +5657,27 @@ def replace_children(expression: Expression, fun: t.Callable, *args, **kwargs) -
         expression.args[k] = new_child_nodes if is_list_arg else seq_get(new_child_nodes, 0)
 
 
-def column_table_names(expression: Expression) -> t.List[str]:
+def column_table_names(expression: Expression, exclude: str = "") -> t.Set[str]:
     """
     Return all table names referenced through columns in an expression.
 
     Example:
         >>> import sqlglot
-        >>> column_table_names(sqlglot.parse_one("a.b AND c.d AND c.e"))
-        ['c', 'a']
+        >>> sorted(column_table_names(sqlglot.parse_one("a.b AND c.d AND c.e")))
+        ['a', 'c']
 
     Args:
         expression: expression to find table names.
+        exclude: a table name to exclude
 
     Returns:
         A list of unique names.
     """
-    return list(dict.fromkeys(column.table for column in expression.find_all(Column)))
+    return {
+        table
+        for table in (column.table for column in expression.find_all(Column))
+        if table and table != exclude
+    }
 
 
 def table_name(table: Table | str) -> str:

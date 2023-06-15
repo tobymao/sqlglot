@@ -6,17 +6,16 @@ from sqlglot.helper import name_sequence, tsort
 
 class TestHelper(unittest.TestCase):
     def test_tsort(self):
-        self.assertEqual(tsort({"a": []}), ["a"])
-        self.assertEqual(tsort({"a": ["b", "b"]}), ["b", "a"])
-        self.assertEqual(tsort({"a": ["b"]}), ["b", "a"])
-        self.assertEqual(tsort({"a": ["c"], "b": [], "c": []}), ["c", "a", "b"])
+        self.assertEqual(tsort({"a": set()}), ["a"])
+        self.assertEqual(tsort({"a": {"b"}}), ["b", "a"])
+        self.assertEqual(tsort({"a": {"c"}, "b": set(), "c": set()}), ["b", "c", "a"])
         self.assertEqual(
             tsort(
                 {
-                    "a": ["b", "c"],
-                    "b": ["c"],
-                    "c": [],
-                    "d": ["a"],
+                    "a": {"b", "c"},
+                    "b": {"c"},
+                    "c": set(),
+                    "d": {"a"},
                 }
             ),
             ["c", "b", "a", "d"],
@@ -25,9 +24,9 @@ class TestHelper(unittest.TestCase):
         with self.assertRaises(ValueError):
             tsort(
                 {
-                    "a": ["b", "c"],
-                    "b": ["a"],
-                    "c": [],
+                    "a": {"b", "c"},
+                    "b": {"a"},
+                    "c": set(),
                 }
             )
 

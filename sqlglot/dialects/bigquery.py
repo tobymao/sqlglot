@@ -105,6 +105,7 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
+    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
 
     TIME_MAPPING = {
         "%D": "%m/%d/%y",

@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
-from sqlglot.helper import apply_index_offset, csv, seq_get, should_identify
+from sqlglot.helper import apply_index_offset, can_identify, csv, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -886,7 +886,7 @@ class Generator:
         text = text.replace(self.IDENTIFIER_END, self._escaped_identifier_end)
         if (
             expression.quoted
-            or should_identify(text, self.identify)
+            or can_identify(text, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):

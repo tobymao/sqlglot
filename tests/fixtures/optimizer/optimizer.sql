@@ -646,3 +646,38 @@ CROSS JOIN LATERAL (
     "l"."log_date" DESC NULLS LAST
   LIMIT 1
 ) AS "l";
+
+# title: bigquery identifiers are case-insensitive
+# execute: false
+# dialect: bigquery
+WITH cte AS (
+    SELECT
+        refresh_date AS `reFREsh_date`,
+        term AS `TeRm`,
+        `rank`
+    FROM `bigquery-public-data.google_trends.top_terms`
+)
+SELECT
+   refresh_date AS `Day`,
+   term AS Top_Term,
+   rank,
+FROM cte
+WHERE
+   rank = 1
+   AND refresh_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 2 WEEK)
+GROUP BY `dAy`, `top_term`, rank
+ORDER BY `DaY` DESC;
+SELECT
+  `top_terms`.`refresh_date` AS `day`,
+  `top_terms`.`term` AS `top_term`,
+  `top_terms`.`rank` AS `rank`
+FROM `bigquery-public-data`.`google_trends`.`top_terms` AS `top_terms`
+WHERE
+  `top_terms`.`rank` = 1
+  AND CAST(`top_terms`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
+GROUP BY
+  `top_terms`.`refresh_date`,
+  `top_terms`.`term`,
+  `top_terms`.`rank`
+ORDER BY
+  `day` DESC;

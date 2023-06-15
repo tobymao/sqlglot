@@ -1,6 +1,7 @@
 import datetime
 import unittest
 from datetime import date
+from multiprocessing import Pool
 
 import duckdb
 import pandas as pd
@@ -76,13 +77,21 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        for i, (sql, _) in enumerate(self.sqls):
-            with self.subTest(f"tpch-h {i + 1}"):
-                a = self.cached_execute(sql)
-                sql = parse_one(sql).transform(to_csv).sql(pretty=True)
-                table = execute(sql, TPCH_SCHEMA)
-                b = pd.DataFrame(table.rows, columns=table.columns)
-                assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
+        with Pool() as pool:
+            for i, table in enumerate(
+                pool.starmap(
+                    execute,
+                    (
+                        (parse_one(sql).transform(to_csv).sql(pretty=True), TPCH_SCHEMA)
+                        for sql, _ in self.sqls
+                    ),
+                )
+            ):
+                with self.subTest(f"tpch-h {i + 1}"):
+                    sql, _ = self.sqls[i]
+                    a = self.cached_execute(sql)
+                    b = pd.DataFrame(table.rows, columns=table.columns)
+                    assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
 
     def test_execute_callable(self):
         tables = {

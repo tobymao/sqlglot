@@ -74,6 +74,7 @@ class TestBigQuery(Validator):
             "SELECT * FROM `my-project.my-dataset.my-table`",
             write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
         )
+        self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_identity("CAST(x AS TIMESTAMP)")
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
         self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})

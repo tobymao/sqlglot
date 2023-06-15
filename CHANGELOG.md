@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v16.1.3] - 2023-06-15
+### :sparkles: New Features
+- [`9660c33`](https://github.com/tobymao/sqlglot/commit/9660c331f7a7c4dac267b38ceffe16d33da69015) - add enum/set types to mysql closes [#1778](https://github.com/tobymao/sqlglot/pull/1778) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`fd0fc97`](https://github.com/tobymao/sqlglot/commit/fd0fc971393eaa9a61f48aead04eeea11d74c897) - bigquery timestamp -> timestamptz *(commit by [@tobymao](https://github.com/tobymao))*
+- [`b86f7e8`](https://github.com/tobymao/sqlglot/commit/b86f7e8aced2fbb71aef8532073ede16810babe6) - dialect build *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.1.1] - 2023-06-15
 ### :bug: Bug Fixes
 - [`697c8b1`](https://github.com/tobymao/sqlglot/commit/697c8b13f4983a9e00110ae88ab7d58e5ba22e06) - **bigquery**: allow SPLIT call with 1 argument *(PR [#1770](https://github.com/tobymao/sqlglot/pull/1770) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -496,3 +505,4 @@ Changelog
 [v16.0.0]: https://github.com/tobymao/sqlglot/compare/v15.2.0...v16.0.0
 [v16.1.0]: https://github.com/tobymao/sqlglot/compare/v16.0.0...v16.1.0
 [v16.1.1]: https://github.com/tobymao/sqlglot/compare/v16.1.0...v16.1.1
+[v16.1.3]: https://github.com/tobymao/sqlglot/compare/v16.1.2...v16.1.3

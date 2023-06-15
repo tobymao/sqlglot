@@ -2986,23 +2986,14 @@ class Parser(metaclass=_Parser):
 
         value: t.Optional[exp.Expression] = None
         if type_token in self.TIMESTAMPS:
-            if self._match_text_seq("WITH", "TIME", "ZONE") or type_token == TokenType.TIMESTAMPTZ:
+            if self._match_text_seq("WITH", "TIME", "ZONE"):
+                maybe_func = False
                 value = exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ, expressions=expressions)
-            elif (
-                self._match_text_seq("WITH", "LOCAL", "TIME", "ZONE")
-                or type_token == TokenType.TIMESTAMPLTZ
-            ):
+            elif self._match_text_seq("WITH", "LOCAL", "TIME", "ZONE"):
+                maybe_func = False
                 value = exp.DataType(this=exp.DataType.Type.TIMESTAMPLTZ, expressions=expressions)
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
-                if type_token == TokenType.TIME:
-                    value = exp.DataType(this=exp.DataType.Type.TIME, expressions=expressions)
-                else:
-                    value = exp.DataType(this=exp.DataType.Type.TIMESTAMP, expressions=expressions)
-
-            maybe_func = maybe_func and value is None
-
-            if value is None:
-                value = exp.DataType(this=exp.DataType.Type.TIMESTAMP, expressions=expressions)
+                maybe_func = False
         elif type_token == TokenType.INTERVAL:
             unit = self._parse_var()
 

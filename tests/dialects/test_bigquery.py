@@ -74,11 +74,11 @@ class TestBigQuery(Validator):
             "SELECT * FROM `my-project.my-dataset.my-table`",
             write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
         )
+        self.validate_identity("CAST(x AS TIMESTAMP)")
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
         self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS TIMESTAMP)", write={"bigquery": "CAST(x AS DATETIME)"})
         self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
         self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
         self.validate_all(

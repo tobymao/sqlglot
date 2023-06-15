@@ -108,7 +108,6 @@ class _Dialect(type):
             },
             "STRING_ESCAPE": klass.tokenizer_class.STRING_ESCAPES[0],
             "IDENTIFIER_ESCAPE": klass.tokenizer_class.IDENTIFIER_ESCAPES[0],
-            "can_identify": klass.can_identify,
         }
 
         if enum not in ("", "bigquery"):
@@ -122,6 +121,8 @@ class _Dialect(type):
 
         if not klass.STRICT_STRING_CONCAT:
             klass.parser_class.BITWISE[TokenType.DPIPE] = exp.SafeDPipe
+
+        klass.generator_class.can_identify = klass.can_identify
 
         return klass
 

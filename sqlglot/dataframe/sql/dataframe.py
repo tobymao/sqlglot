@@ -316,6 +316,7 @@ class DataFrame:
                         expression.alias_or_name: expression.type.sql("spark")
                         for expression in select_expression.expressions
                     },
+                    dialect="spark",
                 )
                 cache_storage_level = select_expression.args["cache_storage_level"]
                 options = [

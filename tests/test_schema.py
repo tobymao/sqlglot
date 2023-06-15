@@ -201,7 +201,7 @@ class TestSchema(unittest.TestCase):
     def test_schema_normalization(self):
         schema = MappingSchema(
             schema={"x": {"`y`": {"Z": {"a": "INT", "`B`": "VARCHAR"}, "w": {"C": "INT"}}}},
-            dialect="spark",
+            dialect="clickhouse",
         )
 
         table_z = exp.Table(this="z", db="y", catalog="x")
@@ -228,7 +228,9 @@ class TestSchema(unittest.TestCase):
 
         # Check that the correct dialect is used when calling schema methods
         schema = MappingSchema(schema={"[Fo]": {"x": "int"}}, dialect="tsql")
-        self.assertEqual(schema.column_names("[Fo]"), schema.column_names("`Fo`", dialect="spark"))
+        self.assertEqual(
+            schema.column_names("[Fo]"), schema.column_names("`Fo`", dialect="clickhouse")
+        )
 
         # Check that all identifiers are normalized to lowercase for BigQuery, even quoted ones
         schema = MappingSchema(schema={"`Foo`": {"BaR": "int"}}, dialect="bigquery")

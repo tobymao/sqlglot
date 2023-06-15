@@ -105,6 +105,8 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
+
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
 
     TIME_MAPPING = {

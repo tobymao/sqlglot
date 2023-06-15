@@ -19,17 +19,14 @@ class DataFrameReader:
     def table(self, tableName: str) -> DataFrame:
         from sqlglot.dataframe.sql.dataframe import DataFrame
 
-        sqlglot.schema.add_table(tableName)
+        sqlglot.schema.add_table(tableName, dialect="spark")
 
         return DataFrame(
             self.spark,
             exp.Select()
-            .from_(tableName)
+            .from_(exp.to_table(tableName, dialect="spark").transform(Spark.normalize_identifier))
             .select(
-                *(
-                    column if Spark.can_identify(column, "safe") else f'"{column}"'
-                    for column in sqlglot.schema.column_names(tableName)
-                )
+                *(column for column in sqlglot.schema.column_names(tableName, dialect="spark"))
             ),
         )
 
@@ -74,7 +71,7 @@ class DataFrameWriter:
         )
         df = self._df.copy(output_expression_container=output_expression_container)
         if self._by_name:
-            columns = sqlglot.schema.column_names(tableName, only_visible=True)
+            columns = sqlglot.schema.column_names(tableName, only_visible=True, dialect="spark")
             df = df._convert_leaf_to_cte().select(*columns)
 
         return self.copy(_df=df)

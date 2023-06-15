@@ -266,7 +266,7 @@ class Generator:
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
 
-    can_identify: t.Callable[[str, str | bool], bool] = lambda *_: False
+    can_identify: t.Callable[[str, str | bool], bool]
 
     # Delimiters for quotes, identifiers and the corresponding escape characters
     QUOTE_START = "'"

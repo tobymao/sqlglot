@@ -183,6 +183,7 @@ def _to_timestamp(args: t.List) -> exp.Expression:
 
 
 class Postgres(Dialect):
+    INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TIME_MAPPING = {

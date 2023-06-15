@@ -234,9 +234,21 @@ class Generator:
     # Keywords that can't be used as unquoted identifier names
     RESERVED_KEYWORDS: t.Set[str] = set()
 
-    WITH_SEPARATED_COMMENTS = (exp.Select, exp.From, exp.Where, exp.With)
+    # Expressions whose comments are separated from them for better formatting
+    WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
+        exp.Select,
+        exp.From,
+        exp.Where,
+        exp.With,
+    )
 
-    UNWRAPPED_INTERVAL_VALUES = (exp.Column, exp.Literal, exp.Neg, exp.Paren)
+    # Expressions that can remain unwrapped when appearing in the context of an INTERVAL
+    UNWRAPPED_INTERVAL_VALUES: t.Tuple[t.Type[exp.Expression], ...] = (
+        exp.Column,
+        exp.Literal,
+        exp.Neg,
+        exp.Paren,
+    )
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 

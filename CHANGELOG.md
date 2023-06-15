@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v16.2.0] - 2023-06-15
+### :bug: Bug Fixes
+- [`b29a421`](https://github.com/tobymao/sqlglot/commit/b29a421843bc94d88e5f67dd787ee07a675d16ab) - parsing unknown into data type build *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`3233c73`](https://github.com/tobymao/sqlglot/commit/3233c73a4acb803e31143b3afe8aece7ef80313c) - mute logger *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.1.4] - 2023-06-15
 ### :bug: Bug Fixes
 - [`4a1068b`](https://github.com/tobymao/sqlglot/commit/4a1068b51fcf6c9e49ec32c29345eac189d24ef2) - **Postgres**: Set INDEX_OFFSET to 1 *(PR [#1782](https://github.com/tobymao/sqlglot/pull/1782) by [@vegarsti](https://github.com/vegarsti))*
@@ -514,3 +522,4 @@ Changelog
 [v16.1.1]: https://github.com/tobymao/sqlglot/compare/v16.1.0...v16.1.1
 [v16.1.3]: https://github.com/tobymao/sqlglot/compare/v16.1.2...v16.1.3
 [v16.1.4]: https://github.com/tobymao/sqlglot/compare/v16.1.3...v16.1.4
+[v16.2.0]: https://github.com/tobymao/sqlglot/compare/v16.1.4...v16.2.0

@@ -12325,7 +12325,10 @@ SELECT
   "call_center"."cc_manager" AS "manager",
   SUM("catalog_returns"."cr_net_loss") AS "returns_loss"
 FROM "call_center" AS "call_center"
-CROSS JOIN "customer" AS "customer"
+JOIN "household_demographics" AS "household_demographics"
+  ON "household_demographics"."hd_buy_potential" LIKE 'Unknown%'
+JOIN "customer" AS "customer"
+  ON "household_demographics"."hd_demo_sk" = "customer"."c_current_hdemo_sk"
 JOIN "catalog_returns" AS "catalog_returns"
   ON "catalog_returns"."cr_call_center_sk" = "call_center"."cc_call_center_sk"
   AND "catalog_returns"."cr_returning_customer_sk" = "customer"."c_customer_sk"
@@ -12350,9 +12353,6 @@ JOIN "customer_demographics" AS "customer_demographics"
     "customer_demographics"."cd_marital_status" = 'M'
     OR "customer_demographics"."cd_marital_status" = 'W'
   )
-JOIN "household_demographics" AS "household_demographics"
-  ON "household_demographics"."hd_buy_potential" LIKE 'Unknown%'
-  AND "household_demographics"."hd_demo_sk" = "customer"."c_current_hdemo_sk"
 JOIN "date_dim" AS "date_dim"
   ON "catalog_returns"."cr_returned_date_sk" = "date_dim"."d_date_sk"
   AND "date_dim"."d_moy" = 12

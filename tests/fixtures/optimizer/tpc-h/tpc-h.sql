@@ -99,19 +99,19 @@ order by
    p_partkey
 limit
    100;
-WITH "partsupp_2" AS (
-  SELECT
-    "partsupp"."ps_partkey" AS "ps_partkey",
-    "partsupp"."ps_suppkey" AS "ps_suppkey",
-    "partsupp"."ps_supplycost" AS "ps_supplycost"
-  FROM "partsupp" AS "partsupp"
-), "region_2" AS (
+WITH "region_2" AS (
   SELECT
     "region"."r_regionkey" AS "r_regionkey",
     "region"."r_name" AS "r_name"
   FROM "region" AS "region"
   WHERE
     "region"."r_name" = 'EUROPE'
+), "partsupp_2" AS (
+  SELECT
+    "partsupp"."ps_partkey" AS "ps_partkey",
+    "partsupp"."ps_suppkey" AS "ps_suppkey",
+    "partsupp"."ps_supplycost" AS "ps_supplycost"
+  FROM "partsupp" AS "partsupp"
 ), "_u_0" AS (
   SELECT
     MIN("partsupp"."ps_supplycost") AS "_col_0",
@@ -136,13 +136,13 @@ SELECT
   "supplier"."s_phone" AS "s_phone",
   "supplier"."s_comment" AS "s_comment"
 FROM "part" AS "part"
-CROSS JOIN "nation" AS "nation"
+CROSS JOIN "region_2" AS "region"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "part"."p_partkey" = "_u_0"."_u_1"
+JOIN "nation" AS "nation"
+  ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "partsupp_2" AS "partsupp"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
-JOIN "region_2" AS "region"
-  ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "supplier" AS "supplier"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
   AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
@@ -380,7 +380,6 @@ SELECT
     1 - "lineitem"."l_discount"
   )) AS "revenue"
 FROM "supplier" AS "supplier"
-CROSS JOIN "customer" AS "customer"
 JOIN "lineitem" AS "lineitem"
   ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
   AND CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1996-12-31' AS DATE)
@@ -391,8 +390,7 @@ JOIN "nation" AS "n1"
   )
   AND "supplier"."s_nationkey" = "n1"."n_nationkey"
 JOIN "nation" AS "n2"
-  ON "customer"."c_nationkey" = "n2"."n_nationkey"
-  AND (
+  ON (
     "n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE'
   )
   AND (
@@ -401,6 +399,8 @@ JOIN "nation" AS "n2"
   AND (
     "n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY'
   )
+JOIN "customer" AS "customer"
+  ON "customer"."c_nationkey" = "n2"."n_nationkey"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
   AND "orders"."o_orderkey" = "lineitem"."l_orderkey"

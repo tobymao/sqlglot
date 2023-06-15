@@ -10,6 +10,20 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT CURRENT_TIMESTAMP")
 
         self.validate_all(
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (-1) DAY",
+            read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},
+        )
+        self.validate_all(
+            "SELECT INTERVAL '1 quarter'",
+            write={"duckdb": "SELECT (90 * INTERVAL '1' day)"},
+        )
+        self.validate_all(
+            "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - MOD((DAYOFWEEK(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)) day) + (7 * INTERVAL (-5) day))) AS t1",
+            read={
+                "presto": "SELECT ((DATE_ADD('week', -5, DATE_TRUNC('DAY', DATE_ADD('day', (0 - MOD((DAY_OF_WEEK(CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)), CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)))))) AS t1",
+            },
+        )
+        self.validate_all(
             "EPOCH(x)",
             read={
                 "presto": "TO_UNIXTIME(x)",

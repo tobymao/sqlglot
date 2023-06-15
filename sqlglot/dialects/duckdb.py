@@ -237,10 +237,26 @@ class DuckDB(Dialect):
 
         STAR_MAPPING = {**generator.Generator.STAR_MAPPING, "except": "EXCLUDE"}
 
+        UNWRAPPED_INTERVAL_VALUES = {exp.Column, exp.Literal, exp.Paren}
+
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def interval_sql(self, expression: exp.Interval) -> str:
+            multiplier: t.Optional[int] = None
+            unit = expression.text("unit").lower()
+
+            if unit.startswith("week"):
+                multiplier = 7
+            if unit.startswith("quarter"):
+                multiplier = 90
+
+            if multiplier:
+                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('day')))})"
+
+            return super().interval_sql(expression)
 
         def tablesample_sql(
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep: str = " AS "

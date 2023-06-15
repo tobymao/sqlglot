@@ -128,6 +128,7 @@ class MySQL(Dialect):
             "MEDIUMBLOB": TokenType.MEDIUMBLOB,
             "MEDIUMTEXT": TokenType.MEDIUMTEXT,
             "SEPARATOR": TokenType.SEPARATOR,
+            "ENUM": TokenType.ENUM,
             "START": TokenType.BEGIN,
             "_ARMSCII8": TokenType.INTRODUCER,
             "_ASCII": TokenType.INTRODUCER,
@@ -277,6 +278,16 @@ class MySQL(Dialect):
             "PAGE FAULTS",
             "SOURCE",
             "SWAPS",
+        }
+
+        TYPE_TOKENS = {
+            *parser.Parser.TYPE_TOKENS,
+            TokenType.SET,
+        }
+
+        ENUM_TYPE_TOKENS = {
+            *parser.Parser.ENUM_TYPE_TOKENS,
+            TokenType.SET,
         }
 
         LOG_DEFAULTS_TO_LN = True

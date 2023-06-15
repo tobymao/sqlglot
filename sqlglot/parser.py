@@ -109,6 +109,10 @@ class Parser(metaclass=_Parser):
         TokenType.STRUCT,
     }
 
+    ENUM_TYPE_TOKENS = {
+        TokenType.ENUM,
+    }
+
     TYPE_TOKENS = {
         TokenType.BIT,
         TokenType.BOOLEAN,
@@ -180,6 +184,7 @@ class Parser(metaclass=_Parser):
         TokenType.VARIANT,
         TokenType.OBJECT,
         TokenType.INET,
+        TokenType.ENUM,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -2936,6 +2941,8 @@ class Parser(metaclass=_Parser):
                 expressions = self._parse_csv(
                     lambda: self._parse_types(check_func=check_func, schema=schema)
                 )
+            elif type_token in self.ENUM_TYPE_TOKENS:
+                expressions = self._parse_csv(self._parse_primary)
             else:
                 expressions = self._parse_csv(self._parse_type_size)
 

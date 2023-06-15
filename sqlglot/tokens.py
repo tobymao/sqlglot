@@ -144,6 +144,7 @@ class TokenType(AutoName):
     VARIANT = auto()
     OBJECT = auto()
     INET = auto()
+    ENUM = auto()
 
     # keywords
     ALIAS = auto()

@@ -153,6 +153,7 @@ class BigQuery(Dialect):
             "FLOAT64": TokenType.DOUBLE,
             "INT64": TokenType.BIGINT,
             "RECORD": TokenType.STRUCT,
+            "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "UNKNOWN": TokenType.NULL,
         }
@@ -340,6 +341,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.NVARCHAR: "STRING",
             exp.DataType.Type.SMALLINT: "INT64",
             exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.TIMESTAMP: "DATETIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
             exp.DataType.Type.TINYINT: "INT64",

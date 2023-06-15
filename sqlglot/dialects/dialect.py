@@ -227,6 +227,25 @@ class Dialect(metaclass=_Dialect):
 
         return expression
 
+    @classmethod
+    def case_sensitive(cls, text: str) -> bool:
+        if cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None:
+            return False
+
+        unsafe = str.islower if cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE else str.isupper
+        return any(unsafe(char) for char in text)
+
+    @classmethod
+    def quote_identifier(cls, expression: E, identify: bool = True) -> E:
+        if isinstance(expression, exp.Identifier):
+            name = expression.this
+            expression.set(
+                "quoted",
+                identify or cls.case_sensitive(name) or not exp.SAFE_IDENTIFIER_RE.match(name),
+            )
+
+        return expression
+
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)
 

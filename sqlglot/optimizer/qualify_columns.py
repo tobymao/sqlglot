@@ -5,9 +5,9 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot._typing import E
-from sqlglot.dialects.dialect import DialectType
+from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import case_sensitive, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 
@@ -417,19 +417,9 @@ def _qualify_outputs(scope):
 
 def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool = True) -> E:
     """Makes sure all identifiers that need to be quoted are quoted."""
-
-    def _quote(expression: E) -> E:
-        if isinstance(expression, exp.Identifier):
-            name = expression.this
-            expression.set(
-                "quoted",
-                identify
-                or case_sensitive(name, dialect=dialect)
-                or not exp.SAFE_IDENTIFIER_RE.match(name),
-            )
-        return expression
-
-    return expression.transform(_quote, copy=False)
+    return expression.transform(
+        Dialect.get_or_raise(dialect).quote_identifier, identify=identify, copy=False
+    )
 
 
 class Resolver:

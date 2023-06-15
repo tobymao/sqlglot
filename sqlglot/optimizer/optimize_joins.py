@@ -36,6 +36,9 @@ def optimize_joins(expression):
                 on = dep.args["on"]
 
                 if isinstance(on, exp.Connector):
+                    if len(other_table_names(dep)) < 2:
+                        continue
+
                     for predicate in on.flatten():
                         if name in exp.column_table_names(predicate):
                             predicate.replace(exp.true())

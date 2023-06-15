@@ -32,7 +32,7 @@ def eliminate_joins(expression):
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):
-            alias = join.this.alias_or_name
+            alias = join.alias_or_name
             if _should_eliminate_join(scope, join, alias):
                 join.pop()
                 scope.remove_source(alias)
@@ -126,7 +126,7 @@ def join_condition(join):
         tuple[list[str], list[str], exp.Expression]:
             Tuple of (source key, join key, remaining predicate)
     """
-    name = join.this.alias_or_name
+    name = join.alias_or_name
     on = (join.args.get("on") or exp.true()).copy()
     source_key = []
     join_key = []

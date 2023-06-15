@@ -99,30 +99,30 @@ order by
    p_partkey
 limit
    100;
-WITH "region_2" AS (
+WITH "partsupp_2" AS (
+  SELECT
+    "partsupp"."ps_partkey" AS "ps_partkey",
+    "partsupp"."ps_suppkey" AS "ps_suppkey",
+    "partsupp"."ps_supplycost" AS "ps_supplycost"
+  FROM "partsupp" AS "partsupp"
+), "region_2" AS (
   SELECT
     "region"."r_regionkey" AS "r_regionkey",
     "region"."r_name" AS "r_name"
   FROM "region" AS "region"
   WHERE
     "region"."r_name" = 'EUROPE'
-), "partsupp_2" AS (
-  SELECT
-    "partsupp"."ps_partkey" AS "ps_partkey",
-    "partsupp"."ps_suppkey" AS "ps_suppkey",
-    "partsupp"."ps_supplycost" AS "ps_supplycost"
-  FROM "partsupp" AS "partsupp"
 ), "_u_0" AS (
   SELECT
     MIN("partsupp"."ps_supplycost") AS "_col_0",
     "partsupp"."ps_partkey" AS "_u_1"
   FROM "partsupp_2" AS "partsupp"
-  CROSS JOIN "region_2" AS "region"
-  JOIN "nation" AS "nation"
-    ON "nation"."n_regionkey" = "region"."r_regionkey"
   JOIN "supplier" AS "supplier"
+    ON "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+  JOIN "nation" AS "nation"
     ON "supplier"."s_nationkey" = "nation"."n_nationkey"
-    AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
+  JOIN "region_2" AS "region"
+    ON "nation"."n_regionkey" = "region"."r_regionkey"
   GROUP BY
     "partsupp"."ps_partkey"
 )
@@ -136,16 +136,16 @@ SELECT
   "supplier"."s_phone" AS "s_phone",
   "supplier"."s_comment" AS "s_comment"
 FROM "part" AS "part"
-CROSS JOIN "region_2" AS "region"
-JOIN "nation" AS "nation"
-  ON "nation"."n_regionkey" = "region"."r_regionkey"
+CROSS JOIN "nation" AS "nation"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "part"."p_partkey" = "_u_0"."_u_1"
 JOIN "partsupp_2" AS "partsupp"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
+JOIN "region_2" AS "region"
+  ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "supplier" AS "supplier"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
   AND "supplier"."s_suppkey" = "partsupp"."ps_suppkey"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "part"."p_partkey" = "_u_0"."_u_1"
 WHERE
   "part"."p_size" = 15
   AND "part"."p_type" LIKE '%BRASS'
@@ -294,16 +294,15 @@ JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
   AND CAST("orders"."o_orderdate" AS DATE) < CAST('1995-01-01' AS DATE)
   AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1994-01-01' AS DATE)
-JOIN "region" AS "region"
-  ON "region"."r_name" = 'ASIA'
-JOIN "nation" AS "nation"
-  ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "supplier" AS "supplier"
   ON "customer"."c_nationkey" = "supplier"."s_nationkey"
-  AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND "lineitem"."l_suppkey" = "supplier"."s_suppkey"
+JOIN "nation" AS "nation"
+  ON "supplier"."s_nationkey" = "nation"."n_nationkey"
+JOIN "region" AS "region"
+  ON "nation"."n_regionkey" = "region"."r_regionkey" AND "region"."r_name" = 'ASIA'
 GROUP BY
   "nation"."n_name"
 ORDER BY
@@ -381,14 +380,11 @@ SELECT
     1 - "lineitem"."l_discount"
   )) AS "revenue"
 FROM "supplier" AS "supplier"
+CROSS JOIN "customer" AS "customer"
 JOIN "lineitem" AS "lineitem"
   ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
   AND CAST("lineitem"."l_shipdate" AS DATE) <= CAST('1996-12-31' AS DATE)
   AND CAST("lineitem"."l_shipdate" AS DATE) >= CAST('1995-01-01' AS DATE)
-JOIN "orders" AS "orders"
-  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
-JOIN "customer" AS "customer"
-  ON "customer"."c_custkey" = "orders"."o_custkey"
 JOIN "nation" AS "n1"
   ON (
     "n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY'
@@ -405,6 +401,9 @@ JOIN "nation" AS "n2"
   AND (
     "n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY'
   )
+JOIN "orders" AS "orders"
+  ON "customer"."c_custkey" = "orders"."o_custkey"
+  AND "orders"."o_orderkey" = "lineitem"."l_orderkey"
 GROUP BY
   "n1"."n_name",
   "n2"."n_name",
@@ -470,21 +469,21 @@ SELECT
 FROM "part" AS "part"
 JOIN "region" AS "region"
   ON "region"."r_name" = 'AMERICA'
+JOIN "lineitem" AS "lineitem"
+  ON "part"."p_partkey" = "lineitem"."l_partkey"
 JOIN "nation" AS "n1"
   ON "n1"."n_regionkey" = "region"."r_regionkey"
 JOIN "customer" AS "customer"
   ON "customer"."c_nationkey" = "n1"."n_nationkey"
-JOIN "orders" AS "orders"
-  ON "orders"."o_custkey" = "customer"."c_custkey"
-  AND CAST("orders"."o_orderdate" AS DATE) <= CAST('1996-12-31' AS DATE)
-  AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1995-01-01' AS DATE)
-JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
-  AND "part"."p_partkey" = "lineitem"."l_partkey"
 JOIN "supplier" AS "supplier"
   ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
 JOIN "nation" AS "n2"
   ON "supplier"."s_nationkey" = "n2"."n_nationkey"
+JOIN "orders" AS "orders"
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "orders"."o_custkey" = "customer"."c_custkey"
+  AND CAST("orders"."o_orderdate" AS DATE) <= CAST('1996-12-31' AS DATE)
+  AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1995-01-01' AS DATE)
 WHERE
   "part"."p_type" = 'ECONOMY ANODIZED STEEL'
 GROUP BY
@@ -538,13 +537,13 @@ SELECT
 FROM "part" AS "part"
 JOIN "lineitem" AS "lineitem"
   ON "part"."p_partkey" = "lineitem"."l_partkey"
-JOIN "supplier" AS "supplier"
-  ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
+JOIN "orders" AS "orders"
+  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 JOIN "partsupp" AS "partsupp"
   ON "partsupp"."ps_partkey" = "lineitem"."l_partkey"
   AND "partsupp"."ps_suppkey" = "lineitem"."l_suppkey"
-JOIN "orders" AS "orders"
-  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
+JOIN "supplier" AS "supplier"
+  ON "supplier"."s_suppkey" = "lineitem"."l_suppkey"
 JOIN "nation" AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
 WHERE
@@ -604,14 +603,14 @@ SELECT
   "customer"."c_phone" AS "c_phone",
   "customer"."c_comment" AS "c_comment"
 FROM "customer" AS "customer"
+JOIN "nation" AS "nation"
+  ON "customer"."c_nationkey" = "nation"."n_nationkey"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
   AND CAST("orders"."o_orderdate" AS DATE) < CAST('1994-01-01' AS DATE)
   AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1993-10-01' AS DATE)
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey" AND "lineitem"."l_returnflag" = 'R'
-JOIN "nation" AS "nation"
-  ON "customer"."c_nationkey" = "nation"."n_nationkey"
 GROUP BY
   "customer"."c_custkey",
   "customer"."c_name",
@@ -679,11 +678,11 @@ SELECT
   "partsupp"."ps_partkey" AS "ps_partkey",
   SUM("partsupp"."ps_supplycost" * "partsupp"."ps_availqty") AS "value"
 FROM "partsupp" AS "partsupp"
+CROSS JOIN "_u_0" AS "_u_0"
 JOIN "supplier_2" AS "supplier"
   ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
 JOIN "nation_2" AS "nation"
   ON "supplier"."s_nationkey" = "nation"."n_nationkey"
-CROSS JOIN "_u_0" AS "_u_0"
 GROUP BY
   "partsupp"."ps_partkey"
 HAVING
@@ -948,13 +947,13 @@ SELECT
   "part"."p_size" AS "p_size",
   COUNT(DISTINCT "partsupp"."ps_suppkey") AS "supplier_cnt"
 FROM "partsupp" AS "partsupp"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 JOIN "part" AS "part"
   ON "part"."p_brand" <> 'Brand#45'
   AND "part"."p_partkey" = "partsupp"."ps_partkey"
   AND "part"."p_size" IN (49, 14, 23, 45, 19, 3, 36, 9)
   AND NOT "part"."p_type" LIKE 'MEDIUM POLISHED%'
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "partsupp"."ps_suppkey" = "_u_0"."s_suppkey"
 WHERE
   "_u_0"."s_suppkey" IS NULL
 GROUP BY
@@ -1064,10 +1063,10 @@ SELECT
 FROM "customer" AS "customer"
 JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
-JOIN "lineitem" AS "lineitem"
-  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "orders"."o_orderkey" = "_u_0"."l_orderkey"
+JOIN "lineitem" AS "lineitem"
+  ON "orders"."o_orderkey" = "lineitem"."l_orderkey"
 WHERE
   NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
@@ -1258,10 +1257,10 @@ SELECT
   "supplier"."s_name" AS "s_name",
   "supplier"."s_address" AS "s_address"
 FROM "supplier" AS "supplier"
-JOIN "nation" AS "nation"
-  ON "nation"."n_name" = 'CANADA' AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 LEFT JOIN "_u_4" AS "_u_4"
   ON "supplier"."s_suppkey" = "_u_4"."ps_suppkey"
+JOIN "nation" AS "nation"
+  ON "nation"."n_name" = 'CANADA' AND "supplier"."s_nationkey" = "nation"."n_nationkey"
 WHERE
   NOT "_u_4"."ps_suppkey" IS NULL
 ORDER BY
@@ -1335,8 +1334,6 @@ FROM "supplier" AS "supplier"
 JOIN "lineitem" AS "l1"
   ON "l1"."l_receiptdate" > "l1"."l_commitdate"
   AND "supplier"."s_suppkey" = "l1"."l_suppkey"
-JOIN "orders" AS "orders"
-  ON "orders"."o_orderkey" = "l1"."l_orderkey" AND "orders"."o_orderstatus" = 'F'
 JOIN "nation" AS "nation"
   ON "nation"."n_name" = 'SAUDI ARABIA'
   AND "supplier"."s_nationkey" = "nation"."n_nationkey"
@@ -1344,6 +1341,8 @@ LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."l_orderkey" = "l1"."l_orderkey"
 LEFT JOIN "_u_2" AS "_u_2"
   ON "_u_2"."l_orderkey" = "l1"."l_orderkey"
+JOIN "orders" AS "orders"
+  ON "orders"."o_orderkey" = "l1"."l_orderkey" AND "orders"."o_orderstatus" = 'F'
 WHERE
   (
     "_u_2"."l_orderkey" IS NULL
@@ -1428,3 +1427,4 @@ GROUP BY
   SUBSTRING("customer"."c_phone", 1, 2)
 ORDER BY
   "cntrycode";
+

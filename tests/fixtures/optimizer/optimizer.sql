@@ -101,10 +101,10 @@ SELECT
   "x"."a" AS "a",
   SUM("y"."b") AS "sum_b"
 FROM "x" AS "x"
-JOIN "y" AS "y"
-  ON "x"."b" = "y"."b"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "x"."b" = "_u_0"."_u_1"
+JOIN "y" AS "y"
+  ON "x"."b" = "y"."b"
 WHERE
   "_u_0"."_col_0" >= 0 AND "x"."a" > 1
 GROUP BY
@@ -210,10 +210,10 @@ SELECT
   "n"."b" AS "b",
   "o"."b" AS "b"
 FROM "n"
-FULL JOIN "o"
-  ON "n"."a" = "o"."a"
 JOIN "n" AS "n2"
   ON "n"."a" = "n2"."a"
+FULL JOIN "o"
+  ON "n"."a" = "o"."a"
 WHERE
   "o"."b" > 0;
 

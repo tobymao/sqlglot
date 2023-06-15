@@ -1,6 +1,13 @@
 Changelog
 =========
 
+## [v16.1.4] - 2023-06-15
+### :bug: Bug Fixes
+- [`4a1068b`](https://github.com/tobymao/sqlglot/commit/4a1068b51fcf6c9e49ec32c29345eac189d24ef2) - **Postgres**: Set INDEX_OFFSET to 1 *(PR [#1782](https://github.com/tobymao/sqlglot/pull/1782) by [@vegarsti](https://github.com/vegarsti))*
+  - :arrow_lower_right: *fixes issue [#1781](undefined) opened by [@vegarsti](https://github.com/vegarsti)*
+- [`f523dd6`](https://github.com/tobymao/sqlglot/commit/f523dd62f516a94cd69ecb51d864ee6aea45820a) - build uppercasing everything *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.1.3] - 2023-06-15
 ### :sparkles: New Features
 - [`9660c33`](https://github.com/tobymao/sqlglot/commit/9660c331f7a7c4dac267b38ceffe16d33da69015) - add enum/set types to mysql closes [#1778](https://github.com/tobymao/sqlglot/pull/1778) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -506,3 +513,4 @@ Changelog
 [v16.1.0]: https://github.com/tobymao/sqlglot/compare/v16.0.0...v16.1.0
 [v16.1.1]: https://github.com/tobymao/sqlglot/compare/v16.1.0...v16.1.1
 [v16.1.3]: https://github.com/tobymao/sqlglot/compare/v16.1.2...v16.1.3
+[v16.1.4]: https://github.com/tobymao/sqlglot/compare/v16.1.3...v16.1.4

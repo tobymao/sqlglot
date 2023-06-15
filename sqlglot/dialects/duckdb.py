@@ -237,7 +237,7 @@ class DuckDB(Dialect):
 
         STAR_MAPPING = {**generator.Generator.STAR_MAPPING, "except": "EXCLUDE"}
 
-        UNWRAPPED_INTERVAL_VALUES = {exp.Column, exp.Literal, exp.Paren}
+        UNWRAPPED_INTERVAL_VALUES = (exp.Column, exp.Literal, exp.Paren)
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

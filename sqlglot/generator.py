@@ -12,17 +12,7 @@ from sqlglot.tokens import TokenType
 logger = logging.getLogger("sqlglot")
 
 
-class _Generator(type):
-    def __new__(cls, clsname, bases, attrs):
-        klass = super().__new__(cls, clsname, bases, attrs)
-
-        klass._WITH_SEPARATED_COMMENTS = tuple(klass.WITH_SEPARATED_COMMENTS)
-        klass._UNWRAPPED_INTERVAL_VALUES = tuple(klass.UNWRAPPED_INTERVAL_VALUES)
-
-        return klass
-
-
-class Generator(metaclass=_Generator):
+class Generator:
     """
     Generator converts a given syntax tree to the corresponding SQL string.
 
@@ -245,10 +235,20 @@ class Generator(metaclass=_Generator):
     RESERVED_KEYWORDS: t.Set[str] = set()
 
     # Expressions whose comments are separated from them for better formatting
-    WITH_SEPARATED_COMMENTS = {exp.Select, exp.From, exp.Where, exp.With}
+    WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
+        exp.Select,
+        exp.From,
+        exp.Where,
+        exp.With,
+    )
 
     # Expressions that can remain unwrapped when appearing in the context of an INTERVAL
-    UNWRAPPED_INTERVAL_VALUES = {exp.Column, exp.Literal, exp.Neg, exp.Paren}
+    UNWRAPPED_INTERVAL_VALUES: t.Tuple[t.Type[exp.Expression], ...] = (
+        exp.Column,
+        exp.Literal,
+        exp.Neg,
+        exp.Paren,
+    )
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
@@ -262,9 +262,6 @@ class Generator(metaclass=_Generator):
     STRICT_STRING_CONCAT = False
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
-
-    _WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...]
-    _UNWRAPPED_INTERVAL_VALUES: t.Tuple[t.Type[exp.Expression], ...]
 
     # Delimiters for quotes, identifiers and the corresponding escape characters
     QUOTE_START = "'"
@@ -414,7 +411,7 @@ class Generator(metaclass=_Generator):
         if not comments_sql:
             return sql
 
-        if isinstance(expression, self._WITH_SEPARATED_COMMENTS):
+        if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return (
                 f"{self.sep()}{comments_sql}{sql}"
                 if sql[0].isspace()
@@ -1872,7 +1869,7 @@ class Generator(metaclass=_Generator):
 
         this = self.sql(expression, "this")
         if this:
-            unwrapped = isinstance(expression.this, self._UNWRAPPED_INTERVAL_VALUES)
+            unwrapped = isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES)
             this = f" {this}" if unwrapped else f" ({this})"
 
         return f"INTERVAL{this}{unit}"

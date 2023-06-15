@@ -819,6 +819,9 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("NULL").sql(), "NULL")
         self.assertEqual(exp.DataType.build("UNKNOWN").sql(), "UNKNOWN")
         self.assertEqual(exp.DataType.build("TIMESTAMP", dialect="bigquery").sql(), "TIMESTAMPTZ")
+        self.assertEqual(
+            exp.DataType.build("struct<x int>", dialect="spark").sql(), "STRUCT<x INT>"
+        )
 
     def test_rename_table(self):
         self.assertEqual(

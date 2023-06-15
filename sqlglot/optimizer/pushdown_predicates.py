@@ -41,7 +41,7 @@ def pushdown_predicates(expression):
             # joins should only pushdown into itself, not to other joins
             # so we limit the selected sources to only itself
             for join in select.args.get("joins") or []:
-                name = join.this.alias_or_name
+                name = join.alias_or_name
                 pushdown(join.args.get("on"), {name: scope.selected_sources[name]}, scope_ref_count)
 
     return expression
@@ -93,10 +93,10 @@ def pushdown_dnf(predicates, scope, scope_ref_count):
     pushdown_tables = set()
 
     for a in predicates:
-        a_tables = set(exp.column_table_names(a))
+        a_tables = exp.column_table_names(a)
 
         for b in predicates:
-            a_tables &= set(exp.column_table_names(b))
+            a_tables &= exp.column_table_names(b)
 
         pushdown_tables.update(a_tables)
 
@@ -147,7 +147,7 @@ def nodes_for_predicate(predicate, sources, scope_ref_count):
     tables = exp.column_table_names(predicate)
     where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
 
-    for table in tables:
+    for table in sorted(tables):
         node, source = sources.get(table) or (None, None)
 
         # if the predicate is in a where statement we can try to push it down

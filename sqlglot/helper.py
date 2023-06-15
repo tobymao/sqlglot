@@ -208,7 +208,7 @@ def while_changing(expression: Expression, func: t.Callable[[Expression], E]) ->
     return expression
 
 
-def tsort(dag: t.Dict[T, t.List[T]]) -> t.List[T]:
+def tsort(dag: t.Dict[T, t.Set[T]]) -> t.List[T]:
     """
     Sorts a given directed acyclic graph in topological order.
 
@@ -220,22 +220,24 @@ def tsort(dag: t.Dict[T, t.List[T]]) -> t.List[T]:
     """
     result = []
 
-    def visit(node: T, visited: t.Set[T]) -> None:
-        if node in result:
-            return
-        if node in visited:
+    for node, deps in tuple(dag.items()):
+        for dep in deps:
+            if not dep in dag:
+                dag[dep] = set()
+
+    while dag:
+        current = {node for node, deps in dag.items() if not deps}
+
+        if not current:
             raise ValueError("Cycle error")
 
-        visited.add(node)
+        for node in current:
+            dag.pop(node)
 
-        for dep in dag.get(node, []):
-            visit(dep, visited)
+        for deps in dag.values():
+            deps -= current
 
-        visited.remove(node)
-        result.append(node)
-
-    for node in dag:
-        visit(node, set())
+        result.extend(sorted(current))  # type: ignore
 
     return result
 

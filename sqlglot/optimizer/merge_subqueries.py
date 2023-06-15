@@ -145,7 +145,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         if not isinstance(from_or_join, exp.Join):
             return False
 
-        alias = from_or_join.this.alias_or_name
+        alias = from_or_join.alias_or_name
 
         on = from_or_join.args.get("on")
         if not on:
@@ -328,7 +328,7 @@ def _merge_where(outer_scope, inner_scope, from_or_join):
             if source == from_or_join.alias_or_name:
                 break
 
-        if set(exp.column_table_names(where.this)) <= sources:
+        if exp.column_table_names(where.this) <= sources:
             from_or_join.on(where.this, copy=False)
             from_or_join.set("on", from_or_join.args.get("on"))
             return

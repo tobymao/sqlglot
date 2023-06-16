@@ -167,6 +167,7 @@ def _parse_convert_timezone(args: t.List) -> exp.Expression:
 
 
 class Snowflake(Dialect):
+    # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"

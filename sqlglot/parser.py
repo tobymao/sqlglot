@@ -587,6 +587,7 @@ class Parser(metaclass=_Parser):
         "CLUSTER": lambda self: self._parse_cluster(),
         "COLLATE": lambda self: self._parse_property_assignment(exp.CollateProperty),
         "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "COPY": lambda self: self._parse_copy_property(),
         "DATABLOCKSIZE": lambda self, **kwargs: self._parse_datablocksize(**kwargs),
         "DEFINER": lambda self: self._parse_definer(),
         "DETERMINISTIC": lambda self: self.expression(
@@ -1428,6 +1429,13 @@ class Parser(metaclass=_Parser):
             return None
 
         return self.expression(exp.Cluster, expressions=self._parse_csv(self._parse_ordered))
+
+    def _parse_copy_property(self) -> t.Optional[exp.CopyGrantsProperty]:
+        if not self._match_text_seq("GRANTS"):
+            self._retreat(self._index - 1)
+            return None
+
+        return self.expression(exp.CopyGrantsProperty)
 
     def _parse_freespace(self) -> exp.FreespaceProperty:
         self._match(TokenType.EQ)

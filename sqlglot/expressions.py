@@ -1844,6 +1844,10 @@ class CollateProperty(Property):
     arg_types = {"this": True}
 
 
+class CopyGrantsProperty(Property):
+    arg_types = {}
+
+
 class DataBlocksizeProperty(Property):
     arg_types = {
         "size": False,

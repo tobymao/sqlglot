@@ -232,6 +232,7 @@ class TestSchema(unittest.TestCase):
             schema.column_names("[Fo]"), schema.column_names("`Fo`", dialect="clickhouse")
         )
 
-        # Check that all identifiers are normalized to lowercase for BigQuery, even quoted ones
-        schema = MappingSchema(schema={"`Foo`": {"BaR": "int"}}, dialect="bigquery")
-        self.assertEqual(schema.column_names("foo"), ["bar"])
+        # Check that all column identifiers are normalized to lowercase for BigQuery, even quoted
+        # ones. Also, ensure that tables aren't normalized, since they're case-sensitive by default.
+        schema = MappingSchema(schema={"Foo": {"`BaR`": "int"}}, dialect="bigquery")
+        self.assertEqual(schema.column_names("Foo"), ["bar"])

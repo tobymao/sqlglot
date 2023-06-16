@@ -444,6 +444,7 @@ class TestDuckDB(Validator):
 
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")
+        self.validate_identity("ARRAY((SELECT id FROM t))")
 
     def test_cast(self):
         self.validate_identity("CAST(x AS REAL)")

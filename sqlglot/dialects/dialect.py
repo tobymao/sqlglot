@@ -117,6 +117,9 @@ class _Dialect(type):
             "IDENTIFIER_ESCAPE": klass.tokenizer_class.IDENTIFIER_ESCAPES[0],
         }
 
+        if enum not in ("", "bigquery"):
+            dialect_properties["SELECT_KINDS"] = ()
+
         # Pass required dialect properties to the tokenizer, parser and generator classes
         for subclass in (klass.tokenizer_class, klass.parser_class, klass.generator_class):
             for name, value in dialect_properties.items():

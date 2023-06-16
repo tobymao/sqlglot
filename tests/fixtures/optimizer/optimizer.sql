@@ -647,7 +647,7 @@ CROSS JOIN LATERAL (
   LIMIT 1
 ) AS "l";
 
-# title: bigquery identifiers are case-insensitive
+# title: bigquery column identifiers are case-insensitive
 # execute: false
 # dialect: bigquery
 WITH cte AS (
@@ -655,7 +655,7 @@ WITH cte AS (
         refresh_date AS `reFREsh_date`,
         term AS `TeRm`,
         `rank`
-    FROM `bigquery-public-data.google_trends.top_terms`
+    FROM `bigquery-public-data.GooGle_tReNDs.TOp_TeRmS`
 )
 SELECT
    refresh_date AS `Day`,
@@ -668,16 +668,16 @@ WHERE
 GROUP BY `dAy`, `top_term`, rank
 ORDER BY `DaY` DESC;
 SELECT
-  `top_terms`.`refresh_date` AS `day`,
-  `top_terms`.`term` AS `top_term`,
-  `top_terms`.`rank` AS `rank`
-FROM `bigquery-public-data`.`google_trends`.`top_terms` AS `top_terms`
+  `TOp_TeRmS`.`refresh_date` AS `day`,
+  `TOp_TeRmS`.`term` AS `top_term`,
+  `TOp_TeRmS`.`rank` AS `rank`
+FROM `bigquery-public-data`.`GooGle_tReNDs`.`TOp_TeRmS` AS `TOp_TeRmS`
 WHERE
-  `top_terms`.`rank` = 1
-  AND CAST(`top_terms`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
+  `TOp_TeRmS`.`rank` = 1
+  AND CAST(`TOp_TeRmS`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
 GROUP BY
-  `top_terms`.`refresh_date`,
-  `top_terms`.`term`,
-  `top_terms`.`rank`
+  `TOp_TeRmS`.`refresh_date`,
+  `TOp_TeRmS`.`term`,
+  `TOp_TeRmS`.`rank`
 ORDER BY
   `day` DESC;

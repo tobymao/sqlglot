@@ -4,6 +4,7 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
@@ -128,6 +129,17 @@ class BigQuery(Dialect):
         "SSSSS": "%f",
         "TZH": "%z",
     }
+
+    @classmethod
+    def normalize_identifier(cls, expression: E) -> E:
+        # In BigQuery CTEs are not case-sensitive, but table names are. The following check is
+        # essentially a heuristic to detect tables based on whether or not they're qualified.
+        if isinstance(expression, exp.Identifier) and not (
+            isinstance(expression.parent, exp.Table) and len(expression.parent.parts) >= 1
+        ):
+            expression.set("this", expression.this.lower())
+
+        return expression
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"', '"""', "'''"]

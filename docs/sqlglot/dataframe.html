@@ -72,7 +72,7 @@
 <ul>
 <li><a href="https://github.com/tobymao/sqlglot/blob/main/README.md#install">Install SQLGlot</a> and that is all that is required to just generate SQL. <a href="#examples">The examples</a> show generating SQL and then executing that SQL on a specific engine and that will require that engine's client library.</li>
 <li>Find/replace all <code>from pyspark.sql</code> with <code>from <a href="">sqlglot.dataframe</a></code>.</li>
-<li>Prior to any <code>spark.read.table</code> or <code>spark.table</code> run <code>sqlglot.schema.add_table('&lt;table_name&gt;', &lt;column_structure&gt;)</code>.
+<li>Prior to any <code>spark.read.table</code> or <code>spark.table</code> run <code>sqlglot.schema.add_table('&lt;table_name&gt;', &lt;column_structure&gt;, dialect="spark")</code>.
 <ul>
 <li>The column structure can be defined the following ways:
 <ul>
@@ -111,12 +111,16 @@
 <span class="kn">from</span> <span class="nn">sqlglot.dataframe.sql.session</span> <span class="kn">import</span> <span class="n">SparkSession</span>
 <span class="kn">from</span> <span class="nn"><a href="dataframe/sql.html">sqlglot.dataframe.sql</a></span> <span class="kn">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">F</span>
 
-<span class="n">sqlglot</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span><span class="s1">&#39;employee&#39;</span><span class="p">,</span> <span class="p">{</span>
-  <span class="s1">&#39;employee_id&#39;</span><span class="p">:</span> <span class="s1">&#39;INT&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;fname&#39;</span><span class="p">:</span> <span class="s1">&#39;STRING&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;lname&#39;</span><span class="p">:</span> <span class="s1">&#39;STRING&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;age&#39;</span><span class="p">:</span> <span class="s1">&#39;INT&#39;</span><span class="p">,</span>
-<span class="p">})</span>  <span class="c1"># Register the table structure prior to reading from the table</span>
+<span class="n">sqlglot</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span>
+  <span class="s1">&#39;employee&#39;</span><span class="p">,</span>
+  <span class="p">{</span>
+    <span class="s1">&#39;employee_id&#39;</span><span class="p">:</span> <span class="s1">&#39;INT&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;fname&#39;</span><span class="p">:</span> <span class="s1">&#39;STRING&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lname&#39;</span><span class="p">:</span> <span class="s1">&#39;STRING&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;age&#39;</span><span class="p">:</span> <span class="s1">&#39;INT&#39;</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">,</span>
+<span class="p">)</span>  <span class="c1"># Register the table structure prior to reading from the table</span>
 
 <span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="p">()</span>
 

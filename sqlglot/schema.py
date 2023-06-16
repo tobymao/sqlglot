@@ -343,9 +343,8 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         if not self.normalize:
             return name
 
-        # This can be useful for normalize_identifier, depending on the dialect
+        # This can be useful for normalize_identifier
         identifier.meta["is_table"] = is_table
-
         return Dialect.get_or_raise(dialect).normalize_identifier(identifier).name
 
     def _depth(self) -> int:

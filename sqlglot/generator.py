@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
-from sqlglot.helper import apply_index_offset, csv, seq_get, should_identify
+from sqlglot.helper import apply_index_offset, csv, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -265,6 +265,8 @@ class Generator:
     STRICT_STRING_CONCAT = False
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
+
+    can_identify: t.Callable[[str, str | bool], bool]
 
     # Delimiters for quotes, identifiers and the corresponding escape characters
     QUOTE_START = "'"
@@ -886,7 +888,7 @@ class Generator:
         text = text.replace(self.IDENTIFIER_END, self._escaped_identifier_end)
         if (
             expression.quoted
-            or should_identify(text, self.identify)
+            or self.can_identify(text, self.identify)
             or lower in self.RESERVED_KEYWORDS
             or (not self.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):

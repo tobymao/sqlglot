@@ -6,7 +6,7 @@ import typing as t
 import sqlglot
 from sqlglot import expressions as exp
 from sqlglot._typing import T
-from sqlglot.dialects.dialect import RESOLVES_IDENTIFIERS_AS_UPPERCASE
+from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import ParseError, SchemaError
 from sqlglot.helper import dict_depth
 from sqlglot.trie import in_trie, new_trie
@@ -335,11 +335,10 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             return name if isinstance(name, str) else name.name
 
         name = identifier.name
-
-        if not self.normalize or identifier.quoted:
+        if not self.normalize:
             return name
 
-        return name.upper() if dialect in RESOLVES_IDENTIFIERS_AS_UPPERCASE else name.lower()
+        return Dialect.get_or_raise(dialect).normalize_identifier(identifier).name
 
     def _depth(self) -> int:
         # The columns themselves are a mapping, but we don't want to include those

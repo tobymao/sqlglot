@@ -5,6 +5,7 @@ import typing as t
 import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dataframe.sql.types import DataType
+from sqlglot.dialects import Spark
 from sqlglot.helper import flatten, is_iterable
 
 if t.TYPE_CHECKING:
@@ -22,6 +23,10 @@ class Column:
         expression = sqlglot.maybe_parse(expression, dialect="spark")
         if expression is None:
             raise ValueError(f"Could not parse {expression}")
+
+        if isinstance(expression, exp.Column):
+            expression.transform(Spark.normalize_identifier, copy=False)
+
         self.expression: exp.Expression = expression
 
     def __repr__(self):

@@ -88,6 +88,9 @@ def _regexp_extract_sql(self: generator.Generator, expression: exp.RegexpExtract
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
 
+    # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
+    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

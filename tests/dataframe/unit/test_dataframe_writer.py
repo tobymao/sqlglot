@@ -30,7 +30,7 @@ class TestDataFrameWriter(DataFrameSQLValidator):
 
     @mock.patch("sqlglot.schema", MappingSchema())
     def test_insertInto_byName(self):
-        sqlglot.schema.add_table("table_name", {"employee_id": "INT"})
+        sqlglot.schema.add_table("table_name", {"employee_id": "INT"}, dialect="spark")
         df = self.df_employee.write.byName.insertInto("table_name")
         expected = "INSERT INTO table_name SELECT `a1`.`employee_id` AS `employee_id` FROM VALUES (1, 'Jack', 'Shephard', 37, 1), (2, 'John', 'Locke', 65, 1), (3, 'Kate', 'Austen', 37, 2), (4, 'Claire', 'Littleton', 27, 2), (5, 'Hugo', 'Reyes', 29, 100) AS `a1`(`employee_id`, `fname`, `lname`, `age`, `store_id`)"
         self.compare_sql(df, expected)
@@ -88,8 +88,8 @@ class TestDataFrameWriter(DataFrameSQLValidator):
         self.compare_sql(df, expected_statements)
 
     def test_quotes(self):
-        sqlglot.schema.add_table('"Test"', {'"ID"': "STRING"})
-        df = self.spark.table('"Test"')
+        sqlglot.schema.add_table("`Test`", {"`ID`": "STRING"}, dialect="spark")
+        df = self.spark.table("`Test`")
         self.compare_sql(
-            df.select(df['"ID"']), ["SELECT `Test`.`ID` AS `ID` FROM `Test` AS `Test`"]
+            df.select(df["`ID`"]), ["SELECT `test`.`id` AS `id` FROM `test` AS `test`"]
         )

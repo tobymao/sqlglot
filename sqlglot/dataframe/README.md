@@ -9,7 +9,7 @@ Currently many of the common operations are covered and more functionality will 
 ## Instructions
 * [Install SQLGlot](https://github.com/tobymao/sqlglot/blob/main/README.md#install) and that is all that is required to just generate SQL. [The examples](#examples) show generating SQL and then executing that SQL on a specific engine and that will require that engine's client library.
 * Find/replace all `from pyspark.sql` with `from sqlglot.dataframe`.
-* Prior to any `spark.read.table` or `spark.table` run `sqlglot.schema.add_table('<table_name>', <column_structure>)`.
+* Prior to any `spark.read.table` or `spark.table` run `sqlglot.schema.add_table('<table_name>', <column_structure>, dialect="spark")`.
   * The column structure can be defined the following ways:
     * Dictionary where the keys are column names and values are string of the Spark SQL type name.
       * Ex: `{'cola': 'string', 'colb': 'int'}`
@@ -33,12 +33,16 @@ import sqlglot
 from sqlglot.dataframe.sql.session import SparkSession
 from sqlglot.dataframe.sql import functions as F
 
-sqlglot.schema.add_table('employee', {
-  'employee_id': 'INT',
-  'fname': 'STRING',
-  'lname': 'STRING',
-  'age': 'INT',
-})  # Register the table structure prior to reading from the table
+sqlglot.schema.add_table(
+  'employee',
+  {
+    'employee_id': 'INT',
+    'fname': 'STRING',
+    'lname': 'STRING',
+    'age': 'INT',
+  },
+  dialect="spark",
+)  # Register the table structure prior to reading from the table
 
 spark = SparkSession()
 

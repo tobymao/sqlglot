@@ -180,7 +180,7 @@ class TestRedshift(Validator):
             "DATEDIFF('day', a, b)",
             write={
                 "redshift": "DATEDIFF(day, a, b)",
-                "presto": "DATE_DIFF('day', CAST(SUBSTR(CAST(a AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST(b AS VARCHAR), 1, 10) AS DATE))",
+                "presto": "DATE_DIFF('day', CAST(CAST(a AS TIMESTAMP) AS DATE), CAST(CAST(b AS TIMESTAMP) AS DATE))",
             },
         )
         self.validate_all(

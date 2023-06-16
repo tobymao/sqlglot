@@ -485,7 +485,7 @@ class TestDialect(Validator):
                 "duckdb": "CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
                 "postgres": "CAST(x AS DATE)",
-                "presto": "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
+                "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
                 "snowflake": "CAST(x AS DATE)",
             },
         )
@@ -749,14 +749,14 @@ class TestDialect(Validator):
                 "drill": "DATE_ADD(CAST('2021-02-01' AS DATE), INTERVAL 1 DAY)",
                 "duckdb": "CAST('2021-02-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD('2021-02-01', 1)",
-                "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2021-02-01', 1, 10), '%Y-%m-%d'))",
+                "presto": "DATE_ADD('DAY', 1, CAST(CAST('2021-02-01' AS TIMESTAMP) AS DATE))",
                 "spark": "DATE_ADD('2021-02-01', 1)",
             },
         )
         self.validate_all(
             "TS_OR_DS_ADD(x, 1, 'DAY')",
             write={
-                "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR(CAST(x AS VARCHAR), 1, 10), '%Y-%m-%d'))",
+                "presto": "DATE_ADD('DAY', 1, CAST(CAST(x AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD(x, 1)",
             },
         )

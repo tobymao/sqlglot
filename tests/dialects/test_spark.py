@@ -130,7 +130,7 @@ TBLPROPERTIES (
             write={
                 "duckdb": "CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
-                "presto": "CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE)",
+                "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
                 "spark": "TO_DATE(x)",
             },
         )
@@ -268,10 +268,10 @@ TBLPROPERTIES (
             write={
                 "databricks": "SELECT DATEDIFF(MONTH, TO_DATE('2020-01-01'), TO_DATE('2020-03-05'))",
                 "hive": "SELECT MONTHS_BETWEEN(TO_DATE('2020-03-05'), TO_DATE('2020-01-01'))",
-                "presto": "SELECT DATE_DIFF('MONTH', CAST(SUBSTR(CAST('2020-01-01' AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST('2020-03-05' AS VARCHAR), 1, 10) AS DATE))",
+                "presto": "SELECT DATE_DIFF('MONTH', CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE), CAST(CAST('2020-03-05' AS TIMESTAMP) AS DATE))",
                 "spark": "SELECT DATEDIFF(MONTH, TO_DATE('2020-01-01'), TO_DATE('2020-03-05'))",
                 "spark2": "SELECT MONTHS_BETWEEN(TO_DATE('2020-03-05'), TO_DATE('2020-01-01'))",
-                "trino": "SELECT DATE_DIFF('MONTH', CAST(SUBSTR(CAST('2020-01-01' AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST('2020-03-05' AS VARCHAR), 1, 10) AS DATE))",
+                "trino": "SELECT DATE_DIFF('MONTH', CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE), CAST(CAST('2020-03-05' AS TIMESTAMP) AS DATE))",
             },
         )
 
@@ -359,7 +359,7 @@ TBLPROPERTIES (
             "MONTH('2021-03-01')",
             write={
                 "duckdb": "MONTH(CAST('2021-03-01' AS DATE))",
-                "presto": "MONTH(CAST(SUBSTR(CAST('2021-03-01' AS VARCHAR), 1, 10) AS DATE))",
+                "presto": "MONTH(CAST(CAST('2021-03-01' AS TIMESTAMP) AS DATE))",
                 "hive": "MONTH(TO_DATE('2021-03-01'))",
                 "spark": "MONTH(TO_DATE('2021-03-01'))",
             },
@@ -368,7 +368,7 @@ TBLPROPERTIES (
             "YEAR('2021-03-01')",
             write={
                 "duckdb": "YEAR(CAST('2021-03-01' AS DATE))",
-                "presto": "YEAR(CAST(SUBSTR(CAST('2021-03-01' AS VARCHAR), 1, 10) AS DATE))",
+                "presto": "YEAR(CAST(CAST('2021-03-01' AS TIMESTAMP) AS DATE))",
                 "hive": "YEAR(TO_DATE('2021-03-01'))",
                 "spark": "YEAR(TO_DATE('2021-03-01'))",
             },

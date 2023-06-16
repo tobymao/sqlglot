@@ -51,6 +51,9 @@
                                     <li>
                                             <a class="function" href="#Oracle.Generator.xmltable_sql">xmltable_sql</a>
                                     </li>
+                                    <li>
+                                            <a class="function" href="#Oracle.Generator.can_identify">can_identify</a>
+                                    </li>
                             </ul>
 
                         </li>
@@ -443,6 +446,10 @@
                                     <div><dt><a href="dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></dt>
                                 <dd id="Oracle.get_or_raise" class="function"><a href="dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
                 <dd id="Oracle.format_time" class="function"><a href="dialect.html#Dialect.format_time">format_time</a></dd>
+                <dd id="Oracle.normalize_identifier" class="function"><a href="dialect.html#Dialect.normalize_identifier">normalize_identifier</a></dd>
+                <dd id="Oracle.case_sensitive" class="function"><a href="dialect.html#Dialect.case_sensitive">case_sensitive</a></dd>
+                <dd id="Oracle.can_identify" class="function"><a href="dialect.html#Dialect.can_identify">can_identify</a></dd>
+                <dd id="Oracle.quote_identifier" class="function"><a href="dialect.html#Dialect.quote_identifier">quote_identifier</a></dd>
                 <dd id="Oracle.parse" class="function"><a href="dialect.html#Dialect.parse">parse</a></dd>
                 <dd id="Oracle.parse_into" class="function"><a href="dialect.html#Dialect.parse_into">parse_into</a></dd>
                 <dd id="Oracle.generate" class="function"><a href="dialect.html#Dialect.generate">generate</a></dd>
@@ -725,6 +732,60 @@ Default: True</li>
     
 
                             </div>
+                            <div id="Oracle.Generator.can_identify" class="classattr">
+                                        <input id="Oracle.Generator.can_identify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+                    <div class="decorator">@classmethod</div>
+
+        <span class="def">def</span>
+        <span class="name">can_identify</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">text</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s1">&#39;safe&#39;</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+                <label class="view-source-button" for="Oracle.Generator.can_identify-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Oracle.Generator.can_identify"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Oracle.Generator.can_identify-247"><a href="#Oracle.Generator.can_identify-247"><span class="linenos">247</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Oracle.Generator.can_identify-248"><a href="#Oracle.Generator.can_identify-248"><span class="linenos">248</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Oracle.Generator.can_identify-249"><a href="#Oracle.Generator.can_identify-249"><span class="linenos">249</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Oracle.Generator.can_identify-250"><a href="#Oracle.Generator.can_identify-250"><span class="linenos">250</span></a>
+</span><span id="Oracle.Generator.can_identify-251"><a href="#Oracle.Generator.can_identify-251"><span class="linenos">251</span></a><span class="sd">        Args:</span>
+</span><span id="Oracle.Generator.can_identify-252"><a href="#Oracle.Generator.can_identify-252"><span class="linenos">252</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Oracle.Generator.can_identify-253"><a href="#Oracle.Generator.can_identify-253"><span class="linenos">253</span></a><span class="sd">            identify:</span>
+</span><span id="Oracle.Generator.can_identify-254"><a href="#Oracle.Generator.can_identify-254"><span class="linenos">254</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Oracle.Generator.can_identify-255"><a href="#Oracle.Generator.can_identify-255"><span class="linenos">255</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Oracle.Generator.can_identify-256"><a href="#Oracle.Generator.can_identify-256"><span class="linenos">256</span></a>
+</span><span id="Oracle.Generator.can_identify-257"><a href="#Oracle.Generator.can_identify-257"><span class="linenos">257</span></a><span class="sd">        Returns:</span>
+</span><span id="Oracle.Generator.can_identify-258"><a href="#Oracle.Generator.can_identify-258"><span class="linenos">258</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Oracle.Generator.can_identify-259"><a href="#Oracle.Generator.can_identify-259"><span class="linenos">259</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Oracle.Generator.can_identify-260"><a href="#Oracle.Generator.can_identify-260"><span class="linenos">260</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Oracle.Generator.can_identify-261"><a href="#Oracle.Generator.can_identify-261"><span class="linenos">261</span></a>            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="Oracle.Generator.can_identify-262"><a href="#Oracle.Generator.can_identify-262"><span class="linenos">262</span></a>
+</span><span id="Oracle.Generator.can_identify-263"><a href="#Oracle.Generator.can_identify-263"><span class="linenos">263</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Oracle.Generator.can_identify-264"><a href="#Oracle.Generator.can_identify-264"><span class="linenos">264</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Oracle.Generator.can_identify-265"><a href="#Oracle.Generator.can_identify-265"><span class="linenos">265</span></a>
+</span><span id="Oracle.Generator.can_identify-266"><a href="#Oracle.Generator.can_identify-266"><span class="linenos">266</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Checks if text can be identified given an identify option.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>text:</strong>  The text to check.</li>
+<li><strong>identify:</strong>  "always" or <code>True</code>: Always returns true.
+"safe": True if the identifier is case-insensitive.</li>
+</ul>
+
+<h6 id="returns">Returns:</h6>
+
+<blockquote>
+  <p>Whether or not the given text can be identified.</p>
+</blockquote>
+</div>
+
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
@@ -825,6 +886,7 @@ Default: True</li>
                 <dd id="Oracle.Generator.pragma_sql" class="function"><a href="../generator.html#Generator.pragma_sql">pragma_sql</a></dd>
                 <dd id="Oracle.Generator.lock_sql" class="function"><a href="../generator.html#Generator.lock_sql">lock_sql</a></dd>
                 <dd id="Oracle.Generator.literal_sql" class="function"><a href="../generator.html#Generator.literal_sql">literal_sql</a></dd>
+                <dd id="Oracle.Generator.escape_str" class="function"><a href="../generator.html#Generator.escape_str">escape_str</a></dd>
                 <dd id="Oracle.Generator.loaddata_sql" class="function"><a href="../generator.html#Generator.loaddata_sql">loaddata_sql</a></dd>
                 <dd id="Oracle.Generator.null_sql" class="function"><a href="../generator.html#Generator.null_sql">null_sql</a></dd>
                 <dd id="Oracle.Generator.boolean_sql" class="function"><a href="../generator.html#Generator.boolean_sql">boolean_sql</a></dd>

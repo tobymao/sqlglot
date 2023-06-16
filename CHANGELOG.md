@@ -1,6 +1,23 @@
 Changelog
 =========
 
+## [v16.2.1] - 2023-06-16
+### :boom: BREAKING CHANGES
+- due to [`88249b8`](https://github.com/tobymao/sqlglot/commit/88249b825fbe446e3450a364ef8e108e8495767e) - cyclic joins in the optimizer *(PR [#1786](https://github.com/tobymao/sqlglot/pull/1786) by [@tobymao](https://github.com/tobymao))*:
+
+  cyclic joins in the optimizer (#1786)
+
+
+### :bug: Bug Fixes
+- [`88249b8`](https://github.com/tobymao/sqlglot/commit/88249b825fbe446e3450a364ef8e108e8495767e) - cyclic joins in the optimizer *(PR [#1786](https://github.com/tobymao/sqlglot/pull/1786) by [@tobymao](https://github.com/tobymao))*
+- [`f957a07`](https://github.com/tobymao/sqlglot/commit/f957a07468df3e9a30393cbcb9baafcb41ad0bc6) - overly aggressive cross join removal *(commit by [@tobymao](https://github.com/tobymao))*
+- [`cacf8bf`](https://github.com/tobymao/sqlglot/commit/cacf8bf65dcb0dfc9c0b6339d84f2cfec9bcb46b) - build null types *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`d696d7f`](https://github.com/tobymao/sqlglot/commit/d696d7fe195a841d9418487627496054b0d4492f) - cleanup merge_subqueries *(commit by [@tobymao](https://github.com/tobymao))*
+- [`8e1b6a7`](https://github.com/tobymao/sqlglot/commit/8e1b6a723fa48181314dcb867a04ff1346bab27b) - speed up executor tests *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.2.0] - 2023-06-15
 ### :bug: Bug Fixes
 - [`b29a421`](https://github.com/tobymao/sqlglot/commit/b29a421843bc94d88e5f67dd787ee07a675d16ab) - parsing unknown into data type build *(commit by [@tobymao](https://github.com/tobymao))*
@@ -523,3 +540,4 @@ Changelog
 [v16.1.3]: https://github.com/tobymao/sqlglot/compare/v16.1.2...v16.1.3
 [v16.1.4]: https://github.com/tobymao/sqlglot/compare/v16.1.3...v16.1.4
 [v16.2.0]: https://github.com/tobymao/sqlglot/compare/v16.1.4...v16.2.0
+[v16.2.1]: https://github.com/tobymao/sqlglot/compare/v16.2.0...v16.2.1

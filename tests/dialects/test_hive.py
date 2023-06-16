@@ -288,7 +288,7 @@ class TestHive(Validator):
             "DATEDIFF(a, b)",
             write={
                 "duckdb": "DATE_DIFF('day', CAST(b AS DATE), CAST(a AS DATE))",
-                "presto": "DATE_DIFF('day', CAST(SUBSTR(CAST(b AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST(a AS VARCHAR), 1, 10) AS DATE))",
+                "presto": "DATE_DIFF('day', CAST(CAST(b AS TIMESTAMP) AS DATE), CAST(CAST(a AS TIMESTAMP) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
                 "spark": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
                 "": "DATEDIFF(TS_OR_DS_TO_DATE(a), TS_OR_DS_TO_DATE(b))",
@@ -316,7 +316,7 @@ class TestHive(Validator):
             "DATE_ADD('2020-01-01', 1)",
             write={
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
-                "presto": "DATE_ADD('DAY', 1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d'))",
+                "presto": "DATE_ADD('DAY', 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD('2020-01-01', 1)",
                 "spark": "DATE_ADD('2020-01-01', 1)",
                 "": "TS_OR_DS_ADD('2020-01-01', 1, 'DAY')",
@@ -326,7 +326,7 @@ class TestHive(Validator):
             "DATE_SUB('2020-01-01', 1)",
             write={
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL (1 * -1) DAY",
-                "presto": "DATE_ADD('DAY', 1 * -1, DATE_PARSE(SUBSTR('2020-01-01', 1, 10), '%Y-%m-%d'))",
+                "presto": "DATE_ADD('DAY', 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD('2020-01-01', 1 * -1)",
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",
                 "": "TS_OR_DS_ADD('2020-01-01', 1 * -1, 'DAY')",
@@ -341,7 +341,7 @@ class TestHive(Validator):
             "DATEDIFF(TO_DATE(y), x)",
             write={
                 "duckdb": "DATE_DIFF('day', CAST(x AS DATE), CAST(CAST(y AS DATE) AS DATE))",
-                "presto": "DATE_DIFF('day', CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE), CAST(SUBSTR(CAST(CAST(SUBSTR(CAST(y AS VARCHAR), 1, 10) AS DATE) AS VARCHAR), 1, 10) AS DATE))",
+                "presto": "DATE_DIFF('day', CAST(CAST(x AS TIMESTAMP) AS DATE), CAST(CAST(CAST(CAST(y AS TIMESTAMP) AS DATE) AS TIMESTAMP) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
                 "spark": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
                 "": "DATEDIFF(TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE(y)), TS_OR_DS_TO_DATE(x))",
@@ -363,7 +363,7 @@ class TestHive(Validator):
                 f"{unit}(x)",
                 write={
                     "duckdb": f"{unit}(CAST(x AS DATE))",
-                    "presto": f"{unit}(CAST(SUBSTR(CAST(x AS VARCHAR), 1, 10) AS DATE))",
+                    "presto": f"{unit}(CAST(CAST(x AS TIMESTAMP) AS DATE))",
                     "hive": f"{unit}(TO_DATE(x))",
                     "spark": f"{unit}(TO_DATE(x))",
                 },

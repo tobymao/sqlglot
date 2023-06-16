@@ -103,24 +103,15 @@ def _str_to_time_sql(
 def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
-        return f"CAST({_str_to_time_sql(self, expression)} AS DATE)"
-    return f"CAST(SUBSTR(CAST({self.sql(expression, 'this')} AS VARCHAR), 1, 10) AS DATE)"
+        return exp.cast(_str_to_time_sql(self, expression), "DATE").sql(dialect="presto")
+    return exp.cast(exp.cast(expression.this, "TIMESTAMP"), "DATE").sql(dialect="presto")
 
 
 def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
     this = expression.this
 
     if not isinstance(this, exp.CurrentDate):
-        this = self.func(
-            "DATE_PARSE",
-            self.func(
-                "SUBSTR",
-                this if this.is_string else exp.cast(this, "VARCHAR"),
-                exp.Literal.number(1),
-                exp.Literal.number(10),
-            ),
-            Presto.DATE_FORMAT,
-        )
+        this = exp.cast(exp.cast(expression.this, "TIMESTAMP"), "DATE")
 
     return self.func(
         "DATE_ADD",

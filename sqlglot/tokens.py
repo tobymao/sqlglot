@@ -163,6 +163,7 @@ class TokenType(AutoName):
     CACHE = auto()
     CASE = auto()
     CHARACTER_SET = auto()
+    CLUSTER_BY = auto()
     COLLATE = auto()
     COMMAND = auto()
     COMMENT = auto()
@@ -182,6 +183,7 @@ class TokenType(AutoName):
     DESCRIBE = auto()
     DICTIONARY = auto()
     DISTINCT = auto()
+    DISTRIBUTE_BY = auto()
     DIV = auto()
     DROP = auto()
     ELSE = auto()
@@ -282,6 +284,7 @@ class TokenType(AutoName):
     SHOW = auto()
     SIMILAR_TO = auto()
     SOME = auto()
+    SORT_BY = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
@@ -509,6 +512,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
         "CHARACTER SET": TokenType.CHARACTER_SET,
+        "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,
         "COMMIT": TokenType.COMMIT,
@@ -526,6 +530,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DESC": TokenType.DESC,
         "DESCRIBE": TokenType.DESCRIBE,
         "DISTINCT": TokenType.DISTINCT,
+        "DISTRIBUTE BY": TokenType.DISTRIBUTE_BY,
         "DIV": TokenType.DIV,
         "DROP": TokenType.DROP,
         "ELSE": TokenType.ELSE,
@@ -617,6 +622,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SHOW": TokenType.SHOW,
         "SIMILAR TO": TokenType.SIMILAR_TO,
         "SOME": TokenType.SOME,
+        "SORT BY": TokenType.SORT_BY,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

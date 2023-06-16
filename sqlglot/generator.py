@@ -778,9 +778,11 @@ class Generator:
         return this
 
     def rawstring_sql(self, expression: exp.RawString) -> str:
+        string = expression.this
         if self.RAW_START:
-            return f"{self.RAW_START}{expression.name}{self.RAW_END}"
-        return self.sql(exp.Literal.string(expression.name.replace("\\", "\\\\")))
+            return f"{self.RAW_START}{self.escape_str(expression.this)}{self.RAW_END}"
+        string = self.escape_str(string.replace("\\", "\\\\"))
+        return f"{self.QUOTE_START}{string}{self.QUOTE_END}"
 
     def datatypesize_sql(self, expression: exp.DataTypeSize) -> str:
         this = self.sql(expression, "this")
@@ -1420,10 +1422,13 @@ class Generator:
     def literal_sql(self, expression: exp.Literal) -> str:
         text = expression.this or ""
         if expression.is_string:
-            text = text.replace(self.QUOTE_END, self._escaped_quote_end)
-            if self.pretty:
-                text = text.replace("\n", self.SENTINEL_LINE_BREAK)
-            text = f"{self.QUOTE_START}{text}{self.QUOTE_END}"
+            text = f"{self.QUOTE_START}{self.escape_str(text)}{self.QUOTE_END}"
+        return text
+
+    def escape_str(self, text: str) -> str:
+        text = text.replace(self.QUOTE_END, self._escaped_quote_end)
+        if self.pretty:
+            text = text.replace("\n", self.SENTINEL_LINE_BREAK)
         return text
 
     def loaddata_sql(self, expression: exp.LoadData) -> str:

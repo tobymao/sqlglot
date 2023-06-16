@@ -125,6 +125,21 @@ class TestBigQuery(Validator):
             transpile("'\\'", read="bigquery")
 
         self.validate_all(
+            "r'x\\''",
+            write={
+                "bigquery": "r'x\\''",
+                "hive": "'x\\''",
+            },
+        )
+
+        self.validate_all(
+            "r'x\\y'",
+            write={
+                "bigquery": "r'x\\y'",
+                "hive": "'x\\\\y'",
+            },
+        )
+        self.validate_all(
             "'\\\\'",
             write={
                 "bigquery": r"'\\'",

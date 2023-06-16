@@ -3221,15 +3221,15 @@ class Star(Expression):
         return self.name
 
 
-class Parameter(Expression):
+class Parameter(Condition):
     arg_types = {"this": True, "wrapped": False}
 
 
-class SessionParameter(Expression):
+class SessionParameter(Condition):
     arg_types = {"this": True, "kind": False}
 
 
-class Placeholder(Expression):
+class Placeholder(Condition):
     arg_types = {"this": False, "kind": False}
 
 

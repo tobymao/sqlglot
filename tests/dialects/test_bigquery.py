@@ -23,6 +23,14 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT b'abc'")
         self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[1, 2])""")
         self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
+        self.validate_all(
+            "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+            write={
+                "": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+                "bigquery": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+                "duckdb": "SELECT {'y': ARRAY(SELECT {'b': b} FROM x)} FROM z",
+            },
+        )
         self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
         self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")

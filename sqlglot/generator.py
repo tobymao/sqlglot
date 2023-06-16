@@ -142,6 +142,9 @@ class Generator:
     # Whether or not comparing against booleans (e.g. x IS TRUE) is supported
     IS_BOOL_ALLOWED = True
 
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
+    SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1565,9 +1568,30 @@ class Generator:
         hint = self.sql(expression, "hint")
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
-        kind = expression.args.get("kind")
-        kind = f" AS {kind}" if kind else ""
+        kind = self.sql(expression, "kind").upper()
         expressions = self.expressions(expression)
+
+        if kind:
+            if kind in self.SELECT_KINDS:
+                kind = f" AS {kind}"
+            else:
+                if kind == "STRUCT":
+                    expressions = self.expressions(
+                        sqls=[
+                            self.sql(
+                                exp.Struct(
+                                    expressions=[
+                                        exp.column(e.output_name).eq(
+                                            e.this if isinstance(e, exp.Alias) else e
+                                        )
+                                        for e in expression.expressions
+                                    ]
+                                )
+                            )
+                        ]
+                    )
+                kind = ""
+
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
         sql = self.query_modifiers(
             expression,

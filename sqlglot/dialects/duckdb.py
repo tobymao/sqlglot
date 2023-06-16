@@ -167,7 +167,7 @@ class DuckDB(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: lambda self, e: self.func("ARRAY", e.expressions[0])
-            if isinstance(seq_get(e.expressions, 0), exp.Select)
+            if e.expressions and e.expressions[0].find(exp.Select)
             else rename_func("LIST_VALUE")(self, e),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,

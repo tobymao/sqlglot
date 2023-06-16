@@ -575,6 +575,7 @@ class TestSnowflake(Validator):
         )
 
     def test_ddl(self):
+        self.validate_identity("CREATE OR REPLACE VIEW foo (uid) COPY GRANTS AS (SELECT 1)")
         self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
         self.validate_identity("CREATE DATABASE mytestdb_clone CLONE mytestdb")

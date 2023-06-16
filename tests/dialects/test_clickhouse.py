@@ -53,7 +53,7 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
-            "CONCAT(CASE WHEN COALESCE(a, '') IS NULL THEN COALESCE(a, '') ELSE CAST(COALESCE(a, '') AS TEXT) END, CASE WHEN COALESCE(b, '') IS NULL THEN COALESCE(b, '') ELSE CAST(COALESCE(b, '') AS TEXT) END)",
+            "CONCAT(CASE WHEN COALESCE(CAST(a AS TEXT), '') IS NULL THEN COALESCE(CAST(a AS TEXT), '') ELSE CAST(COALESCE(CAST(a AS TEXT), '') AS TEXT) END, CASE WHEN COALESCE(CAST(b AS TEXT), '') IS NULL THEN COALESCE(CAST(b AS TEXT), '') ELSE CAST(COALESCE(CAST(b AS TEXT), '') AS TEXT) END)",
             read={"postgres": "CONCAT(a, b)"},
         )
         self.validate_all(

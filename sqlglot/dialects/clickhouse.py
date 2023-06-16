@@ -344,7 +344,7 @@ class ClickHouse(Dialect):
             return self.func(
                 "CONCAT",
                 *[
-                    exp.func("if", e.is_(exp.null()), e, exp.cast(e, "text"))
+                    exp.func("if", exp.Is(this=e, expression=exp.null()), e, exp.cast(e, "text"))
                     for e in expression.expressions
                 ],
             )

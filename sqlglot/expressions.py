@@ -3229,7 +3229,7 @@ class SessionParameter(Expression):
     arg_types = {"this": True, "kind": False}
 
 
-class Placeholder(Expression):
+class Placeholder(Condition):
     arg_types = {"this": False, "kind": False}
 
 

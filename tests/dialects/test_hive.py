@@ -4,17 +4,6 @@ from tests.dialects.test_dialect import Validator
 class TestHive(Validator):
     dialect = "hive"
 
-    def test_hive(self):
-        self.validate_identity("SELECT * FROM test DISTRIBUTE BY y SORT BY x DESC ORDER BY l")
-        self.validate_identity(
-            "SELECT * FROM test WHERE RAND() <= 0.1 DISTRIBUTE BY RAND() SORT BY RAND()"
-        )
-        self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z")
-        self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z SORT BY x")
-        self.validate_identity("(SELECT 1 UNION SELECT 2) CLUSTER BY y DESC")
-        self.validate_identity("SELECT * FROM test CLUSTER BY y")
-        self.validate_identity("(SELECT 1 UNION SELECT 2) SORT BY z")
-
     def test_bits(self):
         self.validate_all(
             "x & 1",
@@ -381,6 +370,16 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("SELECT * FROM test DISTRIBUTE BY y SORT BY x DESC ORDER BY l")
+        self.validate_identity(
+            "SELECT * FROM test WHERE RAND() <= 0.1 DISTRIBUTE BY RAND() SORT BY RAND()"
+        )
+        self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z")
+        self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z SORT BY x")
+        self.validate_identity("(SELECT 1 UNION SELECT 2) CLUSTER BY y DESC")
+        self.validate_identity("SELECT * FROM test CLUSTER BY y")
+
+        self.validate_identity("(SELECT 1 UNION SELECT 2) SORT BY z")
         self.validate_identity(
             "INSERT OVERWRITE TABLE zipcodes PARTITION(state = '0') VALUES (896, 'US', 'TAMPA', 33607)"
         )

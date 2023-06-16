@@ -465,7 +465,7 @@ class Parser(metaclass=_Parser):
     }
 
     EXPRESSION_PARSERS = {
-        exp.Cluster: lambda self: self._parse_sort(exp.Cluster, "CLUSTER", "BY"),
+        exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
         exp.Column: lambda self: self._parse_column(),
         exp.Condition: lambda self: self._parse_conjunction(),
         exp.DataType: lambda self: self._parse_types(),
@@ -484,7 +484,7 @@ class Parser(metaclass=_Parser):
         exp.Properties: lambda self: self._parse_properties(),
         exp.Qualify: lambda self: self._parse_qualify(),
         exp.Returning: lambda self: self._parse_returning(),
-        exp.Sort: lambda self: self._parse_sort(exp.Sort, "SORT", "BY"),
+        exp.Sort: lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY),
         exp.Table: lambda self: self._parse_table_parts(),
         exp.TableAlias: lambda self: self._parse_table_alias(),
         exp.Where: lambda self: self._parse_where(),
@@ -584,7 +584,7 @@ class Parser(metaclass=_Parser):
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
         "CHARACTER SET": lambda self: self._parse_character_set(),
         "CHECKSUM": lambda self: self._parse_checksum(),
-        "CLUSTER": lambda self: self._parse_cluster(),
+        "CLUSTER BY": lambda self: self._parse_cluster(),
         "COLLATE": lambda self: self._parse_property_assignment(exp.CollateProperty),
         "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
         "COPY": lambda self: self._parse_copy_property(),
@@ -1424,10 +1424,6 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.ChecksumProperty, on=on, default=self._match(TokenType.DEFAULT))
 
     def _parse_cluster(self) -> t.Optional[exp.Cluster]:
-        if not self._match_text_seq("BY"):
-            self._retreat(self._index - 1)
-            return None
-
         return self.expression(exp.Cluster, expressions=self._parse_csv(self._parse_ordered))
 
     def _parse_copy_property(self) -> t.Optional[exp.CopyGrantsProperty]:
@@ -2618,8 +2614,8 @@ class Parser(metaclass=_Parser):
             exp.Order, this=this, expressions=self._parse_csv(self._parse_ordered)
         )
 
-    def _parse_sort(self, exp_class: t.Type[E], *texts: str) -> t.Optional[E]:
-        if not self._match_text_seq(*texts):
+    def _parse_sort(self, exp_class: t.Type[E], token: TokenType) -> t.Optional[E]:
+        if not self._match(token):
             return None
         return self.expression(exp_class, expressions=self._parse_csv(self._parse_ordered))
 

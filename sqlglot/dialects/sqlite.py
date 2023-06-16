@@ -59,6 +59,9 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
 
 
 class SQLite(Dialect):
+    # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
+    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]

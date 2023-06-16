@@ -135,9 +135,9 @@ class DataFrameValidator(unittest.TestCase):
             data=district_data, schema=cls.sqlglot_district_schema
         )
         cls.df_district.createOrReplaceTempView("district")
-        sqlglot.schema.add_table("employee", cls.sqlglot_employee_schema)
-        sqlglot.schema.add_table("store", cls.sqlglot_store_schema)
-        sqlglot.schema.add_table("district", cls.sqlglot_district_schema)
+        sqlglot.schema.add_table("employee", cls.sqlglot_employee_schema, dialect="spark")
+        sqlglot.schema.add_table("store", cls.sqlglot_store_schema, dialect="spark")
+        sqlglot.schema.add_table("district", cls.sqlglot_district_schema, dialect="spark")
 
     def setUp(self) -> None:
         warnings.filterwarnings("ignore", category=ResourceWarning)

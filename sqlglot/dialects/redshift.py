@@ -14,6 +14,9 @@ def _json_sql(self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONEx
 
 
 class Redshift(Postgres):
+    # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
+    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
         **Postgres.TIME_MAPPING,

@@ -172,6 +172,11 @@ class Presto(Dialect):
     TIME_MAPPING = MySQL.TIME_MAPPING
     STRICT_STRING_CONCAT = True
 
+    # https://github.com/trinodb/trino/issues/17
+    # https://github.com/trinodb/trino/issues/12289
+    # https://github.com/prestodb/presto/issues/2863
+    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

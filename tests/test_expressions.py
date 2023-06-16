@@ -804,6 +804,8 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("NULLABLE").sql(), "NULLABLE")
         self.assertEqual(exp.DataType.build("HLLSKETCH", dialect="redshift").sql(), "HLLSKETCH")
         self.assertEqual(exp.DataType.build("HSTORE", dialect="postgres").sql(), "HSTORE")
+        self.assertEqual(exp.DataType.build("NULL").sql(), "NULL")
+        self.assertEqual(exp.DataType.build("NULL", dialect="bigquery").sql(), "NULL")
         self.assertEqual(exp.DataType.build("UNKNOWN").sql(), "UNKNOWN")
         self.assertEqual(exp.DataType.build("UNKNOWN", dialect="bigquery").sql(), "UNKNOWN")
         self.assertEqual(exp.DataType.build("UNKNOWN", dialect="snowflake").sql(), "UNKNOWN")

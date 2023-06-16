@@ -3373,6 +3373,8 @@ class DataType(Expression):
         Type.DATETIME64,
     }
 
+    META_TYPES = {"UNKNOWN", "NULL"}
+
     @classmethod
     def build(
         cls, dtype: str | DataType | DataType.Type, dialect: DialectType = None, **kwargs
@@ -3380,8 +3382,9 @@ class DataType(Expression):
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
-            if dtype.upper() == "UNKNOWN":
-                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type.UNKNOWN)
+            upper = dtype.upper()
+            if upper in DataType.META_TYPES:
+                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type[upper])
             else:
                 data_type_exp = parse_one(dtype, read=dialect, into=DataType)
 

@@ -1192,7 +1192,7 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "COALESCE(a, '')",
+            "COALESCE(CAST(a AS TEXT), '')",
             read={
                 "drill": "CONCAT(a)",
                 "duckdb": "CONCAT(a)",

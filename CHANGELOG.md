@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v16.3.1] - 2023-06-16
+### :bug: Bug Fixes
+- [`18db68c`](https://github.com/tobymao/sqlglot/commit/18db68c15e607884572adaae3dd6bd0c6c4bc582) - cluster/distribute/sort by for hive *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.3.0] - 2023-06-16
 ### :boom: BREAKING CHANGES
 - due to [`038afc9`](https://github.com/tobymao/sqlglot/commit/038afc90b1f3fe261ea6ffb4d3654006bb4317fd) - switch presto tsords to cast timestamp -> date *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -568,3 +573,4 @@ Changelog
 [v16.2.0]: https://github.com/tobymao/sqlglot/compare/v16.1.4...v16.2.0
 [v16.2.1]: https://github.com/tobymao/sqlglot/compare/v16.2.0...v16.2.1
 [v16.3.0]: https://github.com/tobymao/sqlglot/compare/v16.2.1...v16.3.0
+[v16.3.1]: https://github.com/tobymao/sqlglot/compare/v16.3.0...v16.3.1

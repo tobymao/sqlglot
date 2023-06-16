@@ -289,7 +289,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
 
     def _normalize(self, schema: t.Dict) -> t.Dict:
         """
-        Converts all identifiers in the schema into lowercase, unless they're quoted.
+        Normalizes all identifiers in the schema.
 
         Args:
             schema: the schema to normalize.
@@ -304,7 +304,9 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             columns = nested_get(schema, *zip(keys, keys))
             assert columns is not None
 
-            normalized_keys = [self._normalize_name(key, dialect=self.dialect) for key in keys]
+            normalized_keys = [
+                self._normalize_name(key, dialect=self.dialect, is_table=True) for key in keys
+            ]
             for column_name, column_type in columns.items():
                 nested_set(
                     normalized_mapping,
@@ -321,12 +323,15 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             value = normalized_table.args.get(arg)
             if isinstance(value, (str, exp.Identifier)):
                 normalized_table.set(
-                    arg, exp.to_identifier(self._normalize_name(value, dialect=dialect))
+                    arg,
+                    exp.to_identifier(self._normalize_name(value, dialect=dialect, is_table=True)),
                 )
 
         return normalized_table
 
-    def _normalize_name(self, name: str | exp.Identifier, dialect: DialectType = None) -> str:
+    def _normalize_name(
+        self, name: str | exp.Identifier, dialect: DialectType = None, is_table: bool = False
+    ) -> str:
         dialect = dialect or self.dialect
 
         try:
@@ -338,6 +343,8 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         if not self.normalize:
             return name
 
+        # This can be useful for normalize_identifier
+        identifier.meta["is_table"] = is_table
         return Dialect.get_or_raise(dialect).normalize_identifier(identifier).name
 
     def _depth(self) -> int:

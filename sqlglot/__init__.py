@@ -84,58 +84,17 @@ def parse(sql: str, read: DialectType = None, **opts) -> t.List[t.Optional[Expre
 
 
 @t.overload
-def parse_one(
-    sql: str,
-    read: None = None,
-    into: t.Type[E] = ...,
-    **opts,
-) -> E:
+def parse_one(sql: str, *, into: t.Type[E], **opts) -> E:
     ...
 
 
 @t.overload
-def parse_one(
-    sql: str,
-    read: DialectType,
-    into: t.Type[E],
-    **opts,
-) -> E:
-    ...
-
-
-@t.overload
-def parse_one(
-    sql: str,
-    read: None = None,
-    into: t.Union[str, t.Collection[t.Union[str, t.Type[Expression]]]] = ...,
-    **opts,
-) -> Expression:
-    ...
-
-
-@t.overload
-def parse_one(
-    sql: str,
-    read: DialectType,
-    into: t.Union[str, t.Collection[t.Union[str, t.Type[Expression]]]],
-    **opts,
-) -> Expression:
-    ...
-
-
-@t.overload
-def parse_one(
-    sql: str,
-    **opts,
-) -> Expression:
+def parse_one(sql: str, **opts) -> Expression:
     ...
 
 
 def parse_one(
-    sql: str,
-    read: DialectType = None,
-    into: t.Optional[exp.IntoType] = None,
-    **opts,
+    sql: str, read: DialectType = None, into: t.Optional[exp.IntoType] = None, **opts
 ) -> Expression:
     """
     Parses the given SQL string and returns a syntax tree for the first parsed SQL statement.

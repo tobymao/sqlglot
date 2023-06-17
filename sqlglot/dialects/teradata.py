@@ -31,18 +31,19 @@ class Teradata(Dialect):
         # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Expressions-and-Predicates/March-2017/Comparison-Operators-and-Functions/Comparison-Operators/ANSI-Compliance
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "BYTEINT": TokenType.SMALLINT,
-            "SEL": TokenType.SELECT,
-            "INS": TokenType.INSERT,
-            "MOD": TokenType.MOD,
-            "LT": TokenType.LT,
-            "LE": TokenType.LTE,
-            "GT": TokenType.GT,
-            "GE": TokenType.GTE,
             "^=": TokenType.NEQ,
+            "BYTEINT": TokenType.SMALLINT,
+            "GE": TokenType.GTE,
+            "GT": TokenType.GT,
+            "INS": TokenType.INSERT,
+            "LE": TokenType.LTE,
+            "LT": TokenType.LT,
+            "MOD": TokenType.MOD,
             "NE": TokenType.NEQ,
             "NOT=": TokenType.NEQ,
+            "SEL": TokenType.SELECT,
             "ST_GEOMETRY": TokenType.GEOMETRY,
+            "TOP": TokenType.TOP,
         }
 
         # Teradata does not support % as a modulo operator

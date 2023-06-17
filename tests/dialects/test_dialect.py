@@ -1300,6 +1300,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT x FROM y LIMIT 10",
             read={
+                "teradata": "SELECT TOP 10 x FROM y",
                 "tsql": "SELECT TOP 10 x FROM y",
             },
             write={

@@ -481,6 +481,11 @@ class TestBigQuery(Validator):
             "SELECT * FROM UNNEST([1]) WITH OFFSET y",
             write={"bigquery": "SELECT * FROM UNNEST([1]) WITH OFFSET AS y"},
         )
+        self.validate_all(
+            "GENERATE_ARRAY(1, 4)",
+            read={"bigquery": "GENERATE_ARRAY(1, 4)"},
+            write={"duckdb": "GENERATE_SERIES(1, 4)"},
+        )
 
     def test_user_defined_functions(self):
         self.validate_identity(

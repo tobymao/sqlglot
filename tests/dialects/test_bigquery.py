@@ -486,6 +486,15 @@ class TestBigQuery(Validator):
             read={"bigquery": "GENERATE_ARRAY(1, 4)"},
             write={"duckdb": "GENERATE_SERIES(1, 4)"},
         )
+        self.validate_all(
+            "TO_JSON_STRING(x)",
+            read={"bigquery": "TO_JSON_STRING(x)"},
+            write={
+                "bigquery": "TO_JSON_STRING(x)",
+                "presto": "JSON_FORMAT(x)",
+                "spark": "TO_JSON(x)",
+            },
+        )
 
     def test_user_defined_functions(self):
         self.validate_identity(

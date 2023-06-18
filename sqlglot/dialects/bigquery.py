@@ -220,6 +220,7 @@ class BigQuery(Dialect):
             "TIME_SUB": parse_date_delta_with_interval(exp.TimeSub),
             "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
             "TIMESTAMP_SUB": parse_date_delta_with_interval(exp.TimestampSub),
+            "TO_JSON_STRING": exp.JSONFormat.from_arg_list,
         }
 
         FUNCTION_PARSERS = {
@@ -308,6 +309,7 @@ class BigQuery(Dialect):
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
+            exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.ILike: no_ilike_sql,

@@ -664,6 +664,7 @@ class TestPresto(Validator):
                 "spark": "TO_JSON(x)",
             },
             write={
+                "bigquery": "TO_JSON_STRING(x)",
                 "presto": "JSON_FORMAT(x)",
                 "spark": "TO_JSON(x)",
             },
@@ -672,6 +673,7 @@ class TestPresto(Validator):
         self.validate_all(
             "JSON_FORMAT(JSON 'x')",
             write={
+                "bigquery": "TO_JSON_STRING(CAST('x' AS JSON))",
                 "presto": "JSON_FORMAT(CAST('x' AS JSON))",
                 "spark": "TO_JSON('x')",
             },

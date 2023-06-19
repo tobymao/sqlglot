@@ -665,6 +665,7 @@ class TestPresto(Validator):
             },
             write={
                 "bigquery": "TO_JSON_STRING(x)",
+                "duckdb": "CAST(TO_JSON(x) AS TEXT)",
                 "presto": "JSON_FORMAT(x)",
                 "spark": "TO_JSON(x)",
             },
@@ -674,6 +675,7 @@ class TestPresto(Validator):
             "JSON_FORMAT(JSON 'x')",
             write={
                 "bigquery": "TO_JSON_STRING(CAST('x' AS JSON))",
+                "duckdb": "CAST(CAST('x' AS JSON) AS TEXT)",
                 "presto": "JSON_FORMAT(CAST('x' AS JSON))",
                 "spark": "TO_JSON('x')",
             },

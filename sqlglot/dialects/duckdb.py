@@ -85,6 +85,11 @@ def _regexp_extract_sql(self: generator.Generator, expression: exp.RegexpExtract
     )
 
 
+def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
+    sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
+    return f"CAST({sql} AS TEXT)"
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
 
@@ -195,6 +200,7 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONFormat: _json_format_sql,
             exp.JSONBExtract: arrow_json_extract_sql,
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),

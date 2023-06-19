@@ -491,6 +491,7 @@ class TestBigQuery(Validator):
             read={"bigquery": "TO_JSON_STRING(x)"},
             write={
                 "bigquery": "TO_JSON_STRING(x)",
+                "duckdb": "CAST(TO_JSON(x) AS TEXT)",
                 "presto": "JSON_FORMAT(x)",
                 "spark": "TO_JSON(x)",
             },

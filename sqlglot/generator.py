@@ -824,7 +824,8 @@ class Generator:
         )
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
-        sql = f"DELETE{this}{using_sql}{where_sql}{returning}"
+        limit = self.sql(expression, "limit")
+        sql = f"DELETE{this}{using_sql}{where_sql}{returning}{limit}"
         return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression: exp.Drop) -> str:

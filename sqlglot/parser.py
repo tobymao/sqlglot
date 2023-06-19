@@ -1783,6 +1783,7 @@ class Parser(metaclass=_Parser):
             using=self._parse_csv(lambda: self._match(TokenType.USING) and self._parse_table()),
             where=self._parse_where(),
             returning=self._parse_returning(),
+            limit=self._parse_limit(),
         )
 
     def _parse_update(self) -> exp.Update:

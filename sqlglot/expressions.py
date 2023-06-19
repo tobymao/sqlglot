@@ -1301,7 +1301,14 @@ class Constraint(Expression):
 
 
 class Delete(Expression):
-    arg_types = {"with": False, "this": False, "using": False, "where": False, "returning": False}
+    arg_types = {
+        "with": False,
+        "this": False,
+        "using": False,
+        "where": False,
+        "returning": False,
+        "limit": False,
+    }
 
     def delete(
         self,

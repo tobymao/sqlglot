@@ -1302,6 +1302,7 @@ class TestDialect(Validator):
             read={
                 "teradata": "SELECT TOP 10 x FROM y",
                 "tsql": "SELECT TOP 10 x FROM y",
+                "snowflake": "SELECT TOP 10 x FROM y",
             },
             write={
                 "sqlite": "SELECT x FROM y LIMIT 10",

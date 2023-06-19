@@ -285,11 +285,12 @@ class Snowflake(Dialect):
             "NCHAR VARYING": TokenType.VARCHAR,
             "PUT": TokenType.COMMAND,
             "RENAME": TokenType.REPLACE,
+            "SAMPLE": TokenType.TABLE_SAMPLE,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
-            "SAMPLE": TokenType.TABLE_SAMPLE,
+            "TOP": TokenType.TOP,
         }
 
         SINGLE_TOKENS = {

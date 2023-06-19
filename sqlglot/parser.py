@@ -1795,6 +1795,7 @@ class Parser(metaclass=_Parser):
                 "from": self._parse_from(modifiers=True),
                 "where": self._parse_where(),
                 "returning": self._parse_returning(),
+                "limit": self._parse_limit(),
             },
         )
 

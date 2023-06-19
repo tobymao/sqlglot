@@ -2413,6 +2413,7 @@ class Update(Expression):
         "from": False,
         "where": False,
         "returning": False,
+        "limit": False,
     }
 
 

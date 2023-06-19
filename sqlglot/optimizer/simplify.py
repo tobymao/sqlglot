@@ -408,9 +408,14 @@ def remove_where_true(expression):
         if always_true(where.this):
             where.parent.set("where", None)
     for join in expression.find_all(exp.Join):
-        if always_true(join.args.get("on")):
-            join.set("kind", "CROSS")
+        if (
+            always_true(join.args.get("on"))
+            and not join.args.get("using")
+            and not join.args.get("method")
+        ):
             join.set("on", None)
+            join.set("side", None)
+            join.set("kind", "CROSS")
 
 
 def always_true(expression):

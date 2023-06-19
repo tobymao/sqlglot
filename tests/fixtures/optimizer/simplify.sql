@@ -240,6 +240,12 @@ A AND B AND C;
 SELECT x WHERE TRUE;
 SELECT x;
 
+SELECT x FROM y LEFT JOIN z ON TRUE;
+SELECT x FROM y CROSS JOIN z;
+
+SELECT x FROM y JOIN z USING (x);
+SELECT x FROM y JOIN z USING (x);
+
 --------------------------------------
 -- Parenthesis removal
 --------------------------------------

@@ -6,6 +6,7 @@ class TestMySQL(Validator):
     dialect = "mysql"
 
     def test_ddl(self):
+        self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
         self.validate_identity(
             "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE SET x.id = 1"
         )

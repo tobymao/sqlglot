@@ -1248,7 +1248,8 @@ class Generator:
         from_sql = self.sql(expression, "from")
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
-        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}{returning}"
+        limit = self.sql(expression, "limit")
+        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}{returning}{limit}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:

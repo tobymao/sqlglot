@@ -670,14 +670,25 @@ class TestPresto(Validator):
                 "spark": "TO_JSON(x)",
             },
         )
-
         self.validate_all(
-            "JSON_FORMAT(JSON 'x')",
+            """JSON_FORMAT(JSON '"x"')""",
             write={
-                "bigquery": "TO_JSON_STRING(CAST('x' AS JSON))",
-                "duckdb": "CAST(TO_JSON(CAST('x' AS JSON)) AS TEXT)",
-                "presto": "JSON_FORMAT(CAST('x' AS JSON))",
-                "spark": "TO_JSON('x')",
+                "bigquery": """TO_JSON_STRING(CAST('"x"' AS JSON))""",
+                "duckdb": """CAST(TO_JSON(CAST('"x"' AS JSON)) AS TEXT)""",
+                "presto": """JSON_FORMAT(CAST('"x"' AS JSON))""",
+                "spark": """REGEXP_EXTRACT(TO_JSON(FROM_JSON('["x"]', SCHEMA_OF_JSON('["x"]'))), '^.(.*).$', 1)""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON_FORMAT(JSON '{"a": 1, "b": "c"}')""",
+            write={
+                "spark": """SELECT REGEXP_EXTRACT(TO_JSON(FROM_JSON('[{"a": 1, "b": "c"}]', SCHEMA_OF_JSON('[{"a": 1, "b": "c"}]'))), '^.(.*).$', 1)""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON_FORMAT(JSON '[1, 2, 3]')""",
+            write={
+                "spark": "SELECT REGEXP_EXTRACT(TO_JSON(FROM_JSON('[[1, 2, 3]]', SCHEMA_OF_JSON('[[1, 2, 3]]'))), '^.(.*).$', 1)",
             },
         )
 

@@ -86,13 +86,17 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
 
 def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
     this = expression.this
-    if not this.type:
-        from sqlglot.optimizer.annotate_types import annotate_types
+    if isinstance(this, exp.Cast) and this.is_type("json") and this.this.is_string:
+        # Since FROM_JSON requires a nested type, we always wrap the json string with
+        # an array to ensure that "naked" strings like "'a'" will be handled correctly
+        wrapped_json = exp.Literal.string(f"[{this.this.name}]")
 
-        annotate_types(this)
+        from_json = self.func("FROM_JSON", wrapped_json, self.func("SCHEMA_OF_JSON", wrapped_json))
+        to_json = self.func("TO_JSON", from_json)
 
-    if this.type.is_type("json"):
-        return self.sql(this)
+        # This strips the [, ] delimiters of the dummy array printed by TO_JSON
+        return self.func("REGEXP_EXTRACT", to_json, "'^.(.*).$'", "1")
+
     return self.func("TO_JSON", this, expression.args.get("options"))
 
 

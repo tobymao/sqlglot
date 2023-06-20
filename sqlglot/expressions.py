@@ -3343,6 +3343,7 @@ class DataType(Expression):
         UINT128 = auto()
         UINT256 = auto()
         UNIQUEIDENTIFIER = auto()
+        USERDEFINED = "USER-DEFINED"
         UUID = auto()
         VARBINARY = auto()
         VARCHAR = auto()

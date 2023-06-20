@@ -187,7 +187,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         },
     }
 
-    ANNOTATORS = {
+    ANNOTATORS: t.Dict = {
         **{
             expr_type: lambda self, e: self._annotate_unary(e)
             for expr_type in subclasses(exp.__name__, (exp.Unary, exp.Alias))

@@ -2278,9 +2278,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
-        hints = []
+        hints: t.List[exp.Expression] = []
         if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
-            # # https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table?view=sql-server-ver16
+            # https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table?view=sql-server-ver16
             hints.append(
                 self.expression(
                     exp.WithTableHint,
@@ -2291,7 +2291,7 @@ class Parser(metaclass=_Parser):
             )
             self._match_r_paren()
         else:
-            # # https://dev.mysql.com/doc/refman/8.0/en/index-hints.html
+            # https://dev.mysql.com/doc/refman/8.0/en/index-hints.html
             while self._match_set(self.TABLE_INDEX_HINT_TOKENS):
                 hint = exp.IndexTableHint(this=self._prev.text.upper())
 

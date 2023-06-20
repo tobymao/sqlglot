@@ -182,7 +182,9 @@ class MySQL(Dialect):
 
     class Parser(parser.Parser):
         FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}
-        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
+        TABLE_ALIAS_TOKENS = (
+            parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
+        )
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

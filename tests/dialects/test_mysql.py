@@ -73,12 +73,8 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SELECT * FROM t1 USE INDEX (i1) IGNORE INDEX FOR ORDER BY (i2) ORDER BY a"
         )
-        self.validate_identity(
-            "SELECT * FROM t1 USE INDEX (i1) USE INDEX (i1, i1)"
-        )
-        self.validate_identity(
-            "SELECT * FROM t1 USE INDEX FOR JOIN (i1) FORCE INDEX FOR JOIN (i2)"
-        )
+        self.validate_identity("SELECT * FROM t1 USE INDEX (i1) USE INDEX (i1, i1)")
+        self.validate_identity("SELECT * FROM t1 USE INDEX FOR JOIN (i1) FORCE INDEX FOR JOIN (i2)")
         self.validate_identity(
             "SELECT * FROM t1 USE INDEX () IGNORE INDEX (i2) USE INDEX (i1) USE INDEX (i2)"
         )

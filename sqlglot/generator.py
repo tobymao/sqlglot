@@ -1167,7 +1167,7 @@ class Generator:
         null = f" NULL DEFINED AS {null}" if null else ""
         return f"ROW FORMAT DELIMITED{fields}{escaped}{items}{keys}{lines}{null}"
 
-    def withtablehint_sql(self, expression: exp.WithTablehint) -> str:
+    def withtablehint_sql(self, expression: exp.WithTableHint) -> str:
         return f"WITH ({self.expressions(expression, flat=True)})"
 
     def indextablehint_sql(self, expression: exp.IndexTableHint) -> str:

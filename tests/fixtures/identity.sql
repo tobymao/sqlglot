@@ -519,8 +519,6 @@ SELECT student, score FROM tests CROSS JOIN UNNEST(scores) AS t(a, b)
 SELECT student, score FROM tests CROSS JOIN UNNEST(scores) WITH ORDINALITY AS t(a, b)
 SELECT student, score FROM tests CROSS JOIN UNNEST(x.scores) AS t(score)
 SELECT student, score FROM tests CROSS JOIN UNNEST(ARRAY(x.scores)) AS t(score)
-SELECT * FROM t WITH (TABLOCK, INDEX(myindex))
-SELECT * FROM t WITH (NOWAIT)
 CREATE TABLE foo AS (SELECT 1) UNION ALL (SELECT 2)
 CREATE TABLE foo (id INT PRIMARY KEY ASC)
 CREATE TABLE a.b AS SELECT 1

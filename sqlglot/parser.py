@@ -177,6 +177,7 @@ class Parser(metaclass=_Parser):
         TokenType.BIGSERIAL,
         TokenType.XML,
         TokenType.UNIQUEIDENTIFIER,
+        TokenType.USERDEFINED,
         TokenType.MONEY,
         TokenType.SMALLMONEY,
         TokenType.ROWVERSION,

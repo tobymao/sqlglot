@@ -2,7 +2,7 @@ import typing as t
 
 # The generic time format is based on python time.strftime.
 # https://docs.python.org/3/library/time.html#time.strftime
-from sqlglot.trie import in_trie, new_trie
+from sqlglot.trie import TrieResult, in_trie, new_trie
 
 
 def format_time(
@@ -37,7 +37,7 @@ def format_time(
         chars = string[start:end]
         result, current = in_trie(current, chars[-1])
 
-        if result == 0:
+        if result == TrieResult.FAILED:
             if sym:
                 end -= 1
                 chars = sym
@@ -45,11 +45,12 @@ def format_time(
             start += len(chars)
             chunks.append(chars)
             current = trie
-        elif result == 2:
+        elif result == TrieResult.EXISTS:
             sym = chars
 
         end += 1
 
-        if result and end > size:
+        if result != TrieResult.FAILED and end > size:
             chunks.append(chars)
+
     return "".join(mapping.get(chars, chars) for chars in chunks)

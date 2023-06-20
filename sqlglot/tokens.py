@@ -4,7 +4,7 @@ import typing as t
 from enum import auto
 
 from sqlglot.helper import AutoName
-from sqlglot.trie import in_trie, new_trie
+from sqlglot.trie import TrieResult, in_trie, new_trie
 
 
 class TokenType(AutoName):
@@ -913,13 +913,13 @@ class Tokenizer(metaclass=_Tokenizer):
 
         while chars:
             if skip:
-                result = 1
+                result = TrieResult.PREFIX
             else:
                 result, trie = in_trie(trie, char.upper())
 
-            if result == 0:
+            if result == TrieResult.FAILED:
                 break
-            if result == 2:
+            if result == TrieResult.EXISTS:
                 word = chars
 
             size += 1

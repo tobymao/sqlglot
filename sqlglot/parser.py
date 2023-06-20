@@ -9,7 +9,7 @@ from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
 from sqlglot.helper import apply_index_offset, ensure_list, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
-from sqlglot.trie import in_trie, new_trie
+from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -4564,13 +4564,16 @@ class Parser(metaclass=_Parser):
             curr = self._curr.text.upper()
             key = curr.split(" ")
             this.append(curr)
+
             self._advance()
             result, trie = in_trie(trie, key)
-            if result == 0:
+            if result == TrieResult.FAILED:
                 break
-            if result == 2:
+
+            if result == TrieResult.EXISTS:
                 subparser = parsers[" ".join(this)]
                 return subparser
+
         self._retreat(index)
         return None
 

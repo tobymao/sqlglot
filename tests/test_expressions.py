@@ -813,6 +813,7 @@ FROM foo""",
         self.assertEqual(
             exp.DataType.build("struct<x int>", dialect="spark").sql(), "STRUCT<x INT>"
         )
+        self.assertEqual(exp.DataType.build("USER-DEFINED").sql(), "USER-DEFINED")
 
     def test_rename_table(self):
         self.assertEqual(

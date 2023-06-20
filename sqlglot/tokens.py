@@ -137,6 +137,7 @@ class TokenType(AutoName):
     BIGSERIAL = auto()
     XML = auto()
     UNIQUEIDENTIFIER = auto()
+    USERDEFINED = auto()
     MONEY = auto()
     SMALLMONEY = auto()
     ROWVERSION = auto()
@@ -723,6 +724,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PREPARE": TokenType.COMMAND,
         "TRUNCATE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
+        "USER-DEFINED": TokenType.USERDEFINED,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {

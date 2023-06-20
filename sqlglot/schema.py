@@ -9,7 +9,7 @@ from sqlglot._typing import T
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import ParseError, SchemaError
 from sqlglot.helper import dict_depth
-from sqlglot.trie import in_trie, new_trie
+from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.types import StructType
@@ -135,10 +135,10 @@ class AbstractMappingSchema(t.Generic[T]):
         parts = self.table_parts(table)[0 : len(self.supported_table_args)]
         value, trie = in_trie(self.mapping_trie if trie is None else trie, parts)
 
-        if value == 0:
+        if value == TrieResult.FAILED:
             return None
 
-        if value == 1:
+        if value == TrieResult.PREFIX:
             possibilities = flatten_schema(trie, depth=dict_depth(trie) - 1)
 
             if len(possibilities) == 1:

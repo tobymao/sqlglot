@@ -2256,6 +2256,16 @@ QUERY_MODIFIERS = {
 }
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table?view=sql-server-ver16
+class WithTableHint(Expression):
+    arg_types = {"expressions": True}
+
+
+# https://dev.mysql.com/doc/refman/8.0/en/index-hints.html
+class IndexTableHint(Expression):
+    arg_types = {"this": True, "expressions": False, "target": False}
+
+
 class Table(Expression):
     arg_types = {
         "this": True,

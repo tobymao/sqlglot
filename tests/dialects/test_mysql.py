@@ -63,6 +63,22 @@ class TestMySQL(Validator):
             "SELECT * FROM t1, t2, t3 FOR SHARE OF t1 NOWAIT FOR UPDATE OF t2, t3 SKIP LOCKED"
         )
 
+        # Index hints
+        self.validate_identity(
+            "SELECT * FROM table1 USE INDEX (col1_index, col2_index) WHERE col1 = 1 AND col2 = 2 AND col3 = 3"
+        )
+        self.validate_identity(
+            "SELECT * FROM table1 IGNORE INDEX (col3_index) WHERE col1 = 1 AND col2 = 2 AND col3 = 3"
+        )
+        self.validate_identity(
+            "SELECT * FROM t1 USE INDEX (i1) IGNORE INDEX FOR ORDER BY (i2) ORDER BY a"
+        )
+        self.validate_identity("SELECT * FROM t1 USE INDEX (i1) USE INDEX (i1, i1)")
+        self.validate_identity("SELECT * FROM t1 USE INDEX FOR JOIN (i1) FORCE INDEX FOR JOIN (i2)")
+        self.validate_identity(
+            "SELECT * FROM t1 USE INDEX () IGNORE INDEX (i2) USE INDEX (i1) USE INDEX (i2)"
+        )
+
         # SET Commands
         self.validate_identity("SET @var_name = expr")
         self.validate_identity("SET @name = 43")
@@ -82,12 +98,6 @@ class TestMySQL(Validator):
         self.validate_identity("SET @@SESSION.max_join_size = DEFAULT")
         self.validate_identity("SET @@SESSION.max_join_size = @@GLOBAL.max_join_size")
         self.validate_identity("SET @x = 1, SESSION sql_mode = ''")
-        self.validate_identity(
-            "SET GLOBAL sort_buffer_size = 1000000, SESSION sort_buffer_size = 1000000"
-        )
-        self.validate_identity(
-            "SET @@GLOBAL.sort_buffer_size = 1000000, @@LOCAL.sort_buffer_size = 1000000"
-        )
         self.validate_identity("SET GLOBAL max_connections = 1000, sort_buffer_size = 1000000")
         self.validate_identity("SET @@GLOBAL.sort_buffer_size = 50000, sort_buffer_size = 1000000")
         self.validate_identity("SET CHARACTER SET 'utf8'")
@@ -103,6 +113,12 @@ class TestMySQL(Validator):
         self.validate_identity("SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE")
         self.validate_identity("SELECT SCHEMA()")
         self.validate_identity("SELECT DATABASE()")
+        self.validate_identity(
+            "SET GLOBAL sort_buffer_size = 1000000, SESSION sort_buffer_size = 1000000"
+        )
+        self.validate_identity(
+            "SET @@GLOBAL.sort_buffer_size = 1000000, @@LOCAL.sort_buffer_size = 1000000"
+        )
 
     def test_types(self):
         self.validate_all(

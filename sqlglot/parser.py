@@ -541,8 +541,7 @@ class Parser(metaclass=_Parser):
             exp.Literal, this=token.text, is_string=False
         ),
         TokenType.STAR: lambda self, _: self.expression(
-            exp.Star,
-            **{"except": self._parse_except(), "replace": self._parse_replace()},
+            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
         ),
         TokenType.NULL: lambda self, _: self.expression(exp.Null),
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
@@ -782,6 +781,8 @@ class Parser(metaclass=_Parser):
 
     CLONE_KINDS = {"TIMESTAMP", "OFFSET", "STATEMENT"}
 
+    TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
+
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
@@ -790,7 +791,8 @@ class Parser(metaclass=_Parser):
 
     STRICT_CAST = True
 
-    CONCAT_NULL_OUTPUTS_STRING = False  # A NULL arg in CONCAT yields NULL by default
+    # A NULL arg in CONCAT yields NULL by default
+    CONCAT_NULL_OUTPUTS_STRING = False
 
     CONVERT_TYPE_FIRST = False
 
@@ -2275,6 +2277,33 @@ class Parser(metaclass=_Parser):
             partition_by=self._parse_partition_by(),
         )
 
+    def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
+        hints: t.List[exp.Expression] = []
+        if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
+            # https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table?view=sql-server-ver16
+            hints.append(
+                self.expression(
+                    exp.WithTableHint,
+                    expressions=self._parse_csv(
+                        lambda: self._parse_function() or self._parse_var(any_token=True)
+                    ),
+                )
+            )
+            self._match_r_paren()
+        else:
+            # https://dev.mysql.com/doc/refman/8.0/en/index-hints.html
+            while self._match_set(self.TABLE_INDEX_HINT_TOKENS):
+                hint = exp.IndexTableHint(this=self._prev.text.upper())
+
+                self._match_texts({"INDEX", "KEY"})
+                if self._match(TokenType.FOR):
+                    hint.set("target", self._advance_any() and self._prev.text.upper())
+
+                hint.set("expressions", self._parse_wrapped_id_vars())
+                hints.append(hint)
+
+        return hints or None
+
     def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
         return (
             (not schema and self._parse_function(optional_parens=False))
@@ -2342,12 +2371,7 @@ class Parser(metaclass=_Parser):
         if not this.args.get("pivots"):
             this.set("pivots", self._parse_pivots())
 
-        if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
-            this.set(
-                "hints",
-                self._parse_csv(lambda: self._parse_function() or self._parse_var(any_token=True)),
-            )
-            self._match_r_paren()
+        this.set("hints", self._parse_table_hints())
 
         if not self.ALIAS_POST_TABLESAMPLE:
             table_sample = self._parse_table_sample()

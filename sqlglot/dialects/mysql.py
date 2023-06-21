@@ -123,6 +123,8 @@ class MySQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CHARSET": TokenType.CHARACTER_SET,
+            "FORCE": TokenType.FORCE,
+            "IGNORE": TokenType.IGNORE,
             "LONGBLOB": TokenType.LONGBLOB,
             "LONGTEXT": TokenType.LONGTEXT,
             "MEDIUMBLOB": TokenType.MEDIUMBLOB,
@@ -180,6 +182,9 @@ class MySQL(Dialect):
 
     class Parser(parser.Parser):
         FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}
+        TABLE_ALIAS_TOKENS = (
+            parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
+        )
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -389,7 +394,7 @@ class MySQL(Dialect):
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
         JOIN_HINTS = False
-        TABLE_HINTS = False
+        TABLE_HINTS = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

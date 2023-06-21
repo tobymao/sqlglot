@@ -1167,6 +1167,15 @@ class Generator:
         null = f" NULL DEFINED AS {null}" if null else ""
         return f"ROW FORMAT DELIMITED{fields}{escaped}{items}{keys}{lines}{null}"
 
+    def withtablehint_sql(self, expression: exp.WithTableHint) -> str:
+        return f"WITH ({self.expressions(expression, flat=True)})"
+
+    def indextablehint_sql(self, expression: exp.IndexTableHint) -> str:
+        this = f"{self.sql(expression, 'this')} INDEX"
+        target = self.sql(expression, "target")
+        target = f" FOR {target}" if target else ""
+        return f"{this}{target} ({self.expressions(expression, flat=True)})"
+
     def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
         table = ".".join(
             part
@@ -1180,8 +1189,8 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
-        hints = self.expressions(expression, key="hints", flat=True)
-        hints = f" WITH ({hints})" if hints and self.TABLE_HINTS else ""
+        hints = self.expressions(expression, key="hints", sep=" ")
+        hints = f" {hints}" if hints and self.TABLE_HINTS else ""
         pivots = self.expressions(expression, key="pivots", sep=" ", flat=True)
         pivots = f" {pivots}" if pivots else ""
         joins = self.expressions(expression, key="joins", sep="")

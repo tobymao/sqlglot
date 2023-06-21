@@ -6,6 +6,8 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("SELECT * FROM t WITH (TABLOCK, INDEX(myindex))")
+        self.validate_identity("SELECT * FROM t WITH (NOWAIT)")
         self.validate_identity("SELECT CASE WHEN a > 1 THEN b END")
         self.validate_identity("SELECT * FROM taxi ORDER BY 1 OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY")
         self.validate_identity("END")

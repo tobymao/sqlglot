@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.schema API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -31,8 +31,14 @@
             <h2>API Documentation</h2>
                 <ul class="memberlist">
             <li>
+                    <a class="variable" href="#TABLE_ARGS">TABLE_ARGS</a>
+            </li>
+            <li>
                     <a class="class" href="#Schema">Schema</a>
                             <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#Schema.dialect">dialect</a>
+                        </li>
                         <li>
                                 <a class="function" href="#Schema.add_table">add_table</a>
                         </li>
@@ -58,6 +64,18 @@
                                 <a class="function" href="#AbstractMappingSchema.__init__">AbstractMappingSchema</a>
                         </li>
                         <li>
+                                <a class="variable" href="#AbstractMappingSchema.mapping">mapping</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#AbstractMappingSchema.mapping_trie">mapping_trie</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#AbstractMappingSchema.empty">empty</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#AbstractMappingSchema.supported_table_args">supported_table_args</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#AbstractMappingSchema.table_parts">table_parts</a>
                         </li>
                         <li>
@@ -76,19 +94,16 @@
                                 <a class="function" href="#MappingSchema.__init__">MappingSchema</a>
                         </li>
                         <li>
+                                <a class="variable" href="#MappingSchema.visible">visible</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#MappingSchema.normalize">normalize</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#MappingSchema.from_mapping_schema">from_mapping_schema</a>
                         </li>
                         <li>
                                 <a class="function" href="#MappingSchema.copy">copy</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#MappingSchema.add_table">add_table</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#MappingSchema.column_names">column_names</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#MappingSchema.get_column_type">get_column_type</a>
                         </li>
                 </ul>
 
@@ -142,7 +157,7 @@
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.dialect</span> <span class="kn">import</span> <span class="n">Dialect</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">from</span> <span class="nn">sqlglot.errors</span> <span class="kn">import</span> <span class="n">ParseError</span><span class="p">,</span> <span class="n">SchemaError</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">from</span> <span class="nn">sqlglot.helper</span> <span class="kn">import</span> <span class="n">dict_depth</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="kn">from</span> <span class="nn">sqlglot.trie</span> <span class="kn">import</span> <span class="n">in_trie</span><span class="p">,</span> <span class="n">new_trie</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="kn">from</span> <span class="nn">sqlglot.trie</span> <span class="kn">import</span> <span class="n">TrieResult</span><span class="p">,</span> <span class="n">in_trie</span><span class="p">,</span> <span class="n">new_trie</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>    <span class="kn">from</span> <span class="nn">sqlglot.dataframe.sql.types</span> <span class="kn">import</span> <span class="n">StructType</span>
@@ -268,10 +283,10 @@
 </span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>        <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table</span><span class="p">)[</span><span class="mi">0</span> <span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">supported_table_args</span><span class="p">)]</span>
 </span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>        <span class="n">value</span><span class="p">,</span> <span class="n">trie</span> <span class="o">=</span> <span class="n">in_trie</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping_trie</span> <span class="k">if</span> <span class="n">trie</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">trie</span><span class="p">,</span> <span class="n">parts</span><span class="p">)</span>
 </span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>
-</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">TrieResult</span><span class="o">.</span><span class="n">FAILED</span><span class="p">:</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>            <span class="k">return</span> <span class="kc">None</span>
 </span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>
-</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">TrieResult</span><span class="o">.</span><span class="n">PREFIX</span><span class="p">:</span>
 </span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>            <span class="n">possibilities</span> <span class="o">=</span> <span class="n">flatten_schema</span><span class="p">(</span><span class="n">trie</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">dict_depth</span><span class="p">(</span><span class="n">trie</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>
 </span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possibilities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -618,6 +633,18 @@
 
 
             </section>
+                <section id="TABLE_ARGS">
+                    <div class="attr variable">
+            <span class="name">TABLE_ARGS</span>        =
+<span class="default_value">(&#39;this&#39;, &#39;db&#39;, &#39;catalog&#39;)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TABLE_ARGS"></a>
+    
+    
+
+                </section>
                 <section id="Schema">
                             <input id="Schema-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr class">
@@ -706,6 +733,17 @@
 </div>
 
 
+                            <div id="Schema.dialect" class="classattr">
+                                <div class="attr variable">
+            <span class="name">dialect</span><span class="annotation">: Union[str, <a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a>, Type[<a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a>], NoneType]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Schema.dialect"></a>
+    
+    
+
+                            </div>
                             <div id="Schema.add_table" class="classattr">
                                         <input id="Schema.add_table-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -934,10 +972,10 @@
 </span><span id="AbstractMappingSchema-136"><a href="#AbstractMappingSchema-136"><span class="linenos">136</span></a>        <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table</span><span class="p">)[</span><span class="mi">0</span> <span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">supported_table_args</span><span class="p">)]</span>
 </span><span id="AbstractMappingSchema-137"><a href="#AbstractMappingSchema-137"><span class="linenos">137</span></a>        <span class="n">value</span><span class="p">,</span> <span class="n">trie</span> <span class="o">=</span> <span class="n">in_trie</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping_trie</span> <span class="k">if</span> <span class="n">trie</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">trie</span><span class="p">,</span> <span class="n">parts</span><span class="p">)</span>
 </span><span id="AbstractMappingSchema-138"><a href="#AbstractMappingSchema-138"><span class="linenos">138</span></a>
-</span><span id="AbstractMappingSchema-139"><a href="#AbstractMappingSchema-139"><span class="linenos">139</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema-139"><a href="#AbstractMappingSchema-139"><span class="linenos">139</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">TrieResult</span><span class="o">.</span><span class="n">FAILED</span><span class="p">:</span>
 </span><span id="AbstractMappingSchema-140"><a href="#AbstractMappingSchema-140"><span class="linenos">140</span></a>            <span class="k">return</span> <span class="kc">None</span>
 </span><span id="AbstractMappingSchema-141"><a href="#AbstractMappingSchema-141"><span class="linenos">141</span></a>
-</span><span id="AbstractMappingSchema-142"><a href="#AbstractMappingSchema-142"><span class="linenos">142</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema-142"><a href="#AbstractMappingSchema-142"><span class="linenos">142</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">TrieResult</span><span class="o">.</span><span class="n">PREFIX</span><span class="p">:</span>
 </span><span id="AbstractMappingSchema-143"><a href="#AbstractMappingSchema-143"><span class="linenos">143</span></a>            <span class="n">possibilities</span> <span class="o">=</span> <span class="n">flatten_schema</span><span class="p">(</span><span class="n">trie</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">dict_depth</span><span class="p">(</span><span class="n">trie</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="AbstractMappingSchema-144"><a href="#AbstractMappingSchema-144"><span class="linenos">144</span></a>
 </span><span id="AbstractMappingSchema-145"><a href="#AbstractMappingSchema-145"><span class="linenos">145</span></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possibilities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -1007,6 +1045,50 @@ For example, a generic mapping type might be defined as::</p>
     
 
                             </div>
+                            <div id="AbstractMappingSchema.mapping" class="classattr">
+                                <div class="attr variable">
+            <span class="name">mapping</span>
+
+        
+    </div>
+    <a class="headerlink" href="#AbstractMappingSchema.mapping"></a>
+    
+    
+
+                            </div>
+                            <div id="AbstractMappingSchema.mapping_trie" class="classattr">
+                                <div class="attr variable">
+            <span class="name">mapping_trie</span>
+
+        
+    </div>
+    <a class="headerlink" href="#AbstractMappingSchema.mapping_trie"></a>
+    
+    
+
+                            </div>
+                            <div id="AbstractMappingSchema.empty" class="classattr">
+                                <div class="attr variable">
+            <span class="name">empty</span><span class="annotation">: bool</span>
+
+        
+    </div>
+    <a class="headerlink" href="#AbstractMappingSchema.empty"></a>
+    
+    
+
+                            </div>
+                            <div id="AbstractMappingSchema.supported_table_args" class="classattr">
+                                <div class="attr variable">
+            <span class="name">supported_table_args</span><span class="annotation">: Tuple[str, ...]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#AbstractMappingSchema.supported_table_args"></a>
+    
+    
+
+                            </div>
                             <div id="AbstractMappingSchema.table_parts" class="classattr">
                                         <input id="AbstractMappingSchema.table_parts-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1045,10 +1127,10 @@ For example, a generic mapping type might be defined as::</p>
 </span><span id="AbstractMappingSchema.find-136"><a href="#AbstractMappingSchema.find-136"><span class="linenos">136</span></a>        <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">table</span><span class="p">)[</span><span class="mi">0</span> <span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">supported_table_args</span><span class="p">)]</span>
 </span><span id="AbstractMappingSchema.find-137"><a href="#AbstractMappingSchema.find-137"><span class="linenos">137</span></a>        <span class="n">value</span><span class="p">,</span> <span class="n">trie</span> <span class="o">=</span> <span class="n">in_trie</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping_trie</span> <span class="k">if</span> <span class="n">trie</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">trie</span><span class="p">,</span> <span class="n">parts</span><span class="p">)</span>
 </span><span id="AbstractMappingSchema.find-138"><a href="#AbstractMappingSchema.find-138"><span class="linenos">138</span></a>
-</span><span id="AbstractMappingSchema.find-139"><a href="#AbstractMappingSchema.find-139"><span class="linenos">139</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema.find-139"><a href="#AbstractMappingSchema.find-139"><span class="linenos">139</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">TrieResult</span><span class="o">.</span><span class="n">FAILED</span><span class="p">:</span>
 </span><span id="AbstractMappingSchema.find-140"><a href="#AbstractMappingSchema.find-140"><span class="linenos">140</span></a>            <span class="k">return</span> <span class="kc">None</span>
 </span><span id="AbstractMappingSchema.find-141"><a href="#AbstractMappingSchema.find-141"><span class="linenos">141</span></a>
-</span><span id="AbstractMappingSchema.find-142"><a href="#AbstractMappingSchema.find-142"><span class="linenos">142</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema.find-142"><a href="#AbstractMappingSchema.find-142"><span class="linenos">142</span></a>        <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">TrieResult</span><span class="o">.</span><span class="n">PREFIX</span><span class="p">:</span>
 </span><span id="AbstractMappingSchema.find-143"><a href="#AbstractMappingSchema.find-143"><span class="linenos">143</span></a>            <span class="n">possibilities</span> <span class="o">=</span> <span class="n">flatten_schema</span><span class="p">(</span><span class="n">trie</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">dict_depth</span><span class="p">(</span><span class="n">trie</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 </span><span id="AbstractMappingSchema.find-144"><a href="#AbstractMappingSchema.find-144"><span class="linenos">144</span></a>
 </span><span id="AbstractMappingSchema.find-145"><a href="#AbstractMappingSchema.find-145"><span class="linenos">145</span></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possibilities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -1375,6 +1457,28 @@ are assumed to be visible. The nesting should mirror that of the schema:
     
 
                             </div>
+                            <div id="MappingSchema.visible" class="classattr">
+                                <div class="attr variable">
+            <span class="name">visible</span>
+
+        
+    </div>
+    <a class="headerlink" href="#MappingSchema.visible"></a>
+    
+    
+
+                            </div>
+                            <div id="MappingSchema.normalize" class="classattr">
+                                <div class="attr variable">
+            <span class="name">normalize</span>
+
+        
+    </div>
+    <a class="headerlink" href="#MappingSchema.normalize"></a>
+    
+    
+
+                            </div>
                             <div id="MappingSchema.from_mapping_schema" class="classattr">
                                         <input id="MappingSchema.from_mapping_schema-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1426,177 +1530,21 @@ are assumed to be visible. The nesting should mirror that of the schema:
     
 
                             </div>
-                            <div id="MappingSchema.add_table" class="classattr">
-                                        <input id="MappingSchema.add_table-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">add_table</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">table</span><span class="p">:</span> <span class="n"><a href="expressions.html#Table">sqlglot.expressions.Table</a></span> <span class="o">|</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">column_mapping</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sqlglot</span><span class="o">.</span><span class="n">dataframe</span><span class="o">.</span><span class="n">sql</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">StructType</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="kc">None</span>:</span></span>
-
-                <label class="view-source-button" for="MappingSchema.add_table-view-source"><span>View Source</span></label>
-
-    </div>
-    <a class="headerlink" href="#MappingSchema.add_table"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="MappingSchema.add_table-216"><a href="#MappingSchema.add_table-216"><span class="linenos">216</span></a>    <span class="k">def</span> <span class="nf">add_table</span><span class="p">(</span>
-</span><span id="MappingSchema.add_table-217"><a href="#MappingSchema.add_table-217"><span class="linenos">217</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="MappingSchema.add_table-218"><a href="#MappingSchema.add_table-218"><span class="linenos">218</span></a>        <span class="n">table</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Table</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="MappingSchema.add_table-219"><a href="#MappingSchema.add_table-219"><span class="linenos">219</span></a>        <span class="n">column_mapping</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">ColumnMapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="MappingSchema.add_table-220"><a href="#MappingSchema.add_table-220"><span class="linenos">220</span></a>        <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="MappingSchema.add_table-221"><a href="#MappingSchema.add_table-221"><span class="linenos">221</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="MappingSchema.add_table-222"><a href="#MappingSchema.add_table-222"><span class="linenos">222</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="MappingSchema.add_table-223"><a href="#MappingSchema.add_table-223"><span class="linenos">223</span></a><span class="sd">        Register or update a table. Updates are only performed if a new column mapping is provided.</span>
-</span><span id="MappingSchema.add_table-224"><a href="#MappingSchema.add_table-224"><span class="linenos">224</span></a>
-</span><span id="MappingSchema.add_table-225"><a href="#MappingSchema.add_table-225"><span class="linenos">225</span></a><span class="sd">        Args:</span>
-</span><span id="MappingSchema.add_table-226"><a href="#MappingSchema.add_table-226"><span class="linenos">226</span></a><span class="sd">            table: the `Table` expression instance or string representing the table.</span>
-</span><span id="MappingSchema.add_table-227"><a href="#MappingSchema.add_table-227"><span class="linenos">227</span></a><span class="sd">            column_mapping: a column mapping that describes the structure of the table.</span>
-</span><span id="MappingSchema.add_table-228"><a href="#MappingSchema.add_table-228"><span class="linenos">228</span></a><span class="sd">            dialect: the SQL dialect that will be used to parse `table` if it&#39;s a string.</span>
-</span><span id="MappingSchema.add_table-229"><a href="#MappingSchema.add_table-229"><span class="linenos">229</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="MappingSchema.add_table-230"><a href="#MappingSchema.add_table-230"><span class="linenos">230</span></a>        <span class="n">normalized_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_table</span><span class="p">(</span>
-</span><span id="MappingSchema.add_table-231"><a href="#MappingSchema.add_table-231"><span class="linenos">231</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">),</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span>
-</span><span id="MappingSchema.add_table-232"><a href="#MappingSchema.add_table-232"><span class="linenos">232</span></a>        <span class="p">)</span>
-</span><span id="MappingSchema.add_table-233"><a href="#MappingSchema.add_table-233"><span class="linenos">233</span></a>        <span class="n">normalized_column_mapping</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="MappingSchema.add_table-234"><a href="#MappingSchema.add_table-234"><span class="linenos">234</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_name</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">):</span> <span class="n">value</span>
-</span><span id="MappingSchema.add_table-235"><a href="#MappingSchema.add_table-235"><span class="linenos">235</span></a>            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">ensure_column_mapping</span><span class="p">(</span><span class="n">column_mapping</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="MappingSchema.add_table-236"><a href="#MappingSchema.add_table-236"><span class="linenos">236</span></a>        <span class="p">}</span>
-</span><span id="MappingSchema.add_table-237"><a href="#MappingSchema.add_table-237"><span class="linenos">237</span></a>
-</span><span id="MappingSchema.add_table-238"><a href="#MappingSchema.add_table-238"><span class="linenos">238</span></a>        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="MappingSchema.add_table-239"><a href="#MappingSchema.add_table-239"><span class="linenos">239</span></a>        <span class="k">if</span> <span class="n">schema</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">normalized_column_mapping</span><span class="p">:</span>
-</span><span id="MappingSchema.add_table-240"><a href="#MappingSchema.add_table-240"><span class="linenos">240</span></a>            <span class="k">return</span>
-</span><span id="MappingSchema.add_table-241"><a href="#MappingSchema.add_table-241"><span class="linenos">241</span></a>
-</span><span id="MappingSchema.add_table-242"><a href="#MappingSchema.add_table-242"><span class="linenos">242</span></a>        <span class="n">parts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">)</span>
-</span><span id="MappingSchema.add_table-243"><a href="#MappingSchema.add_table-243"><span class="linenos">243</span></a>
-</span><span id="MappingSchema.add_table-244"><a href="#MappingSchema.add_table-244"><span class="linenos">244</span></a>        <span class="n">nested_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">parts</span><span class="p">)),</span> <span class="n">normalized_column_mapping</span><span class="p">)</span>
-</span><span id="MappingSchema.add_table-245"><a href="#MappingSchema.add_table-245"><span class="linenos">245</span></a>        <span class="n">new_trie</span><span class="p">([</span><span class="n">parts</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping_trie</span><span class="p">)</span>
-</span></pre></div>
-
-
-            <div class="docstring"><p>Register or update a table. Updates are only performed if a new column mapping is provided.</p>
-
-<h6 id="arguments">Arguments:</h6>
-
-<ul>
-<li><strong>table:</strong>  the <code>Table</code> expression instance or string representing the table.</li>
-<li><strong>column_mapping:</strong>  a column mapping that describes the structure of the table.</li>
-<li><strong>dialect:</strong>  the SQL dialect that will be used to parse <code>table</code> if it's a string.</li>
-</ul>
-</div>
-
-
-                            </div>
-                            <div id="MappingSchema.column_names" class="classattr">
-                                        <input id="MappingSchema.column_names-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">column_names</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">table</span><span class="p">:</span> <span class="n"><a href="expressions.html#Table">sqlglot.expressions.Table</a></span> <span class="o">|</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">only_visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
-
-                <label class="view-source-button" for="MappingSchema.column_names-view-source"><span>View Source</span></label>
-
-    </div>
-    <a class="headerlink" href="#MappingSchema.column_names"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="MappingSchema.column_names-247"><a href="#MappingSchema.column_names-247"><span class="linenos">247</span></a>    <span class="k">def</span> <span class="nf">column_names</span><span class="p">(</span>
-</span><span id="MappingSchema.column_names-248"><a href="#MappingSchema.column_names-248"><span class="linenos">248</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="MappingSchema.column_names-249"><a href="#MappingSchema.column_names-249"><span class="linenos">249</span></a>        <span class="n">table</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Table</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="MappingSchema.column_names-250"><a href="#MappingSchema.column_names-250"><span class="linenos">250</span></a>        <span class="n">only_visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="MappingSchema.column_names-251"><a href="#MappingSchema.column_names-251"><span class="linenos">251</span></a>        <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="MappingSchema.column_names-252"><a href="#MappingSchema.column_names-252"><span class="linenos">252</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="MappingSchema.column_names-253"><a href="#MappingSchema.column_names-253"><span class="linenos">253</span></a>        <span class="n">normalized_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_table</span><span class="p">(</span>
-</span><span id="MappingSchema.column_names-254"><a href="#MappingSchema.column_names-254"><span class="linenos">254</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">),</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span>
-</span><span id="MappingSchema.column_names-255"><a href="#MappingSchema.column_names-255"><span class="linenos">255</span></a>        <span class="p">)</span>
-</span><span id="MappingSchema.column_names-256"><a href="#MappingSchema.column_names-256"><span class="linenos">256</span></a>
-</span><span id="MappingSchema.column_names-257"><a href="#MappingSchema.column_names-257"><span class="linenos">257</span></a>        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">)</span>
-</span><span id="MappingSchema.column_names-258"><a href="#MappingSchema.column_names-258"><span class="linenos">258</span></a>        <span class="k">if</span> <span class="n">schema</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="MappingSchema.column_names-259"><a href="#MappingSchema.column_names-259"><span class="linenos">259</span></a>            <span class="k">return</span> <span class="p">[]</span>
-</span><span id="MappingSchema.column_names-260"><a href="#MappingSchema.column_names-260"><span class="linenos">260</span></a>
-</span><span id="MappingSchema.column_names-261"><a href="#MappingSchema.column_names-261"><span class="linenos">261</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">only_visible</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">:</span>
-</span><span id="MappingSchema.column_names-262"><a href="#MappingSchema.column_names-262"><span class="linenos">262</span></a>            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span>
-</span><span id="MappingSchema.column_names-263"><a href="#MappingSchema.column_names-263"><span class="linenos">263</span></a>
-</span><span id="MappingSchema.column_names-264"><a href="#MappingSchema.column_names-264"><span class="linenos">264</span></a>        <span class="n">visible</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nested_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_parts</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
-</span><span id="MappingSchema.column_names-265"><a href="#MappingSchema.column_names-265"><span class="linenos">265</span></a>        <span class="k">return</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">schema</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">visible</span><span class="p">]</span>
-</span></pre></div>
-
-
-            <div class="docstring"><p>Get the column names for a table.</p>
-
-<h6 id="arguments">Arguments:</h6>
-
-<ul>
-<li><strong>table:</strong>  the <code>Table</code> expression instance.</li>
-<li><strong>only_visible:</strong>  whether to include invisible columns.</li>
-<li><strong>dialect:</strong>  the SQL dialect that will be used to parse <code>table</code> if it's a string.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>The list of column names.</p>
-</blockquote>
-</div>
-
-
-                            </div>
-                            <div id="MappingSchema.get_column_type" class="classattr">
-                                        <input id="MappingSchema.get_column_type-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-            
-        <span class="def">def</span>
-        <span class="name">get_column_type</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">table</span><span class="p">:</span> <span class="n"><a href="expressions.html#Table">sqlglot.expressions.Table</a></span> <span class="o">|</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">column</span><span class="p">:</span> <span class="n"><a href="expressions.html#Column">sqlglot.expressions.Column</a></span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n"><a href="expressions.html#DataType">sqlglot.expressions.DataType</a></span>:</span></span>
-
-                <label class="view-source-button" for="MappingSchema.get_column_type-view-source"><span>View Source</span></label>
-
-    </div>
-    <a class="headerlink" href="#MappingSchema.get_column_type"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="MappingSchema.get_column_type-267"><a href="#MappingSchema.get_column_type-267"><span class="linenos">267</span></a>    <span class="k">def</span> <span class="nf">get_column_type</span><span class="p">(</span>
-</span><span id="MappingSchema.get_column_type-268"><a href="#MappingSchema.get_column_type-268"><span class="linenos">268</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="MappingSchema.get_column_type-269"><a href="#MappingSchema.get_column_type-269"><span class="linenos">269</span></a>        <span class="n">table</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Table</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="MappingSchema.get_column_type-270"><a href="#MappingSchema.get_column_type-270"><span class="linenos">270</span></a>        <span class="n">column</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">,</span>
-</span><span id="MappingSchema.get_column_type-271"><a href="#MappingSchema.get_column_type-271"><span class="linenos">271</span></a>        <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="MappingSchema.get_column_type-272"><a href="#MappingSchema.get_column_type-272"><span class="linenos">272</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">:</span>
-</span><span id="MappingSchema.get_column_type-273"><a href="#MappingSchema.get_column_type-273"><span class="linenos">273</span></a>        <span class="n">normalized_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_table</span><span class="p">(</span>
-</span><span id="MappingSchema.get_column_type-274"><a href="#MappingSchema.get_column_type-274"><span class="linenos">274</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">),</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span>
-</span><span id="MappingSchema.get_column_type-275"><a href="#MappingSchema.get_column_type-275"><span class="linenos">275</span></a>        <span class="p">)</span>
-</span><span id="MappingSchema.get_column_type-276"><a href="#MappingSchema.get_column_type-276"><span class="linenos">276</span></a>        <span class="n">normalized_column_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normalize_name</span><span class="p">(</span>
-</span><span id="MappingSchema.get_column_type-277"><a href="#MappingSchema.get_column_type-277"><span class="linenos">277</span></a>            <span class="n">column</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">column</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span>
-</span><span id="MappingSchema.get_column_type-278"><a href="#MappingSchema.get_column_type-278"><span class="linenos">278</span></a>        <span class="p">)</span>
-</span><span id="MappingSchema.get_column_type-279"><a href="#MappingSchema.get_column_type-279"><span class="linenos">279</span></a>
-</span><span id="MappingSchema.get_column_type-280"><a href="#MappingSchema.get_column_type-280"><span class="linenos">280</span></a>        <span class="n">table_schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">normalized_table</span><span class="p">,</span> <span class="n">raise_on_missing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="MappingSchema.get_column_type-281"><a href="#MappingSchema.get_column_type-281"><span class="linenos">281</span></a>        <span class="k">if</span> <span class="n">table_schema</span><span class="p">:</span>
-</span><span id="MappingSchema.get_column_type-282"><a href="#MappingSchema.get_column_type-282"><span class="linenos">282</span></a>            <span class="n">column_type</span> <span class="o">=</span> <span class="n">table_schema</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">normalized_column_name</span><span class="p">)</span>
-</span><span id="MappingSchema.get_column_type-283"><a href="#MappingSchema.get_column_type-283"><span class="linenos">283</span></a>
-</span><span id="MappingSchema.get_column_type-284"><a href="#MappingSchema.get_column_type-284"><span class="linenos">284</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column_type</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">):</span>
-</span><span id="MappingSchema.get_column_type-285"><a href="#MappingSchema.get_column_type-285"><span class="linenos">285</span></a>                <span class="k">return</span> <span class="n">column_type</span>
-</span><span id="MappingSchema.get_column_type-286"><a href="#MappingSchema.get_column_type-286"><span class="linenos">286</span></a>            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="MappingSchema.get_column_type-287"><a href="#MappingSchema.get_column_type-287"><span class="linenos">287</span></a>                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_data_type</span><span class="p">(</span><span class="n">column_type</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">)</span>
-</span><span id="MappingSchema.get_column_type-288"><a href="#MappingSchema.get_column_type-288"><span class="linenos">288</span></a>
-</span><span id="MappingSchema.get_column_type-289"><a href="#MappingSchema.get_column_type-289"><span class="linenos">289</span></a>        <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
-</span></pre></div>
-
-
-            <div class="docstring"><p>Get the <code>sqlglot.exp.DataType</code> type of a column in the schema.</p>
-
-<h6 id="arguments">Arguments:</h6>
-
-<ul>
-<li><strong>table:</strong>  the source table.</li>
-<li><strong>column:</strong>  the target column.</li>
-<li><strong>dialect:</strong>  the SQL dialect that will be used to parse <code>table</code> if it's a string.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>The resulting column type.</p>
-</blockquote>
-</div>
-
-
-                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
-                                    <div><dt><a href="#AbstractMappingSchema">AbstractMappingSchema</a></dt>
-                                <dd id="MappingSchema.empty" class="variable"><a href="#AbstractMappingSchema.empty">empty</a></dd>
-                <dd id="MappingSchema.supported_table_args" class="variable"><a href="#AbstractMappingSchema.supported_table_args">supported_table_args</a></dd>
+                                    <div><dt><a href="#Schema">Schema</a></dt>
+                                <dd id="MappingSchema.dialect" class="variable"><a href="#Schema.dialect">dialect</a></dd>
+                <dd id="MappingSchema.add_table" class="function"><a href="#Schema.add_table">add_table</a></dd>
+                <dd id="MappingSchema.column_names" class="function"><a href="#Schema.column_names">column_names</a></dd>
+                <dd id="MappingSchema.get_column_type" class="function"><a href="#Schema.get_column_type">get_column_type</a></dd>
+                <dd id="MappingSchema.supported_table_args" class="variable"><a href="#Schema.supported_table_args">supported_table_args</a></dd>
+                <dd id="MappingSchema.empty" class="variable"><a href="#Schema.empty">empty</a></dd>
+
+            </div>
+            <div><dt><a href="#AbstractMappingSchema">AbstractMappingSchema</a></dt>
+                                <dd id="MappingSchema.mapping" class="variable"><a href="#AbstractMappingSchema.mapping">mapping</a></dd>
+                <dd id="MappingSchema.mapping_trie" class="variable"><a href="#AbstractMappingSchema.mapping_trie">mapping_trie</a></dd>
                 <dd id="MappingSchema.table_parts" class="function"><a href="#AbstractMappingSchema.table_parts">table_parts</a></dd>
                 <dd id="MappingSchema.find" class="function"><a href="#AbstractMappingSchema.find">find</a></dd>
                 <dd id="MappingSchema.nested_get" class="function"><a href="#AbstractMappingSchema.nested_get">nested_get</a></dd>

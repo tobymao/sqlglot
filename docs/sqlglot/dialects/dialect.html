@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.dialects.dialect API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -103,6 +103,66 @@
                     <a class="class" href="#Dialect">Dialect</a>
                             <ul class="memberlist">
                         <li>
+                                <a class="variable" href="#Dialect.INDEX_OFFSET">INDEX_OFFSET</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.NULL_ORDERING">NULL_ORDERING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.DATE_FORMAT">DATE_FORMAT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.DATEINT_FORMAT">DATEINT_FORMAT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.TIME_FORMAT">TIME_FORMAT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.TIME_MAPPING">TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.tokenizer_class">tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.parser_class">parser_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.generator_class">generator_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.TIME_TRIE">TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.FORMAT_TRIE">FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Dialect.get_or_raise">get_or_raise</a>
                         </li>
                         <li>
@@ -136,13 +196,55 @@
                                 <a class="function" href="#Dialect.tokenize">tokenize</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Dialect.tokenizer">tokenizer</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Dialect.parser">parser</a>
                         </li>
                         <li>
                                 <a class="function" href="#Dialect.generator">generator</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Dialect.QUOTE_START">QUOTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.QUOTE_END">QUOTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.IDENTIFIER_START">IDENTIFIER_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.IDENTIFIER_END">IDENTIFIER_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.BIT_START">BIT_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.BIT_END">BIT_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.HEX_START">HEX_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.HEX_END">HEX_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.BYTE_START">BYTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.BYTE_END">BYTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.RAW_START">RAW_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Dialect.RAW_END">RAW_END</a>
+                        </li>
                 </ul>
 
+            </li>
+            <li>
+                    <a class="variable" href="#DialectType">DialectType</a>
             </li>
             <li>
                     <a class="function" href="#rename_func">rename_func</a>
@@ -1470,6 +1572,246 @@
 
     
 
+                            <div id="Dialect.INDEX_OFFSET" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INDEX_OFFSET</span>        =
+<span class="default_value">0</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.INDEX_OFFSET"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.UNNEST_COLUMN_ONLY" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNNEST_COLUMN_ONLY</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.UNNEST_COLUMN_ONLY"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.ALIAS_POST_TABLESAMPLE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">ALIAS_POST_TABLESAMPLE</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.ALIAS_POST_TABLESAMPLE"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span><span class="annotation">: Optional[bool]</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.RESOLVES_IDENTIFIERS_AS_UPPERCASE"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIERS_CAN_START_WITH_DIGIT</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.STRICT_STRING_CONCAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRICT_STRING_CONCAT</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.STRICT_STRING_CONCAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.NORMALIZE_FUNCTIONS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">NORMALIZE_FUNCTIONS</span><span class="annotation">: bool | str</span>        =
+<span class="default_value">&#39;upper&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.NORMALIZE_FUNCTIONS"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.NULL_ORDERING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">NULL_ORDERING</span>        =
+<span class="default_value">&#39;nulls_are_small&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.NULL_ORDERING"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.DATE_FORMAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">DATE_FORMAT</span>        =
+<span class="default_value">&#34;&#39;%Y-%m-%d&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.DATE_FORMAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.DATEINT_FORMAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">DATEINT_FORMAT</span>        =
+<span class="default_value">&#34;&#39;%Y%m%d&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.DATEINT_FORMAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.TIME_FORMAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_FORMAT</span>        =
+<span class="default_value">&#34;&#39;%Y-%m-%d %H:%M:%S&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.TIME_FORMAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.FORMAT_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.FORMAT_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.parser_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">parser_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../parser.html#Parser">sqlglot.parser.Parser</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.parser_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.generator_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">generator_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../generator.html#Generator">sqlglot.generator.Generator</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.generator_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
                             <div id="Dialect.get_or_raise" class="classattr">
                                         <input id="Dialect.get_or_raise-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1781,6 +2123,17 @@ they will be normalized regardless of being quoted or not.</p>
     
 
                             </div>
+                            <div id="Dialect.tokenizer" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tokenizer</span><span class="annotation">: <a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a></span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.tokenizer"></a>
+    
+    
+
+                            </div>
                             <div id="Dialect.parser" class="classattr">
                                         <input id="Dialect.parser-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1819,6 +2172,163 @@ they will be normalized regardless of being quoted or not.</p>
     
 
                             </div>
+                            <div id="Dialect.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.RAW_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.RAW_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Dialect.RAW_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Dialect.RAW_END"></a>
+    
+    
+
+                            </div>
+                </section>
+                <section id="DialectType">
+                    <div class="attr variable">
+            <span class="name">DialectType</span>        =
+<input id="DialectType-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="DialectType-view-value"></label><span class="default_value">typing.Union[str, <a href="#Dialect">sqlglot.dialects.dialect.Dialect</a>, typing.Type[<a href="#Dialect">sqlglot.dialects.dialect.Dialect</a>], NoneType]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DialectType"></a>
+    
+    
+
                 </section>
                 <section id="rename_func">
                             <input id="rename_func-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">

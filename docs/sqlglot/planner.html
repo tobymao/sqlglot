@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.planner API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -36,6 +36,18 @@
                         <li>
                                 <a class="function" href="#Plan.__init__">Plan</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Plan.expression">expression</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Plan.root">root</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Plan.dag">dag</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Plan.leaves">leaves</a>
+                        </li>
                 </ul>
 
             </li>
@@ -46,10 +58,34 @@
                                 <a class="function" href="#Step.from_expression">from_expression</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Step.name">name</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Step.dependencies">dependencies</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Step.dependents">dependents</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Step.projections">projections</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Step.limit">limit</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Step.condition">condition</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Step.add_dependency">add_dependency</a>
                         </li>
                         <li>
                                 <a class="function" href="#Step.to_s">to_s</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Step.type_name">type_name</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Step.id">id</a>
                         </li>
                 </ul>
 
@@ -60,6 +96,9 @@
                         <li>
                                 <a class="function" href="#Scan.from_expression">from_expression</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Scan.source">source</a>
+                        </li>
                 </ul>
 
             </li>
@@ -69,18 +108,36 @@
                         <li>
                                 <a class="function" href="#Join.from_joins">from_joins</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Join.joins">joins</a>
+                        </li>
                 </ul>
 
             </li>
             <li>
                     <a class="class" href="#Aggregate">Aggregate</a>
                             <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#Aggregate.aggregations">aggregations</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Aggregate.operands">operands</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Aggregate.group">group</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Aggregate.source">source</a>
+                        </li>
                 </ul>
 
             </li>
             <li>
                     <a class="class" href="#Sort">Sort</a>
                             <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#Sort.key">key</a>
+                        </li>
                 </ul>
 
             </li>
@@ -91,7 +148,22 @@
                                 <a class="function" href="#SetOperation.__init__">SetOperation</a>
                         </li>
                         <li>
+                                <a class="variable" href="#SetOperation.op">op</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SetOperation.left">left</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SetOperation.right">right</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SetOperation.distinct">distinct</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#SetOperation.from_expression">from_expression</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#SetOperation.type_name">type_name</a>
                         </li>
                 </ul>
 
@@ -598,6 +670,50 @@
     
 
                             </div>
+                            <div id="Plan.expression" class="classattr">
+                                <div class="attr variable">
+            <span class="name">expression</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Plan.expression"></a>
+    
+    
+
+                            </div>
+                            <div id="Plan.root" class="classattr">
+                                <div class="attr variable">
+            <span class="name">root</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Plan.root"></a>
+    
+    
+
+                            </div>
+                            <div id="Plan.dag" class="classattr">
+                                <div class="attr variable">
+            <span class="name">dag</span><span class="annotation">: Dict[<a href="#Step">sqlglot.planner.Step</a>, Set[<a href="#Step">sqlglot.planner.Step</a>]]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Plan.dag"></a>
+    
+    
+
+                            </div>
+                            <div id="Plan.leaves" class="classattr">
+                                <div class="attr variable">
+            <span class="name">leaves</span><span class="annotation">: Iterator[<a href="#Step">sqlglot.planner.Step</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Plan.leaves"></a>
+    
+    
+
+                            </div>
                 </section>
                 <section id="Step">
                             <input id="Step-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -1077,6 +1193,72 @@ Projections:</li>
 
 
                             </div>
+                            <div id="Step.name" class="classattr">
+                                <div class="attr variable">
+            <span class="name">name</span><span class="annotation">: Optional[str]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.name"></a>
+    
+    
+
+                            </div>
+                            <div id="Step.dependencies" class="classattr">
+                                <div class="attr variable">
+            <span class="name">dependencies</span><span class="annotation">: Set[<a href="#Step">sqlglot.planner.Step</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.dependencies"></a>
+    
+    
+
+                            </div>
+                            <div id="Step.dependents" class="classattr">
+                                <div class="attr variable">
+            <span class="name">dependents</span><span class="annotation">: Set[<a href="#Step">sqlglot.planner.Step</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.dependents"></a>
+    
+    
+
+                            </div>
+                            <div id="Step.projections" class="classattr">
+                                <div class="attr variable">
+            <span class="name">projections</span><span class="annotation">: Sequence[<a href="expressions.html#Expression">sqlglot.expressions.Expression</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.projections"></a>
+    
+    
+
+                            </div>
+                            <div id="Step.limit" class="classattr">
+                                <div class="attr variable">
+            <span class="name">limit</span><span class="annotation">: float</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.limit"></a>
+    
+    
+
+                            </div>
+                            <div id="Step.condition" class="classattr">
+                                <div class="attr variable">
+            <span class="name">condition</span><span class="annotation">: Optional[<a href="expressions.html#Expression">sqlglot.expressions.Expression</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.condition"></a>
+    
+    
+
+                            </div>
                             <div id="Step.add_dependency" class="classattr">
                                         <input id="Step.add_dependency-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1141,6 +1323,28 @@ Projections:</li>
 </span></pre></div>
 
 
+    
+
+                            </div>
+                            <div id="Step.type_name" class="classattr">
+                                <div class="attr variable">
+            <span class="name">type_name</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.type_name"></a>
+    
+    
+
+                            </div>
+                            <div id="Step.id" class="classattr">
+                                <div class="attr variable">
+            <span class="name">id</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Step.id"></a>
+    
     
 
                             </div>
@@ -1285,12 +1489,31 @@ Projections:</li>
 
 
                             </div>
+                            <div id="Scan.source" class="classattr">
+                                <div class="attr variable">
+            <span class="name">source</span><span class="annotation">: Optional[<a href="expressions.html#Expression">sqlglot.expressions.Expression</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scan.source"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#Step">Step</a></dt>
-                                <dd id="Scan.add_dependency" class="function"><a href="#Step.add_dependency">add_dependency</a></dd>
+                                <dd id="Scan.name" class="variable"><a href="#Step.name">name</a></dd>
+                <dd id="Scan.dependencies" class="variable"><a href="#Step.dependencies">dependencies</a></dd>
+                <dd id="Scan.dependents" class="variable"><a href="#Step.dependents">dependents</a></dd>
+                <dd id="Scan.projections" class="variable"><a href="#Step.projections">projections</a></dd>
+                <dd id="Scan.limit" class="variable"><a href="#Step.limit">limit</a></dd>
+                <dd id="Scan.condition" class="variable"><a href="#Step.condition">condition</a></dd>
+                <dd id="Scan.add_dependency" class="function"><a href="#Step.add_dependency">add_dependency</a></dd>
                 <dd id="Scan.to_s" class="function"><a href="#Step.to_s">to_s</a></dd>
+                <dd id="Scan.type_name" class="variable"><a href="#Step.type_name">type_name</a></dd>
+                <dd id="Scan.id" class="variable"><a href="#Step.id">id</a></dd>
 
             </div>
                                 </dl>
@@ -1379,13 +1602,32 @@ Projections:</li>
     
 
                             </div>
+                            <div id="Join.joins" class="classattr">
+                                <div class="attr variable">
+            <span class="name">joins</span><span class="annotation">: Dict[str, Dict[str, Union[List[str], <a href="expressions.html#Expression">sqlglot.expressions.Expression</a>]]]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Join.joins"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#Step">Step</a></dt>
                                 <dd id="Join.from_expression" class="function"><a href="#Step.from_expression">from_expression</a></dd>
+                <dd id="Join.name" class="variable"><a href="#Step.name">name</a></dd>
+                <dd id="Join.dependencies" class="variable"><a href="#Step.dependencies">dependencies</a></dd>
+                <dd id="Join.dependents" class="variable"><a href="#Step.dependents">dependents</a></dd>
+                <dd id="Join.projections" class="variable"><a href="#Step.projections">projections</a></dd>
+                <dd id="Join.limit" class="variable"><a href="#Step.limit">limit</a></dd>
+                <dd id="Join.condition" class="variable"><a href="#Step.condition">condition</a></dd>
                 <dd id="Join.add_dependency" class="function"><a href="#Step.add_dependency">add_dependency</a></dd>
                 <dd id="Join.to_s" class="function"><a href="#Step.to_s">to_s</a></dd>
+                <dd id="Join.type_name" class="variable"><a href="#Step.type_name">type_name</a></dd>
+                <dd id="Join.id" class="variable"><a href="#Step.id">id</a></dd>
 
             </div>
                                 </dl>
@@ -1434,13 +1676,65 @@ Projections:</li>
 
     
 
+                            <div id="Aggregate.aggregations" class="classattr">
+                                <div class="attr variable">
+            <span class="name">aggregations</span><span class="annotation">: List[<a href="expressions.html#Expression">sqlglot.expressions.Expression</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Aggregate.aggregations"></a>
+    
+    
+
+                            </div>
+                            <div id="Aggregate.operands" class="classattr">
+                                <div class="attr variable">
+            <span class="name">operands</span><span class="annotation">: Tuple[<a href="expressions.html#Expression">sqlglot.expressions.Expression</a>, ...]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Aggregate.operands"></a>
+    
+    
+
+                            </div>
+                            <div id="Aggregate.group" class="classattr">
+                                <div class="attr variable">
+            <span class="name">group</span><span class="annotation">: Dict[str, <a href="expressions.html#Expression">sqlglot.expressions.Expression</a>]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Aggregate.group"></a>
+    
+    
+
+                            </div>
+                            <div id="Aggregate.source" class="classattr">
+                                <div class="attr variable">
+            <span class="name">source</span><span class="annotation">: Optional[str]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Aggregate.source"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#Step">Step</a></dt>
                                 <dd id="Aggregate.from_expression" class="function"><a href="#Step.from_expression">from_expression</a></dd>
+                <dd id="Aggregate.name" class="variable"><a href="#Step.name">name</a></dd>
+                <dd id="Aggregate.dependencies" class="variable"><a href="#Step.dependencies">dependencies</a></dd>
+                <dd id="Aggregate.dependents" class="variable"><a href="#Step.dependents">dependents</a></dd>
+                <dd id="Aggregate.projections" class="variable"><a href="#Step.projections">projections</a></dd>
+                <dd id="Aggregate.limit" class="variable"><a href="#Step.limit">limit</a></dd>
+                <dd id="Aggregate.condition" class="variable"><a href="#Step.condition">condition</a></dd>
                 <dd id="Aggregate.add_dependency" class="function"><a href="#Step.add_dependency">add_dependency</a></dd>
                 <dd id="Aggregate.to_s" class="function"><a href="#Step.to_s">to_s</a></dd>
+                <dd id="Aggregate.type_name" class="variable"><a href="#Step.type_name">type_name</a></dd>
+                <dd id="Aggregate.id" class="variable"><a href="#Step.id">id</a></dd>
 
             </div>
                                 </dl>
@@ -1474,13 +1768,32 @@ Projections:</li>
 
     
 
+                            <div id="Sort.key" class="classattr">
+                                <div class="attr variable">
+            <span class="name">key</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Sort.key"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#Step">Step</a></dt>
                                 <dd id="Sort.from_expression" class="function"><a href="#Step.from_expression">from_expression</a></dd>
+                <dd id="Sort.name" class="variable"><a href="#Step.name">name</a></dd>
+                <dd id="Sort.dependencies" class="variable"><a href="#Step.dependencies">dependencies</a></dd>
+                <dd id="Sort.dependents" class="variable"><a href="#Step.dependents">dependents</a></dd>
+                <dd id="Sort.projections" class="variable"><a href="#Step.projections">projections</a></dd>
+                <dd id="Sort.limit" class="variable"><a href="#Step.limit">limit</a></dd>
+                <dd id="Sort.condition" class="variable"><a href="#Step.condition">condition</a></dd>
                 <dd id="Sort.add_dependency" class="function"><a href="#Step.add_dependency">add_dependency</a></dd>
                 <dd id="Sort.to_s" class="function"><a href="#Step.to_s">to_s</a></dd>
+                <dd id="Sort.type_name" class="variable"><a href="#Step.type_name">type_name</a></dd>
+                <dd id="Sort.id" class="variable"><a href="#Step.id">id</a></dd>
 
             </div>
                                 </dl>
@@ -1567,6 +1880,50 @@ Projections:</li>
 </span></pre></div>
 
 
+    
+
+                            </div>
+                            <div id="SetOperation.op" class="classattr">
+                                <div class="attr variable">
+            <span class="name">op</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SetOperation.op"></a>
+    
+    
+
+                            </div>
+                            <div id="SetOperation.left" class="classattr">
+                                <div class="attr variable">
+            <span class="name">left</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SetOperation.left"></a>
+    
+    
+
+                            </div>
+                            <div id="SetOperation.right" class="classattr">
+                                <div class="attr variable">
+            <span class="name">right</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SetOperation.right"></a>
+    
+    
+
+                            </div>
+                            <div id="SetOperation.distinct" class="classattr">
+                                <div class="attr variable">
+            <span class="name">distinct</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SetOperation.distinct"></a>
+    
     
 
                             </div>
@@ -1662,12 +2019,30 @@ Projections:</li>
 
 
                             </div>
+                            <div id="SetOperation.type_name" class="classattr">
+                                <div class="attr variable">
+            <span class="name">type_name</span><span class="annotation">: str</span>
+
+        
+    </div>
+    <a class="headerlink" href="#SetOperation.type_name"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="#Step">Step</a></dt>
-                                <dd id="SetOperation.add_dependency" class="function"><a href="#Step.add_dependency">add_dependency</a></dd>
+                                <dd id="SetOperation.name" class="variable"><a href="#Step.name">name</a></dd>
+                <dd id="SetOperation.dependencies" class="variable"><a href="#Step.dependencies">dependencies</a></dd>
+                <dd id="SetOperation.dependents" class="variable"><a href="#Step.dependents">dependents</a></dd>
+                <dd id="SetOperation.projections" class="variable"><a href="#Step.projections">projections</a></dd>
+                <dd id="SetOperation.limit" class="variable"><a href="#Step.limit">limit</a></dd>
+                <dd id="SetOperation.condition" class="variable"><a href="#Step.condition">condition</a></dd>
+                <dd id="SetOperation.add_dependency" class="function"><a href="#Step.add_dependency">add_dependency</a></dd>
                 <dd id="SetOperation.to_s" class="function"><a href="#Step.to_s">to_s</a></dd>
+                <dd id="SetOperation.id" class="variable"><a href="#Step.id">id</a></dd>
 
             </div>
                                 </dl>

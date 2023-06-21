@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.dialects.presto API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -34,20 +34,95 @@
                     <a class="class" href="#Presto">Presto</a>
                             <ul class="memberlist">
                         <li>
+                                <a class="variable" href="#Presto.INDEX_OFFSET">INDEX_OFFSET</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.NULL_ORDERING">NULL_ORDERING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.TIME_FORMAT">TIME_FORMAT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.TIME_MAPPING">TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a>
+                        </li>
+                        <li>
                                 <a class="class" href="#Presto.Tokenizer">Presto.Tokenizer</a>
                                         <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Presto.Tokenizer.KEYWORDS">KEYWORDS</a>
+                                    </li>
                             </ul>
 
                         </li>
                         <li>
                                 <a class="class" href="#Presto.Parser">Presto.Parser</a>
                                         <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.FUNCTIONS">FUNCTIONS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.FUNCTION_PARSERS">FUNCTION_PARSERS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.INDEX_OFFSET">INDEX_OFFSET</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.NULL_ORDERING">NULL_ORDERING</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.SHOW_TRIE">SHOW_TRIE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.SET_TRIE">SET_TRIE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.FORMAT_TRIE">FORMAT_TRIE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.TIME_MAPPING">TIME_MAPPING</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Parser.TIME_TRIE">TIME_TRIE</a>
+                                    </li>
                             </ul>
 
                         </li>
                         <li>
                                 <a class="class" href="#Presto.Generator">Presto.Generator</a>
                                         <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.INTERVAL_ALLOWS_PLURAL_FORM">INTERVAL_ALLOWS_PLURAL_FORM</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.JOIN_HINTS">JOIN_HINTS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.TABLE_HINTS">TABLE_HINTS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.IS_BOOL_ALLOWED">IS_BOOL_ALLOWED</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.STRUCT_DELIMITER">STRUCT_DELIMITER</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.PROPERTIES_LOCATION">PROPERTIES_LOCATION</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.TYPE_MAPPING">TYPE_MAPPING</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.TRANSFORMS">TRANSFORMS</a>
+                                    </li>
                                     <li>
                                             <a class="function" href="#Presto.Generator.interval_sql">interval_sql</a>
                                     </li>
@@ -61,10 +136,127 @@
                                             <a class="function" href="#Presto.Generator.offset_limit_modifiers">offset_limit_modifiers</a>
                                     </li>
                                     <li>
+                                            <a class="variable" href="#Presto.Generator.SELECT_KINDS">SELECT_KINDS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.INDEX_OFFSET">INDEX_OFFSET</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.NULL_ORDERING">NULL_ORDERING</a>
+                                    </li>
+                                    <li>
                                             <a class="function" href="#Presto.Generator.can_identify">can_identify</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.QUOTE_START">QUOTE_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.QUOTE_END">QUOTE_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.IDENTIFIER_START">IDENTIFIER_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.IDENTIFIER_END">IDENTIFIER_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.STRING_ESCAPE">STRING_ESCAPE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.IDENTIFIER_ESCAPE">IDENTIFIER_ESCAPE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.BIT_START">BIT_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.BIT_END">BIT_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.HEX_START">HEX_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.HEX_END">HEX_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.BYTE_START">BYTE_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.BYTE_END">BYTE_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.RAW_START">RAW_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Presto.Generator.RAW_END">RAW_END</a>
                                     </li>
                             </ul>
 
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.tokenizer_class">tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.parser_class">parser_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.generator_class">generator_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.TIME_TRIE">TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.FORMAT_TRIE">FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.QUOTE_START">QUOTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.QUOTE_END">QUOTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.IDENTIFIER_START">IDENTIFIER_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.IDENTIFIER_END">IDENTIFIER_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.BIT_START">BIT_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.BIT_END">BIT_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.HEX_START">HEX_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.HEX_END">HEX_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.BYTE_START">BYTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.BYTE_END">BYTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.RAW_START">RAW_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Presto.RAW_END">RAW_END</a>
                         </li>
                 </ul>
 
@@ -673,11 +865,323 @@
 
     
 
+                            <div id="Presto.INDEX_OFFSET" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INDEX_OFFSET</span>        =
+<span class="default_value">1</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.INDEX_OFFSET"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.NULL_ORDERING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">NULL_ORDERING</span>        =
+<span class="default_value">&#39;nulls_are_last&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.NULL_ORDERING"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.TIME_FORMAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_FORMAT</span>        =
+<span class="default_value">&#34;&#39;%Y-%m-%d %T&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.TIME_FORMAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Presto.TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%M&#39;: &#39;%B&#39;, &#39;%c&#39;: &#39;%-m&#39;, &#39;%e&#39;: &#39;%-d&#39;, &#39;%h&#39;: &#39;%I&#39;, &#39;%i&#39;: &#39;%M&#39;, &#39;%s&#39;: &#39;%S&#39;, &#39;%S&#39;: &#39;%S&#39;, &#39;%u&#39;: &#39;%W&#39;, &#39;%k&#39;: &#39;%-H&#39;, &#39;%l&#39;: &#39;%-I&#39;, &#39;%T&#39;: &#39;%H:%M:%S&#39;, &#39;%W&#39;: &#39;%a&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.STRICT_STRING_CONCAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRICT_STRING_CONCAT</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.STRICT_STRING_CONCAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span><span class="annotation">: Optional[bool]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.RESOLVES_IDENTIFIERS_AS_UPPERCASE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Presto.Tokenizer">sqlglot.dialects.presto.Presto.Tokenizer</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.parser_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">parser_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Presto.Parser">sqlglot.dialects.presto.Presto.Parser</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.parser_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.generator_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">generator_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Presto.Generator">sqlglot.dialects.presto.Presto.Generator</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.generator_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Presto.TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Presto.FORMAT_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.FORMAT_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Presto.INVERSE_TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.INVERSE_TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%B&#39;: &#39;%M&#39;, &#39;%-m&#39;: &#39;%c&#39;, &#39;%-d&#39;: &#39;%e&#39;, &#39;%I&#39;: &#39;%h&#39;, &#39;%M&#39;: &#39;%i&#39;, &#39;%S&#39;: &#39;%S&#39;, &#39;%W&#39;: &#39;%u&#39;, &#39;%-H&#39;: &#39;%k&#39;, &#39;%-I&#39;: &#39;%l&#39;, &#39;%H:%M:%S&#39;: &#39;%T&#39;, &#39;%a&#39;: &#39;%W&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Presto.INVERSE_TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.INVERSE_TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;B&#39;: {0: True}, &#39;-&#39;: {&#39;m&#39;: {0: True}, &#39;d&#39;: {0: True}, &#39;H&#39;: {0: True}, &#39;I&#39;: {0: True}}, &#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;W&#39;: {0: True}, &#39;H&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;M&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;S&#39;: {0: True}}}}}}}, &#39;a&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.RAW_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.RAW_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.RAW_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.RAW_END"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></dt>
-                                <dd id="Presto.get_or_raise" class="function"><a href="dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
+                                <dd id="Presto.UNNEST_COLUMN_ONLY" class="variable"><a href="dialect.html#Dialect.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Presto.ALIAS_POST_TABLESAMPLE" class="variable"><a href="dialect.html#Dialect.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Presto.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="dialect.html#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Presto.NORMALIZE_FUNCTIONS" class="variable"><a href="dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Presto.DATE_FORMAT" class="variable"><a href="dialect.html#Dialect.DATE_FORMAT">DATE_FORMAT</a></dd>
+                <dd id="Presto.DATEINT_FORMAT" class="variable"><a href="dialect.html#Dialect.DATEINT_FORMAT">DATEINT_FORMAT</a></dd>
+                <dd id="Presto.FORMAT_MAPPING" class="variable"><a href="dialect.html#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
+                <dd id="Presto.get_or_raise" class="function"><a href="dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
                 <dd id="Presto.format_time" class="function"><a href="dialect.html#Dialect.format_time">format_time</a></dd>
                 <dd id="Presto.normalize_identifier" class="function"><a href="dialect.html#Dialect.normalize_identifier">normalize_identifier</a></dd>
                 <dd id="Presto.case_sensitive" class="function"><a href="dialect.html#Dialect.case_sensitive">case_sensitive</a></dd>
@@ -688,6 +1192,7 @@
                 <dd id="Presto.generate" class="function"><a href="dialect.html#Dialect.generate">generate</a></dd>
                 <dd id="Presto.transpile" class="function"><a href="dialect.html#Dialect.transpile">transpile</a></dd>
                 <dd id="Presto.tokenize" class="function"><a href="dialect.html#Dialect.tokenize">tokenize</a></dd>
+                <dd id="Presto.tokenizer" class="variable"><a href="dialect.html#Dialect.tokenizer">tokenizer</a></dd>
                 <dd id="Presto.parser" class="function"><a href="dialect.html#Dialect.parser">parser</a></dd>
                 <dd id="Presto.generator" class="function"><a href="dialect.html#Dialect.generator">generator</a></dd>
 
@@ -718,13 +1223,46 @@
 
     
 
+                            <div id="Presto.Tokenizer.KEYWORDS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">KEYWORDS</span>        =
+<input id="Presto.Tokenizer.KEYWORDS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Tokenizer.KEYWORDS-view-value"></label><span class="default_value">{&#39;{%&#39;: &lt;TokenType.BLOCK_START: &#39;BLOCK_START&#39;&gt;, &#39;{%+&#39;: &lt;TokenType.BLOCK_START: &#39;BLOCK_START&#39;&gt;, &#39;{%-&#39;: &lt;TokenType.BLOCK_START: &#39;BLOCK_START&#39;&gt;, &#39;%}&#39;: &lt;TokenType.BLOCK_END: &#39;BLOCK_END&#39;&gt;, &#39;+%}&#39;: &lt;TokenType.BLOCK_END: &#39;BLOCK_END&#39;&gt;, &#39;-%}&#39;: &lt;TokenType.BLOCK_END: &#39;BLOCK_END&#39;&gt;, &#39;{{+&#39;: &lt;TokenType.BLOCK_START: &#39;BLOCK_START&#39;&gt;, &#39;{{-&#39;: &lt;TokenType.BLOCK_START: &#39;BLOCK_START&#39;&gt;, &#39;+}}&#39;: &lt;TokenType.BLOCK_END: &#39;BLOCK_END&#39;&gt;, &#39;-}}&#39;: &lt;TokenType.BLOCK_END: &#39;BLOCK_END&#39;&gt;, &#39;/*+&#39;: &lt;TokenType.HINT: &#39;HINT&#39;&gt;, &#39;==&#39;: &lt;TokenType.EQ: &#39;EQ&#39;&gt;, &#39;::&#39;: &lt;TokenType.DCOLON: &#39;DCOLON&#39;&gt;, &#39;||&#39;: &lt;TokenType.DPIPE: &#39;DPIPE&#39;&gt;, &#39;&gt;=&#39;: &lt;TokenType.GTE: &#39;GTE&#39;&gt;, &#39;&lt;=&#39;: &lt;TokenType.LTE: &#39;LTE&#39;&gt;, &#39;&lt;&gt;&#39;: &lt;TokenType.NEQ: &#39;NEQ&#39;&gt;, &#39;!=&#39;: &lt;TokenType.NEQ: &#39;NEQ&#39;&gt;, &#39;&lt;=&gt;&#39;: &lt;TokenType.NULLSAFE_EQ: &#39;NULLSAFE_EQ&#39;&gt;, &#39;-&gt;&#39;: &lt;TokenType.ARROW: &#39;ARROW&#39;&gt;, &#39;-&gt;&gt;&#39;: &lt;TokenType.DARROW: &#39;DARROW&#39;&gt;, &#39;=&gt;&#39;: &lt;TokenType.FARROW: &#39;FARROW&#39;&gt;, &#39;#&gt;&#39;: &lt;TokenType.HASH_ARROW: &#39;HASH_ARROW&#39;&gt;, &#39;#&gt;&gt;&#39;: &lt;TokenType.DHASH_ARROW: &#39;DHASH_ARROW&#39;&gt;, &#39;&lt;-&gt;&#39;: &lt;TokenType.LR_ARROW: &#39;LR_ARROW&#39;&gt;, &#39;&amp;&amp;&#39;: &lt;TokenType.DAMP: &#39;DAMP&#39;&gt;, &#39;ALL&#39;: &lt;TokenType.ALL: &#39;ALL&#39;&gt;, &#39;ALWAYS&#39;: &lt;TokenType.ALWAYS: &#39;ALWAYS&#39;&gt;, &#39;AND&#39;: &lt;TokenType.AND: &#39;AND&#39;&gt;, &#39;ANTI&#39;: &lt;TokenType.ANTI: &#39;ANTI&#39;&gt;, &#39;ANY&#39;: &lt;TokenType.ANY: &#39;ANY&#39;&gt;, &#39;ASC&#39;: &lt;TokenType.ASC: &#39;ASC&#39;&gt;, &#39;AS&#39;: &lt;TokenType.ALIAS: &#39;ALIAS&#39;&gt;, &#39;ASOF&#39;: &lt;TokenType.ASOF: &#39;ASOF&#39;&gt;, &#39;AUTOINCREMENT&#39;: &lt;TokenType.AUTO_INCREMENT: &#39;AUTO_INCREMENT&#39;&gt;, &#39;AUTO_INCREMENT&#39;: &lt;TokenType.AUTO_INCREMENT: &#39;AUTO_INCREMENT&#39;&gt;, &#39;BEGIN&#39;: &lt;TokenType.BEGIN: &#39;BEGIN&#39;&gt;, &#39;BETWEEN&#39;: &lt;TokenType.BETWEEN: &#39;BETWEEN&#39;&gt;, &#39;CACHE&#39;: &lt;TokenType.CACHE: &#39;CACHE&#39;&gt;, &#39;UNCACHE&#39;: &lt;TokenType.UNCACHE: &#39;UNCACHE&#39;&gt;, &#39;CASE&#39;: &lt;TokenType.CASE: &#39;CASE&#39;&gt;, &#39;CHARACTER SET&#39;: &lt;TokenType.CHARACTER_SET: &#39;CHARACTER_SET&#39;&gt;, &#39;CLUSTER BY&#39;: &lt;TokenType.CLUSTER_BY: &#39;CLUSTER_BY&#39;&gt;, &#39;COLLATE&#39;: &lt;TokenType.COLLATE: &#39;COLLATE&#39;&gt;, &#39;COLUMN&#39;: &lt;TokenType.COLUMN: &#39;COLUMN&#39;&gt;, &#39;COMMIT&#39;: &lt;TokenType.COMMIT: &#39;COMMIT&#39;&gt;, &#39;CONSTRAINT&#39;: &lt;TokenType.CONSTRAINT: &#39;CONSTRAINT&#39;&gt;, &#39;CREATE&#39;: &lt;TokenType.CREATE: &#39;CREATE&#39;&gt;, &#39;CROSS&#39;: &lt;TokenType.CROSS: &#39;CROSS&#39;&gt;, &#39;CUBE&#39;: &lt;TokenType.CUBE: &#39;CUBE&#39;&gt;, &#39;CURRENT_DATE&#39;: &lt;TokenType.CURRENT_DATE: &#39;CURRENT_DATE&#39;&gt;, &#39;CURRENT_TIME&#39;: &lt;TokenType.CURRENT_TIME: &#39;CURRENT_TIME&#39;&gt;, &#39;CURRENT_TIMESTAMP&#39;: &lt;TokenType.CURRENT_TIMESTAMP: &#39;CURRENT_TIMESTAMP&#39;&gt;, &#39;CURRENT_USER&#39;: &lt;TokenType.CURRENT_USER: &#39;CURRENT_USER&#39;&gt;, &#39;DATABASE&#39;: &lt;TokenType.DATABASE: &#39;DATABASE&#39;&gt;, &#39;DEFAULT&#39;: &lt;TokenType.DEFAULT: &#39;DEFAULT&#39;&gt;, &#39;DELETE&#39;: &lt;TokenType.DELETE: &#39;DELETE&#39;&gt;, &#39;DESC&#39;: &lt;TokenType.DESC: &#39;DESC&#39;&gt;, &#39;DESCRIBE&#39;: &lt;TokenType.DESCRIBE: &#39;DESCRIBE&#39;&gt;, &#39;DISTINCT&#39;: &lt;TokenType.DISTINCT: &#39;DISTINCT&#39;&gt;, &#39;DISTRIBUTE BY&#39;: &lt;TokenType.DISTRIBUTE_BY: &#39;DISTRIBUTE_BY&#39;&gt;, &#39;DIV&#39;: &lt;TokenType.DIV: &#39;DIV&#39;&gt;, &#39;DROP&#39;: &lt;TokenType.DROP: &#39;DROP&#39;&gt;, &#39;ELSE&#39;: &lt;TokenType.ELSE: &#39;ELSE&#39;&gt;, &#39;END&#39;: &lt;TokenType.END: &#39;END&#39;&gt;, &#39;ESCAPE&#39;: &lt;TokenType.ESCAPE: &#39;ESCAPE&#39;&gt;, &#39;EXCEPT&#39;: &lt;TokenType.EXCEPT: &#39;EXCEPT&#39;&gt;, &#39;EXECUTE&#39;: &lt;TokenType.EXECUTE: &#39;EXECUTE&#39;&gt;, &#39;EXISTS&#39;: &lt;TokenType.EXISTS: &#39;EXISTS&#39;&gt;, &#39;FALSE&#39;: &lt;TokenType.FALSE: &#39;FALSE&#39;&gt;, &#39;FETCH&#39;: &lt;TokenType.FETCH: &#39;FETCH&#39;&gt;, &#39;FILTER&#39;: &lt;TokenType.FILTER: &#39;FILTER&#39;&gt;, &#39;FIRST&#39;: &lt;TokenType.FIRST: &#39;FIRST&#39;&gt;, &#39;FULL&#39;: &lt;TokenType.FULL: &#39;FULL&#39;&gt;, &#39;FUNCTION&#39;: &lt;TokenType.FUNCTION: &#39;FUNCTION&#39;&gt;, &#39;FOR&#39;: &lt;TokenType.FOR: &#39;FOR&#39;&gt;, &#39;FOREIGN KEY&#39;: &lt;TokenType.FOREIGN_KEY: &#39;FOREIGN_KEY&#39;&gt;, &#39;FORMAT&#39;: &lt;TokenType.FORMAT: &#39;FORMAT&#39;&gt;, &#39;FROM&#39;: &lt;TokenType.FROM: &#39;FROM&#39;&gt;, &#39;GEOGRAPHY&#39;: &lt;TokenType.GEOGRAPHY: &#39;GEOGRAPHY&#39;&gt;, &#39;GEOMETRY&#39;: &lt;TokenType.GEOMETRY: &#39;GEOMETRY&#39;&gt;, &#39;GLOB&#39;: &lt;TokenType.GLOB: &#39;GLOB&#39;&gt;, &#39;GROUP BY&#39;: &lt;TokenType.GROUP_BY: &#39;GROUP_BY&#39;&gt;, &#39;GROUPING SETS&#39;: &lt;TokenType.GROUPING_SETS: &#39;GROUPING_SETS&#39;&gt;, &#39;HAVING&#39;: &lt;TokenType.HAVING: &#39;HAVING&#39;&gt;, &#39;IF&#39;: &lt;TokenType.IF: &#39;IF&#39;&gt;, &#39;ILIKE&#39;: &lt;TokenType.ILIKE: &#39;ILIKE&#39;&gt;, &#39;IN&#39;: &lt;TokenType.IN: &#39;IN&#39;&gt;, &#39;INDEX&#39;: &lt;TokenType.INDEX: &#39;INDEX&#39;&gt;, &#39;INET&#39;: &lt;TokenType.INET: &#39;INET&#39;&gt;, &#39;INNER&#39;: &lt;TokenType.INNER: &#39;INNER&#39;&gt;, &#39;INSERT&#39;: &lt;TokenType.INSERT: &#39;INSERT&#39;&gt;, &#39;INTERVAL&#39;: &lt;TokenType.INTERVAL: &#39;INTERVAL&#39;&gt;, &#39;INTERSECT&#39;: &lt;TokenType.INTERSECT: &#39;INTERSECT&#39;&gt;, &#39;INTO&#39;: &lt;TokenType.INTO: &#39;INTO&#39;&gt;, &#39;IS&#39;: &lt;TokenType.IS: &#39;IS&#39;&gt;, &#39;ISNULL&#39;: &lt;TokenType.ISNULL: &#39;ISNULL&#39;&gt;, &#39;JOIN&#39;: &lt;TokenType.JOIN: &#39;JOIN&#39;&gt;, &#39;KEEP&#39;: &lt;TokenType.KEEP: &#39;KEEP&#39;&gt;, &#39;LATERAL&#39;: &lt;TokenType.LATERAL: &#39;LATERAL&#39;&gt;, &#39;LEFT&#39;: &lt;TokenType.LEFT: &#39;LEFT&#39;&gt;, &#39;LIKE&#39;: &lt;TokenType.LIKE: &#39;LIKE&#39;&gt;, &#39;LIMIT&#39;: &lt;TokenType.LIMIT: &#39;LIMIT&#39;&gt;, &#39;LOAD&#39;: &lt;TokenType.LOAD: &#39;LOAD&#39;&gt;, &#39;LOCK&#39;: &lt;TokenType.LOCK: &#39;LOCK&#39;&gt;, &#39;MERGE&#39;: &lt;TokenType.MERGE: &#39;MERGE&#39;&gt;, &#39;NATURAL&#39;: &lt;TokenType.NATURAL: &#39;NATURAL&#39;&gt;, &#39;NEXT&#39;: &lt;TokenType.NEXT: &#39;NEXT&#39;&gt;, &#39;NEXT VALUE FOR&#39;: &lt;TokenType.NEXT_VALUE_FOR: &#39;NEXT_VALUE_FOR&#39;&gt;, &#39;NOT&#39;: &lt;TokenType.NOT: &#39;NOT&#39;&gt;, &#39;NOTNULL&#39;: &lt;TokenType.NOTNULL: &#39;NOTNULL&#39;&gt;, &#39;NULL&#39;: &lt;TokenType.NULL: &#39;NULL&#39;&gt;, &#39;OBJECT&#39;: &lt;TokenType.OBJECT: &#39;OBJECT&#39;&gt;, &#39;OFFSET&#39;: &lt;TokenType.OFFSET: &#39;OFFSET&#39;&gt;, &#39;ON&#39;: &lt;TokenType.ON: &#39;ON&#39;&gt;, &#39;OR&#39;: &lt;TokenType.OR: &#39;OR&#39;&gt;, &#39;ORDER BY&#39;: &lt;TokenType.ORDER_BY: &#39;ORDER_BY&#39;&gt;, &#39;ORDINALITY&#39;: &lt;TokenType.ORDINALITY: &#39;ORDINALITY&#39;&gt;, &#39;OUTER&#39;: &lt;TokenType.OUTER: &#39;OUTER&#39;&gt;, &#39;OVER&#39;: &lt;TokenType.OVER: &#39;OVER&#39;&gt;, &#39;OVERLAPS&#39;: &lt;TokenType.OVERLAPS: &#39;OVERLAPS&#39;&gt;, &#39;OVERWRITE&#39;: &lt;TokenType.OVERWRITE: &#39;OVERWRITE&#39;&gt;, &#39;PARTITION&#39;: &lt;TokenType.PARTITION: &#39;PARTITION&#39;&gt;, &#39;PARTITION BY&#39;: &lt;TokenType.PARTITION_BY: &#39;PARTITION_BY&#39;&gt;, &#39;PARTITIONED BY&#39;: &lt;TokenType.PARTITION_BY: &#39;PARTITION_BY&#39;&gt;, &#39;PARTITIONED_BY&#39;: &lt;TokenType.PARTITION_BY: &#39;PARTITION_BY&#39;&gt;, &#39;PERCENT&#39;: &lt;TokenType.PERCENT: &#39;PERCENT&#39;&gt;, &#39;PIVOT&#39;: &lt;TokenType.PIVOT: &#39;PIVOT&#39;&gt;, &#39;PRAGMA&#39;: &lt;TokenType.PRAGMA: &#39;PRAGMA&#39;&gt;, &#39;PRIMARY KEY&#39;: &lt;TokenType.PRIMARY_KEY: &#39;PRIMARY_KEY&#39;&gt;, &#39;PROCEDURE&#39;: &lt;TokenType.PROCEDURE: &#39;PROCEDURE&#39;&gt;, &#39;QUALIFY&#39;: &lt;TokenType.QUALIFY: &#39;QUALIFY&#39;&gt;, &#39;RANGE&#39;: &lt;TokenType.RANGE: &#39;RANGE&#39;&gt;, &#39;RECURSIVE&#39;: &lt;TokenType.RECURSIVE: &#39;RECURSIVE&#39;&gt;, &#39;REGEXP&#39;: &lt;TokenType.RLIKE: &#39;RLIKE&#39;&gt;, &#39;REPLACE&#39;: &lt;TokenType.REPLACE: &#39;REPLACE&#39;&gt;, &#39;RETURNING&#39;: &lt;TokenType.RETURNING: &#39;RETURNING&#39;&gt;, &#39;REFERENCES&#39;: &lt;TokenType.REFERENCES: &#39;REFERENCES&#39;&gt;, &#39;RIGHT&#39;: &lt;TokenType.RIGHT: &#39;RIGHT&#39;&gt;, &#39;RLIKE&#39;: &lt;TokenType.RLIKE: &#39;RLIKE&#39;&gt;, &#39;ROLLBACK&#39;: &lt;TokenType.ROLLBACK: &#39;ROLLBACK&#39;&gt;, &#39;ROLLUP&#39;: &lt;TokenType.ROLLUP: &#39;ROLLUP&#39;&gt;, &#39;ROW&#39;: &lt;TokenType.STRUCT: &#39;STRUCT&#39;&gt;, &#39;ROWS&#39;: &lt;TokenType.ROWS: &#39;ROWS&#39;&gt;, &#39;SCHEMA&#39;: &lt;TokenType.SCHEMA: &#39;SCHEMA&#39;&gt;, &#39;SELECT&#39;: &lt;TokenType.SELECT: &#39;SELECT&#39;&gt;, &#39;SEMI&#39;: &lt;TokenType.SEMI: &#39;SEMI&#39;&gt;, &#39;SET&#39;: &lt;TokenType.SET: &#39;SET&#39;&gt;, &#39;SETTINGS&#39;: &lt;TokenType.SETTINGS: &#39;SETTINGS&#39;&gt;, &#39;SHOW&#39;: &lt;TokenType.SHOW: &#39;SHOW&#39;&gt;, &#39;SIMILAR TO&#39;: &lt;TokenType.SIMILAR_TO: &#39;SIMILAR_TO&#39;&gt;, &#39;SOME&#39;: &lt;TokenType.SOME: &#39;SOME&#39;&gt;, &#39;SORT BY&#39;: &lt;TokenType.SORT_BY: &#39;SORT_BY&#39;&gt;, &#39;TABLE&#39;: &lt;TokenType.TABLE: &#39;TABLE&#39;&gt;, &#39;TABLESAMPLE&#39;: &lt;TokenType.TABLE_SAMPLE: &#39;TABLE_SAMPLE&#39;&gt;, &#39;TEMP&#39;: &lt;TokenType.TEMPORARY: &#39;TEMPORARY&#39;&gt;, &#39;TEMPORARY&#39;: &lt;TokenType.TEMPORARY: &#39;TEMPORARY&#39;&gt;, &#39;THEN&#39;: &lt;TokenType.THEN: &#39;THEN&#39;&gt;, &#39;TRUE&#39;: &lt;TokenType.TRUE: &#39;TRUE&#39;&gt;, &#39;UNION&#39;: &lt;TokenType.UNION: &#39;UNION&#39;&gt;, &#39;UNNEST&#39;: &lt;TokenType.UNNEST: &#39;UNNEST&#39;&gt;, &#39;UNPIVOT&#39;: &lt;TokenType.UNPIVOT: &#39;UNPIVOT&#39;&gt;, &#39;UPDATE&#39;: &lt;TokenType.UPDATE: &#39;UPDATE&#39;&gt;, &#39;USE&#39;: &lt;TokenType.USE: &#39;USE&#39;&gt;, &#39;USING&#39;: &lt;TokenType.USING: &#39;USING&#39;&gt;, &#39;UUID&#39;: &lt;TokenType.UUID: &#39;UUID&#39;&gt;, &#39;VALUES&#39;: &lt;TokenType.VALUES: &#39;VALUES&#39;&gt;, &#39;VIEW&#39;: &lt;TokenType.VIEW: &#39;VIEW&#39;&gt;, &#39;VOLATILE&#39;: &lt;TokenType.VOLATILE: &#39;VOLATILE&#39;&gt;, &#39;WHEN&#39;: &lt;TokenType.WHEN: &#39;WHEN&#39;&gt;, &#39;WHERE&#39;: &lt;TokenType.WHERE: &#39;WHERE&#39;&gt;, &#39;WINDOW&#39;: &lt;TokenType.WINDOW: &#39;WINDOW&#39;&gt;, &#39;WITH&#39;: &lt;TokenType.WITH: &#39;WITH&#39;&gt;, &#39;APPLY&#39;: &lt;TokenType.APPLY: &#39;APPLY&#39;&gt;, &#39;ARRAY&#39;: &lt;TokenType.ARRAY: &#39;ARRAY&#39;&gt;, &#39;BIT&#39;: &lt;TokenType.BIT: &#39;BIT&#39;&gt;, &#39;BOOL&#39;: &lt;TokenType.BOOLEAN: &#39;BOOLEAN&#39;&gt;, &#39;BOOLEAN&#39;: &lt;TokenType.BOOLEAN: &#39;BOOLEAN&#39;&gt;, &#39;BYTE&#39;: &lt;TokenType.TINYINT: &#39;TINYINT&#39;&gt;, &#39;TINYINT&#39;: &lt;TokenType.TINYINT: &#39;TINYINT&#39;&gt;, &#39;SHORT&#39;: &lt;TokenType.SMALLINT: &#39;SMALLINT&#39;&gt;, &#39;SMALLINT&#39;: &lt;TokenType.SMALLINT: &#39;SMALLINT&#39;&gt;, &#39;INT2&#39;: &lt;TokenType.SMALLINT: &#39;SMALLINT&#39;&gt;, &#39;INTEGER&#39;: &lt;TokenType.INT: &#39;INT&#39;&gt;, &#39;INT&#39;: &lt;TokenType.INT: &#39;INT&#39;&gt;, &#39;INT4&#39;: &lt;TokenType.INT: &#39;INT&#39;&gt;, &#39;LONG&#39;: &lt;TokenType.BIGINT: &#39;BIGINT&#39;&gt;, &#39;BIGINT&#39;: &lt;TokenType.BIGINT: &#39;BIGINT&#39;&gt;, &#39;INT8&#39;: &lt;TokenType.BIGINT: &#39;BIGINT&#39;&gt;, &#39;DEC&#39;: &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &#39;DECIMAL&#39;: &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &#39;BIGDECIMAL&#39;: &lt;TokenType.BIGDECIMAL: &#39;BIGDECIMAL&#39;&gt;, &#39;BIGNUMERIC&#39;: &lt;TokenType.BIGDECIMAL: &#39;BIGDECIMAL&#39;&gt;, &#39;MAP&#39;: &lt;TokenType.MAP: &#39;MAP&#39;&gt;, &#39;NULLABLE&#39;: &lt;TokenType.NULLABLE: &#39;NULLABLE&#39;&gt;, &#39;NUMBER&#39;: &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &#39;NUMERIC&#39;: &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &#39;FIXED&#39;: &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &#39;REAL&#39;: &lt;TokenType.FLOAT: &#39;FLOAT&#39;&gt;, &#39;FLOAT&#39;: &lt;TokenType.FLOAT: &#39;FLOAT&#39;&gt;, &#39;FLOAT4&#39;: &lt;TokenType.FLOAT: &#39;FLOAT&#39;&gt;, &#39;FLOAT8&#39;: &lt;TokenType.DOUBLE: &#39;DOUBLE&#39;&gt;, &#39;DOUBLE&#39;: &lt;TokenType.DOUBLE: &#39;DOUBLE&#39;&gt;, &#39;DOUBLE PRECISION&#39;: &lt;TokenType.DOUBLE: &#39;DOUBLE&#39;&gt;, &#39;JSON&#39;: &lt;TokenType.JSON: &#39;JSON&#39;&gt;, &#39;CHAR&#39;: &lt;TokenType.CHAR: &#39;CHAR&#39;&gt;, &#39;CHARACTER&#39;: &lt;TokenType.CHAR: &#39;CHAR&#39;&gt;, &#39;NCHAR&#39;: &lt;TokenType.NCHAR: &#39;NCHAR&#39;&gt;, &#39;VARCHAR&#39;: &lt;TokenType.VARCHAR: &#39;VARCHAR&#39;&gt;, &#39;VARCHAR2&#39;: &lt;TokenType.VARCHAR: &#39;VARCHAR&#39;&gt;, &#39;NVARCHAR&#39;: &lt;TokenType.NVARCHAR: &#39;NVARCHAR&#39;&gt;, &#39;NVARCHAR2&#39;: &lt;TokenType.NVARCHAR: &#39;NVARCHAR&#39;&gt;, &#39;STR&#39;: &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &#39;STRING&#39;: &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &#39;TEXT&#39;: &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &#39;CLOB&#39;: &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &#39;LONGVARCHAR&#39;: &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &#39;BINARY&#39;: &lt;TokenType.BINARY: &#39;BINARY&#39;&gt;, &#39;BLOB&#39;: &lt;TokenType.VARBINARY: &#39;VARBINARY&#39;&gt;, &#39;BYTEA&#39;: &lt;TokenType.VARBINARY: &#39;VARBINARY&#39;&gt;, &#39;VARBINARY&#39;: &lt;TokenType.VARBINARY: &#39;VARBINARY&#39;&gt;, &#39;TIME&#39;: &lt;TokenType.TIME: &#39;TIME&#39;&gt;, &#39;TIMESTAMP&#39;: &lt;TokenType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;, &#39;TIMESTAMPTZ&#39;: &lt;TokenType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;, &#39;TIMESTAMPLTZ&#39;: &lt;TokenType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;, &#39;DATE&#39;: &lt;TokenType.DATE: &#39;DATE&#39;&gt;, &#39;DATETIME&#39;: &lt;TokenType.DATETIME: &#39;DATETIME&#39;&gt;, &#39;INT4RANGE&#39;: &lt;TokenType.INT4RANGE: &#39;INT4RANGE&#39;&gt;, &#39;INT4MULTIRANGE&#39;: &lt;TokenType.INT4MULTIRANGE: &#39;INT4MULTIRANGE&#39;&gt;, &#39;INT8RANGE&#39;: &lt;TokenType.INT8RANGE: &#39;INT8RANGE&#39;&gt;, &#39;INT8MULTIRANGE&#39;: &lt;TokenType.INT8MULTIRANGE: &#39;INT8MULTIRANGE&#39;&gt;, &#39;NUMRANGE&#39;: &lt;TokenType.NUMRANGE: &#39;NUMRANGE&#39;&gt;, &#39;NUMMULTIRANGE&#39;: &lt;TokenType.NUMMULTIRANGE: &#39;NUMMULTIRANGE&#39;&gt;, &#39;TSRANGE&#39;: &lt;TokenType.TSRANGE: &#39;TSRANGE&#39;&gt;, &#39;TSMULTIRANGE&#39;: &lt;TokenType.TSMULTIRANGE: &#39;TSMULTIRANGE&#39;&gt;, &#39;TSTZRANGE&#39;: &lt;TokenType.TSTZRANGE: &#39;TSTZRANGE&#39;&gt;, &#39;TSTZMULTIRANGE&#39;: &lt;TokenType.TSTZMULTIRANGE: &#39;TSTZMULTIRANGE&#39;&gt;, &#39;DATERANGE&#39;: &lt;TokenType.DATERANGE: &#39;DATERANGE&#39;&gt;, &#39;DATEMULTIRANGE&#39;: &lt;TokenType.DATEMULTIRANGE: &#39;DATEMULTIRANGE&#39;&gt;, &#39;UNIQUE&#39;: &lt;TokenType.UNIQUE: &#39;UNIQUE&#39;&gt;, &#39;STRUCT&#39;: &lt;TokenType.STRUCT: &#39;STRUCT&#39;&gt;, &#39;VARIANT&#39;: &lt;TokenType.VARIANT: &#39;VARIANT&#39;&gt;, &#39;ALTER&#39;: &lt;TokenType.ALTER: &#39;ALTER&#39;&gt;, &#39;ANALYZE&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;CALL&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;COMMENT&#39;: &lt;TokenType.COMMENT: &#39;COMMENT&#39;&gt;, &#39;COPY&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;EXPLAIN&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;GRANT&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;OPTIMIZE&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;PREPARE&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;TRUNCATE&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;VACUUM&#39;: &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &#39;USER-DEFINED&#39;: &lt;TokenType.USERDEFINED: &#39;USERDEFINED&#39;&gt;, &#39;START&#39;: &lt;TokenType.BEGIN: &#39;BEGIN&#39;&gt;, &#39;MATCH_RECOGNIZE&#39;: &lt;TokenType.MATCH_RECOGNIZE: &#39;MATCH_RECOGNIZE&#39;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Tokenizer.KEYWORDS"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a></dt>
-                                <dd id="Presto.Tokenizer.reset" class="function"><a href="../tokens.html#Tokenizer.reset">reset</a></dd>
+                                <dd id="Presto.Tokenizer.SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.SINGLE_TOKENS">SINGLE_TOKENS</a></dd>
+                <dd id="Presto.Tokenizer.BIT_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BIT_STRINGS">BIT_STRINGS</a></dd>
+                <dd id="Presto.Tokenizer.BYTE_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BYTE_STRINGS">BYTE_STRINGS</a></dd>
+                <dd id="Presto.Tokenizer.HEX_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.HEX_STRINGS">HEX_STRINGS</a></dd>
+                <dd id="Presto.Tokenizer.RAW_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.RAW_STRINGS">RAW_STRINGS</a></dd>
+                <dd id="Presto.Tokenizer.IDENTIFIERS" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS">IDENTIFIERS</a></dd>
+                <dd id="Presto.Tokenizer.IDENTIFIER_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIER_ESCAPES">IDENTIFIER_ESCAPES</a></dd>
+                <dd id="Presto.Tokenizer.QUOTES" class="variable"><a href="../tokens.html#Tokenizer.QUOTES">QUOTES</a></dd>
+                <dd id="Presto.Tokenizer.STRING_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.STRING_ESCAPES">STRING_ESCAPES</a></dd>
+                <dd id="Presto.Tokenizer.VAR_SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.VAR_SINGLE_TOKENS">VAR_SINGLE_TOKENS</a></dd>
+                <dd id="Presto.Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Presto.Tokenizer.WHITE_SPACE" class="variable"><a href="../tokens.html#Tokenizer.WHITE_SPACE">WHITE_SPACE</a></dd>
+                <dd id="Presto.Tokenizer.COMMANDS" class="variable"><a href="../tokens.html#Tokenizer.COMMANDS">COMMANDS</a></dd>
+                <dd id="Presto.Tokenizer.COMMAND_PREFIX_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.COMMAND_PREFIX_TOKENS">COMMAND_PREFIX_TOKENS</a></dd>
+                <dd id="Presto.Tokenizer.NUMERIC_LITERALS" class="variable"><a href="../tokens.html#Tokenizer.NUMERIC_LITERALS">NUMERIC_LITERALS</a></dd>
+                <dd id="Presto.Tokenizer.ENCODE" class="variable"><a href="../tokens.html#Tokenizer.ENCODE">ENCODE</a></dd>
+                <dd id="Presto.Tokenizer.COMMENTS" class="variable"><a href="../tokens.html#Tokenizer.COMMENTS">COMMENTS</a></dd>
+                <dd id="Presto.Tokenizer.reset" class="function"><a href="../tokens.html#Tokenizer.reset">reset</a></dd>
                 <dd id="Presto.Tokenizer.tokenize" class="function"><a href="../tokens.html#Tokenizer.tokenize">tokenize</a></dd>
                 <dd id="Presto.Tokenizer.peek" class="function"><a href="../tokens.html#Tokenizer.peek">peek</a></dd>
+                <dd id="Presto.Tokenizer.size" class="variable"><a href="../tokens.html#Tokenizer.size">size</a></dd>
+                <dd id="Presto.Tokenizer.sql" class="variable"><a href="../tokens.html#Tokenizer.sql">sql</a></dd>
+                <dd id="Presto.Tokenizer.tokens" class="variable"><a href="../tokens.html#Tokenizer.tokens">tokens</a></dd>
 
             </div>
                                 </dl>
@@ -795,11 +1333,206 @@ Default: 3</li>
 </div>
 
 
+                            <div id="Presto.Parser.FUNCTIONS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FUNCTIONS</span>        =
+<input id="Presto.Parser.FUNCTIONS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Parser.FUNCTIONS-view-value"></label><span class="default_value">{&#39;ABS&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Abs">sqlglot.expressions.Abs</a>&#39;&gt;&gt;, &#39;ANY_VALUE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#AnyValue">sqlglot.expressions.AnyValue</a>&#39;&gt;&gt;, &#39;APPROX_DISTINCT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ApproxDistinct">sqlglot.expressions.ApproxDistinct</a>&#39;&gt;&gt;, &#39;APPROX_COUNT_DISTINCT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ApproxDistinct">sqlglot.expressions.ApproxDistinct</a>&#39;&gt;&gt;, &#39;APPROX_QUANTILE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ApproxQuantile">sqlglot.expressions.ApproxQuantile</a>&#39;&gt;&gt;, &#39;ARRAY&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Array">sqlglot.expressions.Array</a>&#39;&gt;&gt;, &#39;ARRAY_AGG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayAgg">sqlglot.expressions.ArrayAgg</a>&#39;&gt;&gt;, &#39;ARRAY_ALL&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayAll">sqlglot.expressions.ArrayAll</a>&#39;&gt;&gt;, &#39;ARRAY_ANY&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayAny">sqlglot.expressions.ArrayAny</a>&#39;&gt;&gt;, &#39;ARRAY_CONCAT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayConcat">sqlglot.expressions.ArrayConcat</a>&#39;&gt;&gt;, &#39;ARRAY_CONTAINS&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayContains">sqlglot.expressions.ArrayContains</a>&#39;&gt;&gt;, &#39;FILTER&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayFilter">sqlglot.expressions.ArrayFilter</a>&#39;&gt;&gt;, &#39;ARRAY_FILTER&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayFilter">sqlglot.expressions.ArrayFilter</a>&#39;&gt;&gt;, &#39;ARRAY_JOIN&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayJoin">sqlglot.expressions.ArrayJoin</a>&#39;&gt;&gt;, &#39;ARRAY_SIZE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArraySize">sqlglot.expressions.ArraySize</a>&#39;&gt;&gt;, &#39;ARRAY_SORT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArraySort">sqlglot.expressions.ArraySort</a>&#39;&gt;&gt;, &#39;ARRAY_SUM&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArraySum">sqlglot.expressions.ArraySum</a>&#39;&gt;&gt;, &#39;ARRAY_UNION_AGG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayUnionAgg">sqlglot.expressions.ArrayUnionAgg</a>&#39;&gt;&gt;, &#39;AVG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Avg">sqlglot.expressions.Avg</a>&#39;&gt;&gt;, &#39;CASE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Case">sqlglot.expressions.Case</a>&#39;&gt;&gt;, &#39;CAST&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Cast">sqlglot.expressions.Cast</a>&#39;&gt;&gt;, &#39;CAST_TO_STR_TYPE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CastToStrType">sqlglot.expressions.CastToStrType</a>&#39;&gt;&gt;, &#39;CEIL&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Ceil">sqlglot.expressions.Ceil</a>&#39;&gt;&gt;, &#39;CEILING&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Ceil">sqlglot.expressions.Ceil</a>&#39;&gt;&gt;, &#39;COALESCE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Coalesce">sqlglot.expressions.Coalesce</a>&#39;&gt;&gt;, &#39;IFNULL&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Coalesce">sqlglot.expressions.Coalesce</a>&#39;&gt;&gt;, &#39;NVL&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Coalesce">sqlglot.expressions.Coalesce</a>&#39;&gt;&gt;, &#39;CONCAT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Concat">sqlglot.expressions.Concat</a>&#39;&gt;&gt;, &#39;CONCAT_WS&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ConcatWs">sqlglot.expressions.ConcatWs</a>&#39;&gt;&gt;, &#39;COUNT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Count">sqlglot.expressions.Count</a>&#39;&gt;&gt;, &#39;COUNT_IF&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CountIf">sqlglot.expressions.CountIf</a>&#39;&gt;&gt;, &#39;CURRENT_DATE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CurrentDate">sqlglot.expressions.CurrentDate</a>&#39;&gt;&gt;, &#39;CURRENT_DATETIME&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CurrentDatetime">sqlglot.expressions.CurrentDatetime</a>&#39;&gt;&gt;, &#39;CURRENT_TIME&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CurrentTime">sqlglot.expressions.CurrentTime</a>&#39;&gt;&gt;, &#39;CURRENT_TIMESTAMP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CurrentTimestamp">sqlglot.expressions.CurrentTimestamp</a>&#39;&gt;&gt;, &#39;CURRENT_USER&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CurrentUser">sqlglot.expressions.CurrentUser</a>&#39;&gt;&gt;, &#39;DATE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Date">sqlglot.expressions.Date</a>&#39;&gt;&gt;, &#39;DATE_ADD&#39;: &lt;function <a href="#Presto.Parser">Presto.Parser</a>.&lt;lambda&gt;&gt;, &#39;DATEDIFF&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DateDiff">sqlglot.expressions.DateDiff</a>&#39;&gt;&gt;, &#39;DATE_DIFF&#39;: &lt;function <a href="#Presto.Parser">Presto.Parser</a>.&lt;lambda&gt;&gt;, &#39;DATEFROMPARTS&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DateFromParts">sqlglot.expressions.DateFromParts</a>&#39;&gt;&gt;, &#39;DATE_STR_TO_DATE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DateStrToDate">sqlglot.expressions.DateStrToDate</a>&#39;&gt;&gt;, &#39;DATE_SUB&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DateSub">sqlglot.expressions.DateSub</a>&#39;&gt;&gt;, &#39;DATE_TO_DATE_STR&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;DATE_TO_DI&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DateToDi">sqlglot.expressions.DateToDi</a>&#39;&gt;&gt;, &#39;DATE_TRUNC&#39;: &lt;function date_trunc_to_time&gt;, &#39;DATETIME_ADD&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DatetimeAdd">sqlglot.expressions.DatetimeAdd</a>&#39;&gt;&gt;, &#39;DATETIME_DIFF&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DatetimeDiff">sqlglot.expressions.DatetimeDiff</a>&#39;&gt;&gt;, &#39;DATETIME_SUB&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DatetimeSub">sqlglot.expressions.DatetimeSub</a>&#39;&gt;&gt;, &#39;DATETIME_TRUNC&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DatetimeTrunc">sqlglot.expressions.DatetimeTrunc</a>&#39;&gt;&gt;, &#39;DAY&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Day">sqlglot.expressions.Day</a>&#39;&gt;&gt;, &#39;DAY_OF_MONTH&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DayOfMonth">sqlglot.expressions.DayOfMonth</a>&#39;&gt;&gt;, &#39;DAYOFMONTH&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DayOfMonth">sqlglot.expressions.DayOfMonth</a>&#39;&gt;&gt;, &#39;DAY_OF_WEEK&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DayOfWeek">sqlglot.expressions.DayOfWeek</a>&#39;&gt;&gt;, &#39;DAYOFWEEK&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DayOfWeek">sqlglot.expressions.DayOfWeek</a>&#39;&gt;&gt;, &#39;DAY_OF_YEAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DayOfYear">sqlglot.expressions.DayOfYear</a>&#39;&gt;&gt;, &#39;DAYOFYEAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DayOfYear">sqlglot.expressions.DayOfYear</a>&#39;&gt;&gt;, &#39;DECODE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Decode">sqlglot.expressions.Decode</a>&#39;&gt;&gt;, &#39;DI_TO_DATE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#DiToDate">sqlglot.expressions.DiToDate</a>&#39;&gt;&gt;, &#39;ENCODE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Encode">sqlglot.expressions.Encode</a>&#39;&gt;&gt;, &#39;EXP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Exp">sqlglot.expressions.Exp</a>&#39;&gt;&gt;, &#39;EXPLODE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Explode">sqlglot.expressions.Explode</a>&#39;&gt;&gt;, &#39;EXTRACT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Extract">sqlglot.expressions.Extract</a>&#39;&gt;&gt;, &#39;FLOOR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Floor">sqlglot.expressions.Floor</a>&#39;&gt;&gt;, &#39;FROM_BASE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#FromBase">sqlglot.expressions.FromBase</a>&#39;&gt;&gt;, &#39;FROM_BASE64&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#FromBase64">sqlglot.expressions.FromBase64</a>&#39;&gt;&gt;, &#39;GENERATE_SERIES&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#GenerateSeries">sqlglot.expressions.GenerateSeries</a>&#39;&gt;&gt;, &#39;GREATEST&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Greatest">sqlglot.expressions.Greatest</a>&#39;&gt;&gt;, &#39;GROUP_CONCAT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#GroupConcat">sqlglot.expressions.GroupConcat</a>&#39;&gt;&gt;, &#39;HEX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Hex">sqlglot.expressions.Hex</a>&#39;&gt;&gt;, &#39;HLL&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Hll">sqlglot.expressions.Hll</a>&#39;&gt;&gt;, &#39;IF&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#If">sqlglot.expressions.If</a>&#39;&gt;&gt;, &#39;INITCAP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Initcap">sqlglot.expressions.Initcap</a>&#39;&gt;&gt;, &#39;JSONB_EXTRACT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#JSONBExtract">sqlglot.expressions.JSONBExtract</a>&#39;&gt;&gt;, &#39;JSONB_EXTRACT_SCALAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#JSONBExtractScalar">sqlglot.expressions.JSONBExtractScalar</a>&#39;&gt;&gt;, &#39;JSON_EXTRACT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#JSONExtract">sqlglot.expressions.JSONExtract</a>&#39;&gt;&gt;, &#39;JSON_EXTRACT_SCALAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#JSONExtractScalar">sqlglot.expressions.JSONExtractScalar</a>&#39;&gt;&gt;, &#39;JSON_FORMAT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#JSONFormat">sqlglot.expressions.JSONFormat</a>&#39;&gt;&gt;, &#39;J_S_O_N_OBJECT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#JSONObject">sqlglot.expressions.JSONObject</a>&#39;&gt;&gt;, &#39;LAST_DATE_OF_MONTH&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#LastDateOfMonth">sqlglot.expressions.LastDateOfMonth</a>&#39;&gt;&gt;, &#39;LEAST&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Least">sqlglot.expressions.Least</a>&#39;&gt;&gt;, &#39;LEFT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Left">sqlglot.expressions.Left</a>&#39;&gt;&gt;, &#39;LENGTH&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Length">sqlglot.expressions.Length</a>&#39;&gt;&gt;, &#39;LEN&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Length">sqlglot.expressions.Length</a>&#39;&gt;&gt;, &#39;LEVENSHTEIN&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Levenshtein">sqlglot.expressions.Levenshtein</a>&#39;&gt;&gt;, &#39;LN&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Ln">sqlglot.expressions.Ln</a>&#39;&gt;&gt;, &#39;LOG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Log">sqlglot.expressions.Log</a>&#39;&gt;&gt;, &#39;LOG10&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Log10">sqlglot.expressions.Log10</a>&#39;&gt;&gt;, &#39;LOG2&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Log2">sqlglot.expressions.Log2</a>&#39;&gt;&gt;, &#39;LOGICAL_AND&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#LogicalAnd">sqlglot.expressions.LogicalAnd</a>&#39;&gt;&gt;, &#39;BOOL_AND&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#LogicalAnd">sqlglot.expressions.LogicalAnd</a>&#39;&gt;&gt;, &#39;BOOLAND_AGG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#LogicalAnd">sqlglot.expressions.LogicalAnd</a>&#39;&gt;&gt;, &#39;LOGICAL_OR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#LogicalOr">sqlglot.expressions.LogicalOr</a>&#39;&gt;&gt;, &#39;BOOL_OR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#LogicalOr">sqlglot.expressions.LogicalOr</a>&#39;&gt;&gt;, &#39;BOOLOR_AGG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#LogicalOr">sqlglot.expressions.LogicalOr</a>&#39;&gt;&gt;, &#39;LOWER&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Lower">sqlglot.expressions.Lower</a>&#39;&gt;&gt;, &#39;LCASE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Lower">sqlglot.expressions.Lower</a>&#39;&gt;&gt;, &#39;MD5&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#MD5">sqlglot.expressions.MD5</a>&#39;&gt;&gt;, &#39;MAP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Map">sqlglot.expressions.Map</a>&#39;&gt;&gt;, &#39;MATCH_AGAINST&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#MatchAgainst">sqlglot.expressions.MatchAgainst</a>&#39;&gt;&gt;, &#39;MAX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Max">sqlglot.expressions.Max</a>&#39;&gt;&gt;, &#39;MIN&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Min">sqlglot.expressions.Min</a>&#39;&gt;&gt;, &#39;MONTH&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Month">sqlglot.expressions.Month</a>&#39;&gt;&gt;, &#39;NEXT_VALUE_FOR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#NextValueFor">sqlglot.expressions.NextValueFor</a>&#39;&gt;&gt;, &#39;NUMBER_TO_STR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#NumberToStr">sqlglot.expressions.NumberToStr</a>&#39;&gt;&gt;, &#39;NVL2&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Nvl2">sqlglot.expressions.Nvl2</a>&#39;&gt;&gt;, &#39;OPEN_J_S_O_N&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#OpenJSON">sqlglot.expressions.OpenJSON</a>&#39;&gt;&gt;, &#39;PARAMETERIZED_AGG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ParameterizedAgg">sqlglot.expressions.ParameterizedAgg</a>&#39;&gt;&gt;, &#39;PERCENTILE_CONT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#PercentileCont">sqlglot.expressions.PercentileCont</a>&#39;&gt;&gt;, &#39;PERCENTILE_DISC&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#PercentileDisc">sqlglot.expressions.PercentileDisc</a>&#39;&gt;&gt;, &#39;POSEXPLODE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Posexplode">sqlglot.expressions.Posexplode</a>&#39;&gt;&gt;, &#39;POWER&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Pow">sqlglot.expressions.Pow</a>&#39;&gt;&gt;, &#39;POW&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Pow">sqlglot.expressions.Pow</a>&#39;&gt;&gt;, &#39;QUANTILE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Quantile">sqlglot.expressions.Quantile</a>&#39;&gt;&gt;, &#39;RANGE_N&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#RangeN">sqlglot.expressions.RangeN</a>&#39;&gt;&gt;, &#39;READ_CSV&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ReadCSV">sqlglot.expressions.ReadCSV</a>&#39;&gt;&gt;, &#39;REDUCE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Reduce">sqlglot.expressions.Reduce</a>&#39;&gt;&gt;, &#39;REGEXP_EXTRACT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#RegexpExtract">sqlglot.expressions.RegexpExtract</a>&#39;&gt;&gt;, &#39;REGEXP_I_LIKE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#RegexpILike">sqlglot.expressions.RegexpILike</a>&#39;&gt;&gt;, &#39;REGEXP_LIKE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#RegexpLike">sqlglot.expressions.RegexpLike</a>&#39;&gt;&gt;, &#39;REGEXP_SPLIT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#RegexpSplit">sqlglot.expressions.RegexpSplit</a>&#39;&gt;&gt;, &#39;REPEAT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Repeat">sqlglot.expressions.Repeat</a>&#39;&gt;&gt;, &#39;RIGHT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Right">sqlglot.expressions.Right</a>&#39;&gt;&gt;, &#39;ROUND&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Round">sqlglot.expressions.Round</a>&#39;&gt;&gt;, &#39;ROW_NUMBER&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#RowNumber">sqlglot.expressions.RowNumber</a>&#39;&gt;&gt;, &#39;SHA&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#SHA">sqlglot.expressions.SHA</a>&#39;&gt;&gt;, &#39;SHA1&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#SHA">sqlglot.expressions.SHA</a>&#39;&gt;&gt;, &#39;SHA2&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#SHA2">sqlglot.expressions.SHA2</a>&#39;&gt;&gt;, &#39;SAFE_CONCAT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#SafeConcat">sqlglot.expressions.SafeConcat</a>&#39;&gt;&gt;, &#39;SAFE_DIVIDE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#SafeDivide">sqlglot.expressions.SafeDivide</a>&#39;&gt;&gt;, &#39;SET_AGG&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#SetAgg">sqlglot.expressions.SetAgg</a>&#39;&gt;&gt;, &#39;SORT_ARRAY&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#SortArray">sqlglot.expressions.SortArray</a>&#39;&gt;&gt;, &#39;SPLIT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Split">sqlglot.expressions.Split</a>&#39;&gt;&gt;, &#39;SQRT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Sqrt">sqlglot.expressions.Sqrt</a>&#39;&gt;&gt;, &#39;STANDARD_HASH&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StandardHash">sqlglot.expressions.StandardHash</a>&#39;&gt;&gt;, &#39;STAR_MAP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StarMap">sqlglot.expressions.StarMap</a>&#39;&gt;&gt;, &#39;STDDEV&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Stddev">sqlglot.expressions.Stddev</a>&#39;&gt;&gt;, &#39;STDDEV_POP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StddevPop">sqlglot.expressions.StddevPop</a>&#39;&gt;&gt;, &#39;STDDEV_SAMP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StddevSamp">sqlglot.expressions.StddevSamp</a>&#39;&gt;&gt;, &#39;STR_POSITION&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StrPosition">sqlglot.expressions.StrPosition</a>&#39;&gt;&gt;, &#39;STR_TO_DATE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StrToDate">sqlglot.expressions.StrToDate</a>&#39;&gt;&gt;, &#39;STR_TO_TIME&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StrToTime">sqlglot.expressions.StrToTime</a>&#39;&gt;&gt;, &#39;STR_TO_UNIX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StrToUnix">sqlglot.expressions.StrToUnix</a>&#39;&gt;&gt;, &#39;STRUCT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Struct">sqlglot.expressions.Struct</a>&#39;&gt;&gt;, &#39;STRUCT_EXTRACT&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#StructExtract">sqlglot.expressions.StructExtract</a>&#39;&gt;&gt;, &#39;SUBSTRING&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Substring">sqlglot.expressions.Substring</a>&#39;&gt;&gt;, &#39;SUM&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Sum">sqlglot.expressions.Sum</a>&#39;&gt;&gt;, &#39;TIME_ADD&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeAdd">sqlglot.expressions.TimeAdd</a>&#39;&gt;&gt;, &#39;TIME_DIFF&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeDiff">sqlglot.expressions.TimeDiff</a>&#39;&gt;&gt;, &#39;TIME_STR_TO_DATE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeStrToDate">sqlglot.expressions.TimeStrToDate</a>&#39;&gt;&gt;, &#39;TIME_STR_TO_TIME&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeStrToTime">sqlglot.expressions.TimeStrToTime</a>&#39;&gt;&gt;, &#39;TIME_STR_TO_UNIX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeStrToUnix">sqlglot.expressions.TimeStrToUnix</a>&#39;&gt;&gt;, &#39;TIME_SUB&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeSub">sqlglot.expressions.TimeSub</a>&#39;&gt;&gt;, &#39;TIME_TO_STR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeToStr">sqlglot.expressions.TimeToStr</a>&#39;&gt;&gt;, &#39;TIME_TO_TIME_STR&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TIME_TO_UNIX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeToUnix">sqlglot.expressions.TimeToUnix</a>&#39;&gt;&gt;, &#39;TIME_TRUNC&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeTrunc">sqlglot.expressions.TimeTrunc</a>&#39;&gt;&gt;, &#39;TIMESTAMP_ADD&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimestampAdd">sqlglot.expressions.TimestampAdd</a>&#39;&gt;&gt;, &#39;TIMESTAMP_DIFF&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimestampDiff">sqlglot.expressions.TimestampDiff</a>&#39;&gt;&gt;, &#39;TIMESTAMP_SUB&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimestampSub">sqlglot.expressions.TimestampSub</a>&#39;&gt;&gt;, &#39;TIMESTAMP_TRUNC&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimestampTrunc">sqlglot.expressions.TimestampTrunc</a>&#39;&gt;&gt;, &#39;TO_BASE64&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ToBase64">sqlglot.expressions.ToBase64</a>&#39;&gt;&gt;, &#39;TO_CHAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ToChar">sqlglot.expressions.ToChar</a>&#39;&gt;&gt;, &#39;TRIM&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Trim">sqlglot.expressions.Trim</a>&#39;&gt;&gt;, &#39;TRY_CAST&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TryCast">sqlglot.expressions.TryCast</a>&#39;&gt;&gt;, &#39;TS_OR_DI_TO_DI&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TsOrDiToDi">sqlglot.expressions.TsOrDiToDi</a>&#39;&gt;&gt;, &#39;TS_OR_DS_ADD&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TsOrDsAdd">sqlglot.expressions.TsOrDsAdd</a>&#39;&gt;&gt;, &#39;TS_OR_DS_TO_DATE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TsOrDsToDate">sqlglot.expressions.TsOrDsToDate</a>&#39;&gt;&gt;, &#39;TS_OR_DS_TO_DATE_STR&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;UNHEX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Unhex">sqlglot.expressions.Unhex</a>&#39;&gt;&gt;, &#39;UNIX_TO_STR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#UnixToStr">sqlglot.expressions.UnixToStr</a>&#39;&gt;&gt;, &#39;UNIX_TO_TIME&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#UnixToTime">sqlglot.expressions.UnixToTime</a>&#39;&gt;&gt;, &#39;UNIX_TO_TIME_STR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#UnixToTimeStr">sqlglot.expressions.UnixToTimeStr</a>&#39;&gt;&gt;, &#39;UPPER&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Upper">sqlglot.expressions.Upper</a>&#39;&gt;&gt;, &#39;UCASE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Upper">sqlglot.expressions.Upper</a>&#39;&gt;&gt;, &#39;VAR_MAP&#39;: &lt;function parse_var_map&gt;, &#39;VARIANCE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Variance">sqlglot.expressions.Variance</a>&#39;&gt;&gt;, &#39;VARIANCE_SAMP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Variance">sqlglot.expressions.Variance</a>&#39;&gt;&gt;, &#39;VAR_SAMP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Variance">sqlglot.expressions.Variance</a>&#39;&gt;&gt;, &#39;VARIANCE_POP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#VariancePop">sqlglot.expressions.VariancePop</a>&#39;&gt;&gt;, &#39;VAR_POP&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#VariancePop">sqlglot.expressions.VariancePop</a>&#39;&gt;&gt;, &#39;WEEK&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Week">sqlglot.expressions.Week</a>&#39;&gt;&gt;, &#39;WEEK_OF_YEAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#WeekOfYear">sqlglot.expressions.WeekOfYear</a>&#39;&gt;&gt;, &#39;WEEKOFYEAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#WeekOfYear">sqlglot.expressions.WeekOfYear</a>&#39;&gt;&gt;, &#39;WHEN&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#When">sqlglot.expressions.When</a>&#39;&gt;&gt;, &#39;X_M_L_TABLE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#XMLTable">sqlglot.expressions.XMLTable</a>&#39;&gt;&gt;, &#39;YEAR&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Year">sqlglot.expressions.Year</a>&#39;&gt;&gt;, &#39;GLOB&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;LIKE&#39;: &lt;function parse_like&gt;, &#39;APPROX_PERCENTILE&#39;: &lt;function _approx_percentile&gt;, &#39;CARDINALITY&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArraySize">sqlglot.expressions.ArraySize</a>&#39;&gt;&gt;, &#39;CONTAINS&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#ArrayContains">sqlglot.expressions.ArrayContains</a>&#39;&gt;&gt;, &#39;DATE_FORMAT&#39;: &lt;function format_time_lambda.&lt;locals&gt;._format_time&gt;, &#39;DATE_PARSE&#39;: &lt;function format_time_lambda.&lt;locals&gt;._format_time&gt;, &#39;FROM_HEX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Unhex">sqlglot.expressions.Unhex</a>&#39;&gt;&gt;, &#39;FROM_UNIXTIME&#39;: &lt;function _from_unixtime&gt;, &#39;FROM_UTF8&#39;: &lt;function <a href="#Presto.Parser">Presto.Parser</a>.&lt;lambda&gt;&gt;, &#39;NOW&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#CurrentTimestamp">sqlglot.expressions.CurrentTimestamp</a>&#39;&gt;&gt;, &#39;SEQUENCE&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#GenerateSeries">sqlglot.expressions.GenerateSeries</a>&#39;&gt;&gt;, &#39;STRPOS&#39;: &lt;function <a href="#Presto.Parser">Presto.Parser</a>.&lt;lambda&gt;&gt;, &#39;TO_UNIXTIME&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#TimeToUnix">sqlglot.expressions.TimeToUnix</a>&#39;&gt;&gt;, &#39;TO_HEX&#39;: &lt;bound method Func.from_arg_list of &lt;class &#39;<a href="../expressions.html#Hex">sqlglot.expressions.Hex</a>&#39;&gt;&gt;, &#39;TO_UTF8&#39;: &lt;function <a href="#Presto.Parser">Presto.Parser</a>.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.FUNCTIONS"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.FUNCTION_PARSERS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FUNCTION_PARSERS</span>        =
+<input id="Presto.Parser.FUNCTION_PARSERS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Parser.FUNCTION_PARSERS-view-value"></label><span class="default_value">{&#39;CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CONCAT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CONVERT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;DECODE&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;EXTRACT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;JSON_OBJECT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;LOG&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;MATCH&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;OPENJSON&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;POSITION&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;SAFE_CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;STRING_AGG&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;SUBSTRING&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRY_CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRY_CONVERT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.FUNCTION_PARSERS"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.INDEX_OFFSET" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INDEX_OFFSET</span><span class="annotation">: int</span>        =
+<span class="default_value">1</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.INDEX_OFFSET"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.STRICT_STRING_CONCAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRICT_STRING_CONCAT</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.STRICT_STRING_CONCAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.NULL_ORDERING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">NULL_ORDERING</span><span class="annotation">: str</span>        =
+<span class="default_value">&#39;nulls_are_last&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.NULL_ORDERING"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.SHOW_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SHOW_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.SHOW_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.SET_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SET_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{&#39;GLOBAL&#39;: {0: True}, &#39;LOCAL&#39;: {0: True}, &#39;SESSION&#39;: {0: True}, &#39;TRANSACTION&#39;: {0: True}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.SET_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Presto.Parser.FORMAT_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Parser.FORMAT_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Presto.Parser.TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Parser.TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%M&#39;: &#39;%B&#39;, &#39;%c&#39;: &#39;%-m&#39;, &#39;%e&#39;: &#39;%-d&#39;, &#39;%h&#39;: &#39;%I&#39;, &#39;%i&#39;: &#39;%M&#39;, &#39;%s&#39;: &#39;%S&#39;, &#39;%S&#39;: &#39;%S&#39;, &#39;%u&#39;: &#39;%W&#39;, &#39;%k&#39;: &#39;%-H&#39;, &#39;%l&#39;: &#39;%-I&#39;, &#39;%T&#39;: &#39;%H:%M:%S&#39;, &#39;%W&#39;: &#39;%a&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Parser.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Presto.Parser.TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Parser.TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Parser.TIME_TRIE"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../parser.html#Parser">sqlglot.parser.Parser</a></dt>
                                 <dd id="Presto.Parser.__init__" class="function"><a href="../parser.html#Parser.__init__">Parser</a></dd>
+                <dd id="Presto.Parser.NO_PAREN_FUNCTIONS" class="variable"><a href="../parser.html#Parser.NO_PAREN_FUNCTIONS">NO_PAREN_FUNCTIONS</a></dd>
+                <dd id="Presto.Parser.NESTED_TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.NESTED_TYPE_TOKENS">NESTED_TYPE_TOKENS</a></dd>
+                <dd id="Presto.Parser.ENUM_TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.ENUM_TYPE_TOKENS">ENUM_TYPE_TOKENS</a></dd>
+                <dd id="Presto.Parser.TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.TYPE_TOKENS">TYPE_TOKENS</a></dd>
+                <dd id="Presto.Parser.SUBQUERY_PREDICATES" class="variable"><a href="../parser.html#Parser.SUBQUERY_PREDICATES">SUBQUERY_PREDICATES</a></dd>
+                <dd id="Presto.Parser.RESERVED_KEYWORDS" class="variable"><a href="../parser.html#Parser.RESERVED_KEYWORDS">RESERVED_KEYWORDS</a></dd>
+                <dd id="Presto.Parser.DB_CREATABLES" class="variable"><a href="../parser.html#Parser.DB_CREATABLES">DB_CREATABLES</a></dd>
+                <dd id="Presto.Parser.CREATABLES" class="variable"><a href="../parser.html#Parser.CREATABLES">CREATABLES</a></dd>
+                <dd id="Presto.Parser.ID_VAR_TOKENS" class="variable"><a href="../parser.html#Parser.ID_VAR_TOKENS">ID_VAR_TOKENS</a></dd>
+                <dd id="Presto.Parser.INTERVAL_VARS" class="variable"><a href="../parser.html#Parser.INTERVAL_VARS">INTERVAL_VARS</a></dd>
+                <dd id="Presto.Parser.TABLE_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.TABLE_ALIAS_TOKENS">TABLE_ALIAS_TOKENS</a></dd>
+                <dd id="Presto.Parser.COMMENT_TABLE_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.COMMENT_TABLE_ALIAS_TOKENS">COMMENT_TABLE_ALIAS_TOKENS</a></dd>
+                <dd id="Presto.Parser.UPDATE_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.UPDATE_ALIAS_TOKENS">UPDATE_ALIAS_TOKENS</a></dd>
+                <dd id="Presto.Parser.TRIM_TYPES" class="variable"><a href="../parser.html#Parser.TRIM_TYPES">TRIM_TYPES</a></dd>
+                <dd id="Presto.Parser.FUNC_TOKENS" class="variable"><a href="../parser.html#Parser.FUNC_TOKENS">FUNC_TOKENS</a></dd>
+                <dd id="Presto.Parser.CONJUNCTION" class="variable"><a href="../parser.html#Parser.CONJUNCTION">CONJUNCTION</a></dd>
+                <dd id="Presto.Parser.EQUALITY" class="variable"><a href="../parser.html#Parser.EQUALITY">EQUALITY</a></dd>
+                <dd id="Presto.Parser.COMPARISON" class="variable"><a href="../parser.html#Parser.COMPARISON">COMPARISON</a></dd>
+                <dd id="Presto.Parser.BITWISE" class="variable"><a href="../parser.html#Parser.BITWISE">BITWISE</a></dd>
+                <dd id="Presto.Parser.TERM" class="variable"><a href="../parser.html#Parser.TERM">TERM</a></dd>
+                <dd id="Presto.Parser.FACTOR" class="variable"><a href="../parser.html#Parser.FACTOR">FACTOR</a></dd>
+                <dd id="Presto.Parser.TIMESTAMPS" class="variable"><a href="../parser.html#Parser.TIMESTAMPS">TIMESTAMPS</a></dd>
+                <dd id="Presto.Parser.SET_OPERATIONS" class="variable"><a href="../parser.html#Parser.SET_OPERATIONS">SET_OPERATIONS</a></dd>
+                <dd id="Presto.Parser.JOIN_METHODS" class="variable"><a href="../parser.html#Parser.JOIN_METHODS">JOIN_METHODS</a></dd>
+                <dd id="Presto.Parser.JOIN_SIDES" class="variable"><a href="../parser.html#Parser.JOIN_SIDES">JOIN_SIDES</a></dd>
+                <dd id="Presto.Parser.JOIN_KINDS" class="variable"><a href="../parser.html#Parser.JOIN_KINDS">JOIN_KINDS</a></dd>
+                <dd id="Presto.Parser.JOIN_HINTS" class="variable"><a href="../parser.html#Parser.JOIN_HINTS">JOIN_HINTS</a></dd>
+                <dd id="Presto.Parser.LAMBDAS" class="variable"><a href="../parser.html#Parser.LAMBDAS">LAMBDAS</a></dd>
+                <dd id="Presto.Parser.COLUMN_OPERATORS" class="variable"><a href="../parser.html#Parser.COLUMN_OPERATORS">COLUMN_OPERATORS</a></dd>
+                <dd id="Presto.Parser.EXPRESSION_PARSERS" class="variable"><a href="../parser.html#Parser.EXPRESSION_PARSERS">EXPRESSION_PARSERS</a></dd>
+                <dd id="Presto.Parser.STATEMENT_PARSERS" class="variable"><a href="../parser.html#Parser.STATEMENT_PARSERS">STATEMENT_PARSERS</a></dd>
+                <dd id="Presto.Parser.UNARY_PARSERS" class="variable"><a href="../parser.html#Parser.UNARY_PARSERS">UNARY_PARSERS</a></dd>
+                <dd id="Presto.Parser.PRIMARY_PARSERS" class="variable"><a href="../parser.html#Parser.PRIMARY_PARSERS">PRIMARY_PARSERS</a></dd>
+                <dd id="Presto.Parser.PLACEHOLDER_PARSERS" class="variable"><a href="../parser.html#Parser.PLACEHOLDER_PARSERS">PLACEHOLDER_PARSERS</a></dd>
+                <dd id="Presto.Parser.RANGE_PARSERS" class="variable"><a href="../parser.html#Parser.RANGE_PARSERS">RANGE_PARSERS</a></dd>
+                <dd id="Presto.Parser.PROPERTY_PARSERS" class="variable"><a href="../parser.html#Parser.PROPERTY_PARSERS">PROPERTY_PARSERS</a></dd>
+                <dd id="Presto.Parser.CONSTRAINT_PARSERS" class="variable"><a href="../parser.html#Parser.CONSTRAINT_PARSERS">CONSTRAINT_PARSERS</a></dd>
+                <dd id="Presto.Parser.ALTER_PARSERS" class="variable"><a href="../parser.html#Parser.ALTER_PARSERS">ALTER_PARSERS</a></dd>
+                <dd id="Presto.Parser.SCHEMA_UNNAMED_CONSTRAINTS" class="variable"><a href="../parser.html#Parser.SCHEMA_UNNAMED_CONSTRAINTS">SCHEMA_UNNAMED_CONSTRAINTS</a></dd>
+                <dd id="Presto.Parser.NO_PAREN_FUNCTION_PARSERS" class="variable"><a href="../parser.html#Parser.NO_PAREN_FUNCTION_PARSERS">NO_PAREN_FUNCTION_PARSERS</a></dd>
+                <dd id="Presto.Parser.FUNCTIONS_WITH_ALIASED_ARGS" class="variable"><a href="../parser.html#Parser.FUNCTIONS_WITH_ALIASED_ARGS">FUNCTIONS_WITH_ALIASED_ARGS</a></dd>
+                <dd id="Presto.Parser.QUERY_MODIFIER_PARSERS" class="variable"><a href="../parser.html#Parser.QUERY_MODIFIER_PARSERS">QUERY_MODIFIER_PARSERS</a></dd>
+                <dd id="Presto.Parser.SET_PARSERS" class="variable"><a href="../parser.html#Parser.SET_PARSERS">SET_PARSERS</a></dd>
+                <dd id="Presto.Parser.SHOW_PARSERS" class="variable"><a href="../parser.html#Parser.SHOW_PARSERS">SHOW_PARSERS</a></dd>
+                <dd id="Presto.Parser.TYPE_LITERAL_PARSERS" class="variable"><a href="../parser.html#Parser.TYPE_LITERAL_PARSERS">TYPE_LITERAL_PARSERS</a></dd>
+                <dd id="Presto.Parser.MODIFIABLES" class="variable"><a href="../parser.html#Parser.MODIFIABLES">MODIFIABLES</a></dd>
+                <dd id="Presto.Parser.DDL_SELECT_TOKENS" class="variable"><a href="../parser.html#Parser.DDL_SELECT_TOKENS">DDL_SELECT_TOKENS</a></dd>
+                <dd id="Presto.Parser.PRE_VOLATILE_TOKENS" class="variable"><a href="../parser.html#Parser.PRE_VOLATILE_TOKENS">PRE_VOLATILE_TOKENS</a></dd>
+                <dd id="Presto.Parser.TRANSACTION_KIND" class="variable"><a href="../parser.html#Parser.TRANSACTION_KIND">TRANSACTION_KIND</a></dd>
+                <dd id="Presto.Parser.TRANSACTION_CHARACTERISTICS" class="variable"><a href="../parser.html#Parser.TRANSACTION_CHARACTERISTICS">TRANSACTION_CHARACTERISTICS</a></dd>
+                <dd id="Presto.Parser.INSERT_ALTERNATIVES" class="variable"><a href="../parser.html#Parser.INSERT_ALTERNATIVES">INSERT_ALTERNATIVES</a></dd>
+                <dd id="Presto.Parser.CLONE_KINDS" class="variable"><a href="../parser.html#Parser.CLONE_KINDS">CLONE_KINDS</a></dd>
+                <dd id="Presto.Parser.TABLE_INDEX_HINT_TOKENS" class="variable"><a href="../parser.html#Parser.TABLE_INDEX_HINT_TOKENS">TABLE_INDEX_HINT_TOKENS</a></dd>
+                <dd id="Presto.Parser.WINDOW_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_ALIAS_TOKENS">WINDOW_ALIAS_TOKENS</a></dd>
+                <dd id="Presto.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_BEFORE_PAREN_TOKENS">WINDOW_BEFORE_PAREN_TOKENS</a></dd>
+                <dd id="Presto.Parser.WINDOW_SIDES" class="variable"><a href="../parser.html#Parser.WINDOW_SIDES">WINDOW_SIDES</a></dd>
+                <dd id="Presto.Parser.ADD_CONSTRAINT_TOKENS" class="variable"><a href="../parser.html#Parser.ADD_CONSTRAINT_TOKENS">ADD_CONSTRAINT_TOKENS</a></dd>
+                <dd id="Presto.Parser.STRICT_CAST" class="variable"><a href="../parser.html#Parser.STRICT_CAST">STRICT_CAST</a></dd>
+                <dd id="Presto.Parser.CONCAT_NULL_OUTPUTS_STRING" class="variable"><a href="../parser.html#Parser.CONCAT_NULL_OUTPUTS_STRING">CONCAT_NULL_OUTPUTS_STRING</a></dd>
+                <dd id="Presto.Parser.CONVERT_TYPE_FIRST" class="variable"><a href="../parser.html#Parser.CONVERT_TYPE_FIRST">CONVERT_TYPE_FIRST</a></dd>
+                <dd id="Presto.Parser.PREFIXED_PIVOT_COLUMNS" class="variable"><a href="../parser.html#Parser.PREFIXED_PIVOT_COLUMNS">PREFIXED_PIVOT_COLUMNS</a></dd>
+                <dd id="Presto.Parser.IDENTIFY_PIVOT_STRINGS" class="variable"><a href="../parser.html#Parser.IDENTIFY_PIVOT_STRINGS">IDENTIFY_PIVOT_STRINGS</a></dd>
+                <dd id="Presto.Parser.LOG_BASE_FIRST" class="variable"><a href="../parser.html#Parser.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
+                <dd id="Presto.Parser.LOG_DEFAULTS_TO_LN" class="variable"><a href="../parser.html#Parser.LOG_DEFAULTS_TO_LN">LOG_DEFAULTS_TO_LN</a></dd>
+                <dd id="Presto.Parser.UNNEST_COLUMN_ONLY" class="variable"><a href="../parser.html#Parser.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Presto.Parser.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../parser.html#Parser.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Presto.Parser.FORMAT_MAPPING" class="variable"><a href="../parser.html#Parser.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
+                <dd id="Presto.Parser.error_level" class="variable"><a href="../parser.html#Parser.error_level">error_level</a></dd>
+                <dd id="Presto.Parser.error_message_context" class="variable"><a href="../parser.html#Parser.error_message_context">error_message_context</a></dd>
+                <dd id="Presto.Parser.max_errors" class="variable"><a href="../parser.html#Parser.max_errors">max_errors</a></dd>
                 <dd id="Presto.Parser.reset" class="function"><a href="../parser.html#Parser.reset">reset</a></dd>
                 <dd id="Presto.Parser.parse" class="function"><a href="../parser.html#Parser.parse">parse</a></dd>
                 <dd id="Presto.Parser.parse_into" class="function"><a href="../parser.html#Parser.parse_into">parse_into</a></dd>
@@ -807,6 +1540,8 @@ Default: 3</li>
                 <dd id="Presto.Parser.raise_error" class="function"><a href="../parser.html#Parser.raise_error">raise_error</a></dd>
                 <dd id="Presto.Parser.expression" class="function"><a href="../parser.html#Parser.expression">expression</a></dd>
                 <dd id="Presto.Parser.validate_expression" class="function"><a href="../parser.html#Parser.validate_expression">validate_expression</a></dd>
+                <dd id="Presto.Parser.errors" class="variable"><a href="../parser.html#Parser.errors">errors</a></dd>
+                <dd id="Presto.Parser.sql" class="variable"><a href="../parser.html#Parser.sql">sql</a></dd>
 
             </div>
                                 </dl>
@@ -1007,6 +1742,105 @@ Default: True</li>
 </div>
 
 
+                            <div id="Presto.Generator.INTERVAL_ALLOWS_PLURAL_FORM" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INTERVAL_ALLOWS_PLURAL_FORM</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.INTERVAL_ALLOWS_PLURAL_FORM"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.JOIN_HINTS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">JOIN_HINTS</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.JOIN_HINTS"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.TABLE_HINTS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TABLE_HINTS</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.TABLE_HINTS"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.IS_BOOL_ALLOWED" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IS_BOOL_ALLOWED</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.IS_BOOL_ALLOWED"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.STRUCT_DELIMITER" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRUCT_DELIMITER</span>        =
+<span class="default_value">(&#39;(&#39;, &#39;)&#39;)</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.STRUCT_DELIMITER"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.PROPERTIES_LOCATION" class="classattr">
+                                <div class="attr variable">
+            <span class="name">PROPERTIES_LOCATION</span>        =
+<input id="Presto.Generator.PROPERTIES_LOCATION-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Generator.PROPERTIES_LOCATION-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#AlgorithmProperty">sqlglot.expressions.AlgorithmProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#AutoIncrementProperty">sqlglot.expressions.AutoIncrementProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#BlockCompressionProperty">sqlglot.expressions.BlockCompressionProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#CharacterSetProperty">sqlglot.expressions.CharacterSetProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#ChecksumProperty">sqlglot.expressions.ChecksumProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#CollateProperty">sqlglot.expressions.CollateProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#CopyGrantsProperty">sqlglot.expressions.CopyGrantsProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Cluster">sqlglot.expressions.Cluster</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#DataBlocksizeProperty">sqlglot.expressions.DataBlocksizeProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#DefinerProperty">sqlglot.expressions.DefinerProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#DictRange">sqlglot.expressions.DictRange</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#DictProperty">sqlglot.expressions.DictProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#DistKeyProperty">sqlglot.expressions.DistKeyProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#DistStyleProperty">sqlglot.expressions.DistStyleProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#EngineProperty">sqlglot.expressions.EngineProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#ExecuteAsProperty">sqlglot.expressions.ExecuteAsProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#ExternalProperty">sqlglot.expressions.ExternalProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#FallbackProperty">sqlglot.expressions.FallbackProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#FileFormatProperty">sqlglot.expressions.FileFormatProperty</a>&#39;&gt;: &lt;Location.POST_WITH: &#39;POST_WITH&#39;&gt;, &lt;class &#39;<a href="../expressions.html#FreespaceProperty">sqlglot.expressions.FreespaceProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#IsolatedLoadingProperty">sqlglot.expressions.IsolatedLoadingProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JournalProperty">sqlglot.expressions.JournalProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LanguageProperty">sqlglot.expressions.LanguageProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LikeProperty">sqlglot.expressions.LikeProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LocationProperty">sqlglot.expressions.LocationProperty</a>&#39;&gt;: &lt;Location.UNSUPPORTED: &#39;UNSUPPORTED&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LockingProperty">sqlglot.expressions.LockingProperty</a>&#39;&gt;: &lt;Location.POST_ALIAS: &#39;POST_ALIAS&#39;&gt;, &lt;class &#39;<a href="../expressions.html#LogProperty">sqlglot.expressions.LogProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#MaterializedProperty">sqlglot.expressions.MaterializedProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#MergeBlockRatioProperty">sqlglot.expressions.MergeBlockRatioProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;, &lt;class &#39;<a href="../expressions.html#NoPrimaryIndexProperty">sqlglot.expressions.NoPrimaryIndexProperty</a>&#39;&gt;: &lt;Location.POST_EXPRESSION: &#39;POST_EXPRESSION&#39;&gt;, &lt;class &#39;<a href="../expressions.html#OnCommitProperty">sqlglot.expressions.OnCommitProperty</a>&#39;&gt;: &lt;Location.POST_EXPRESSION: &#39;POST_EXPRESSION&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Order">sqlglot.expressions.Order</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#PartitionedByProperty">sqlglot.expressions.PartitionedByProperty</a>&#39;&gt;: &lt;Location.POST_WITH: &#39;POST_WITH&#39;&gt;, &lt;class &#39;<a href="../expressions.html#PrimaryKey">sqlglot.expressions.PrimaryKey</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Property">sqlglot.expressions.Property</a>&#39;&gt;: &lt;Location.POST_WITH: &#39;POST_WITH&#39;&gt;, &lt;class &#39;<a href="../expressions.html#ReturnsProperty">sqlglot.expressions.ReturnsProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#RowFormatProperty">sqlglot.expressions.RowFormatProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#RowFormatDelimitedProperty">sqlglot.expressions.RowFormatDelimitedProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#RowFormatSerdeProperty">sqlglot.expressions.RowFormatSerdeProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#SchemaCommentProperty">sqlglot.expressions.SchemaCommentProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#SerdeProperties">sqlglot.expressions.SerdeProperties</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Set">sqlglot.expressions.Set</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#SettingsProperty">sqlglot.expressions.SettingsProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#SetProperty">sqlglot.expressions.SetProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#SortKeyProperty">sqlglot.expressions.SortKeyProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#SqlSecurityProperty">sqlglot.expressions.SqlSecurityProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#StabilityProperty">sqlglot.expressions.StabilityProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#TemporaryProperty">sqlglot.expressions.TemporaryProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#ToTableProperty">sqlglot.expressions.ToTableProperty</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#TransientProperty">sqlglot.expressions.TransientProperty</a>&#39;&gt;: &lt;Location.POST_CREATE: &#39;POST_CREATE&#39;&gt;, &lt;class &#39;<a href="../expressions.html#MergeTreeTTL">sqlglot.expressions.MergeTreeTTL</a>&#39;&gt;: &lt;Location.POST_SCHEMA: &#39;POST_SCHEMA&#39;&gt;, &lt;class &#39;<a href="../expressions.html#VolatileProperty">sqlglot.expressions.VolatileProperty</a>&#39;&gt;: &lt;Location.UNSUPPORTED: &#39;UNSUPPORTED&#39;&gt;, &lt;class &#39;<a href="../expressions.html#WithDataProperty">sqlglot.expressions.WithDataProperty</a>&#39;&gt;: &lt;Location.POST_EXPRESSION: &#39;POST_EXPRESSION&#39;&gt;, &lt;class &#39;<a href="../expressions.html#WithJournalTableProperty">sqlglot.expressions.WithJournalTableProperty</a>&#39;&gt;: &lt;Location.POST_NAME: &#39;POST_NAME&#39;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.PROPERTIES_LOCATION"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.TYPE_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TYPE_MAPPING</span>        =
+<input id="Presto.Generator.TYPE_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Generator.TYPE_MAPPING-view-value"></label><span class="default_value">{&lt;Type.NCHAR: &#39;NCHAR&#39;&gt;: &#39;CHAR&#39;, &lt;Type.NVARCHAR: &#39;NVARCHAR&#39;&gt;: &#39;VARCHAR&#39;, &lt;Type.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.LONGTEXT: &#39;LONGTEXT&#39;&gt;: &#39;TEXT&#39;, &lt;Type.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.LONGBLOB: &#39;LONGBLOB&#39;&gt;: &#39;BLOB&#39;, &lt;Type.INET: &#39;INET&#39;&gt;: &#39;INET&#39;, &lt;Type.INT: &#39;INT&#39;&gt;: &#39;INTEGER&#39;, &lt;Type.FLOAT: &#39;FLOAT&#39;&gt;: &#39;REAL&#39;, &lt;Type.BINARY: &#39;BINARY&#39;&gt;: &#39;VARBINARY&#39;, &lt;Type.TEXT: &#39;TEXT&#39;&gt;: &#39;VARCHAR&#39;, &lt;Type.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;: &#39;TIMESTAMP&#39;, &lt;Type.STRUCT: &#39;STRUCT&#39;&gt;: &#39;ROW&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.TYPE_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.TRANSFORMS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TRANSFORMS</span>        =
+<input id="Presto.Generator.TRANSFORMS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Generator.TRANSFORMS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#DateAdd">sqlglot.expressions.DateAdd</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDsAdd">sqlglot.expressions.TsOrDsAdd</a>&#39;&gt;: &lt;function _ts_or_ds_add_sql&gt;, &lt;class &#39;<a href="../expressions.html#CaseSpecificColumnConstraint">sqlglot.expressions.CaseSpecificColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CharacterSetColumnConstraint">sqlglot.expressions.CharacterSetColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CharacterSetProperty">sqlglot.expressions.CharacterSetProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CheckColumnConstraint">sqlglot.expressions.CheckColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CollateColumnConstraint">sqlglot.expressions.CollateColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CopyGrantsProperty">sqlglot.expressions.CopyGrantsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CommentColumnConstraint">sqlglot.expressions.CommentColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DateFormatColumnConstraint">sqlglot.expressions.DateFormatColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DefaultColumnConstraint">sqlglot.expressions.DefaultColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#EncodeColumnConstraint">sqlglot.expressions.EncodeColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExecuteAsProperty">sqlglot.expressions.ExecuteAsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExternalProperty">sqlglot.expressions.ExternalProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#InlineLengthColumnConstraint">sqlglot.expressions.InlineLengthColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LanguageProperty">sqlglot.expressions.LanguageProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LocationProperty">sqlglot.expressions.LocationProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LogProperty">sqlglot.expressions.LogProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#MaterializedProperty">sqlglot.expressions.MaterializedProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#NoPrimaryIndexProperty">sqlglot.expressions.NoPrimaryIndexProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OnCommitProperty">sqlglot.expressions.OnCommitProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OnUpdateColumnConstraint">sqlglot.expressions.OnUpdateColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#PathColumnConstraint">sqlglot.expressions.PathColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ReturnsProperty">sqlglot.expressions.ReturnsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SetProperty">sqlglot.expressions.SetProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SettingsProperty">sqlglot.expressions.SettingsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SqlSecurityProperty">sqlglot.expressions.SqlSecurityProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StabilityProperty">sqlglot.expressions.StabilityProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TemporaryProperty">sqlglot.expressions.TemporaryProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ToTableProperty">sqlglot.expressions.ToTableProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TransientProperty">sqlglot.expressions.TransientProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TitleColumnConstraint">sqlglot.expressions.TitleColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UppercaseColumnConstraint">sqlglot.expressions.UppercaseColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VarMap">sqlglot.expressions.VarMap</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VolatileProperty">sqlglot.expressions.VolatileProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#WithJournalTableProperty">sqlglot.expressions.WithJournalTableProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ApproxDistinct">sqlglot.expressions.ApproxDistinct</a>&#39;&gt;: &lt;function _approx_distinct_sql&gt;, &lt;class &#39;<a href="../expressions.html#ApproxQuantile">sqlglot.expressions.ApproxQuantile</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Array">sqlglot.expressions.Array</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArrayConcat">sqlglot.expressions.ArrayConcat</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArrayContains">sqlglot.expressions.ArrayContains</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArraySize">sqlglot.expressions.ArraySize</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseAnd">sqlglot.expressions.BitwiseAnd</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseLeftShift">sqlglot.expressions.BitwiseLeftShift</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseNot">sqlglot.expressions.BitwiseNot</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseOr">sqlglot.expressions.BitwiseOr</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseRightShift">sqlglot.expressions.BitwiseRightShift</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseXor">sqlglot.expressions.BitwiseXor</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Cast">sqlglot.expressions.Cast</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#CurrentTimestamp">sqlglot.expressions.CurrentTimestamp</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DataType">sqlglot.expressions.DataType</a>&#39;&gt;: &lt;function _datatype_sql&gt;, &lt;class &#39;<a href="../expressions.html#DateDiff">sqlglot.expressions.DateDiff</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DateStrToDate">sqlglot.expressions.DateStrToDate</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DateToDi">sqlglot.expressions.DateToDi</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Decode">sqlglot.expressions.Decode</a>&#39;&gt;: &lt;function _decode_sql&gt;, &lt;class &#39;<a href="../expressions.html#DiToDate">sqlglot.expressions.DiToDate</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Encode">sqlglot.expressions.Encode</a>&#39;&gt;: &lt;function _encode_sql&gt;, &lt;class &#39;<a href="../expressions.html#FileFormatProperty">sqlglot.expressions.FileFormatProperty</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Group">sqlglot.expressions.Group</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#Hex">sqlglot.expressions.Hex</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#If">sqlglot.expressions.If</a>&#39;&gt;: &lt;function if_sql&gt;, &lt;class &#39;<a href="../expressions.html#ILike">sqlglot.expressions.ILike</a>&#39;&gt;: &lt;function no_ilike_sql&gt;, &lt;class &#39;<a href="../expressions.html#Initcap">sqlglot.expressions.Initcap</a>&#39;&gt;: &lt;function _initcap_sql&gt;, &lt;class &#39;<a href="../expressions.html#Lateral">sqlglot.expressions.Lateral</a>&#39;&gt;: &lt;function _explode_to_unnest_sql&gt;, &lt;class &#39;<a href="../expressions.html#Left">sqlglot.expressions.Left</a>&#39;&gt;: &lt;function left_to_substring_sql&gt;, &lt;class &#39;<a href="../expressions.html#Levenshtein">sqlglot.expressions.Levenshtein</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LogicalAnd">sqlglot.expressions.LogicalAnd</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LogicalOr">sqlglot.expressions.LogicalOr</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Pivot">sqlglot.expressions.Pivot</a>&#39;&gt;: &lt;function no_pivot_sql&gt;, &lt;class &#39;<a href="../expressions.html#Quantile">sqlglot.expressions.Quantile</a>&#39;&gt;: &lt;function _quantile_sql&gt;, &lt;class &#39;<a href="../expressions.html#Right">sqlglot.expressions.Right</a>&#39;&gt;: &lt;function right_to_substring_sql&gt;, &lt;class &#39;<a href="../expressions.html#SafeDivide">sqlglot.expressions.SafeDivide</a>&#39;&gt;: &lt;function no_safe_divide_sql&gt;, &lt;class &#39;<a href="../expressions.html#Schema">sqlglot.expressions.Schema</a>&#39;&gt;: &lt;function _schema_sql&gt;, &lt;class &#39;<a href="../expressions.html#Select">sqlglot.expressions.Select</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#SortArray">sqlglot.expressions.SortArray</a>&#39;&gt;: &lt;function _no_sort_array&gt;, &lt;class &#39;<a href="../expressions.html#StrPosition">sqlglot.expressions.StrPosition</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StrToDate">sqlglot.expressions.StrToDate</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StrToTime">sqlglot.expressions.StrToTime</a>&#39;&gt;: &lt;function _str_to_time_sql&gt;, &lt;class &#39;<a href="../expressions.html#StrToUnix">sqlglot.expressions.StrToUnix</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StructExtract">sqlglot.expressions.StructExtract</a>&#39;&gt;: &lt;function struct_extract_sql&gt;, &lt;class &#39;<a href="../expressions.html#Table">sqlglot.expressions.Table</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimestampTrunc">sqlglot.expressions.TimestampTrunc</a>&#39;&gt;: &lt;function timestamptrunc_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToDate">sqlglot.expressions.TimeStrToDate</a>&#39;&gt;: &lt;function timestrtotime_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToTime">sqlglot.expressions.TimeStrToTime</a>&#39;&gt;: &lt;function timestrtotime_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToUnix">sqlglot.expressions.TimeStrToUnix</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TimeToStr">sqlglot.expressions.TimeToStr</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TimeToUnix">sqlglot.expressions.TimeToUnix</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TryCast">sqlglot.expressions.TryCast</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDiToDi">sqlglot.expressions.TsOrDiToDi</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDsToDate">sqlglot.expressions.TsOrDsToDate</a>&#39;&gt;: &lt;function _ts_or_ds_to_date_sql&gt;, &lt;class &#39;<a href="../expressions.html#Unhex">sqlglot.expressions.Unhex</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UnixToStr">sqlglot.expressions.UnixToStr</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UnixToTime">sqlglot.expressions.UnixToTime</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UnixToTimeStr">sqlglot.expressions.UnixToTimeStr</a>&#39;&gt;: &lt;function <a href="#Presto.Generator">Presto.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VariancePop">sqlglot.expressions.VariancePop</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#With">sqlglot.expressions.With</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#WithinGroup">sqlglot.expressions.WithinGroup</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.TRANSFORMS"></a>
+    
+    
+
+                            </div>
                             <div id="Presto.Generator.interval_sql" class="classattr">
                                         <input id="Presto.Generator.interval_sql-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1112,6 +1946,80 @@ Default: True</li>
     
 
                             </div>
+                            <div id="Presto.Generator.SELECT_KINDS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SELECT_KINDS</span><span class="annotation">: Tuple[str, ...]</span>        =
+<span class="default_value">()</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.SELECT_KINDS"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Presto.Generator.INVERSE_TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Generator.INVERSE_TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%B&#39;: &#39;%M&#39;, &#39;%-m&#39;: &#39;%c&#39;, &#39;%-d&#39;: &#39;%e&#39;, &#39;%I&#39;: &#39;%h&#39;, &#39;%M&#39;: &#39;%i&#39;, &#39;%S&#39;: &#39;%S&#39;, &#39;%W&#39;: &#39;%u&#39;, &#39;%-H&#39;: &#39;%k&#39;, &#39;%-I&#39;: &#39;%l&#39;, &#39;%H:%M:%S&#39;: &#39;%T&#39;, &#39;%a&#39;: &#39;%W&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Presto.Generator.INVERSE_TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Presto.Generator.INVERSE_TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;B&#39;: {0: True}, &#39;-&#39;: {&#39;m&#39;: {0: True}, &#39;d&#39;: {0: True}, &#39;H&#39;: {0: True}, &#39;I&#39;: {0: True}}, &#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;W&#39;: {0: True}, &#39;H&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;M&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;S&#39;: {0: True}}}}}}}, &#39;a&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.INDEX_OFFSET" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INDEX_OFFSET</span>        =
+<span class="default_value">1</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.INDEX_OFFSET"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.STRICT_STRING_CONCAT" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRICT_STRING_CONCAT</span>        =
+<span class="default_value">True</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.STRICT_STRING_CONCAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.NULL_ORDERING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">NULL_ORDERING</span>        =
+<span class="default_value">&#39;nulls_are_last&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.NULL_ORDERING"></a>
+    
+    
+
+                            </div>
                             <div id="Presto.Generator.can_identify" class="classattr">
                                         <input id="Presto.Generator.can_identify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1166,11 +2074,215 @@ Default: True</li>
 
 
                             </div>
+                            <div id="Presto.Generator.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.STRING_ESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRING_ESCAPE</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.STRING_ESCAPE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.IDENTIFIER_ESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_ESCAPE</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.IDENTIFIER_ESCAPE"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.RAW_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.RAW_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Presto.Generator.RAW_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Presto.Generator.RAW_END"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../generator.html#Generator">sqlglot.generator.Generator</a></dt>
                                 <dd id="Presto.Generator.__init__" class="function"><a href="../generator.html#Generator.__init__">Generator</a></dd>
+                <dd id="Presto.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
+                <dd id="Presto.Generator.LOCKING_READS_SUPPORTED" class="variable"><a href="../generator.html#Generator.LOCKING_READS_SUPPORTED">LOCKING_READS_SUPPORTED</a></dd>
+                <dd id="Presto.Generator.EXPLICIT_UNION" class="variable"><a href="../generator.html#Generator.EXPLICIT_UNION">EXPLICIT_UNION</a></dd>
+                <dd id="Presto.Generator.WRAP_DERIVED_VALUES" class="variable"><a href="../generator.html#Generator.WRAP_DERIVED_VALUES">WRAP_DERIVED_VALUES</a></dd>
+                <dd id="Presto.Generator.CREATE_FUNCTION_RETURN_AS" class="variable"><a href="../generator.html#Generator.CREATE_FUNCTION_RETURN_AS">CREATE_FUNCTION_RETURN_AS</a></dd>
+                <dd id="Presto.Generator.MATCHED_BY_SOURCE" class="variable"><a href="../generator.html#Generator.MATCHED_BY_SOURCE">MATCHED_BY_SOURCE</a></dd>
+                <dd id="Presto.Generator.SINGLE_STRING_INTERVAL" class="variable"><a href="../generator.html#Generator.SINGLE_STRING_INTERVAL">SINGLE_STRING_INTERVAL</a></dd>
+                <dd id="Presto.Generator.TABLESAMPLE_WITH_METHOD" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_WITH_METHOD">TABLESAMPLE_WITH_METHOD</a></dd>
+                <dd id="Presto.Generator.TABLESAMPLE_SIZE_IS_PERCENT" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_SIZE_IS_PERCENT">TABLESAMPLE_SIZE_IS_PERCENT</a></dd>
+                <dd id="Presto.Generator.LIMIT_FETCH" class="variable"><a href="../generator.html#Generator.LIMIT_FETCH">LIMIT_FETCH</a></dd>
+                <dd id="Presto.Generator.RENAME_TABLE_WITH_DB" class="variable"><a href="../generator.html#Generator.RENAME_TABLE_WITH_DB">RENAME_TABLE_WITH_DB</a></dd>
+                <dd id="Presto.Generator.GROUPINGS_SEP" class="variable"><a href="../generator.html#Generator.GROUPINGS_SEP">GROUPINGS_SEP</a></dd>
+                <dd id="Presto.Generator.INDEX_ON" class="variable"><a href="../generator.html#Generator.INDEX_ON">INDEX_ON</a></dd>
+                <dd id="Presto.Generator.STAR_MAPPING" class="variable"><a href="../generator.html#Generator.STAR_MAPPING">STAR_MAPPING</a></dd>
+                <dd id="Presto.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
+                <dd id="Presto.Generator.TOKEN_MAPPING" class="variable"><a href="../generator.html#Generator.TOKEN_MAPPING">TOKEN_MAPPING</a></dd>
+                <dd id="Presto.Generator.PARAMETER_TOKEN" class="variable"><a href="../generator.html#Generator.PARAMETER_TOKEN">PARAMETER_TOKEN</a></dd>
+                <dd id="Presto.Generator.RESERVED_KEYWORDS" class="variable"><a href="../generator.html#Generator.RESERVED_KEYWORDS">RESERVED_KEYWORDS</a></dd>
+                <dd id="Presto.Generator.WITH_SEPARATED_COMMENTS" class="variable"><a href="../generator.html#Generator.WITH_SEPARATED_COMMENTS">WITH_SEPARATED_COMMENTS</a></dd>
+                <dd id="Presto.Generator.UNWRAPPED_INTERVAL_VALUES" class="variable"><a href="../generator.html#Generator.UNWRAPPED_INTERVAL_VALUES">UNWRAPPED_INTERVAL_VALUES</a></dd>
+                <dd id="Presto.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
+                <dd id="Presto.Generator.UNNEST_COLUMN_ONLY" class="variable"><a href="../generator.html#Generator.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Presto.Generator.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../generator.html#Generator.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Presto.Generator.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../generator.html#Generator.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Presto.Generator.NORMALIZE_FUNCTIONS" class="variable"><a href="../generator.html#Generator.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Presto.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
+                <dd id="Presto.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
+                <dd id="Presto.Generator.normalize" class="variable"><a href="../generator.html#Generator.normalize">normalize</a></dd>
+                <dd id="Presto.Generator.pad" class="variable"><a href="../generator.html#Generator.pad">pad</a></dd>
+                <dd id="Presto.Generator.unsupported_level" class="variable"><a href="../generator.html#Generator.unsupported_level">unsupported_level</a></dd>
+                <dd id="Presto.Generator.max_unsupported" class="variable"><a href="../generator.html#Generator.max_unsupported">max_unsupported</a></dd>
+                <dd id="Presto.Generator.leading_comma" class="variable"><a href="../generator.html#Generator.leading_comma">leading_comma</a></dd>
+                <dd id="Presto.Generator.max_text_width" class="variable"><a href="../generator.html#Generator.max_text_width">max_text_width</a></dd>
+                <dd id="Presto.Generator.comments" class="variable"><a href="../generator.html#Generator.comments">comments</a></dd>
+                <dd id="Presto.Generator.normalize_functions" class="variable"><a href="../generator.html#Generator.normalize_functions">normalize_functions</a></dd>
+                <dd id="Presto.Generator.unsupported_messages" class="variable"><a href="../generator.html#Generator.unsupported_messages">unsupported_messages</a></dd>
                 <dd id="Presto.Generator.generate" class="function"><a href="../generator.html#Generator.generate">generate</a></dd>
                 <dd id="Presto.Generator.unsupported" class="function"><a href="../generator.html#Generator.unsupported">unsupported</a></dd>
                 <dd id="Presto.Generator.sep" class="function"><a href="../generator.html#Generator.sep">sep</a></dd>
@@ -1247,6 +2359,8 @@ Default: True</li>
                 <dd id="Presto.Generator.onconflict_sql" class="function"><a href="../generator.html#Generator.onconflict_sql">onconflict_sql</a></dd>
                 <dd id="Presto.Generator.returning_sql" class="function"><a href="../generator.html#Generator.returning_sql">returning_sql</a></dd>
                 <dd id="Presto.Generator.rowformatdelimitedproperty_sql" class="function"><a href="../generator.html#Generator.rowformatdelimitedproperty_sql">rowformatdelimitedproperty_sql</a></dd>
+                <dd id="Presto.Generator.withtablehint_sql" class="function"><a href="../generator.html#Generator.withtablehint_sql">withtablehint_sql</a></dd>
+                <dd id="Presto.Generator.indextablehint_sql" class="function"><a href="../generator.html#Generator.indextablehint_sql">indextablehint_sql</a></dd>
                 <dd id="Presto.Generator.table_sql" class="function"><a href="../generator.html#Generator.table_sql">table_sql</a></dd>
                 <dd id="Presto.Generator.tablesample_sql" class="function"><a href="../generator.html#Generator.tablesample_sql">tablesample_sql</a></dd>
                 <dd id="Presto.Generator.pivot_sql" class="function"><a href="../generator.html#Generator.pivot_sql">pivot_sql</a></dd>

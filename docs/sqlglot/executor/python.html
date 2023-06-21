@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.executor.python API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -35,6 +35,15 @@
                             <ul class="memberlist">
                         <li>
                                 <a class="function" href="#PythonExecutor.__init__">PythonExecutor</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#PythonExecutor.generator">generator</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#PythonExecutor.env">env</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#PythonExecutor.tables">tables</a>
                         </li>
                         <li>
                                 <a class="function" href="#PythonExecutor.execute">execute</a>
@@ -90,6 +99,9 @@
                         <li>
                                 <a class="class" href="#Python.Tokenizer">Python.Tokenizer</a>
                                         <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Python.Tokenizer.STRING_ESCAPES">STRING_ESCAPES</a>
+                                    </li>
                             </ul>
 
                         </li>
@@ -97,10 +109,121 @@
                                 <a class="class" href="#Python.Generator">Python.Generator</a>
                                         <ul class="memberlist">
                                     <li>
+                                            <a class="variable" href="#Python.Generator.TRANSFORMS">TRANSFORMS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.SELECT_KINDS">SELECT_KINDS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                                    </li>
+                                    <li>
                                             <a class="function" href="#Python.Generator.can_identify">can_identify</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.QUOTE_START">QUOTE_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.QUOTE_END">QUOTE_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.IDENTIFIER_START">IDENTIFIER_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.IDENTIFIER_END">IDENTIFIER_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.STRING_ESCAPE">STRING_ESCAPE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.IDENTIFIER_ESCAPE">IDENTIFIER_ESCAPE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.BIT_START">BIT_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.BIT_END">BIT_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.HEX_START">HEX_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.HEX_END">HEX_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.BYTE_START">BYTE_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.BYTE_END">BYTE_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.RAW_START">RAW_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.RAW_END">RAW_END</a>
                                     </li>
                             </ul>
 
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.tokenizer_class">tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.parser_class">parser_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.generator_class">generator_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.TIME_TRIE">TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.FORMAT_TRIE">FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.QUOTE_START">QUOTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.QUOTE_END">QUOTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.IDENTIFIER_START">IDENTIFIER_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.IDENTIFIER_END">IDENTIFIER_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.BIT_START">BIT_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.BIT_END">BIT_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.HEX_START">HEX_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.HEX_END">HEX_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.BYTE_START">BYTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.BYTE_END">BYTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.RAW_START">RAW_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Python.RAW_END">RAW_END</a>
                         </li>
                 </ul>
 
@@ -937,6 +1060,39 @@
     
 
                             </div>
+                            <div id="PythonExecutor.generator" class="classattr">
+                                <div class="attr variable">
+            <span class="name">generator</span>
+
+        
+    </div>
+    <a class="headerlink" href="#PythonExecutor.generator"></a>
+    
+    
+
+                            </div>
+                            <div id="PythonExecutor.env" class="classattr">
+                                <div class="attr variable">
+            <span class="name">env</span>
+
+        
+    </div>
+    <a class="headerlink" href="#PythonExecutor.env"></a>
+    
+    
+
+                            </div>
+                            <div id="PythonExecutor.tables" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tables</span>
+
+        
+    </div>
+    <a class="headerlink" href="#PythonExecutor.tables"></a>
+    
+    
+
+                            </div>
                             <div id="PythonExecutor.execute" class="classattr">
                                         <input id="PythonExecutor.execute-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1539,11 +1695,252 @@
 
     
 
+                            <div id="Python.tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Python.Tokenizer">sqlglot.executor.python.Python.Tokenizer</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.parser_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">parser_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="../parser.html#Parser">sqlglot.parser.Parser</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.parser_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.generator_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">generator_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Python.Generator">sqlglot.executor.python.Python.Generator</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.generator_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.RAW_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.RAW_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.RAW_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.RAW_END"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></dt>
-                                <dd id="Python.get_or_raise" class="function"><a href="../dialects/dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
+                                <dd id="Python.INDEX_OFFSET" class="variable"><a href="../dialects/dialect.html#Dialect.INDEX_OFFSET">INDEX_OFFSET</a></dd>
+                <dd id="Python.UNNEST_COLUMN_ONLY" class="variable"><a href="../dialects/dialect.html#Dialect.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Python.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../dialects/dialect.html#Dialect.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Python.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="variable"><a href="../dialects/dialect.html#Dialect.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a></dd>
+                <dd id="Python.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../dialects/dialect.html#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Python.STRICT_STRING_CONCAT" class="variable"><a href="../dialects/dialect.html#Dialect.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
+                <dd id="Python.NORMALIZE_FUNCTIONS" class="variable"><a href="../dialects/dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Python.NULL_ORDERING" class="variable"><a href="../dialects/dialect.html#Dialect.NULL_ORDERING">NULL_ORDERING</a></dd>
+                <dd id="Python.DATE_FORMAT" class="variable"><a href="../dialects/dialect.html#Dialect.DATE_FORMAT">DATE_FORMAT</a></dd>
+                <dd id="Python.DATEINT_FORMAT" class="variable"><a href="../dialects/dialect.html#Dialect.DATEINT_FORMAT">DATEINT_FORMAT</a></dd>
+                <dd id="Python.TIME_FORMAT" class="variable"><a href="../dialects/dialect.html#Dialect.TIME_FORMAT">TIME_FORMAT</a></dd>
+                <dd id="Python.TIME_MAPPING" class="variable"><a href="../dialects/dialect.html#Dialect.TIME_MAPPING">TIME_MAPPING</a></dd>
+                <dd id="Python.FORMAT_MAPPING" class="variable"><a href="../dialects/dialect.html#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
+                <dd id="Python.get_or_raise" class="function"><a href="../dialects/dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
                 <dd id="Python.format_time" class="function"><a href="../dialects/dialect.html#Dialect.format_time">format_time</a></dd>
                 <dd id="Python.normalize_identifier" class="function"><a href="../dialects/dialect.html#Dialect.normalize_identifier">normalize_identifier</a></dd>
                 <dd id="Python.case_sensitive" class="function"><a href="../dialects/dialect.html#Dialect.case_sensitive">case_sensitive</a></dd>
@@ -1554,6 +1951,7 @@
                 <dd id="Python.generate" class="function"><a href="../dialects/dialect.html#Dialect.generate">generate</a></dd>
                 <dd id="Python.transpile" class="function"><a href="../dialects/dialect.html#Dialect.transpile">transpile</a></dd>
                 <dd id="Python.tokenize" class="function"><a href="../dialects/dialect.html#Dialect.tokenize">tokenize</a></dd>
+                <dd id="Python.tokenizer" class="variable"><a href="../dialects/dialect.html#Dialect.tokenizer">tokenizer</a></dd>
                 <dd id="Python.parser" class="function"><a href="../dialects/dialect.html#Dialect.parser">parser</a></dd>
                 <dd id="Python.generator" class="function"><a href="../dialects/dialect.html#Dialect.generator">generator</a></dd>
 
@@ -1579,13 +1977,45 @@
 
     
 
+                            <div id="Python.Tokenizer.STRING_ESCAPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRING_ESCAPES</span>        =
+<span class="default_value">[&#39;\\&#39;]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Tokenizer.STRING_ESCAPES"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a></dt>
-                                <dd id="Python.Tokenizer.reset" class="function"><a href="../tokens.html#Tokenizer.reset">reset</a></dd>
+                                <dd id="Python.Tokenizer.SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.SINGLE_TOKENS">SINGLE_TOKENS</a></dd>
+                <dd id="Python.Tokenizer.BIT_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BIT_STRINGS">BIT_STRINGS</a></dd>
+                <dd id="Python.Tokenizer.BYTE_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BYTE_STRINGS">BYTE_STRINGS</a></dd>
+                <dd id="Python.Tokenizer.HEX_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.HEX_STRINGS">HEX_STRINGS</a></dd>
+                <dd id="Python.Tokenizer.RAW_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.RAW_STRINGS">RAW_STRINGS</a></dd>
+                <dd id="Python.Tokenizer.IDENTIFIERS" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS">IDENTIFIERS</a></dd>
+                <dd id="Python.Tokenizer.IDENTIFIER_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIER_ESCAPES">IDENTIFIER_ESCAPES</a></dd>
+                <dd id="Python.Tokenizer.QUOTES" class="variable"><a href="../tokens.html#Tokenizer.QUOTES">QUOTES</a></dd>
+                <dd id="Python.Tokenizer.VAR_SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.VAR_SINGLE_TOKENS">VAR_SINGLE_TOKENS</a></dd>
+                <dd id="Python.Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Python.Tokenizer.KEYWORDS" class="variable"><a href="../tokens.html#Tokenizer.KEYWORDS">KEYWORDS</a></dd>
+                <dd id="Python.Tokenizer.WHITE_SPACE" class="variable"><a href="../tokens.html#Tokenizer.WHITE_SPACE">WHITE_SPACE</a></dd>
+                <dd id="Python.Tokenizer.COMMANDS" class="variable"><a href="../tokens.html#Tokenizer.COMMANDS">COMMANDS</a></dd>
+                <dd id="Python.Tokenizer.COMMAND_PREFIX_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.COMMAND_PREFIX_TOKENS">COMMAND_PREFIX_TOKENS</a></dd>
+                <dd id="Python.Tokenizer.NUMERIC_LITERALS" class="variable"><a href="../tokens.html#Tokenizer.NUMERIC_LITERALS">NUMERIC_LITERALS</a></dd>
+                <dd id="Python.Tokenizer.ENCODE" class="variable"><a href="../tokens.html#Tokenizer.ENCODE">ENCODE</a></dd>
+                <dd id="Python.Tokenizer.COMMENTS" class="variable"><a href="../tokens.html#Tokenizer.COMMENTS">COMMENTS</a></dd>
+                <dd id="Python.Tokenizer.reset" class="function"><a href="../tokens.html#Tokenizer.reset">reset</a></dd>
                 <dd id="Python.Tokenizer.tokenize" class="function"><a href="../tokens.html#Tokenizer.tokenize">tokenize</a></dd>
                 <dd id="Python.Tokenizer.peek" class="function"><a href="../tokens.html#Tokenizer.peek">peek</a></dd>
+                <dd id="Python.Tokenizer.size" class="variable"><a href="../tokens.html#Tokenizer.size">size</a></dd>
+                <dd id="Python.Tokenizer.sql" class="variable"><a href="../tokens.html#Tokenizer.sql">sql</a></dd>
+                <dd id="Python.Tokenizer.tokens" class="variable"><a href="../tokens.html#Tokenizer.tokens">tokens</a></dd>
 
             </div>
                                 </dl>
@@ -1668,6 +2098,55 @@ Default: True</li>
 </div>
 
 
+                            <div id="Python.Generator.TRANSFORMS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TRANSFORMS</span>        =
+<input id="Python.Generator.TRANSFORMS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Python.Generator.TRANSFORMS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#Add">sqlglot.expressions.Add</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#And">sqlglot.expressions.And</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArrayContained">sqlglot.expressions.ArrayContained</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayContains">sqlglot.expressions.ArrayContains</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayOverlaps">sqlglot.expressions.ArrayOverlaps</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Binary">sqlglot.expressions.Binary</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseAnd">sqlglot.expressions.BitwiseAnd</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseLeftShift">sqlglot.expressions.BitwiseLeftShift</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseOr">sqlglot.expressions.BitwiseOr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseRightShift">sqlglot.expressions.BitwiseRightShift</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseXor">sqlglot.expressions.BitwiseXor</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Collate">sqlglot.expressions.Collate</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Connector">sqlglot.expressions.Connector</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DPipe">sqlglot.expressions.DPipe</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Distance">sqlglot.expressions.Distance</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Div">sqlglot.expressions.Div</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Dot">sqlglot.expressions.Dot</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#EQ">sqlglot.expressions.EQ</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Escape">sqlglot.expressions.Escape</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#GT">sqlglot.expressions.GT</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#GTE">sqlglot.expressions.GTE</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Glob">sqlglot.expressions.Glob</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ILike">sqlglot.expressions.ILike</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ILikeAny">sqlglot.expressions.ILikeAny</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#IntDiv">sqlglot.expressions.IntDiv</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Is">sqlglot.expressions.Is</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#JSONBContains">sqlglot.expressions.JSONBContains</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#JSONBExtract">sqlglot.expressions.JSONBExtract</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#JSONBExtractScalar">sqlglot.expressions.JSONBExtractScalar</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#JSONExtract">sqlglot.expressions.JSONExtract</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#JSONExtractScalar">sqlglot.expressions.JSONExtractScalar</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Kwarg">sqlglot.expressions.Kwarg</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#LT">sqlglot.expressions.LT</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#LTE">sqlglot.expressions.LTE</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Like">sqlglot.expressions.Like</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#LikeAny">sqlglot.expressions.LikeAny</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Mod">sqlglot.expressions.Mod</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Mul">sqlglot.expressions.Mul</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#NEQ">sqlglot.expressions.NEQ</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#NullSafeEQ">sqlglot.expressions.NullSafeEQ</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#NullSafeNEQ">sqlglot.expressions.NullSafeNEQ</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Or">sqlglot.expressions.Or</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Overlaps">sqlglot.expressions.Overlaps</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Pow">sqlglot.expressions.Pow</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SafeDPipe">sqlglot.expressions.SafeDPipe</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SimilarTo">sqlglot.expressions.SimilarTo</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Slice">sqlglot.expressions.Slice</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Sub">sqlglot.expressions.Sub</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Abs">sqlglot.expressions.Abs</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#AnyValue">sqlglot.expressions.AnyValue</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ApproxDistinct">sqlglot.expressions.ApproxDistinct</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ApproxQuantile">sqlglot.expressions.ApproxQuantile</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Array">sqlglot.expressions.Array</a>&#39;&gt;: &lt;function inline_array_sql&gt;, &lt;class &#39;<a href="../expressions.html#ArrayAgg">sqlglot.expressions.ArrayAgg</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayAll">sqlglot.expressions.ArrayAll</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayAny">sqlglot.expressions.ArrayAny</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayConcat">sqlglot.expressions.ArrayConcat</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayFilter">sqlglot.expressions.ArrayFilter</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayJoin">sqlglot.expressions.ArrayJoin</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArraySize">sqlglot.expressions.ArraySize</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArraySort">sqlglot.expressions.ArraySort</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArraySum">sqlglot.expressions.ArraySum</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ArrayUnionAgg">sqlglot.expressions.ArrayUnionAgg</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Avg">sqlglot.expressions.Avg</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Case">sqlglot.expressions.Case</a>&#39;&gt;: &lt;function _case_sql&gt;, &lt;class &#39;<a href="../expressions.html#Cast">sqlglot.expressions.Cast</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CastToStrType">sqlglot.expressions.CastToStrType</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Ceil">sqlglot.expressions.Ceil</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Coalesce">sqlglot.expressions.Coalesce</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Concat">sqlglot.expressions.Concat</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ConcatWs">sqlglot.expressions.ConcatWs</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Count">sqlglot.expressions.Count</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#CountIf">sqlglot.expressions.CountIf</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#CurrentDate">sqlglot.expressions.CurrentDate</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#CurrentDatetime">sqlglot.expressions.CurrentDatetime</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#CurrentTime">sqlglot.expressions.CurrentTime</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#CurrentTimestamp">sqlglot.expressions.CurrentTimestamp</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#CurrentUser">sqlglot.expressions.CurrentUser</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Date">sqlglot.expressions.Date</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateAdd">sqlglot.expressions.DateAdd</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateDiff">sqlglot.expressions.DateDiff</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateFromParts">sqlglot.expressions.DateFromParts</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateStrToDate">sqlglot.expressions.DateStrToDate</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateSub">sqlglot.expressions.DateSub</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateToDateStr">sqlglot.expressions.DateToDateStr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateToDi">sqlglot.expressions.DateToDi</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DateTrunc">sqlglot.expressions.DateTrunc</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DatetimeAdd">sqlglot.expressions.DatetimeAdd</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DatetimeDiff">sqlglot.expressions.DatetimeDiff</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DatetimeSub">sqlglot.expressions.DatetimeSub</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DatetimeTrunc">sqlglot.expressions.DatetimeTrunc</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Day">sqlglot.expressions.Day</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DayOfMonth">sqlglot.expressions.DayOfMonth</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DayOfWeek">sqlglot.expressions.DayOfWeek</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DayOfYear">sqlglot.expressions.DayOfYear</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Decode">sqlglot.expressions.Decode</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#DiToDate">sqlglot.expressions.DiToDate</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Encode">sqlglot.expressions.Encode</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Exp">sqlglot.expressions.Exp</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Explode">sqlglot.expressions.Explode</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Extract">sqlglot.expressions.Extract</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Floor">sqlglot.expressions.Floor</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#FromBase">sqlglot.expressions.FromBase</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#FromBase64">sqlglot.expressions.FromBase64</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#GenerateSeries">sqlglot.expressions.GenerateSeries</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Greatest">sqlglot.expressions.Greatest</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#GroupConcat">sqlglot.expressions.GroupConcat</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Hex">sqlglot.expressions.Hex</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Hll">sqlglot.expressions.Hll</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#If">sqlglot.expressions.If</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Initcap">sqlglot.expressions.Initcap</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#JSONFormat">sqlglot.expressions.JSONFormat</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#JSONObject">sqlglot.expressions.JSONObject</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#LastDateOfMonth">sqlglot.expressions.LastDateOfMonth</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Least">sqlglot.expressions.Least</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Left">sqlglot.expressions.Left</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Length">sqlglot.expressions.Length</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Levenshtein">sqlglot.expressions.Levenshtein</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Ln">sqlglot.expressions.Ln</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Log">sqlglot.expressions.Log</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Log10">sqlglot.expressions.Log10</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Log2">sqlglot.expressions.Log2</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#LogicalAnd">sqlglot.expressions.LogicalAnd</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#LogicalOr">sqlglot.expressions.LogicalOr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Lower">sqlglot.expressions.Lower</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#MD5">sqlglot.expressions.MD5</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Map">sqlglot.expressions.Map</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#MatchAgainst">sqlglot.expressions.MatchAgainst</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Max">sqlglot.expressions.Max</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Min">sqlglot.expressions.Min</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Month">sqlglot.expressions.Month</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#NextValueFor">sqlglot.expressions.NextValueFor</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#NumberToStr">sqlglot.expressions.NumberToStr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Nvl2">sqlglot.expressions.Nvl2</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#OpenJSON">sqlglot.expressions.OpenJSON</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ParameterizedAgg">sqlglot.expressions.ParameterizedAgg</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#PercentileCont">sqlglot.expressions.PercentileCont</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#PercentileDisc">sqlglot.expressions.PercentileDisc</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Posexplode">sqlglot.expressions.Posexplode</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Quantile">sqlglot.expressions.Quantile</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#RangeN">sqlglot.expressions.RangeN</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ReadCSV">sqlglot.expressions.ReadCSV</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Reduce">sqlglot.expressions.Reduce</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#RegexpExtract">sqlglot.expressions.RegexpExtract</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#RegexpILike">sqlglot.expressions.RegexpILike</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#RegexpLike">sqlglot.expressions.RegexpLike</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#RegexpSplit">sqlglot.expressions.RegexpSplit</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Repeat">sqlglot.expressions.Repeat</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Right">sqlglot.expressions.Right</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Round">sqlglot.expressions.Round</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#RowNumber">sqlglot.expressions.RowNumber</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SHA">sqlglot.expressions.SHA</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SHA2">sqlglot.expressions.SHA2</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SafeConcat">sqlglot.expressions.SafeConcat</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SafeDivide">sqlglot.expressions.SafeDivide</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SetAgg">sqlglot.expressions.SetAgg</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#SortArray">sqlglot.expressions.SortArray</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Split">sqlglot.expressions.Split</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Sqrt">sqlglot.expressions.Sqrt</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StandardHash">sqlglot.expressions.StandardHash</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StarMap">sqlglot.expressions.StarMap</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Stddev">sqlglot.expressions.Stddev</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StddevPop">sqlglot.expressions.StddevPop</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StddevSamp">sqlglot.expressions.StddevSamp</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StrPosition">sqlglot.expressions.StrPosition</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StrToDate">sqlglot.expressions.StrToDate</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StrToTime">sqlglot.expressions.StrToTime</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StrToUnix">sqlglot.expressions.StrToUnix</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Struct">sqlglot.expressions.Struct</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#StructExtract">sqlglot.expressions.StructExtract</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Substring">sqlglot.expressions.Substring</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Sum">sqlglot.expressions.Sum</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeAdd">sqlglot.expressions.TimeAdd</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeDiff">sqlglot.expressions.TimeDiff</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToDate">sqlglot.expressions.TimeStrToDate</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToTime">sqlglot.expressions.TimeStrToTime</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToUnix">sqlglot.expressions.TimeStrToUnix</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeSub">sqlglot.expressions.TimeSub</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeToStr">sqlglot.expressions.TimeToStr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeToTimeStr">sqlglot.expressions.TimeToTimeStr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeToUnix">sqlglot.expressions.TimeToUnix</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimeTrunc">sqlglot.expressions.TimeTrunc</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimestampAdd">sqlglot.expressions.TimestampAdd</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimestampDiff">sqlglot.expressions.TimestampDiff</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimestampSub">sqlglot.expressions.TimestampSub</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TimestampTrunc">sqlglot.expressions.TimestampTrunc</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ToBase64">sqlglot.expressions.ToBase64</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#ToChar">sqlglot.expressions.ToChar</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Trim">sqlglot.expressions.Trim</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TryCast">sqlglot.expressions.TryCast</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDiToDi">sqlglot.expressions.TsOrDiToDi</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDsAdd">sqlglot.expressions.TsOrDsAdd</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDsToDate">sqlglot.expressions.TsOrDsToDate</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDsToDateStr">sqlglot.expressions.TsOrDsToDateStr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Unhex">sqlglot.expressions.Unhex</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#UnixToStr">sqlglot.expressions.UnixToStr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#UnixToTime">sqlglot.expressions.UnixToTime</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#UnixToTimeStr">sqlglot.expressions.UnixToTimeStr</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Upper">sqlglot.expressions.Upper</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#VarMap">sqlglot.expressions.VarMap</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Variance">sqlglot.expressions.Variance</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#VariancePop">sqlglot.expressions.VariancePop</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Week">sqlglot.expressions.Week</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#WeekOfYear">sqlglot.expressions.WeekOfYear</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#When">sqlglot.expressions.When</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#XMLTable">sqlglot.expressions.XMLTable</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Year">sqlglot.expressions.Year</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Alias">sqlglot.expressions.Alias</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Between">sqlglot.expressions.Between</a>&#39;&gt;: &lt;function _rename&gt;, &lt;class &#39;<a href="../expressions.html#Boolean">sqlglot.expressions.Boolean</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Column">sqlglot.expressions.Column</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Distinct">sqlglot.expressions.Distinct</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#In">sqlglot.expressions.In</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Interval">sqlglot.expressions.Interval</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Lambda">sqlglot.expressions.Lambda</a>&#39;&gt;: &lt;function _lambda_sql&gt;, &lt;class &#39;<a href="../expressions.html#Not">sqlglot.expressions.Not</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Null">sqlglot.expressions.Null</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Ordered">sqlglot.expressions.Ordered</a>&#39;&gt;: &lt;function _ordered_py&gt;, &lt;class &#39;<a href="../expressions.html#Star">sqlglot.expressions.Star</a>&#39;&gt;: &lt;function <a href="#Python.Generator">Python.Generator</a>.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.TRANSFORMS"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.SELECT_KINDS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SELECT_KINDS</span><span class="annotation">: Tuple[str, ...]</span>        =
+<span class="default_value">()</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.SELECT_KINDS"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
                             <div id="Python.Generator.can_identify" class="classattr">
                                         <input id="Python.Generator.can_identify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1722,11 +2201,225 @@ Default: True</li>
 
 
                             </div>
+                            <div id="Python.Generator.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.STRING_ESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRING_ESCAPE</span>        =
+<span class="default_value">&#39;\\&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.STRING_ESCAPE"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.IDENTIFIER_ESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_ESCAPE</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.IDENTIFIER_ESCAPE"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.RAW_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.RAW_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Python.Generator.RAW_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.RAW_END"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../generator.html#Generator">sqlglot.generator.Generator</a></dt>
                                 <dd id="Python.Generator.__init__" class="function"><a href="../generator.html#Generator.__init__">Generator</a></dd>
+                <dd id="Python.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
+                <dd id="Python.Generator.LOCKING_READS_SUPPORTED" class="variable"><a href="../generator.html#Generator.LOCKING_READS_SUPPORTED">LOCKING_READS_SUPPORTED</a></dd>
+                <dd id="Python.Generator.EXPLICIT_UNION" class="variable"><a href="../generator.html#Generator.EXPLICIT_UNION">EXPLICIT_UNION</a></dd>
+                <dd id="Python.Generator.WRAP_DERIVED_VALUES" class="variable"><a href="../generator.html#Generator.WRAP_DERIVED_VALUES">WRAP_DERIVED_VALUES</a></dd>
+                <dd id="Python.Generator.CREATE_FUNCTION_RETURN_AS" class="variable"><a href="../generator.html#Generator.CREATE_FUNCTION_RETURN_AS">CREATE_FUNCTION_RETURN_AS</a></dd>
+                <dd id="Python.Generator.MATCHED_BY_SOURCE" class="variable"><a href="../generator.html#Generator.MATCHED_BY_SOURCE">MATCHED_BY_SOURCE</a></dd>
+                <dd id="Python.Generator.SINGLE_STRING_INTERVAL" class="variable"><a href="../generator.html#Generator.SINGLE_STRING_INTERVAL">SINGLE_STRING_INTERVAL</a></dd>
+                <dd id="Python.Generator.INTERVAL_ALLOWS_PLURAL_FORM" class="variable"><a href="../generator.html#Generator.INTERVAL_ALLOWS_PLURAL_FORM">INTERVAL_ALLOWS_PLURAL_FORM</a></dd>
+                <dd id="Python.Generator.TABLESAMPLE_WITH_METHOD" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_WITH_METHOD">TABLESAMPLE_WITH_METHOD</a></dd>
+                <dd id="Python.Generator.TABLESAMPLE_SIZE_IS_PERCENT" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_SIZE_IS_PERCENT">TABLESAMPLE_SIZE_IS_PERCENT</a></dd>
+                <dd id="Python.Generator.LIMIT_FETCH" class="variable"><a href="../generator.html#Generator.LIMIT_FETCH">LIMIT_FETCH</a></dd>
+                <dd id="Python.Generator.RENAME_TABLE_WITH_DB" class="variable"><a href="../generator.html#Generator.RENAME_TABLE_WITH_DB">RENAME_TABLE_WITH_DB</a></dd>
+                <dd id="Python.Generator.GROUPINGS_SEP" class="variable"><a href="../generator.html#Generator.GROUPINGS_SEP">GROUPINGS_SEP</a></dd>
+                <dd id="Python.Generator.INDEX_ON" class="variable"><a href="../generator.html#Generator.INDEX_ON">INDEX_ON</a></dd>
+                <dd id="Python.Generator.JOIN_HINTS" class="variable"><a href="../generator.html#Generator.JOIN_HINTS">JOIN_HINTS</a></dd>
+                <dd id="Python.Generator.TABLE_HINTS" class="variable"><a href="../generator.html#Generator.TABLE_HINTS">TABLE_HINTS</a></dd>
+                <dd id="Python.Generator.IS_BOOL_ALLOWED" class="variable"><a href="../generator.html#Generator.IS_BOOL_ALLOWED">IS_BOOL_ALLOWED</a></dd>
+                <dd id="Python.Generator.TYPE_MAPPING" class="variable"><a href="../generator.html#Generator.TYPE_MAPPING">TYPE_MAPPING</a></dd>
+                <dd id="Python.Generator.STAR_MAPPING" class="variable"><a href="../generator.html#Generator.STAR_MAPPING">STAR_MAPPING</a></dd>
+                <dd id="Python.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
+                <dd id="Python.Generator.TOKEN_MAPPING" class="variable"><a href="../generator.html#Generator.TOKEN_MAPPING">TOKEN_MAPPING</a></dd>
+                <dd id="Python.Generator.STRUCT_DELIMITER" class="variable"><a href="../generator.html#Generator.STRUCT_DELIMITER">STRUCT_DELIMITER</a></dd>
+                <dd id="Python.Generator.PARAMETER_TOKEN" class="variable"><a href="../generator.html#Generator.PARAMETER_TOKEN">PARAMETER_TOKEN</a></dd>
+                <dd id="Python.Generator.PROPERTIES_LOCATION" class="variable"><a href="../generator.html#Generator.PROPERTIES_LOCATION">PROPERTIES_LOCATION</a></dd>
+                <dd id="Python.Generator.RESERVED_KEYWORDS" class="variable"><a href="../generator.html#Generator.RESERVED_KEYWORDS">RESERVED_KEYWORDS</a></dd>
+                <dd id="Python.Generator.WITH_SEPARATED_COMMENTS" class="variable"><a href="../generator.html#Generator.WITH_SEPARATED_COMMENTS">WITH_SEPARATED_COMMENTS</a></dd>
+                <dd id="Python.Generator.UNWRAPPED_INTERVAL_VALUES" class="variable"><a href="../generator.html#Generator.UNWRAPPED_INTERVAL_VALUES">UNWRAPPED_INTERVAL_VALUES</a></dd>
+                <dd id="Python.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
+                <dd id="Python.Generator.INDEX_OFFSET" class="variable"><a href="../generator.html#Generator.INDEX_OFFSET">INDEX_OFFSET</a></dd>
+                <dd id="Python.Generator.UNNEST_COLUMN_ONLY" class="variable"><a href="../generator.html#Generator.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Python.Generator.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../generator.html#Generator.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Python.Generator.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../generator.html#Generator.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Python.Generator.STRICT_STRING_CONCAT" class="variable"><a href="../generator.html#Generator.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
+                <dd id="Python.Generator.NORMALIZE_FUNCTIONS" class="variable"><a href="../generator.html#Generator.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Python.Generator.NULL_ORDERING" class="variable"><a href="../generator.html#Generator.NULL_ORDERING">NULL_ORDERING</a></dd>
+                <dd id="Python.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
+                <dd id="Python.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
+                <dd id="Python.Generator.normalize" class="variable"><a href="../generator.html#Generator.normalize">normalize</a></dd>
+                <dd id="Python.Generator.pad" class="variable"><a href="../generator.html#Generator.pad">pad</a></dd>
+                <dd id="Python.Generator.unsupported_level" class="variable"><a href="../generator.html#Generator.unsupported_level">unsupported_level</a></dd>
+                <dd id="Python.Generator.max_unsupported" class="variable"><a href="../generator.html#Generator.max_unsupported">max_unsupported</a></dd>
+                <dd id="Python.Generator.leading_comma" class="variable"><a href="../generator.html#Generator.leading_comma">leading_comma</a></dd>
+                <dd id="Python.Generator.max_text_width" class="variable"><a href="../generator.html#Generator.max_text_width">max_text_width</a></dd>
+                <dd id="Python.Generator.comments" class="variable"><a href="../generator.html#Generator.comments">comments</a></dd>
+                <dd id="Python.Generator.normalize_functions" class="variable"><a href="../generator.html#Generator.normalize_functions">normalize_functions</a></dd>
+                <dd id="Python.Generator.unsupported_messages" class="variable"><a href="../generator.html#Generator.unsupported_messages">unsupported_messages</a></dd>
                 <dd id="Python.Generator.generate" class="function"><a href="../generator.html#Generator.generate">generate</a></dd>
                 <dd id="Python.Generator.unsupported" class="function"><a href="../generator.html#Generator.unsupported">unsupported</a></dd>
                 <dd id="Python.Generator.sep" class="function"><a href="../generator.html#Generator.sep">sep</a></dd>
@@ -1803,6 +2496,8 @@ Default: True</li>
                 <dd id="Python.Generator.onconflict_sql" class="function"><a href="../generator.html#Generator.onconflict_sql">onconflict_sql</a></dd>
                 <dd id="Python.Generator.returning_sql" class="function"><a href="../generator.html#Generator.returning_sql">returning_sql</a></dd>
                 <dd id="Python.Generator.rowformatdelimitedproperty_sql" class="function"><a href="../generator.html#Generator.rowformatdelimitedproperty_sql">rowformatdelimitedproperty_sql</a></dd>
+                <dd id="Python.Generator.withtablehint_sql" class="function"><a href="../generator.html#Generator.withtablehint_sql">withtablehint_sql</a></dd>
+                <dd id="Python.Generator.indextablehint_sql" class="function"><a href="../generator.html#Generator.indextablehint_sql">indextablehint_sql</a></dd>
                 <dd id="Python.Generator.table_sql" class="function"><a href="../generator.html#Generator.table_sql">table_sql</a></dd>
                 <dd id="Python.Generator.tablesample_sql" class="function"><a href="../generator.html#Generator.tablesample_sql">tablesample_sql</a></dd>
                 <dd id="Python.Generator.pivot_sql" class="function"><a href="../generator.html#Generator.pivot_sql">pivot_sql</a></dd>

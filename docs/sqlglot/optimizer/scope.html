@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.optimizer.scope API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -61,6 +61,42 @@
                                 <a class="function" href="#Scope.__init__">Scope</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Scope.expression">expression</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.sources">sources</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.lateral_sources">lateral_sources</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.outer_column_list">outer_column_list</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.parent">parent</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.scope_type">scope_type</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.subquery_scopes">subquery_scopes</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.derived_table_scopes">derived_table_scopes</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.table_scopes">table_scopes</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.cte_scopes">cte_scopes</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.union_scopes">union_scopes</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.udtf_scopes">udtf_scopes</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Scope.clear_cache">clear_cache</a>
                         </li>
                         <li>
@@ -113,6 +149,9 @@
                         </li>
                         <li>
                                 <a class="variable" href="#Scope.join_hints">join_hints</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Scope.pivots">pivots</a>
                         </li>
                         <li>
                                 <a class="function" href="#Scope.source_columns">source_columns</a>
@@ -1501,7 +1540,7 @@ The LATERAL VIEW EXPLODE gets x as a source.</li>
 defines a column list of it's alias of this scope, this is that list of columns.
 For example:
     SELECT * FROM (SELECT ...) AS y(col1, col2)
-The inner query would have <code>["col1", "col2"]</code> for its <code>outer_column_list</code></li>
+The inner query would have <code>["col1", "col2"]</code> for its <code><a href="#Scope.outer_column_list">outer_column_list</a></code></li>
 <li><strong>parent (Scope):</strong>  Parent scope</li>
 <li><strong>scope_type (ScopeType):</strong>  Type of this scope, relative to it's parent</li>
 <li><strong>subquery_scopes (list[Scope]):</strong>  List of all child scopes for subqueries</li>
@@ -1551,6 +1590,138 @@ a list of the left and right child scopes.</li>
 </span></pre></div>
 
 
+    
+
+                            </div>
+                            <div id="Scope.expression" class="classattr">
+                                <div class="attr variable">
+            <span class="name">expression</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.expression"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.sources" class="classattr">
+                                <div class="attr variable">
+            <span class="name">sources</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.sources"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.lateral_sources" class="classattr">
+                                <div class="attr variable">
+            <span class="name">lateral_sources</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.lateral_sources"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.outer_column_list" class="classattr">
+                                <div class="attr variable">
+            <span class="name">outer_column_list</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.outer_column_list"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.parent" class="classattr">
+                                <div class="attr variable">
+            <span class="name">parent</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.parent"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.scope_type" class="classattr">
+                                <div class="attr variable">
+            <span class="name">scope_type</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.scope_type"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.subquery_scopes" class="classattr">
+                                <div class="attr variable">
+            <span class="name">subquery_scopes</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.subquery_scopes"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.derived_table_scopes" class="classattr">
+                                <div class="attr variable">
+            <span class="name">derived_table_scopes</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.derived_table_scopes"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.table_scopes" class="classattr">
+                                <div class="attr variable">
+            <span class="name">table_scopes</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.table_scopes"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.cte_scopes" class="classattr">
+                                <div class="attr variable">
+            <span class="name">cte_scopes</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.cte_scopes"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.union_scopes" class="classattr">
+                                <div class="attr variable">
+            <span class="name">union_scopes</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.union_scopes"></a>
+    
+    
+
+                            </div>
+                            <div id="Scope.udtf_scopes" class="classattr">
+                                <div class="attr variable">
+            <span class="name">udtf_scopes</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.udtf_scopes"></a>
+    
     
 
                             </div>
@@ -2021,6 +2192,17 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
 </blockquote>
 </div>
 
+
+                            </div>
+                            <div id="Scope.pivots" class="classattr">
+                                <div class="attr variable">
+            <span class="name">pivots</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Scope.pivots"></a>
+    
+    
 
                             </div>
                             <div id="Scope.source_columns" class="classattr">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.dialects.trino API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -37,7 +37,61 @@
                                 <a class="class" href="#Trino.Generator">Trino.Generator</a>
                                         <ul class="memberlist">
                                     <li>
+                                            <a class="variable" href="#Trino.Generator.TRANSFORMS">TRANSFORMS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.SELECT_KINDS">SELECT_KINDS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                                    </li>
+                                    <li>
                                             <a class="function" href="#Trino.Generator.can_identify">can_identify</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.QUOTE_START">QUOTE_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.QUOTE_END">QUOTE_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.IDENTIFIER_START">IDENTIFIER_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.IDENTIFIER_END">IDENTIFIER_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.STRING_ESCAPE">STRING_ESCAPE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.IDENTIFIER_ESCAPE">IDENTIFIER_ESCAPE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.BIT_START">BIT_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.BIT_END">BIT_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.HEX_START">HEX_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.HEX_END">HEX_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.BYTE_START">BYTE_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.BYTE_END">BYTE_END</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.RAW_START">RAW_START</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.RAW_END">RAW_END</a>
                                     </li>
                             </ul>
 
@@ -45,8 +99,68 @@
                         <li>
                                 <a class="class" href="#Trino.Tokenizer">Trino.Tokenizer</a>
                                         <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Trino.Tokenizer.HEX_STRINGS">HEX_STRINGS</a>
+                                    </li>
                             </ul>
 
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.tokenizer_class">tokenizer_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.parser_class">parser_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.generator_class">generator_class</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.TIME_TRIE">TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.FORMAT_TRIE">FORMAT_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.QUOTE_START">QUOTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.QUOTE_END">QUOTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.IDENTIFIER_START">IDENTIFIER_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.IDENTIFIER_END">IDENTIFIER_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.BIT_START">BIT_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.BIT_END">BIT_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.HEX_START">HEX_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.HEX_END">HEX_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.BYTE_START">BYTE_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.BYTE_END">BYTE_END</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.RAW_START">RAW_START</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Trino.RAW_END">RAW_END</a>
                         </li>
                 </ul>
 
@@ -118,15 +232,260 @@
 
     
 
+                            <div id="Trino.tokenizer_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">tokenizer_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Trino.Tokenizer">sqlglot.dialects.trino.Trino.Tokenizer</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.tokenizer_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.parser_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">parser_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="presto.html#Presto.Parser">sqlglot.dialects.presto.Presto.Parser</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.parser_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.generator_class" class="classattr">
+                                <div class="attr variable">
+            <span class="name">generator_class</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Trino.Generator">sqlglot.dialects.trino.Trino.Generator</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.generator_class"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Trino.TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Trino.FORMAT_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.FORMAT_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Trino.INVERSE_TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.INVERSE_TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%B&#39;: &#39;%M&#39;, &#39;%-m&#39;: &#39;%c&#39;, &#39;%-d&#39;: &#39;%e&#39;, &#39;%I&#39;: &#39;%h&#39;, &#39;%M&#39;: &#39;%i&#39;, &#39;%S&#39;: &#39;%S&#39;, &#39;%W&#39;: &#39;%u&#39;, &#39;%-H&#39;: &#39;%k&#39;, &#39;%-I&#39;: &#39;%l&#39;, &#39;%H:%M:%S&#39;: &#39;%T&#39;, &#39;%a&#39;: &#39;%W&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Trino.INVERSE_TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.INVERSE_TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;B&#39;: {0: True}, &#39;-&#39;: {&#39;m&#39;: {0: True}, &#39;d&#39;: {0: True}, &#39;H&#39;: {0: True}, &#39;I&#39;: {0: True}}, &#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;W&#39;: {0: True}, &#39;H&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;M&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;S&#39;: {0: True}}}}}}}, &#39;a&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span>        =
+<span class="default_value">&#34;X&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.RAW_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_START</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.RAW_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.RAW_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_END</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.RAW_END"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="presto.html#Presto">sqlglot.dialects.presto.Presto</a></dt>
-                                <dd id="Trino.Parser" class="class"><a href="presto.html#Presto.Parser">Parser</a></dd>
+                                <dd id="Trino.INDEX_OFFSET" class="variable"><a href="presto.html#Presto.INDEX_OFFSET">INDEX_OFFSET</a></dd>
+                <dd id="Trino.NULL_ORDERING" class="variable"><a href="presto.html#Presto.NULL_ORDERING">NULL_ORDERING</a></dd>
+                <dd id="Trino.TIME_FORMAT" class="variable"><a href="presto.html#Presto.TIME_FORMAT">TIME_FORMAT</a></dd>
+                <dd id="Trino.TIME_MAPPING" class="variable"><a href="presto.html#Presto.TIME_MAPPING">TIME_MAPPING</a></dd>
+                <dd id="Trino.STRICT_STRING_CONCAT" class="variable"><a href="presto.html#Presto.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
+                <dd id="Trino.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="variable"><a href="presto.html#Presto.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a></dd>
+                <dd id="Trino.Parser" class="class"><a href="presto.html#Presto.Parser">Parser</a></dd>
 
             </div>
             <div><dt><a href="dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></dt>
-                                <dd id="Trino.get_or_raise" class="function"><a href="dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
+                                <dd id="Trino.UNNEST_COLUMN_ONLY" class="variable"><a href="dialect.html#Dialect.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Trino.ALIAS_POST_TABLESAMPLE" class="variable"><a href="dialect.html#Dialect.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Trino.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="dialect.html#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Trino.NORMALIZE_FUNCTIONS" class="variable"><a href="dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Trino.DATE_FORMAT" class="variable"><a href="dialect.html#Dialect.DATE_FORMAT">DATE_FORMAT</a></dd>
+                <dd id="Trino.DATEINT_FORMAT" class="variable"><a href="dialect.html#Dialect.DATEINT_FORMAT">DATEINT_FORMAT</a></dd>
+                <dd id="Trino.FORMAT_MAPPING" class="variable"><a href="dialect.html#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
+                <dd id="Trino.get_or_raise" class="function"><a href="dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
                 <dd id="Trino.format_time" class="function"><a href="dialect.html#Dialect.format_time">format_time</a></dd>
                 <dd id="Trino.normalize_identifier" class="function"><a href="dialect.html#Dialect.normalize_identifier">normalize_identifier</a></dd>
                 <dd id="Trino.case_sensitive" class="function"><a href="dialect.html#Dialect.case_sensitive">case_sensitive</a></dd>
@@ -137,6 +496,7 @@
                 <dd id="Trino.generate" class="function"><a href="dialect.html#Dialect.generate">generate</a></dd>
                 <dd id="Trino.transpile" class="function"><a href="dialect.html#Dialect.transpile">transpile</a></dd>
                 <dd id="Trino.tokenize" class="function"><a href="dialect.html#Dialect.tokenize">tokenize</a></dd>
+                <dd id="Trino.tokenizer" class="variable"><a href="dialect.html#Dialect.tokenizer">tokenizer</a></dd>
                 <dd id="Trino.parser" class="function"><a href="dialect.html#Dialect.parser">parser</a></dd>
                 <dd id="Trino.generator" class="function"><a href="dialect.html#Dialect.generator">generator</a></dd>
 
@@ -202,6 +562,57 @@ Default: True</li>
 </div>
 
 
+                            <div id="Trino.Generator.TRANSFORMS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TRANSFORMS</span>        =
+<input id="Trino.Generator.TRANSFORMS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.Generator.TRANSFORMS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#DateAdd">sqlglot.expressions.DateAdd</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDsAdd">sqlglot.expressions.TsOrDsAdd</a>&#39;&gt;: &lt;function _ts_or_ds_add_sql&gt;, &lt;class &#39;<a href="../expressions.html#CaseSpecificColumnConstraint">sqlglot.expressions.CaseSpecificColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CharacterSetColumnConstraint">sqlglot.expressions.CharacterSetColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CharacterSetProperty">sqlglot.expressions.CharacterSetProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CheckColumnConstraint">sqlglot.expressions.CheckColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CollateColumnConstraint">sqlglot.expressions.CollateColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CopyGrantsProperty">sqlglot.expressions.CopyGrantsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#CommentColumnConstraint">sqlglot.expressions.CommentColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DateFormatColumnConstraint">sqlglot.expressions.DateFormatColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DefaultColumnConstraint">sqlglot.expressions.DefaultColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#EncodeColumnConstraint">sqlglot.expressions.EncodeColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExecuteAsProperty">sqlglot.expressions.ExecuteAsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ExternalProperty">sqlglot.expressions.ExternalProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#InlineLengthColumnConstraint">sqlglot.expressions.InlineLengthColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LanguageProperty">sqlglot.expressions.LanguageProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LocationProperty">sqlglot.expressions.LocationProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LogProperty">sqlglot.expressions.LogProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#MaterializedProperty">sqlglot.expressions.MaterializedProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#NoPrimaryIndexProperty">sqlglot.expressions.NoPrimaryIndexProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OnCommitProperty">sqlglot.expressions.OnCommitProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#OnUpdateColumnConstraint">sqlglot.expressions.OnUpdateColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#PathColumnConstraint">sqlglot.expressions.PathColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ReturnsProperty">sqlglot.expressions.ReturnsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SetProperty">sqlglot.expressions.SetProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SettingsProperty">sqlglot.expressions.SettingsProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#SqlSecurityProperty">sqlglot.expressions.SqlSecurityProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StabilityProperty">sqlglot.expressions.StabilityProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TemporaryProperty">sqlglot.expressions.TemporaryProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ToTableProperty">sqlglot.expressions.ToTableProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TransientProperty">sqlglot.expressions.TransientProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TitleColumnConstraint">sqlglot.expressions.TitleColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UppercaseColumnConstraint">sqlglot.expressions.UppercaseColumnConstraint</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VarMap">sqlglot.expressions.VarMap</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VolatileProperty">sqlglot.expressions.VolatileProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#WithJournalTableProperty">sqlglot.expressions.WithJournalTableProperty</a>&#39;&gt;: &lt;function Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ApproxDistinct">sqlglot.expressions.ApproxDistinct</a>&#39;&gt;: &lt;function _approx_distinct_sql&gt;, &lt;class &#39;<a href="../expressions.html#ApproxQuantile">sqlglot.expressions.ApproxQuantile</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Array">sqlglot.expressions.Array</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArrayConcat">sqlglot.expressions.ArrayConcat</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArrayContains">sqlglot.expressions.ArrayContains</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#ArraySize">sqlglot.expressions.ArraySize</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseAnd">sqlglot.expressions.BitwiseAnd</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseLeftShift">sqlglot.expressions.BitwiseLeftShift</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseNot">sqlglot.expressions.BitwiseNot</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseOr">sqlglot.expressions.BitwiseOr</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseRightShift">sqlglot.expressions.BitwiseRightShift</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#BitwiseXor">sqlglot.expressions.BitwiseXor</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Cast">sqlglot.expressions.Cast</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#CurrentTimestamp">sqlglot.expressions.CurrentTimestamp</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DataType">sqlglot.expressions.DataType</a>&#39;&gt;: &lt;function _datatype_sql&gt;, &lt;class &#39;<a href="../expressions.html#DateDiff">sqlglot.expressions.DateDiff</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DateStrToDate">sqlglot.expressions.DateStrToDate</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#DateToDi">sqlglot.expressions.DateToDi</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Decode">sqlglot.expressions.Decode</a>&#39;&gt;: &lt;function _decode_sql&gt;, &lt;class &#39;<a href="../expressions.html#DiToDate">sqlglot.expressions.DiToDate</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Encode">sqlglot.expressions.Encode</a>&#39;&gt;: &lt;function _encode_sql&gt;, &lt;class &#39;<a href="../expressions.html#FileFormatProperty">sqlglot.expressions.FileFormatProperty</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Group">sqlglot.expressions.Group</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#Hex">sqlglot.expressions.Hex</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#If">sqlglot.expressions.If</a>&#39;&gt;: &lt;function if_sql&gt;, &lt;class &#39;<a href="../expressions.html#ILike">sqlglot.expressions.ILike</a>&#39;&gt;: &lt;function no_ilike_sql&gt;, &lt;class &#39;<a href="../expressions.html#Initcap">sqlglot.expressions.Initcap</a>&#39;&gt;: &lt;function _initcap_sql&gt;, &lt;class &#39;<a href="../expressions.html#Lateral">sqlglot.expressions.Lateral</a>&#39;&gt;: &lt;function _explode_to_unnest_sql&gt;, &lt;class &#39;<a href="../expressions.html#Left">sqlglot.expressions.Left</a>&#39;&gt;: &lt;function left_to_substring_sql&gt;, &lt;class &#39;<a href="../expressions.html#Levenshtein">sqlglot.expressions.Levenshtein</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LogicalAnd">sqlglot.expressions.LogicalAnd</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#LogicalOr">sqlglot.expressions.LogicalOr</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#Pivot">sqlglot.expressions.Pivot</a>&#39;&gt;: &lt;function no_pivot_sql&gt;, &lt;class &#39;<a href="../expressions.html#Quantile">sqlglot.expressions.Quantile</a>&#39;&gt;: &lt;function _quantile_sql&gt;, &lt;class &#39;<a href="../expressions.html#Right">sqlglot.expressions.Right</a>&#39;&gt;: &lt;function right_to_substring_sql&gt;, &lt;class &#39;<a href="../expressions.html#SafeDivide">sqlglot.expressions.SafeDivide</a>&#39;&gt;: &lt;function no_safe_divide_sql&gt;, &lt;class &#39;<a href="../expressions.html#Schema">sqlglot.expressions.Schema</a>&#39;&gt;: &lt;function _schema_sql&gt;, &lt;class &#39;<a href="../expressions.html#Select">sqlglot.expressions.Select</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#SortArray">sqlglot.expressions.SortArray</a>&#39;&gt;: &lt;function _no_sort_array&gt;, &lt;class &#39;<a href="../expressions.html#StrPosition">sqlglot.expressions.StrPosition</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StrToDate">sqlglot.expressions.StrToDate</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StrToTime">sqlglot.expressions.StrToTime</a>&#39;&gt;: &lt;function _str_to_time_sql&gt;, &lt;class &#39;<a href="../expressions.html#StrToUnix">sqlglot.expressions.StrToUnix</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#StructExtract">sqlglot.expressions.StructExtract</a>&#39;&gt;: &lt;function struct_extract_sql&gt;, &lt;class &#39;<a href="../expressions.html#Table">sqlglot.expressions.Table</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimestampTrunc">sqlglot.expressions.TimestampTrunc</a>&#39;&gt;: &lt;function timestamptrunc_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToDate">sqlglot.expressions.TimeStrToDate</a>&#39;&gt;: &lt;function timestrtotime_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToTime">sqlglot.expressions.TimeStrToTime</a>&#39;&gt;: &lt;function timestrtotime_sql&gt;, &lt;class &#39;<a href="../expressions.html#TimeStrToUnix">sqlglot.expressions.TimeStrToUnix</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TimeToStr">sqlglot.expressions.TimeToStr</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TimeToUnix">sqlglot.expressions.TimeToUnix</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TryCast">sqlglot.expressions.TryCast</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDiToDi">sqlglot.expressions.TsOrDiToDi</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#TsOrDsToDate">sqlglot.expressions.TsOrDsToDate</a>&#39;&gt;: &lt;function _ts_or_ds_to_date_sql&gt;, &lt;class &#39;<a href="../expressions.html#Unhex">sqlglot.expressions.Unhex</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UnixToStr">sqlglot.expressions.UnixToStr</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UnixToTime">sqlglot.expressions.UnixToTime</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#UnixToTimeStr">sqlglot.expressions.UnixToTimeStr</a>&#39;&gt;: &lt;function Presto.Generator.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#VariancePop">sqlglot.expressions.VariancePop</a>&#39;&gt;: &lt;function rename_func.&lt;locals&gt;.&lt;lambda&gt;&gt;, &lt;class &#39;<a href="../expressions.html#With">sqlglot.expressions.With</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#WithinGroup">sqlglot.expressions.WithinGroup</a>&#39;&gt;: &lt;function preprocess.&lt;locals&gt;._to_sql&gt;, &lt;class &#39;<a href="../expressions.html#ArraySum">sqlglot.expressions.ArraySum</a>&#39;&gt;: &lt;function <a href="#Trino.Generator">Trino.Generator</a>.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.TRANSFORMS"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.SELECT_KINDS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SELECT_KINDS</span><span class="annotation">: Tuple[str, ...]</span>        =
+<span class="default_value">()</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.SELECT_KINDS"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.INVERSE_TIME_MAPPING" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Trino.Generator.INVERSE_TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.Generator.INVERSE_TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%B&#39;: &#39;%M&#39;, &#39;%-m&#39;: &#39;%c&#39;, &#39;%-d&#39;: &#39;%e&#39;, &#39;%I&#39;: &#39;%h&#39;, &#39;%M&#39;: &#39;%i&#39;, &#39;%S&#39;: &#39;%S&#39;, &#39;%W&#39;: &#39;%u&#39;, &#39;%-H&#39;: &#39;%k&#39;, &#39;%-I&#39;: &#39;%l&#39;, &#39;%H:%M:%S&#39;: &#39;%T&#39;, &#39;%a&#39;: &#39;%W&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.INVERSE_TIME_MAPPING"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.INVERSE_TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Trino.Generator.INVERSE_TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.Generator.INVERSE_TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;B&#39;: {0: True}, &#39;-&#39;: {&#39;m&#39;: {0: True}, &#39;d&#39;: {0: True}, &#39;H&#39;: {0: True}, &#39;I&#39;: {0: True}}, &#39;I&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;W&#39;: {0: True}, &#39;H&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;M&#39;: {&#39;:&#39;: {&#39;%&#39;: {&#39;S&#39;: {0: True}}}}}}}, &#39;a&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.INVERSE_TIME_TRIE"></a>
+    
+    
+
+                            </div>
                             <div id="Trino.Generator.can_identify" class="classattr">
                                         <input id="Trino.Generator.can_identify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -256,11 +667,215 @@ Default: True</li>
 
 
                             </div>
+                            <div id="Trino.Generator.QUOTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_START</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.QUOTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.QUOTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">QUOTE_END</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.QUOTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.IDENTIFIER_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_START</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.IDENTIFIER_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.IDENTIFIER_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_END</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.IDENTIFIER_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.STRING_ESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">STRING_ESCAPE</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.STRING_ESCAPE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.IDENTIFIER_ESCAPE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">IDENTIFIER_ESCAPE</span>        =
+<span class="default_value">&#39;&#34;&#39;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.IDENTIFIER_ESCAPE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.BIT_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.BIT_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.BIT_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BIT_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.BIT_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.HEX_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">&#34;X&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.HEX_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.HEX_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">&#34;&#39;&#34;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.HEX_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.BYTE_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.BYTE_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.BYTE_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">BYTE_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.BYTE_END"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.RAW_START" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_START</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.RAW_START"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.RAW_END" class="classattr">
+                                <div class="attr variable">
+            <span class="name">RAW_END</span><span class="annotation">: Optional[str]</span>        =
+<span class="default_value">None</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.RAW_END"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../generator.html#Generator">sqlglot.generator.Generator</a></dt>
                                 <dd id="Trino.Generator.__init__" class="function"><a href="../generator.html#Generator.__init__">Generator</a></dd>
+                <dd id="Trino.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
+                <dd id="Trino.Generator.LOCKING_READS_SUPPORTED" class="variable"><a href="../generator.html#Generator.LOCKING_READS_SUPPORTED">LOCKING_READS_SUPPORTED</a></dd>
+                <dd id="Trino.Generator.EXPLICIT_UNION" class="variable"><a href="../generator.html#Generator.EXPLICIT_UNION">EXPLICIT_UNION</a></dd>
+                <dd id="Trino.Generator.WRAP_DERIVED_VALUES" class="variable"><a href="../generator.html#Generator.WRAP_DERIVED_VALUES">WRAP_DERIVED_VALUES</a></dd>
+                <dd id="Trino.Generator.CREATE_FUNCTION_RETURN_AS" class="variable"><a href="../generator.html#Generator.CREATE_FUNCTION_RETURN_AS">CREATE_FUNCTION_RETURN_AS</a></dd>
+                <dd id="Trino.Generator.MATCHED_BY_SOURCE" class="variable"><a href="../generator.html#Generator.MATCHED_BY_SOURCE">MATCHED_BY_SOURCE</a></dd>
+                <dd id="Trino.Generator.SINGLE_STRING_INTERVAL" class="variable"><a href="../generator.html#Generator.SINGLE_STRING_INTERVAL">SINGLE_STRING_INTERVAL</a></dd>
+                <dd id="Trino.Generator.TABLESAMPLE_WITH_METHOD" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_WITH_METHOD">TABLESAMPLE_WITH_METHOD</a></dd>
+                <dd id="Trino.Generator.TABLESAMPLE_SIZE_IS_PERCENT" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_SIZE_IS_PERCENT">TABLESAMPLE_SIZE_IS_PERCENT</a></dd>
+                <dd id="Trino.Generator.LIMIT_FETCH" class="variable"><a href="../generator.html#Generator.LIMIT_FETCH">LIMIT_FETCH</a></dd>
+                <dd id="Trino.Generator.RENAME_TABLE_WITH_DB" class="variable"><a href="../generator.html#Generator.RENAME_TABLE_WITH_DB">RENAME_TABLE_WITH_DB</a></dd>
+                <dd id="Trino.Generator.GROUPINGS_SEP" class="variable"><a href="../generator.html#Generator.GROUPINGS_SEP">GROUPINGS_SEP</a></dd>
+                <dd id="Trino.Generator.INDEX_ON" class="variable"><a href="../generator.html#Generator.INDEX_ON">INDEX_ON</a></dd>
+                <dd id="Trino.Generator.STAR_MAPPING" class="variable"><a href="../generator.html#Generator.STAR_MAPPING">STAR_MAPPING</a></dd>
+                <dd id="Trino.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
+                <dd id="Trino.Generator.TOKEN_MAPPING" class="variable"><a href="../generator.html#Generator.TOKEN_MAPPING">TOKEN_MAPPING</a></dd>
+                <dd id="Trino.Generator.PARAMETER_TOKEN" class="variable"><a href="../generator.html#Generator.PARAMETER_TOKEN">PARAMETER_TOKEN</a></dd>
+                <dd id="Trino.Generator.RESERVED_KEYWORDS" class="variable"><a href="../generator.html#Generator.RESERVED_KEYWORDS">RESERVED_KEYWORDS</a></dd>
+                <dd id="Trino.Generator.WITH_SEPARATED_COMMENTS" class="variable"><a href="../generator.html#Generator.WITH_SEPARATED_COMMENTS">WITH_SEPARATED_COMMENTS</a></dd>
+                <dd id="Trino.Generator.UNWRAPPED_INTERVAL_VALUES" class="variable"><a href="../generator.html#Generator.UNWRAPPED_INTERVAL_VALUES">UNWRAPPED_INTERVAL_VALUES</a></dd>
+                <dd id="Trino.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
+                <dd id="Trino.Generator.UNNEST_COLUMN_ONLY" class="variable"><a href="../generator.html#Generator.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Trino.Generator.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../generator.html#Generator.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Trino.Generator.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../generator.html#Generator.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Trino.Generator.NORMALIZE_FUNCTIONS" class="variable"><a href="../generator.html#Generator.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Trino.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
+                <dd id="Trino.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
+                <dd id="Trino.Generator.normalize" class="variable"><a href="../generator.html#Generator.normalize">normalize</a></dd>
+                <dd id="Trino.Generator.pad" class="variable"><a href="../generator.html#Generator.pad">pad</a></dd>
+                <dd id="Trino.Generator.unsupported_level" class="variable"><a href="../generator.html#Generator.unsupported_level">unsupported_level</a></dd>
+                <dd id="Trino.Generator.max_unsupported" class="variable"><a href="../generator.html#Generator.max_unsupported">max_unsupported</a></dd>
+                <dd id="Trino.Generator.leading_comma" class="variable"><a href="../generator.html#Generator.leading_comma">leading_comma</a></dd>
+                <dd id="Trino.Generator.max_text_width" class="variable"><a href="../generator.html#Generator.max_text_width">max_text_width</a></dd>
+                <dd id="Trino.Generator.comments" class="variable"><a href="../generator.html#Generator.comments">comments</a></dd>
+                <dd id="Trino.Generator.normalize_functions" class="variable"><a href="../generator.html#Generator.normalize_functions">normalize_functions</a></dd>
+                <dd id="Trino.Generator.unsupported_messages" class="variable"><a href="../generator.html#Generator.unsupported_messages">unsupported_messages</a></dd>
                 <dd id="Trino.Generator.generate" class="function"><a href="../generator.html#Generator.generate">generate</a></dd>
                 <dd id="Trino.Generator.unsupported" class="function"><a href="../generator.html#Generator.unsupported">unsupported</a></dd>
                 <dd id="Trino.Generator.sep" class="function"><a href="../generator.html#Generator.sep">sep</a></dd>
@@ -337,6 +952,8 @@ Default: True</li>
                 <dd id="Trino.Generator.onconflict_sql" class="function"><a href="../generator.html#Generator.onconflict_sql">onconflict_sql</a></dd>
                 <dd id="Trino.Generator.returning_sql" class="function"><a href="../generator.html#Generator.returning_sql">returning_sql</a></dd>
                 <dd id="Trino.Generator.rowformatdelimitedproperty_sql" class="function"><a href="../generator.html#Generator.rowformatdelimitedproperty_sql">rowformatdelimitedproperty_sql</a></dd>
+                <dd id="Trino.Generator.withtablehint_sql" class="function"><a href="../generator.html#Generator.withtablehint_sql">withtablehint_sql</a></dd>
+                <dd id="Trino.Generator.indextablehint_sql" class="function"><a href="../generator.html#Generator.indextablehint_sql">indextablehint_sql</a></dd>
                 <dd id="Trino.Generator.table_sql" class="function"><a href="../generator.html#Generator.table_sql">table_sql</a></dd>
                 <dd id="Trino.Generator.tablesample_sql" class="function"><a href="../generator.html#Generator.tablesample_sql">tablesample_sql</a></dd>
                 <dd id="Trino.Generator.pivot_sql" class="function"><a href="../generator.html#Generator.pivot_sql">pivot_sql</a></dd>
@@ -500,10 +1117,20 @@ Default: True</li>
 
             </div>
             <div><dt><a href="presto.html#Presto.Generator">sqlglot.dialects.presto.Presto.Generator</a></dt>
-                                <dd id="Trino.Generator.interval_sql" class="function"><a href="presto.html#Presto.Generator.interval_sql">interval_sql</a></dd>
+                                <dd id="Trino.Generator.INTERVAL_ALLOWS_PLURAL_FORM" class="variable"><a href="presto.html#Presto.Generator.INTERVAL_ALLOWS_PLURAL_FORM">INTERVAL_ALLOWS_PLURAL_FORM</a></dd>
+                <dd id="Trino.Generator.JOIN_HINTS" class="variable"><a href="presto.html#Presto.Generator.JOIN_HINTS">JOIN_HINTS</a></dd>
+                <dd id="Trino.Generator.TABLE_HINTS" class="variable"><a href="presto.html#Presto.Generator.TABLE_HINTS">TABLE_HINTS</a></dd>
+                <dd id="Trino.Generator.IS_BOOL_ALLOWED" class="variable"><a href="presto.html#Presto.Generator.IS_BOOL_ALLOWED">IS_BOOL_ALLOWED</a></dd>
+                <dd id="Trino.Generator.STRUCT_DELIMITER" class="variable"><a href="presto.html#Presto.Generator.STRUCT_DELIMITER">STRUCT_DELIMITER</a></dd>
+                <dd id="Trino.Generator.PROPERTIES_LOCATION" class="variable"><a href="presto.html#Presto.Generator.PROPERTIES_LOCATION">PROPERTIES_LOCATION</a></dd>
+                <dd id="Trino.Generator.TYPE_MAPPING" class="variable"><a href="presto.html#Presto.Generator.TYPE_MAPPING">TYPE_MAPPING</a></dd>
+                <dd id="Trino.Generator.interval_sql" class="function"><a href="presto.html#Presto.Generator.interval_sql">interval_sql</a></dd>
                 <dd id="Trino.Generator.transaction_sql" class="function"><a href="presto.html#Presto.Generator.transaction_sql">transaction_sql</a></dd>
                 <dd id="Trino.Generator.generateseries_sql" class="function"><a href="presto.html#Presto.Generator.generateseries_sql">generateseries_sql</a></dd>
                 <dd id="Trino.Generator.offset_limit_modifiers" class="function"><a href="presto.html#Presto.Generator.offset_limit_modifiers">offset_limit_modifiers</a></dd>
+                <dd id="Trino.Generator.INDEX_OFFSET" class="variable"><a href="presto.html#Presto.Generator.INDEX_OFFSET">INDEX_OFFSET</a></dd>
+                <dd id="Trino.Generator.STRICT_STRING_CONCAT" class="variable"><a href="presto.html#Presto.Generator.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
+                <dd id="Trino.Generator.NULL_ORDERING" class="variable"><a href="presto.html#Presto.Generator.NULL_ORDERING">NULL_ORDERING</a></dd>
 
             </div>
                                 </dl>
@@ -527,13 +1154,48 @@ Default: True</li>
 
     
 
+                            <div id="Trino.Tokenizer.HEX_STRINGS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">HEX_STRINGS</span>        =
+<span class="default_value">[(&#34;X&#39;&#34;, &#34;&#39;&#34;)]</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Tokenizer.HEX_STRINGS"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a></dt>
-                                <dd id="Trino.Tokenizer.reset" class="function"><a href="../tokens.html#Tokenizer.reset">reset</a></dd>
+                                <dd id="Trino.Tokenizer.SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.SINGLE_TOKENS">SINGLE_TOKENS</a></dd>
+                <dd id="Trino.Tokenizer.BIT_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BIT_STRINGS">BIT_STRINGS</a></dd>
+                <dd id="Trino.Tokenizer.BYTE_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BYTE_STRINGS">BYTE_STRINGS</a></dd>
+                <dd id="Trino.Tokenizer.RAW_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.RAW_STRINGS">RAW_STRINGS</a></dd>
+                <dd id="Trino.Tokenizer.IDENTIFIERS" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS">IDENTIFIERS</a></dd>
+                <dd id="Trino.Tokenizer.IDENTIFIER_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIER_ESCAPES">IDENTIFIER_ESCAPES</a></dd>
+                <dd id="Trino.Tokenizer.QUOTES" class="variable"><a href="../tokens.html#Tokenizer.QUOTES">QUOTES</a></dd>
+                <dd id="Trino.Tokenizer.STRING_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.STRING_ESCAPES">STRING_ESCAPES</a></dd>
+                <dd id="Trino.Tokenizer.VAR_SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.VAR_SINGLE_TOKENS">VAR_SINGLE_TOKENS</a></dd>
+                <dd id="Trino.Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Trino.Tokenizer.WHITE_SPACE" class="variable"><a href="../tokens.html#Tokenizer.WHITE_SPACE">WHITE_SPACE</a></dd>
+                <dd id="Trino.Tokenizer.COMMANDS" class="variable"><a href="../tokens.html#Tokenizer.COMMANDS">COMMANDS</a></dd>
+                <dd id="Trino.Tokenizer.COMMAND_PREFIX_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.COMMAND_PREFIX_TOKENS">COMMAND_PREFIX_TOKENS</a></dd>
+                <dd id="Trino.Tokenizer.NUMERIC_LITERALS" class="variable"><a href="../tokens.html#Tokenizer.NUMERIC_LITERALS">NUMERIC_LITERALS</a></dd>
+                <dd id="Trino.Tokenizer.ENCODE" class="variable"><a href="../tokens.html#Tokenizer.ENCODE">ENCODE</a></dd>
+                <dd id="Trino.Tokenizer.COMMENTS" class="variable"><a href="../tokens.html#Tokenizer.COMMENTS">COMMENTS</a></dd>
+                <dd id="Trino.Tokenizer.reset" class="function"><a href="../tokens.html#Tokenizer.reset">reset</a></dd>
                 <dd id="Trino.Tokenizer.tokenize" class="function"><a href="../tokens.html#Tokenizer.tokenize">tokenize</a></dd>
                 <dd id="Trino.Tokenizer.peek" class="function"><a href="../tokens.html#Tokenizer.peek">peek</a></dd>
+                <dd id="Trino.Tokenizer.size" class="variable"><a href="../tokens.html#Tokenizer.size">size</a></dd>
+                <dd id="Trino.Tokenizer.sql" class="variable"><a href="../tokens.html#Tokenizer.sql">sql</a></dd>
+                <dd id="Trino.Tokenizer.tokens" class="variable"><a href="../tokens.html#Tokenizer.tokens">tokens</a></dd>
+
+            </div>
+            <div><dt><a href="presto.html#Presto.Tokenizer">sqlglot.dialects.presto.Presto.Tokenizer</a></dt>
+                                <dd id="Trino.Tokenizer.KEYWORDS" class="variable"><a href="presto.html#Presto.Tokenizer.KEYWORDS">KEYWORDS</a></dd>
 
             </div>
                                 </dl>

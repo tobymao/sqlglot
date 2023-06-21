@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 13.1.1"/>
+    <meta name="generator" content="pdoc 14.0.0"/>
     <title>sqlglot.executor.table API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -37,6 +37,21 @@
                                 <a class="function" href="#Table.__init__">Table</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Table.columns">columns</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Table.column_range">column_range</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Table.reader">reader</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Table.rows">rows</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Table.range_reader">range_reader</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Table.add_columns">add_columns</a>
                         </li>
                         <li>
@@ -44,6 +59,9 @@
                         </li>
                         <li>
                                 <a class="function" href="#Table.pop">pop</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Table.width">width</a>
                         </li>
                 </ul>
 
@@ -54,6 +72,12 @@
                         <li>
                                 <a class="function" href="#TableIter.__init__">TableIter</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#TableIter.table">table</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#TableIter.index">index</a>
+                        </li>
                 </ul>
 
             </li>
@@ -63,6 +87,12 @@
                         <li>
                                 <a class="function" href="#RangeReader.__init__">RangeReader</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#RangeReader.table">table</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#RangeReader.range">range</a>
+                        </li>
                 </ul>
 
             </li>
@@ -71,6 +101,12 @@
                             <ul class="memberlist">
                         <li>
                                 <a class="function" href="#RowReader.__init__">RowReader</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#RowReader.columns">columns</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#RowReader.row">row</a>
                         </li>
                 </ul>
 
@@ -342,6 +378,61 @@
     
 
                             </div>
+                            <div id="Table.columns" class="classattr">
+                                <div class="attr variable">
+            <span class="name">columns</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Table.columns"></a>
+    
+    
+
+                            </div>
+                            <div id="Table.column_range" class="classattr">
+                                <div class="attr variable">
+            <span class="name">column_range</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Table.column_range"></a>
+    
+    
+
+                            </div>
+                            <div id="Table.reader" class="classattr">
+                                <div class="attr variable">
+            <span class="name">reader</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Table.reader"></a>
+    
+    
+
+                            </div>
+                            <div id="Table.rows" class="classattr">
+                                <div class="attr variable">
+            <span class="name">rows</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Table.rows"></a>
+    
+    
+
+                            </div>
+                            <div id="Table.range_reader" class="classattr">
+                                <div class="attr variable">
+            <span class="name">range_reader</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Table.range_reader"></a>
+    
+    
+
+                            </div>
                             <div id="Table.add_columns" class="classattr">
                                         <input id="Table.add_columns-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -405,6 +496,17 @@
     
 
                             </div>
+                            <div id="Table.width" class="classattr">
+                                <div class="attr variable">
+            <span class="name">width</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Table.width"></a>
+    
+    
+
+                            </div>
                 </section>
                 <section id="TableIter">
                             <input id="TableIter-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -454,6 +556,28 @@
     
 
                             </div>
+                            <div id="TableIter.table" class="classattr">
+                                <div class="attr variable">
+            <span class="name">table</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TableIter.table"></a>
+    
+    
+
+                            </div>
+                            <div id="TableIter.index" class="classattr">
+                                <div class="attr variable">
+            <span class="name">index</span>
+
+        
+    </div>
+    <a class="headerlink" href="#TableIter.index"></a>
+    
+    
+
+                            </div>
                 </section>
                 <section id="RangeReader">
                             <input id="RangeReader-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -497,6 +621,28 @@
 </span></pre></div>
 
 
+    
+
+                            </div>
+                            <div id="RangeReader.table" class="classattr">
+                                <div class="attr variable">
+            <span class="name">table</span>
+
+        
+    </div>
+    <a class="headerlink" href="#RangeReader.table"></a>
+    
+    
+
+                            </div>
+                            <div id="RangeReader.range" class="classattr">
+                                <div class="attr variable">
+            <span class="name">range</span>
+
+        
+    </div>
+    <a class="headerlink" href="#RangeReader.range"></a>
+    
     
 
                             </div>
@@ -547,6 +693,28 @@
     
 
                             </div>
+                            <div id="RowReader.columns" class="classattr">
+                                <div class="attr variable">
+            <span class="name">columns</span>
+
+        
+    </div>
+    <a class="headerlink" href="#RowReader.columns"></a>
+    
+    
+
+                            </div>
+                            <div id="RowReader.row" class="classattr">
+                                <div class="attr variable">
+            <span class="name">row</span>
+
+        
+    </div>
+    <a class="headerlink" href="#RowReader.row"></a>
+    
+    
+
+                            </div>
                 </section>
                 <section id="Tables">
                             <input id="Tables-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
@@ -590,6 +758,10 @@ For example, a generic mapping type might be defined as::</p>
                                 <dl>
                                     <div><dt><a href="../schema.html#AbstractMappingSchema">sqlglot.schema.AbstractMappingSchema</a></dt>
                                 <dd id="Tables.__init__" class="function"><a href="../schema.html#AbstractMappingSchema.__init__">AbstractMappingSchema</a></dd>
+                <dd id="Tables.mapping" class="variable"><a href="../schema.html#AbstractMappingSchema.mapping">mapping</a></dd>
+                <dd id="Tables.mapping_trie" class="variable"><a href="../schema.html#AbstractMappingSchema.mapping_trie">mapping_trie</a></dd>
+                <dd id="Tables.empty" class="variable"><a href="../schema.html#AbstractMappingSchema.empty">empty</a></dd>
+                <dd id="Tables.supported_table_args" class="variable"><a href="../schema.html#AbstractMappingSchema.supported_table_args">supported_table_args</a></dd>
                 <dd id="Tables.table_parts" class="function"><a href="../schema.html#AbstractMappingSchema.table_parts">table_parts</a></dd>
                 <dd id="Tables.find" class="function"><a href="../schema.html#AbstractMappingSchema.find">find</a></dd>
                 <dd id="Tables.nested_get" class="function"><a href="../schema.html#AbstractMappingSchema.nested_get">nested_get</a></dd>

@@ -580,6 +580,7 @@ class TestExecutor(unittest.TestCase):
             ("INTERVAL '1' week", datetime.timedelta(weeks=1)),
             ("1 IN (1, 2, 3)", True),
             ("1 IN (2, 3)", False),
+            ("1 IN (1)", True),
             ("NULL IS NULL", True),
             ("NULL IS NOT NULL", False),
             ("NULL = NULL", None),

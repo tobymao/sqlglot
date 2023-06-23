@@ -163,6 +163,7 @@ ENV = {
     "IF": lambda predicate, true, false: true if predicate else false,
     "INTDIV": null_if_any(lambda e, this: e // this),
     "INTERVAL": interval,
+    "LEFT": null_if_any(lambda this, e: this[:e]),
     "LIKE": null_if_any(
         lambda this, e: bool(re.match(e.replace("_", ".").replace("%", ".*"), this))
     ),
@@ -176,6 +177,7 @@ ENV = {
     "ORD": null_if_any(ord),
     "ORDERED": ordered,
     "POW": pow,
+    "RIGHT": null_if_any(lambda this, e: this[-e:]),
     "STRPOSITION": str_position,
     "SUB": null_if_any(lambda e, this: e - this),
     "SUBSTRING": substring,

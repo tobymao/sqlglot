@@ -613,6 +613,8 @@ class TestExecutor(unittest.TestCase):
             ("STRFTIME('%j', NULL)", None),
             ("DATESTRTODATE('2022-01-01')", date(2022, 1, 1)),
             ("TIMESTRTOTIME('2022-01-01')", datetime.datetime(2022, 1, 1)),
+            ("LEFT('12345', 3)", "123"),
+            ("RIGHT('12345', 3)", "345"),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

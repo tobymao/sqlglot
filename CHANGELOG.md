@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v16.4.2] - 2023-06-23
+### :sparkles: New Features
+- [`91ebaf5`](https://github.com/tobymao/sqlglot/commit/91ebaf5c36780e68bed26dec5f57b63d831634ea) - **snowflake**: add support for BYTEINT type *(PR [#1819](https://github.com/tobymao/sqlglot/pull/1819) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#1818](undefined) opened by [@criccomini](https://github.com/criccomini)*
+- [`2367bfc`](https://github.com/tobymao/sqlglot/commit/2367bfc2d9e0a43ebf37e37cfc4711c9e243cb89) - make table_name more robust by quoting unsafe parts *(PR [#1820](https://github.com/tobymao/sqlglot/pull/1820) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`5572e76`](https://github.com/tobymao/sqlglot/commit/5572e768ac1af31f743fb4a0fae5a1e73569f167) - execute LEFT and RIGHT *(PR [#1821](https://github.com/tobymao/sqlglot/pull/1821) by [@barakalon](https://github.com/barakalon))*
+
+
 ## [v16.4.1] - 2023-06-23
 ### :sparkles: New Features
 - [`088e745`](https://github.com/tobymao/sqlglot/commit/088e745b83358080dacda2ade79ede5cbb09c99d) - **databricks**: add support for REPLACE WHERE in INSERT statement *(PR [#1817](https://github.com/tobymao/sqlglot/pull/1817) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -615,3 +623,4 @@ Changelog
 [v16.3.1]: https://github.com/tobymao/sqlglot/compare/v16.3.0...v16.3.1
 [v16.4.0]: https://github.com/tobymao/sqlglot/compare/v16.3.1...v16.4.0
 [v16.4.1]: https://github.com/tobymao/sqlglot/compare/v16.4.0...v16.4.1
+[v16.4.2]: https://github.com/tobymao/sqlglot/compare/v16.4.1...v16.4.2

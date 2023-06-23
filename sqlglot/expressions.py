@@ -5710,7 +5710,7 @@ def table_name(table: Table | str, dialect: DialectType = None) -> str:
 
     Args:
         table: Table expression node or string.
-        dialect: The dialect to generate the table name into.
+        dialect: The dialect to generate the table name for.
 
     Examples:
         >>> from sqlglot import exp, parse_one

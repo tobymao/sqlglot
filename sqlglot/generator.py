@@ -912,7 +912,7 @@ class Generator:
         return f"{prefix}{string}"
 
     def partition_sql(self, expression: exp.Partition) -> str:
-        return f"PARTITION({self.expressions(expression)})"
+        return f"PARTITION({self.expressions(expression, flat=True)})"
 
     def properties_sql(self, expression: exp.Properties) -> str:
         root_properties = []
@@ -1102,23 +1102,24 @@ class Generator:
         overwrite = expression.args.get("overwrite")
 
         if isinstance(expression.this, exp.Directory):
-            this = "OVERWRITE " if overwrite else "INTO "
+            this = " OVERWRITE" if overwrite else " INTO"
         else:
-            this = "OVERWRITE TABLE " if overwrite else "INTO "
+            this = " OVERWRITE TABLE" if overwrite else " INTO"
 
         alternative = expression.args.get("alternative")
-        alternative = f" OR {alternative} " if alternative else " "
-        this = f"{this}{self.sql(expression, 'this')}"
+        alternative = f" OR {alternative}" if alternative else ""
+        this = f"{this} {self.sql(expression, 'this')}"
 
-        exists = " IF EXISTS " if expression.args.get("exists") else " "
+        exists = " IF EXISTS" if expression.args.get("exists") else ""
         partition_sql = (
-            self.sql(expression, "partition") if expression.args.get("partition") else ""
+            f" {self.sql(expression, 'partition')}" if expression.args.get("partition") else ""
         )
-        expression_sql = self.sql(expression, "expression")
+        where = self.sql(expression, "where")
+        where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
+        expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         conflict = self.sql(expression, "conflict")
         returning = self.sql(expression, "returning")
-        sep = self.sep() if partition_sql else ""
-        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{sep}{expression_sql}{conflict}{returning}"
+        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{where}{expression_sql}{conflict}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:

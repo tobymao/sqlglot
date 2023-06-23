@@ -1528,6 +1528,7 @@ class Insert(Expression):
         "exists": False,
         "partition": False,
         "alternative": False,
+        "where": False,
     }
 
     def with_(

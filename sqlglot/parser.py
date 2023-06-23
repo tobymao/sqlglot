@@ -1677,6 +1677,8 @@ class Parser(metaclass=_Parser):
             this=this,
             exists=self._parse_exists(),
             partition=self._parse_partition(),
+            where=self._match_pair(TokenType.REPLACE, TokenType.WHERE)
+            and self._parse_conjunction(),
             expression=self._parse_ddl_select(),
             conflict=self._parse_on_conflict(),
             returning=self._parse_returning(),

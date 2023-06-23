@@ -178,9 +178,22 @@ FROM (
 ) AS x;
 
 INSERT OVERWRITE TABLE x VALUES (1, 2.0, '3.0'), (4, 5.0, '6.0');
-INSERT OVERWRITE TABLE x VALUES
+INSERT OVERWRITE TABLE x
+VALUES
   (1, 2.0, '3.0'),
   (4, 5.0, '6.0');
+
+INSERT INTO TABLE foo REPLACE WHERE cond SELECT * FROM bar;
+INSERT INTO foo
+REPLACE WHERE cond
+SELECT
+  *
+FROM bar;
+
+INSERT OVERWRITE TABLE zipcodes PARTITION(state = '0') VALUES (896, 'US', 'TAMPA', 33607);
+INSERT OVERWRITE TABLE zipcodes PARTITION(state = '0')
+VALUES
+  (896, 'US', 'TAMPA', 33607);
 
 WITH regional_sales AS (
     SELECT region, SUM(amount) AS total_sales

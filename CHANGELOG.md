@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v16.4.1] - 2023-06-23
+### :sparkles: New Features
+- [`088e745`](https://github.com/tobymao/sqlglot/commit/088e745b83358080dacda2ade79ede5cbb09c99d) - **databricks**: add support for REPLACE WHERE in INSERT statement *(PR [#1817](https://github.com/tobymao/sqlglot/pull/1817) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`8079b50`](https://github.com/tobymao/sqlglot/commit/8079b50818d12cf1cceaea24bd81163cd834a27a) - **executor**: ensure IN clause can work with a single value *(PR [#1815](https://github.com/tobymao/sqlglot/pull/1815) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#892](undefined) opened by [@treysp](https://github.com/treysp)*
+
+
 ## [v16.4.0] - 2023-06-21
 ### :boom: BREAKING CHANGES
 - due to [`1db023f`](https://github.com/tobymao/sqlglot/commit/1db023fb2135f28e09ddd757b3b16dfcf3454916) - simplify mypy type hints for parse_one *(PR [#1797](https://github.com/tobymao/sqlglot/pull/1797) by [@GeorgeSittas](https://github.com/GeorgeSittas))*:
@@ -605,3 +614,4 @@ Changelog
 [v16.3.0]: https://github.com/tobymao/sqlglot/compare/v16.2.1...v16.3.0
 [v16.3.1]: https://github.com/tobymao/sqlglot/compare/v16.3.0...v16.3.1
 [v16.4.0]: https://github.com/tobymao/sqlglot/compare/v16.3.1...v16.4.0
+[v16.4.1]: https://github.com/tobymao/sqlglot/compare/v16.4.0...v16.4.1

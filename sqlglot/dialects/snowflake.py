@@ -275,6 +275,7 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "BYTEINT": TokenType.INT,
             "CHAR VARYING": TokenType.VARCHAR,
             "CHARACTER VARYING": TokenType.VARCHAR,
             "EXCLUDE": TokenType.EXCEPT,

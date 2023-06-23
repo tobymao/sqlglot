@@ -5705,11 +5705,12 @@ def column_table_names(expression: Expression, exclude: str = "") -> t.Set[str]:
     }
 
 
-def table_name(table: Table | str) -> str:
+def table_name(table: Table | str, dialect: DialectType = None) -> str:
     """Get the full name of a table as a string.
 
     Args:
-        table: table expression node or string.
+        table: Table expression node or string.
+        dialect: The dialect to generate the table name for.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -5725,7 +5726,10 @@ def table_name(table: Table | str) -> str:
     if not table:
         raise ValueError(f"Cannot parse {table}")
 
-    return ".".join(part for part in (table.text("catalog"), table.text("db"), table.name) if part)
+    return ".".join(
+        part.sql(dialect=dialect) if not SAFE_IDENTIFIER_RE.match(part.name) else part.name
+        for part in table.parts
+    )
 
 
 def replace_tables(expression: E, mapping: t.Dict[str, str], copy: bool = True) -> E:

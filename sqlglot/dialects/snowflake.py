@@ -258,14 +258,14 @@ class Snowflake(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
-            "UNSET": lambda self: self._parse_alter_table_set_tag(unset=True),
-            "SET": lambda self: self._parse_alter_table_set_tag(),
+            "SET": lambda self: self._parse_set(tag=self._match_text_seq("TAG")),
+            "UNSET": lambda self: self.expression(
+                exp.Set,
+                tag=self._match_text_seq("TAG"),
+                expressions=self._parse_csv(self._parse_id_var),
+                unset=True,
+            ),
         }
-
-        def _parse_alter_table_set_tag(self, unset: bool = False) -> exp.Expression:
-            self._match_text_seq("TAG")
-            parser = t.cast(t.Callable, self._parse_id_var if unset else self._parse_conjunction)
-            return self.expression(exp.SetTag, expressions=self._parse_csv(parser), unset=unset)
 
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
@@ -379,10 +379,6 @@ class Snowflake(Dialect):
             if not expression.args.get("distinct", False):
                 self.unsupported("INTERSECT with All is not supported in Snowflake")
             return super().intersect_op(expression)
-
-        def settag_sql(self, expression: exp.SetTag) -> str:
-            action = "UNSET" if expression.args.get("unset") else "SET"
-            return f"{action} TAG {self.expressions(expression)}"
 
         def describe_sql(self, expression: exp.Describe) -> str:
             # Default to table if kind is unknown

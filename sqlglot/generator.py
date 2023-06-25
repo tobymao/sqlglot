@@ -1408,7 +1408,8 @@ class Generator:
         expressions = (
             f" {self.expressions(expression, flat=True)}" if expression.expressions else ""
         )
-        return f"SET{expressions}"
+        tag = " TAG" if expression.args.get("tag") else ""
+        return f"{'UNSET' if expression.args.get('unset') else 'SET'}{tag}{expressions}"
 
     def pragma_sql(self, expression: exp.Pragma) -> str:
         return f"PRAGMA {self.sql(expression, 'this')}"

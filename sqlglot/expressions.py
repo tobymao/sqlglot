@@ -1013,7 +1013,7 @@ class Pragma(Expression):
 
 
 class Set(Expression):
-    arg_types = {"expressions": False}
+    arg_types = {"expressions": False, "unset": False, "tag": False}
 
 
 class SetItem(Expression):
@@ -1166,10 +1166,6 @@ class AlterColumn(Expression):
 
 class RenameTable(Expression):
     pass
-
-
-class SetTag(Expression):
-    arg_types = {"expressions": True, "unset": False}
 
 
 class Comment(Expression):

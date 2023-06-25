@@ -4394,8 +4394,8 @@ class Parser(metaclass=_Parser):
 
         if self._next:
             self._advance()
-        parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
 
+        parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:
             actions = ensure_list(parser(self))
 
@@ -4516,9 +4516,11 @@ class Parser(metaclass=_Parser):
         parser = self._find_parser(self.SET_PARSERS, self.SET_TRIE)
         return parser(self) if parser else self._parse_set_item_assignment(kind=None)
 
-    def _parse_set(self) -> exp.Set | exp.Command:
+    def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
         index = self._index
-        set_ = self.expression(exp.Set, expressions=self._parse_csv(self._parse_set_item))
+        set_ = self.expression(
+            exp.Set, expressions=self._parse_csv(self._parse_set_item), unset=unset, tag=tag
+        )
 
         if self._curr:
             self._retreat(index)

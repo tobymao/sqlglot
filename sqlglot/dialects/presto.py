@@ -20,7 +20,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.errors import UnsupportedError
-from sqlglot.helper import seq_get
+from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -154,6 +154,13 @@ def _from_unixtime(args: t.List) -> exp.Expression:
     return exp.UnixToTime.from_arg_list(args)
 
 
+def _parse_element_at(args: t.List) -> exp.SafeBracket:
+    this = seq_get(args, 0)
+    index = seq_get(args, 1)
+    assert isinstance(this, exp.Expression) and isinstance(index, exp.Expression)
+    return exp.SafeBracket(this=this, expressions=apply_index_offset(this, [index], -1))
+
+
 def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Table):
         if isinstance(expression.this, exp.GenerateSeries):
@@ -201,6 +208,7 @@ class Presto(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
             "DATE_TRUNC": date_trunc_to_time,
+            "ELEMENT_AT": _parse_element_at,
             "FROM_HEX": exp.Unhex.from_arg_list,
             "FROM_UNIXTIME": _from_unixtime,
             "FROM_UTF8": lambda args: exp.Decode(
@@ -285,6 +293,9 @@ class Presto(Dialect):
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
             exp.Right: right_to_substring_sql,
+            exp.SafeBracket: lambda self, e: self.func(
+                "ELEMENT_AT", e.this, seq_get(apply_index_offset(e.this, e.expressions, 1), 0)
+            ),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.Select: transforms.preprocess(

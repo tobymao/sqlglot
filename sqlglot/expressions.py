@@ -3712,6 +3712,10 @@ class Bracket(Condition):
     arg_types = {"this": True, "expressions": True}
 
 
+class SafeBracket(Bracket):
+    """Represents array lookup where OOB index yields NULL instead of causing a failure."""
+
+
 class Distinct(Expression):
     arg_types = {"expressions": False, "on": False}
 

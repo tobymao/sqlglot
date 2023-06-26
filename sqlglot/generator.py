@@ -1750,6 +1750,9 @@ class Generator:
 
         return f"{self.sql(expression, 'this')}[{expressions_sql}]"
 
+    def safebracket_sql(self, expression: exp.SafeBracket) -> str:
+        return self.bracket_sql(expression)
+
     def all_sql(self, expression: exp.All) -> str:
         return f"ALL {self.wrap(expression)}"
 

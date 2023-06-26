@@ -378,3 +378,11 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            """Forms like ARRAY[1, 2, 3][3] aren't allowed; we need to wrap the ARRAY."""
+            if isinstance(expression.this, exp.Array):
+                expression = expression.copy()
+                expression.set("this", exp.paren(expression.this, copy=False))
+
+            return super().bracket_sql(expression)

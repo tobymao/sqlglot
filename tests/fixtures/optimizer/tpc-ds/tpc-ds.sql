@@ -254,7 +254,7 @@ GROUP BY
   "item"."i_brand",
   "item"."i_brand_id"
 ORDER BY
-  "dt"."d_year",
+  "d_year",
   "sum_agg" DESC,
   "brand_id"
 LIMIT 100;
@@ -2767,8 +2767,8 @@ GROUP BY
   "item"."i_manufact"
 ORDER BY
   "ext_price" DESC,
-  "item"."i_brand",
-  "item"."i_brand_id",
+  "brand",
+  "brand_id",
   "i_manufact_id",
   "i_manufact"
 LIMIT 100;
@@ -5112,10 +5112,10 @@ GROUP BY
   "item"."i_category_id",
   "item"."i_category"
 ORDER BY
-  SUM("store_sales"."ss_ext_sales_price") DESC,
-  "dt"."d_year",
-  "item"."i_category_id",
-  "item"."i_category"
+  "_col_3" DESC,
+  "d_year",
+  "i_category_id",
+  "i_category"
 LIMIT 100;
 
 --------------------------------------
@@ -6353,7 +6353,7 @@ GROUP BY
   "item"."i_brand",
   "item"."i_brand_id"
 ORDER BY
-  "dt"."d_year",
+  "d_year",
   "ext_price" DESC,
   "brand_id"
 LIMIT 100;
@@ -6648,7 +6648,7 @@ GROUP BY
   "item"."i_brand_id"
 ORDER BY
   "ext_price" DESC,
-  "item"."i_brand_id"
+  "brand_id"
 LIMIT 100;
 
 --------------------------------------
@@ -7770,7 +7770,7 @@ GROUP BY
   "ship_mode"."sm_type",
   "web_site"."web_name"
 ORDER BY
-  SUBSTR("warehouse"."w_warehouse_name", 1, 20),
+  "_col_0",
   "sm_type",
   "web_name"
 LIMIT 100;
@@ -9668,7 +9668,7 @@ GROUP BY
   "time_dim"."t_minute"
 ORDER BY
   "ext_price" DESC,
-  "item"."i_brand_id";
+  "brand_id";
 
 --------------------------------------
 -- TPC-DS 72
@@ -11692,10 +11692,10 @@ JOIN "customer_demographics" AS "cd1"
 GROUP BY
   "reason"."r_reason_desc"
 ORDER BY
-  SUBSTR("reason"."r_reason_desc", 1, 20),
-  AVG("web_sales"."ws_quantity"),
-  AVG("web_returns"."wr_refunded_cash"),
-  AVG("web_returns"."wr_fee")
+  "_col_0",
+  "_col_1",
+  "_col_2",
+  "_col_3"
 LIMIT 100;
 
 --------------------------------------
@@ -12364,7 +12364,7 @@ GROUP BY
   "customer_demographics"."cd_marital_status",
   "customer_demographics"."cd_education_status"
 ORDER BY
-  SUM("catalog_returns"."cr_net_loss") DESC;
+  "returns_loss" DESC;
 
 --------------------------------------
 -- TPC-DS 92
@@ -12940,7 +12940,7 @@ GROUP BY
   "ship_mode"."sm_type",
   "call_center"."cc_name"
 ORDER BY
-  SUBSTR("warehouse"."w_warehouse_name", 1, 20),
+  "_col_0",
   "sm_type",
   "cc_name"
 LIMIT 100;

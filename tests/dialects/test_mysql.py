@@ -6,6 +6,7 @@ class TestMySQL(Validator):
     dialect = "mysql"
 
     def test_ddl(self):
+        self.validate_identity("CREATE TABLE foo (id BIGINT)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
         self.validate_identity(
@@ -49,10 +50,6 @@ class TestMySQL(Validator):
     def test_identity(self):
         self.validate_identity("CAST(x AS ENUM('a', 'b'))")
         self.validate_identity("CAST(x AS SET('a', 'b'))")
-        self.validate_identity("CAST(x AS SIGNED)", "CAST(x AS BIGINT)")
-        self.validate_identity("CAST(x AS SIGNED INTEGER)", "CAST(x AS BIGINT)")
-        self.validate_identity("CAST(x AS UNSIGNED)", "CAST(x AS UBIGINT)")
-        self.validate_identity("CAST(x AS UNSIGNED INTEGER)", "CAST(x AS UBIGINT)")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
         self.validate_identity("x ->> '$.name'")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
@@ -401,6 +398,10 @@ class TestMySQL(Validator):
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
 
     def test_mysql(self):
+        self.validate_all("CAST(x AS SIGNED)", write={"mysql": "CAST(x AS SIGNED)"})
+        self.validate_all("CAST(x AS SIGNED INTEGER)", write={"mysql": "CAST(x AS SIGNED)"})
+        self.validate_all("CAST(x AS UNSIGNED)", write={"mysql": "CAST(x AS UNSIGNED)"})
+        self.validate_all("CAST(x AS UNSIGNED INTEGER)", write={"mysql": "CAST(x AS UNSIGNED)"})
         self.validate_all(
             "SELECT * FROM t LOCK IN SHARE MODE", write={"mysql": "SELECT * FROM t FOR SHARE"}
         )

@@ -388,6 +388,11 @@ def no_comment_column_constraint_sql(
     return ""
 
 
+def no_map_from_entries_sql(self: Generator, expression: exp.MapFromEntries) -> str:
+    self.unsupported("MAP_FROM_ENTRIES unsupported")
+    return ""
+
+
 def str_position_sql(self: Generator, expression: exp.StrPosition) -> str:
     this = self.sql(expression, "this")
     substr = self.sql(expression, "substr")

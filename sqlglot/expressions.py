@@ -4292,6 +4292,10 @@ class Map(Func):
     arg_types = {"keys": False, "values": False}
 
 
+class MapFromEntries(Func):
+    pass
+
+
 class StarMap(Func):
     pass
 

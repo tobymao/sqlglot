@@ -456,6 +456,13 @@ class TestPresto(Validator):
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' WEEKS"})
         self.validate_all(
+            "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
+            write={
+                "postgres": UnsupportedError,
+                "presto": "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
+            },
+        )
+        self.validate_all(
             "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
             write={
                 "": "SELECT ARRAY(1, 2, 3)[3]",

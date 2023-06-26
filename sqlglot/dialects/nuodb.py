@@ -1,33 +1,33 @@
-from sqlglot import exp
-from sqlglot import generator
+from __future__ import annotations
+
+from sqlglot import exp, generator, tokens
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.generator import Generator
 from sqlglot.tokens import Tokenizer, TokenType
 
 
 class NuoDB(Dialect):
-
-    #* Refer to http://nuocrucible/browse/NuoDB/Omega/Parser/SQL.l?r=5926eff6ff3e077c09c390c7acc4649c81b1d27b&r=daafc63d9399e66689d0990a893fbddd115df89f&r=6ef1d2d9e253f74515bf89625434b605be6486ea
-    #? Revise so all tokens are considered
-    #? Built-in Function Names excluded
-    class Tokenizer(Tokenizer):
+    # * Refer to http://nuocrucible/browse/NuoDB/Omega/Parser/SQL.l?r=5926eff6ff3e077c09c390c7acc4649c81b1d27b&r=daafc63d9399e66689d0990a893fbddd115df89f&r=6ef1d2d9e253f74515bf89625434b605be6486ea
+    # ? Revise so all tokens are considered
+    # ? Built-in Function Names excluded
+    class Tokenizer(tokens.Tokenizer):
         QUOTES = [
-            "'", '"',
-            "N'",    # unicodequote 
-            #?
-            ]
+            "'",
+            '"',
+            "N'",  # unicodequote
+            # ?
+        ]
         COMMENTS = ["--", "//", ("/*", "*/")]
-        IDENTIFIERS = ["`", '"'] #?
+        IDENTIFIERS = ["`", '"']  # ?
         STRING_ESCAPES = ["\\"]
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
-            "BITS": TokenType.BIT,   #? Confirm "BIT" is the same as "BITS"
+            "BITS": TokenType.BIT,  # ? Confirm "BIT" is the same as "BITS"
             "BOTH": TokenType.BOTH,
             "BREAK": TokenType.BREAK,
-            "BY": TokenType.BY, #? Is this keyword required? Not already added in conjunction with other keywords?
+            "BY": TokenType.BY,  # ? Is this keyword required? Not already added in conjunction with other keywords?
             "CASCADE": TokenType.CASCADE,
             "CATCH": TokenType.CATCH,
             "CONTAINING": TokenType.CONTAINING,
@@ -39,15 +39,15 @@ class NuoDB(Dialect):
             "END_TRIGGER": TokenType.END_TRIGGER,
             "END_TRY": TokenType.END_TRY,
             "END_WHILE": TokenType.END_WHILE,
-            "FOREIGN": TokenType.FOREIGN, #? Separate keyword from FOREIGN KEY?
+            "FOREIGN": TokenType.FOREIGN,  # ? Separate keyword from FOREIGN KEY?
             "GENERATED": TokenType.GENERATED,
-            "GROUP": TokenType.GROUP, #? Separate keyword from GROUP BY?
+            "GROUP": TokenType.GROUP,  # ? Separate keyword from GROUP BY?
             "IDENTITY": TokenType.IDENTITY,
             "INOUT": TokenType.INOUT,
-            "KEY": TokenType.KEY, #? Separate keyword from FOREIGN KEY?
+            "KEY": TokenType.KEY,  # ? Separate keyword from FOREIGN KEY?
             "LEADING": TokenType.LEADING,
             "NATIONAL": TokenType.NATIONAL,
-            "NCLOB": TokenType.TEXT, #? Seems like Clob is set to be as type TEXT, so same for NCLOB?
+            "NCLOB": TokenType.TEXT,  # ? Seems like Clob is set to be as type TEXT, so same for NCLOB?
             # NEXT_VALUE #? NEXT VALUE FOR is already considered
             "OCTETS": TokenType.OCTETS,
             "OFF": TokenType.OFF,
@@ -58,31 +58,31 @@ class NuoDB(Dialect):
             "RECORD_BATCHING": TokenType.RECORD_BATCHING,
             "RECORD_NUMBER": TokenType.RECORD_NUMBER,
             "RESTRICT": TokenType.RESTRICT,
-            "RETURN": TokenType.RETURNING,  #? Same as RETURNING type?
+            "RETURN": TokenType.RETURNING,  # ? Same as RETURNING type?
             "STARTING": TokenType.STARTING,
             "THROW": TokenType.THROW,
             "TO": TokenType.TO,
             "TRAILING": TokenType.TRAILING,
             "UNKNOWN": TokenType.UNKNOWN,
-            "VAR": TokenType.VAR, #? Is VAR same as any of NCHAR, VARCHAR, NVARCHAR?
+            "VAR": TokenType.VAR,  # ? Is VAR same as any of NCHAR, VARCHAR, NVARCHAR?
             "VER": TokenType.VER,
             "WHILE": TokenType.WHILE,
             "_RECORD_ID": TokenType._RECORD_ID,
             "_RECORD_PARTITIONID": TokenType._RECORD_PARTITIONID,
             "_RECORD_SEQUENCE": TokenType._RECORD_SEQUENCE,
-            "_RECORD_TRANSACTION": TokenType._RECORD_TRANSACTION
+            "_RECORD_TRANSACTION": TokenType._RECORD_TRANSACTION,
         }
 
-        #? COMMANDS?
+        # ? COMMANDS?
 
-    class Generator(Generator):
+    class Generator(generator.Generator):
         TRANSFORMS = {exp.Array: lambda self, e: f"[{self.expressions(e)}]"}
 
         TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
 
-        #? Should all of these datatypes that NuoDB doesn't support be popped?
-        #? Seems like updating the TYPE_MAPPING such as the following is a good approach
-        '''
+        # ? Should all of these datatypes that NuoDB doesn't support be popped?
+        # ? Seems like updating the TYPE_MAPPING such as the following is a good approach
+        """
         TYPE_MAPPING = {
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.SMALLINT: "INT64",
@@ -94,10 +94,10 @@ class NuoDB(Dialect):
             exp.DataType.Type.BOOLEAN: "BOOL",
             exp.DataType.Type.TEXT: "STRING",
         }
-        '''
+        """
         # TYPE_MAPPING.pop(exp.DataType.Type.BIGDECIMAL)
         # TYPE_MAPPING.pop(exp.DataType.Type.BIGSERIAL)
-        #? BIT == BYTE ?
+        # ? BIT == BYTE ?
         # TYPE_MAPPING.pop(exp.DataType.Type.DATETIME)
         # TYPE_MAPPING.pop(exp.DataType.Type.DATETIME64)
         # TYPE_MAPPING.pop(exp.DataType.Type.ENUM)
@@ -117,4 +117,4 @@ class NuoDB(Dialect):
         # TYPE_MAPPING.pop(exp.DataType.Type.GEOGRAPHY)
         # TYPE_MAPPING.pop(exp.DataType.Type.GEOMETRY)
         # TYPE_MAPPING.pop(exp.DataType.Type.HLLSKETCH)
-        #? STILL NEED TO ADD OTHERS
+        # ? STILL NEED TO ADD OTHERS

@@ -10,7 +10,7 @@ install-pre-commit:
 	pre-commit install
 
 test:
-	python -m unittest
+	python3.8 -m unittest
 
 style:
 	pre-commit run --all-files
@@ -18,7 +18,7 @@ style:
 check: style test
 
 docs:
-	python pdoc/cli.py -o docs
+	python3.8 pdoc/cli.py -o docs
 
 docs-serve:
-	python pdoc/cli.py --port 8002
+	python3.8 pdoc/cli.py --port 8002

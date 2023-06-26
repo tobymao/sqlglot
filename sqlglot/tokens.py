@@ -163,7 +163,7 @@ class TokenType(AutoName):
     AUTO_INCREMENT = auto()
     BEGIN = auto()
     BETWEEN = auto()
-    BY = auto()     #? Is this keyword required? Not already added in conjunction with other keywords?
+    BY = auto()  # ? Is this keyword required? Not already added in conjunction with other keywords?
     BOTH = auto()
     CACHE = auto()
     CASCADE = auto()
@@ -215,7 +215,7 @@ class TokenType(AutoName):
     FIRST = auto()
     FOR = auto()
     FORCE = auto()
-    FOREIGN = auto()    #?
+    FOREIGN = auto()  # ?
     FOREIGN_KEY = auto()
     FORMAT = auto()
     FROM = auto()
@@ -224,7 +224,7 @@ class TokenType(AutoName):
     GENERATED = auto()
     GLOB = auto()
     GLOBAL = auto()
-    GROUP = auto()  #?
+    GROUP = auto()  # ?
     GROUP_BY = auto()
     GROUPING_SETS = auto()
     HAVING = auto()
@@ -348,8 +348,6 @@ class TokenType(AutoName):
     WINDOW = auto()
     WITH = auto()
     UNIQUE = auto()
-
-
 
 
 class Token:

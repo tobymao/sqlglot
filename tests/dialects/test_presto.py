@@ -1,3 +1,5 @@
+from unittest import mock
+
 from sqlglot import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
@@ -439,7 +441,8 @@ class TestPresto(Validator):
             },
         )
 
-    def test_presto(self):
+    @mock.patch("sqlglot.helper.logger")
+    def test_presto(self, mock_logger):
         self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
@@ -452,6 +455,21 @@ class TestPresto(Validator):
         self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' day"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' WEEKS"})
+        self.validate_all(
+            "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
+            write={
+                "postgres": UnsupportedError,
+                "presto": "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
+            },
+        )
+        self.validate_all(
+            "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
+            write={
+                "": "SELECT ARRAY(1, 2, 3)[3]",
+                "postgres": "SELECT (ARRAY[1, 2, 3])[4]",
+                "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
+            },
+        )
         self.validate_all(
             "SELECT SUBSTRING(a, 1, 3), SUBSTRING(a, LENGTH(a) - (3 - 1))",
             read={

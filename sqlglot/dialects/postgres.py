@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     format_time_lambda,
     max_or_greatest,
     min_or_least,
+    no_map_from_entries_sql,
     no_paren_current_date_sql,
     no_pivot_sql,
     no_tablesample_sql,
@@ -346,6 +347,7 @@ class Postgres(Dialect):
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.Max: max_or_greatest,
+            exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
@@ -378,3 +380,11 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            """Forms like ARRAY[1, 2, 3][3] aren't allowed; we need to wrap the ARRAY."""
+            if isinstance(expression.this, exp.Array):
+                expression = expression.copy()
+                expression.set("this", exp.paren(expression.this, copy=False))
+
+            return super().bracket_sql(expression)

@@ -64,6 +64,7 @@ from sqlglot.dialects.drill import Drill
 from sqlglot.dialects.duckdb import DuckDB
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.dialects.nuodb import NuoDB
 from sqlglot.dialects.oracle import Oracle
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.dialects.presto import Presto

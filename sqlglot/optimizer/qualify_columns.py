@@ -79,7 +79,7 @@ def validate_qualify_columns(expression: E) -> E:
     return expression
 
 
-def _pop_table_column_aliases(derived_tables: t.List[exp.CTE]) -> None:
+def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) -> None:
     """
     Remove table column aliases.
 

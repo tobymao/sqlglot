@@ -1119,7 +1119,7 @@ def map_entries(col: ColumnOrName) -> Column:
 
 
 def map_from_entries(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "MAP_FROM_ENTRIES")
+    return Column.invoke_expression_over_column(col, expression.MapFromEntries)
 
 
 def array_repeat(col: ColumnOrName, count: t.Union[ColumnOrName, int]) -> Column:

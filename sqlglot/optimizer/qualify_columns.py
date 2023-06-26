@@ -97,7 +97,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
     ordered = [key for key in scope.selected_sources if key not in names]
 
     # Mapping of automatically joined column names to an ordered set of source names (dict).
-    column_tables = {}
+    column_tables: t.Dict[str, t.Dict[str, t.Any]] = {}
 
     for join in joins:
         using = join.args.get("using")
@@ -296,17 +296,17 @@ def _expand_stars(
     """Expand stars to lists of column selections"""
 
     new_selections = []
-    except_columns = {}
-    replace_columns = {}
+    except_columns: t.Dict[int, t.Set[str]] = {}
+    replace_columns: t.Dict[int, t.Dict[str, str]] = {}
     coalesced_columns = set()
 
     # TODO: handle optimization of multiple PIVOTs (and possibly UNPIVOTs) in the future
     pivot_columns = None
     pivot_output_columns = None
-    pivot = seq_get(scope.pivots, 0)
+    pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
 
     has_pivoted_source = pivot and not pivot.args.get("unpivot")
-    if has_pivoted_source:
+    if pivot and has_pivoted_source:
         pivot_columns = set(col.output_name for col in pivot.find_all(exp.Column))
 
         pivot_output_columns = [col.output_name for col in pivot.args.get("columns", [])]
@@ -342,7 +342,7 @@ def _expand_stars(
                 ]
 
             if columns and "*" not in columns:
-                if has_pivoted_source:
+                if pivot and has_pivoted_source and pivot_columns and pivot_output_columns:
                     implicit_columns = [col for col in columns if col not in pivot_columns]
                     new_selections.extend(
                         exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
@@ -380,7 +380,7 @@ def _expand_stars(
 
 
 def _add_except_columns(
-    expression: exp.Expression, tables, except_columns: t.Dict[int, t.Any]
+    expression: exp.Expression, tables, except_columns: t.Dict[int, t.Set[str]]
 ) -> None:
     except_ = expression.args.get("except")
 
@@ -394,7 +394,7 @@ def _add_except_columns(
 
 
 def _add_replace_columns(
-    expression: exp.Expression, tables, replace_columns: t.Dict[int, t.Any]
+    expression: exp.Expression, tables, replace_columns: t.Dict[int, t.Dict[str, str]]
 ) -> None:
     replace = expression.args.get("replace")
 

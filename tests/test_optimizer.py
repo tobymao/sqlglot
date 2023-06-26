@@ -727,3 +727,20 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             source_query = parse_one('SELECT * FROM example."source"', read="snowflake")
             transformed = func(source_query, dialect="snowflake", schema=schema)
             self.assertEqual(transformed.sql(pretty=True, dialect="snowflake"), expected)
+
+    def test_no_pseudocolumn_expansion(self):
+        schema = {
+            "a": {
+                "a": "text",
+                "b": "text",
+                "_PARTITIONDATE": "date",
+                "_PARTITIONTIME": "timestamp",
+            }
+        }
+
+        self.assertEqual(
+            optimizer.optimize(
+                parse_one("SELECT * FROM a"), schema=MappingSchema(schema, dialect="bigquery")
+            ),
+            parse_one('SELECT "a"."a" AS "a", "a"."b" AS "b" FROM "a" AS "a"'),
+        )

@@ -222,6 +222,12 @@ def _expand_order_by(scope):
     ):
         ordered.set("this", new_expression)
 
+    if scope.expression.args.get("group"):
+        selects = {s.this: exp.column(s.alias_or_name) for s in scope.selects}
+
+        for ordered in ordereds:
+            ordered.set("this", selects.get(ordered.this, ordered.this))
+
 
 def _expand_positional_references(scope, expressions):
     new_nodes = []

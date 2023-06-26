@@ -646,3 +646,20 @@ class TestExecutor(unittest.TestCase):
 
         self.assertEqual(result.columns, ("id", "price"))
         self.assertEqual(result.rows, [(1, 1.0), (2, 2.0), (3, 3.0)])
+
+    def test_group_order_exp(self):
+        result = execute(
+            "SELECT a, AVG(b) FROM x GROUP BY a ORDER BY AVG(b)",
+            tables={
+                "x": [
+                    {"a": "a", "b": 10},
+                    {"a": "b", "b": 20},
+                    {"a": "c", "b": 28},
+                    {"a": "b", "b": 25},
+                    {"a": "a", "b": 40},
+                ],
+            },
+        )
+
+        self.assertEqual(result.columns, ("a", "_col_1"))
+        self.assertEqual(result.rows, [("b", 22.5), ("a", 25.0), ("c", 28.0)])

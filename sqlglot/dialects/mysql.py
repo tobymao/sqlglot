@@ -445,6 +445,17 @@ class MySQL(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
+        def cast_sql(self, expression: exp.Cast) -> str:
+            """(U)BIGINT is not allowed in a CAST expression, so we use (UN)SIGNED instead."""
+            if expression.to.this == exp.DataType.Type.BIGINT:
+                to = "SIGNED"
+            elif expression.to.this == exp.DataType.Type.UBIGINT:
+                to = "UNSIGNED"
+            else:
+                return super().cast_sql(expression)
+
+            return f"CAST({self.sql(expression, 'this')} AS {to})"
+
         def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"
             full = " FULL" if expression.args.get("full") else ""

@@ -336,7 +336,9 @@ def _expand_stars(
             # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
             if resolver.schema.dialect == "bigquery":
                 columns = [
-                    name for name in columns if name not in ("_PARTITIONTIME", "_PARTITIONDATE")
+                    name
+                    for name in columns
+                    if name.upper() not in ("_PARTITIONTIME", "_PARTITIONDATE")
                 ]
 
             if columns and "*" not in columns:

@@ -49,6 +49,10 @@ class TestMySQL(Validator):
     def test_identity(self):
         self.validate_identity("CAST(x AS ENUM('a', 'b'))")
         self.validate_identity("CAST(x AS SET('a', 'b'))")
+        self.validate_identity("CAST(x AS SIGNED)", "CAST(x AS BIGINT)")
+        self.validate_identity("CAST(x AS SIGNED INTEGER)", "CAST(x AS BIGINT)")
+        self.validate_identity("CAST(x AS UNSIGNED)", "CAST(x AS UBIGINT)")
+        self.validate_identity("CAST(x AS SIGNED UNSIGNED)", "CAST(x AS UBIGINT)")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
         self.validate_identity("x ->> '$.name'")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")

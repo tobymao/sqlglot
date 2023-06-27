@@ -1930,6 +1930,11 @@ class LanguageProperty(Property):
     arg_types = {"this": True}
 
 
+# spark ddl
+class ClusteredByProperty(Property):
+    arg_types = {"expressions": True, "sorted_by": False, "buckets": True}
+
+
 class DictProperty(Property):
     arg_types = {"this": True, "kind": True, "settings": False}
 
@@ -2070,6 +2075,7 @@ class Properties(Expression):
         "ALGORITHM": AlgorithmProperty,
         "AUTO_INCREMENT": AutoIncrementProperty,
         "CHARACTER SET": CharacterSetProperty,
+        "CLUSTERED_BY": ClusteredByProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
         "DEFINER": DefinerProperty,

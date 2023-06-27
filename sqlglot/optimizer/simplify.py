@@ -28,6 +28,8 @@ def simplify(expression):
     generate = cached_generator()
 
     def _simplify(expression, root=True):
+        if expression.meta.get("final"):
+            return expression
         node = expression
         node = rewrite_between(node)
         node = uniq_sort(node, generate, root)

@@ -56,8 +56,8 @@ def qualify_columns(
         if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver, using_column_tables)
             _qualify_outputs(scope)
-        _expand_group_by(scope, resolver)
-        _expand_order_by(scope)
+        _expand_group_by(scope)
+        _expand_order_by(scope, resolver)
 
     return expression
 
@@ -172,20 +172,25 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
 
     alias_to_expression: t.Dict[str, exp.Expression] = {}
 
-    def replace_columns(
-        node: t.Optional[exp.Expression], expand: bool = True, resolve_agg: bool = False
-    ) -> None:
+    def replace_columns(node: t.Optional[exp.Expression], resolve_table: bool = False) -> None:
         if not node:
             return
 
         for column, *_ in walk_in_scope(node):
             if not isinstance(column, exp.Column):
                 continue
-            table = resolver.get_table(column.name) if resolve_agg and not column.table else None
-            if table and column.find_ancestor(exp.AggFunc):
+            table = resolver.get_table(column.name) if resolve_table and not column.table else None
+            alias_expr = alias_to_expression.get(column.name)
+            double_agg = (
+                (alias_expr.find(exp.AggFunc) and column.find_ancestor(exp.AggFunc))
+                if alias_expr
+                else False
+            )
+
+            if table and (not alias_expr or double_agg):
                 column.set("table", table)
-            elif expand and not column.table and column.name in alias_to_expression:
-                column.replace(alias_to_expression[column.name].copy())
+            elif not column.table and alias_expr and not double_agg:
+                column.replace(alias_expr.copy())
 
     for projection in scope.selects:
         replace_columns(projection)
@@ -195,22 +200,41 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
 
     replace_columns(expression.args.get("where"))
     replace_columns(expression.args.get("group"))
-    replace_columns(expression.args.get("having"), resolve_agg=True)
-    replace_columns(expression.args.get("qualify"), resolve_agg=True)
-    replace_columns(expression.args.get("order"), expand=False, resolve_agg=True)
+    replace_columns(expression.args.get("having"), resolve_table=True)
+    replace_columns(expression.args.get("qualify"), resolve_table=True)
     scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope, resolver: Resolver):
-    group = scope.expression.args.get("group")
+def _expand_group_by(scope: Scope):
+    expression = scope.expression
+    group = expression.args.get("group")
     if not group:
         return
 
     group.set("expressions", _expand_positional_references(scope, group.expressions))
-    scope.expression.set("group", group)
+    expression.set("group", group)
+
+    # group by expressions cannot be simplified, for example
+    # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
+    # the projection must exactly match the group by key
+    groups = set(group.expressions)
+    group.meta["final"] = True
+
+    for e in expression.selects:
+        for node, *_ in e.walk():
+            if node in groups:
+                e.meta["final"] = True
+                break
+
+    having = expression.args.get("having")
+    if having:
+        for node, *_ in having.walk():
+            if node in groups:
+                having.meta["final"] = True
+                break
 
 
-def _expand_order_by(scope: Scope):
+def _expand_order_by(scope: Scope, resolver: Resolver):
     order = scope.expression.args.get("order")
     if not order:
         return
@@ -220,6 +244,11 @@ def _expand_order_by(scope: Scope):
         ordereds,
         _expand_positional_references(scope, (o.this for o in ordereds)),
     ):
+        for agg in ordered.find_all(exp.AggFunc):
+            for col in agg.find_all(exp.Column):
+                if not col.table:
+                    col.set("table", resolver.get_table(col.name))
+
         ordered.set("this", new_expression)
 
     if scope.expression.args.get("group"):

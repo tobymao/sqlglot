@@ -267,6 +267,21 @@ class Snowflake(Dialect):
             ),
         }
 
+        def _parse_id_var(
+            self,
+            any_token: bool = True,
+            tokens: t.Optional[t.Collection[TokenType]] = None,
+        ) -> t.Optional[exp.Expression]:
+            if self._match_text_seq("IDENTIFIER", "("):
+                identifier = (
+                    super()._parse_id_var(any_token=any_token, tokens=tokens)
+                    or self._parse_string()
+                )
+                self._match_r_paren()
+                return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
+
+            return super()._parse_id_var(any_token=any_token, tokens=tokens)
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", "$$"]
         STRING_ESCAPES = ["\\", "'"]

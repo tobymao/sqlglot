@@ -91,6 +91,7 @@ class Step:
             A Step DAG corresponding to `expression`.
         """
         ctes = ctes or {}
+        expression = expression.unnest()
         with_ = expression.args.get("with")
 
         # CTEs break the mold of scope and introduce themselves to all in the context.

@@ -35,9 +35,7 @@ def _date_add_sql(
     return func
 
 
-def _derived_table_values_to_unnest(
-    self: generator.Generator, expression: exp.Values
-) -> str:
+def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.Values) -> str:
     if not isinstance(expression.unnest().parent, exp.From):
         return self.values_sql(expression)
 
@@ -61,9 +59,7 @@ def _derived_table_values_to_unnest(
     return self.unnest_sql(exp.Unnest(expressions=[exp.Array(expressions=structs)]))
 
 
-def _returnsproperty_sql(
-    self: generator.Generator, expression: exp.ReturnsProperty
-) -> str:
+def _returnsproperty_sql(self: generator.Generator, expression: exp.ReturnsProperty) -> str:
     this = expression.this
     if isinstance(this, exp.Schema):
         this = f"{this.this} <{self.expressions(this)}>"
@@ -157,15 +153,11 @@ class BigQuery(Dialect):
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
         BYTE_STRINGS = [
-            (prefix + q, q)
-            for q in t.cast(t.List[str], QUOTES)
-            for prefix in ("b", "B")
+            (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("b", "B")
         ]
 
         RAW_STRINGS = [
-            (prefix + q, q)
-            for q in t.cast(t.List[str], QUOTES)
-            for prefix in ("r", "R")
+            (prefix + q, q) for q in t.cast(t.List[str], QUOTES) for prefix in ("r", "R")
         ]
 
         KEYWORDS = {
@@ -201,16 +193,14 @@ class BigQuery(Dialect):
             ),
             "DATETIME_ADD": parse_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
-            "DIV": lambda args: exp.IntDiv(
-                this=seq_get(args, 0), expression=seq_get(args, 1)
-            ),
+            "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
                 [seq_get(args, 1), seq_get(args, 0)]
             ),
-            "PARSE_TIMESTAMP": lambda args: format_time_lambda(
-                exp.StrToTime, "bigquery"
-            )([seq_get(args, 1), seq_get(args, 0)]),
+            "PARSE_TIMESTAMP": lambda args: format_time_lambda(exp.StrToTime, "bigquery")(
+                [seq_get(args, 1), seq_get(args, 0)]
+            ),
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0),
@@ -235,9 +225,7 @@ class BigQuery(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "ARRAY": lambda self: self.expression(
-                exp.Array, expressions=[self._parse_statement()]
-            ),
+            "ARRAY": lambda self: self.expression(exp.Array, expressions=[self._parse_statement()]),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -266,9 +254,7 @@ class BigQuery(Dialect):
 
         CONSTRAINT_PARSERS = {
             **parser.Parser.CONSTRAINT_PARSERS,
-            "OPTIONS": lambda self: exp.Properties(
-                expressions=self._parse_with_property()
-            ),
+            "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
@@ -315,18 +301,14 @@ class BigQuery(Dialect):
             exp.AtTimeZone: lambda self, e: self.func(
                 "TIMESTAMP", self.func("DATETIME", e.this, e.args.get("zone"))
             ),
-            exp.Cast: transforms.preprocess(
-                [transforms.remove_precision_parameterized_types]
-            ),
+            exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", e.this, e.text("unit")
-            ),
+            exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
@@ -523,12 +505,8 @@ class BigQuery(Dialect):
 
         def intersect_op(self, expression: exp.Intersect) -> str:
             if not expression.args.get("distinct", False):
-                self.unsupported(
-                    "INTERSECT without DISTINCT is not supported in BigQuery"
-                )
-            return (
-                f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
-            )
+                self.unsupported("INTERSECT without DISTINCT is not supported in BigQuery")
+            return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, prefix=self.seg("OPTIONS"))

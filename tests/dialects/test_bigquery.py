@@ -65,6 +65,7 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all("SELECT 1 AS hash", write={"bigquery": "SELECT 1 AS `hash`"})
+        self.validate_all("SELECT 1 AS at", write={"bigquery": "SELECT 1 AS `at`"})
         self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
         self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})

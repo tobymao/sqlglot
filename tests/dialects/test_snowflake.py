@@ -652,12 +652,12 @@ class TestSnowflake(Validator):
         # All examples from https://docs.snowflake.com/en/sql-reference/literals-table.html
         self.validate_all(
             r"""SELECT * FROM TABLE('MYTABLE')""",
-            write={"snowflake": r"""SELECT * FROM IDENTIFIER('MYTABLE')"""},
+            write={"snowflake": r"""SELECT * FROM TABLE('MYTABLE')"""},
         )
 
         self.validate_all(
             r"""SELECT * FROM TABLE('MYDB."MYSCHEMA"."MYTABLE"')""",
-            write={"snowflake": r"""SELECT * FROM IDENTIFIER('MYDB."MYSCHEMA"."MYTABLE"')"""},
+            write={"snowflake": r"""SELECT * FROM TABLE('MYDB."MYSCHEMA"."MYTABLE"')"""},
         )
 
         # Per Snowflake documentation at https://docs.snowflake.com/en/sql-reference/literals-table.html
@@ -665,27 +665,27 @@ class TestSnowflake(Validator):
         # Capturing the single tokens seems like lot of work. Hence adjusting tests to use these interchangeably,
         self.validate_all(
             r"""SELECT * FROM TABLE($$MYDB. "MYSCHEMA"."MYTABLE"$$)""",
-            write={"snowflake": r"""SELECT * FROM IDENTIFIER('MYDB. "MYSCHEMA"."MYTABLE"')"""},
+            write={"snowflake": r"""SELECT * FROM TABLE('MYDB. "MYSCHEMA"."MYTABLE"')"""},
         )
 
         self.validate_all(
             r"""SELECT * FROM TABLE($MYVAR)""",
-            write={"snowflake": r"""SELECT * FROM IDENTIFIER($MYVAR)"""},
+            write={"snowflake": r"""SELECT * FROM TABLE($MYVAR)"""},
         )
 
         self.validate_all(
             r"""SELECT * FROM TABLE(?)""",
-            write={"snowflake": r"""SELECT * FROM IDENTIFIER(?)"""},
+            write={"snowflake": r"""SELECT * FROM TABLE(?)"""},
         )
 
         self.validate_all(
             r"""SELECT * FROM TABLE(:BINDING)""",
-            write={"snowflake": r"""SELECT * FROM IDENTIFIER(:BINDING)"""},
+            write={"snowflake": r"""SELECT * FROM TABLE(:BINDING)"""},
         )
 
         self.validate_all(
             r"""SELECT * FROM TABLE($MYVAR) WHERE COL1 = 10""",
-            write={"snowflake": r"""SELECT * FROM IDENTIFIER($MYVAR) WHERE COL1 = 10"""},
+            write={"snowflake": r"""SELECT * FROM TABLE($MYVAR) WHERE COL1 = 10"""},
         )
 
     def test_flatten(self):
@@ -709,7 +709,7 @@ class TestSnowflake(Validator):
   dag_report.airflow_name,
   dag_report.dag_id,
   CAST(f.value AS VARCHAR) AS operator
-FROM cs.telescope.dag_report, IDENTIFIER(FLATTEN(input => SPLIT(operators, ','))) AS f"""
+FROM cs.telescope.dag_report, TABLE(FLATTEN(input => SPLIT(operators, ','))) AS f"""
             },
             pretty=True,
         )
@@ -718,56 +718,54 @@ FROM cs.telescope.dag_report, IDENTIFIER(FLATTEN(input => SPLIT(operators, ','))
         self.validate_all(
             "SELECT * FROM TABLE(FLATTEN(input => parse_json('[1, ,77]'))) f",
             write={
-                "snowflake": "SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('[1, ,77]'))) AS f"
+                "snowflake": "SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('[1, ,77]'))) AS f"
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88]}'), outer => true)) f""",
             write={
-                "snowflake": """SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88]}'), outer => TRUE)) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88]}'), outer => TRUE)) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88]}'), path => 'b')) f""",
             write={
-                "snowflake": """SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88]}'), path => 'b')) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88]}'), path => 'b')) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('[]'))) f""",
-            write={
-                "snowflake": """SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('[]'))) AS f"""
-            },
+            write={"snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('[]'))) AS f"""},
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('[]'), outer => true)) f""",
             write={
-                "snowflake": """SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('[]'), outer => TRUE)) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('[]'), outer => TRUE)) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88], "c": {"d":"X"}}'))) f""",
             write={
-                "snowflake": """SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'))) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'))) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => true)) f""",
             write={
-                "snowflake": """SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => TRUE)) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => TRUE)) AS f"""
             },
         )
 
         self.validate_all(
             """SELECT * FROM TABLE(FLATTEN(input => parse_json('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => true, mode => 'object')) f""",
             write={
-                "snowflake": """SELECT * FROM IDENTIFIER(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => TRUE, mode => 'object')) AS f"""
+                "snowflake": """SELECT * FROM TABLE(FLATTEN(input => PARSE_JSON('{"a":1, "b":[77,88], "c": {"d":"X"}}'), recursive => TRUE, mode => 'object')) AS f"""
             },
         )
 

@@ -278,7 +278,7 @@ class Snowflake(Dialect):
                     or self._parse_string()
                 )
                 self._match_r_paren()
-                return self.expression(exp.ToIdentifier, this=identifier)
+                return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
 
             return super()._parse_id_var(any_token=any_token, tokens=tokens)
 

@@ -4017,11 +4017,6 @@ class CurrentUser(Func):
     arg_types = {"this": False}
 
 
-# https://docs.snowflake.com/en/sql-reference/identifier-literal
-class ToIdentifier(Func):
-    _sql_names = ["IDENTIFIER", "TABLE"]
-
-
 class DateAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 

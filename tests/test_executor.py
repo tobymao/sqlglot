@@ -254,6 +254,11 @@ class TestExecutor(unittest.TestCase):
                 [("a",)],
             ),
             (
+                "(SELECT a FROM x) EXCEPT (SELECT a FROM y)",
+                ["a"],
+                [("a",)],
+            ),
+            (
                 "SELECT a FROM x INTERSECT SELECT a FROM y",
                 ["a"],
                 [("b",), ("c",)],

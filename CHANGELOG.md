@@ -1,6 +1,19 @@
 Changelog
 =========
 
+## [v16.6.0] - 2023-06-27
+### :boom: BREAKING CHANGES
+- due to [`71818f9`](https://github.com/tobymao/sqlglot/commit/71818f948b083f87c691a9b3b7cf38ffd6f34007) - bigquery normalize dot tables and aliases *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  bigquery normalize dot tables and aliases
+
+
+### :bug: Bug Fixes
+- [`b60e19b`](https://github.com/tobymao/sqlglot/commit/b60e19b7f1464f727cadfd8f51fc27c6bfd2e0a9) - spark clustered by dml *(commit by [@tobymao](https://github.com/tobymao))*
+- [`40928b7`](https://github.com/tobymao/sqlglot/commit/40928b720dcc61cec29731e7530104fbfe696d3a) - full support for spark clustered by *(commit by [@tobymao](https://github.com/tobymao))*
+- [`71818f9`](https://github.com/tobymao/sqlglot/commit/71818f948b083f87c691a9b3b7cf38ffd6f34007) - bigquery normalize dot tables and aliases *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.5.0] - 2023-06-27
 ### :boom: BREAKING CHANGES
 - due to [`451dad2`](https://github.com/tobymao/sqlglot/commit/451dad22e7c7b6ca8f6ed5cd5cd17d350c22f8e4) - use alias for order by after group by closes [#1822](https://github.com/tobymao/sqlglot/pull/1822) *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -656,3 +669,4 @@ Changelog
 [v16.4.1]: https://github.com/tobymao/sqlglot/compare/v16.4.0...v16.4.1
 [v16.4.2]: https://github.com/tobymao/sqlglot/compare/v16.4.1...v16.4.2
 [v16.5.0]: https://github.com/tobymao/sqlglot/compare/v16.4.2...v16.5.0
+[v16.6.0]: https://github.com/tobymao/sqlglot/compare/v16.5.0...v16.6.0

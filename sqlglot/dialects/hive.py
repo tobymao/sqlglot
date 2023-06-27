@@ -209,7 +209,6 @@ class Hive(Dialect):
             "ADD FILES": TokenType.COMMAND,
             "ADD JAR": TokenType.COMMAND,
             "ADD JARS": TokenType.COMMAND,
-            "CLUSTERED BY": TokenType.CLUSTER_BY,
             "MSCK REPAIR": TokenType.COMMAND,
             "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
@@ -437,8 +436,3 @@ class Hive(Dialect):
                 self.sql(expression, "sort"),
                 self.sql(expression, "cluster"),
             ]
-
-        def cluster_sql(self, expression: exp.Cluster) -> str:
-            if isinstance(expression.parent, exp.Properties):
-                return f"CLUSTERED BY ({self.expressions(expression, flat=True)})"
-            return self.op_expressions("CLUSTER BY", expression)

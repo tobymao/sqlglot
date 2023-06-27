@@ -188,6 +188,7 @@ class Generator:
         exp.CollateProperty: exp.Properties.Location.POST_SCHEMA,
         exp.CopyGrantsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
+        exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
         exp.DictRange: exp.Properties.Location.POST_SCHEMA,
@@ -2412,6 +2413,13 @@ class Generator:
 
     def oncluster_sql(self, expression: exp.OnCluster) -> str:
         return ""
+
+    def clusteredbyproperty_sql(self, expression: exp.ClusteredByProperty) -> str:
+        expressions = self.expressions(expression, key="expressions", flat=True)
+        sorted_by = self.expressions(expression, key="sorted_by", flat=True)
+        sorted_by = f" SORTED BY ({sorted_by})" if sorted_by else ""
+        buckets = self.sql(expression, "buckets")
+        return f"CLUSTERED BY ({expressions}){sorted_by} INTO {buckets} BUCKETS"
 
 
 def cached_generator(

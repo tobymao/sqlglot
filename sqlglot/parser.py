@@ -585,7 +585,7 @@ class Parser(metaclass=_Parser):
         "CHARACTER SET": lambda self: self._parse_character_set(),
         "CHECKSUM": lambda self: self._parse_checksum(),
         "CLUSTER BY": lambda self: self._parse_cluster(),
-        "CLUSTERED BY": lambda self: self._parse_cluster(dml=True),
+        "CLUSTERED": lambda self: self._parse_clustered_by(),
         "COLLATE": lambda self: self._parse_property_assignment(exp.CollateProperty),
         "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
         "COPY": lambda self: self._parse_copy_property(),
@@ -1427,15 +1427,33 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.ChecksumProperty, on=on, default=self._match(TokenType.DEFAULT))
 
-    def _parse_cluster(self, dml: bool = False) -> t.Optional[exp.Cluster]:
-        if dml:
+    def _parse_cluster(self) -> exp.Cluster:
+        return self.expression(exp.Cluster, expressions=self._parse_csv(self._parse_ordered))
+
+    def _parse_clustered_by(self) -> exp.ClusteredByProperty:
+        self._match_text_seq("BY")
+
+        self._match_l_paren()
+        expressions = self._parse_csv(self._parse_column)
+        self._match_r_paren()
+
+        if self._match_text_seq("SORTED", "BY"):
             self._match_l_paren()
-            expressions = self._parse_csv(self._parse_ordered)
+            sorted_by = self._parse_csv(self._parse_ordered)
             self._match_r_paren()
         else:
-            expressions = self._parse_csv(self._parse_ordered)
+            sorted_by = None
 
-        return self.expression(exp.Cluster, expressions=expressions)
+        self._match(TokenType.INTO)
+        buckets = self._parse_number()
+        self._match_text_seq("BUCKETS")
+
+        return self.expression(
+            exp.ClusteredByProperty,
+            expressions=expressions,
+            sorted_by=sorted_by,
+            buckets=buckets,
+        )
 
     def _parse_copy_property(self) -> t.Optional[exp.CopyGrantsProperty]:
         if not self._match_text_seq("GRANTS"):

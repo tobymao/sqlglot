@@ -1413,7 +1413,8 @@ class TestDialect(Validator):
                 "presto": "SELECT a AS b FROM x GROUP BY 1",
                 "hive": "SELECT a AS b FROM x GROUP BY 1",
                 "oracle": "SELECT a AS b FROM x GROUP BY 1",
-                "spark": "SELECT a AS b FROM x GROUP BY 1",
+                "spark": "SELECT a AS b FROM x GROUP BY b",
+                "spark2": "SELECT a AS b FROM x GROUP BY 1",
             },
         )
         self.validate_all(

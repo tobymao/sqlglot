@@ -647,19 +647,55 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(result.columns, ("id", "price"))
         self.assertEqual(result.rows, [(1, 1.0), (2, 2.0), (3, 3.0)])
 
-    def test_group_order_exp(self):
-        result = execute(
-            "SELECT a, AVG(b) FROM x GROUP BY a ORDER BY AVG(b)",
-            tables={
-                "x": [
-                    {"a": "a", "b": 10},
-                    {"a": "b", "b": 20},
-                    {"a": "c", "b": 28},
-                    {"a": "b", "b": 25},
-                    {"a": "a", "b": 40},
-                ],
-            },
-        )
+    def test_group_by(self):
+        tables = {
+            "x": [
+                {"a": 1, "b": 10},
+                {"a": 2, "b": 20},
+                {"a": 3, "b": 28},
+                {"a": 2, "b": 25},
+                {"a": 1, "b": 40},
+            ],
+        }
 
-        self.assertEqual(result.columns, ("a", "_col_1"))
-        self.assertEqual(result.rows, [("b", 22.5), ("a", 25.0), ("c", 28.0)])
+        for sql, expected, columns in (
+            (
+                "SELECT a, AVG(b) FROM x GROUP BY a ORDER BY AVG(b)",
+                [(2, 22.5), (1, 25.0), (3, 28.0)],
+                ("a", "_col_1"),
+            ),
+            (
+                "SELECT a, AVG(b) FROM x GROUP BY a having avg(b) > 23",
+                [(1, 25.0), (3, 28.0)],
+                ("a", "_col_1"),
+            ),
+            (
+                "SELECT a, AVG(b) FROM x GROUP BY a having avg(b + 1) > 23",
+                [(1, 25.0), (2, 22.5), (3, 28.0)],
+                ("a", "_col_1"),
+            ),
+            (
+                "SELECT a, AVG(b) FROM x GROUP BY a having sum(b) + 5 > 50",
+                [(1, 25.0)],
+                ("a", "_col_1"),
+            ),
+            (
+                "SELECT a + 1 AS a, AVG(b + 1) FROM x GROUP BY a + 1 having AVG(b + 1) > 26",
+                [(4, 29.0)],
+                ("a", "_col_1"),
+            ),
+            (
+                "SELECT a, avg(b) FROM x GROUP BY a HAVING a = 1",
+                [(1, 25.0)],
+                ("a", "_col_1"),
+            ),
+            (
+                "SELECT a + 1, avg(b) FROM x GROUP BY a + 1 HAVING a + 1 = 2",
+                [(2, 25.0)],
+                ("_col_0", "_col_1"),
+            ),
+        ):
+            with self.subTest(sql):
+                result = execute(sql, tables=tables)
+                self.assertEqual(result.columns, columns)
+                self.assertEqual(result.rows, expected)

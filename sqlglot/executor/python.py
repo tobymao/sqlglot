@@ -276,11 +276,9 @@ class PythonExecutor:
         end = 1
         length = len(context.table)
         table = self.table(list(step.group) + step.aggregations)
-        condition = self.generate(step.condition)
 
         def add_row():
-            if not condition or context.eval(condition):
-                table.append(group + context.eval_tuple(aggregations))
+            table.append(group + context.eval_tuple(aggregations))
 
         if length:
             for i in range(length):
@@ -304,7 +302,7 @@ class PythonExecutor:
 
         context = self.context({step.name: table, **{name: table for name in context.tables}})
 
-        if step.projections:
+        if step.projections or step.condition:
             return self.scan(step, context)
         return context
 

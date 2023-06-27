@@ -681,3 +681,15 @@ GROUP BY
   `TOp_TeRmS`.`rank`
 ORDER BY
   `day` DESC;
+
+
+# title: group by keys cannot be simplified
+SELECT a + 1 + 1 + 1 + 1 AS b, 2 + 1 AS c FROM x GROUP BY a + 1 + 1 HAVING a + 1 + 1 + 1 + 1 > 1;
+SELECT
+  "x"."a" + 1 + 1 + 1 + 1 AS "b",
+  3 AS "c"
+FROM "x" AS "x"
+GROUP BY
+  "x"."a" + 1 + 1
+HAVING
+  "x"."a" + 1 + 1 + 1 + 1 > 1;

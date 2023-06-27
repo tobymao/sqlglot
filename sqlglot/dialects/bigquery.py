@@ -135,12 +135,14 @@ class BigQuery(Dialect):
         # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
         # The following check is essentially a heuristic to detect tables based on whether or
         # not they're qualified.
-        if (
-            isinstance(expression, exp.Identifier)
-            and not (isinstance(expression.parent, exp.Table) and expression.parent.db)
-            and not expression.meta.get("is_table")
-        ):
-            expression.set("this", expression.this.lower())
+        if isinstance(expression, exp.Identifier) and not expression.meta.get("is_table"):
+            parent = expression.parent
+
+            while isinstance(parent, exp.Dot):
+                parent = parent.parent
+
+            if not (isinstance(parent, exp.Table) and parent.db):
+                expression.set("this", expression.this.lower())
 
         return expression
 

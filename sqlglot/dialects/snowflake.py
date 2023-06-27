@@ -272,8 +272,11 @@ class Snowflake(Dialect):
             any_token: bool = True,
             tokens: t.Optional[t.Collection[TokenType]] = None,
         ) -> t.Optional[exp.Expression]:
-            if self._match_text_seq("IDENTIFIER", "(") or self._match_text_seq("TABLE", "("):
-                identifier = super()._parse_id_var(any_token=any_token, tokens=tokens)
+            if self._match_text_seq("IDENTIFIER", "("):
+                identifier = (
+                    super()._parse_id_var(any_token=any_token, tokens=tokens)
+                    or self._parse_string()
+                )
                 self._match_r_paren()
                 return self.expression(exp.ToIdentifier, this=identifier)
 

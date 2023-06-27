@@ -588,9 +588,8 @@ class TestSnowflake(Validator):
         self.validate_identity("CREATE DATABASE mytestdb_clone CLONE mytestdb")
         self.validate_identity("CREATE SCHEMA mytestschema_clone CLONE testschema")
         self.validate_identity("CREATE TABLE orders_clone CLONE orders")
-        self.validate_identity(
-            "CREATE TABLE IDENTIFIER($TABLE_NAME) (COLUMN1 VARCHAR, COLUMN2 VARCHAR)"
-        )
+        self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
+        self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity(
             "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))"
         )

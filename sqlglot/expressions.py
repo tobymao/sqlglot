@@ -1499,11 +1499,6 @@ class Identifier(Expression):
         return self.name
 
 
-# https://docs.snowflake.com/en/sql-reference/identifier-literal
-class ToIdentifier(Expression):
-    pass
-
-
 class Index(Expression):
     arg_types = {
         "this": False,
@@ -4020,6 +4015,11 @@ class CurrentTimestamp(Func):
 
 class CurrentUser(Func):
     arg_types = {"this": False}
+
+
+# https://docs.snowflake.com/en/sql-reference/identifier-literal
+class ToIdentifier(Func):
+    _sql_names = ["IDENTIFIER", "TABLE"]
 
 
 class DateAdd(Func, TimeUnit):

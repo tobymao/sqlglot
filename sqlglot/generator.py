@@ -2413,6 +2413,9 @@ class Generator:
     def oncluster_sql(self, expression: exp.OnCluster) -> str:
         return ""
 
+    def toidentifier_sql(self, expression: exp.ToIdentifier) -> str:
+        return f"IDENTIFIER({self.sql(expression, 'this')})"
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

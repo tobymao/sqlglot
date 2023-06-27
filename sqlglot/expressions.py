@@ -1499,6 +1499,11 @@ class Identifier(Expression):
         return self.name
 
 
+# https://docs.snowflake.com/en/sql-reference/identifier-literal
+class ToIdentifier(Expression):
+    pass
+
+
 class Index(Expression):
     arg_types = {
         "this": False,

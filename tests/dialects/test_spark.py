@@ -7,6 +7,7 @@ class TestSpark(Validator):
     def test_ddl(self):
         self.validate_identity("CREATE TABLE foo (col VARCHAR(50))")
         self.validate_identity("CREATE TABLE foo (col STRUCT<struct_col_a: VARCHAR((50))>)")
+        self.validate_identity("CREATE TABLE foo (col STRING) CLUSTERED BY (col)")
 
         self.validate_all(
             "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",

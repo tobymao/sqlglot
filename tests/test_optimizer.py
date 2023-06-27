@@ -216,6 +216,17 @@ class TestOptimizer(unittest.TestCase):
             "SELECT y AS y FROM x",
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH X AS (SELECT Y.A FROM DB.Y CROSS JOIN a.b.INFORMATION_SCHEMA.COLUMNS) SELECT `A` FROM X",
+                    read="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(),
+            'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."Y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA"."COLUMNS" AS "_q_0") SELECT "x"."a" AS "a" FROM "x"',
+        )
+
         self.check_file("qualify_columns", qualify_columns, execute=True, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):
@@ -724,7 +735,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         ).sql(pretty=True, dialect="snowflake")
 
         for func in (optimizer.qualify.qualify, optimizer.optimize):
-            source_query = parse_one('SELECT * FROM example."source"', read="snowflake")
+            source_query = parse_one('SELECT * FROM example."source" AS "source"', read="snowflake")
             transformed = func(source_query, dialect="snowflake", schema=schema)
             self.assertEqual(transformed.sql(pretty=True, dialect="snowflake"), expected)
 

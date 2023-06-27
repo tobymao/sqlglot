@@ -43,6 +43,7 @@ class Spark(Spark2):
     class Generator(Spark2.Generator):
         TRANSFORMS = Spark2.Generator.TRANSFORMS.copy()
         TRANSFORMS.pop(exp.DateDiff)
+        TRANSFORMS.pop(exp.Group)
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:
             unit = self.sql(expression, "unit")

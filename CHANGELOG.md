@@ -1,6 +1,21 @@
 Changelog
 =========
 
+## [v16.7.0] - 2023-06-28
+### :boom: BREAKING CHANGES
+- due to [`d72caf4`](https://github.com/tobymao/sqlglot/commit/d72caf49d1d2f516142d84ca12b4e3fc616a71a4) - bigquery udfs are case sensitive *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  bigquery udfs are case sensitive
+
+
+### :bug: Bug Fixes
+- [`ebe04bb`](https://github.com/tobymao/sqlglot/commit/ebe04bbbe1c039c9067cd461a5c57d6e66f4469e) - table name with dots *(commit by [@tobymao](https://github.com/tobymao))*
+- [`e3c43f2`](https://github.com/tobymao/sqlglot/commit/e3c43f2b88deba0b1a0c41b91fb0ad6f3e0be0da) - redshift to ast incorrect *(commit by [@tobymao](https://github.com/tobymao))*
+- [`d72caf4`](https://github.com/tobymao/sqlglot/commit/d72caf49d1d2f516142d84ca12b4e3fc616a71a4) - bigquery udfs are case sensitive *(commit by [@tobymao](https://github.com/tobymao))*
+- [`7cb01a0`](https://github.com/tobymao/sqlglot/commit/7cb01a09c1897357905428b46f095f80cdfe4804) - **bigquery**: transpile explode projection to cross join unnest, clean up tests *(PR [#1844](https://github.com/tobymao/sqlglot/pull/1844) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`abdf34b`](https://github.com/tobymao/sqlglot/commit/abdf34b273acd0f1a33648912059dfd42104cc2f) - **bigquery**: STRING_AGG parsing bug *(PR [#1846](https://github.com/tobymao/sqlglot/pull/1846) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v16.6.0] - 2023-06-27
 ### :boom: BREAKING CHANGES
 - due to [`71818f9`](https://github.com/tobymao/sqlglot/commit/71818f948b083f87c691a9b3b7cf38ffd6f34007) - bigquery normalize dot tables and aliases *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -670,3 +685,4 @@ Changelog
 [v16.4.2]: https://github.com/tobymao/sqlglot/compare/v16.4.1...v16.4.2
 [v16.5.0]: https://github.com/tobymao/sqlglot/compare/v16.4.2...v16.5.0
 [v16.6.0]: https://github.com/tobymao/sqlglot/compare/v16.5.0...v16.6.0
+[v16.7.0]: https://github.com/tobymao/sqlglot/compare/v16.6.0...v16.7.0

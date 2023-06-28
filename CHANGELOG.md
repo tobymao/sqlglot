@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v16.7.1] - 2023-06-28
+### :sparkles: New Features
+- [`95a4b70`](https://github.com/tobymao/sqlglot/commit/95a4b70146bfb82ef2beca263a6dd6612994d224) - **bigquery**: pushdown CTE column names *(PR [#1847](https://github.com/tobymao/sqlglot/pull/1847) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`f81dd26`](https://github.com/tobymao/sqlglot/commit/f81dd26df3dc00a511f6d4d461d83c2e844d9476) - **bigquery**: add support for casting to string w/ format *(PR [#1848](https://github.com/tobymao/sqlglot/pull/1848) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :wrench: Chores
+- [`898f1a2`](https://github.com/tobymao/sqlglot/commit/898f1a2ed4f575d11f7d8680c2d642c3d5b8320c) - add test case for bigquery table normalization *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.7.0] - 2023-06-28
 ### :boom: BREAKING CHANGES
 - due to [`d72caf4`](https://github.com/tobymao/sqlglot/commit/d72caf49d1d2f516142d84ca12b4e3fc616a71a4) - bigquery udfs are case sensitive *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -686,3 +695,4 @@ Changelog
 [v16.5.0]: https://github.com/tobymao/sqlglot/compare/v16.4.2...v16.5.0
 [v16.6.0]: https://github.com/tobymao/sqlglot/compare/v16.5.0...v16.6.0
 [v16.7.0]: https://github.com/tobymao/sqlglot/compare/v16.6.0...v16.7.0
+[v16.7.1]: https://github.com/tobymao/sqlglot/compare/v16.7.0...v16.7.1

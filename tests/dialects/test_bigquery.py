@@ -1,3 +1,5 @@
+from unittest import mock
+
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, transpile
 from tests.dialects.test_dialect import Validator
 
@@ -570,4 +572,35 @@ class TestBigQuery(Validator):
                 "snowflake": "ALTER TABLE db.t1 RENAME TO db.t2",
                 "bigquery": "ALTER TABLE db.t1 RENAME TO t2",
             },
+        )
+
+    @mock.patch("sqlglot.dialects.bigquery.logger")
+    def test_pushdown_cte_column_names(self, mock_logger):
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "WITH cte(foo) AS (SELECT * FROM tbl) SELECT foo FROM cte",
+                read="spark",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        self.validate_all(
+            "WITH cte AS (SELECT 1 AS foo) SELECT foo FROM cte",
+            read={"spark": "WITH cte(foo) AS (SELECT 1) SELECT foo FROM cte"},
+        )
+        self.validate_all(
+            "WITH cte AS (SELECT 1 AS foo) SELECT foo FROM cte",
+            read={"spark": "WITH cte(foo) AS (SELECT 1 AS bar) SELECT foo FROM cte"},
+        )
+        self.validate_all(
+            "WITH cte AS (SELECT 1 AS bar) SELECT bar FROM cte",
+            read={"spark": "WITH cte AS (SELECT 1 AS bar) SELECT bar FROM cte"},
+        )
+        self.validate_all(
+            "WITH cte AS (SELECT 1 AS foo, 2) SELECT foo FROM cte",
+            read={"postgres": "WITH cte(foo) AS (SELECT 1, 2) SELECT foo FROM cte"},
+        )
+        self.validate_all(
+            "WITH cte AS (SELECT 1 AS foo UNION ALL SELECT 2) SELECT foo FROM cte",
+            read={"postgres": "WITH cte(foo) AS (SELECT 1 UNION ALL SELECT 2) SELECT foo FROM cte"},
         )

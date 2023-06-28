@@ -104,7 +104,7 @@ class TestRedshift(Validator):
             "SELECT ST_AsEWKT(ST_GeomFromEWKT('SRID=4326;POINT(10 20)')::geography)",
             write={
                 "redshift": "SELECT ST_ASEWKT(CAST(ST_GEOMFROMEWKT('SRID=4326;POINT(10 20)') AS GEOGRAPHY))",
-                "bigquery": "SELECT ST_ASEWKT(SAFE_CAST(ST_GEOMFROMEWKT('SRID=4326;POINT(10 20)') AS GEOGRAPHY))",
+                "bigquery": "SELECT ST_AsEWKT(SAFE_CAST(ST_GeomFromEWKT('SRID=4326;POINT(10 20)') AS GEOGRAPHY))",
             },
         )
         self.validate_all(

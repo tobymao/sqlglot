@@ -110,6 +110,9 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
 
+    # bigquery udfs are case sensitive
+    NORMALIZE_FUNCTIONS = False
+
     TIME_MAPPING = {
         "%D": "%m/%d/%y",
     }
@@ -135,13 +138,15 @@ class BigQuery(Dialect):
         # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
         # The following check is essentially a heuristic to detect tables based on whether or
         # not they're qualified.
-        if isinstance(expression, exp.Identifier) and not expression.meta.get("is_table"):
+        if isinstance(expression, exp.Identifier):
             parent = expression.parent
 
             while isinstance(parent, exp.Dot):
                 parent = parent.parent
 
-            if not (isinstance(parent, exp.Table) and parent.db):
+            if not (isinstance(parent, exp.Table) and parent.db) and not expression.meta.get(
+                "is_table"
+            ):
                 expression.set("this", expression.this.lower())
 
         return expression

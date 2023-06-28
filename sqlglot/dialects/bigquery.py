@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import typing as t
 
@@ -20,6 +21,8 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
+
+logger = logging.getLogger("sqlglot")
 
 
 def _date_add_sql(
@@ -100,6 +103,33 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
                     for column in select.find_all(exp.Column):
                         if column.table == unnest.alias:
                             column.set("table", None)
+
+    return expression
+
+
+def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
+    """BigQuery doesn't allow column names when defining a CTE, so we try to push them down."""
+    if isinstance(expression, exp.CTE) and expression.alias_column_names:
+        cte_query = expression.this
+        column_names = expression.alias_column_names
+
+        if cte_query.is_star:
+            logger.warning(
+                "Can't push down CTE column names for star queries. Run the query through"
+                " the optimizer or use 'qualify' to expand the star projections first."
+            )
+            return expression
+
+        expression.args["alias"].set("columns", None)
+
+        for (name, select) in zip(column_names, cte_query.selects):
+            to_replace = select
+
+            if isinstance(select, exp.Alias):
+                select = select.this
+
+            # Inner aliases are shadowed by the CTE column names
+            to_replace.replace(exp.alias_(select, name))
 
     return expression
 
@@ -309,6 +339,7 @@ class BigQuery(Dialect):
                 "TIMESTAMP", self.func("DATETIME", e.this, e.args.get("zone"))
             ),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
+            exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
@@ -485,6 +516,11 @@ class BigQuery(Dialect):
             "with",
             "within",
         }
+
+        def cte_sql(self, expression: exp.CTE) -> str:
+            if expression.alias_column_names:
+                self.unsupported("Column names in CTE definition are not supported.")
+            return super().cte_sql(expression)
 
         def array_sql(self, expression: exp.Array) -> str:
             first_arg = seq_get(expression.expressions, 0)

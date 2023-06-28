@@ -332,7 +332,7 @@ class BigQuery(Dialect):
             ),
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.Select: transforms.preprocess(
-                [_unqualify_unnest, transforms.eliminate_distinct_on]
+                [transforms.explode_to_unnest, _unqualify_unnest, transforms.eliminate_distinct_on]
             ),
             exp.StrToDate: lambda self, e: f"PARSE_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",

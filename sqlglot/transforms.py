@@ -159,10 +159,11 @@ def explode_to_unnest(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
         from sqlglot.optimizer.scope import build_scope
 
-        taken_select_names = set(expression.named_selects)
         scope = build_scope(expression)
         if not scope:
             return expression
+
+        taken_select_names = set(expression.named_selects)
         taken_source_names = set(scope.selected_sources)
 
         for select in expression.selects:

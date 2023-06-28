@@ -27,6 +27,10 @@ class TestBigQuery(Validator):
         with self.assertRaises(ParseError):
             transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
 
+        self.validate_identity("STRING_AGG(a)")
+        self.validate_identity("STRING_AGG(a, ' & ')")
+        self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
+        self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
         self.validate_identity("DATE(2016, 12, 25)")
         self.validate_identity("DATE(CAST('2016-12-25 23:59:59' AS DATETIME))")
         self.validate_identity("SELECT foo IN UNNEST(bar) AS bla")

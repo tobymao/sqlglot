@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v16.7.2] - 2023-06-28
+### :bug: Bug Fixes
+- [`eaed790`](https://github.com/tobymao/sqlglot/commit/eaed790b331d45cfec049bafd5251e4250c663a0) - workaround bigquery grouped alias with order *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.7.1] - 2023-06-28
 ### :sparkles: New Features
 - [`95a4b70`](https://github.com/tobymao/sqlglot/commit/95a4b70146bfb82ef2beca263a6dd6612994d224) - **bigquery**: pushdown CTE column names *(PR [#1847](https://github.com/tobymao/sqlglot/pull/1847) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -696,3 +701,4 @@ Changelog
 [v16.6.0]: https://github.com/tobymao/sqlglot/compare/v16.5.0...v16.6.0
 [v16.7.0]: https://github.com/tobymao/sqlglot/compare/v16.6.0...v16.7.0
 [v16.7.1]: https://github.com/tobymao/sqlglot/compare/v16.7.0...v16.7.1
+[v16.7.2]: https://github.com/tobymao/sqlglot/compare/v16.7.1...v16.7.2

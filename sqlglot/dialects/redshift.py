@@ -41,8 +41,6 @@ class Redshift(Postgres):
             "STRTOL": exp.FromBase.from_arg_list,
         }
 
-        CONVERT_TYPE_FIRST = True
-
         def _parse_types(
             self, check_func: bool = False, schema: bool = False
         ) -> t.Optional[exp.Expression]:
@@ -57,6 +55,12 @@ class Redshift(Postgres):
                 this.set("expressions", [exp.var("MAX")])
 
             return this
+
+        def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
+            to = self._parse_types()
+            self._match(TokenType.COMMA)
+            this = self._parse_bitwise()
+            return self.expression(exp.TryCast, this=this, to=to)
 
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []

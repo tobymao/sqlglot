@@ -82,7 +82,7 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all("SELECT INTERVAL '5 days'", read={"": "SELECT INTERVAL '5' days"})
-        self.validate_all("CONVERT(INTEGER, x)", write={"redshift": "CAST(x AS INTEGER)"})
+        self.validate_all("CONVERT(INT, x)", write={"redshift": "CAST(x AS INTEGER)"})
         self.validate_all(
             "DATEADD('day', ndays, caldate)", write={"redshift": "DATEADD(day, ndays, caldate)"}
         )

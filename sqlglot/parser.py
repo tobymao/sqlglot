@@ -795,8 +795,6 @@ class Parser(metaclass=_Parser):
     # A NULL arg in CONCAT yields NULL by default
     CONCAT_NULL_OUTPUTS_STRING = False
 
-    CONVERT_TYPE_FIRST = False
-
     PREFIXED_PIVOT_COLUMNS = False
     IDENTIFY_PIVOT_STRINGS = False
 
@@ -3761,19 +3759,16 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
 
     def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
-        to: t.Optional[exp.Expression]
         this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
-            to = self.expression(exp.CharacterSet, this=self._parse_var())
+            to: t.Optional[exp.Expression] = self.expression(
+                exp.CharacterSet, this=self._parse_var()
+            )
         elif self._match(TokenType.COMMA):
-            to = self._parse_bitwise()
+            to = self._parse_types()
         else:
             to = None
-
-        # Swap the argument order if needed to produce the correct AST
-        if self.CONVERT_TYPE_FIRST:
-            this, to = to, this
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
 

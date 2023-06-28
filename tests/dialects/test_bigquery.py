@@ -517,6 +517,16 @@ class TestBigQuery(Validator):
             },
         )
 
+        self.validate_identity(
+            "SELECT y + 1 z FROM x GROUP BY y + 1 ORDER BY z",
+            "SELECT y + 1 AS z FROM x GROUP BY z ORDER BY z",
+        )
+        self.validate_identity(
+            "SELECT y + 1 z FROM x GROUP BY y + 1",
+            "SELECT y + 1 AS z FROM x GROUP BY y + 1",
+        )
+        self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
+
     def test_user_defined_functions(self):
         self.validate_identity(
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"

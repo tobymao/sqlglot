@@ -107,6 +107,34 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+# https://issuetracker.google.com/issues/162294746
+# workaround for bigquery bug when grouping by an expression and then ordering
+# WITH x AS (SELECT 1 y)
+# SELECT y + 1 z
+# FROM x
+# GROUP BY x + 1
+# ORDER by z
+def _alias_ordered_group(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Select):
+        group = expression.args.get("group")
+        order = expression.args.get("order")
+
+        if group and order:
+            aliases = {
+                select.this: select.args["alias"]
+                for select in expression.selects
+                if isinstance(select, exp.Alias)
+            }
+
+            for e in group.expressions:
+                alias = aliases.get(e)
+
+                if alias:
+                    e.replace(exp.column(alias))
+
+    return expression
+
+
 def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
     """BigQuery doesn't allow column names when defining a CTE, so we try to push them down."""
     if isinstance(expression, exp.CTE) and expression.alias_column_names:
@@ -360,7 +388,12 @@ class BigQuery(Dialect):
             ),
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.Select: transforms.preprocess(
-                [transforms.explode_to_unnest, _unqualify_unnest, transforms.eliminate_distinct_on]
+                [
+                    transforms.explode_to_unnest,
+                    _unqualify_unnest,
+                    transforms.eliminate_distinct_on,
+                    _alias_ordered_group,
+                ]
             ),
             exp.StrToDate: lambda self, e: f"PARSE_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",

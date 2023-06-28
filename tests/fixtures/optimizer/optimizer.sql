@@ -676,9 +676,9 @@ WHERE
   `top_terms`.`rank` = 1
   AND CAST(`top_terms`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
 GROUP BY
-  `top_terms`.`refresh_date`,
-  `top_terms`.`term`,
-  `top_terms`.`rank`
+  `day`,
+  `top_term`,
+  `rank`
 ORDER BY
   `day` DESC;
 

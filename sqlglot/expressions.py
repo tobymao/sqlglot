@@ -2283,6 +2283,12 @@ class Table(Expression):
     }
 
     @property
+    def name(self) -> str:
+        if isinstance(self.this, Func):
+            return ""
+        return self.this.name
+
+    @property
     def db(self) -> str:
         return self.text("db")
 

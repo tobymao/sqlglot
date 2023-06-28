@@ -224,7 +224,7 @@ class TestOptimizer(unittest.TestCase):
                 ),
                 dialect="bigquery",
             ).sql(),
-            'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."Y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA"."COLUMNS" AS "_q_0") SELECT "x"."a" AS "a" FROM "x"',
+            'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."Y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA"."COLUMNS" AS "columns") SELECT "x"."a" AS "a" FROM "x"',
         )
 
         self.check_file("qualify_columns", qualify_columns, execute=True, schema=self.schema)

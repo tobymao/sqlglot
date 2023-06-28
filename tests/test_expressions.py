@@ -406,6 +406,16 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(expression.transform(fun).sql(), "SELECT a, b FROM x")
 
+    def test_transform_subquery_as_child(self):
+        expression = parse_one("SELECT * FROM (SELECT * FROM x) AS y")
+
+        def fun(node):
+            if isinstance(node, exp.Star):
+                return [parse_one(c) for c in ["a", "b"]]
+            return node
+
+        self.assertEqual(expression.transform(fun).sql(), "SELECT a, b FROM (SELECT a, b FROM x) AS y")
+
     def test_transform_node_removal(self):
         expression = parse_one("SELECT a, b FROM x")
 

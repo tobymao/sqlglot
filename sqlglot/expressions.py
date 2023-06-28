@@ -536,7 +536,6 @@ class Expression(metaclass=_Expression):
             return new_node
         if new_node is not node:
             new_node.parent = node.parent
-            return new_node
 
         replace_children(new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs))
         return new_node

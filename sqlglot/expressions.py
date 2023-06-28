@@ -3946,7 +3946,7 @@ class Case(Func):
 
 
 class Cast(Func):
-    arg_types = {"this": True, "to": True}
+    arg_types = {"this": True, "to": True, "format": False}
 
     @property
     def name(self) -> str:

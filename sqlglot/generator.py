@@ -2005,8 +2005,10 @@ class Generator:
     def bitwisexor_sql(self, expression: exp.BitwiseXor) -> str:
         return self.binary(expression, "^")
 
-    def cast_sql(self, expression: exp.Cast) -> str:
-        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
+    def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+        format_sql = self.sql(expression, "format")
+        format_sql = f" FORMAT {format_sql}" if format_sql else ""
+        return f"{safe_prefix or ''}CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')}{format_sql})"
 
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")
@@ -2232,7 +2234,7 @@ class Generator:
         return self.binary(expression, "-")
 
     def trycast_sql(self, expression: exp.TryCast) -> str:
-        return f"TRY_CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
+        return self.cast_sql(expression, safe_prefix="TRY_")
 
     def use_sql(self, expression: exp.Use) -> str:
         kind = self.sql(expression, "kind")

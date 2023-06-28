@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -133,7 +135,7 @@ class SQLite(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
-        def cast_sql(self, expression: exp.Cast) -> str:
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.is_type("date"):
                 return self.func("DATE", expression.this)
 

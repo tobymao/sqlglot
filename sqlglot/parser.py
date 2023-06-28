@@ -3689,6 +3689,7 @@ class Parser(metaclass=_Parser):
             else:
                 self.raise_error("Expected AS after CAST")
 
+        fmt = None
         to = self._parse_types()
 
         if not to:
@@ -3696,22 +3697,23 @@ class Parser(metaclass=_Parser):
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
-        elif to.this in exp.DataType.TEMPORAL_TYPES and self._match(TokenType.FORMAT):
-            fmt = self._parse_string()
+        elif self._match(TokenType.FORMAT):
+            fmt = self._parse_at_time_zone(self._parse_string())
 
-            return self.expression(
-                exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
-                this=this,
-                format=exp.Literal.string(
-                    format_time(
-                        fmt.this if fmt else "",
-                        self.FORMAT_MAPPING or self.TIME_MAPPING,
-                        self.FORMAT_TRIE or self.TIME_TRIE,
-                    )
-                ),
-            )
+            if to.this in exp.DataType.TEMPORAL_TYPES:
+                return self.expression(
+                    exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
+                    this=this,
+                    format=exp.Literal.string(
+                        format_time(
+                            fmt.this if fmt else "",
+                            self.FORMAT_MAPPING or self.TIME_MAPPING,
+                            self.FORMAT_TRIE or self.TIME_TRIE,
+                        )
+                    ),
+                )
 
-        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, format=fmt)
 
     def _parse_concat(self) -> t.Optional[exp.Expression]:
         args = self._parse_csv(self._parse_conjunction)

@@ -231,14 +231,14 @@ class Spark2(Hive):
         WRAP_DERIVED_VALUES = False
         CREATE_FUNCTION_RETURN_AS = False
 
-        def cast_sql(self, expression: exp.Cast) -> str:
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if isinstance(expression.this, exp.Cast) and expression.this.is_type("json"):
                 schema = f"'{self.sql(expression, 'to')}'"
                 return self.func("FROM_JSON", expression.this.this, schema)
             if expression.is_type("json"):
                 return self.func("TO_JSON", expression.this)
 
-            return super(Hive.Generator, self).cast_sql(expression)
+            return super(Hive.Generator, self).cast_sql(expression, safe_prefix=safe_prefix)
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             return super().columndef_sql(

@@ -29,6 +29,9 @@ class TestBigQuery(Validator):
         with self.assertRaises(ParseError):
             transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
 
+        self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
+        self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
+        self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("STRING_AGG(a)")
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
@@ -99,6 +102,18 @@ class TestBigQuery(Validator):
         self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
         self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
+        self.validate_all(
+            "SELECT CAST(TIMESTAMP '2008-12-25 00:00:00+00:00' AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM') AS date_time_to_string",
+            write={
+                "bigquery": "SELECT CAST(CAST('2008-12-25 00:00:00+00:00' AS TIMESTAMP) AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM') AS date_time_to_string",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(TIMESTAMP '2008-12-25 00:00:00+00:00' AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM' AT TIME ZONE 'Asia/Kolkata') AS date_time_to_string",
+            write={
+                "bigquery": "SELECT CAST(CAST('2008-12-25 00:00:00+00:00' AS TIMESTAMP) AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM' AT TIME ZONE 'Asia/Kolkata') AS date_time_to_string",
+            },
+        )
         self.validate_all(
             "WITH cte AS (SELECT [1, 2, 3] AS arr) SELECT col FROM cte CROSS JOIN UNNEST(arr) AS col",
             read={

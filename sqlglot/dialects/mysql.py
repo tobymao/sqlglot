@@ -445,7 +445,7 @@ class MySQL(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
-        def cast_sql(self, expression: exp.Cast) -> str:
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             """(U)BIGINT is not allowed in a CAST expression, so we use (UN)SIGNED instead."""
             if expression.to.this == exp.DataType.Type.BIGINT:
                 to = "SIGNED"

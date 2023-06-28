@@ -335,9 +335,6 @@ class BigQuery(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
-            exp.AtTimeZone: lambda self, e: self.func(
-                "TIMESTAMP", self.func("DATETIME", e.this, e.args.get("zone"))
-            ),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
@@ -372,7 +369,6 @@ class BigQuery(Dialect):
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TryCast: lambda self, e: f"SAFE_CAST({self.sql(e, 'this')} AS {self.sql(e, 'to')})",
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.TsOrDsAdd: _date_add_sql("DATE", "ADD"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
@@ -516,6 +512,16 @@ class BigQuery(Dialect):
             "with",
             "within",
         }
+
+        def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
+            if not isinstance(expression.parent, exp.Cast):
+                return self.func(
+                    "TIMESTAMP", self.func("DATETIME", expression.this, expression.args.get("zone"))
+                )
+            return super().attimezone_sql(expression)
+
+        def trycast_sql(self, expression: exp.TryCast) -> str:
+            return self.cast_sql(expression, safe_prefix="SAFE_")
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if expression.alias_column_names:

@@ -236,3 +236,4 @@ class TestSchema(unittest.TestCase):
         # ones. Also, ensure that tables aren't normalized, since they're case-sensitive by default.
         schema = MappingSchema(schema={"Foo": {"`BaR`": "int"}}, dialect="bigquery")
         self.assertEqual(schema.column_names("Foo"), ["bar"])
+        self.assertEqual(schema.column_names("foo"), [])

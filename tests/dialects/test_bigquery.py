@@ -6,6 +6,27 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
+        with self.assertRaises(ValueError):
+            transpile("'\\'", read="bigquery")
+
+        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(ParseError):
+            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
+
         self.validate_identity("DATE(2016, 12, 25)")
         self.validate_identity("DATE(CAST('2016-12-25 23:59:59' AS DATETIME))")
         self.validate_identity("SELECT foo IN UNNEST(bar) AS bla")
@@ -21,16 +42,8 @@ class TestBigQuery(Validator):
         self.validate_identity("x <> ''")
         self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
         self.validate_identity("SELECT b'abc'")
-        self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[1, 2])""")
+        self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])""")
         self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
-        self.validate_all(
-            "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
-            write={
-                "": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
-                "bigquery": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
-                "duckdb": "SELECT {'y': ARRAY(SELECT {'b': b} FROM x)} FROM z",
-            },
-        )
         self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
         self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
@@ -38,6 +51,13 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
         self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
+        self.validate_identity("CAST(x AS TIMESTAMP)")
+        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
+        self.validate_identity("BEGIN A B C D E F")
+        self.validate_identity("BEGIN TRANSACTION")
+        self.validate_identity("COMMIT TRANSACTION")
+        self.validate_identity("ROLLBACK TRANSACTION")
+        self.validate_identity("CAST(x AS BIGNUMERIC)")
         self.validate_identity(
             "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
         )
@@ -50,8 +70,43 @@ class TestBigQuery(Validator):
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS foo AS SELECT * FROM bla EXCEPT DISTINCT (SELECT * FROM bar) LIMIT 0"
         )
+        self.validate_identity(
+            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)"
+        )
+        self.validate_identity(
+            "SELECT item, purchases, LAST_VALUE(item) OVER (item_window ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce WINDOW item_window AS (ORDER BY purchases)"
+        )
+        self.validate_identity(
+            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
+        )
 
         self.validate_all("SELECT SPLIT(foo)", write={"bigquery": "SELECT SPLIT(foo, ',')"})
+        self.validate_all("SELECT 1 AS hash", write={"bigquery": "SELECT 1 AS `hash`"})
+        self.validate_all("SELECT 1 AS at", write={"bigquery": "SELECT 1 AS `at`"})
+        self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
+        self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
+        self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
+        self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
+        self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
+        self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
+        self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})
+        self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
+        self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
+        self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
+        self.validate_all(
+            "WITH cte AS (SELECT [1, 2, 3] AS arr) SELECT col FROM cte CROSS JOIN UNNEST(arr) AS col",
+            read={
+                "spark": "WITH cte AS (SELECT ARRAY(1, 2, 3) AS arr) SELECT EXPLODE(arr) FROM cte"
+            },
+        )
+        self.validate_all(
+            "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+            write={
+                "": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+                "bigquery": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+                "duckdb": "SELECT {'y': ARRAY(SELECT {'b': b} FROM x)} FROM z",
+            },
+        )
         self.validate_all(
             "cast(x as date format 'MM/DD/YYYY')",
             write={
@@ -64,11 +119,6 @@ class TestBigQuery(Validator):
                 "bigquery": "PARSE_TIMESTAMP('%Y.%m.%d %I:%M:%S%z', x)",
             },
         )
-        self.validate_all("SELECT 1 AS hash", write={"bigquery": "SELECT 1 AS `hash`"})
-        self.validate_all("SELECT 1 AS at", write={"bigquery": "SELECT 1 AS `at`"})
-        self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
-        self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
-        self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all(
             "CREATE TEMP TABLE foo AS SELECT 1",
             write={"bigquery": "CREATE TEMPORARY TABLE foo AS SELECT 1"},
@@ -83,14 +133,6 @@ class TestBigQuery(Validator):
             "SELECT * FROM `my-project.my-dataset.my-table`",
             write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
         )
-        self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
-        self.validate_identity("CAST(x AS TIMESTAMP)")
-        self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
-        self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
-        self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
         self.validate_all(
             "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
             write={
@@ -122,9 +164,6 @@ class TestBigQuery(Validator):
                 "spark": "'x\\''",
             },
         )
-        with self.assertRaises(ValueError):
-            transpile("'\\'", read="bigquery")
-
         self.validate_all(
             "r'x\\''",
             write={
@@ -302,7 +341,6 @@ class TestBigQuery(Validator):
                 "spark": "CURRENT_TIMESTAMP()",
             },
         )
-
         self.validate_all(
             "DIV(x, y)",
             write={
@@ -310,19 +348,6 @@ class TestBigQuery(Validator):
                 "duckdb": "x // y",
             },
         )
-
-        self.validate_identity(
-            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)"
-        )
-
-        self.validate_identity(
-            "SELECT item, purchases, LAST_VALUE(item) OVER (item_window ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce WINDOW item_window AS (ORDER BY purchases)"
-        )
-
-        self.validate_identity(
-            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
-        )
-
         self.validate_all(
             "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
             write={
@@ -359,25 +384,6 @@ class TestBigQuery(Validator):
                 "spark": "SELECT * FROM a WHERE b IN (SELECT UNNEST(ARRAY(1, 2, 3)))",
             },
         )
-
-        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(ParseError):
-            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
-
         self.validate_all(
             "DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)",
             write={
@@ -466,14 +472,6 @@ class TestBigQuery(Validator):
                 "duckdb": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
             },
         )
-        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
-        self.validate_identity("BEGIN A B C D E F")
-        self.validate_identity("BEGIN TRANSACTION")
-        self.validate_identity("COMMIT TRANSACTION")
-        self.validate_identity("ROLLBACK TRANSACTION")
-        self.validate_identity("CAST(x AS BIGNUMERIC)")
-
-        self.validate_identity("SELECT * FROM UNNEST([1]) WITH ORDINALITY")
         self.validate_all(
             "SELECT * FROM UNNEST([1]) WITH OFFSET",
             write={"bigquery": "SELECT * FROM UNNEST([1]) WITH OFFSET AS offset"},

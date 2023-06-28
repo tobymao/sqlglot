@@ -3732,20 +3732,23 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_string_agg(self) -> exp.Expression:
-        expression: t.Optional[exp.Expression]
-
         if self._match(TokenType.DISTINCT):
-            args = self._parse_csv(self._parse_conjunction)
-            expression = self.expression(exp.Distinct, expressions=[seq_get(args, 0)])
+            args: t.List[t.Optional[exp.Expression]] = [
+                self.expression(exp.Distinct, expressions=[self._parse_conjunction()])
+            ]
+            if self._match(TokenType.COMMA):
+                args.extend(self._parse_csv(self._parse_conjunction))
         else:
             args = self._parse_csv(self._parse_conjunction)
-            expression = seq_get(args, 0)
 
         index = self._index
         if not self._match(TokenType.R_PAREN):
             # postgres: STRING_AGG([DISTINCT] expression, separator [ORDER BY expression1 {ASC | DESC} [, ...]])
-            order = self._parse_order(this=expression)
-            return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
+            return self.expression(
+                exp.GroupConcat,
+                this=seq_get(args, 0),
+                separator=self._parse_order(this=seq_get(args, 1)),
+            )
 
         # Checks if we can parse an order clause: WITHIN GROUP (ORDER BY <order_by_expression_list> [ASC | DESC]).
         # This is done "manually", instead of letting _parse_window parse it into an exp.WithinGroup node, so that
@@ -3755,7 +3758,7 @@ class Parser(metaclass=_Parser):
             return self.validate_expression(exp.GroupConcat.from_arg_list(args), args)
 
         self._match_l_paren()  # The corresponding match_r_paren will be called in parse_function (caller)
-        order = self._parse_order(this=expression)
+        order = self._parse_order(this=seq_get(args, 0))
         return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
 
     def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:

@@ -122,7 +122,7 @@ def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
 
         expression.args["alias"].set("columns", None)
 
-        for (name, select) in zip(column_names, cte_query.selects):
+        for name, select in zip(column_names, cte_query.selects):
             to_replace = select
 
             if isinstance(select, exp.Alias):

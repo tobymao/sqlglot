@@ -111,7 +111,6 @@ def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
     """BigQuery doesn't allow column names when defining a CTE, so we try to push them down."""
     if isinstance(expression, exp.CTE) and expression.alias_column_names:
         cte_query = expression.this
-        column_names = expression.alias_column_names
 
         if cte_query.is_star:
             logger.warning(
@@ -120,6 +119,7 @@ def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
             )
             return expression
 
+        column_names = expression.alias_column_names
         expression.args["alias"].set("columns", None)
 
         for name, select in zip(column_names, cte_query.selects):

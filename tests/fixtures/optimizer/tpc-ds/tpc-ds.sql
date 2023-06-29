@@ -5985,7 +5985,7 @@ WITH "date_dim_2" AS (
   WHERE
     "store"."currency_rank" <= 10 OR "store"."return_rank" <= 10
   ORDER BY
-    'store',
+    1,
     "store"."return_rank",
     "store"."currency_rank"
   LIMIT 100

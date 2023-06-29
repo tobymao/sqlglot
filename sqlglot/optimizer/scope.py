@@ -1,4 +1,5 @@
 import itertools
+import logging
 import typing as t
 from collections import defaultdict
 from enum import Enum, auto
@@ -6,6 +7,8 @@ from enum import Enum, auto
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import find_new_name
+
+logger = logging.getLogger("sqlglot")
 
 
 class ScopeType(Enum):
@@ -536,7 +539,11 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, exp.UDTF):
         pass
     else:
-        raise OptimizeError(f"Unexpected expression type: {type(scope.expression)}")
+        logger.warning(
+            "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
+        )
+        return
+
     yield scope
 
 
@@ -576,6 +583,8 @@ def _traverse_ctes(scope):
             if isinstance(union, exp.Union):
                 recursive_scope = scope.branch(union.this, scope_type=ScopeType.CTE)
 
+        child_scope = None
+
         for child_scope in _traverse_scope(
             scope.branch(
                 cte.this,
@@ -593,7 +602,8 @@ def _traverse_ctes(scope):
                 child_scope.add_source(alias, recursive_scope)
 
         # append the final child_scope yielded
-        scope.cte_scopes.append(child_scope)
+        if child_scope:
+            scope.cte_scopes.append(child_scope)
 
     scope.sources.update(sources)
 
@@ -632,6 +642,9 @@ def _traverse_tables(scope):
                 sources[find_new_name(sources, table_name)] = expression
             else:
                 sources[source_name] = expression
+            continue
+
+        if not isinstance(expression, exp.DerivedTable):
             continue
 
         if isinstance(expression, exp.UDTF):

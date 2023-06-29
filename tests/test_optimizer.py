@@ -1,6 +1,7 @@
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
+from unittest.mock import patch
 
 import duckdb
 from pandas.testing import assert_frame_equal
@@ -14,6 +15,7 @@ from sqlglot.schema import MappingSchema
 from tests.helpers import (
     TPCDS_SCHEMA,
     TPCH_SCHEMA,
+    assert_logger_contains,
     load_sql_fixture_pairs,
     load_sql_fixtures,
     string_to_bool,
@@ -409,6 +411,15 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 if isinstance(node, exp.Column)
             },
             {"s.b"},
+        )
+
+    @patch("sqlglot.optimizer.scope.logger")
+    def test_scope_warning(self, logger):
+        self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)
+        assert_logger_contains(
+            "Cannot traverse scope %s with type '%s'",
+            logger,
+            level="warning",
         )
 
     def test_literal_type_annotation(self):

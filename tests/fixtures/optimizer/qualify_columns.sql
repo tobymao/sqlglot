@@ -87,6 +87,23 @@ SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
 SELECT a, b FROM x ORDER BY 1, 2;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a, x.b;
 
+SELECT 2 FROM x GROUP BY 1;
+SELECT 2 AS "2" FROM x AS x GROUP BY 1;
+
+SELECT 'a' AS a FROM x GROUP BY 1;
+SELECT 'a' AS a FROM x AS x GROUP BY 1;
+
+# execute: false
+-- this query seems to be invalid in postgres and duckdb but valid in bigquery
+SELECT 2 a FROM x GROUP BY 1 HAVING a > 1;
+SELECT 2 AS a FROM x AS x GROUP BY 1 HAVING a > 1;
+
+SELECT 2 d FROM x GROUP BY d HAVING d > 1;
+SELECT 2 AS d FROM x AS x GROUP BY 1 HAVING d > 1;
+
+SELECT 2 d FROM x GROUP BY 1 ORDER BY 1;
+SELECT 2 AS d FROM x AS x GROUP BY 1 ORDER BY d;
+
 # execute: false
 SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);

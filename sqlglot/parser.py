@@ -4715,12 +4715,8 @@ class Parser(metaclass=_Parser):
             exp.replace_children(this, self._replace_columns_with_dots)
             table = this.args.get("table")
             this = (
-                self.expression(exp.Dot, this=table, expression=this.this)
-                if table
-                else self.expression(exp.Var, this=this.name)
+                self.expression(exp.Dot, this=table, expression=this.this) if table else this.this
             )
-        elif isinstance(this, exp.Identifier):
-            this = self.expression(exp.Var, this=this.name)
 
         return this
 

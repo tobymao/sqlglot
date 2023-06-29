@@ -717,6 +717,7 @@ class Parser(metaclass=_Parser):
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
     FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+        "ANY_VALUE": lambda self: self._parse_any_value(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONCAT": lambda self: self._parse_concat(),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
@@ -3677,6 +3678,18 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
 
         return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
+
+    def _parse_any_value(self) -> exp.AnyValue:
+        this = self._parse_lambda()
+        is_max = None
+        having = None
+
+        if self._match(TokenType.HAVING):
+            self._match_texts(("MAX", "MIN"))
+            is_max = self._prev.text == "MAX"
+            having = self._parse_column()
+
+        return self.expression(exp.AnyValue, this=this, having=having, max=is_max)
 
     def _parse_cast(self, strict: bool) -> exp.Expression:
         this = self._parse_conjunction()

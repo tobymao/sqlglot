@@ -3922,7 +3922,7 @@ class Avg(AggFunc):
 
 
 class AnyValue(AggFunc):
-    pass
+    arg_types = {"this": True, "having": False, "max": False}
 
 
 class Case(Func):

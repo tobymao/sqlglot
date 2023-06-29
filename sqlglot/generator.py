@@ -2423,6 +2423,15 @@ class Generator:
         buckets = self.sql(expression, "buckets")
         return f"CLUSTERED BY ({expressions}){sorted_by} INTO {buckets} BUCKETS"
 
+    def anyvalue_sql(self, expression: exp.AnyValue) -> str:
+        this = self.sql(expression, "this")
+        having = self.sql(expression, "having")
+
+        if having:
+            this = f"{this} HAVING {'MAX' if expression.args.get('max') else 'MIN'} {having}"
+
+        return self.func("ANY_VALUE", this)
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

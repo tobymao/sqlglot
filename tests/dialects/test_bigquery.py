@@ -29,6 +29,8 @@ class TestBigQuery(Validator):
         with self.assertRaises(ParseError):
             transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
 
+        self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
+        self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
         self.validate_identity("SELECT `project-id`.udfs.func(call.dir)")
         self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")

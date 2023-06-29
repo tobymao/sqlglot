@@ -47,8 +47,8 @@ UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
 }
 
 
-# Projections of the following types in the outer query can be replaced without
-# getting wrapped in parentheses, because the precedence won't be altered.
+# Projections in the outer query that are instances of these types can be replaced
+# without getting wrapped in parentheses, because the precedence won't be altered.
 SAFE_TO_REPLACE_UNWRAPPED = (
     exp.Column,
     exp.EQ,

@@ -86,6 +86,10 @@ def _parse_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
     )
 
 
+def _parse_datediff(args: t.List) -> exp.DateDiff:
+    return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
+
+
 def _unix_to_time_sql(self: generator.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
@@ -214,15 +218,15 @@ class Snowflake(Dialect):
             "DATEADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
-            "DATEDIFF": lambda args: exp.DateDiff(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
+            "DATEDIFF": _parse_datediff,
             "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
             "OBJECT_CONSTRUCT": _parse_object_construct,
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "TIMEDIFF": _parse_datediff,
+            "TIMESTAMPDIFF": _parse_datediff,
             "TO_ARRAY": exp.Array.from_arg_list,
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,

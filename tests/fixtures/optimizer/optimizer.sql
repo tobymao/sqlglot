@@ -693,3 +693,11 @@ GROUP BY
   "x"."a" + 1 + 1
 HAVING
   "x"."a" + 1 + 1 + 1 + 1 > 1;
+
+# title: replace alias with mult expression without wrapping it
+WITH cte AS (SELECT a * b AS c, a AS d, b as e FROM x) SELECT c + d - (c - e) AS f FROM cte;
+SELECT
+  "x"."a" * "x"."b" + "x"."a" - (
+    "x"."a" * "x"."b" - "x"."b"
+  ) AS "f"
+FROM "x" AS "x";

@@ -47,6 +47,17 @@ UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
 }
 
 
+# Projections in the outer query that are instances of these types can be replaced
+# without getting wrapped in parentheses, because the precedence won't be altered.
+SAFE_TO_REPLACE_UNWRAPPED = (
+    exp.Column,
+    exp.EQ,
+    exp.Func,
+    exp.NEQ,
+    exp.Paren,
+)
+
+
 def merge_ctes(expression, leave_tables_isolated=False):
     scopes = traverse_scope(expression)
 
@@ -293,8 +304,17 @@ def _merge_expressions(outer_scope, inner_scope, alias):
         if not projection_name:
             continue
         columns_to_replace = outer_columns.get(projection_name, [])
+
+        expression = expression.unalias()
+        must_wrap_expression = not isinstance(expression, SAFE_TO_REPLACE_UNWRAPPED)
+
         for column in columns_to_replace:
-            column.replace(expression.unalias().copy())
+            # Ensures we don't alter the intended operator precedence if there's additional
+            # context surrounding the outer expression (i.e. it's not a simple projection).
+            if isinstance(column.parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
+                expression = exp.paren(expression, copy=False)
+
+            column.replace(expression.copy())
 
 
 def _merge_where(outer_scope, inner_scope, from_or_join):

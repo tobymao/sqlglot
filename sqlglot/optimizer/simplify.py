@@ -400,6 +400,7 @@ def simplify_parens(expression):
         or not isinstance(this, exp.Binary)
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
         or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
+        or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
     ):
         return expression.this
     return expression

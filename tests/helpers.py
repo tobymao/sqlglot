@@ -22,7 +22,9 @@ def _extract_meta(sql):
 
 def assert_logger_contains(message, logger, level="error"):
     output = "\n".join(str(args[0][0]) for args in getattr(logger, level).call_args_list)
-    assert message in output
+    if message not in output:
+        print(f"Expected '{message}' not in {output}")
+        raise
 
 
 def load_sql_fixtures(filename):

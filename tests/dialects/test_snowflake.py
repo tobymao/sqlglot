@@ -550,14 +550,16 @@ class TestSnowflake(Validator):
                 "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
             },
         )
-        self.validate_identity("DATEDIFF(DAY, 5, CAST('2008-12-25' AS DATE))")
         self.validate_identity(
-            "TIMEDIFF(DAY, 5, CAST('2008-12-25' AS DATE))",
-            "DATEDIFF(DAY, 5, CAST('2008-12-25' AS DATE))",
+            "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))"
         )
         self.validate_identity(
-            "TIMESTAMPDIFF(DAY, 5, CAST('2008-12-25' AS DATE))",
-            "DATEDIFF(DAY, 5, CAST('2008-12-25' AS DATE))",
+            "TIMEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
+            "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
+        )
+        self.validate_identity(
+            "TIMESTAMPDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
+            "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
         )
 
     def test_semi_structured_types(self):

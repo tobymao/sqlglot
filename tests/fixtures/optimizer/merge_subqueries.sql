@@ -2,7 +2,7 @@
 SELECT a, b FROM (SELECT a, b FROM x);
 SELECT x.a AS a, x.b AS b FROM x AS x;
 
-# title: Wrap addition in a multiplicaiton
+# title: Wrap addition in a multiplication
 SELECT c * 2 AS d FROM (SELECT a + b AS c FROM x);
 SELECT (x.a + x.b) * 2 AS d FROM x AS x;
 

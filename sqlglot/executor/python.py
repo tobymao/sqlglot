@@ -19,7 +19,6 @@ class PythonExecutor:
         self.tables = tables or {}
 
     def execute(self, plan):
-        running = set()
         finished = set()
         queue = set(plan.leaves)
         contexts = {}
@@ -34,7 +33,6 @@ class PythonExecutor:
                         for name, table in contexts[dep].tables.items()
                     }
                 )
-                running.add(node)
 
                 if isinstance(node, planner.Scan):
                     contexts[node] = self.scan(node, context)
@@ -49,11 +47,10 @@ class PythonExecutor:
                 else:
                     raise NotImplementedError
 
-                running.remove(node)
                 finished.add(node)
 
                 for dep in node.dependents:
-                    if dep not in running and all(d in contexts for d in dep.dependencies):
+                    if all(d in contexts for d in dep.dependencies):
                         queue.add(dep)
 
                 for dep in node.dependencies:

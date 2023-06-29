@@ -2,6 +2,28 @@
 SELECT a, b FROM (SELECT a, b FROM x);
 SELECT x.a AS a, x.b AS b FROM x AS x;
 
+# title: Wrap addition in a multiplicaiton
+SELECT c * 2 AS d FROM (SELECT a + b AS c FROM x);
+SELECT (x.a + x.b) * 2 AS d FROM x AS x;
+
+# title: Wrap addition in an addition
+# note: The "simplify" rule will unwrap this
+SELECT c + d AS e FROM (SELECT a + b AS c, a AS d FROM x);
+SELECT (x.a + x.b) + x.a AS e FROM x AS x;
+
+# title: Wrap multiplication in an addition
+# note: The "simplify" rule will unwrap this
+WITH cte AS (SELECT a * b AS c, a AS d FROM x) SELECT c + d AS e FROM cte;
+SELECT (x.a * x.b) + x.a AS e FROM x AS x;
+
+# title: Don't wrap function
+SELECT 2 * foo AS bar FROM (SELECT CAST(b AS DOUBLE) AS foo FROM x);
+SELECT 2 * CAST(x.b AS DOUBLE) AS bar FROM x AS x;
+
+# title: Don't wrap a wrapped expression
+SELECT foo * 2 AS bar FROM (SELECT (1 + 2 + 3) AS foo FROM x);
+SELECT (1 + 2 + 3) * 2 AS bar FROM x AS x;
+
 # title: Inner table alias is merged
 SELECT a, b FROM (SELECT a, b FROM x AS q) AS r;
 SELECT q.a AS a, q.b AS b FROM x AS q;

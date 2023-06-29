@@ -313,7 +313,9 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         return normalized_mapping
 
     def _normalize_table(self, table: exp.Table | str, dialect: DialectType = None) -> exp.Table:
-        normalized_table = exp.maybe_parse(table, into=exp.Table, dialect=dialect or self.dialect, copy=True)
+        normalized_table = exp.maybe_parse(
+            table, into=exp.Table, dialect=dialect or self.dialect, copy=True
+        )
 
         for arg in TABLE_ARGS:
             value = normalized_table.args.get(arg)

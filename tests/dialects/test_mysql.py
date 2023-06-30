@@ -48,6 +48,11 @@ class TestMySQL(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT @a MEMBER OF(@c), @b MEMBER OF(@c)")
+        self.validate_identity("SELECT JSON_ARRAY(4, 5) MEMBER OF('[[3,4],[4,5]]')")
+        self.validate_identity("SELECT CAST('[4,5]' AS JSON) MEMBER OF('[[3,4],[4,5]]')")
+        self.validate_identity("""SELECT 'ab' MEMBER OF('[23, "abc", 17, "ab", 10]')""")
+        self.validate_identity("""SELECT 17 MEMBER OF('[23, "abc", 17, "ab", 10]')""")
         self.validate_identity("CAST(x AS ENUM('a', 'b'))")
         self.validate_identity("CAST(x AS SET('a', 'b'))")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")

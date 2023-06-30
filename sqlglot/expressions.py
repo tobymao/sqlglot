@@ -4482,7 +4482,7 @@ class StrToDate(Func):
 
 
 class StrToTime(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": True, "format": True, "zone": False}
 
 
 # Spark allows unix_timestamp()

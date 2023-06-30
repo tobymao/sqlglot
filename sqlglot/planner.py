@@ -23,9 +23,11 @@ class Plan:
             while nodes:
                 node = nodes.pop()
                 dag[node] = set()
+
                 for dep in node.dependencies:
                     dag[node].add(dep)
                     nodes.add(dep)
+
             self._dag = dag
 
         return self._dag
@@ -128,13 +130,16 @@ class Step:
             agg_funcs = tuple(expression.find_all(exp.AggFunc))
             if agg_funcs:
                 aggregations.add(expression)
+
             for agg in agg_funcs:
                 for operand in agg.unnest_operands():
                     if isinstance(operand, exp.Column):
                         continue
                     if operand not in operands:
                         operands[operand] = next_operand_name()
+
                     operand.replace(exp.column(operands[operand], quoted=True))
+
             return bool(agg_funcs)
 
         for e in expression.expressions:
@@ -178,13 +183,14 @@ class Step:
             for k, v in aggregate.group.items():
                 intermediate[v] = k
                 if isinstance(v, exp.Column):
-                    intermediate[v.alias_or_name] = k
+                    intermediate[v.name] = k
 
             for projection in projections:
                 for node, *_ in projection.walk():
                     name = intermediate.get(node)
                     if name:
                         node.replace(exp.column(name, step.name))
+
             if aggregate.condition:
                 for node, *_ in aggregate.condition.walk():
                     name = intermediate.get(node) or intermediate.get(node.name)
@@ -197,6 +203,15 @@ class Step:
         order = expression.args.get("order")
 
         if order:
+            if isinstance(step, Aggregate):
+                for ordered in order.expressions:
+                    if ordered.find(exp.AggFunc):
+                        operand_name = next_operand_name()
+                        extract_agg_operands(exp.alias_(ordered.this, operand_name, quoted=True))
+                        ordered.this.replace(exp.column(operand_name, quoted=True))
+
+                step.aggregations = list(aggregations)
+
             sort = Sort()
             sort.name = step.name
             sort.key = order.expressions

@@ -471,7 +471,7 @@ make docs-serve
 
 ```
 make style  # Only linter checks
-make unit   # Only unit tests & linter checks
+make unit   # Only unit tests
 make check  # Full test suite & linter checks
 ```
 

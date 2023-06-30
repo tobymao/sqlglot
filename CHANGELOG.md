@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v16.7.7] - 2023-06-30
+### :bug: Bug Fixes
+- [`3005306`](https://github.com/tobymao/sqlglot/commit/30053066bf9909ff521e8ac28fd3063a91159a81) - qualify column in func with equality *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.7.6] - 2023-06-30
 ### :bug: Bug Fixes
 - [`9919e62`](https://github.com/tobymao/sqlglot/commit/9919e62046967f1fcbc40a638ab6234bc6082c65) - make bigquery unnest unalias more comprehensive *(commit by [@tobymao](https://github.com/tobymao))*
@@ -729,3 +734,4 @@ Changelog
 [v16.7.2]: https://github.com/tobymao/sqlglot/compare/v16.7.1...v16.7.2
 [v16.7.4]: https://github.com/tobymao/sqlglot/compare/v16.7.3...v16.7.4
 [v16.7.6]: https://github.com/tobymao/sqlglot/compare/v16.7.5...v16.7.6
+[v16.7.7]: https://github.com/tobymao/sqlglot/compare/v16.7.6...v16.7.7

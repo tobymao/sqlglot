@@ -620,6 +620,7 @@ class TestExecutor(unittest.TestCase):
             ("TIMESTRTOTIME('2022-01-01')", datetime.datetime(2022, 1, 1)),
             ("LEFT('12345', 3)", "123"),
             ("RIGHT('12345', 3)", "345"),
+            ("DATEDIFF('2022-01-03'::date, '2022-01-01'::TIMESTAMP::DATE)", 2),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

@@ -100,9 +100,19 @@ def substring(this, start=None, length=None):
 @null_if_any
 def cast(this, to):
     if to == exp.DataType.Type.DATE:
-        return datetime.date.fromisoformat(this)
-    if to == exp.DataType.Type.DATETIME:
-        return datetime.datetime.fromisoformat(this)
+        if isinstance(this, datetime.datetime):
+            return this.date()
+        if isinstance(this, datetime.date):
+            return this
+        if isinstance(this, str):
+            return datetime.date.fromisoformat(this)
+    if to in (exp.DataType.Type.DATETIME, exp.DataType.Type.TIMESTAMP):
+        if isinstance(this, datetime.datetime):
+            return this
+        if isinstance(this, datetime.date):
+            return datetime.datetime(this.year, this.month, this.day)
+        if isinstance(this, str):
+            return datetime.datetime.fromisoformat(this)
     if to == exp.DataType.Type.BOOLEAN:
         return bool(this)
     if to in exp.DataType.TEXT_TYPES:
@@ -111,7 +121,7 @@ def cast(this, to):
         return float(this)
     if to in exp.DataType.NUMERIC_TYPES:
         return int(this)
-    raise NotImplementedError(f"Casting to '{to}' not implemented.")
+    raise NotImplementedError(f"Casting {this} to '{to}' not implemented.")
 
 
 def ordered(this, desc, nulls_first):
@@ -153,6 +163,7 @@ ENV = {
     "CONCAT": null_if_any(lambda *args: "".join(args)),
     "SAFECONCAT": null_if_any(lambda *args: "".join(str(arg) for arg in args)),
     "CONCATWS": null_if_any(lambda this, *args: this.join(args)),
+    "DATEDIFF": null_if_any(lambda this, expression, *_: (this - expression).days),
     "DATESTRTODATE": null_if_any(lambda arg: datetime.date.fromisoformat(arg)),
     "DIV": null_if_any(lambda e, this: e / this),
     "DOT": null_if_any(lambda e, this: e[this]),

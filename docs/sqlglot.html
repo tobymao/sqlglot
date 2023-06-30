@@ -313,10 +313,11 @@
 <pre><span></span><code><span class="p">[{</span>
   <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="s1">&#39;Expecting )&#39;</span><span class="p">,</span>
   <span class="s1">&#39;line&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="s1">&#39;col&#39;</span><span class="p">:</span> <span class="mi">13</span><span class="p">,</span>
+  <span class="s1">&#39;col&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
   <span class="s1">&#39;start_context&#39;</span><span class="p">:</span> <span class="s1">&#39;SELECT foo( &#39;</span><span class="p">,</span>
   <span class="s1">&#39;highlight&#39;</span><span class="p">:</span> <span class="s1">&#39;FROM&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;end_context&#39;</span><span class="p">:</span> <span class="s1">&#39; bar&#39;</span>
+  <span class="s1">&#39;end_context&#39;</span><span class="p">:</span> <span class="s1">&#39; bar&#39;</span><span class="p">,</span>
+  <span class="s1">&#39;into_expression&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">}]</span>
 </code></pre>
 </div>
@@ -595,7 +596,9 @@
 
 <h2 id="run-tests-and-lint">Run Tests and Lint</h2>
 
-<pre><code>make check  # Set SKIP_INTEGRATION=1 to skip integration tests
+<pre><code>make style  # Only linter checks
+make unit   # Only unit tests
+make check  # Full test suite &amp; linter checks
 </code></pre>
 
 <h2 id="benchmarks">Benchmarks</h2>

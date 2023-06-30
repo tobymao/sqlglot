@@ -203,8 +203,10 @@ class BigQuery(Dialect):
             while isinstance(parent, exp.Dot):
                 parent = parent.parent
 
-            if not (isinstance(parent, exp.Table) and parent.db) and not expression.meta.get(
-                "is_table"
+            if (
+                not isinstance(parent, exp.UserDefinedFunction)
+                and not (isinstance(parent, exp.Table) and parent.db)
+                and not expression.meta.get("is_table")
             ):
                 expression.set("this", expression.this.lower())
 

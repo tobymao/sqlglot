@@ -229,6 +229,17 @@ class TestOptimizer(unittest.TestCase):
             'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."Y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA"."COLUMNS" AS "columns") SELECT "x"."a" AS "a" FROM "x"',
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "CREATE FUNCTION udfs.`myTest`(`x` FLOAT64) AS (1)",
+                    read="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "CREATE FUNCTION `udfs`.`myTest`(`x` FLOAT64) AS (1)",
+        )
+
         self.check_file("qualify_columns", qualify_columns, execute=True, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):

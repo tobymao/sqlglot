@@ -123,14 +123,15 @@ class MySQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "CHARSET": TokenType.CHARACTER_SET,
+            "ENUM": TokenType.ENUM,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,
             "LONGBLOB": TokenType.LONGBLOB,
             "LONGTEXT": TokenType.LONGTEXT,
             "MEDIUMBLOB": TokenType.MEDIUMBLOB,
             "MEDIUMTEXT": TokenType.MEDIUMTEXT,
+            "MEMBER OF": TokenType.MEMBER_OF,
             "SEPARATOR": TokenType.SEPARATOR,
-            "ENUM": TokenType.ENUM,
             "START": TokenType.BEGIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
@@ -195,6 +196,13 @@ class MySQL(Dialect):
         TABLE_ALIAS_TOKENS = (
             parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
         )
+
+        RANGE_PARSERS = {
+            **parser.Parser.RANGE_PARSERS,
+            TokenType.MEMBER_OF: lambda self, this: self.expression(
+                exp.JSONArrayContains, this=this, expression=self._parse_wrapped(self._parse_string)
+            ),
+        }
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

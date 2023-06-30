@@ -3624,6 +3624,11 @@ class Is(Binary, Predicate):
     pass
 
 
+# https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html#operator_member-of
+class JSONArrayContains(Binary, Predicate):
+    pass
+
+
 class Kwarg(Binary):
     """Kwarg in special functions like func(kwarg => y)."""
 

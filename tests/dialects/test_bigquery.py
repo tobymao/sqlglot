@@ -29,6 +29,7 @@ class TestBigQuery(Validator):
         with self.assertRaises(ParseError):
             transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
 
+        self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
         self.validate_identity("SELECT `project-id`.udfs.func(call.dir)")
@@ -105,6 +106,14 @@ class TestBigQuery(Validator):
         self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
         self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
+        self.validate_all(
+            "SELECT CAST('20201225' AS TIMESTAMP FORMAT 'YYYYMMDD' AT TIME ZONE 'America/New_York')",
+            write={"bigquery": "SELECT PARSE_TIMESTAMP('%Y%m%d', '20201225', 'America/New_York')"},
+        )
+        self.validate_all(
+            "SELECT CAST('20201225' AS TIMESTAMP FORMAT 'YYYYMMDD')",
+            write={"bigquery": "SELECT PARSE_TIMESTAMP('%Y%m%d', '20201225')"},
+        )
         self.validate_all(
             "SELECT CAST(TIMESTAMP '2008-12-25 00:00:00+00:00' AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM') AS date_time_to_string",
             write={

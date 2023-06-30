@@ -3709,20 +3709,26 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
         elif self._match(TokenType.FORMAT):
-            fmt = self._parse_at_time_zone(self._parse_string())
+            fmt_string = self._parse_string()
+            fmt = self._parse_at_time_zone(fmt_string)
 
             if to.this in exp.DataType.TEMPORAL_TYPES:
-                return self.expression(
+                this = self.expression(
                     exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
                     this=this,
                     format=exp.Literal.string(
                         format_time(
-                            fmt.this if fmt else "",
+                            fmt_string.this if fmt_string else "",
                             self.FORMAT_MAPPING or self.TIME_MAPPING,
                             self.FORMAT_TRIE or self.TIME_TRIE,
                         )
                     ),
                 )
+
+                if isinstance(fmt, exp.AtTimeZone) and isinstance(this, exp.StrToTime):
+                    this.set("zone", fmt.args["zone"])
+
+                return this
 
         return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, format=fmt)
 

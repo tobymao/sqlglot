@@ -60,10 +60,10 @@ def _format_time_lambda(
         assert len(args) == 2
 
         return exp_class(
-            this=args[1],
+            this=exp.cast(args[1], "datetime"),
             format=exp.Literal.string(
                 format_time(
-                    args[0].name,
+                    args[0].name.lower(),
                     {**TSQL.TIME_MAPPING, **FULL_FORMAT_TIME_MAPPING}
                     if full_format_mapping
                     else TSQL.TIME_MAPPING,

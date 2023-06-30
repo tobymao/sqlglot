@@ -268,6 +268,7 @@ class Generator:
     STRICT_STRING_CONCAT = False
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
+    ESCAPE_LINE_BREAK = False
 
     can_identify: t.Callable[[str, str | bool], bool]
 
@@ -286,8 +287,6 @@ class Generator:
     HEX_END: t.Optional[str] = None
     BYTE_START: t.Optional[str] = None
     BYTE_END: t.Optional[str] = None
-    RAW_START: t.Optional[str] = None
-    RAW_END: t.Optional[str] = None
 
     __slots__ = (
         "pretty",
@@ -779,10 +778,7 @@ class Generator:
         return this
 
     def rawstring_sql(self, expression: exp.RawString) -> str:
-        string = expression.this
-        if self.RAW_START:
-            return f"{self.RAW_START}{self.escape_str(expression.this)}{self.RAW_END}"
-        string = self.escape_str(string.replace("\\", "\\\\"))
+        string = self.escape_str(expression.this.replace("\\", "\\\\"))
         return f"{self.QUOTE_START}{string}{self.QUOTE_END}"
 
     def datatypesize_sql(self, expression: exp.DataTypeSize) -> str:
@@ -1445,7 +1441,9 @@ class Generator:
 
     def escape_str(self, text: str) -> str:
         text = text.replace(self.QUOTE_END, self._escaped_quote_end)
-        if self.pretty:
+        if self.ESCAPE_LINE_BREAK:
+            text = text.replace("\n", "\\n")
+        elif self.pretty:
             text = text.replace("\n", self.SENTINEL_LINE_BREAK)
         return text
 

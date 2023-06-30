@@ -191,7 +191,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "r'x\\''",
             write={
-                "bigquery": "r'x\\''",
+                "bigquery": "'x\\''",
                 "hive": "'x\\''",
             },
         )
@@ -199,7 +199,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "r'x\\y'",
             write={
-                "bigquery": "r'x\\y'",
+                "bigquery": "'x\\\y'",
                 "hive": "'x\\\\y'",
             },
         )
@@ -215,7 +215,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             r'r"""/\*.*\*/"""',
             write={
-                "bigquery": r"r'/\*.*\*/'",
+                "bigquery": r"'/\\*.*\\*/'",
                 "duckdb": r"'/\\*.*\\*/'",
                 "presto": r"'/\\*.*\\*/'",
                 "hive": r"'/\\*.*\\*/'",
@@ -225,11 +225,25 @@ class TestBigQuery(Validator):
         self.validate_all(
             r'R"""/\*.*\*/"""',
             write={
-                "bigquery": r"r'/\*.*\*/'",
+                "bigquery": r"'/\\*.*\\*/'",
                 "duckdb": r"'/\\*.*\\*/'",
                 "presto": r"'/\\*.*\\*/'",
                 "hive": r"'/\\*.*\\*/'",
                 "spark": r"'/\\*.*\\*/'",
+            },
+        )
+        self.validate_all(
+            'r"""a\n"""',
+            write={
+                "bigquery": "'a\\n'",
+                "duckdb": "'a\n'",
+            },
+        )
+        self.validate_all(
+            '"""a\n"""',
+            write={
+                "bigquery": "'a\\n'",
+                "duckdb": "'a\n'",
             },
         )
         self.validate_all(

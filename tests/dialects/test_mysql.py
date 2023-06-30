@@ -64,7 +64,6 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT JSON_ARRAY(4, 5) MEMBER OF('[[3,4],[4,5]]')")
         self.validate_identity("SELECT CAST('[4,5]' AS JSON) MEMBER OF('[[3,4],[4,5]]')")
         self.validate_identity("""SELECT 'ab' MEMBER OF('[23, "abc", 17, "ab", 10]')""")
-        self.validate_identity("""SELECT 17 MEMBER OF('[23, "abc", 17, "ab", 10]')""")
         self.validate_identity("CAST(x AS ENUM('a', 'b'))")
         self.validate_identity("CAST(x AS SET('a', 'b'))")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
@@ -419,6 +418,13 @@ class TestMySQL(Validator):
         self.validate_all("CAST(x AS SIGNED INTEGER)", write={"mysql": "CAST(x AS SIGNED)"})
         self.validate_all("CAST(x AS UNSIGNED)", write={"mysql": "CAST(x AS UNSIGNED)"})
         self.validate_all("CAST(x AS UNSIGNED INTEGER)", write={"mysql": "CAST(x AS UNSIGNED)"})
+        self.validate_all(
+            """SELECT 17 MEMBER OF('[23, "abc", 17, "ab", 10]')""",
+            write={
+                "": """SELECT JSON_ARRAY_CONTAINS(17, '[23, "abc", 17, "ab", 10]')""",
+                "mysql": """SELECT 17 MEMBER OF('[23, "abc", 17, "ab", 10]')""",
+            },
+        )
         self.validate_all(
             "SELECT DATE_ADD('2023-06-23 12:00:00', INTERVAL 2 * 2 MONTH) FROM foo",
             write={

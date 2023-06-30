@@ -157,14 +157,10 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
 def explode_to_unnest(expression: exp.Expression) -> exp.Expression:
     """Convert explode/posexplode into unnest (used in hive -> presto)."""
     if isinstance(expression, exp.Select):
-        from sqlglot.optimizer.scope import build_scope
-
-        scope = build_scope(expression)
-        if not scope:
-            return expression
+        from sqlglot.optimizer.scope import Scope
 
         taken_select_names = set(expression.named_selects)
-        taken_source_names = set(scope.selected_sources)
+        taken_source_names = {name for name, _ in Scope(expression).references}
 
         for select in expression.selects:
             to_replace = select

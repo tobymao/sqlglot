@@ -88,6 +88,7 @@ class Scope:
         self._external_columns = None
         self._join_hints = None
         self._pivots = None
+        self._references = None
 
     def branch(self, expression, scope_type, chain_sources=None, **kwargs):
         """Branch from the current scope to a new, inner scope"""
@@ -292,15 +293,9 @@ class Scope:
             dict[str, (exp.Table|exp.Select, exp.Table|Scope)]: selected sources and nodes
         """
         if self._selected_sources is None:
-            referenced_names = []
-
-            for table in self.tables:
-                referenced_names.append((table.alias_or_name, table))
-            for expression in itertools.chain(self.derived_tables, self.udtfs):
-                referenced_names.append((expression.alias, expression.unnest()))
             result = {}
 
-            for name, node in referenced_names:
+            for name, node in self.references:
                 if name in result:
                     raise OptimizeError(f"Alias already used: {name}")
                 if name in self.sources:
@@ -308,6 +303,23 @@ class Scope:
 
             self._selected_sources = result
         return self._selected_sources
+
+    @property
+    def references(self) -> t.List[t.Tuple[str, exp.Expression]]:
+        if self._references is None:
+            self._references = []
+
+            for table in self.tables:
+                self._references.append((table.alias_or_name, table))
+            for expression in itertools.chain(self.derived_tables, self.udtfs):
+                self._references.append(
+                    (
+                        expression.alias,
+                        expression if expression.args.get("pivots") else expression.unnest(),
+                    )
+                )
+
+        return self._references
 
     @property
     def cte_sources(self):
@@ -381,9 +393,7 @@ class Scope:
     def pivots(self):
         if not self._pivots:
             self._pivots = [
-                pivot
-                for node in self.tables + self.derived_tables
-                for pivot in node.args.get("pivots") or []
+                pivot for _, node in self.references for pivot in node.args.get("pivots") or []
             ]
 
         return self._pivots

@@ -2440,9 +2440,6 @@ class Generator:
 
         return self.func("ANY_VALUE", this)
 
-    def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
-        return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
-
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

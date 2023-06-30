@@ -3624,11 +3624,6 @@ class Is(Binary, Predicate):
     pass
 
 
-# https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html#operator_member-of
-class JSONArrayContains(Binary, Predicate):
-    pass
-
-
 class Kwarg(Binary):
     """Kwarg in special functions like func(kwarg => y)."""
 
@@ -4250,6 +4245,11 @@ class JSONBExtractScalar(JSONExtract):
 class JSONFormat(Func):
     arg_types = {"this": False, "options": False}
     _sql_names = ["JSON_FORMAT"]
+
+
+# https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html#operator_member-of
+class JSONArrayContains(Binary, Predicate, Func):
+    _sql_names = ["JSON_ARRAY_CONTAINS"]
 
 
 class Least(Func):

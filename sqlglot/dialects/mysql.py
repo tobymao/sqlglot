@@ -464,6 +464,9 @@ class MySQL(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
+        def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
+            return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
+
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             """(U)BIGINT is not allowed in a CAST expression, so we use (UN)SIGNED instead."""
             if expression.to.this == exp.DataType.Type.BIGINT:

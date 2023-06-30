@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v16.7.6] - 2023-06-30
+### :bug: Bug Fixes
+- [`9919e62`](https://github.com/tobymao/sqlglot/commit/9919e62046967f1fcbc40a638ab6234bc6082c65) - make bigquery unnest unalias more comprehensive *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`15ac3c1`](https://github.com/tobymao/sqlglot/commit/15ac3c13f3af7a8bdc15a9631a932bd2d2a95332) - **executor**: get rid of 'running' set *(PR [#1861](https://github.com/tobymao/sqlglot/pull/1861) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v16.7.4] - 2023-06-29
 ### :sparkles: New Features
 - [`08c3074`](https://github.com/tobymao/sqlglot/commit/08c3074eea09a2c1ba0d1114bfd05910e6c61b5c) - **bigquery**: support the full syntax of ANY_VALUE *(PR [#1860](https://github.com/tobymao/sqlglot/pull/1860) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -720,3 +728,4 @@ Changelog
 [v16.7.1]: https://github.com/tobymao/sqlglot/compare/v16.7.0...v16.7.1
 [v16.7.2]: https://github.com/tobymao/sqlglot/compare/v16.7.1...v16.7.2
 [v16.7.4]: https://github.com/tobymao/sqlglot/compare/v16.7.3...v16.7.4
+[v16.7.6]: https://github.com/tobymao/sqlglot/compare/v16.7.5...v16.7.6

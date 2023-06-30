@@ -146,6 +146,9 @@ class Generator:
     # Whether or not to include the "SET" keyword in the "INSERT ... ON DUPLICATE KEY UPDATE" statement
     DUPLICATE_KEY_UPDATE_WITH_SET = True
 
+    # Whether or not to generate the limit as TOP <value> instead of LIMIT <value>
+    LIMIT_IS_TOP = False
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -1385,7 +1388,7 @@ class Generator:
         alias = f" AS {alias}" if alias else ""
         return f"LATERAL {this}{alias}"
 
-    def limit_sql(self, expression: exp.Limit) -> str:
+    def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
         args = ", ".join(
             sql
@@ -1395,7 +1398,7 @@ class Generator:
             )
             if sql
         )
-        return f"{this}{self.seg('LIMIT')} {args}"
+        return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args}"
 
     def offset_sql(self, expression: exp.Offset) -> str:
         this = self.sql(expression, "this")
@@ -1552,12 +1555,21 @@ class Generator:
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
         limit: t.Optional[exp.Fetch | exp.Limit] = expression.args.get("limit")
 
+        # If the limit is generated as TOP, we need to ensure it's not generated twice
+        with_offset_limit_modifiers = not isinstance(limit, exp.Limit) or not self.LIMIT_IS_TOP
+
         if self.LIMIT_FETCH == "LIMIT" and isinstance(limit, exp.Fetch):
             limit = exp.Limit(expression=limit.args.get("count"))
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             limit = exp.Fetch(direction="FIRST", count=limit.expression)
 
         fetch = isinstance(limit, exp.Fetch)
+
+        offset_limit_modifiers = (
+            self.offset_limit_modifiers(expression, fetch, limit)
+            if with_offset_limit_modifiers
+            else []
+        )
 
         return csv(
             *sqls,
@@ -1569,7 +1581,7 @@ class Generator:
             self.sql(expression, "having"),
             *self.after_having_modifiers(expression),
             self.sql(expression, "order"),
-            *self.offset_limit_modifiers(expression, fetch, limit),
+            *offset_limit_modifiers,
             *self.after_limit_modifiers(expression),
             sep="",
         )
@@ -1600,6 +1612,13 @@ class Generator:
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
         kind = self.sql(expression, "kind").upper()
+        limit = expression.args.get("limit")
+        top = (
+            self.limit_sql(limit, top=True)
+            if isinstance(limit, exp.Limit) and self.LIMIT_IS_TOP
+            else ""
+        )
+
         expressions = self.expressions(expression)
 
         if kind:
@@ -1626,7 +1645,7 @@ class Generator:
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
         sql = self.query_modifiers(
             expression,
-            f"SELECT{hint}{distinct}{kind}{expressions}",
+            f"SELECT{top}{hint}{distinct}{kind}{expressions}",
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )

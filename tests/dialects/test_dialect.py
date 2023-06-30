@@ -1307,7 +1307,7 @@ class TestDialect(Validator):
             write={
                 "sqlite": "SELECT x FROM y LIMIT 10",
                 "oracle": "SELECT x FROM y FETCH FIRST 10 ROWS ONLY",
-                "tsql": "SELECT x FROM y FETCH FIRST 10 ROWS ONLY",
+                "tsql": "SELECT TOP 10 x FROM y",
             },
         )
         self.validate_all(

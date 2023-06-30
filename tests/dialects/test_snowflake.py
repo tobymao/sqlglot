@@ -6,6 +6,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
@@ -32,6 +33,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity(
             'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)'
+        )
+        self.validate_identity(
+            "SELECT state, city, SUM(retail_price * quantity) AS gross_revenue FROM sales GROUP BY ALL"
         )
 
         self.validate_all("CAST(x AS BYTEINT)", write={"snowflake": "CAST(x AS INT)"})

@@ -1620,6 +1620,7 @@ class Group(Expression):
         "cube": False,
         "rollup": False,
         "totals": False,
+        "all": False,
     }
 
 

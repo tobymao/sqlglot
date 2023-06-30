@@ -1287,6 +1287,10 @@ class Generator:
 
     def group_sql(self, expression: exp.Group) -> str:
         group_by = self.op_expressions("GROUP BY", expression)
+
+        if expression.args.get("all"):
+            return f"{group_by} ALL"
+
         grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
         grouping_sets = (
             f"{self.seg('GROUPING SETS')} {self.wrap(grouping_sets)}" if grouping_sets else ""

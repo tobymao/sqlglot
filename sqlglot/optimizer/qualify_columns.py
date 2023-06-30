@@ -220,25 +220,6 @@ def _expand_group_by(scope: Scope):
     group.set("expressions", _expand_positional_references(scope, group.expressions))
     expression.set("group", group)
 
-    # group by expressions cannot be simplified, for example
-    # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
-    # the projection must exactly match the group by key
-    groups = set(group.expressions)
-    group.meta["final"] = True
-
-    for e in expression.selects:
-        for node, *_ in e.walk():
-            if node in groups:
-                e.meta["final"] = True
-                break
-
-    having = expression.args.get("having")
-    if having:
-        for node, *_ in having.walk():
-            if node in groups:
-                having.meta["final"] = True
-                break
-
 
 def _expand_order_by(scope: Scope, resolver: Resolver):
     order = scope.expression.args.get("order")

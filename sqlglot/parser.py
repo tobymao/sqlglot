@@ -3322,11 +3322,6 @@ class Parser(metaclass=_Parser):
         else:
             this = self._parse_select_or_expression(alias=alias)
 
-            if isinstance(this, exp.EQ):
-                left = this.this
-                if isinstance(left, exp.Column):
-                    left.replace(exp.var(left.text("this")))
-
         return self._parse_limit(self._parse_order(self._parse_respect_or_ignore_nulls(this)))
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:

@@ -155,6 +155,7 @@ REGEXP_LIKE('new york', '.')
 REGEXP_SPLIT('new york', '.')
 SPLIT('new york', '.')
 X((y AS z)).1
+X(a.b = 1)
 (x AS y, y AS z)
 REPLACE(1)
 DATE(x) = DATE(y)

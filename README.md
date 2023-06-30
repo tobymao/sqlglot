@@ -205,10 +205,11 @@ except sqlglot.errors.ParseError as e:
 [{
   'description': 'Expecting )',
   'line': 1,
-  'col': 13,
+  'col': 16,
   'start_context': 'SELECT foo( ',
   'highlight': 'FROM',
-  'end_context': ' bar'
+  'end_context': ' bar',
+  'into_expression': None,
 }]
 ```
 

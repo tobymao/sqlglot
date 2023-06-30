@@ -700,6 +700,11 @@ class TestExecutor(unittest.TestCase):
                 [(2, 25.0)],
                 ("_col_0", "_col_1"),
             ),
+            (
+                "SELECT a FROM x GROUP BY a ORDER BY AVG(b)",
+                [(2,), (1,), (3,)],
+                ("a",),
+            ),
         ):
             with self.subTest(sql):
                 result = execute(sql, tables=tables)

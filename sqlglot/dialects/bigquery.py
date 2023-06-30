@@ -163,6 +163,12 @@ def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _parse_timestamp(args: t.List) -> exp.StrToTime:
+    this = format_time_lambda(exp.StrToTime, "bigquery")([seq_get(args, 1), seq_get(args, 0)])
+    this.set("zone", seq_get(args, 2))
+    return this
+
+
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
 
@@ -266,9 +272,7 @@ class BigQuery(Dialect):
             "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
                 [seq_get(args, 1), seq_get(args, 0)]
             ),
-            "PARSE_TIMESTAMP": lambda args: format_time_lambda(exp.StrToTime, "bigquery")(
-                [seq_get(args, 1), seq_get(args, 0)]
-            ),
+            "PARSE_TIMESTAMP": _parse_timestamp,
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0),
@@ -400,7 +404,9 @@ class BigQuery(Dialect):
                 ]
             ),
             exp.StrToDate: lambda self, e: f"PARSE_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
-            exp.StrToTime: lambda self, e: f"PARSE_TIMESTAMP({self.format_time(e)}, {self.sql(e, 'this')})",
+            exp.StrToTime: lambda self, e: self.func(
+                "PARSE_TIMESTAMP", self.format_time(e), e.this, e.args.get("zone")
+            ),
             exp.TimeAdd: _date_add_sql("TIME", "ADD"),
             exp.TimeSub: _date_add_sql("TIME", "SUB"),
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
@@ -551,10 +557,15 @@ class BigQuery(Dialect):
         }
 
         def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
-            if not isinstance(expression.parent, exp.Cast):
+            parent = expression.parent
+
+            # BigQuery allows CAST(.. AS {STRING|TIMESTAMP} [FORMAT <fmt> [AT TIME ZONE <tz>]]).
+            # Only the TIMESTAMP one should use the below conversion, when AT TIME ZONE is included.
+            if not isinstance(parent, exp.Cast) or not parent.to.is_type("text"):
                 return self.func(
                     "TIMESTAMP", self.func("DATETIME", expression.this, expression.args.get("zone"))
                 )
+
             return super().attimezone_sql(expression)
 
         def trycast_sql(self, expression: exp.TryCast) -> str:

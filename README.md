@@ -470,7 +470,9 @@ make docs-serve
 ## Run Tests and Lint
 
 ```
-make check  # Set SKIP_INTEGRATION=1 to skip integration tests
+make lint        # Run only the linter checks
+make check       # Run the full test suite & linter checks
+make check-unit  # Run only the unit tests & linter checks
 ```
 
 ## Benchmarks

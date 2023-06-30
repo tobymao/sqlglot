@@ -41,11 +41,13 @@ class Context:
     def table(self) -> Table:
         if self._table is None:
             self._table = list(self.tables.values())[0]
+
             for other in self.tables.values():
                 if self._table.columns != other.columns:
                     raise Exception(f"Columns are different.")
                 if len(self._table.rows) != len(other.rows):
                     raise Exception(f"Rows are different.")
+
         return self._table
 
     def add_columns(self, *columns: str) -> None:

@@ -1525,6 +1525,7 @@ class Insert(Expression):
         "partition": False,
         "alternative": False,
         "where": False,
+        "ignore": False,
     }
 
     def with_(

@@ -10,7 +10,19 @@ class TestMySQL(Validator):
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
         self.validate_identity(
-            "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE SET x.id = 1"
+            "INSERT IGNORE INTO subscribers (email) VALUES ('john.doe@gmail.com'), ('jane.smith@ibm.com')"
+        )
+        self.validate_identity(
+            "INSERT INTO t1 (a, b, c) VALUES (1, 2, 3), (4, 5, 6) ON DUPLICATE KEY UPDATE c = VALUES(a) + VALUES(b)"
+        )
+        self.validate_identity(
+            "INSERT INTO t1 (a, b) SELECT c, d FROM t2 UNION SELECT e, f FROM t3 ON DUPLICATE KEY UPDATE b = b + c"
+        )
+        self.validate_identity(
+            "INSERT INTO t1 (a, b, c) VALUES (1, 2, 3) ON DUPLICATE KEY UPDATE c = c + 1"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE x.id = 1"
         )
 
         self.validate_all(

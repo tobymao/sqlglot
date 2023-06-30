@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-pre-commit test lint check docs docs-serve
+.PHONY: install install-dev install-pre-commit test style check unit docs docs-serve
 
 install:
 	pip install -e .
@@ -15,12 +15,12 @@ test:
 test-unit:
 	SKIP_INTEGRATION=1 python -m unittest
 
-lint:
+style:
 	pre-commit run --all-files
 
-check: lint test
+check: style test
 
-check-unit: lint test-unit
+unit: style test-unit
 
 docs:
 	python pdoc/cli.py -o docs

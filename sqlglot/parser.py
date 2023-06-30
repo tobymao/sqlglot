@@ -2603,6 +2603,9 @@ class Parser(metaclass=_Parser):
 
         elements = defaultdict(list)
 
+        if self._match(TokenType.ALL):
+            return self.expression(exp.Group, all=True)
+
         while True:
             expressions = self._parse_csv(self._parse_conjunction)
             if expressions:

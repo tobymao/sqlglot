@@ -185,7 +185,13 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
-        FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.SCHEMA, TokenType.DATABASE}
+        FUNC_TOKENS = {
+            *parser.Parser.FUNC_TOKENS,
+            TokenType.DATABASE,
+            TokenType.SCHEMA,
+            TokenType.VALUES,
+        }
+
         TABLE_ALIAS_TOKENS = (
             parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
         )
@@ -206,6 +212,10 @@ class MySQL(Dialect):
                 exp.GroupConcat,
                 this=self._parse_lambda(),
                 separator=self._match(TokenType.SEPARATOR) and self._parse_field(),
+            ),
+            # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
+            "VALUES": lambda self: self.expression(
+                exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
             ),
         }
 
@@ -399,6 +409,7 @@ class MySQL(Dialect):
         NULL_ORDERING_SUPPORTED = False
         JOIN_HINTS = False
         TABLE_HINTS = True
+        DUPLICATE_KEY_UPDATE_WITH_SET = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

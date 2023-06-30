@@ -8,6 +8,9 @@ from sqlglot import exp
 from sqlglot.generator import cached_generator
 from sqlglot.helper import first, while_changing
 
+# Final means that an expression should not be simplified
+FINAL = "final"
+
 
 def simplify(expression):
     """
@@ -27,8 +30,29 @@ def simplify(expression):
 
     generate = cached_generator()
 
+    # group by expressions cannot be simplified, for example
+    # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
+    # the projection must exactly match the group by key
+    for group in expression.find_all(exp.Group):
+        select = group.parent
+        groups = set(group.expressions)
+        group.meta[FINAL] = True
+
+        for e in select.selects:
+            for node, *_ in e.walk():
+                if node in groups:
+                    e.meta[FINAL] = True
+                    break
+
+        having = select.args.get("having")
+        if having:
+            for node, *_ in having.walk():
+                if node in groups:
+                    having.meta[FINAL] = True
+                    break
+
     def _simplify(expression, root=True):
-        if expression.meta.get("final"):
+        if expression.meta.get(FINAL):
             return expression
         node = expression
         node = rewrite_between(node)
@@ -58,7 +82,7 @@ def rewrite_between(expression: exp.Expression) -> exp.Expression:
     """
     if isinstance(expression, exp.Between):
         return exp.and_(
-            exp.GTE(this=expression.this.copy(), expression=expression.args["low"]),
+            exp.GTE(this=expression.this.copy(), expression=expression.args[FINAL]),
             exp.LTE(this=expression.this.copy(), expression=expression.args["high"]),
             copy=False,
         )

@@ -143,6 +143,9 @@ class Generator:
     # Whether or not comparing against booleans (e.g. x IS TRUE) is supported
     IS_BOOL_ALLOWED = True
 
+    # Whether or not to include the "SET" keyword in the "INSERT ... ON DUPLICATE KEY UPDATE" statement
+    DUPLICATE_KEY_UPDATE_WITH_SET = True
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -1105,6 +1108,8 @@ class Generator:
 
         alternative = expression.args.get("alternative")
         alternative = f" OR {alternative}" if alternative else ""
+        ignore = " IGNORE" if expression.args.get("ignore") else ""
+
         this = f"{this} {self.sql(expression, 'this')}"
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
@@ -1116,7 +1121,7 @@ class Generator:
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         conflict = self.sql(expression, "conflict")
         returning = self.sql(expression, "returning")
-        sql = f"INSERT{alternative}{this}{exists}{partition_sql}{where}{expression_sql}{conflict}{returning}"
+        sql = f"INSERT{alternative}{ignore}{this}{exists}{partition_sql}{where}{expression_sql}{conflict}{returning}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1143,8 +1148,9 @@ class Generator:
         do = "" if expression.args.get("duplicate") else " DO "
         nothing = "NOTHING" if expression.args.get("nothing") else ""
         expressions = self.expressions(expression, flat=True)
+        set_keyword = "SET " if self.DUPLICATE_KEY_UPDATE_WITH_SET else ""
         if expressions:
-            expressions = f"UPDATE SET {expressions}"
+            expressions = f"UPDATE {set_keyword}{expressions}"
         return f"{self.seg(conflict)} {constraint}{key}{do}{nothing}{expressions}"
 
     def returning_sql(self, expression: exp.Returning) -> str:

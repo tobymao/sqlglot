@@ -1679,6 +1679,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_insert(self) -> exp.Insert:
         overwrite = self._match(TokenType.OVERWRITE)
+        ignore = self._match(TokenType.IGNORE)
         local = self._match_text_seq("LOCAL")
         alternative = None
 
@@ -1709,6 +1710,7 @@ class Parser(metaclass=_Parser):
             returning=self._parse_returning(),
             overwrite=overwrite,
             alternative=alternative,
+            ignore=ignore,
         )
 
     def _parse_on_conflict(self) -> t.Optional[exp.OnConflict]:
@@ -1734,7 +1736,8 @@ class Parser(metaclass=_Parser):
             nothing = True
         else:
             self._match(TokenType.UPDATE)
-            expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
+            self._match(TokenType.SET)
+            expressions = self._parse_csv(self._parse_equality)
 
         return self.expression(
             exp.OnConflict,
@@ -1917,7 +1920,7 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
             limit = self._parse_limit(top=True)
-            expressions = self._parse_csv(self._parse_expression)
+            expressions = self._parse_expressions()
 
             this = self.expression(
                 exp.Select,
@@ -2091,9 +2094,7 @@ class Parser(metaclass=_Parser):
 
         partition = self._parse_partition_by()
         order = self._parse_order()
-        measures = (
-            self._parse_csv(self._parse_expression) if self._match_text_seq("MEASURES") else None
-        )
+        measures = self._parse_expressions() if self._match_text_seq("MEASURES") else None
 
         if self._match_text_seq("ONE", "ROW", "PER", "MATCH"):
             rows = exp.var("ONE ROW PER MATCH")
@@ -3174,7 +3175,7 @@ class Parser(metaclass=_Parser):
             if query:
                 expressions = [query]
             else:
-                expressions = self._parse_csv(self._parse_expression)
+                expressions = self._parse_expressions()
 
             this = self._parse_query_modifiers(seq_get(expressions, 0))
 
@@ -4226,7 +4227,7 @@ class Parser(metaclass=_Parser):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_expression)
-        return self._parse_csv(self._parse_expression)
+        return self._parse_expressions()
 
     def _parse_csv(
         self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
@@ -4275,6 +4276,9 @@ class Parser(metaclass=_Parser):
         if wrapped:
             self._match_r_paren()
         return parse_result
+
+    def _parse_expressions(self) -> t.List[t.Optional[exp.Expression]]:
+        return self._parse_csv(self._parse_expression)
 
     def _parse_select_or_expression(self, alias: bool = False) -> t.Optional[exp.Expression]:
         return self._parse_select() or self._parse_set_operations(

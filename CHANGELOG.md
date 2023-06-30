@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v16.8.1] - 2023-06-30
+### :bug: Bug Fixes
+- [`154ece5`](https://github.com/tobymao/sqlglot/commit/154ece50d089bc1961cd20d9e424ccb32490379c) - don't normalize udf defs *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v16.8.0] - 2023-06-30
 ### :boom: BREAKING CHANGES
 - due to [`fcf7dd0`](https://github.com/tobymao/sqlglot/commit/fcf7dd0504a123c3b550a5f7c070da0a90e90c25) - big query single quotes does not support line breaks *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -758,3 +763,4 @@ Changelog
 [v16.7.6]: https://github.com/tobymao/sqlglot/compare/v16.7.5...v16.7.6
 [v16.7.7]: https://github.com/tobymao/sqlglot/compare/v16.7.6...v16.7.7
 [v16.8.0]: https://github.com/tobymao/sqlglot/compare/v16.7.7...v16.8.0
+[v16.8.1]: https://github.com/tobymao/sqlglot/compare/v16.8.0...v16.8.1

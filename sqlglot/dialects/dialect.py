@@ -98,7 +98,6 @@ class _Dialect(type):
         klass.BIT_START, klass.BIT_END = get_start_end(TokenType.BIT_STRING)
         klass.HEX_START, klass.HEX_END = get_start_end(TokenType.HEX_STRING)
         klass.BYTE_START, klass.BYTE_END = get_start_end(TokenType.BYTE_STRING)
-        klass.RAW_START, klass.RAW_END = get_start_end(TokenType.RAW_STRING)
 
         dialect_properties = {
             **{

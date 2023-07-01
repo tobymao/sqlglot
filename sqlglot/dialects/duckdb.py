@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    date_trunc_to_time,
     datestrtodate_sql,
     format_time_lambda,
     no_comment_column_constraint_sql,
@@ -131,6 +132,8 @@ class DuckDB(Dialect):
             "ARRAY_REVERSE_SORT": _sort_array_reverse,
             "DATEDIFF": _parse_date_diff,
             "DATE_DIFF": _parse_date_diff,
+            "DATE_TRUNC": date_trunc_to_time,
+            "DATETRUNC": date_trunc_to_time,
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
                 this=exp.Div(this=seq_get(args, 0), expression=exp.Literal.number(1000))

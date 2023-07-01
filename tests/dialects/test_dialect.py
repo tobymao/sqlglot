@@ -601,7 +601,6 @@ class TestDialect(Validator):
             "DATE_TRUNC('day', x)",
             read={
                 "bigquery": "DATE_TRUNC(x, day)",
-                "duckdb": "DATE_TRUNC('day', x)",
                 "spark": "TRUNC(x, 'day')",
             },
             write={
@@ -619,6 +618,7 @@ class TestDialect(Validator):
             "TIMESTAMP_TRUNC(x, day)",
             read={
                 "bigquery": "TIMESTAMP_TRUNC(x, day)",
+                "duckdb": "DATE_TRUNC('day', x)",
                 "presto": "DATE_TRUNC('day', x)",
                 "postgres": "DATE_TRUNC('day', x)",
                 "snowflake": "DATE_TRUNC('day', x)",

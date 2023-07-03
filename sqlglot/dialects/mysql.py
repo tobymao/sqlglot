@@ -200,7 +200,7 @@ class MySQL(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.MEMBER_OF: lambda self, this: self.expression(
-                exp.JSONArrayContains, this=this, expression=self._parse_wrapped(self._parse_string)
+                exp.JSONArrayContains, this=this, expression=self._parse_wrapped(self._parse_expression)
             ),
         }
 

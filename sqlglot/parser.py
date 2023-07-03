@@ -2275,16 +2275,20 @@ class Parser(metaclass=_Parser):
         if hint:
             kwargs["hint"] = hint
 
-        if self._match(TokenType.ON):
-            kwargs["on"] = self._parse_conjunction()
-        elif self._match(TokenType.USING):
-            kwargs["using"] = self._parse_wrapped_id_vars()
-        elif not (kind and kind.token_type == TokenType.CROSS):
+        def parse_join_condition(kwargs: t.Dict) -> None:
+            if self._match(TokenType.ON):
+                kwargs["on"] = self._parse_conjunction()
+            elif self._match(TokenType.USING):
+                kwargs["using"] = self._parse_wrapped_id_vars()
+
+        parse_join_condition(kwargs)
+
+        if not (kind and kind.token_type == TokenType.CROSS):
             index = self._index
             joins = self._parse_joins()
 
-            if joins and self._match(TokenType.ON):
-                kwargs["on"] = self._parse_conjunction()
+            if joins and self._match_set({TokenType.ON, TokenType.USING}, advance=False):
+                parse_join_condition(kwargs)
                 kwargs["this"].set("joins", joins)
             else:
                 self._retreat(index)

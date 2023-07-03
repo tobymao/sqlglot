@@ -945,8 +945,6 @@ class Tokenizer(metaclass=_Tokenizer):
                 char = ""
                 chars = " "
 
-        word = None if not single_token and chars[-1] not in self.WHITE_SPACE else word
-
         if not word:
             if self._char in self.SINGLE_TOKENS:
                 self._add(self.SINGLE_TOKENS[self._char], text=self._char)

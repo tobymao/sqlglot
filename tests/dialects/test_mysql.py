@@ -65,7 +65,9 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT CAST('[4,5]' AS JSON) MEMBER OF('[[3,4],[4,5]]')")
         self.validate_identity("""SELECT 'ab' MEMBER OF('[23, "abc", 17, "ab", 10]')""")
         self.validate_identity("""SELECT * FROM foo WHERE 'ab' MEMBER OF(content)""")
-        self.validate_identity("""SELECT * FROM foo WHERE 3 MEMBER OF(JSON_EXTRACT(info, '$.value'))""")
+        self.validate_identity(
+            """SELECT * FROM foo WHERE 3 MEMBER OF(JSON_EXTRACT(info, '$.value'))"""
+        )
         self.validate_identity("CAST(x AS ENUM('a', 'b'))")
         self.validate_identity("CAST(x AS SET('a', 'b'))")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")

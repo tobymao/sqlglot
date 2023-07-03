@@ -278,8 +278,8 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x as DATE)",
             write={
-                "spark":"CAST(x AS DATETIME)",
-                "tsql" :"CAST(x AS DATETIME)",
+                "spark":"CAST(x AS DATE)",
+                "tsql" :"CAST(x AS DATE)",
             },
         )
         

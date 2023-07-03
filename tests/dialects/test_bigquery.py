@@ -262,7 +262,7 @@ class TestBigQuery(Validator):
                 "duckdb": "CAST(a AS BIGINT)",
                 "presto": "CAST(a AS BIGINT)",
                 "hive": "CAST(a AS BIGINT)",
-                "spark": "CAST(a AS LONG)",
+                "spark": "CAST(a AS BIGINT)",
             },
         )
         self.validate_all(
@@ -412,7 +412,7 @@ class TestBigQuery(Validator):
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a BIGINT, struct_col_b STRUCT(nested_col_a TEXT, nested_col_b TEXT)))",
                 "presto": "CREATE TABLE db.example_table (col_a ROW(struct_col_a BIGINT, struct_col_b ROW(nested_col_a VARCHAR, nested_col_b VARCHAR)))",
                 "hive": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a BIGINT, struct_col_b STRUCT<nested_col_a STRING, nested_col_b STRING>>)",
-                "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: LONG, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
+                "spark": "CREATE TABLE db.example_table (col_a STRUCT<struct_col_a: BIGINT, struct_col_b: STRUCT<nested_col_a: STRING, nested_col_b: STRING>>)",
             },
         )
         self.validate_all(

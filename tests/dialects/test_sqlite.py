@@ -92,7 +92,7 @@ class TestSQLite(Validator):
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={
                 "sqlite": 'SELECT CAST("a"."b" AS INTEGER) FROM foo',
-                "spark": "SELECT CAST(`a`.`b` AS SHORT) FROM foo",
+                "spark": "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
             },
         )
         self.validate_all(

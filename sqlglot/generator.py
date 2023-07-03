@@ -1202,7 +1202,7 @@ class Generator:
         hints = f" {hints}" if hints and self.TABLE_HINTS else ""
         pivots = self.expressions(expression, key="pivots", sep=" ", flat=True)
         pivots = f" {pivots}" if pivots else ""
-        joins = self.expressions(expression, key="joins", sep="")
+        joins = self.expressions(expression, key="joins", sep="", skip_first=True)
         laterals = self.expressions(expression, key="laterals", sep="")
         system_time = expression.args.get("system_time")
         system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
@@ -2320,6 +2320,7 @@ class Generator:
         sqls: t.Optional[t.List[str]] = None,
         flat: bool = False,
         indent: bool = True,
+        skip_first: bool = False,
         sep: str = ", ",
         prefix: str = "",
     ) -> str:
@@ -2353,7 +2354,7 @@ class Generator:
                 result_sqls.append(f"{prefix}{sql}{comments}{sep if i + 1 < num_sqls else ''}")
 
         result_sql = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
-        return self.indent(result_sql, skip_first=False) if indent else result_sql
+        return self.indent(result_sql, skip_first=skip_first) if indent else result_sql
 
     def op_expressions(self, op: str, expression: exp.Expression, flat: bool = False) -> str:
         flat = flat or isinstance(expression.parent, exp.Properties)

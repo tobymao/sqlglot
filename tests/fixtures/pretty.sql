@@ -363,3 +363,23 @@ SELECT
   A.*
   EXCEPT (A.COL_1, A.COL_2)
 FROM TABLE_1 AS A;
+
+SELECT *
+FROM a
+JOIN b
+  JOIN c
+    ON b.id = c.id
+  ON a.id = b.id
+CROSS JOIN d
+JOIN e
+  ON d.id = e.id;
+SELECT
+  *
+FROM a
+JOIN b
+  JOIN c
+    ON b.id = c.id
+  ON a.id = b.id
+CROSS JOIN d
+JOIN e
+  ON d.id = e.id;

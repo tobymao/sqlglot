@@ -156,9 +156,12 @@ class ClickHouse(Dialect):
             return this
 
         def _parse_table(
-            self, schema: bool = False, alias_tokens: t.Optional[t.Collection[TokenType]] = None
+            self,
+            schema: bool = False,
+            joins: bool = False,
+            alias_tokens: t.Optional[t.Collection[TokenType]] = None,
         ) -> t.Optional[exp.Expression]:
-            this = super()._parse_table(schema=schema, alias_tokens=alias_tokens)
+            this = super()._parse_table(schema=schema, joins=joins, alias_tokens=alias_tokens)
 
             if self._match(TokenType.FINAL):
                 this = self.expression(exp.Final, this=this)

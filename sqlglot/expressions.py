@@ -1301,6 +1301,7 @@ class Delete(Expression):
         "where": False,
         "returning": False,
         "limit": False,
+        "tables": False,  # Multiple-Table Syntax (MySQL)
     }
 
     def delete(

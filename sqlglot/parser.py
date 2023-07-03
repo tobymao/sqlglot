@@ -1818,12 +1818,17 @@ class Parser(metaclass=_Parser):
         return self._parse_as_command(self._prev)
 
     def _parse_delete(self) -> exp.Delete:
-        self._match(TokenType.FROM)
+        # This handles MySQL's "Multiple-Table Syntax"
+        # https://dev.mysql.com/doc/refman/8.0/en/delete.html
+        tables = None
+        if not self._match(TokenType.FROM, advance=False):
+            tables = self._parse_csv(self._parse_table) or None
 
         return self.expression(
             exp.Delete,
-            this=self._parse_table(),
-            using=self._parse_csv(lambda: self._match(TokenType.USING) and self._parse_table()),
+            tables=tables,
+            this=self._match(TokenType.FROM) and self._parse_table(joins=True),
+            using=self._match(TokenType.USING) and self._parse_table(joins=True),
             where=self._parse_where(),
             returning=self._parse_returning(),
             limit=self._parse_limit(),
@@ -1835,7 +1840,7 @@ class Parser(metaclass=_Parser):
             **{  # type: ignore
                 "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
                 "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
-                "from": self._parse_from(modifiers=True),
+                "from": self._parse_from(joins=True),
                 "where": self._parse_where(),
                 "returning": self._parse_returning(),
                 "limit": self._parse_limit(),
@@ -1888,7 +1893,7 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Tuple, expressions=expressions)
 
         # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
-        # Source: https://prestodb.io/docs/current/sql/values.html
+        # https://prestodb.io/docs/current/sql/values.html
         return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
 
     def _parse_select(
@@ -2091,18 +2096,13 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_from(
-        self, modifiers: bool = False, skip_from_token: bool = False
+        self, joins: bool = False, skip_from_token: bool = False
     ) -> t.Optional[exp.From]:
         if not skip_from_token and not self._match(TokenType.FROM):
             return None
 
-        comments = self._prev_comments
-        this = self._parse_table()
-
         return self.expression(
-            exp.From,
-            comments=comments,
-            this=self._parse_query_modifiers(this) if modifiers else this,
+            exp.From, comments=self._prev_comments, this=self._parse_table(joins=joins)
         )
 
     def _parse_match_recognize(self) -> t.Optional[exp.MatchRecognize]:
@@ -2383,7 +2383,10 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_table(
-        self, schema: bool = False, alias_tokens: t.Optional[t.Collection[TokenType]] = None
+        self,
+        schema: bool = False,
+        joins: bool = False,
+        alias_tokens: t.Optional[t.Collection[TokenType]] = None,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -2426,6 +2429,10 @@ class Parser(metaclass=_Parser):
         if table_sample:
             table_sample.set("this", this)
             this = table_sample
+
+        if joins:
+            for join in iter(self._parse_join, None):
+                this.append("joins", join)
 
         return this
 

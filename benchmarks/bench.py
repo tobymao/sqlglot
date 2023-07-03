@@ -7,10 +7,10 @@ import timeit
 
 import numpy as np
 
-import sqlfluff
-import moz_sql_parser
-import sqloxide
-import sqlparse
+#import sqlfluff
+#import moz_sql_parser
+#import sqloxide
+#import sqlparse
 import sqltree
 
 import sqlglot
@@ -199,11 +199,11 @@ def diff(row, column):
 
 libs = [
     "sqlglot",
-    "sqlfluff",
+    #"sqlfluff",
     "sqltree",
-    "sqlparse",
-    "moz_sql_parser",
-    "sqloxide",
+    #"sqlparse",
+    #"moz_sql_parser",
+    #"sqloxide",
 ]
 table = []
 

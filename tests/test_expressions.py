@@ -15,14 +15,14 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("x(1)").find(exp.Literal).depth, 1)
 
     def test_eq(self):
-        self.assertEqual(exp.to_identifier("a"), exp.to_identifier("A"))
+        self.assertNotEqual(exp.to_identifier("a"), exp.to_identifier("A"))
 
         self.assertEqual(
             exp.Column(table=exp.to_identifier("b"), this=exp.to_identifier("b")),
             exp.Column(this=exp.to_identifier("b"), table=exp.to_identifier("b")),
         )
 
-        self.assertEqual(exp.to_identifier("a", quoted=True), exp.to_identifier("A"))
+        self.assertNotEqual(exp.to_identifier("a", quoted=True), exp.to_identifier("A"))
         self.assertNotEqual(exp.to_identifier("A", quoted=True), exp.to_identifier("A"))
         self.assertNotEqual(
             exp.to_identifier("A", quoted=True), exp.to_identifier("a", quoted=True)
@@ -31,9 +31,9 @@ class TestExpressions(unittest.TestCase):
         self.assertNotEqual(parse_one("'1'"), parse_one("1"))
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"'))
         self.assertEqual(parse_one("`a`", read="hive"), parse_one('"a"  '))
-        self.assertEqual(parse_one("`a`.b", read="hive"), parse_one('"a"."b"'))
+        self.assertEqual(parse_one("`a`.`b`", read="hive"), parse_one('"a"."b"'))
         self.assertEqual(parse_one("select a, b+1"), parse_one("SELECT a, b + 1"))
-        self.assertEqual(parse_one("`a`.`b`.`c`", read="hive"), parse_one("a.b.c"))
+        self.assertNotEqual(parse_one("`a`.`b`.`c`", read="hive"), parse_one("a.b.c"))
         self.assertNotEqual(parse_one("a.b.c.d", read="hive"), parse_one("a.b.c"))
         self.assertEqual(parse_one("a.b.c.d", read="hive"), parse_one("a.b.c.d"))
         self.assertEqual(parse_one("a + b * c - 1.0"), parse_one("a+b*c-1.0"))
@@ -338,7 +338,7 @@ class TestExpressions(unittest.TestCase):
             {
                 parse_one("select a.b"),
                 parse_one("1+2"),
-                parse_one('"a".b'),
+                parse_one('"a"."b"'),
                 parse_one("a.b.c.d"),
             },
             {

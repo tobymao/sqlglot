@@ -2279,6 +2279,15 @@ class Parser(metaclass=_Parser):
             kwargs["on"] = self._parse_conjunction()
         elif self._match(TokenType.USING):
             kwargs["using"] = self._parse_wrapped_id_vars()
+        elif not (kind and kind.token_type == TokenType.CROSS):
+            index = self._index
+            joins = self._parse_joins()
+
+            if joins and self._match(TokenType.ON):
+                kwargs["on"] = self._parse_conjunction()
+                kwargs["this"].set("joins", joins)
+            else:
+                self._retreat(index)
 
         return self.expression(exp.Join, **kwargs)
 
@@ -2536,6 +2545,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_pivots(self) -> t.Optional[t.List[exp.Pivot]]:
         return list(iter(self._parse_pivot, None)) or None
+
+    def _parse_joins(self) -> t.Optional[t.List[exp.Join]]:
+        return list(iter(self._parse_join, None)) or None
 
     # https://duckdb.org/docs/sql/statements/pivot
     def _parse_simplified_pivot(self) -> exp.Pivot:

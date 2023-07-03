@@ -124,7 +124,9 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
     other expressions. This transforms removes the precision from parameterized types in expressions.
     """
     for node in expression.find_all(exp.DataType):
-        node.set("expressions", [e for e in node.expressions if isinstance(e, exp.DataType)])
+        node.set(
+            "expressions", [e for e in node.expressions if not isinstance(e, exp.DataTypeSize)]
+        )
 
     return expression
 

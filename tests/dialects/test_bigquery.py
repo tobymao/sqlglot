@@ -36,6 +36,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
+        self.validate_identity("CAST(STRUCT<a INT64>(1) AS STRUCT<a INT64>)")
         self.validate_identity("STRING_AGG(a)")
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")

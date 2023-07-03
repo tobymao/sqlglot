@@ -273,13 +273,6 @@ class Hive(Dialect):
             ),
         }
 
-        QUERY_MODIFIER_PARSERS = {
-            **parser.Parser.QUERY_MODIFIER_PARSERS,
-            "cluster": lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
-            "distribute": lambda self: self._parse_sort(exp.Distribute, TokenType.DISTRIBUTE_BY),
-            "sort": lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY),
-        }
-
         def _parse_types(
             self, check_func: bool = False, schema: bool = False
         ) -> t.Optional[exp.Expression]:
@@ -429,10 +422,3 @@ class Hive(Dialect):
                 expression = exp.DataType.build(expression.this)
 
             return super().datatype_sql(expression)
-
-        def after_having_modifiers(self, expression: exp.Expression) -> t.List[str]:
-            return super().after_having_modifiers(expression) + [
-                self.sql(expression, "distribute"),
-                self.sql(expression, "sort"),
-                self.sql(expression, "cluster"),
-            ]

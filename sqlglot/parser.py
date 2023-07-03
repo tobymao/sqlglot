@@ -737,19 +737,29 @@ class Parser(metaclass=_Parser):
     }
 
     QUERY_MODIFIER_PARSERS = {
-        "joins": lambda self: list(iter(self._parse_join, None)),
-        "laterals": lambda self: list(iter(self._parse_lateral, None)),
-        "match": lambda self: self._parse_match_recognize(),
-        "where": lambda self: self._parse_where(),
-        "group": lambda self: self._parse_group(),
-        "having": lambda self: self._parse_having(),
-        "qualify": lambda self: self._parse_qualify(),
-        "windows": lambda self: self._parse_window_clause(),
-        "order": lambda self: self._parse_order(),
-        "limit": lambda self: self._parse_limit(),
-        "offset": lambda self: self._parse_offset(),
-        "locks": lambda self: self._parse_locks(),
-        "sample": lambda self: self._parse_table_sample(as_modifier=True),
+        TokenType.MATCH_RECOGNIZE: ("match", lambda self: self._parse_match_recognize()),
+        TokenType.WHERE: ("where", lambda self: self._parse_where()),
+        TokenType.GROUP_BY: ("group", lambda self: self._parse_group()),
+        TokenType.HAVING: ("having", lambda self: self._parse_having()),
+        TokenType.QUALIFY: ("qualify", lambda self: self._parse_qualify()),
+        TokenType.WINDOW: ("windows", lambda self: self._parse_window_clause()),
+        TokenType.ORDER_BY: ("order", lambda self: self._parse_order()),
+        TokenType.LIMIT: ("limit", lambda self: self._parse_limit()),
+        TokenType.FETCH: ("limit", lambda self: self._parse_limit()),
+        TokenType.OFFSET: ("offset", lambda self: self._parse_offset()),
+        TokenType.FOR: ("locks", lambda self: self._parse_locks()),
+        TokenType.LOCK: ("locks", lambda self: self._parse_locks()),
+        TokenType.TABLE_SAMPLE: ("sample", lambda self: self._parse_table_sample(as_modifier=True)),
+        TokenType.USING: ("sample", lambda self: self._parse_table_sample(as_modifier=True)),
+        TokenType.CLUSTER_BY: (
+            "cluster",
+            lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
+        ),
+        TokenType.DISTRIBUTE_BY: (
+            "distribute",
+            lambda self: self._parse_sort(exp.Distribute, TokenType.DISTRIBUTE_BY),
+        ),
+        TokenType.SORT_BY: ("sort", lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY)),
     }
 
     SET_PARSERS = {
@@ -2037,15 +2047,24 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
         if isinstance(this, self.MODIFIABLES):
-            for key, parser in self.QUERY_MODIFIER_PARSERS.items():
-                expression = parser(self)
+            for join in iter(self._parse_join, None):
+                this.append("joins", join)
+            for lateral in iter(self._parse_lateral, None):
+                this.append("laterals", lateral)
 
-                if expression:
-                    if key == "limit":
-                        offset = expression.args.pop("offset", None)
-                        if offset:
-                            this.set("offset", exp.Offset(expression=offset))
-                    this.set(key, expression)
+            while True:
+                if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
+                    key, parser = self.QUERY_MODIFIER_PARSERS[self._curr.token_type]
+                    expression = parser(self)
+
+                    if expression:
+                        this.set(key, expression)
+                        if key == "limit":
+                            offset = expression.args.pop("offset", None)
+                            if offset:
+                                this.set("offset", exp.Offset(expression=offset))
+                        continue
+                break
         return this
 
     def _parse_hint(self) -> t.Optional[exp.Hint]:
@@ -2508,8 +2527,8 @@ class Parser(metaclass=_Parser):
             kind=kind,
         )
 
-    def _parse_pivots(self) -> t.List[t.Optional[exp.Expression]]:
-        return list(iter(self._parse_pivot, None))
+    def _parse_pivots(self) -> t.Optional[t.List[exp.Pivot]]:
+        return list(iter(self._parse_pivot, None)) or None
 
     # https://duckdb.org/docs/sql/statements/pivot
     def _parse_simplified_pivot(self) -> exp.Pivot:

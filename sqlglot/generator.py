@@ -823,15 +823,14 @@ class Generator:
     def delete_sql(self, expression: exp.Delete) -> str:
         this = self.sql(expression, "this")
         this = f" FROM {this}" if this else ""
-        using_sql = (
-            f" USING {self.expressions(expression, key='using', sep=', USING ')}"
-            if expression.args.get("using")
-            else ""
-        )
-        where_sql = self.sql(expression, "where")
+        using = self.sql(expression, "using")
+        using = f" USING {using}" if using else ""
+        where = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
         limit = self.sql(expression, "limit")
-        sql = f"DELETE{this}{using_sql}{where_sql}{returning}{limit}"
+        tables = self.expressions(expression, key="tables")
+        tables = f" {tables}" if tables else ""
+        sql = f"DELETE{tables}{this}{using}{where}{returning}{limit}"
         return self.prepend_ctes(expression, sql)
 
     def drop_sql(self, expression: exp.Drop) -> str:

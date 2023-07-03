@@ -648,7 +648,7 @@ ANALYZE a.y
 DELETE FROM x WHERE y > 1
 DELETE FROM y
 DELETE FROM event USING sales WHERE event.eventid = sales.eventid
-DELETE FROM event USING sales, USING bla WHERE event.eventid = sales.eventid
+DELETE FROM event USING sales, bla WHERE event.eventid = sales.eventid
 DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid
 DELETE FROM event AS event USING sales AS s WHERE event.eventid = s.eventid
 PREPARE statement

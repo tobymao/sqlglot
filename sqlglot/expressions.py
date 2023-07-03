@@ -102,13 +102,10 @@ class Expression(metaclass=_Expression):
 
     @property
     def hashable_args(self) -> t.Any:
-        args = (self.args.get(k) for k in self.arg_types)
-
-        return tuple(
-            (tuple(_norm_arg(a) for a in arg) if arg else None)
-            if type(arg) is list
-            else (_norm_arg(arg) if arg is not None and arg is not False else None)
-            for arg in args
+        return frozenset(
+            (k, tuple(_norm_arg(a) for a in v) if type(v) is list else _norm_arg(v))
+            for k, v in self.args.items()
+            if not (v is None or v is False or (type(v) is list and not v))
         )
 
     def __hash__(self) -> int:
@@ -1490,9 +1487,7 @@ class Identifier(Expression):
 
     @property
     def hashable_args(self) -> t.Any:
-        if self.quoted and any(char.isupper() for char in self.this):
-            return (self.this, self.quoted)
-        return self.this.lower()
+        return (self.this, self.quoted)
 
     @property
     def output_name(self) -> str:

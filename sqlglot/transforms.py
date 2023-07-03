@@ -215,25 +215,6 @@ def explode_to_unnest(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
-    """Remove table refs from columns in when statements."""
-    if isinstance(expression, exp.Merge):
-        alias = expression.this.args.get("alias")
-        targets = {expression.this.this}
-        if alias:
-            targets.add(alias.this)
-
-        for when in expression.expressions:
-            when.transform(
-                lambda node: exp.column(node.name)
-                if isinstance(node, exp.Column) and node.args.get("table") in targets
-                else node,
-                copy=False,
-            )
-
-    return expression
-
-
 def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expression:
     if (
         isinstance(expression, exp.WithinGroup)

@@ -183,6 +183,29 @@ def _to_timestamp(args: t.List) -> exp.Expression:
     return format_time_lambda(exp.StrToTime, "postgres")(args)
 
 
+def _remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
+    """Remove table refs from columns in when statements."""
+    if isinstance(expression, exp.Merge):
+        alias = expression.this.args.get("alias")
+
+        normalize = lambda identifier: Postgres.normalize_identifier(identifier).name
+
+        targets = {normalize(expression.this.this)}
+
+        if alias:
+            targets.add(normalize(alias.this))
+
+        for when in expression.expressions:
+            when.transform(
+                lambda node: exp.column(node.name)
+                if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
+                else node,
+                copy=False,
+            )
+
+    return expression
+
+
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_large"
@@ -352,7 +375,7 @@ class Postgres(Dialect):
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
             exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
-            exp.Merge: transforms.preprocess([transforms.remove_target_from_merge]),
+            exp.Merge: transforms.preprocess([_remove_target_from_merge]),
             exp.Pivot: no_pivot_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),

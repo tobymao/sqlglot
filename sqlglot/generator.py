@@ -491,7 +491,10 @@ class Generator:
             return expression
 
         if key:
-            return self.sql(expression.args.get(key))
+            value = expression.args.get(key)
+            if value:
+                return self.sql(value)
+            return ""
 
         if self._cache is not None:
             expression_id = hash(expression)
@@ -1600,6 +1603,9 @@ class Generator:
             self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
             if expression.args.get("windows")
             else "",
+            self.sql(expression, "distribute"),
+            self.sql(expression, "sort"),
+            self.sql(expression, "cluster"),
         ]
 
     def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:

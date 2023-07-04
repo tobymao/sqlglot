@@ -140,6 +140,9 @@ class Generator:
     # Whether or not table hints should be generated
     TABLE_HINTS = True
 
+    # Whether or not query hints should be generated
+    QUERY_HINTS = False
+
     # Whether or not comparing against booleans (e.g. x IS TRUE) is supported
     IS_BOOL_ALLOWED = True
 
@@ -871,9 +874,11 @@ class Generator:
         return f"{this} FILTER({where})"
 
     def hint_sql(self, expression: exp.Hint) -> str:
-        if self.sql(expression, "this"):
+        if not self.QUERY_HINTS:
             self.unsupported("Hints are not supported")
-        return ""
+            return ""
+
+        return f" /*+ {self.expressions(expression).strip()} */"
 
     def index_sql(self, expression: exp.Index) -> str:
         unique = "UNIQUE " if expression.args.get("unique") else ""

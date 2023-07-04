@@ -173,6 +173,8 @@ class Spark2(Hive):
             return pivot_column_names(aggregations, dialect="spark")
 
     class Generator(Hive.Generator):
+        QUERY_HINTS = True
+
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,
             exp.DataType.Type.TINYINT: "BYTE",
@@ -203,7 +205,6 @@ class Spark2(Hive):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.From: transforms.preprocess([_unalias_pivot]),
-            exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,

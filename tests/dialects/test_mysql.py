@@ -69,6 +69,8 @@ class TestMySQL(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT /*+ MERGE(dt) */ * FROM (SELECT * FROM t1) AS dt")
+        self.validate_identity("SELECT /*+ INDEX(t, i) */ c1 FROM t WHERE c2 = 'value'")
         self.validate_identity("SELECT @a MEMBER OF(@c), @b MEMBER OF(@c)")
         self.validate_identity("SELECT JSON_ARRAY(4, 5) MEMBER OF('[[3,4],[4,5]]')")
         self.validate_identity("SELECT CAST('[4,5]' AS JSON) MEMBER OF('[[3,4],[4,5]]')")

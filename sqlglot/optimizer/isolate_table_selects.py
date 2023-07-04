@@ -12,11 +12,7 @@ def isolate_table_selects(expression, schema=None):
             continue
 
         for _, source in scope.selected_sources.values():
-            if (
-                not isinstance(source, exp.Table)
-                or not schema.column_names(source)
-                or isinstance(source.parent, exp.Paren)
-            ):
+            if not isinstance(source, exp.Table) or not schema.column_names(source):
                 continue
 
             if not source.alias:

@@ -232,6 +232,7 @@ class Presto(Dialect):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
         TABLE_HINTS = False
+        QUERY_HINTS = False
         IS_BOOL_ALLOWED = False
         STRUCT_DELIMITER = ("(", ")")
 

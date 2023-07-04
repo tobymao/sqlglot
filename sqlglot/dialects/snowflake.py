@@ -326,6 +326,7 @@ class Snowflake(Dialect):
         SINGLE_STRING_INTERVAL = True
         JOIN_HINTS = False
         TABLE_HINTS = False
+        QUERY_HINTS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

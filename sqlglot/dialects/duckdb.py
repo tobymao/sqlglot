@@ -170,6 +170,7 @@ class DuckDB(Dialect):
     class Generator(generator.Generator):
         JOIN_HINTS = False
         TABLE_HINTS = False
+        QUERY_HINTS = False
         LIMIT_FETCH = "LIMIT"
         STRUCT_DELIMITER = ("(", ")")
         RENAME_TABLE_WITH_DB = False

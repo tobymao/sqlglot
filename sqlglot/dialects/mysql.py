@@ -419,7 +419,6 @@ class MySQL(Dialect):
         NULL_ORDERING_SUPPORTED = False
         JOIN_HINTS = False
         TABLE_HINTS = True
-        QUERY_HINTS = True
         DUPLICATE_KEY_UPDATE_WITH_SET = False
         QUERY_HINT_SEP = " "
 

@@ -141,7 +141,7 @@ class Generator:
     TABLE_HINTS = True
 
     # Whether or not query hints should be generated
-    QUERY_HINTS = False
+    QUERY_HINTS = True
 
     # What kind of separator to use for query hints
     QUERY_HINT_SEP = ", "

@@ -708,6 +708,16 @@ class TestExecutor(unittest.TestCase):
                 [(2,), (1,), (3,)],
                 ("a",),
             ),
+            (
+                "SELECT a, SUM(b) FROM x GROUP BY a ORDER BY COUNT(*)",
+                [(3, 28), (1, 50), (2, 45)],
+                ("a", "_col_1"),
+            ),
+            (
+                "SELECT a, SUM(b) FROM x GROUP BY a ORDER BY COUNT(*) DESC",
+                [(1, 50), (2, 45), (3, 28)],
+                ("a", "_col_1"),
+            ),
         ):
             with self.subTest(sql):
                 result = execute(sql, tables=tables)

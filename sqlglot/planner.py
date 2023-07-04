@@ -142,6 +142,10 @@ class Step:
 
             return bool(agg_funcs)
 
+        def set_ops_and_aggs(step):
+            step.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
+            step.aggregations = list(aggregations)
+
         for e in expression.expressions:
             if e.find(exp.AggFunc):
                 projections.append(exp.column(e.alias_or_name, step.name, quoted=True))
@@ -169,10 +173,7 @@ class Step:
                 else:
                     aggregate.condition = having.this
 
-            aggregate.operands = tuple(
-                alias(operand, alias_) for operand, alias_ in operands.items()
-            )
-            aggregate.aggregations = list(aggregations)
+            set_ops_and_aggs(aggregate)
 
             # give aggregates names and replace projections with references to them
             aggregate.group = {
@@ -204,13 +205,11 @@ class Step:
 
         if order:
             if isinstance(step, Aggregate):
-                for ordered in order.expressions:
-                    if ordered.find(exp.AggFunc):
-                        operand_name = next_operand_name()
-                        extract_agg_operands(exp.alias_(ordered.this, operand_name, quoted=True))
-                        ordered.this.replace(exp.column(operand_name, quoted=True))
+                for i, ordered in enumerate(order.expressions):
+                    if extract_agg_operands(exp.alias_(ordered.this, f"_o_{i}", quoted=True)):
+                        ordered.this.replace(exp.column(f"_o_{i}", step.name, quoted=True))
 
-                step.aggregations = list(aggregations)
+                set_ops_and_aggs(aggregate)
 
             sort = Sort()
             sort.name = step.name
@@ -355,7 +354,10 @@ class Join(Step):
     def _to_s(self, indent: str) -> t.List[str]:
         lines = []
         for name, join in self.joins.items():
-            lines.append(f"{indent}{name}: {join['side']}")
+            lines.append(f"{indent}{name}: {join['side'] or 'INNER'}")
+            join_key = ", ".join(str(key) for key in t.cast(list, join.get("join_key") or []))
+            if join_key:
+                lines.append(f"{indent}Key: {join_key}")
             if join.get("condition"):
                 lines.append(f"{indent}On: {join['condition'].sql()}")  # type: ignore
         return lines

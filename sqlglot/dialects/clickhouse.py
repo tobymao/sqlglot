@@ -109,11 +109,11 @@ class ClickHouse(Dialect):
 
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
-            TokenType.SETTINGS: (
+            TokenType.SETTINGS: lambda self: (
                 "settings",
-                lambda self: self._advance() or self._parse_csv(self._parse_conjunction),
+                self._advance() or self._parse_csv(self._parse_conjunction),
             ),
-            TokenType.FORMAT: ("format", lambda self: self._advance() or self._parse_id_var()),
+            TokenType.FORMAT: lambda self: ("format", self._advance() or self._parse_id_var()),
         }
 
         def _parse_conjunction(self) -> t.Optional[exp.Expression]:

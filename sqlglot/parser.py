@@ -737,29 +737,29 @@ class Parser(metaclass=_Parser):
     }
 
     QUERY_MODIFIER_PARSERS = {
-        TokenType.MATCH_RECOGNIZE: ("match", lambda self: self._parse_match_recognize()),
-        TokenType.WHERE: ("where", lambda self: self._parse_where()),
-        TokenType.GROUP_BY: ("group", lambda self: self._parse_group()),
-        TokenType.HAVING: ("having", lambda self: self._parse_having()),
-        TokenType.QUALIFY: ("qualify", lambda self: self._parse_qualify()),
-        TokenType.WINDOW: ("windows", lambda self: self._parse_window_clause()),
-        TokenType.ORDER_BY: ("order", lambda self: self._parse_order()),
-        TokenType.LIMIT: ("limit", lambda self: self._parse_limit()),
-        TokenType.FETCH: ("limit", lambda self: self._parse_limit()),
-        TokenType.OFFSET: ("offset", lambda self: self._parse_offset()),
-        TokenType.FOR: ("locks", lambda self: self._parse_locks()),
-        TokenType.LOCK: ("locks", lambda self: self._parse_locks()),
-        TokenType.TABLE_SAMPLE: ("sample", lambda self: self._parse_table_sample(as_modifier=True)),
-        TokenType.USING: ("sample", lambda self: self._parse_table_sample(as_modifier=True)),
-        TokenType.CLUSTER_BY: (
+        TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
+        TokenType.WHERE: lambda self: ("where", self._parse_where()),
+        TokenType.GROUP_BY: lambda self: ("group", self._parse_group()),
+        TokenType.HAVING: lambda self: ("having", self._parse_having()),
+        TokenType.QUALIFY: lambda self: ("qualify", self._parse_qualify()),
+        TokenType.WINDOW: lambda self: ("windows", self._parse_window_clause()),
+        TokenType.ORDER_BY: lambda self: ("order", self._parse_order()),
+        TokenType.LIMIT: lambda self: ("limit", self._parse_limit()),
+        TokenType.FETCH: lambda self: ("limit", self._parse_limit()),
+        TokenType.OFFSET: lambda self: ("offset", self._parse_offset()),
+        TokenType.FOR: lambda self: ("locks", self._parse_locks()),
+        TokenType.LOCK: lambda self: ("locks", self._parse_locks()),
+        TokenType.TABLE_SAMPLE: lambda self: ("sample", self._parse_table_sample(as_modifier=True)),
+        TokenType.USING: lambda self: ("sample", self._parse_table_sample(as_modifier=True)),
+        TokenType.CLUSTER_BY: lambda self: (
             "cluster",
-            lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
+            self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
         ),
-        TokenType.DISTRIBUTE_BY: (
+        TokenType.DISTRIBUTE_BY: lambda self: (
             "distribute",
-            lambda self: self._parse_sort(exp.Distribute, TokenType.DISTRIBUTE_BY),
+            self._parse_sort(exp.Distribute, TokenType.DISTRIBUTE_BY),
         ),
-        TokenType.SORT_BY: ("sort", lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY)),
+        TokenType.SORT_BY: lambda self: ("sort", self._parse_sort(exp.Sort, TokenType.SORT_BY)),
     }
 
     SET_PARSERS = {
@@ -2059,8 +2059,8 @@ class Parser(metaclass=_Parser):
 
             while True:
                 if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
-                    key, parser = self.QUERY_MODIFIER_PARSERS[self._curr.token_type]
-                    expression = parser(self)
+                    parser = self.QUERY_MODIFIER_PARSERS[self._curr.token_type]
+                    key, expression = parser(self)
 
                     if expression:
                         this.set(key, expression)

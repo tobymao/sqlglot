@@ -58,8 +58,11 @@ class TestExecutor(unittest.TestCase):
                 source.rename(columns={column: target.columns[i]}, inplace=True)
 
     def test_py_dialect(self):
-        self.assertEqual(Python().generate(parse_one("'x '''")), r"'x \''")
-        self.assertEqual(Python().generate(parse_one("MAP([1], [2])")), "MAP([1], [2])")
+        generate = Python().generate
+        self.assertEqual(generate(parse_one("'x '''")), r"'x \''")
+        self.assertEqual(generate(parse_one("MAP([1], [2])")), "MAP([1], [2])")
+        self.assertEqual(generate(parse_one("1 is null")), "1 == None")
+        self.assertEqual(generate(parse_one("x is null")), "scope[None][x] is None")
 
     def test_optimized_tpch(self):
         for i, (sql, optimized) in enumerate(self.sqls[:20], start=1):

@@ -321,6 +321,23 @@ class MySQL(Dialect):
 
         LOG_DEFAULTS_TO_LN = True
 
+        def _parse_hint(self) -> t.Optional[exp.Hint]:
+            if self._match(TokenType.HINT):
+                hints = []
+                while True:
+                    # MySQL allows multiple hints separated by whitespace
+                    func = self._parse_function()
+                    if not func:
+                        break
+                    hints.append(func)
+
+                if not self._match_pair(TokenType.STAR, TokenType.SLASH):
+                    self.raise_error("Expected */ after HINT")
+
+                return self.expression(exp.Hint, expressions=hints)
+
+            return None
+
         def _parse_show_mysql(
             self,
             this: str,
@@ -421,6 +438,7 @@ class MySQL(Dialect):
         TABLE_HINTS = True
         QUERY_HINTS = True
         DUPLICATE_KEY_UPDATE_WITH_SET = False
+        QUERY_HINT_SEP = " "
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

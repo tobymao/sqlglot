@@ -143,6 +143,9 @@ class Generator:
     # Whether or not query hints should be generated
     QUERY_HINTS = False
 
+    # What kind of separator to use for query hints
+    QUERY_HINT_SEP = ", "
+
     # Whether or not comparing against booleans (e.g. x IS TRUE) is supported
     IS_BOOL_ALLOWED = True
 
@@ -878,7 +881,7 @@ class Generator:
             self.unsupported("Hints are not supported")
             return ""
 
-        return f" /*+ {self.expressions(expression).strip()} */"
+        return f" /*+ {self.expressions(expression, sep=self.QUERY_HINT_SEP).strip()} */"
 
     def index_sql(self, expression: exp.Index) -> str:
         unique = "UNIQUE " if expression.args.get("unique") else ""

@@ -17,16 +17,28 @@ class TestTSQL(Validator):
         self.validate_identity("PRINT @TestVariable")
         self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
         self.validate_identity("INSERT INTO @TestTable VALUES (1, 'Value1', 12, 20)")
-        self.validate_identity(
-            "SELECT x FROM @MyTableVar AS m JOIN Employee ON m.EmployeeID = Employee.EmployeeID"
-        )
         self.validate_identity('SELECT "x"."y" FROM foo')
         self.validate_identity("SELECT * FROM #foo")
         self.validate_identity("SELECT * FROM ##foo")
         self.validate_identity(
+            "SELECT x FROM @MyTableVar AS m JOIN Employee ON m.EmployeeID = Employee.EmployeeID"
+        )
+        self.validate_identity(
             "SELECT DISTINCT DepartmentName, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY BaseRate) OVER (PARTITION BY DepartmentName) AS MedianCont FROM dbo.DimEmployee"
         )
 
+        self.validate_all(
+            "SELECT DATEPART(year, TRY_CAST('2017-01-01' AS DATE))",
+            read={"postgres": "SELECT DATE_PART('year', '2017-01-01'::DATE)"},
+        )
+        self.validate_all(
+            "SELECT DATEPART(month, TRY_CAST('2017-03-01' AS DATE))",
+            read={"postgres": "SELECT DATE_PART('month', '2017-03-01'::DATE)"},
+        )
+        self.validate_all(
+            "SELECT DATEPART(day, TRY_CAST('2017-01-02' AS DATE))",
+            read={"postgres": "SELECT DATE_PART('day', '2017-01-02'::DATE)"},
+        )
         self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={

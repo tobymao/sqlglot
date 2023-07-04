@@ -483,6 +483,7 @@ class TSQL(Dialect):
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
+            exp.Extract: rename_func("DATEPART"),
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
             exp.Max: max_or_greatest,

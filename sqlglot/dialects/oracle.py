@@ -99,7 +99,6 @@ class Oracle(Dialect):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
         TABLE_HINTS = False
-        QUERY_HINTS = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

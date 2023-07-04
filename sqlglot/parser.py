@@ -2074,7 +2074,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_hint(self) -> t.Optional[exp.Hint]:
         if self._match(TokenType.HINT):
-            hints = self._parse_csv(self._parse_function)
+            hints = []
+            for hint in iter(lambda: self._parse_csv(self._parse_function), []):
+                hints.extend(hint)
 
             if not self._match_pair(TokenType.STAR, TokenType.SLASH):
                 self.raise_error("Expected */ after HINT")

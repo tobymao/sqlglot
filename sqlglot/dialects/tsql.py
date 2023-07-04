@@ -468,6 +468,7 @@ class TSQL(Dialect):
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         LIMIT_IS_TOP = True
+        QUERY_HINTS = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

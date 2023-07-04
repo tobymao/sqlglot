@@ -110,7 +110,7 @@ class TestPostgres(Validator):
         )
 
     @mock.patch("sqlglot.helper.logger")
-    def test_array_offset(self, mock_logger):
+    def test_array_offset(self, logger):
         self.validate_all(
             "SELECT col[1]",
             write={

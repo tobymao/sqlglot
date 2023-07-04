@@ -1,3 +1,5 @@
+from unittest import mock
+
 from tests.dialects.test_dialect import Validator
 
 
@@ -148,7 +150,8 @@ TBLPROPERTIES (
             },
         )
 
-    def test_hint(self):
+    @mock.patch("sqlglot.generator.logger")
+    def test_hint(self, logger):
         self.validate_all(
             "SELECT /*+ COALESCE(3) */ * FROM x",
             write={

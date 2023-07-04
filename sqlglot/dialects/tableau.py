@@ -8,6 +8,7 @@ class Tableau(Dialect):
     class Generator(generator.Generator):
         JOIN_HINTS = False
         TABLE_HINTS = False
+        QUERY_HINTS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

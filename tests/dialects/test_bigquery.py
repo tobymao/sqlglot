@@ -627,7 +627,7 @@ class TestBigQuery(Validator):
         )
 
     @mock.patch("sqlglot.dialects.bigquery.logger")
-    def test_pushdown_cte_column_names(self, mock_logger):
+    def test_pushdown_cte_column_names(self, logger):
         with self.assertRaises(UnsupportedError):
             transpile(
                 "WITH cte(foo) AS (SELECT * FROM tbl) SELECT foo FROM cte",

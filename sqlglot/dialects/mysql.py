@@ -420,6 +420,7 @@ class MySQL(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = True
         DUPLICATE_KEY_UPDATE_WITH_SET = False
+        QUERY_HINT_SEP = " "
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

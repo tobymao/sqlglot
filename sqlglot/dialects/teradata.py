@@ -140,6 +140,7 @@ class Teradata(Dialect):
     class Generator(generator.Generator):
         JOIN_HINTS = False
         TABLE_HINTS = False
+        QUERY_HINTS = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

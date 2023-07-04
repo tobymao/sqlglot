@@ -146,7 +146,8 @@ class TestOptimizer(unittest.TestCase):
                     df2 = self.conn.execute(optimized.sql(pretty=pretty, dialect="duckdb")).df()
                     assert_frame_equal(df1, df2)
 
-    def test_optimize(self):
+    @patch("sqlglot.generator.logger")
+    def test_optimize(self, logger):
         self.assertEqual(optimizer.optimize("x = 1 + 1", identify=None).sql(), "x = 2")
 
         schema = {
@@ -199,7 +200,8 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("normalize", normalize)
 
-    def test_qualify_columns(self):
+    @patch("sqlglot.generator.logger")
+    def test_qualify_columns(self, logger):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one("WITH x AS (SELECT a FROM db.y) SELECT z FROM db.x"),
@@ -318,7 +320,8 @@ class TestOptimizer(unittest.TestCase):
             pretty=True,
         )
 
-    def test_merge_subqueries(self):
+    @patch("sqlglot.generator.logger")
+    def test_merge_subqueries(self, logger):
         optimize = partial(
             optimizer.optimize,
             rules=[

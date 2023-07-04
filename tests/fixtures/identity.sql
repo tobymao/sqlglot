@@ -837,3 +837,4 @@ SELECT * FROM case
 SELECT * FROM schema.case
 SELECT * FROM current_date
 SELECT * FROM schema.current_date
+SELECT /*+ SOME_HINT(foo) */ 1

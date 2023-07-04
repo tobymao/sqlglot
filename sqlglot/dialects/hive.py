@@ -312,6 +312,7 @@ class Hive(Dialect):
         TABLESAMPLE_SIZE_IS_PERCENT = True
         JOIN_HINTS = False
         TABLE_HINTS = False
+        QUERY_HINTS = False
         INDEX_ON = "ON TABLE"
 
         TYPE_MAPPING = {

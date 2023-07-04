@@ -362,6 +362,7 @@ class BigQuery(Dialect):
         EXPLICIT_UNION = True
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False
+        QUERY_HINTS = False
         TABLE_HINTS = False
         LIMIT_FETCH = "LIMIT"
         RENAME_TABLE_WITH_DB = False

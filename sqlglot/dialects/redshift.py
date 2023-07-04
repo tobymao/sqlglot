@@ -86,6 +86,7 @@ class Redshift(Postgres):
     class Generator(Postgres.Generator):
         LOCKING_READS_SUPPORTED = False
         RENAME_TABLE_WITH_DB = False
+        QUERY_HINTS = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,

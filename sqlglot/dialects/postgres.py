@@ -338,6 +338,7 @@ class Postgres(Dialect):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
         TABLE_HINTS = False
+        QUERY_HINTS = False
         PARAMETER_TOKEN = "$"
 
         TYPE_MAPPING = {

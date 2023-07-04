@@ -121,7 +121,6 @@ class Oracle(Dialect):
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
-            exp.Hint: lambda self, e: f" /*+ {self.expressions(e).strip()} */",
             exp.ILike: no_ilike_sql,
             exp.Coalesce: rename_func("NVL"),
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),

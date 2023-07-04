@@ -277,6 +277,7 @@ class ClickHouse(Dialect):
             return None
 
     class Generator(generator.Generator):
+        QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
 
         TYPE_MAPPING = {

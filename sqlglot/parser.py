@@ -2266,7 +2266,15 @@ class Parser(metaclass=_Parser):
         if outer_apply:
             side = Token(TokenType.LEFT, "LEFT")
 
-        kwargs: t.Dict[str, t.Any] = {"this": self._parse_table()}
+        # This handles parenthesized joins like "a JOIN (b JOIN c ..) ..", by
+        # ensuring the table source is parsed as a Paren and not as a Subquery
+        source = self._parse_table()
+        if isinstance(source, exp.Subquery):
+            unnested = source.unnest()
+            if isinstance(unnested, exp.Table):
+                source = exp.paren(unnested, copy=False)
+
+        kwargs: t.Dict[str, t.Any] = {"this": source}
 
         if method:
             kwargs["method"] = method.text
@@ -2292,7 +2300,8 @@ class Parser(metaclass=_Parser):
             else:
                 joins = None
                 self._retreat(index)
-            kwargs["this"].set("joins", joins)
+
+            kwargs["this"].unnest().set("joins", joins)
 
         return self.expression(exp.Join, **kwargs)
 

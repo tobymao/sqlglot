@@ -632,8 +632,9 @@ def _traverse_tables(scope):
     if from_:
         expressions.append(from_.this)
 
-    for join in scope.expression.args.get("joins") or []:
-        expressions.append(join.this)
+    for expression, *_ in scope.walk():
+        for join in expression.args.get("joins") or []:
+            expressions.append(join.this)
 
     if isinstance(scope.expression, exp.Table):
         expressions.append(scope.expression)
@@ -641,6 +642,9 @@ def _traverse_tables(scope):
     expressions.extend(scope.expression.args.get("laterals") or [])
 
     for expression in expressions:
+        if isinstance(expression, exp.Paren):
+            expression = expression.unnest()
+
         if isinstance(expression, exp.Table):
             table_name = expression.name
             source_name = expression.alias_or_name

@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v17.1.0] - 2023-07-04
+### :sparkles: New Features
+- [`b178e1c`](https://github.com/tobymao/sqlglot/commit/b178e1c3f48c2460c59d525a40363cbda488cad8) - dialect argument for parse_one *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`83db4c0`](https://github.com/tobymao/sqlglot/commit/83db4c0bc45cc34af7b7aa41153a9e44847c1f10) - **tsql**: rename EXTRACT to DATEPART closes [#1885](https://github.com/tobymao/sqlglot/pull/1885) *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`5a84605`](https://github.com/tobymao/sqlglot/commit/5a84605324ad2aab5eb0e76016845d262b458cd3) - order by agg closes [#1887](https://github.com/tobymao/sqlglot/pull/1887) *(PR [#1889](https://github.com/tobymao/sqlglot/pull/1889) by [@tobymao](https://github.com/tobymao))*
+- [`d1ad7da`](https://github.com/tobymao/sqlglot/commit/d1ad7da4446d58ef78f5ebfa4765818d06fa2c6b) - performance regression due to 6f80cc80 *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v17.0.0] - 2023-07-04
 ### :boom: BREAKING CHANGES
 - due to [`df4448d`](https://github.com/tobymao/sqlglot/commit/df4448dcb8d82470a2312d845506e9a429411451) - use a dictionary for query modifier search *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -801,3 +811,4 @@ Changelog
 [v16.8.0]: https://github.com/tobymao/sqlglot/compare/v16.7.7...v16.8.0
 [v16.8.1]: https://github.com/tobymao/sqlglot/compare/v16.8.0...v16.8.1
 [v17.0.0]: https://github.com/tobymao/sqlglot/compare/v16.8.1...v17.0.0
+[v17.1.0]: https://github.com/tobymao/sqlglot/compare/v17.0.0...v17.1.0

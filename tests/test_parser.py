@@ -1,3 +1,4 @@
+import time
 import unittest
 from unittest.mock import patch
 
@@ -522,6 +523,55 @@ class TestParser(unittest.TestCase):
                 expr = parse_one(query, read=dialect)
                 columns = expr.args["from"].this.args["pivots"][0].args["columns"]
                 self.assertEqual(expected_columns, [col.sql(dialect=dialect) for col in columns])
+
+    def test_parse_nested(self):
+        now = time.time()
+        query = parse_one(
+            """
+            select *
+            FROM a
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            LEFT JOIN b ON a.id = b.id
+            """
+        )
+        self.assertIsNotNone(query)
+        self.assertLessEqual(time.time() - now, 0.1)
 
     def test_parse_properties(self):
         self.assertEqual(

@@ -10,6 +10,13 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT CURRENT_TIMESTAMP")
 
         self.validate_all(
+            "SELECT MAKE_DATE(2016, 12, 25)", read={"bigquery": "SELECT DATE(2016, 12, 25)"}
+        )
+        self.validate_all(
+            "SELECT CAST(CAST('2016-12-25 23:59:59' AS DATETIME) AS DATE)",
+            read={"bigquery": "SELECT DATE(DATETIME '2016-12-25 23:59:59')"},
+        )
+        self.validate_all(
             "SELECT STRPTIME(STRFTIME(CAST(CAST('2016-12-25' AS TIMESTAMPTZ) AS DATE), '%d/%m/%Y') || ' ' || 'America/Los_Angeles', '%d/%m/%Y %Z')",
             read={
                 "bigquery": "SELECT DATE(TIMESTAMP '2016-12-25', 'America/Los_Angeles')",

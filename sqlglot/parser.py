@@ -1977,7 +1977,7 @@ class Parser(metaclass=_Parser):
                 index = self._index
                 alias = self._parse_table_alias()
 
-                # Gets rid of redundant parentheses
+                # Removes redundant parentheses, e.g. in "SELECT * FROM ((tbl1 JOIN tbl2)) t"
                 this = this.unnest()
 
                 if not alias:

@@ -84,7 +84,7 @@ def qualify_tables(
 
                 # Unnest joins attached in tables by appending them to closest query
                 for join in source.args.get("joins") or []:
-                    query.append("joins", join)
+                    scope.expression.append("joins", join)
                 else:
                     source.set("joins", None)
 

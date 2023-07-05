@@ -40,15 +40,15 @@ SELECT * FROM a LEFT JOIN b INNER JOIN c ON c.id = b.id ON b.id = a.id;
 SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b ON b.id = a.id INNER JOIN c.db.c AS c ON c.id = b.id;
 
 # title: parentheses can't be omitted because alias shadows inner table names
-SELECT * FROM (tbl AS tbl) AS _q_0;
-SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
+SELECT t.a FROM (tbl AS tbl) AS t;
+SELECT t.a FROM (SELECT * FROM c.db.tbl AS tbl) AS t;
 
 # title: outermost set of parentheses can't be omitted due to shadowing (1)
 SELECT * FROM ((tbl AS tbl)) AS _q_0;
 SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
 
 # title: outermost set of parentheses can't be omitted due to shadowing (2)
-SELECT * FROM (((tbl AS tbl))) AS _q_0;
+SELECT * FROM ((((tbl AS tbl)))) AS _q_0;
 SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
 
 # title: join construct with three tables in canonical form

@@ -35,7 +35,7 @@ SELECT * FROM c.db.tbl AS tbl;
 SELECT * FROM a LEFT JOIN (b INNER JOIN c ON c.id = b.id) ON b.id = a.id;
 SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b ON b.id = a.id INNER JOIN c.db.c AS c ON c.id = b.id;
 
-# title: chained joins converted to canonical form
+# title: nested joins converted to canonical form
 SELECT * FROM a LEFT JOIN b INNER JOIN c ON c.id = b.id ON b.id = a.id;
 SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b ON b.id = a.id INNER JOIN c.db.c AS c ON c.id = b.id;
 

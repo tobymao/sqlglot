@@ -589,7 +589,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_function_annotation(self):
         schema = {"x": {"cola": "VARCHAR", "colb": "CHAR"}}
-        sql = "SELECT x.cola || TRIM(x.colb) AS col, DATE(x.colb) FROM x AS x"
+        sql = "SELECT x.cola || TRIM(x.colb) AS col, DATE(x.colb), DATEFROMPARTS(y, m, d) FROM x AS x"
 
         expression = annotate_types(parse_one(sql), schema=schema)
         concat_expr_alias = expression.expressions[0]
@@ -602,6 +602,9 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(concat_expr.right.this.type.this, exp.DataType.Type.CHAR)  # x.colb
 
         date_expr = expression.expressions[1]
+        self.assertEqual(date_expr.type.this, exp.DataType.Type.DATE)
+
+        date_expr = expression.expressions[2]
         self.assertEqual(date_expr.type.this, exp.DataType.Type.DATE)
 
         sql = "SELECT CASE WHEN 1=1 THEN x.cola ELSE x.colb END AS col FROM x AS x"

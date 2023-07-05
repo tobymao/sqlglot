@@ -41,20 +41,15 @@ def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.Dat
 
 # BigQuery -> DuckDB conversion for the DATE function
 def _date_sql(self: generator.Generator, expression: exp.Date) -> str:
-    expressions = expression.expressions
+    result = f"CAST({self.sql(expression, 'this')} AS DATE)"
+    zone = self.sql(expression, "zone")
 
-    timelike = self.sql(expressions[0])
-    result = f"CAST({timelike} AS DATE)"
-
-    if len(expressions) == 2:
-        zone = self.sql(expressions[1])
+    if zone:
         date_str = self.func("STRFTIME", result, "'%d/%m/%Y'")
         date_str = f"{date_str} || ' ' || {zone}"
 
         # This will create a TIMESTAMP with time zone information
         result = self.func("STRPTIME", date_str, "'%d/%m/%Y %Z'")
-    elif len(expressions) > 2:
-        self.unsupported("Unsupported number of arguments for DATE")
 
     return result
 

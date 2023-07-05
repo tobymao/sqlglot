@@ -20,8 +20,9 @@ class TestSQLite(Validator):
             CREATE TABLE "Track"
             (
                 CONSTRAINT "PK_Track" FOREIGN KEY ("TrackId"),
-                FOREIGN KEY ("AlbumId") REFERENCES "Album" ("AlbumId")
-                    ON DELETE NO ACTION ON UPDATE NO ACTION,
+                FOREIGN KEY ("AlbumId") REFERENCES "Album" (
+                    "AlbumId"
+                ) ON DELETE NO ACTION ON UPDATE NO ACTION,
                 FOREIGN KEY ("AlbumId") ON DELETE CASCADE ON UPDATE RESTRICT,
                 FOREIGN KEY ("AlbumId") ON DELETE SET NULL ON UPDATE SET DEFAULT
             )
@@ -29,7 +30,9 @@ class TestSQLite(Validator):
             write={
                 "sqlite": """CREATE TABLE "Track" (
   CONSTRAINT "PK_Track" FOREIGN KEY ("TrackId"),
-  FOREIGN KEY ("AlbumId") REFERENCES "Album"("AlbumId") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  FOREIGN KEY ("AlbumId") REFERENCES "Album" (
+    "AlbumId"
+  ) ON DELETE NO ACTION ON UPDATE NO ACTION,
   FOREIGN KEY ("AlbumId") ON DELETE CASCADE ON UPDATE RESTRICT,
   FOREIGN KEY ("AlbumId") ON DELETE SET NULL ON UPDATE SET DEFAULT
 )""",

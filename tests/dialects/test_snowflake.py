@@ -615,6 +615,9 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400))"
         )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL, PRIMARY KEY (ID), FOREIGN KEY (CITY_CODE) REFERENCES EXAMPLE_DB.DEMO.CITIES (CITY_CODE))"
+        )
 
         self.validate_all(
             "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",

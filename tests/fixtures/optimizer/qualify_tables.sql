@@ -19,9 +19,9 @@ SELECT (SELECT y.c FROM c.db.y AS y) FROM c.db.x AS x;
 SELECT * FROM x PIVOT (SUM(a) FOR b IN ('a', 'b'));
 SELECT * FROM c.db.x AS x PIVOT(SUM(a) FOR b IN ('a', 'b')) AS _q_0;
 
------------------------------------
--- Unnest wrapped tables / joins
------------------------------------
+----------------------------------------------------------
+-- Unnest wrapped tables / joins, expand join constructs
+----------------------------------------------------------
 
 # title: redundant parentheses (1)
 SELECT * FROM (tbl AS tbl);

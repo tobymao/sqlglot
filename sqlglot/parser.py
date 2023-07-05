@@ -1981,7 +1981,6 @@ class Parser(metaclass=_Parser):
                 this = this.unnest()
 
                 if not alias:
-                    # The unnest here ensures that redundant parentheses are discarded
                     return exp.paren(this, copy=False)
                 else:
                     self._retreat(index)

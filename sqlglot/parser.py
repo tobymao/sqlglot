@@ -3583,11 +3583,7 @@ class Parser(metaclass=_Parser):
             return None
 
         expressions = None
-        this = self._parse_id_var()
-
-        if self._match(TokenType.L_PAREN, advance=False):
-            expressions = self._parse_wrapped_id_vars()
-
+        this = self._parse_table(schema=True)
         options = self._parse_key_constraint_options()
         return self.expression(exp.Reference, this=this, expressions=expressions, options=options)
 

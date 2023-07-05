@@ -1975,7 +1975,7 @@ class Parser(metaclass=_Parser):
             # to represent the inner scope appropriately.
             if isinstance(this, (exp.Table, exp.Paren)):
                 # Removes redundant parentheses, e.g. in "SELECT * FROM ((tbl1 JOIN tbl2)) t"
-                this = this.unnest()
+                this = t.cast(exp.Expression, this.unnest())
 
                 index = self._index
                 alias = self._parse_table_alias()

@@ -636,11 +636,11 @@ def _traverse_tables(scope):
     # We walk the scope because Table expressions can also have joins attached
     # to them, and so we want to pick up the corresponding joined tables
     for expression, *_ in scope.walk():
-        if isinstance(expression, exp.Table):
-            expressions.append(expression)
-
         for join in expression.args.get("joins") or []:
             expressions.append(join.this)
+
+    if isinstance(scope.expression, exp.Table):
+        expressions.append(scope.expression)
 
     expressions.extend(scope.expression.args.get("laterals") or [])
 

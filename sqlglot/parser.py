@@ -1974,16 +1974,16 @@ class Parser(metaclass=_Parser):
             # would shadow all wrapped table names, and so we want to parse it as a Subquery
             # to represent the inner scope appropriately.
             if isinstance(this, (exp.Table, exp.Paren)):
-                index = self._index
-                alias = self._parse_table_alias()
-
                 # Removes redundant parentheses, e.g. in "SELECT * FROM ((tbl1 JOIN tbl2)) t"
                 this = this.unnest()
 
+                index = self._index
+                alias = self._parse_table_alias()
+
                 if not alias:
                     return exp.paren(this, copy=False)
-                else:
-                    self._retreat(index)
+
+                self._retreat(index)
 
             # early return so that subquery unions aren't parsed again
             # SELECT * FROM (SELECT 1) UNION ALL SELECT 1

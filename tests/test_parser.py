@@ -580,3 +580,21 @@ class TestParser(unittest.TestCase):
 
     def test_parse_floats(self):
         self.assertTrue(parse_one("1. ").is_number)
+
+    def test_parse_wrapped_tables(self):
+        expr = parse_one("select * from (table)")
+        self.assertIsInstance(expr.args["from"].this, exp.Paren)
+        self.assertIsInstance(expr.args["from"].this.this, exp.Table)
+
+        expr = parse_one("select * from (((table)))")
+        self.assertIsInstance(expr.args["from"].this, exp.Paren)
+        self.assertIsInstance(expr.args["from"].this.this, exp.Paren)
+        self.assertIsInstance(expr.args["from"].this.this.this, exp.Paren)
+        self.assertIsInstance(expr.args["from"].this.this.this.this, exp.Table)
+
+        expr = parse_one("select * from (tbl1 join tbl2)")
+        self.assertIsInstance(expr.args["from"].this, exp.Paren)
+
+        expr = parse_one("select * from (tbl1 join tbl2) t")
+        self.assertIsInstance(expr.args["from"].this, exp.Subquery)
+        self.assertIsInstance(expr.args["from"].this.this, exp.Table)

@@ -549,7 +549,7 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
     elif isinstance(scope.expression, exp.Table):
-        # This is reached for queries that contain "join constructs", for example:
+        # This is reached when a query contains "join constructs", such as:
         # "SELECT * FROM (tbl1 JOIN tbl2 ON ..) AS t"
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):

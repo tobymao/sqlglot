@@ -1969,6 +1969,22 @@ class Parser(metaclass=_Parser):
 
             self._match_r_paren()
 
+            # Don't parse a wrapped table as a Subquery, but as a parenthesized Table, unless
+            # the Subquery has an alias, since all table names inside of the parentheses would
+            # then be shadowed by it
+            if isinstance(this, (exp.Table, exp.Paren)):
+                index = self._index
+                alias = self._parse_table_alias()
+
+                # Gets rid of redundant parentheses
+                this = this.unnest()
+
+                if not alias:
+                    # The unnest here ensures that redundant parentheses are discarded
+                    return exp.paren(this, copy=False)
+                else:
+                    self._retreat(index)
+
             # early return so that subquery unions aren't parsed again
             # SELECT * FROM (SELECT 1) UNION ALL SELECT 1
             # Union ALL should be a property of the top select node, not the subquery
@@ -2266,15 +2282,7 @@ class Parser(metaclass=_Parser):
         if outer_apply:
             side = Token(TokenType.LEFT, "LEFT")
 
-        # This handles parenthesized joins like "a JOIN (b JOIN c ..) ..", by
-        # ensuring the table source is parsed as a Paren and not as a Subquery
-        source = self._parse_table()
-        if isinstance(source, exp.Subquery):
-            unnested = source.unnest()
-            if isinstance(unnested, exp.Table):
-                source = exp.paren(unnested, copy=False)
-
-        kwargs: t.Dict[str, t.Any] = {"this": source}
+        kwargs: t.Dict[str, t.Any] = {"this": self._parse_table()}
 
         if method:
             kwargs["method"] = method.text

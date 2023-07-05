@@ -15,8 +15,7 @@ def qualify_tables(
     schema: t.Optional[Schema] = None,
 ) -> E:
     """
-    Rewrite sqlglot AST to have fully qualified tables. Additionally, this
-    replaces "join constructs" (*) by equivalent SELECT * subqueries.
+    Rewrite sqlglot AST to have fully qualified, unnested tables.
 
     Examples:
         >>> import sqlglot
@@ -24,9 +23,23 @@ def qualify_tables(
         >>> qualify_tables(expression, db="db").sql()
         'SELECT 1 FROM db.tbl AS tbl'
         >>>
+        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl)")
+        >>> qualify_tables(expression).sql()
+        'SELECT * FROM tbl AS tbl'
+        >>>
         >>> expression = sqlglot.parse_one("SELECT * FROM (tbl1 JOIN tbl2 ON id1 = id2)")
         >>> qualify_tables(expression).sql()
-        'SELECT * FROM (SELECT * FROM tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2) AS _q_0'
+        'SELECT * FROM tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2'
+        >>>
+        >>> # "t" shadows "tbl", so we expand "tbl" into a star query to produce a canonical form
+        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl AS tbl) AS t")
+        >>> qualify_tables(expression).sql()
+        'SELECT * FROM (SELECT * FROM tbl AS tbl) AS t'
+
+    Note:
+        This rule effectively enforces a left-to-right join order, since all joins
+        are unnested. This means that the optimizer doesn't necessarily preserve the
+        original join order, i.e. when parentheses are used to specify it explicitly.
 
     Args:
         expression: Expression to qualify
@@ -36,14 +49,13 @@ def qualify_tables(
 
     Returns:
         The qualified expression.
-
-    (*) See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
     """
     next_alias_name = name_sequence("_q_")
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
             # Expand join construct
+            # See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
             if isinstance(derived_table, exp.Subquery):
                 unnested = derived_table.unnest()
                 if isinstance(unnested, exp.Table):
@@ -65,6 +77,16 @@ def qualify_tables(
                         source.set("db", exp.to_identifier(db))
                     if not source.args.get("catalog"):
                         source.set("catalog", exp.to_identifier(catalog))
+
+                # Unnest parenthesized table
+                if isinstance(source.parent, exp.Paren):
+                    source.parent.replace(source)
+
+                # Unnest joins attached in tables by appending them to closest query
+                for join in source.args.get("joins") or []:
+                    query.append("joins", join)
+                else:
+                    source.set("joins", None)
 
                 if not source.alias:
                     source = source.replace(

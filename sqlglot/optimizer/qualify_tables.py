@@ -39,7 +39,7 @@ def qualify_tables(
     Note:
         This rule effectively enforces a left-to-right join order, since all joins
         are unnested. This means that the optimizer doesn't necessarily preserve the
-        original join order, i.e. when parentheses are used to specify it explicitly.
+        original join order, e.g. when parentheses are used to specify it explicitly.
 
     Args:
         expression: Expression to qualify

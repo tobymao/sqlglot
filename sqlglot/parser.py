@@ -1969,9 +1969,10 @@ class Parser(metaclass=_Parser):
 
             self._match_r_paren()
 
-            # Don't parse a wrapped table as a Subquery, but as a parenthesized Table, unless
-            # the Subquery has an alias, since all table names inside of the parentheses would
-            # then be shadowed by it
+            # Parse a wrapped table as a Paren, instead of a Subquery. The exception to this
+            # is when there's an alias that can be applied to the parentheses, because that
+            # would shadow all wrapped table names, and so we want to parse it as a Subquery
+            # to represent the inner scope appropriately.
             if isinstance(this, (exp.Table, exp.Paren)):
                 index = self._index
                 alias = self._parse_table_alias()

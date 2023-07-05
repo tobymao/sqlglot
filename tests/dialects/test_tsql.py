@@ -142,94 +142,82 @@ class TestTSQL(Validator):
                 "hive": "CAST(x AS TIMESTAMP)",
             },
         )
-        
+
     def test__types_ints(self):
         self.validate_all(
             "CAST(X AS INT)",
-            write={
-                "spark" :"CAST(X AS INT)",
-                "tsql"  :"CAST(X AS INTEGER)"
-            },
+            write={"spark": "CAST(X AS INT)", "tsql": "CAST(X AS INTEGER)"},
         )
-        
+
         self.validate_all(
             "CAST(X AS BIGINT)",
-            write={
-                "spark" :"CAST(X AS BIGINT)",
-                "tsql"  :"CAST(X AS BIGINT)"
-            },
+            write={"spark": "CAST(X AS BIGINT)", "tsql": "CAST(X AS BIGINT)"},
         )
-         
+
         self.validate_all(
             "CAST(X AS SMALLINT)",
-            write={
-                "spark" :"CAST(X AS SMALLINT)",
-                "tsql"  :"CAST(X AS SMALLINT)"
-            },
+            write={"spark": "CAST(X AS SMALLINT)", "tsql": "CAST(X AS SMALLINT)"},
         )
-        
+
         self.validate_all(
             "CAST(X AS TINYINT)",
-            write={
-                "spark" :"CAST(X AS TINYINT)",
-                "tsql"  :"CAST(X AS TINYINT)"
-            },
+            write={"spark": "CAST(X AS TINYINT)", "tsql": "CAST(X AS TINYINT)"},
         )
-        
+
     def test_types_decimals(self):
         self.validate_all(
             "CAST(x as FLOAT)",
             write={
-                "spark":"CAST(x AS FLOAT)",
-                "tsql" :"CAST(x AS FLOAT)",
+                "spark": "CAST(x AS FLOAT)",
+                "tsql": "CAST(x AS FLOAT)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as DOUBLE)",
             write={
-                "spark":"CAST(x AS DOUBLE)",
-                "tsql" :"CAST(x AS DOUBLE)",
+                "spark": "CAST(x AS DOUBLE)",
+                "tsql": "CAST(x AS DOUBLE)",
             },
         )
 
         self.validate_all(
             "CAST(x as DECIMAL(15, 4))",
             write={
-                "spark":"CAST(x AS DECIMAL(15, 4))",
-                "tsql" :"CAST(x AS NUMERIC(15, 4))",
+                "spark": "CAST(x AS DECIMAL(15, 4))",
+                "tsql": "CAST(x AS NUMERIC(15, 4))",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as NUMERIC(13,3))",
             write={
-                "spark":"CAST(x AS DECIMAL(13, 3))",
-                "tsql" :"CAST(x AS NUMERIC(13, 3))",
+                "spark": "CAST(x AS DECIMAL(13, 3))",
+                "tsql": "CAST(x AS NUMERIC(13, 3))",
             },
         )
-         
+
         self.validate_all(
             "CAST(x as MONEY)",
             write={
-                "spark":"CAST(x AS DECIMAL(15, 4))",
-                "tsql" :"CAST(x AS MONEY)",
+                "spark": "CAST(x AS DECIMAL(15, 4))",
+                "tsql": "CAST(x AS MONEY)",
             },
         )
-         
+
         self.validate_all(
             "CAST(x as SMALLMONEY)",
             write={
-                "spark":"CAST(x AS DECIMAL(6, 4))",
-                "tsql" :"CAST(x AS SMALLMONEY)",
+                "spark": "CAST(x AS DECIMAL(6, 4))",
+                "tsql": "CAST(x AS SMALLMONEY)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as REAL)",
             write={
-                "spark":"CAST(x AS FLOAT)",
-                "tsql" :"CAST(x AS FLOAT)",
+                "spark": "CAST(x AS FLOAT)",
+                "tsql": "CAST(x AS FLOAT)",
             },
         )
 
@@ -237,106 +225,106 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x as CHAR(1))",
             write={
-                "spark":"CAST(x AS CHAR(1))",
-                "tsql" :"CAST(x AS CHAR(1))",
+                "spark": "CAST(x AS CHAR(1))",
+                "tsql": "CAST(x AS CHAR(1))",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as VARCHAR(2))",
             write={
-                "spark":"CAST(x AS VARCHAR(2))",
-                "tsql" :"CAST(x AS VARCHAR(2))",
+                "spark": "CAST(x AS VARCHAR(2))",
+                "tsql": "CAST(x AS VARCHAR(2))",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as NCHAR(1))",
             write={
-                "spark":"CAST(x AS CHAR(1))",
-                "tsql" :"CAST(x AS CHAR(1))",
+                "spark": "CAST(x AS CHAR(1))",
+                "tsql": "CAST(x AS CHAR(1))",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as NVARCHAR(2))",
             write={
-                "spark":"CAST(x AS VARCHAR(2))",
-                "tsql" :"CAST(x AS VARCHAR(2))",
+                "spark": "CAST(x AS VARCHAR(2))",
+                "tsql": "CAST(x AS VARCHAR(2))",
             },
         )
-    
+
     def test_types_date(self):
         self.validate_all(
             "CAST(x as DATE)",
             write={
-                "spark":"CAST(x AS DATE)",
-                "tsql" :"CAST(x AS DATE)",
+                "spark": "CAST(x AS DATE)",
+                "tsql": "CAST(x AS DATE)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as DATE)",
             write={
-                "spark":"CAST(x AS DATE)",
-                "tsql" :"CAST(x AS DATE)",
+                "spark": "CAST(x AS DATE)",
+                "tsql": "CAST(x AS DATE)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as TIME(4))",
             write={
-                "spark":"CAST(x AS TIMESTAMP)",
-                "tsql" :"CAST(x AS TIMESTAMP(4))",
+                "spark": "CAST(x AS TIMESTAMP)",
+                "tsql": "CAST(x AS TIMESTAMP(4))",
             },
         )
 
         self.validate_all(
             "CAST(x as DATETIME2)",
             write={
-                "spark":"CAST(x AS TIMESTAMP)",
-                "tsql" :"CAST(x AS DATETIME2)",
+                "spark": "CAST(x AS TIMESTAMP)",
+                "tsql": "CAST(x AS DATETIME2)",
             },
         )
 
         self.validate_all(
             "CAST(x as DATETIMEOFFSET)",
             write={
-                "spark":"CAST(x AS TIMESTAMP)",
-                "tsql" :"CAST(x AS TIMESTAMPTZ)",
+                "spark": "CAST(x AS TIMESTAMP)",
+                "tsql": "CAST(x AS TIMESTAMPTZ)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as SMALLDATETIME)",
             write={
-                "spark":"CAST(x AS TIMESTAMP)",
-                "tsql" :"CAST(x AS DATETIME2)",
+                "spark": "CAST(x AS TIMESTAMP)",
+                "tsql": "CAST(x AS DATETIME2)",
             },
         )
-        
+
     def test_types_bin(self):
         self.validate_all(
             "CAST(x as BIT)",
             write={
-                "spark":"CAST(x AS BOOLEAN)",
-                "tsql" :"CAST(x AS BIT)",
+                "spark": "CAST(x AS BOOLEAN)",
+                "tsql": "CAST(x AS BIT)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as UNIQUEIDENTIFIER)",
             write={
-                "spark":"CAST(x AS BINARY)",
-                "tsql" :"CAST(x AS UNIQUEIDENTIFIER)",
+                "spark": "CAST(x AS BINARY)",
+                "tsql": "CAST(x AS UNIQUEIDENTIFIER)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as VARBINARY)",
             write={
-                "spark":"CAST(x AS BINARY)",
-                "tsql" :"CAST(x AS VARBINARY)",
+                "spark": "CAST(x AS BINARY)",
+                "tsql": "CAST(x AS VARBINARY)",
             },
         )
 

@@ -1972,9 +1972,11 @@ class Parser(metaclass=_Parser):
             # Parse a wrapped table as a Paren, instead of a Subquery. The exception to this
             # is when there's an alias that can be applied to the parentheses, because that
             # would shadow all wrapped table names, and so we want to parse it as a Subquery
-            # to represent the inner scope appropriately.
+            # to represent the inner scope appropriately. Additionally, we want the node under
+            # the Subquery to be an actual query, so we will replace the table reference with
+            # a star query that selects from it.
             if isinstance(this, (exp.Table, exp.Paren)):
-                # Removes redundant parentheses, e.g. in "SELECT * FROM ((tbl1 JOIN tbl2)) t"
+                # Removes redundant parentheses, e.g. in "SELECT * FROM ((tbl1 JOIN tbl2)) AS t"
                 this = t.cast(exp.Expression, this.unnest())
 
                 index = self._index
@@ -1983,11 +1985,16 @@ class Parser(metaclass=_Parser):
                 if not alias:
                     return exp.paren(this, copy=False)
 
+                joins = this.args.get("joins")
+                this.set("joins", None)
+
+                this = this.replace(exp.select("*").from_(this.copy()))
+                this.set("joins", joins)
+
                 self._retreat(index)
 
-            # early return so that subquery unions aren't parsed again
-            # SELECT * FROM (SELECT 1) UNION ALL SELECT 1
-            # Union ALL should be a property of the top select node, not the subquery
+            # We return early here so that the UNION isn't attached to the subquery by the
+            # following call to _parse_set_operations, but instead becomes the parent node
             return self._parse_subquery(this, parse_alias=parse_subquery_alias)
         elif self._match(TokenType.VALUES):
             this = self.expression(

@@ -442,18 +442,30 @@ class TestExpressions(unittest.TestCase):
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
 
-    def test_pop(self):
+    def test_arg_deletion(self):
+        # Using the pop helper method
         expression = parse_one("SELECT a, b FROM x")
         expression.find(exp.Column).pop()
         self.assertEqual(expression.sql(), "SELECT b FROM x")
+
         expression.find(exp.Column).pop()
         self.assertEqual(expression.sql(), "SELECT FROM x")
+
         expression.pop()
         self.assertEqual(expression.sql(), "SELECT FROM x")
 
         expression = parse_one("WITH x AS (SELECT a FROM x) SELECT * FROM x")
         expression.find(exp.With).pop()
         self.assertEqual(expression.sql(), "SELECT * FROM x")
+
+        # Manually deleting by setting to None
+        expression = parse_one("SELECT * FROM foo JOIN bar")
+        self.assertEqual(len(expression.args.get("joins", [])), 1)
+
+        expression.set("joins", None)
+        self.assertEqual(expression.sql(), "SELECT * FROM foo")
+        self.assertEqual(expression.args.get("joins", []), [])
+        self.assertIsNone(expression.args.get("joins"))
 
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")

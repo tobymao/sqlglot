@@ -30,11 +30,6 @@ def qualify_tables(
         >>> expression = sqlglot.parse_one("SELECT * FROM (tbl1 JOIN tbl2 ON id1 = id2)")
         >>> qualify_tables(expression).sql()
         'SELECT * FROM tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2'
-        >>>
-        >>> # "t" shadows "tbl", so we expand "tbl" into a star query to produce a canonical form
-        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl AS tbl) AS t")
-        >>> qualify_tables(expression).sql()
-        'SELECT * FROM (SELECT * FROM tbl AS tbl) AS t'
 
     Note:
         This rule effectively enforces a left-to-right join order, since all joins
@@ -54,13 +49,6 @@ def qualify_tables(
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
-            # Expand join construct
-            # See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
-            if isinstance(derived_table, exp.Subquery):
-                unnested = derived_table.unnest()
-                if isinstance(unnested, exp.Table):
-                    derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
-
             if not derived_table.args.get("alias"):
                 alias_ = next_alias_name()
                 derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))

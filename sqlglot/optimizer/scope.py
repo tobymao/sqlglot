@@ -548,10 +548,6 @@ def _traverse_scope(scope):
         yield from _traverse_union(scope)
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
-    elif isinstance(scope.expression, exp.Table):
-        # This is reached when a query contains "join constructs", such as:
-        # "SELECT * FROM (tbl1 JOIN tbl2 ON ..) AS t"
-        yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
         pass
     else:

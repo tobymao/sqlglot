@@ -274,12 +274,16 @@ class Expression(metaclass=_Expression):
 
     def set(self, arg_key: str, value: t.Any) -> None:
         """
-        Sets `arg_key` to `value`.
+        Sets arg_key to value.
 
         Args:
-            arg_key (str): name of the expression arg.
+            arg_key: name of the expression arg.
             value: value to set the arg to.
         """
+        if value is None:
+            self.args.pop(arg_key, None)
+            return
+
         self.args[arg_key] = value
         self._set_parent(arg_key, value)
 

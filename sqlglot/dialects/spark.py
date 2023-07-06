@@ -50,7 +50,7 @@ class Spark(Spark2):
             exp.DataType.Type.SMALLMONEY: "DECIMAL(6, 4)",
             exp.DataType.Type.VARBINARY: "BINARY",
             exp.DataType.Type.BIT: "BOOLEAN",
-            exp.DataType.Type.UNIQUEIDENTIFIER: "BINARY",
+            exp.DataType.Type.UNIQUEIDENTIFIER: "STRING",
         }
         TRANSFORMS = Spark2.Generator.TRANSFORMS.copy()
         TRANSFORMS.pop(exp.DateDiff)

@@ -315,7 +315,7 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x as UNIQUEIDENTIFIER)",
             write={
-                "spark": "CAST(x AS BINARY)",
+                "spark": "CAST(x AS STRING)",
                 "tsql": "CAST(x AS UNIQUEIDENTIFIER)",
             },
         )

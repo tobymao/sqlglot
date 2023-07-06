@@ -43,9 +43,6 @@ class Spark(Spark2):
     class Generator(Spark2.Generator):
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TINYINT: "TINYINT",
-            exp.DataType.Type.SMALLINT: "SMALLINT",
-            exp.DataType.Type.BIGINT: "BIGINT",
             exp.DataType.Type.MONEY: "DECIMAL(15, 4)",
             exp.DataType.Type.SMALLMONEY: "DECIMAL(6, 4)",
             exp.DataType.Type.UNIQUEIDENTIFIER: "STRING",

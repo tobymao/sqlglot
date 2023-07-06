@@ -146,22 +146,42 @@ class TestTSQL(Validator):
     def test__types_ints(self):
         self.validate_all(
             "CAST(X AS INT)",
-            write={"spark": "CAST(X AS INT)", "tsql": "CAST(X AS INTEGER)"},
+            write={
+                "hive": "CAST(X AS INT)",
+                "spark2": "CAST(X AS INT)",
+                "spark": "CAST(X AS INT)",
+                "tsql": "CAST(X AS INTEGER)",
+            },
         )
 
         self.validate_all(
             "CAST(X AS BIGINT)",
-            write={"spark": "CAST(X AS BIGINT)", "tsql": "CAST(X AS BIGINT)"},
+            write={
+                "hive": "CAST(X AS BIGINT)",
+                "spark2": "CAST(X AS BIGINT)",
+                "spark": "CAST(X AS BIGINT)",
+                "tsql": "CAST(X AS BIGINT)",
+            },
         )
 
         self.validate_all(
             "CAST(X AS SMALLINT)",
-            write={"spark": "CAST(X AS SMALLINT)", "tsql": "CAST(X AS SMALLINT)"},
+            write={
+                "hive": "CAST(X AS SMALLINT)",
+                "spark2": "CAST(X AS SMALLINT)",
+                "spark": "CAST(X AS SMALLINT)",
+                "tsql": "CAST(X AS SMALLINT)",
+            },
         )
 
         self.validate_all(
             "CAST(X AS TINYINT)",
-            write={"spark": "CAST(X AS TINYINT)", "tsql": "CAST(X AS TINYINT)"},
+            write={
+                "hive": "CAST(X AS TINYINT)",
+                "spark2": "CAST(X AS TINYINT)",
+                "spark": "CAST(X AS TINYINT)",
+                "tsql": "CAST(X AS TINYINT)",
+            },
         )
 
     def test_types_decimals(self):

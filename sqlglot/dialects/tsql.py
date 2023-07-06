@@ -532,3 +532,6 @@ class TSQL(Dialect):
             table = expression.args.get("table")
             table = f"{table} " if table else ""
             return f"RETURNS {table}{self.sql(expression, 'this')}"
+
+        def transaction_sql(self, expression: exp.Transaction) -> str:
+            return "BEGIN TRANSACTION"

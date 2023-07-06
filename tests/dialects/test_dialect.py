@@ -1512,6 +1512,7 @@ SELECT
                 "redshift": "BEGIN",
                 "snowflake": "BEGIN",
                 "sqlite": "BEGIN TRANSACTION",
+                "tsql": "BEGIN TRANSACTION",
             },
         )
         self.validate_all(

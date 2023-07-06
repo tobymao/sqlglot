@@ -360,7 +360,46 @@ class TestTSQL(Validator):
             },
         )
 
+    def test_transaction(self):
+        # BEGIN { TRAN | TRANSACTION }
+        #    [ { transaction_name | @tran_name_variable }
+        #    [ WITH MARK [ 'description' ] ]
+        #    ]
+        # [ ; ]
+        self.validate_identity("BEGIN TRANSACTION")
+        self.validate_all("BEGIN TRAN", write={"tsql": "BEGIN TRAN"})
+        # self.validate_identity("BEGIN TRANSACTION transaction_name")
+        # self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
+        # self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description")
+
+        # COMMIT [ { TRAN | TRANSACTION }  [ transaction_name | @tran_name_variable ] ] [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ] [ ; ]
+
+        # self.validate_identity("COMMIT")
+        # self.validate_identity("COMMIT TRAN")
+        self.validate_identity("COMMIT TRANSACTION")
+        # self.validate_identity("COMMIT TRANSACTION transaction_name")
+        # self.validate_identity("COMMIT TRANSACTION @tran_name_variable")
+        # self.validate_identity("COMMIT TRANSACTION @tran_name_variable WITH DELAYED_DURABILITY = ON")
+
+        # Applies to SQL Server and Azure SQL Database
+        # ROLLBACK { TRAN | TRANSACTION }
+        #     [ transaction_name | @tran_name_variable
+        #     | savepoint_name | @savepoint_variable ]
+        # [ ; ]
+        self.validate_identity("ROLLBACK")
+        # self.validate_identity("ROLLBACK TRAN")
+        # self.validate_identity("ROLLBACK TRANSACTION")
+        # self.validate_identity("ROLLBACK TRANSACTION transaction_name")
+        # self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable")
+        # self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable WITH DELAYED_DURABILITY = ON")
+
     def test_udf(self):
+        self.validate_identity("BEGIN")
+        self.validate_identity("END")
+        self.validate_identity("SET XACT_ABORT ON")
+        self.validate_identity(
+            "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)"
+        )
         self.validate_identity(
             "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
         )
@@ -417,6 +456,7 @@ WHERE
             pretty=True,
         )
 
+    def test_fullproc(self):
         sql = """
             CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
                 @Loadid INTEGER

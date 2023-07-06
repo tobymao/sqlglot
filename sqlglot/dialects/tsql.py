@@ -281,8 +281,16 @@ class TSQL(Dialect):
         QUOTES = ["'", '"']
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
+        COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON}
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "BEGIN": TokenType.COMMAND,
+            "BEGIN TRANSACTION": TokenType.BEGIN,
+            "COMMIT": TokenType.COMMIT,
+            "ROLLBACK": TokenType.ROLLBACK,
+            # "END": TokenType.END,
+            "SET": TokenType.SET,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
@@ -534,4 +542,11 @@ class TSQL(Dialect):
             return f"RETURNS {table}{self.sql(expression, 'this')}"
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
-            return "BEGIN TRANSACTION"
+            this = expression.this
+            this = f" {this}" if this else ""
+            return f"BEGIN{this} TRANSACTION"
+
+        def commit_sql(self, expression: exp.Commit) -> str:
+            this = expression.this
+            this = f" {this}" if this else ""
+            return f"COMMIT{this} TRANSACTION"

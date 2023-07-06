@@ -423,7 +423,7 @@ class Hive(Dialect):
                         expression = exp.DataType.build("float")
                     else:
                         expression = exp.DataType.build("double")
-                        
+
             if (
                 expression.this in (exp.DataType.Type.VARCHAR, exp.DataType.Type.NVARCHAR)
                 and not expression.expressions

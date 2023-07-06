@@ -204,7 +204,7 @@ class TestTSQL(Validator):
                 "tsql": "CAST(x AS FLOAT)",
             },
         )
-        
+
         self.validate_all(
             "CAST(x as FLOAT(32))",
             write={"tsql": "CAST(x AS FLOAT(32))", "hive": "CAST(x AS FLOAT)"},

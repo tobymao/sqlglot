@@ -105,6 +105,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.CurrentDate,
             exp.Date,
             exp.DateAdd,
+            exp.DateFromParts,
             exp.DateStrToDate,
             exp.DateSub,
             exp.DateTrunc,

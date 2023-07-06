@@ -218,7 +218,7 @@ class TestDialect(Validator):
                 "presto": "CAST(a AS SMALLINT)",
                 "redshift": "CAST(a AS SMALLINT)",
                 "snowflake": "CAST(a AS SMALLINT)",
-                "spark": "CAST(a AS SHORT)",
+                "spark": "CAST(a AS SMALLINT)",
                 "sqlite": "CAST(a AS INTEGER)",
                 "starrocks": "CAST(a AS SMALLINT)",
             },

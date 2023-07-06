@@ -65,7 +65,7 @@ class TestPresto(Validator):
                 "bigquery": "CAST([1, 2] AS ARRAY<INT64>)",
                 "duckdb": "CAST(LIST_VALUE(1, 2) AS BIGINT[])",
                 "presto": "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
-                "spark": "CAST(ARRAY(1, 2) AS ARRAY<LONG>)",
+                "spark": "CAST(ARRAY(1, 2) AS ARRAY<BIGINT>)",
                 "snowflake": "CAST([1, 2] AS ARRAY)",
             },
         )

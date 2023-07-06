@@ -41,6 +41,12 @@ class Spark(Spark2):
         }
 
     class Generator(Spark2.Generator):
+        TYPE_MAPPING = {
+            **Spark2.Generator.TYPE_MAPPING,
+            exp.DataType.Type.MONEY: "DECIMAL(15, 4)",
+            exp.DataType.Type.SMALLMONEY: "DECIMAL(6, 4)",
+            exp.DataType.Type.UNIQUEIDENTIFIER: "STRING",
+        }
         TRANSFORMS = Spark2.Generator.TRANSFORMS.copy()
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)

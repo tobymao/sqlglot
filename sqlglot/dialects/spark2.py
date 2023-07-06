@@ -177,9 +177,6 @@ class Spark2(Hive):
 
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TINYINT: "BYTE",
-            exp.DataType.Type.SMALLINT: "SHORT",
-            exp.DataType.Type.BIGINT: "LONG",
         }
 
         PROPERTIES_LOCATION = {

@@ -532,7 +532,7 @@ class TestDuckDB(Validator):
                 "duckdb": "CAST(COL AS BIGINT[])",
                 "presto": "CAST(COL AS ARRAY(BIGINT))",
                 "hive": "CAST(COL AS ARRAY<BIGINT>)",
-                "spark": "CAST(COL AS ARRAY<LONG>)",
+                "spark": "CAST(COL AS ARRAY<BIGINT>)",
                 "postgres": "CAST(COL AS BIGINT[])",
                 "snowflake": "CAST(COL AS ARRAY)",
             },

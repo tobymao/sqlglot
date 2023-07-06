@@ -73,7 +73,7 @@ class TestHive(Validator):
                 "duckdb": "TRY_CAST(1 AS SMALLINT)",
                 "presto": "TRY_CAST(1 AS SMALLINT)",
                 "hive": "CAST(1 AS SMALLINT)",
-                "spark": "CAST(1 AS SHORT)",
+                "spark": "CAST(1 AS SMALLINT)",
             },
         )
         self.validate_all(
@@ -82,7 +82,7 @@ class TestHive(Validator):
                 "duckdb": "TRY_CAST(1 AS SMALLINT)",
                 "presto": "TRY_CAST(1 AS SMALLINT)",
                 "hive": "CAST(1 AS SMALLINT)",
-                "spark": "CAST(1 AS SHORT)",
+                "spark": "CAST(1 AS SMALLINT)",
             },
         )
         self.validate_all(
@@ -91,7 +91,7 @@ class TestHive(Validator):
                 "duckdb": "TRY_CAST(1 AS TINYINT)",
                 "presto": "TRY_CAST(1 AS TINYINT)",
                 "hive": "CAST(1 AS TINYINT)",
-                "spark": "CAST(1 AS BYTE)",
+                "spark": "CAST(1 AS TINYINT)",
             },
         )
         self.validate_all(
@@ -100,7 +100,7 @@ class TestHive(Validator):
                 "duckdb": "TRY_CAST(1 AS BIGINT)",
                 "presto": "TRY_CAST(1 AS BIGINT)",
                 "hive": "CAST(1 AS BIGINT)",
-                "spark": "CAST(1 AS LONG)",
+                "spark": "CAST(1 AS BIGINT)",
             },
         )
         self.validate_all(

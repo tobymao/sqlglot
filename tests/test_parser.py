@@ -618,3 +618,21 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             expr.sql(), "SELECT * FROM (SELECT * FROM a CROSS JOIN b CROSS JOIN c) AS t"
         )
+
+        expr = parse_one("select * from (a cross join (b cross join c))")
+        self.assertIsInstance(expr.args["from"].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["wrapped"])
+        self.assertEqual(len(expr.args["from"].this.args["joins"]), 1)
+        self.assertIsInstance(expr.args["from"].this.args["joins"][0].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["joins"][0].this.args["wrapped"])
+        self.assertEqual(expr.sql(), "SELECT * FROM (a CROSS JOIN (b CROSS JOIN c))")
+
+        expr = parse_one("select * from ((a cross join ((b cross join c) cross join d)))")
+        self.assertEqual(expr.sql(), "SELECT * FROM (a CROSS JOIN (b CROSS JOIN c CROSS JOIN d))")
+
+        expr = parse_one(
+            "select * from ((a cross join ((b cross join c) cross join (d cross join e))))"
+        )
+        self.assertEqual(
+            expr.sql(), "SELECT * FROM (a CROSS JOIN (b CROSS JOIN c CROSS JOIN (d CROSS JOIN e)))"
+        )

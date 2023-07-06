@@ -4342,6 +4342,11 @@ class MD5(Func):
     _sql_names = ["MD5"]
 
 
+# Represents the variant of the MD5 function that returns a binary value
+class MD5Digest(Func):
+    _sql_names = ["MD5_DIGEST"]
+
+
 class Min(AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

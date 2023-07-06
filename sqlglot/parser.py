@@ -2316,7 +2316,7 @@ class Parser(metaclass=_Parser):
                 joins = None
                 self._retreat(index)
 
-            kwargs["this"].unnest().set("joins", joins)
+            kwargs["this"].set("joins", joins)
 
         return self.expression(exp.Join, **kwargs)
 

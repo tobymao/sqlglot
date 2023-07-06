@@ -357,6 +357,7 @@ class Hive(Dialect):
             exp.Left: left_to_substring_sql,
             exp.Map: var_map_sql,
             exp.Max: max_or_greatest,
+            exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
             exp.VarMap: var_map_sql,
             exp.Create: create_with_partitions_sql,

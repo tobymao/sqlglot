@@ -4342,8 +4342,9 @@ class MD5(Func):
     _sql_names = ["MD5"]
 
 
-class MD5Hex(Func):
-    _sql_names = ["MD5_HEX"]
+# Represents the variant of the MD5 function that returns a binary value
+class MD5Digest(Func):
+    _sql_names = ["MD5_DIGEST"]
 
 
 class Min(AggFunc):

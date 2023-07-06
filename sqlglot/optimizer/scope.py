@@ -639,9 +639,6 @@ def _traverse_tables(scope):
     expressions.extend(scope.expression.args.get("laterals") or [])
 
     for expression in expressions:
-        if isinstance(expression, exp.Paren):
-            expression = expression.unnest()
-
         if isinstance(expression, exp.Table):
             table_name = expression.name
             source_name = expression.alias_or_name

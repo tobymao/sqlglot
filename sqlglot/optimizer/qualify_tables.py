@@ -66,15 +66,12 @@ def qualify_tables(
                     if not source.args.get("catalog"):
                         source.set("catalog", exp.to_identifier(catalog))
 
-                # Unnest parenthesized table
-                if isinstance(source.parent, exp.Paren):
-                    source.parent.replace(source)
-
                 # Unnest joins attached in tables by appending them to the closest query
                 for join in source.args.get("joins") or []:
                     scope.expression.append("joins", join)
 
                 source.set("joins", None)
+                source.set("wrapped", None)
 
                 if not source.alias:
                     source = source.replace(

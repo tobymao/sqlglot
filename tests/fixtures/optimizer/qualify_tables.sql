@@ -31,6 +31,10 @@ SELECT * FROM c.db.tbl AS tbl;
 SELECT * FROM ((((tbl AS tbl))));
 SELECT * FROM c.db.tbl AS tbl;
 
+# title: redundant parentheses (3)
+SELECT * FROM ((a CROSS JOIN b) CROSS JOIN c);
+SELECT * FROM c.db.a AS a CROSS JOIN c.db.b AS b CROSS JOIN c.db.c AS c;
+
 # title: redundant parentheses around join construct
 SELECT * FROM a LEFT JOIN (b INNER JOIN c ON c.id = b.id) ON b.id = a.id;
 SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b ON b.id = a.id INNER JOIN c.db.c AS c ON c.id = b.id;

@@ -1985,10 +1985,8 @@ class Parser(metaclass=_Parser):
                 if not alias:
                     return exp.paren(this, copy=False)
 
-                joins = this.args.get("joins")
-                this.set("joins", None)
-
-                this = this.replace(exp.select("*").from_(this.copy()))
+                joins = this.args.pop("joins", None)
+                this = this.replace(exp.select("*").from_(this.copy(), copy=False))
                 this.set("joins", joins)
 
             subquery = self._parse_subquery(this, parse_alias=parse_subquery_alias and not alias)

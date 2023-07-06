@@ -121,6 +121,7 @@ class TestPostgres(Validator):
         )
 
     def test_postgres(self):
+        self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")
         self.validate_identity("CAST(x AS INT8RANGE)")

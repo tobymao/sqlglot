@@ -232,7 +232,7 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x as MONEY)",
             write={
-                "spark": "CAST(x AS DECIMAL(15, 4))",
+                "spark": "CAST(x AS DECIMAL(19, 4))",
                 "tsql": "CAST(x AS MONEY)",
             },
         )

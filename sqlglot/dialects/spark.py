@@ -43,7 +43,8 @@ class Spark(Spark2):
     class Generator(Spark2.Generator):
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,
-            exp.DataType.Type.MONEY: "DECIMAL(15, 4)",
+            # https://stackoverflow.com/a/224866
+            exp.DataType.Type.MONEY: "DECIMAL(19, 4)",
             exp.DataType.Type.SMALLMONEY: "DECIMAL(6, 4)",
             exp.DataType.Type.UNIQUEIDENTIFIER: "STRING",
         }

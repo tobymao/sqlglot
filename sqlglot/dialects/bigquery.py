@@ -169,6 +169,11 @@ def _parse_timestamp(args: t.List) -> exp.StrToTime:
     return this
 
 
+def _parse_date(args: t.List) -> exp.Date | exp.DateFromParts:
+    expr_type = exp.DateFromParts if len(args) == 3 else exp.Date
+    return expr_type.from_arg_list(args)
+
+
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
 
@@ -259,6 +264,7 @@ class BigQuery(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "DATE": _parse_date,
             "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
             "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
             "DATE_TRUNC": lambda args: exp.DateTrunc(
@@ -375,6 +381,7 @@ class BigQuery(Dialect):
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
+            exp.DateFromParts: rename_func("DATE"),
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),

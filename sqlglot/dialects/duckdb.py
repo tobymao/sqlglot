@@ -39,6 +39,21 @@ def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.Dat
     return f"{this} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 
 
+# BigQuery -> DuckDB conversion for the DATE function
+def _date_sql(self: generator.Generator, expression: exp.Date) -> str:
+    result = f"CAST({self.sql(expression, 'this')} AS DATE)"
+    zone = self.sql(expression, "zone")
+
+    if zone:
+        date_str = self.func("STRFTIME", result, "'%d/%m/%Y'")
+        date_str = f"{date_str} || ' ' || {zone}"
+
+        # This will create a TIMESTAMP with time zone information
+        result = self.func("STRPTIME", date_str, "'%d/%m/%Y %Z'")
+
+    return result
+
+
 def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("DUCKDB ARRAY_SORT does not support a comparator")
@@ -192,7 +207,9 @@ class DuckDB(Dialect):
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.DataType: _datatype_sql,
+            exp.Date: _date_sql,
             exp.DateAdd: _date_delta_sql,
+            exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.DateSub: _date_delta_sql,
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", f"'{e.args.get('unit', 'day')}'", e.expression, e.this

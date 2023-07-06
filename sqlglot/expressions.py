@@ -4133,9 +4133,9 @@ class DateToDi(Func):
     pass
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#date
 class Date(Func):
-    arg_types = {"expressions": True}
-    is_var_len_args = True
+    arg_types = {"this": True, "zone": False}
 
 
 class Day(Func):

@@ -539,6 +539,9 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ARRAY(time, foo)"), exp.Array)
         self.assertIsInstance(parse_one("STANDARD_HASH('hello', 'sha256')"), exp.StandardHash)
         self.assertIsInstance(parse_one("DATE(foo)"), exp.Date)
+        self.assertIsInstance(parse_one("HEX(foo)"), exp.Hex)
+        self.assertIsInstance(parse_one("TO_HEX(foo)", read="bigquery"), exp.Hex)
+        self.assertIsInstance(parse_one("TO_HEX(MD5(foo))", read="bigquery"), exp.MD5)
 
     def test_column(self):
         column = parse_one("a.b.c.d")

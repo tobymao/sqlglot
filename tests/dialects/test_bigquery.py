@@ -108,6 +108,27 @@ class TestBigQuery(Validator):
         self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
         self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
         self.validate_all(
+            "MD5(x)",
+            write={
+                "": "MD5_DIGEST(x)",
+                "bigquery": "MD5(x)",
+                "hive": "UNHEX(MD5(x))",
+                "spark": "UNHEX(MD5(x))",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_HEX(MD5(some_string))",
+            read={
+                "duckdb": "SELECT MD5(some_string)",
+                "spark": "SELECT MD5(some_string)",
+            },
+            write={
+                "": "SELECT MD5(some_string)",
+                "bigquery": "SELECT TO_HEX(MD5(some_string))",
+                "duckdb": "SELECT MD5(some_string)",
+            },
+        )
+        self.validate_all(
             "SELECT CAST('20201225' AS TIMESTAMP FORMAT 'YYYYMMDD' AT TIME ZONE 'America/New_York')",
             write={"bigquery": "SELECT PARSE_TIMESTAMP('%Y%m%d', '20201225', 'America/New_York')"},
         )

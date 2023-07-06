@@ -175,10 +175,8 @@ def _parse_date(args: t.List) -> exp.Date | exp.DateFromParts:
 
 
 def _parse_to_hex(args: t.List) -> exp.Hex | exp.MD5:
-    arg = seq_get(args, 0)
-    assert arg is not None
-
     # TO_HEX(MD5(..)) is common in BigQuery, so it's parsed into MD5 to simplify its transpilation
+    arg = seq_get(args, 0)
     return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.Hex(this=arg)
 
 

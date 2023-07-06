@@ -174,6 +174,14 @@ def _parse_date(args: t.List) -> exp.Date | exp.DateFromParts:
     return expr_type.from_arg_list(args)
 
 
+def _parse_to_hex(args: t.List) -> exp.Hex | exp.MD5Hex:
+    arg = seq_get(args, 0)
+    assert arg is not None
+
+    # TO_HEX(MD5(..)) is common in BigQuery, so it's parsed into MD5Hex to simplify its transpilation
+    return exp.MD5Hex(this=arg.this) if isinstance(arg, exp.MD5) else exp.Hex(this=arg)
+
+
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
 
@@ -275,6 +283,7 @@ class BigQuery(Dialect):
             "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
+            "TO_HEX": _parse_to_hex,
             "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
                 [seq_get(args, 1), seq_get(args, 0)]
             ),
@@ -391,9 +400,11 @@ class BigQuery(Dialect):
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
+            exp.Hex: rename_func("TO_HEX"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.Max: max_or_greatest,
+            exp.MD5Hex: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
             exp.RegexpExtract: lambda self, e: self.func(
                 "REGEXP_EXTRACT",

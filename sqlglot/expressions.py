@@ -4342,6 +4342,10 @@ class MD5(Func):
     _sql_names = ["MD5"]
 
 
+class MD5Hex(Func):
+    _sql_names = ["MD5_HEX"]
+
+
 class Min(AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

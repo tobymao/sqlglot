@@ -2473,6 +2473,9 @@ class Generator:
 
         return self.func("ANY_VALUE", this)
 
+    def md5hex_sql(self, expression: exp.MD5Hex) -> str:
+        return self.func("MD5", expression.this)
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v17.2.0] - 2023-07-06
+### :bug: Bug Fixes
+- [`1f575db`](https://github.com/tobymao/sqlglot/commit/1f575db44f9c75c92fd5abf6c514c9933b1175b6) - **duckdb**: improve transpilation of BigQuery DATE function *(PR [#1895](https://github.com/tobymao/sqlglot/pull/1895) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.1.0] - 2023-07-04
 ### :sparkles: New Features
 - [`b178e1c`](https://github.com/tobymao/sqlglot/commit/b178e1c3f48c2460c59d525a40363cbda488cad8) - dialect argument for parse_one *(commit by [@tobymao](https://github.com/tobymao))*
@@ -812,3 +817,4 @@ Changelog
 [v16.8.1]: https://github.com/tobymao/sqlglot/compare/v16.8.0...v16.8.1
 [v17.0.0]: https://github.com/tobymao/sqlglot/compare/v16.8.1...v17.0.0
 [v17.1.0]: https://github.com/tobymao/sqlglot/compare/v17.0.0...v17.1.0
+[v17.2.0]: https://github.com/tobymao/sqlglot/compare/v17.1.0...v17.2.0

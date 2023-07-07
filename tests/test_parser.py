@@ -600,7 +600,6 @@ class TestParser(unittest.TestCase):
         expr = parse_one("select * from (tbl1 join tbl2) t")
         self.assertIsInstance(expr.args["from"].this, exp.Subquery)
         self.assertIsInstance(expr.args["from"].this.this, exp.Select)
-
         self.assertEqual(expr.sql(), "SELECT * FROM (SELECT * FROM tbl1, tbl2) AS t")
 
         expr = parse_one("select * from (tbl as tbl) t")

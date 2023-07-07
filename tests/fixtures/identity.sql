@@ -837,3 +837,4 @@ SELECT * FROM schema.case
 SELECT * FROM current_date
 SELECT * FROM schema.current_date
 SELECT /*+ SOME_HINT(foo) */ 1
+SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1)

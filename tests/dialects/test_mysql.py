@@ -69,6 +69,7 @@ class TestMySQL(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT 1 && 0", "SELECT 1 AND 0")
         self.validate_identity("SELECT /*+ BKA(t1) NO_BKA(t2) */ * FROM t1 INNER JOIN t2")
         self.validate_identity("SELECT /*+ MERGE(dt) */ * FROM (SELECT * FROM t1) AS dt")
         self.validate_identity("SELECT /*+ INDEX(t, i) */ c1 FROM t WHERE c2 = 'value'")

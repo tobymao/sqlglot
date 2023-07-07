@@ -206,6 +206,30 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "CAST(x as FLOAT(32))",
+            write={"tsql": "CAST(x AS FLOAT(32))", "hive": "CAST(x AS FLOAT)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(64))",
+            write={"tsql": "CAST(x AS FLOAT(64))", "spark": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(6))", write={"tsql": "CAST(x AS FLOAT(6))", "hive": "CAST(x AS FLOAT)"}
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(36))",
+            write={"tsql": "CAST(x AS FLOAT(36))", "hive": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(99))",
+            write={"tsql": "CAST(x AS FLOAT(99))", "hive": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
             "CAST(x as DOUBLE)",
             write={
                 "spark": "CAST(x AS DOUBLE)",

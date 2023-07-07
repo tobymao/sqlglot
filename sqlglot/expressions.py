@@ -3517,6 +3517,10 @@ class Or(Connector):
     pass
 
 
+class Xor(Connector):
+    pass
+
+
 class BitwiseAnd(Binary):
     pass
 

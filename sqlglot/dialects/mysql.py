@@ -196,6 +196,7 @@ class MySQL(Dialect):
         CONJUNCTION = {
             **parser.Parser.CONJUNCTION,
             TokenType.DAMP: exp.And,
+            TokenType.XOR: exp.Xor,
         }
 
         TABLE_ALIAS_TOKENS = (

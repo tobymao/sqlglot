@@ -2016,6 +2016,9 @@ class Generator:
     def and_sql(self, expression: exp.And) -> str:
         return self.connector_sql(expression, "AND")
 
+    def xor_sql(self, expression: exp.And) -> str:
+        return self.connector_sql(expression, "XOR")
+
     def connector_sql(self, expression: exp.Connector, op: str) -> str:
         if not self.pretty:
             return self.binary(expression, op)

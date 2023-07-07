@@ -1215,7 +1215,8 @@ class Generator:
         system_time = expression.args.get("system_time")
         system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
 
-        return f"{table}{system_time}{alias}{hints}{pivots}{joins}{laterals}"
+        sql = f"{table}{system_time}{alias}{hints}{pivots}{joins}{laterals}"
+        return f"({sql})" if expression.args.get("wrapped") else sql
 
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "

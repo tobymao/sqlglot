@@ -580,3 +580,59 @@ class TestParser(unittest.TestCase):
 
     def test_parse_floats(self):
         self.assertTrue(parse_one("1. ").is_number)
+
+    def test_parse_wrapped_tables(self):
+        expr = parse_one("select * from (table)")
+        self.assertIsInstance(expr.args["from"].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["wrapped"])
+
+        expr = parse_one("select * from (((table)))")
+        self.assertIsInstance(expr.args["from"].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["wrapped"])
+
+        self.assertEqual(expr.sql(), "SELECT * FROM (table)")
+
+        expr = parse_one("select * from (tbl1 join tbl2)")
+        self.assertIsInstance(expr.args["from"].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["wrapped"])
+        self.assertEqual(len(expr.args["from"].this.args["joins"]), 1)
+
+        expr = parse_one("select * from (tbl1 join tbl2) t")
+        self.assertIsInstance(expr.args["from"].this, exp.Subquery)
+        self.assertIsInstance(expr.args["from"].this.this, exp.Select)
+
+        self.assertEqual(expr.sql(), "SELECT * FROM (SELECT * FROM tbl1, tbl2) AS t")
+
+        expr = parse_one("select * from (tbl as tbl) t")
+        self.assertEqual(expr.sql(), "SELECT * FROM (SELECT * FROM tbl AS tbl) AS t")
+
+        expr = parse_one("select * from ((a cross join b) cross join c)")
+        self.assertIsInstance(expr.args["from"].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["wrapped"])
+        self.assertEqual(len(expr.args["from"].this.args["joins"]), 2)
+        self.assertEqual(expr.sql(), "SELECT * FROM (a CROSS JOIN b CROSS JOIN c)")
+
+        expr = parse_one("select * from ((a cross join b) cross join c) t")
+        self.assertIsInstance(expr.args["from"].this, exp.Subquery)
+        self.assertEqual(len(expr.args["from"].this.this.args["joins"]), 2)
+        self.assertEqual(
+            expr.sql(), "SELECT * FROM (SELECT * FROM a CROSS JOIN b CROSS JOIN c) AS t"
+        )
+
+        expr = parse_one("select * from (a cross join (b cross join c))")
+        self.assertIsInstance(expr.args["from"].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["wrapped"])
+        self.assertEqual(len(expr.args["from"].this.args["joins"]), 1)
+        self.assertIsInstance(expr.args["from"].this.args["joins"][0].this, exp.Table)
+        self.assertTrue(expr.args["from"].this.args["joins"][0].this.args["wrapped"])
+        self.assertEqual(expr.sql(), "SELECT * FROM (a CROSS JOIN (b CROSS JOIN c))")
+
+        expr = parse_one("select * from ((a cross join ((b cross join c) cross join d)))")
+        self.assertEqual(expr.sql(), "SELECT * FROM (a CROSS JOIN (b CROSS JOIN c CROSS JOIN d))")
+
+        expr = parse_one(
+            "select * from ((a cross join ((b cross join c) cross join (d cross join e))))"
+        )
+        self.assertEqual(
+            expr.sql(), "SELECT * FROM (a CROSS JOIN (b CROSS JOIN c CROSS JOIN (d CROSS JOIN e)))"
+        )

@@ -415,6 +415,16 @@ class Hive(Dialect):
             return self.properties(properties, prefix=self.seg("TBLPROPERTIES"))
 
         def datatype_sql(self, expression: exp.DataType) -> str:
+            if expression.this == (exp.DataType.Type.FLOAT):
+                # Not dealing with n>64
+                dt = expression.find(exp.DataTypeSize)
+                if dt:
+                    size = int(dt.name)
+                    if size <= 32:
+                        expression = exp.DataType.build("float")
+                    else:
+                        expression = exp.DataType.build("double")
+
             if (
                 expression.this in (exp.DataType.Type.VARCHAR, exp.DataType.Type.NVARCHAR)
                 and not expression.expressions

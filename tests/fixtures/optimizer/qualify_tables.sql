@@ -19,25 +19,50 @@ SELECT (SELECT y.c FROM c.db.y AS y) FROM c.db.x AS x;
 SELECT * FROM x PIVOT (SUM(a) FOR b IN ('a', 'b'));
 SELECT * FROM c.db.x AS x PIVOT(SUM(a) FOR b IN ('a', 'b')) AS _q_0;
 
-----------------------------
--- Expand join constructs
-----------------------------
+----------------------------------------------------------
+-- Unnest wrapped tables / joins, expand join constructs
+----------------------------------------------------------
 
--- This is valid in Trino, so we treat the (tbl AS tbl) as a "join construct" per postgres' terminology.
-SELECT * FROM (tbl AS tbl) AS _q_0;
-SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
+# title: redundant parentheses (1)
+SELECT * FROM (tbl AS tbl);
+SELECT * FROM c.db.tbl AS tbl;
 
+# title: redundant parentheses (2)
+SELECT * FROM ((((tbl AS tbl))));
+SELECT * FROM c.db.tbl AS tbl;
+
+# title: redundant parentheses (3)
+SELECT * FROM ((a CROSS JOIN b) CROSS JOIN c);
+SELECT * FROM c.db.a AS a CROSS JOIN c.db.b AS b CROSS JOIN c.db.c AS c;
+
+# title: redundant parentheses around join construct
+SELECT * FROM a LEFT JOIN (b INNER JOIN c ON c.id = b.id) ON b.id = a.id;
+SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b ON b.id = a.id INNER JOIN c.db.c AS c ON c.id = b.id;
+
+# title: nested joins converted to canonical form
+SELECT * FROM a LEFT JOIN b INNER JOIN c ON c.id = b.id ON b.id = a.id;
+SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b ON b.id = a.id INNER JOIN c.db.c AS c ON c.id = b.id;
+
+# title: parentheses can't be omitted because alias shadows inner table names
+SELECT t.a FROM (tbl AS tbl) AS t;
+SELECT t.a FROM (SELECT * FROM c.db.tbl AS tbl) AS t;
+
+# title: outermost set of parentheses can't be omitted due to shadowing (1)
 SELECT * FROM ((tbl AS tbl)) AS _q_0;
 SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
 
-SELECT * FROM (((tbl AS tbl))) AS _q_0;
+# title: outermost set of parentheses can't be omitted due to shadowing (2)
+SELECT * FROM ((((tbl AS tbl)))) AS _q_0;
 SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
 
+# title: join construct with three tables in canonical form
 SELECT * FROM (tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3) AS _q_0;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _q_0;
 
+# title: join construct with three tables in canonical form and redundant set of parentheses
 SELECT * FROM ((tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3)) AS _q_0;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _q_0;
 
+# title: nested join construct in canonical form
 SELECT * FROM (tbl1 AS tbl1 JOIN (tbl2 AS tbl2 JOIN tbl3 AS tbl3 ON id2 = id3) AS _q_0 ON id1 = id3) AS _q_1;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN (SELECT * FROM c.db.tbl2 AS tbl2 JOIN c.db.tbl3 AS tbl3 ON id2 = id3) AS _q_0 ON id1 = id3) AS _q_1;

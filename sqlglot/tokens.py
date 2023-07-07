@@ -52,6 +52,7 @@ class TokenType(AutoName):
     PARAMETER = auto()
     SESSION_PARAMETER = auto()
     DAMP = auto()
+    XOR = auto()
 
     BLOCK_START = auto()
     BLOCK_END = auto()
@@ -590,6 +591,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
         "OR": TokenType.OR,
+        "XOR": TokenType.XOR,
         "ORDER BY": TokenType.ORDER_BY,
         "ORDINALITY": TokenType.ORDINALITY,
         "OUTER": TokenType.OUTER,

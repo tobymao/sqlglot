@@ -1,6 +1,19 @@
 Changelog
 =========
 
+## [v17.3.0] - 2023-07-07
+### :sparkles: New Features
+- [`fafccf5`](https://github.com/tobymao/sqlglot/commit/fafccf5a8e21028ef3a678cf989332b4e7db6825) - **postgres**: add MONEY type, revert in Spark to use DECIMAL(15, 4) *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`24dda47`](https://github.com/tobymao/sqlglot/commit/24dda47dd85abab79cd5ea126262a8e00639ca6f) - improve transpilation of BigQuery's TO_HEX(MD5(..)) *(PR [#1897](https://github.com/tobymao/sqlglot/pull/1897) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`2ab8887`](https://github.com/tobymao/sqlglot/commit/2ab888786eea5b2c67446c8eb7779b85288bc07b) - **spark**: map MONEY type to a broader DECIMAL type *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`dd7e494`](https://github.com/tobymao/sqlglot/commit/dd7e494c022a724d76fb592bc67c41c18f3c94ec) - enforce function arg order *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`5cf9304`](https://github.com/tobymao/sqlglot/commit/5cf930420e0dd774ff871ecc36115caae452389d) - **optimizer**: add more tests, improve titles in qualify_tables.sql *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.2.0] - 2023-07-06
 ### :bug: Bug Fixes
 - [`1f575db`](https://github.com/tobymao/sqlglot/commit/1f575db44f9c75c92fd5abf6c514c9933b1175b6) - **duckdb**: improve transpilation of BigQuery DATE function *(PR [#1895](https://github.com/tobymao/sqlglot/pull/1895) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -818,3 +831,4 @@ Changelog
 [v17.0.0]: https://github.com/tobymao/sqlglot/compare/v16.8.1...v17.0.0
 [v17.1.0]: https://github.com/tobymao/sqlglot/compare/v17.0.0...v17.1.0
 [v17.2.0]: https://github.com/tobymao/sqlglot/compare/v17.1.0...v17.2.0
+[v17.3.0]: https://github.com/tobymao/sqlglot/compare/v17.2.0...v17.3.0

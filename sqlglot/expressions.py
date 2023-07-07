@@ -4254,7 +4254,7 @@ class JSONArrayContains(Binary, Predicate, Func):
 
 
 class Least(Func):
-    arg_types = {"expressions": False}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 

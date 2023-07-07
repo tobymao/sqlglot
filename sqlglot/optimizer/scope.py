@@ -629,9 +629,8 @@ def _traverse_tables(scope):
     if from_:
         expressions.append(from_.this)
 
-    for expression in (scope.expression, *scope.find_all(exp.Table)):
-        for join in expression.args.get("joins") or []:
-            expressions.append(join.this)
+    for join in scope.expression.args.get("joins") or []:
+        expressions.append(join.this)
 
     if isinstance(scope.expression, exp.Table):
         expressions.append(scope.expression)

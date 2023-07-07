@@ -15,26 +15,13 @@ def qualify_tables(
     schema: t.Optional[Schema] = None,
 ) -> E:
     """
-    Rewrite sqlglot AST to have fully qualified, unnested tables.
+    Rewrite sqlglot AST to have fully qualified tables.
 
     Examples:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT 1 FROM tbl")
         >>> qualify_tables(expression, db="db").sql()
         'SELECT 1 FROM db.tbl AS tbl'
-        >>>
-        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl)")
-        >>> qualify_tables(expression).sql()
-        'SELECT * FROM tbl AS tbl'
-        >>>
-        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl1 JOIN tbl2 ON id1 = id2)")
-        >>> qualify_tables(expression).sql()
-        'SELECT * FROM tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2'
-
-    Note:
-        This rule effectively enforces a left-to-right join order, since all joins
-        are unnested. This means that the optimizer doesn't necessarily preserve the
-        original join order, e.g. when parentheses are used to specify it explicitly.
 
     Args:
         expression: Expression to qualify
@@ -65,13 +52,6 @@ def qualify_tables(
                         source.set("db", exp.to_identifier(db))
                     if not source.args.get("catalog"):
                         source.set("catalog", exp.to_identifier(catalog))
-
-                # Unnest joins attached in tables by appending them to the closest query
-                for join in source.args.get("joins") or []:
-                    scope.expression.append("joins", join)
-
-                source.set("joins", None)
-                source.set("wrapped", None)
 
                 if not source.alias:
                     source = source.replace(

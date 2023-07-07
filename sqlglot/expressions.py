@@ -2282,7 +2282,6 @@ class Table(Expression):
         "pivots": False,
         "hints": False,
         "system_time": False,
-        "wrapped": False,
     }
 
     @property

@@ -360,6 +360,15 @@ class TestTSQL(Validator):
             },
         )
 
+    def test_ddl(self):
+        sql = """CREATE TABLE #mytemp (a INTEGER,  b CHAR(2), c TIME(4), d FLOAT(24));"""
+        self.validate_all(
+            " ".join(sql.split()),
+            write={
+                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIMESTAMP(4), d FLOAT(24))"
+            },
+        )
+
     def test_transaction(self):
         # BEGIN { TRAN | TRANSACTION }
         #    [ { transaction_name | @tran_name_variable }
@@ -368,9 +377,9 @@ class TestTSQL(Validator):
         # [ ; ]
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_all("BEGIN TRAN", write={"tsql": "BEGIN TRAN"})
-        # self.validate_identity("BEGIN TRANSACTION transaction_name")
-        # self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
-        # self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description")
+        self.validate_identity("BEGIN TRANSACTION transaction_name")
+        self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
+        self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")
 
         # COMMIT [ { TRAN | TRANSACTION }  [ transaction_name | @tran_name_variable ] ] [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ] [ ; ]
 
@@ -849,7 +858,8 @@ WHERE
             write={"spark": "SELECT FORMAT_NUMBER(1000000.01, '###,###.###')"},
         )
         self.validate_all(
-            "SELECT FORMAT(1234567, 'f')", write={"spark": "SELECT FORMAT_NUMBER(1234567, 'f')"}
+            "SELECT FORMAT(1234567, 'f')",
+            write={"spark": "SELECT FORMAT_NUMBER(1234567, 'f')"},
         )
         self.validate_all(
             "SELECT FORMAT('01-01-1991', 'dd.mm.yyyy')",
@@ -864,7 +874,8 @@ WHERE
             write={"spark": "SELECT DATE_FORMAT(date_col, 'MMMM d')"},
         )
         self.validate_all(
-            "SELECT FORMAT(num_col, 'c')", write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"}
+            "SELECT FORMAT(num_col, 'c')",
+            write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"},
         )
 
     def test_string(self):

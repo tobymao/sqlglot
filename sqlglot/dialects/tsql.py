@@ -138,7 +138,8 @@ def _format_sql(self: generator.Generator, expression: exp.NumberToStr | exp.Tim
         if isinstance(expression, exp.NumberToStr)
         else exp.Literal.string(
             format_time(
-                expression.text("format"), t.cast(t.Dict[str, str], TSQL.INVERSE_TIME_MAPPING)
+                expression.text("format"),
+                t.cast(t.Dict[str, str], TSQL.INVERSE_TIME_MAPPING),
             )
         )
     )
@@ -311,6 +312,7 @@ class TSQL(Dialect):
             "VARCHAR(MAX)": TokenType.TEXT,
             "XML": TokenType.XML,
             "SYSTEM_USER": TokenType.CURRENT_USER,
+            "WITH": TokenType.WITH,
         }
 
         # TSQL allows @, # to appear as a variable/identifier prefix
@@ -321,7 +323,9 @@ class TSQL(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CHARINDEX": lambda args: exp.StrPosition(
-                this=seq_get(args, 1), substr=seq_get(args, 0), position=seq_get(args, 2)
+                this=seq_get(args, 1),
+                substr=seq_get(args, 0),
+                position=seq_get(args, 2),
             ),
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
             "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
@@ -371,6 +375,46 @@ class TSQL(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
         CONCAT_NULL_OUTPUTS_STRING = True
+
+        def _parse_transaction(self) -> exp.Transaction:
+            this = None
+            if self._match_texts(self.TRANSACTION_KIND):
+                this = self._prev.text
+
+            self._match_texts({"TRANSACTION", "WORK"})
+
+            modes = []
+            while True:
+                mode = []
+                while self._match_set(
+                    (
+                        TokenType.PARAMETER,
+                        TokenType.VAR,
+                        TokenType.WITH,
+                        TokenType.STRING,
+                        TokenType.QUOTE,
+                    )
+                ):
+                    # if self._prev.token_type == TokenType.PARAMETER:
+                    #    mode.append(f"{self._prev.text}{self._curr.text}")
+                    if self._prev.token_type == TokenType.STRING:
+                        mode.append(f"'{self._prev.text}'")
+                    elif self._prev.token_type == TokenType.PARAMETER:
+                        {}
+                    elif (
+                        self._tokens[-2].token_type == TokenType.PARAMETER
+                        and self._tokens[-1].token_type == TokenType.VAR
+                    ):
+                        mode.append(f"@{self._prev.text}")
+                    else:
+                        mode.append(self._prev.text)
+
+                if mode:
+                    modes.append(" ".join(mode))
+                if not self._match(TokenType.BREAK):
+                    break
+
+            return self.expression(exp.Transaction, this=this, modes=modes)
 
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
@@ -502,7 +546,9 @@ class TSQL(Dialect):
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
-                "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
+                "HASHBYTES",
+                exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"),
+                e.this,
             ),
             exp.TimeToStr: _format_sql,
         }
@@ -544,7 +590,9 @@ class TSQL(Dialect):
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = expression.this
             this = f" {this}" if this else ""
-            return f"BEGIN{this} TRANSACTION"
+            modes = expression.args.get("modes")
+            modes = f" {', '.join(modes)}" if modes else ""
+            return f"BEGIN{this} TRANSACTION{modes}"
 
         def commit_sql(self, expression: exp.Commit) -> str:
             this = expression.this

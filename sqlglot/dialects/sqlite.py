@@ -192,7 +192,7 @@ class SQLite(Dialect):
             if len(expression.expressions) > 1:
                 return rename_func("MIN")(self, expression)
 
-            return self.expressions(expression)
+            return self.sql(expression, "this")
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = expression.this

@@ -2290,11 +2290,14 @@ class Generator:
 
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []
-        for arg_value in expression.args.values():
+
+        for key in expression.arg_types:
+            arg_value = expression.args.get(key)
+
             if isinstance(arg_value, list):
                 for value in arg_value:
                     args.append(value)
-            else:
+            elif arg_value is not None:
                 args.append(arg_value)
 
         return self.func(expression.sql_name(), *args)

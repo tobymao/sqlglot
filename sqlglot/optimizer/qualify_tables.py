@@ -41,8 +41,6 @@ def qualify_tables(
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
-            # Expand join construct, for example
-            # SELECT * FROM (t1 JOIN t2) AS t -> SELECT * FROM (SELECT * FROM t1 JOIN t2) AS t
             if isinstance(derived_table, exp.Subquery):
                 unnested = derived_table.unnest()
                 if isinstance(unnested, exp.Table):

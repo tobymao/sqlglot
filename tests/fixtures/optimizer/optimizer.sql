@@ -701,3 +701,76 @@ SELECT
     "x"."a" * "x"."b" - "x"."b"
   ) AS "f"
 FROM "x" AS "x";
+
+# title: wrapped table without alias
+# execute: false
+SELECT * FROM (tbl);
+SELECT
+  *
+FROM (
+  "tbl" AS "tbl"
+);
+
+# title: wrapped table with alias
+# execute: false
+SELECT * FROM (tbl AS tbl);
+SELECT
+  *
+FROM (
+  "tbl" AS "tbl"
+);
+
+# title: wrapped join of tables without alias
+# execute: false
+SELECT * FROM (t1 CROSS JOIN t2);
+SELECT
+  *
+FROM (
+  "t1" AS "t1"
+    CROSS JOIN "t2" AS "t2"
+);
+
+# title: wrapped join of tables with alias
+# execute: false
+SELECT * FROM (t1 CROSS JOIN t2) AS t;
+WITH "t" AS (
+  "t1" AS "t1"
+    CROSS JOIN "t2" AS "t2"
+)
+SELECT
+  *
+FROM "t" AS "t";
+
+# title: chained wrapped joins without aliases
+# execute: false
+SELECT * FROM ((a CROSS JOIN ((b CROSS JOIN c) CROSS JOIN (d CROSS JOIN e))));
+SELECT
+  *
+FROM (
+  (
+    "a" AS "a"
+      CROSS JOIN (
+        (
+          "b" AS "b"
+            CROSS JOIN "c" AS "c"
+        )
+        CROSS JOIN (
+          "d" AS "d"
+            CROSS JOIN "e" AS "e"
+        )
+      )
+  )
+);
+
+# title: chained wrapped joins with aliases
+# execute: false
+SELECT * FROM ((a AS foo CROSS JOIN b AS bar) CROSS JOIN c AS baz);
+SELECT
+  *
+FROM (
+  (
+    "a" AS "foo"
+      CROSS JOIN "b" AS "bar"
+  )
+  CROSS JOIN "c" AS "baz"
+);

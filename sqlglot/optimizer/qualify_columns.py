@@ -550,7 +550,7 @@ class Resolver:
             return source.expression.alias_column_names
 
         # Otherwise, if referencing another scope, return that scope's named selects
-        return source.expression.named_selects
+        return source.named_selects
 
     def _get_all_source_columns(self):
         if self._source_columns is None:

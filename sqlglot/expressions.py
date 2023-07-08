@@ -878,11 +878,11 @@ class DerivedTable(Expression):
         return [c.name for c in table_alias.args.get("columns") or []]
 
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         return self.this.selects if isinstance(self.this, Subqueryable) else []
 
     @property
-    def named_selects(self):
+    def named_selects(self) -> t.List[str]:
         return [select.output_name for select in self.selects]
 
 
@@ -959,7 +959,7 @@ class Unionable(Expression):
 
 class UDTF(DerivedTable, Unionable):
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         alias = self.args.get("alias")
         return alias.columns if alias else []
 
@@ -2194,11 +2194,11 @@ class Subqueryable(Unionable):
         return with_.expressions
 
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         raise NotImplementedError("Subqueryable objects must implement `selects`")
 
     @property
-    def named_selects(self):
+    def named_selects(self) -> t.List[str]:
         raise NotImplementedError("Subqueryable objects must implement `named_selects`")
 
     def with_(
@@ -2299,6 +2299,14 @@ class Table(Expression):
         return self.text("catalog")
 
     @property
+    def selects(self) -> t.List[Expression]:
+        return []
+
+    @property
+    def named_selects(self) -> t.List[str]:
+        return []
+
+    @property
     def parts(self) -> t.List[Identifier]:
         """Return the parts of a table in order catalog, db, table."""
         return [
@@ -2389,7 +2397,7 @@ class Union(Subqueryable):
         return this
 
     @property
-    def named_selects(self):
+    def named_selects(self) -> t.List[str]:
         return self.this.unnest().named_selects
 
     @property
@@ -2397,7 +2405,7 @@ class Union(Subqueryable):
         return self.this.is_star or self.expression.is_star
 
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         return self.this.unnest().selects
 
     @property

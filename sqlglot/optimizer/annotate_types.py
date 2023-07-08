@@ -259,7 +259,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                         )
                     }
                 else:
-                    selects[name] = {select.alias_or_name: select for select in source.selects}
+                    selects[name] = {
+                        select.alias_or_name: select for select in source.expression.selects
+                    }
 
             # First annotate the current scope's column references
             for col in scope.columns:

@@ -198,7 +198,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
                 else:
                     column.replace(alias_expr.copy())
 
-    for i, projection in enumerate(scope.selects):
+    for i, projection in enumerate(scope.expression.selects):
         replace_columns(projection)
 
         if isinstance(projection, exp.Alias):
@@ -239,7 +239,7 @@ def _expand_order_by(scope: Scope, resolver: Resolver):
         ordered.set("this", new_expression)
 
     if scope.expression.args.get("group"):
-        selects = {s.this: exp.column(s.alias_or_name) for s in scope.selects}
+        selects = {s.this: exp.column(s.alias_or_name) for s in scope.expression.selects}
 
         for ordered in ordereds:
             ordered = ordered.this
@@ -270,7 +270,7 @@ def _expand_positional_references(scope: Scope, expressions: t.Iterable[E]) -> t
 
 def _select_by_pos(scope: Scope, node: exp.Literal) -> exp.Alias:
     try:
-        return scope.selects[int(node.this) - 1].assert_is(exp.Alias)
+        return scope.expression.selects[int(node.this) - 1].assert_is(exp.Alias)
     except IndexError:
         raise OptimizeError(f"Unknown output column: {node.name}")
 
@@ -347,7 +347,7 @@ def _expand_stars(
         if not pivot_output_columns:
             pivot_output_columns = [col.alias_or_name for col in pivot.expressions]
 
-    for expression in scope.selects:
+    for expression in scope.expression.selects:
         if isinstance(expression, exp.Star):
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
@@ -446,7 +446,7 @@ def _qualify_outputs(scope: Scope):
     new_selections = []
 
     for i, (selection, aliased_column) in enumerate(
-        itertools.zip_longest(scope.selects, scope.outer_column_list)
+        itertools.zip_longest(scope.expression.selects, scope.outer_column_list)
     ):
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
@@ -550,7 +550,7 @@ class Resolver:
             return source.expression.alias_column_names
 
         # Otherwise, if referencing another scope, return that scope's named selects
-        return source.named_selects
+        return source.expression.named_selects
 
     def _get_all_source_columns(self):
         if self._source_columns is None:

@@ -267,7 +267,7 @@ class Scope:
                 for column in scope.external_columns
             ]
 
-            named_selects = set(self.named_selects)
+            named_selects = set(self.expression.named_selects)
 
             self._columns = []
             for column in columns + external_columns:
@@ -344,40 +344,6 @@ class Scope:
             for alias, scope in self.sources.items()
             if isinstance(scope, Scope) and scope.is_cte
         }
-
-    @property
-    def selects(self):
-        """
-        Select expressions of this scope.
-
-        For example, for the following expression:
-            SELECT 1 as a, 2 as b FROM x
-
-        The outputs are the "1 as a" and "2 as b" expressions.
-
-        Returns:
-            list[exp.Expression]: expressions
-        """
-        if isinstance(self.expression, exp.Table):
-            return []
-        return self.expression.selects
-
-    @property
-    def named_selects(self):
-        """
-        Named select expressions of this scope.
-
-        For example, for the following expression:
-            SELECT 1 as a, 2 as b FROM x
-
-        The outputs are the "a" and " b" expressions.
-
-        Returns:
-            list[exp.Expression]: expressions
-        """
-        if isinstance(self.expression, exp.Table):
-            return []
-        return self.expression.named_selects
 
     @property
     def external_columns(self):

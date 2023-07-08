@@ -775,7 +775,7 @@ FROM (
   CROSS JOIN "c" AS "baz"
 );
 
-# title: table joined with joined construct
+# title: table joined with join construct
 SELECT x.a, y.b, z.c FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
 SELECT
   "x"."a" AS "a",

@@ -580,28 +580,3 @@ class TestParser(unittest.TestCase):
 
     def test_parse_floats(self):
         self.assertTrue(parse_one("1. ").is_number)
-
-    def test_parse_wrapped_tables(self):
-        subquery = parse_one("select * from (table)").args["from"].this
-        self.assertIsInstance(subquery, exp.Subquery)
-        self.assertIsInstance(subquery.this, exp.Table)
-
-        subquery = parse_one("select * from (((table)))").args["from"].this
-        self.assertIsInstance(subquery, exp.Subquery)
-        self.assertIsInstance(subquery.this, exp.Subquery)
-        self.assertIsInstance(subquery.this.this, exp.Subquery)
-        self.assertIsInstance(subquery.this.this.this, exp.Table)
-
-        subquery = parse_one("select * from (tbl1 join tbl2)").args["from"].this
-        self.assertIsInstance(subquery, exp.Subquery)
-        self.assertIsInstance(subquery.this, exp.Table)
-        self.assertEqual(len(subquery.this.args["joins"]), 1)
-
-        subquery = parse_one("select * from (tbl1 join tbl2) t").args["from"].this
-        self.assertIsInstance(subquery, exp.Subquery)
-        self.assertIsInstance(subquery.this, exp.Table)
-        self.assertEqual(len(subquery.this.args["joins"]), 1)
-
-        subquery = parse_one("select * from (tbl as tbl) t").args["from"].this
-        self.assertIsInstance(subquery, exp.Subquery)
-        self.assertIsInstance(subquery.this, exp.Table)

@@ -725,6 +725,11 @@ SELECT * FROM project.dataset.INFORMATION_SCHEMA.TABLES
 SELECT * FROM (table1 AS t1 LEFT JOIN table2 AS t2 ON 1 = 1)
 SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)
 SELECT * FROM (tbl1, tbl2 JOIN tbl3 ON TRUE)
+SELECT * FROM (tbl)
+SELECT * FROM (((tbl)))
+SELECT * FROM (tbl1 CROSS JOIN tbl2)
+SELECT * FROM (tbl1 CROSS JOIN tbl2) AS t
+SELECT * FROM (tbl AS tbl) AS t
 SELECT * FROM (tbl1 JOIN (tbl2 CROSS JOIN tbl3) ON bla = foo)
 SELECT * FROM (tbl1, LATERAL (SELECT * FROM bla) AS tbl)
 SELECT CAST(x AS INT) /* comment */ FROM foo

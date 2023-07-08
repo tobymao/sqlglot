@@ -26,7 +26,7 @@ def qualify_tables(
         >>>
         >>> expression = sqlglot.parse_one("SELECT 1 FROM (t1 JOIN t2) AS t")
         >>> qualify_tables(expression).sql()
-        >>> 'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
+        'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
 
     Args:
         expression: Expression to qualify

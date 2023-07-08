@@ -1708,6 +1708,8 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             this = self._parse_table(schema=True)
 
+        returning = self._parse_returning()
+
         return self.expression(
             exp.Insert,
             this=this,
@@ -1717,7 +1719,7 @@ class Parser(metaclass=_Parser):
             and self._parse_conjunction(),
             expression=self._parse_ddl_select(),
             conflict=self._parse_on_conflict(),
-            returning=self._parse_returning(),
+            returning=returning or self._parse_returning(),
             overwrite=overwrite,
             alternative=alternative,
             ignore=ignore,
@@ -1761,8 +1763,11 @@ class Parser(metaclass=_Parser):
     def _parse_returning(self) -> t.Optional[exp.Returning]:
         if not self._match(TokenType.RETURNING):
             return None
-
-        return self.expression(exp.Returning, expressions=self._parse_csv(self._parse_column))
+        return self.expression(
+            exp.Returning,
+            expressions=self._parse_csv(self._parse_column),
+            into=self._match(TokenType.INTO) and self._parse_table_part(),
+        )
 
     def _parse_row(self) -> t.Optional[exp.RowFormatSerdeProperty | exp.RowFormatDelimitedProperty]:
         if not self._match(TokenType.FORMAT):
@@ -1824,25 +1829,30 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.FROM, advance=False):
             tables = self._parse_csv(self._parse_table) or None
 
+        returning = self._parse_returning()
+
         return self.expression(
             exp.Delete,
             tables=tables,
             this=self._match(TokenType.FROM) and self._parse_table(joins=True),
             using=self._match(TokenType.USING) and self._parse_table(joins=True),
             where=self._parse_where(),
-            returning=self._parse_returning(),
+            returning=returning or self._parse_returning(),
             limit=self._parse_limit(),
         )
 
     def _parse_update(self) -> exp.Update:
+        this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
+        expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
+        returning = self._parse_returning()
         return self.expression(
             exp.Update,
             **{  # type: ignore
-                "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
-                "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
+                "this": this,
+                "expressions": expressions,
                 "from": self._parse_from(joins=True),
                 "where": self._parse_where(),
-                "returning": self._parse_returning(),
+                "returning": returning or self._parse_returning(),
                 "limit": self._parse_limit(),
             },
         )

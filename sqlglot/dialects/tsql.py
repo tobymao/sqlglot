@@ -302,6 +302,7 @@ class TSQL(Dialect):
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "VARCHAR(MAX)": TokenType.TEXT,
             "XML": TokenType.XML,
+            "OUTPUT": TokenType.RETURNING,
             "SYSTEM_USER": TokenType.CURRENT_USER,
         }
 
@@ -469,6 +470,7 @@ class TSQL(Dialect):
         LOCKING_READS_SUPPORTED = True
         LIMIT_IS_TOP = True
         QUERY_HINTS = False
+        RETURNING_END = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -532,3 +534,8 @@ class TSQL(Dialect):
             table = expression.args.get("table")
             table = f"{table} " if table else ""
             return f"RETURNS {table}{self.sql(expression, 'this')}"
+
+        def returning_sql(self, expression: exp.Returning) -> str:
+            into = self.sql(expression, "into")
+            into = self.seg(f"INTO {into}") if into else ""
+            return f"{self.seg('OUTPUT')} {self.expressions(expression, flat=True)}{into}"

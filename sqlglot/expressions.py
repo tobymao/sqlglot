@@ -1576,7 +1576,7 @@ class OnConflict(Expression):
 
 
 class Returning(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "into": False}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html

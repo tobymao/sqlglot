@@ -155,6 +155,9 @@ class Generator:
     # Whether or not to generate the limit as TOP <value> instead of LIMIT <value>
     LIMIT_IS_TOP = False
 
+    # Whether or not to generate INSERT INTO ... RETURNING or INSERT INTO RETURNING ...
+    RETURNING_END = True
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -836,8 +839,11 @@ class Generator:
         limit = self.sql(expression, "limit")
         tables = self.expressions(expression, key="tables")
         tables = f" {tables}" if tables else ""
-        sql = f"DELETE{tables}{this}{using}{where}{returning}{limit}"
-        return self.prepend_ctes(expression, sql)
+        if self.RETURNING_END:
+            expression_sql = f"{this}{using}{where}{returning}{limit}"
+        else:
+            expression_sql = f"{returning}{this}{using}{where}{limit}"
+        return self.prepend_ctes(expression, f"DELETE{tables}{expression_sql}")
 
     def drop_sql(self, expression: exp.Drop) -> str:
         this = self.sql(expression, "this")
@@ -1134,7 +1140,13 @@ class Generator:
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         conflict = self.sql(expression, "conflict")
         returning = self.sql(expression, "returning")
-        sql = f"INSERT{alternative}{ignore}{this}{exists}{partition_sql}{where}{expression_sql}{conflict}{returning}"
+
+        if self.RETURNING_END:
+            expression_sql = f"{expression_sql}{conflict}{returning}"
+        else:
+            expression_sql = f"{returning}{expression_sql}{conflict}"
+
+        sql = f"INSERT{alternative}{ignore}{this}{exists}{partition_sql}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1276,7 +1288,11 @@ class Generator:
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
         limit = self.sql(expression, "limit")
-        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}{returning}{limit}"
+        if self.RETURNING_END:
+            expression_sql = f"{from_sql}{where_sql}{returning}{limit}"
+        else:
+            expression_sql = f"{returning}{from_sql}{where_sql}{limit}"
+        sql = f"UPDATE {this} SET {set_sql}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:

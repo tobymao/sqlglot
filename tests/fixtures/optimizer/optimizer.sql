@@ -721,25 +721,25 @@ FROM (
 );
 
 # title: wrapped join of tables without alias
-# execute: false
-SELECT * FROM (t1 CROSS JOIN t2);
+SELECT a, c FROM (x LEFT JOIN y ON a = c);
 SELECT
-  *
+  "x"."a" AS "a",
+  "y"."c" AS "c"
 FROM (
-  "t1" AS "t1"
-    CROSS JOIN "t2" AS "t2"
+  "x" AS "x"
+    LEFT JOIN "y" AS "y"
+      ON "x"."a" = "y"."c"
 );
 
 # title: wrapped join of tables with alias
 # execute: false
-SELECT * FROM (t1 CROSS JOIN t2) AS t;
-WITH "t" AS (
-  "t1" AS "t1"
-    CROSS JOIN "t2" AS "t2"
-)
+SELECT a, c FROM (x LEFT JOIN y ON a = c) AS t;
 SELECT
-  *
-FROM "t" AS "t";
+  "x"."a" AS "a",
+  "y"."c" AS "c"
+FROM "x" AS "x"
+LEFT JOIN "y" AS "y"
+  ON "x"."a" = "y"."c";
 
 # title: chained wrapped joins without aliases
 # execute: false
@@ -774,3 +774,17 @@ FROM (
   )
   CROSS JOIN "c" AS "baz"
 );
+
+# title: table joined with joined construct
+SELECT x.a, y.b, z.c FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."c" AS "c"
+FROM "x" AS "x"
+LEFT JOIN (
+  "y" AS "y"
+    JOIN "z" AS "z"
+      ON "y"."c" = "z"."c"
+)
+  ON "x"."b" = "y"."b";

@@ -42,9 +42,9 @@ SELECT * FROM ((((c.db.tbl AS tbl))));
 SELECT * FROM (t1 CROSS JOIN t2);
 SELECT * FROM (c.db.t1 AS t1 CROSS JOIN c.db.t2 AS t2);
 
-# title: wrapped join of tables with alias
+# title: wrapped join of tables with alias, expansion of join construct
 SELECT * FROM (t1 CROSS JOIN t2) AS t;
-SELECT * FROM (c.db.t1 AS t1 CROSS JOIN c.db.t2 AS t2) AS t;
+SELECT * FROM (SELECT * FROM c.db.t1 AS t1 CROSS JOIN c.db.t2 AS t2) AS t;
 
 # title: chained wrapped joins without aliases (1)
 SELECT * FROM ((a CROSS JOIN b) CROSS JOIN c);
@@ -72,7 +72,7 @@ SELECT * FROM (c.db.tbl1 AS tbl1 CROSS JOIN (SELECT * FROM c.db.tbl2 AS tbl2) AS
 
 # title: wrapped join with subquery with alias, parentheses can't be omitted because of alias
 SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1) AS t2;
-SELECT * FROM (c.db.tbl1 AS tbl1 CROSS JOIN (SELECT * FROM c.db.tbl2 AS tbl2) AS t1) AS t2;
+SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 CROSS JOIN (SELECT * FROM c.db.tbl2 AS tbl2) AS t1) AS t2;
 
 # title: join construct as the right operand of a left join
 SELECT * FROM a LEFT JOIN (b INNER JOIN c ON c.id = b.id) ON b.id = a.id;
@@ -84,20 +84,20 @@ SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b INNER JOIN c.db.c AS c ON c.id =
 
 # title: parentheses can't be omitted because alias shadows inner table names
 SELECT t.a FROM (tbl AS tbl) AS t;
-SELECT t.a FROM (c.db.tbl AS tbl) AS t;
+SELECT t.a FROM (SELECT * FROM c.db.tbl AS tbl) AS t;
 
 # title: wrapped aliased table with outer alias
 SELECT * FROM ((((tbl AS tbl)))) AS _q_0;
-SELECT * FROM ((((c.db.tbl AS tbl)))) AS _q_0;
+SELECT * FROM (SELECT * FROM c.db.tbl AS tbl) AS _q_0;
 
-# title: join construct with three tables in canonical form
+# title: join construct with three tables
 SELECT * FROM (tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3) AS _q_0;
-SELECT * FROM (c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _q_0;
+SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _q_0;
 
-# title: join construct with three tables in canonical form and redundant set of parentheses
+# title: join construct with three tables and redundant set of parentheses
 SELECT * FROM ((tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3)) AS _q_0;
-SELECT * FROM ((c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3)) AS _q_0;
+SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _q_0;
 
-# title: nested join construct in canonical form
+# title: join construct within join construct
 SELECT * FROM (tbl1 AS tbl1 JOIN (tbl2 AS tbl2 JOIN tbl3 AS tbl3 ON id2 = id3) AS _q_0 ON id1 = id3) AS _q_1;
-SELECT * FROM (c.db.tbl1 AS tbl1 JOIN (c.db.tbl2 AS tbl2 JOIN c.db.tbl3 AS tbl3 ON id2 = id3) AS _q_0 ON id1 = id3) AS _q_1;
+SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN (SELECT * FROM c.db.tbl2 AS tbl2 JOIN c.db.tbl3 AS tbl3 ON id2 = id3) AS _q_0 ON id1 = id3) AS _q_1;

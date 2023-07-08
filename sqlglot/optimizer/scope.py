@@ -278,6 +278,7 @@ class Scope:
                     not ancestor
                     or column.table
                     or isinstance(ancestor, exp.Select)
+                    or (isinstance(ancestor, exp.Table) and not isinstance(ancestor.this, exp.Func))
                     or (
                         isinstance(ancestor, exp.Order)
                         and (

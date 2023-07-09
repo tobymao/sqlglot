@@ -42,7 +42,10 @@ def pushdown_predicates(expression):
             # so we limit the selected sources to only itself
             for join in select.args.get("joins") or []:
                 name = join.alias_or_name
-                pushdown(join.args.get("on"), {name: scope.selected_sources[name]}, scope_ref_count)
+                if name in scope.selected_sources:
+                    pushdown(
+                        join.args.get("on"), {name: scope.selected_sources[name]}, scope_ref_count
+                    )
 
     return expression
 

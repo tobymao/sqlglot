@@ -15,7 +15,8 @@ def qualify_tables(
     schema: t.Optional[Schema] = None,
 ) -> E:
     """
-    Rewrite sqlglot AST to have fully qualified, unnested tables.
+    Rewrite sqlglot AST to have fully qualified tables. Join constructs such as
+    (t1 JOIN t2) AS t will be expanded into (SELECT * FROM t1 AS t1, t2 AS t2) AS t.
 
     Examples:
         >>> import sqlglot
@@ -23,18 +24,9 @@ def qualify_tables(
         >>> qualify_tables(expression, db="db").sql()
         'SELECT 1 FROM db.tbl AS tbl'
         >>>
-        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl)")
+        >>> expression = sqlglot.parse_one("SELECT 1 FROM (t1 JOIN t2) AS t")
         >>> qualify_tables(expression).sql()
-        'SELECT * FROM tbl AS tbl'
-        >>>
-        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl1 JOIN tbl2 ON id1 = id2)")
-        >>> qualify_tables(expression).sql()
-        'SELECT * FROM tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2'
-
-    Note:
-        This rule effectively enforces a left-to-right join order, since all joins
-        are unnested. This means that the optimizer doesn't necessarily preserve the
-        original join order, e.g. when parentheses are used to specify it explicitly.
+        'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
 
     Args:
         expression: Expression to qualify
@@ -49,6 +41,13 @@ def qualify_tables(
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
+            if isinstance(derived_table, exp.Subquery):
+                unnested = derived_table.unnest()
+                if isinstance(unnested, exp.Table):
+                    joins = unnested.args.pop("joins", None)
+                    derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
+                    derived_table.this.set("joins", joins)
+
             if not derived_table.args.get("alias"):
                 alias_ = next_alias_name()
                 derived_table.set("alias", exp.TableAlias(this=exp.to_identifier(alias_)))
@@ -66,19 +65,9 @@ def qualify_tables(
                     if not source.args.get("catalog"):
                         source.set("catalog", exp.to_identifier(catalog))
 
-                # Unnest joins attached in tables by appending them to the closest query
-                for join in source.args.get("joins") or []:
-                    scope.expression.append("joins", join)
-
-                source.set("joins", None)
-                source.set("wrapped", None)
-
                 if not source.alias:
-                    source = source.replace(
-                        alias(
-                            source, name or source.name or next_alias_name(), copy=True, table=True
-                        )
-                    )
+                    # Mutates the source by attaching an alias to it
+                    alias(source, name or source.name or next_alias_name(), copy=False, table=True)
 
                 pivots = source.args.get("pivots")
                 if pivots and not pivots[0].alias:

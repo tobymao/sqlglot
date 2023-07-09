@@ -85,7 +85,7 @@ def _unique_outputs(scope):
         grouped_outputs = set()
 
         unique_outputs = set()
-        for select in scope.selects:
+        for select in scope.expression.selects:
             output = select.unalias()
             if output in grouped_expressions:
                 grouped_outputs.add(output)
@@ -105,7 +105,7 @@ def _unique_outputs(scope):
 
 def _has_single_output_row(scope):
     return isinstance(scope.expression, exp.Select) and (
-        all(isinstance(e.unalias(), exp.AggFunc) for e in scope.selects)
+        all(isinstance(e.unalias(), exp.AggFunc) for e in scope.expression.selects)
         or _is_limit_1(scope)
         or not scope.expression.args.get("from")
     )

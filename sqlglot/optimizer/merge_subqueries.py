@@ -107,6 +107,7 @@ def merge_derived_tables(expression, leave_tables_isolated=False):
                 _merge_order(outer_scope, inner_scope)
                 _merge_hints(outer_scope, inner_scope)
                 outer_scope.clear_cache()
+
     return expression
 
 
@@ -166,7 +167,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         if not inner_from:
             return False
         inner_from_table = inner_from.alias_or_name
-        inner_projections = {s.alias_or_name: s for s in inner_scope.selects}
+        inner_projections = {s.alias_or_name: s for s in inner_scope.expression.selects}
         return any(
             col.table != inner_from_table
             for selection in selections

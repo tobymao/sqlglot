@@ -1979,31 +1979,9 @@ class Parser(metaclass=_Parser):
 
             self._match_r_paren()
 
-            alias = None
-
-            # Ensure "wrapped" tables are not parsed as Subqueries. The exception to this is when there's
-            # an alias that can be applied to the parentheses, because that would shadow all wrapped table
-            # names, and so we want to parse it as a Subquery to represent the inner scope appropriately.
-            # Additionally, we want the node under the Subquery to be an actual query, so we will replace
-            # the table reference with a star query that selects from it.
-            if isinstance(this, exp.Table):
-                alias = self._parse_table_alias()
-                if not alias:
-                    this.set("wrapped", True)
-                    return this
-
-                this.set("wrapped", None)
-                joins = this.args.pop("joins", None)
-                this = this.replace(exp.select("*").from_(this.copy(), copy=False))
-                this.set("joins", joins)
-
-            subquery = self._parse_subquery(this, parse_alias=parse_subquery_alias and not alias)
-            if subquery and alias:
-                subquery.set("alias", alias)
-
             # We return early here so that the UNION isn't attached to the subquery by the
             # following call to _parse_set_operations, but instead becomes the parent node
-            return subquery
+            return self._parse_subquery(this, parse_alias=parse_subquery_alias)
         elif self._match(TokenType.VALUES):
             this = self.expression(
                 exp.Values,

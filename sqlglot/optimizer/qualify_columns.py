@@ -192,7 +192,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
             if table and (not alias_expr or double_agg):
                 column.set("table", table)
             elif not column.table and alias_expr and not double_agg:
-                if isinstance(alias_expr, exp.Literal):
+                if isinstance(alias_expr, exp.Literal) and (literal_index or resolve_table):
                     if literal_index:
                         column.replace(exp.Literal.number(i))
                 else:

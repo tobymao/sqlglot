@@ -788,3 +788,21 @@ LEFT JOIN (
       ON "y"."c" = "z"."c"
 )
   ON "x"."b" = "y"."b";
+
+# title: select * from table joined with join construct
+# execute: false
+SELECT * FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
+SELECT
+  "y"."b" AS "b",
+  "y"."c" AS "c",
+  "z"."a" AS "a",
+  "z"."c" AS "c",
+  "x"."a" AS "a",
+  "x"."b" AS "b"
+FROM "x" AS "x"
+LEFT JOIN (
+  "y" AS "y"
+    JOIN "z" AS "z"
+      ON "y"."c" = "z"."c"
+)
+  ON "x"."b" = "y"."b";

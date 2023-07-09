@@ -66,7 +66,7 @@ def qualify_tables(
                         source.set("catalog", exp.to_identifier(catalog))
 
                 if not source.alias:
-                    # Mutates source by attaching an alias to it
+                    # Mutates the source by attaching an alias to it
                     alias(source, name or source.name or next_alias_name(), copy=False, table=True)
 
                 pivots = source.args.get("pivots")

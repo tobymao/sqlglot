@@ -626,10 +626,7 @@ def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
         self.unsupported(f"REGEXP_EXTRACT does not support the following arg(s): {bad_args}")
 
     return self.func(
-        "REGEXP_EXTRACT",
-        expression.args.get("this"),
-        expression.args.get("expression"),
-        expression.args.get("group"),
+        "REGEXP_EXTRACT", expression.this, expression.expression, expression.args.get("group")
     )
 
 

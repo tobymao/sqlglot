@@ -158,7 +158,7 @@ class Generator:
     # Whether or not to generate INSERT INTO ... RETURNING or INSERT INTO RETURNING ...
     RETURNING_END = True
 
-    # Whether or not to generate the (+) suffix for columns used in JOIN conditions
+    # Whether or not to generate the (+) suffix for columns used in old-style join conditions
     COLUMN_JOIN_MARKS_SUPPORTED = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax

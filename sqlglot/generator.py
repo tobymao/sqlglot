@@ -158,6 +158,9 @@ class Generator:
     # Whether or not to generate INSERT INTO ... RETURNING or INSERT INTO RETURNING ...
     RETURNING_END = True
 
+    # Whether or not to generate the (+) suffix for columns used in old-style join conditions
+    COLUMN_JOIN_MARKS_SUPPORTED = False
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -559,7 +562,13 @@ class Generator:
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
     def column_sql(self, expression: exp.Column) -> str:
-        return ".".join(
+        join_mark = " (+)" if expression.args.get("join_mark") else ""
+
+        if join_mark and not self.COLUMN_JOIN_MARKS_SUPPORTED:
+            join_mark = ""
+            self.unsupported("Outer join syntax using the (+) operator is not supported.")
+
+        column = ".".join(
             self.sql(part)
             for part in (
                 expression.args.get("catalog"),
@@ -569,6 +578,8 @@ class Generator:
             )
             if part
         )
+
+        return f"{column}{join_mark}"
 
     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
         this = self.sql(expression, "this")

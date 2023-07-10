@@ -1765,7 +1765,7 @@ class Parser(metaclass=_Parser):
             return None
         return self.expression(
             exp.Returning,
-            expressions=self._parse_csv(self._parse_column),
+            expressions=self._parse_csv(self._parse_expression),
             into=self._match(TokenType.INTO) and self._parse_table_part(),
         )
 

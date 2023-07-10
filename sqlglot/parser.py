@@ -3033,6 +3033,9 @@ class Parser(metaclass=_Parser):
             exp.DataTypeSize, this=this, expression=self._parse_var(any_token=True)
         )
 
+    def _build_datatype(self, type_token, expressions) -> exp.DataType:
+        return exp.DataType.build(type_token.value, expressions=expressions)
+
     def _parse_types(
         self, check_func: bool = False, schema: bool = False
     ) -> t.Optional[exp.Expression]:
@@ -3074,7 +3077,7 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             this = exp.DataType(
                 this=exp.DataType.Type.ARRAY,
-                expressions=[exp.DataType.build(type_token.value, expressions=expressions)],
+                expressions=[self._build_datatype(type_token, expressions)],
                 nested=True,
             )
 

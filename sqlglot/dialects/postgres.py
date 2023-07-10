@@ -334,6 +334,9 @@ class Postgres(Dialect):
 
             return self.expression(exp.Extract, this=part, expression=value)
 
+        def _build_datatype(self, type_token, expressions) -> exp.DataType:
+            return exp.DataType.build(type_token.value, expressions=expressions, dialect='postgres')
+
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
         LOCKING_READS_SUPPORTED = True

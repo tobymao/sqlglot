@@ -78,6 +78,9 @@ class TestPostgres(Validator):
                 " CONSTRAINT valid_discount CHECK (price > discounted_price))"
             },
         )
+        self.validate_identity(
+            "CREATE TABLE test (elems JSONB[])"
+        )
 
         with self.assertRaises(ParseError):
             transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")

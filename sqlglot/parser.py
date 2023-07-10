@@ -3074,7 +3074,13 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             this = exp.DataType(
                 this=exp.DataType.Type.ARRAY,
-                expressions=[exp.DataType.build(type_token.value, expressions=expressions)],
+                expressions=[
+                    exp.DataType(
+                        this=exp.DataType.Type[type_token.value],
+                        expressions=expressions,
+                        nested=nested,
+                    )
+                ],
                 nested=True,
             )
 
@@ -3135,7 +3141,7 @@ class Parser(metaclass=_Parser):
             return value
 
         return exp.DataType(
-            this=exp.DataType.Type[type_token.value.upper()],
+            this=exp.DataType.Type[type_token.value],
             expressions=expressions,
             nested=nested,
             values=values,

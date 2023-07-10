@@ -1205,7 +1205,8 @@ class Parser(metaclass=_Parser):
             extend_props(self._parse_properties())
 
             self._match(TokenType.ALIAS)
-            begin = self._match_text_seq("BEGIN")  # _match(TokenType.BEGIN)
+            begin = self._match_text_seq("BEGIN")
+            #            begin = self._match(TokenType.BEGIN)
             return_ = self._match_text_seq("RETURN")
             expression = self._parse_statement()
 

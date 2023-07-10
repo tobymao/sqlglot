@@ -3464,11 +3464,17 @@ class Transaction(Expression):
 
 
 class Commit(Expression):
-    arg_types = {"chain": False}
+    arg_types = {
+        "chain": False,
+        "this": False,
+        "transaction": False,
+        "durability": False,
+        "modes": False,
+    }
 
 
 class Rollback(Expression):
-    arg_types = {"savepoint": False}
+    arg_types = {"savepoint": False, "this": False, "transaction": False}
 
 
 class AlterTable(Expression):
@@ -3944,7 +3950,7 @@ class Case(Func):
 
 
 class Cast(Func):
-    arg_types = {"this": True, "to": True, "format": False}
+    arg_types = {"this": True, "to": False, "format": False}
 
     @property
     def name(self) -> str:

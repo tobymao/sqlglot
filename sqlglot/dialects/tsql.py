@@ -369,12 +369,54 @@ class TSQL(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_command(),
+            TokenType.ALIAS: lambda self: self._parse_alias(),
         }
 
         LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
         CONCAT_NULL_OUTPUTS_STRING = True
+
+        def _parse_commit_or_rollback(self) -> exp.Commit | exp.Rollback:
+            """Applies to SQL Server and Azure SQL Database
+                COMMIT [ { TRAN | TRANSACTION }
+                    [ transaction_name | @tran_name_variable ] ]
+                    [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ]
+                    [ ; ]
+
+                ROLLBACK { TRAN | TRANSACTION }
+                    [ transaction_name | @tran_name_variable
+                    | savepoint_name | @savepoint_variable ]
+                    [ ; ]
+
+            Returns:
+                exp.Commit | exp.Rollback: _description_
+            """
+            rollback = False
+            if self._prev.token_type == TokenType.ROLLBACK:
+                rollback = True
+
+            transaction = None
+            if self._match_texts({"TRAN", "TRANSACTION"}):
+                transaction = self._prev.text
+            txn_name = self._parse_id_var()
+
+            durability = None
+            if self._match_text_seq("WITH", "(", "DELAYED_DURABILITY", "="):
+                if self._match_text_seq("OFF"):
+                    durability = False
+                else:
+                    self._match(TokenType.ON)
+                    durability = True
+
+                self._match_r_paren()
+
+            if rollback:
+                return self.expression(exp.Rollback, this=txn_name, transaction=transaction)
+
+            return self.expression(
+                exp.Commit, this=txn_name, durability=durability, transaction=transaction
+            )
 
         def _parse_transaction(self) -> exp.Transaction:
             this = None
@@ -459,7 +501,7 @@ class TSQL(Dialect):
             returns.set("table", table)
             return returns
 
-        def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
+        def gnvert(self, strict: bool) -> t.Optional[exp.Expression]:
             to = self._parse_types()
             self._match(TokenType.COMMA)
             this = self._parse_conjunction()
@@ -594,7 +636,27 @@ class TSQL(Dialect):
             modes = f" {', '.join(modes)}" if modes else ""
             return f"BEGIN{this} TRANSACTION{modes}"
 
+        def _durability_sql(self, expression) -> str:
+            durability = expression.args.get("durability")
+            durability_sql = ""
+            if durability is not None:
+                if durability:
+                    durability = "ON"
+                else:
+                    durability = "OFF"
+                durability_sql = f" WITH (DELAYED_DURABILITY = {durability})"
+            return durability_sql
+
         def commit_sql(self, expression: exp.Commit) -> str:
-            this = expression.this
+            this = self.sql(expression, "this")
             this = f" {this}" if this else ""
-            return f"COMMIT{this} TRANSACTION"
+            transaction = expression.args.get("transaction")
+            transaction = f" {transaction}" if transaction else ""
+            return f"COMMIT{transaction}{this}{self._durability_sql(expression)}"
+
+        def rollback_sql(self, expression: exp.Rollback) -> str:
+            this = self.sql(expression, "this")
+            this = f" {this}" if this else ""
+            transaction = expression.args.get("transaction")
+            transaction = f" {transaction}" if transaction else ""
+            return f"ROLLBACK{transaction}{this}"

@@ -369,6 +369,9 @@ class TestTSQL(Validator):
             },
         )
 
+    def test_convert(self):
+        self.validate_identity("CONVERT(INT, CONVERT(NUMERIC, '444.75'))")
+
     def test_transaction(self):
         # BEGIN { TRAN | TRANSACTION }
         #    [ { transaction_name | @tran_name_variable }
@@ -376,31 +379,38 @@ class TestTSQL(Validator):
         #    ]
         # [ ; ]
         self.validate_identity("BEGIN TRANSACTION")
-        self.validate_all("BEGIN TRAN", write={"tsql": "BEGIN TRAN"})
+        self.validate_identity("BEGIN TRAN")
         self.validate_identity("BEGIN TRANSACTION transaction_name")
         self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
         self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")
 
+    def test_commit(self):
         # COMMIT [ { TRAN | TRANSACTION }  [ transaction_name | @tran_name_variable ] ] [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ] [ ; ]
 
-        # self.validate_identity("COMMIT")
-        # self.validate_identity("COMMIT TRAN")
+        self.validate_identity("COMMIT")
+        self.validate_all("COMMIT TRAN")
         self.validate_identity("COMMIT TRANSACTION")
-        # self.validate_identity("COMMIT TRANSACTION transaction_name")
-        # self.validate_identity("COMMIT TRANSACTION @tran_name_variable")
-        # self.validate_identity("COMMIT TRANSACTION @tran_name_variable WITH DELAYED_DURABILITY = ON")
+        self.validate_identity("COMMIT TRANSACTION transaction_name")
+        self.validate_identity("COMMIT TRANSACTION @tran_name_variable")
 
+        self.validate_identity(
+            "COMMIT TRANSACTION @tran_name_variable WITH (DELAYED_DURABILITY = ON)"
+        )
+        self.validate_identity(
+            "COMMIT TRANSACTION transaction_name WITH (DELAYED_DURABILITY = OFF)"
+        )
+
+    def test_rollback(self):
         # Applies to SQL Server and Azure SQL Database
         # ROLLBACK { TRAN | TRANSACTION }
         #     [ transaction_name | @tran_name_variable
         #     | savepoint_name | @savepoint_variable ]
         # [ ; ]
         self.validate_identity("ROLLBACK")
-        # self.validate_identity("ROLLBACK TRAN")
-        # self.validate_identity("ROLLBACK TRANSACTION")
-        # self.validate_identity("ROLLBACK TRANSACTION transaction_name")
-        # self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable")
-        # self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable WITH DELAYED_DURABILITY = ON")
+        self.validate_all("ROLLBACK TRAN")
+        self.validate_identity("ROLLBACK TRANSACTION")
+        self.validate_identity("ROLLBACK TRANSACTION transaction_name")
+        self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable")
 
     def test_udf(self):
         self.validate_identity("BEGIN")

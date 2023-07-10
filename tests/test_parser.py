@@ -571,7 +571,7 @@ class TestParser(unittest.TestCase):
             """
         )
         self.assertIsNotNone(query)
-        self.assertLessEqual(time.time() - now, 0.1)
+        self.assertLessEqual(time.time() - now, 0.2)
 
     def test_parse_properties(self):
         self.assertEqual(

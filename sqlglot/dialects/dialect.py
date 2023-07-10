@@ -620,7 +620,16 @@ def concat_to_dpipe_sql(self: Generator, expression: exp.Concat | exp.SafeConcat
     return self.sql(this)
 
 
-# Spark, DuckDB use (almost) the same naming scheme for the output columns of the PIVOT operator
+def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
+    bad_args = list(filter(expression.args.get, ("position", "occurrence", "parameters")))
+    if bad_args:
+        self.unsupported(f"REGEXP_EXTRACT does not support the following arg(s): {bad_args}")
+
+    return self.func(
+        "REGEXP_EXTRACT", expression.this, expression.expression, expression.args.get("group")
+    )
+
+
 def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectType) -> t.List[str]:
     names = []
     for agg in aggregations:

@@ -4420,6 +4420,7 @@ class RegexpExtract(Func):
         "expression": True,
         "position": False,
         "occurrence": False,
+        "parameters": False,
         "group": False,
     }
 

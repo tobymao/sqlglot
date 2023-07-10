@@ -223,13 +223,14 @@ class Snowflake(Dialect):
             "IFF": exp.If.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
             "OBJECT_CONSTRUCT": _parse_object_construct,
+            "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TIMEDIFF": _parse_datediff,
             "TIMESTAMPDIFF": _parse_datediff,
             "TO_ARRAY": exp.Array.from_arg_list,
-            "TO_VARCHAR": exp.ToChar.from_arg_list,
             "TO_TIMESTAMP": _snowflake_to_timestamp,
+            "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _zeroifnull_to_if,
         }
 
@@ -361,12 +362,12 @@ class Snowflake(Dialect):
                 "OBJECT_CONSTRUCT",
                 *(arg for expression in e.expressions for arg in expression.flatten()),
             ),
+            exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.TimeToStr: lambda self, e: self.func(
                 "TO_CHAR", exp.cast(e.this, "timestamp"), self.format_time(e)
             ),
-            exp.TimestampTrunc: timestamptrunc_sql,
+            exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
@@ -389,6 +390,24 @@ class Snowflake(Dialect):
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
+            # Other dialects don't support all of the following parameters, so we need to
+            # generate default values as necessary to ensure the transpilation is correct
+            group = expression.args.get("group")
+            parameters = expression.args.get("parameters") or (group and exp.Literal.string("c"))
+            occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))
+            position = expression.args.get("position") or (occurrence and exp.Literal.number(1))
+
+            return self.func(
+                "REGEXP_SUBSTR",
+                expression.this,
+                expression.expression,
+                position,
+                occurrence,
+                parameters,
+                group,
+            )
 
         def except_op(self, expression: exp.Except) -> str:
             if not expression.args.get("distinct", False):

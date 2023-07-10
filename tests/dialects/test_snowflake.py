@@ -1,3 +1,5 @@
+from unittest import mock
+
 from sqlglot import UnsupportedError, exp, parse_one
 from tests.dialects.test_dialect import Validator
 
@@ -309,6 +311,7 @@ class TestSnowflake(Validator):
             "SELECT IFF(TRUE, 'true', 'false')",
             write={
                 "snowflake": "SELECT IFF(TRUE, 'true', 'false')",
+                "spark": "SELECT IF(TRUE, 'true', 'false')",
             },
         )
         self.validate_all(
@@ -869,6 +872,44 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
         self.assertIsInstance(like, exp.LikeAny)
         self.assertIsInstance(ilike, exp.ILikeAny)
         like.sql()  # check that this doesn't raise
+
+    @mock.patch("sqlglot.generator.logger")
+    def test_regexp_substr(self, logger):
+        self.validate_all(
+            "REGEXP_SUBSTR(subject, pattern, pos, occ, params, group)",
+            write={
+                "bigquery": "REGEXP_EXTRACT(subject, pattern, pos, occ)",
+                "hive": "REGEXP_EXTRACT(subject, pattern, group)",
+                "presto": "REGEXP_EXTRACT(subject, pattern, group)",
+                "snowflake": "REGEXP_SUBSTR(subject, pattern, pos, occ, params, group)",
+                "spark": "REGEXP_EXTRACT(subject, pattern, group)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_SUBSTR(subject, pattern)",
+            read={
+                "bigquery": "REGEXP_EXTRACT(subject, pattern)",
+                "hive": "REGEXP_EXTRACT(subject, pattern)",
+                "presto": "REGEXP_EXTRACT(subject, pattern)",
+                "spark": "REGEXP_EXTRACT(subject, pattern)",
+            },
+            write={
+                "bigquery": "REGEXP_EXTRACT(subject, pattern)",
+                "hive": "REGEXP_EXTRACT(subject, pattern)",
+                "presto": "REGEXP_EXTRACT(subject, pattern)",
+                "snowflake": "REGEXP_SUBSTR(subject, pattern)",
+                "spark": "REGEXP_EXTRACT(subject, pattern)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
+            read={
+                "hive": "REGEXP_EXTRACT(subject, pattern, group)",
+                "presto": "REGEXP_EXTRACT(subject, pattern, group)",
+                "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
+                "spark": "REGEXP_EXTRACT(subject, pattern, group)",
+            },
+        )
 
     def test_match_recognize(self):
         for row in (

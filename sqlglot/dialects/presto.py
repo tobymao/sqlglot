@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
     no_pivot_sql,
     no_safe_divide_sql,
+    regexp_extract_sql,
     rename_func,
     right_to_substring_sql,
     struct_extract_sql,
@@ -215,6 +216,9 @@ class Presto(Dialect):
                 this=seq_get(args, 0), replace=seq_get(args, 1), charset=exp.Literal.string("utf-8")
             ),
             "NOW": exp.CurrentTimestamp.from_arg_list,
+            "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
+            ),
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "STRPOS": lambda args: exp.StrPosition(
                 this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
@@ -293,6 +297,7 @@ class Presto(Dialect):
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
+            exp.RegexpExtract: regexp_extract_sql,
             exp.Right: right_to_substring_sql,
             exp.SafeBracket: lambda self, e: self.func(
                 "ELEMENT_AT", e.this, seq_get(apply_index_offset(e.this, e.expressions, 1), 0)

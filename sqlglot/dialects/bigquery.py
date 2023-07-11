@@ -174,6 +174,12 @@ def _parse_date(args: t.List) -> exp.Date | exp.DateFromParts:
     return expr_type.from_arg_list(args)
 
 
+def _parse_to_hex(args: t.List) -> exp.Hex | exp.MD5:
+    # TO_HEX(MD5(..)) is common in BigQuery, so it's parsed into MD5 to simplify its transpilation
+    arg = seq_get(args, 0)
+    return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.Hex(this=arg)
+
+
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
 
@@ -275,6 +281,8 @@ class BigQuery(Dialect):
             "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
             "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
+            "MD5": exp.MD5Digest.from_arg_list,
+            "TO_HEX": _parse_to_hex,
             "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
                 [seq_get(args, 1), seq_get(args, 0)]
             ),
@@ -379,22 +387,27 @@ class BigQuery(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
+            exp.Create: _create_sql,
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: _date_add_sql("DATE", "ADD"),
+            exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.DateFromParts: rename_func("DATE"),
+            exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("DATE", "SUB"),
             exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
             exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
-            exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
-            exp.DateStrToDate: datestrtodate_sql,
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
-            exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
+            exp.Hex: rename_func("TO_HEX"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
+            exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Max: max_or_greatest,
+            exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
+            exp.MD5Digest: rename_func("MD5"),
             exp.Min: min_or_least,
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpExtract: lambda self, e: self.func(
                 "REGEXP_EXTRACT",
                 e.this,
@@ -403,6 +416,7 @@ class BigQuery(Dialect):
                 e.args.get("occurrence"),
             ),
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
+            exp.ReturnsProperty: _returnsproperty_sql,
             exp.Select: transforms.preprocess(
                 [
                     transforms.explode_to_unnest,
@@ -411,6 +425,9 @@ class BigQuery(Dialect):
                     _alias_ordered_group,
                 ]
             ),
+            exp.StabilityProperty: lambda self, e: f"DETERMINISTIC"
+            if e.name == "IMMUTABLE"
+            else "NOT DETERMINISTIC",
             exp.StrToDate: lambda self, e: f"PARSE_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.StrToTime: lambda self, e: self.func(
                 "PARSE_TIMESTAMP", self.format_time(e), e.this, e.args.get("zone")
@@ -420,17 +437,12 @@ class BigQuery(Dialect):
             exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
-            exp.TsOrDsAdd: _date_add_sql("DATE", "ADD"),
-            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
-            exp.VariancePop: rename_func("VAR_POP"),
-            exp.Values: _derived_table_values_to_unnest,
-            exp.ReturnsProperty: _returnsproperty_sql,
-            exp.Create: _create_sql,
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
-            exp.StabilityProperty: lambda self, e: f"DETERMINISTIC"
-            if e.name == "IMMUTABLE"
-            else "NOT DETERMINISTIC",
+            exp.TsOrDsAdd: _date_add_sql("DATE", "ADD"),
+            exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
+            exp.Unhex: rename_func("FROM_HEX"),
+            exp.Values: _derived_table_values_to_unnest,
+            exp.VariancePop: rename_func("VAR_POP"),
         }
 
         TYPE_MAPPING = {

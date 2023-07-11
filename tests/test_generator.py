@@ -1,6 +1,6 @@
 import unittest
 
-from sqlglot import parse_one
+from sqlglot import exp, parse_one
 from sqlglot.expressions import Func
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer
@@ -29,6 +29,11 @@ class TestGenerator(unittest.TestCase):
         tokens = Tokenizer().tokenize("SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x")
         expression = NewParser().parse(tokens)[0]
         self.assertEqual(expression.sql(), "SELECT SPECIAL_UDF(a, b, c, d + 1) FROM x")
+
+        self.assertEqual(
+            exp.DateTrunc(this=exp.to_column("event_date"), unit=exp.var("MONTH")).sql(),
+            "DATE_TRUNC(MONTH, event_date)",
+        )
 
     def test_identify(self):
         assert parse_one("x").sql(identify=True) == '"x"'

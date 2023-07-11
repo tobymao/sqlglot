@@ -263,6 +263,7 @@ class Postgres(Dialect):
             "DO": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
             "JSONB": TokenType.JSONB,
+            "MONEY": TokenType.MONEY,
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,

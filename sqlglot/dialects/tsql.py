@@ -311,6 +311,7 @@ class TSQL(Dialect):
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "VARCHAR(MAX)": TokenType.TEXT,
             "XML": TokenType.XML,
+            "OUTPUT": TokenType.RETURNING,
             "SYSTEM_USER": TokenType.CURRENT_USER,
             "WITH": TokenType.WITH,
         }
@@ -543,6 +544,7 @@ class TSQL(Dialect):
         LOCKING_READS_SUPPORTED = True
         LIMIT_IS_TOP = True
         QUERY_HINTS = False
+        RETURNING_END = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

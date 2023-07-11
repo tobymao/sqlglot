@@ -412,13 +412,11 @@ class TSQL(Dialect):
             """
             if self._match_texts(("TRAN", "TRANSACTION")):
                 # we have a transaction and not a BEGIN
-                txn_name = self._parse_id_var()
-
-                mark = None
+                transaction = self.expression(exp.Transaction, this=self._parse_id_var())
                 if self._match_text_seq("WITH", "MARK"):
-                    mark = self._parse_string()
+                    transaction.set("mark", self._parse_string())
+                return transaction
 
-                return self.expression(exp.Transaction, this=txn_name, mark=mark)
             return self.expression(exp.Command, this="BEGIN")
 
         def _parse_system_time(self) -> t.Optional[exp.Expression]:

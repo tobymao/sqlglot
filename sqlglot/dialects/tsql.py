@@ -628,6 +628,11 @@ class TSQL(Dialect):
             table = expression.args.get("table")
             table = f"{table} " if table else ""
             return f"RETURNS {table}{self.sql(expression, 'this')}"
+            
+        def returning_sql(self, expression: exp.Returning) -> str:
+            into = self.sql(expression, "into")
+            into = self.seg(f"INTO {into}") if into else ""
+            return f"{self.seg('OUTPUT')} {self.expressions(expression, flat=True)}{into}"
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = expression.this

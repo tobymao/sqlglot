@@ -419,44 +419,24 @@ class TSQL(Dialect):
             )
 
         def _parse_transaction(self) -> exp.Transaction:
-            this = None
-            if self._match_texts(self.TRANSACTION_KIND):
-                this = self._prev.text
+            """Syntax:
+                BEGIN { TRAN | TRANSACTION }
+                [ { transaction_name | @tran_name_variable }
+                [ WITH MARK [ 'description' ] ]
+                ]
+                [ ; ]
 
-            self._match_texts({"TRANSACTION", "WORK"})
+            Returns:
+                exp.Transaction: _description_
+            """
+            mark = None
 
-            modes = []
-            while True:
-                mode = []
-                while self._match_set(
-                    (
-                        TokenType.PARAMETER,
-                        TokenType.VAR,
-                        TokenType.WITH,
-                        TokenType.STRING,
-                        TokenType.QUOTE,
-                    )
-                ):
-                    # if self._prev.token_type == TokenType.PARAMETER:
-                    #    mode.append(f"{self._prev.text}{self._curr.text}")
-                    if self._prev.token_type == TokenType.STRING:
-                        mode.append(f"'{self._prev.text}'")
-                    elif self._prev.token_type == TokenType.PARAMETER:
-                        {}
-                    elif (
-                        self._tokens[-2].token_type == TokenType.PARAMETER
-                        and self._tokens[-1].token_type == TokenType.VAR
-                    ):
-                        mode.append(f"@{self._prev.text}")
-                    else:
-                        mode.append(self._prev.text)
+            txn_name = self._parse_id_var()
 
-                if mode:
-                    modes.append(" ".join(mode))
-                if not self._match(TokenType.BREAK):
-                    break
+            if self._match_text_seq("WITH", "MARK"):
+                mark = self._parse_string()
 
-            return self.expression(exp.Transaction, this=this, modes=modes)
+            return self.expression(exp.Transaction, this=txn_name, mark=mark)
 
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
@@ -628,18 +608,18 @@ class TSQL(Dialect):
             table = expression.args.get("table")
             table = f"{table} " if table else ""
             return f"RETURNS {table}{self.sql(expression, 'this')}"
-            
+
         def returning_sql(self, expression: exp.Returning) -> str:
             into = self.sql(expression, "into")
             into = self.seg(f"INTO {into}") if into else ""
             return f"{self.seg('OUTPUT')} {self.expressions(expression, flat=True)}{into}"
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
-            this = expression.this
+            this = self.sql(expression, "this")
             this = f" {this}" if this else ""
-            modes = expression.args.get("modes")
-            modes = f" {', '.join(modes)}" if modes else ""
-            return f"BEGIN{this} TRANSACTION{modes}"
+            mark = expression.args.get("mark")
+            mark = f" WITH MARK {mark}" if mark else ""
+            return f"BEGIN TRANSACTION{this}{mark}"
 
         def _durability_sql(self, expression) -> str:
             durability = expression.args.get("durability")

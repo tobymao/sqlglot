@@ -3460,7 +3460,7 @@ class Command(Expression):
 
 
 class Transaction(Expression):
-    arg_types = {"this": False, "modes": False}
+    arg_types = {"this": False, "modes": False, "mark": False}
 
 
 class Commit(Expression):

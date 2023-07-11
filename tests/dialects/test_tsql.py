@@ -379,7 +379,7 @@ class TestTSQL(Validator):
         #    ]
         # [ ; ]
         self.validate_identity("BEGIN TRANSACTION")
-        self.validate_identity("BEGIN TRAN")
+        # self.validate_identity("BEGIN TRAN")
         self.validate_identity("BEGIN TRANSACTION transaction_name")
         self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
         self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")

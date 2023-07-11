@@ -4354,7 +4354,7 @@ class Parser(metaclass=_Parser):
             self._parse_set_operations(self._parse_select(nested=True, parse_subquery_alias=False))
         )
 
-    def _parse_transaction(self) -> exp.Transaction:
+    def _parse_transaction(self) -> exp.Transaction | exp.Command:
         this = None
         if self._match_texts(self.TRANSACTION_KIND):
             this = self._prev.text

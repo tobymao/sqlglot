@@ -3479,14 +3479,13 @@ class Commit(Expression):
     arg_types = {
         "chain": False,
         "this": False,
-        "transaction": False,
         "durability": False,
         "modes": False,
     }
 
 
 class Rollback(Expression):
-    arg_types = {"savepoint": False, "this": False, "transaction": False}
+    arg_types = {"savepoint": False, "this": False}
 
 
 class AlterTable(Expression):

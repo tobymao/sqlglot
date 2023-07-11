@@ -388,7 +388,7 @@ class TSQL(Dialect):
             """
             rollback = self._prev.token_type == TokenType.ROLLBACK
 
-            transaction = self._match_texts({"TRAN", "TRANSACTION"}) and self._prev.text
+            self._match_texts({"TRAN", "TRANSACTION"})
             txn_name = self._parse_id_var()
 
             durability = None
@@ -404,11 +404,9 @@ class TSQL(Dialect):
                 self._match_r_paren()
 
             if rollback:
-                return self.expression(exp.Rollback, this=txn_name, transaction=transaction)
+                return self.expression(exp.Rollback, this=txn_name)
 
-            return self.expression(
-                exp.Commit, this=txn_name, durability=durability, transaction=transaction
-            )
+            return self.expression(exp.Commit, this=txn_name, durability=durability)
 
         def _parse_transaction(self) -> exp.Transaction:
             """Syntax:
@@ -609,7 +607,6 @@ class TSQL(Dialect):
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = self.sql(expression, "this")
-            #            this = None if this in "TRAN" else this
             this = f" {this}" if this else ""
             mark = self.sql(expression, "mark")
             mark = f" WITH MARK {mark}" if mark else ""
@@ -618,8 +615,6 @@ class TSQL(Dialect):
         def commit_sql(self, expression: exp.Commit) -> str:
             this = self.sql(expression, "this")
             this = f" {this}" if this else ""
-            transaction = self.sql(expression, "transaction")
-            transaction = f" {transaction}" if transaction else ""
             durability = expression.args.get("durability")
             durability = (
                 f" WITH (DELAYED_DURABILITY = {'ON' if durability else 'OFF'})"
@@ -631,6 +626,4 @@ class TSQL(Dialect):
         def rollback_sql(self, expression: exp.Rollback) -> str:
             this = self.sql(expression, "this")
             this = f" {this}" if this else ""
-            transaction = self.sql(expression, "transaction")
-            transaction = f" {transaction}" if transaction else ""
             return f"ROLLBACK TRANSACTION{this}"

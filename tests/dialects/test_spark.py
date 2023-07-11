@@ -233,6 +233,13 @@ TBLPROPERTIES (
         self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
+            "UNHEX(MD5(x))",
+            write={
+                "bigquery": "FROM_HEX(TO_HEX(MD5(x)))",
+                "spark": "UNHEX(MD5(x))",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM ((VALUES 1))", write={"spark": "SELECT * FROM (VALUES (1))"}
         )
         self.validate_all(

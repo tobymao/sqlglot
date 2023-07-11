@@ -6,6 +6,11 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b INTO @y FROM y")
+        self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b FROM y")
+        self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b INTO l SELECT * FROM z")
+        self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b SELECT * FROM z")
+        self.validate_identity("DELETE x OUTPUT x.a FROM z")
         self.validate_identity("SELECT * FROM t WITH (TABLOCK, INDEX(myindex))")
         self.validate_identity("SELECT * FROM t WITH (NOWAIT)")
         self.validate_identity("SELECT CASE WHEN a > 1 THEN b END")
@@ -206,6 +211,30 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "CAST(x as FLOAT(32))",
+            write={"tsql": "CAST(x AS FLOAT(32))", "hive": "CAST(x AS FLOAT)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(64))",
+            write={"tsql": "CAST(x AS FLOAT(64))", "spark": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(6))", write={"tsql": "CAST(x AS FLOAT(6))", "hive": "CAST(x AS FLOAT)"}
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(36))",
+            write={"tsql": "CAST(x AS FLOAT(36))", "hive": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(99))",
+            write={"tsql": "CAST(x AS FLOAT(99))", "hive": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
             "CAST(x as DOUBLE)",
             write={
                 "spark": "CAST(x AS DOUBLE)",
@@ -232,7 +261,7 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x as MONEY)",
             write={
-                "spark": "CAST(x AS DECIMAL(19, 4))",
+                "spark": "CAST(x AS DECIMAL(15, 4))",
                 "tsql": "CAST(x AS MONEY)",
             },
         )

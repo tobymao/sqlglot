@@ -15,8 +15,8 @@ def qualify_tables(
     schema: t.Optional[Schema] = None,
 ) -> E:
     """
-    Rewrite sqlglot AST to have fully qualified tables. Additionally, this
-    replaces "join constructs" (*) by equivalent SELECT * subqueries.
+    Rewrite sqlglot AST to have fully qualified tables. Join constructs such as
+    (t1 JOIN t2) AS t will be expanded into (SELECT * FROM t1 AS t1, t2 AS t2) AS t.
 
     Examples:
         >>> import sqlglot
@@ -24,9 +24,9 @@ def qualify_tables(
         >>> qualify_tables(expression, db="db").sql()
         'SELECT 1 FROM db.tbl AS tbl'
         >>>
-        >>> expression = sqlglot.parse_one("SELECT * FROM (tbl1 JOIN tbl2 ON id1 = id2)")
+        >>> expression = sqlglot.parse_one("SELECT 1 FROM (t1 JOIN t2) AS t")
         >>> qualify_tables(expression).sql()
-        'SELECT * FROM (SELECT * FROM tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2) AS _q_0'
+        'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
 
     Args:
         expression: Expression to qualify
@@ -36,18 +36,17 @@ def qualify_tables(
 
     Returns:
         The qualified expression.
-
-    (*) See section 7.2.1.2 in https://www.postgresql.org/docs/current/queries-table-expressions.html
     """
     next_alias_name = name_sequence("_q_")
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
-            # Expand join construct
             if isinstance(derived_table, exp.Subquery):
                 unnested = derived_table.unnest()
                 if isinstance(unnested, exp.Table):
+                    joins = unnested.args.pop("joins", None)
                     derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
+                    derived_table.this.set("joins", joins)
 
             if not derived_table.args.get("alias"):
                 alias_ = next_alias_name()
@@ -67,14 +66,8 @@ def qualify_tables(
                         source.set("catalog", exp.to_identifier(catalog))
 
                 if not source.alias:
-                    source = source.replace(
-                        alias(
-                            source,
-                            name or source.name or next_alias_name(),
-                            copy=True,
-                            table=True,
-                        )
-                    )
+                    # Mutates the source by attaching an alias to it
+                    alias(source, name or source.name or next_alias_name(), copy=False, table=True)
 
                 pivots = source.args.get("pivots")
                 if pivots and not pivots[0].alias:

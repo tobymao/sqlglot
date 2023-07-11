@@ -113,7 +113,7 @@ def _eliminate_union(scope, existing_ctes, taken):
     taken[alias] = scope
 
     # Try to maintain the selections
-    expressions = scope.selects
+    expressions = scope.expression.selects
     selects = [
         exp.alias_(exp.column(e.alias_or_name, table=alias), alias=e.alias_or_name, copy=False)
         for e in expressions

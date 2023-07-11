@@ -104,7 +104,7 @@ def lineage(
         # Find the specific select clause that is the source of the column we want.
         # This can either be a specific, named select or a generic `*` clause.
         select = next(
-            (select for select in scope.selects if select.alias_or_name == column_name),
+            (select for select in scope.expression.selects if select.alias_or_name == column_name),
             exp.Star() if scope.expression.is_star else None,
         )
 

@@ -274,12 +274,16 @@ class Expression(metaclass=_Expression):
 
     def set(self, arg_key: str, value: t.Any) -> None:
         """
-        Sets `arg_key` to `value`.
+        Sets arg_key to value.
 
         Args:
-            arg_key (str): name of the expression arg.
+            arg_key: name of the expression arg.
             value: value to set the arg to.
         """
+        if value is None:
+            self.args.pop(arg_key, None)
+            return
+
         self.args[arg_key] = value
         self._set_parent(arg_key, value)
 
@@ -874,11 +878,11 @@ class DerivedTable(Expression):
         return [c.name for c in table_alias.args.get("columns") or []]
 
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         return self.this.selects if isinstance(self.this, Subqueryable) else []
 
     @property
-    def named_selects(self):
+    def named_selects(self) -> t.List[str]:
         return [select.output_name for select in self.selects]
 
 
@@ -955,7 +959,7 @@ class Unionable(Expression):
 
 class UDTF(DerivedTable, Unionable):
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         alias = self.args.get("alias")
         return alias.columns if alias else []
 
@@ -1572,7 +1576,7 @@ class OnConflict(Expression):
 
 
 class Returning(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "into": False}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/charset-introducer.html
@@ -2190,11 +2194,11 @@ class Subqueryable(Unionable):
         return with_.expressions
 
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         raise NotImplementedError("Subqueryable objects must implement `selects`")
 
     @property
-    def named_selects(self):
+    def named_selects(self) -> t.List[str]:
         raise NotImplementedError("Subqueryable objects must implement `named_selects`")
 
     def with_(
@@ -2295,6 +2299,14 @@ class Table(Expression):
         return self.text("catalog")
 
     @property
+    def selects(self) -> t.List[Expression]:
+        return []
+
+    @property
+    def named_selects(self) -> t.List[str]:
+        return []
+
+    @property
     def parts(self) -> t.List[Identifier]:
         """Return the parts of a table in order catalog, db, table."""
         return [
@@ -2385,7 +2397,7 @@ class Union(Subqueryable):
         return this
 
     @property
-    def named_selects(self):
+    def named_selects(self) -> t.List[str]:
         return self.this.unnest().named_selects
 
     @property
@@ -2393,7 +2405,7 @@ class Union(Subqueryable):
         return self.this.is_star or self.expression.is_star
 
     @property
-    def selects(self):
+    def selects(self) -> t.List[Expression]:
         return self.this.unnest().selects
 
     @property
@@ -3518,6 +3530,10 @@ class Or(Connector):
     pass
 
 
+class Xor(Connector):
+    pass
+
+
 class BitwiseAnd(Binary):
     pass
 
@@ -4255,7 +4271,7 @@ class JSONArrayContains(Binary, Predicate, Func):
 
 
 class Least(Func):
-    arg_types = {"expressions": False}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 
@@ -4348,6 +4364,11 @@ class MD5(Func):
     _sql_names = ["MD5"]
 
 
+# Represents the variant of the MD5 function that returns a binary value
+class MD5Digest(Func):
+    _sql_names = ["MD5_DIGEST"]
+
+
 class Min(AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
@@ -4405,6 +4426,7 @@ class RegexpExtract(Func):
         "expression": True,
         "position": False,
         "occurrence": False,
+        "parameters": False,
         "group": False,
     }
 

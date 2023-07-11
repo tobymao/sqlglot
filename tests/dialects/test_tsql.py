@@ -369,9 +369,6 @@ class TestTSQL(Validator):
             },
         )
 
-    def test_convert(self):
-        self.validate_identity("CONVERT(INT, CONVERT(NUMERIC, '444.75'))")
-
     def test_transaction(self):
         # BEGIN { TRAN | TRANSACTION }
         #    [ { transaction_name | @tran_name_variable }

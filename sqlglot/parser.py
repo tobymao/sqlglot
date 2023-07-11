@@ -1206,7 +1206,6 @@ class Parser(metaclass=_Parser):
 
             self._match(TokenType.ALIAS)
             begin = self._match_text_seq("BEGIN")
-            #            begin = self._match(TokenType.BEGIN)
             return_ = self._match_text_seq("RETURN")
             expression = self._parse_statement()
 
@@ -4352,7 +4351,7 @@ class Parser(metaclass=_Parser):
             self._parse_set_operations(self._parse_select(nested=True, parse_subquery_alias=False))
         )
 
-    def _parse_transaction(self) -> exp.Transaction:
+    def _parse_transaction(self) -> exp.Transaction | exp.Command:
         this = None
         if self._match_texts(self.TRANSACTION_KIND):
             this = self._prev.text

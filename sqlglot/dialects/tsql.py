@@ -284,7 +284,7 @@ class TSQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "BEGIN": TokenType.COMMAND,
+            # "BEGIN": TokenType.COMMAND,
             "SET": TokenType.SET,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
@@ -408,7 +408,7 @@ class TSQL(Dialect):
 
             return self.expression(exp.Commit, this=txn_name, durability=durability)
 
-        def _parse_transaction(self) -> exp.Transaction:
+        def _parse_transaction(self) -> exp.Transaction | exp.Command:
             """Syntax:
                 BEGIN { TRAN | TRANSACTION }
                 [ { transaction_name | @tran_name_variable }
@@ -419,14 +419,16 @@ class TSQL(Dialect):
             Returns:
                 exp.Transaction: _description_
             """
-            mark = None
+            if self._match_texts(("TRAN", "TRANSACTION")):
+                # we have a transaction and not a BEGIN
+                txn_name = self._parse_id_var()
 
-            txn_name = self._parse_id_var()
+                mark = None
+                if self._match_text_seq("WITH", "MARK"):
+                    mark = self._parse_string()
 
-            if self._match_text_seq("WITH", "MARK"):
-                mark = self._parse_string()
-
-            return self.expression(exp.Transaction, this=txn_name, mark=mark)
+                return self.expression(exp.Transaction, this=txn_name, mark=mark)
+            return self.expression(exp.Command, this="BEGIN")
 
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):
@@ -607,10 +609,15 @@ class TSQL(Dialect):
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = self.sql(expression, "this")
-            this = f" {this}" if this else ""
-            mark = self.sql(expression, "mark")
-            mark = f" WITH MARK {mark}" if mark else ""
-            return f"BEGIN TRANSACTION{this}{mark}"
+            if this in ["TRAN", "TRANSACTION"]:
+                mark = self.sql(expression, "mark")
+                mark = f" WITH MARK {mark}" if mark else ""
+                return f"BEGIN TRANSACTION{mark}"
+            else:
+                this = f" {this}" if this else ""
+                mark = self.sql(expression, "mark")
+                mark = f" WITH MARK {mark}" if mark else ""
+                return f"BEGIN TRANSACTION{this}{mark}"
 
         def commit_sql(self, expression: exp.Commit) -> str:
             this = self.sql(expression, "this")

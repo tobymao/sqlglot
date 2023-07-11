@@ -404,7 +404,7 @@ class TestTSQL(Validator):
         #    ]
         # [ ; ]
         self.validate_identity("BEGIN TRANSACTION")
-        self.validate_identity("BEGIN TRAN")
+        self.validate_all("BEGIN TRAN", write={"tsql": "BEGIN TRANSACTION"})
         self.validate_identity("BEGIN TRANSACTION transaction_name")
         self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
         self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")
@@ -438,9 +438,6 @@ class TestTSQL(Validator):
         self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable")
 
     def test_udf(self):
-        self.validate_identity("BEGIN")
-        self.validate_identity("END")
-        self.validate_identity("SET XACT_ABORT ON")
         self.validate_identity(
             "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)"
         )
@@ -499,6 +496,11 @@ WHERE
             },
             pretty=True,
         )
+
+    def test_procedure_keywords(self):
+        self.validate_identity("BEGIN")
+        self.validate_identity("END")
+        self.validate_identity("SET XACT_ABORT ON")
 
     def test_fullproc(self):
         sql = """

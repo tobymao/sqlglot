@@ -5768,7 +5768,9 @@ def table_name(table: Table | str, dialect: DialectType = None) -> str:
         raise ValueError(f"Cannot parse {table}")
 
     return ".".join(
-        part.sql(dialect=dialect) if not SAFE_IDENTIFIER_RE.match(part.name) else part.name
+        part.sql(dialect=dialect, identify=True)
+        if not SAFE_IDENTIFIER_RE.match(part.name)
+        else part.name
         for part in table.parts
     )
 

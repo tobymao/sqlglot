@@ -3476,12 +3476,7 @@ class Transaction(Expression):
 
 
 class Commit(Expression):
-    arg_types = {
-        "chain": False,
-        "this": False,
-        "durability": False,
-        "modes": False,
-    }
+    arg_types = {"chain": False, "this": False, "durability": False}
 
 
 class Rollback(Expression):

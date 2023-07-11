@@ -284,8 +284,6 @@ class TSQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            # "BEGIN": TokenType.COMMAND,
-            "SET": TokenType.SET,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
@@ -307,7 +305,6 @@ class TSQL(Dialect):
             "XML": TokenType.XML,
             "OUTPUT": TokenType.RETURNING,
             "SYSTEM_USER": TokenType.CURRENT_USER,
-            "WITH": TokenType.WITH,
         }
 
         # TSQL allows @, # to appear as a variable/identifier prefix
@@ -373,18 +370,15 @@ class TSQL(Dialect):
 
         def _parse_commit_or_rollback(self) -> exp.Commit | exp.Rollback:
             """Applies to SQL Server and Azure SQL Database
-                COMMIT [ { TRAN | TRANSACTION }
-                    [ transaction_name | @tran_name_variable ] ]
-                    [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ]
-                    [ ; ]
+            COMMIT [ { TRAN | TRANSACTION }
+                [ transaction_name | @tran_name_variable ] ]
+                [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ]
+                [ ; ]
 
-                ROLLBACK { TRAN | TRANSACTION }
-                    [ transaction_name | @tran_name_variable
-                    | savepoint_name | @savepoint_variable ]
-                    [ ; ]
-
-            Returns:
-                exp.Commit | exp.Rollback: _description_
+            ROLLBACK { TRAN | TRANSACTION }
+                [ transaction_name | @tran_name_variable
+                | savepoint_name | @savepoint_variable ]
+                [ ; ]
             """
             rollback = self._prev.token_type == TokenType.ROLLBACK
 
@@ -409,15 +403,12 @@ class TSQL(Dialect):
             return self.expression(exp.Commit, this=txn_name, durability=durability)
 
         def _parse_transaction(self) -> exp.Transaction | exp.Command:
-            """Syntax:
-                BEGIN { TRAN | TRANSACTION }
-                [ { transaction_name | @tran_name_variable }
-                [ WITH MARK [ 'description' ] ]
-                ]
-                [ ; ]
-
-            Returns:
-                exp.Transaction: _description_
+            """Applies to SQL Server and Azure SQL Database
+            BEGIN { TRAN | TRANSACTION }
+            [ { transaction_name | @tran_name_variable }
+            [ WITH MARK [ 'description' ] ]
+            ]
+            [ ; ]
             """
             if self._match_texts(("TRAN", "TRANSACTION")):
                 # we have a transaction and not a BEGIN

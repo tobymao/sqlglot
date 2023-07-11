@@ -183,6 +183,7 @@ class TestExpressions(unittest.TestCase):
             exp.table_name(parse_one("foo.`{bar,er}`", read="databricks"), dialect="databricks"),
             "foo.`{bar,er}`",
         )
+        self.assertEqual(exp.table_name(exp.to_table("a-1.b.c", dialect="bigquery")), '"a-1".b.c')
 
     def test_table(self):
         self.assertEqual(exp.table_("a", alias="b"), parse_one("select * from a b").find(exp.Table))

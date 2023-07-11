@@ -285,8 +285,6 @@ class TSQL(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "BEGIN": TokenType.COMMAND,
-            # "BEGIN TRAN": TokenType.BEGIN,
-            "BEGIN TRANSACTION": TokenType.BEGIN,
             "SET": TokenType.SET,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,

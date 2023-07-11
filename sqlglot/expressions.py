@@ -2309,11 +2309,17 @@ class Table(Expression):
     @property
     def parts(self) -> t.List[Identifier]:
         """Return the parts of a table in order catalog, db, table."""
-        return [
-            t.cast(Identifier, self.args[part])
-            for part in ("catalog", "db", "this")
-            if self.args.get(part)
-        ]
+        parts: t.List[Identifier] = []
+
+        for arg in ("catalog", "db", "this"):
+            part = self.args.get(arg)
+
+            if isinstance(part, Identifier):
+                parts.append(part)
+            elif isinstance(part, Dot):
+                parts.extend(part.flatten())
+
+        return parts
 
 
 # See the TSQL "Querying data in a system-versioned temporal table" page

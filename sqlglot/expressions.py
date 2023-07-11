@@ -3478,15 +3478,15 @@ class Command(Expression):
 
 
 class Transaction(Expression):
-    arg_types = {"this": False, "modes": False}
+    arg_types = {"this": False, "modes": False, "mark": False}
 
 
 class Commit(Expression):
-    arg_types = {"chain": False}
+    arg_types = {"chain": False, "this": False, "durability": False}
 
 
 class Rollback(Expression):
-    arg_types = {"savepoint": False}
+    arg_types = {"savepoint": False, "this": False}
 
 
 class AlterTable(Expression):

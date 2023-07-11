@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v17.4.1] - 2023-07-11
+### :bug: Bug Fixes
+- [`461aeaf`](https://github.com/tobymao/sqlglot/commit/461aeaf794cf541cebc1a5cce727907f93d44119) - handle dots in table name *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v17.4.0] - 2023-07-11
 ### :boom: BREAKING CHANGES
 - due to [`c511278`](https://github.com/tobymao/sqlglot/commit/c51127842ffbb5dbe02c33de3ba8e04b69e6ebc3) - table_name force quotes if unsafe identifiers *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -859,3 +864,4 @@ Changelog
 [v17.2.0]: https://github.com/tobymao/sqlglot/compare/v17.1.0...v17.2.0
 [v17.3.0]: https://github.com/tobymao/sqlglot/compare/v17.2.0...v17.3.0
 [v17.4.0]: https://github.com/tobymao/sqlglot/compare/v17.3.0...v17.4.0
+[v17.4.1]: https://github.com/tobymao/sqlglot/compare/v17.4.0...v17.4.1

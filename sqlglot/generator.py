@@ -904,7 +904,8 @@ class Generator:
         unique = "UNIQUE " if expression.args.get("unique") else ""
         primary = "PRIMARY " if expression.args.get("primary") else ""
         amp = "AMP " if expression.args.get("amp") else ""
-        name = f"{expression.name} " if expression.name else ""
+        name = self.sql(expression, "this")
+        name = f"{name} " if name else ""
         table = self.sql(expression, "table")
         table = f"{self.INDEX_ON} {table} " if table else ""
         using = self.sql(expression, "using")

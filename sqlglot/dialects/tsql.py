@@ -417,7 +417,7 @@ class TSQL(Dialect):
                     transaction.set("mark", self._parse_string())
                 return transaction
 
-            return self.expression(exp.Command, this="BEGIN")
+            return self._parse_as_command(self._prev)
 
         def _parse_system_time(self) -> t.Optional[exp.Expression]:
             if not self._match_text_seq("FOR", "SYSTEM_TIME"):

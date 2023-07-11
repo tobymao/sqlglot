@@ -5,156 +5,9 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
-    def test_time(self):
-        self.validate_identity("SELECT CURRENT_DATE")
-        self.validate_identity("SELECT CURRENT_TIMESTAMP")
-
-        self.validate_all(
-            "SELECT MAKE_DATE(2016, 12, 25)", read={"bigquery": "SELECT DATE(2016, 12, 25)"}
-        )
-        self.validate_all(
-            "SELECT CAST(CAST('2016-12-25 23:59:59' AS DATETIME) AS DATE)",
-            read={"bigquery": "SELECT DATE(DATETIME '2016-12-25 23:59:59')"},
-        )
-        self.validate_all(
-            "SELECT STRPTIME(STRFTIME(CAST(CAST('2016-12-25' AS TIMESTAMPTZ) AS DATE), '%d/%m/%Y') || ' ' || 'America/Los_Angeles', '%d/%m/%Y %Z')",
-            read={
-                "bigquery": "SELECT DATE(TIMESTAMP '2016-12-25', 'America/Los_Angeles')",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST(CAST(STRPTIME('05/06/2020', '%m/%d/%Y') AS DATE) AS DATE)",
-            read={"bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))"},
-        )
-        self.validate_all(
-            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (-1) DAY",
-            read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},
-        )
-        self.validate_all(
-            "SELECT INTERVAL '1 quarter'",
-            write={"duckdb": "SELECT (90 * INTERVAL '1' day)"},
-        )
-        self.validate_all(
-            "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - MOD((DAYOFWEEK(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)) day) + (7 * INTERVAL (-5) day))) AS t1",
-            read={
-                "presto": "SELECT ((DATE_ADD('week', -5, DATE_TRUNC('DAY', DATE_ADD('day', (0 - MOD((DAY_OF_WEEK(CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)), CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)))))) AS t1",
-            },
-        )
-        self.validate_all(
-            "EPOCH(x)",
-            read={
-                "presto": "TO_UNIXTIME(x)",
-            },
-            write={
-                "bigquery": "TIME_TO_UNIX(x)",
-                "duckdb": "EPOCH(x)",
-                "presto": "TO_UNIXTIME(x)",
-                "spark": "UNIX_TIMESTAMP(x)",
-            },
-        )
-        self.validate_all(
-            "EPOCH_MS(x)",
-            write={
-                "bigquery": "UNIX_TO_TIME(x / 1000)",
-                "duckdb": "TO_TIMESTAMP(x / 1000)",
-                "presto": "FROM_UNIXTIME(x / 1000)",
-                "spark": "CAST(FROM_UNIXTIME(x / 1000) AS TIMESTAMP)",
-            },
-        )
-        self.validate_all(
-            "STRFTIME(x, '%y-%-m-%S')",
-            write={
-                "bigquery": "TIME_TO_STR(x, '%y-%-m-%S')",
-                "duckdb": "STRFTIME(x, '%y-%-m-%S')",
-                "postgres": "TO_CHAR(x, 'YY-FMMM-SS')",
-                "presto": "DATE_FORMAT(x, '%y-%c-%S')",
-                "spark": "DATE_FORMAT(x, 'yy-M-ss')",
-            },
-        )
-        self.validate_all(
-            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
-            write={
-                "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
-                "presto": "DATE_FORMAT(x, '%Y-%m-%d %T')",
-                "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
-            },
-        )
-        self.validate_all(
-            "STRPTIME(x, '%y-%-m')",
-            write={
-                "bigquery": "PARSE_TIMESTAMP('%y-%-m', x)",
-                "duckdb": "STRPTIME(x, '%y-%-m')",
-                "presto": "DATE_PARSE(x, '%y-%c')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy-M')) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'yy-M')",
-            },
-        )
-        self.validate_all(
-            "TO_TIMESTAMP(x)",
-            write={
-                "bigquery": "UNIX_TO_TIME(x)",
-                "duckdb": "TO_TIMESTAMP(x)",
-                "presto": "FROM_UNIXTIME(x)",
-                "hive": "FROM_UNIXTIME(x)",
-            },
-        )
-        self.validate_all(
-            "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
-            write={
-                "bigquery": "PARSE_TIMESTAMP('%-m/%-d/%y %-I:%M %p', x)",
-                "duckdb": "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
-                "presto": "DATE_PARSE(x, '%c/%e/%y %l:%i %p')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:mm a')) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'M/d/yy h:mm a')",
-            },
-        )
-        self.validate_all(
-            "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
-            read={
-                "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
-            },
-            write={
-                "bigquery": "TIMESTAMP(DATETIME(CAST(start AS TIMESTAMP), 'America/New_York'))",
-                "duckdb": "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
-                "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
-            },
-        )
-
-    def test_sample(self):
-        self.validate_all(
-            "SELECT * FROM tbl USING SAMPLE 5",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (5)"},
-        )
-        self.validate_all(
-            "SELECT * FROM tbl USING SAMPLE 10%",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (10 PERCENT)"},
-        )
-        self.validate_all(
-            "SELECT * FROM tbl USING SAMPLE 10 PERCENT (bernoulli)",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE BERNOULLI (10 PERCENT)"},
-        )
-        self.validate_all(
-            "SELECT * FROM tbl USING SAMPLE reservoir(50 ROWS) REPEATABLE (100)",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE RESERVOIR (50 ROWS) REPEATABLE (100)"},
-        )
-        self.validate_all(
-            "SELECT * FROM tbl USING SAMPLE 10% (system, 377)",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE SYSTEM (10 PERCENT) REPEATABLE (377)"},
-        )
-        self.validate_all(
-            "SELECT * FROM tbl TABLESAMPLE RESERVOIR(20%), tbl2 WHERE tbl.i=tbl2.i",
-            write={
-                "duckdb": "SELECT * FROM tbl TABLESAMPLE RESERVOIR (20 PERCENT), tbl2 WHERE tbl.i = tbl2.i"
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM tbl, tbl2 WHERE tbl.i=tbl2.i USING SAMPLE RESERVOIR(20%)",
-            write={
-                "duckdb": "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)"
-            },
-        )
-
     def test_duckdb(self):
+        self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
+
         # https://github.com/duckdb/duckdb/releases/tag/v0.8.0
         self.assertEqual(
             parse_one("a / b", read="duckdb").assert_is(exp.Div).sql(dialect="duckdb"), "a / b"
@@ -458,6 +311,155 @@ class TestDuckDB(Validator):
                 write="duckdb",
                 unsupported_level=ErrorLevel.IMMEDIATE,
             )
+
+    def test_time(self):
+        self.validate_identity("SELECT CURRENT_DATE")
+        self.validate_identity("SELECT CURRENT_TIMESTAMP")
+
+        self.validate_all(
+            "SELECT MAKE_DATE(2016, 12, 25)", read={"bigquery": "SELECT DATE(2016, 12, 25)"}
+        )
+        self.validate_all(
+            "SELECT CAST(CAST('2016-12-25 23:59:59' AS DATETIME) AS DATE)",
+            read={"bigquery": "SELECT DATE(DATETIME '2016-12-25 23:59:59')"},
+        )
+        self.validate_all(
+            "SELECT STRPTIME(STRFTIME(CAST(CAST('2016-12-25' AS TIMESTAMPTZ) AS DATE), '%d/%m/%Y') || ' ' || 'America/Los_Angeles', '%d/%m/%Y %Z')",
+            read={
+                "bigquery": "SELECT DATE(TIMESTAMP '2016-12-25', 'America/Los_Angeles')",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(CAST(STRPTIME('05/06/2020', '%m/%d/%Y') AS DATE) AS DATE)",
+            read={"bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))"},
+        )
+        self.validate_all(
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (-1) DAY",
+            read={"mysql": "SELECT DATE '2020-01-01' + INTERVAL -1 DAY"},
+        )
+        self.validate_all(
+            "SELECT INTERVAL '1 quarter'",
+            write={"duckdb": "SELECT (90 * INTERVAL '1' day)"},
+        )
+        self.validate_all(
+            "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - MOD((DAYOFWEEK(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)) day) + (7 * INTERVAL (-5) day))) AS t1",
+            read={
+                "presto": "SELECT ((DATE_ADD('week', -5, DATE_TRUNC('DAY', DATE_ADD('day', (0 - MOD((DAY_OF_WEEK(CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)), CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)))))) AS t1",
+            },
+        )
+        self.validate_all(
+            "EPOCH(x)",
+            read={
+                "presto": "TO_UNIXTIME(x)",
+            },
+            write={
+                "bigquery": "TIME_TO_UNIX(x)",
+                "duckdb": "EPOCH(x)",
+                "presto": "TO_UNIXTIME(x)",
+                "spark": "UNIX_TIMESTAMP(x)",
+            },
+        )
+        self.validate_all(
+            "EPOCH_MS(x)",
+            write={
+                "bigquery": "UNIX_TO_TIME(x / 1000)",
+                "duckdb": "TO_TIMESTAMP(x / 1000)",
+                "presto": "FROM_UNIXTIME(x / 1000)",
+                "spark": "CAST(FROM_UNIXTIME(x / 1000) AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "STRFTIME(x, '%y-%-m-%S')",
+            write={
+                "bigquery": "TIME_TO_STR(x, '%y-%-m-%S')",
+                "duckdb": "STRFTIME(x, '%y-%-m-%S')",
+                "postgres": "TO_CHAR(x, 'YY-FMMM-SS')",
+                "presto": "DATE_FORMAT(x, '%y-%c-%S')",
+                "spark": "DATE_FORMAT(x, 'yy-M-ss')",
+            },
+        )
+        self.validate_all(
+            "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
+            write={
+                "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
+                "presto": "DATE_FORMAT(x, '%Y-%m-%d %T')",
+                "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",
+            },
+        )
+        self.validate_all(
+            "STRPTIME(x, '%y-%-m')",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%y-%-m', x)",
+                "duckdb": "STRPTIME(x, '%y-%-m')",
+                "presto": "DATE_PARSE(x, '%y-%c')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy-M')) AS TIMESTAMP)",
+                "spark": "TO_TIMESTAMP(x, 'yy-M')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP(x)",
+            write={
+                "bigquery": "UNIX_TO_TIME(x)",
+                "duckdb": "TO_TIMESTAMP(x)",
+                "presto": "FROM_UNIXTIME(x)",
+                "hive": "FROM_UNIXTIME(x)",
+            },
+        )
+        self.validate_all(
+            "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%-m/%-d/%y %-I:%M %p', x)",
+                "duckdb": "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
+                "presto": "DATE_PARSE(x, '%c/%e/%y %l:%i %p')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:mm a')) AS TIMESTAMP)",
+                "spark": "TO_TIMESTAMP(x, 'M/d/yy h:mm a')",
+            },
+        )
+        self.validate_all(
+            "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
+            read={
+                "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
+            },
+            write={
+                "bigquery": "TIMESTAMP(DATETIME(CAST(start AS TIMESTAMP), 'America/New_York'))",
+                "duckdb": "CAST(start AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York'",
+                "snowflake": "CONVERT_TIMEZONE('America/New_York', CAST(start AS TIMESTAMPTZ))",
+            },
+        )
+
+    def test_sample(self):
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 5",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (5)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 10%",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (10 PERCENT)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 10 PERCENT (bernoulli)",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE BERNOULLI (10 PERCENT)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE reservoir(50 ROWS) REPEATABLE (100)",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE RESERVOIR (50 ROWS) REPEATABLE (100)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl USING SAMPLE 10% (system, 377)",
+            write={"duckdb": "SELECT * FROM tbl USING SAMPLE SYSTEM (10 PERCENT) REPEATABLE (377)"},
+        )
+        self.validate_all(
+            "SELECT * FROM tbl TABLESAMPLE RESERVOIR(20%), tbl2 WHERE tbl.i=tbl2.i",
+            write={
+                "duckdb": "SELECT * FROM tbl TABLESAMPLE RESERVOIR (20 PERCENT), tbl2 WHERE tbl.i = tbl2.i"
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM tbl, tbl2 WHERE tbl.i=tbl2.i USING SAMPLE RESERVOIR(20%)",
+            write={
+                "duckdb": "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)"
+            },
+        )
 
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")

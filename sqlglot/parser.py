@@ -4076,7 +4076,10 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression], alias: bool = False
     ) -> t.Optional[exp.Expression]:
         if self._match_pair(TokenType.FILTER, TokenType.L_PAREN):
-            this = self.expression(exp.Filter, this=this, expression=self._parse_where())
+            self._match(TokenType.WHERE)
+            this = self.expression(
+                exp.Filter, this=this, expression=self._parse_where(skip_where_token=True)
+            )
             self._match_r_paren()
 
         # T-SQL allows the OVER (...) syntax after WITHIN GROUP.

@@ -390,9 +390,8 @@ class TestTSQL(Validator):
         )
 
     def test_ddl(self):
-        sql = """CREATE TABLE #mytemp (a INTEGER,  b CHAR(2), c TIME(4), d FLOAT(24));"""
         self.validate_all(
-            " ".join(sql.split()),
+            "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={
                 "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIMESTAMP(4), d FLOAT(24))"
             },
@@ -405,7 +404,8 @@ class TestTSQL(Validator):
         #    ]
         # [ ; ]
         self.validate_identity("BEGIN TRANSACTION")
-        # self.validate_identity("BEGIN TRAN")
+        self.validate_identity("BEGIN TRAN")
+        # self.validate_all("BEGIN TRAN", write={"tsql":"BEGIN TRANSACTION"})
         self.validate_identity("BEGIN TRANSACTION transaction_name")
         self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
         self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")
@@ -413,8 +413,8 @@ class TestTSQL(Validator):
     def test_commit(self):
         # COMMIT [ { TRAN | TRANSACTION }  [ transaction_name | @tran_name_variable ] ] [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ] [ ; ]
 
-        self.validate_identity("COMMIT")
-        self.validate_all("COMMIT TRAN")
+        self.validate_all("COMMIT", write={"tsql": "COMMIT TRANSACTION"})
+        self.validate_all("COMMIT TRAN", write={"tsql": "COMMIT TRANSACTION"})
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION transaction_name")
         self.validate_identity("COMMIT TRANSACTION @tran_name_variable")
@@ -432,8 +432,8 @@ class TestTSQL(Validator):
         #     [ transaction_name | @tran_name_variable
         #     | savepoint_name | @savepoint_variable ]
         # [ ; ]
-        self.validate_identity("ROLLBACK")
-        self.validate_all("ROLLBACK TRAN")
+        self.validate_all("ROLLBACK", write={"tsql": "ROLLBACK TRANSACTION"})
+        self.validate_all("ROLLBACK TRAN", write={"tsql": "ROLLBACK TRANSACTION"})
         self.validate_identity("ROLLBACK TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION transaction_name")
         self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable")

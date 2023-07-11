@@ -282,15 +282,11 @@ class TSQL(Dialect):
         QUOTES = ["'", '"']
         HEX_STRINGS = [("0x", ""), ("0X", "")]
 
-        COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON}
-
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "BEGIN": TokenType.COMMAND,
+            # "BEGIN TRAN": TokenType.BEGIN,
             "BEGIN TRANSACTION": TokenType.BEGIN,
-            "COMMIT": TokenType.COMMIT,
-            "ROLLBACK": TokenType.ROLLBACK,
-            # "END": TokenType.END,
             "SET": TokenType.SET,
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
@@ -370,7 +366,6 @@ class TSQL(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_command(),
-            TokenType.ALIAS: lambda self: self._parse_alias(),
         }
 
         LOG_BASE_FIRST = False
@@ -393,17 +388,15 @@ class TSQL(Dialect):
             Returns:
                 exp.Commit | exp.Rollback: _description_
             """
-            rollback = False
-            if self._prev.token_type == TokenType.ROLLBACK:
-                rollback = True
+            rollback = self._prev.token_type == TokenType.ROLLBACK
 
-            transaction = None
-            if self._match_texts({"TRAN", "TRANSACTION"}):
-                transaction = self._prev.text
+            transaction = self._match_texts({"TRAN", "TRANSACTION"}) and self._prev.text
             txn_name = self._parse_id_var()
 
             durability = None
-            if self._match_text_seq("WITH", "(", "DELAYED_DURABILITY", "="):
+            if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
+                self._match_text_seq("DELAYED_DURABILITY")
+                self._match(TokenType.EQ)
                 if self._match_text_seq("OFF"):
                     durability = False
                 else:
@@ -618,32 +611,28 @@ class TSQL(Dialect):
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = self.sql(expression, "this")
+            #            this = None if this in "TRAN" else this
             this = f" {this}" if this else ""
-            mark = expression.args.get("mark")
+            mark = self.sql(expression, "mark")
             mark = f" WITH MARK {mark}" if mark else ""
             return f"BEGIN TRANSACTION{this}{mark}"
-
-        def _durability_sql(self, expression) -> str:
-            durability = expression.args.get("durability")
-            durability_sql = ""
-            if durability is not None:
-                if durability:
-                    durability = "ON"
-                else:
-                    durability = "OFF"
-                durability_sql = f" WITH (DELAYED_DURABILITY = {durability})"
-            return durability_sql
 
         def commit_sql(self, expression: exp.Commit) -> str:
             this = self.sql(expression, "this")
             this = f" {this}" if this else ""
-            transaction = expression.args.get("transaction")
+            transaction = self.sql(expression, "transaction")
             transaction = f" {transaction}" if transaction else ""
-            return f"COMMIT{transaction}{this}{self._durability_sql(expression)}"
+            durability = expression.args.get("durability")
+            durability = (
+                f" WITH (DELAYED_DURABILITY = {'ON' if durability else 'OFF'})"
+                if durability is not None
+                else ""
+            )
+            return f"COMMIT TRANSACTION{this}{durability}"
 
         def rollback_sql(self, expression: exp.Rollback) -> str:
             this = self.sql(expression, "this")
             this = f" {this}" if this else ""
-            transaction = expression.args.get("transaction")
+            transaction = self.sql(expression, "transaction")
             transaction = f" {transaction}" if transaction else ""
-            return f"ROLLBACK{transaction}{this}"
+            return f"ROLLBACK TRANSACTION{this}"

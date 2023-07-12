@@ -233,6 +233,16 @@ TBLPROPERTIES (
         self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
+            "SELECT RLIKE('John Doe', 'John.*')",
+            write={
+                "bigquery": "SELECT REGEXP_CONTAINS('John Doe', 'John.*')",
+                "hive": "SELECT 'John Doe' RLIKE 'John.*'",
+                "postgres": "SELECT 'John Doe' ~ 'John.*'",
+                "snowflake": "SELECT REGEXP_LIKE('John Doe', 'John.*')",
+                "spark": "SELECT 'John Doe' RLIKE 'John.*'",
+            },
+        )
+        self.validate_all(
             "UNHEX(MD5(x))",
             write={
                 "bigquery": "FROM_HEX(TO_HEX(MD5(x)))",

@@ -125,7 +125,7 @@ class Scope:
             elif (
                 isinstance(node, exp.Subquery)
                 and isinstance(parent, (exp.From, exp.Join))
-                and _is_subquery_scope(node)
+                and _is_derived_table(node)
             ):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.Subqueryable):
@@ -610,13 +610,13 @@ def _traverse_ctes(scope):
     scope.sources.update(sources)
 
 
-def _is_subquery_scope(expression: exp.Subquery) -> bool:
+def _is_derived_table(expression: exp.Subquery) -> bool:
     """
-    We represent (tbl1 JOIN tbl2) as a Subquery, but it's not really a new scope.
-    If an alias is present, it shadows all names under the Subquery, so that's an
-    exception to this rule.
+    We represent (tbl1 JOIN tbl2) as a Subquery, but it's not really a "derived table",
+    as it doesn't introduce a new scope. If an alias is present, it shadows all names
+    under the Subquery, so that's one exception to this rule.
     """
-    return bool(not isinstance(expression.unnest(), exp.Table) or expression.alias)
+    return bool(expression.alias or not isinstance(expression.unnest(), exp.Table))
 
 
 def _traverse_tables(scope):
@@ -664,7 +664,7 @@ def _traverse_tables(scope):
             lateral_sources = sources
             scope_type = ScopeType.UDTF
             scopes = scope.udtf_scopes
-        elif _is_subquery_scope(expression):
+        elif _is_derived_table(expression):
             lateral_sources = None
             scope_type = ScopeType.DERIVED_TABLE
             scopes = scope.derived_table_scopes
@@ -736,7 +736,7 @@ def walk_in_scope(expression, bfs=True):
             or (
                 isinstance(node, exp.Subquery)
                 and isinstance(parent, (exp.From, exp.Join))
-                and _is_subquery_scope(node)
+                and _is_derived_table(node)
             )
             or isinstance(node, exp.UDTF)
             or isinstance(node, exp.Subqueryable)

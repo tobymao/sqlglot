@@ -242,7 +242,6 @@ class Snowflake(Dialect):
 
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
-            TokenType.RLIKE,
             TokenType.TABLE,
         }
 

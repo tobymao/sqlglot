@@ -373,22 +373,24 @@ class TSQL(Dialect):
             COMMIT [ { TRAN | TRANSACTION }
                 [ transaction_name | @tran_name_variable ] ]
                 [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ]
-                [ ; ]
 
             ROLLBACK { TRAN | TRANSACTION }
                 [ transaction_name | @tran_name_variable
                 | savepoint_name | @savepoint_variable ]
-                [ ; ]
             """
             rollback = self._prev.token_type == TokenType.ROLLBACK
 
             self._match_texts({"TRAN", "TRANSACTION"})
-            txn_name = self._parse_id_var()
+            this = self._parse_id_var()
+
+            if rollback:
+                return self.expression(exp.Rollback, this=this)
 
             durability = None
             if self._match_pair(TokenType.WITH, TokenType.L_PAREN):
                 self._match_text_seq("DELAYED_DURABILITY")
                 self._match(TokenType.EQ)
+
                 if self._match_text_seq("OFF"):
                     durability = False
                 else:
@@ -397,10 +399,7 @@ class TSQL(Dialect):
 
                 self._match_r_paren()
 
-            if rollback:
-                return self.expression(exp.Rollback, this=txn_name)
-
-            return self.expression(exp.Commit, this=txn_name, durability=durability)
+            return self.expression(exp.Commit, this=this, durability=durability)
 
         def _parse_transaction(self) -> exp.Transaction | exp.Command:
             """Applies to SQL Server and Azure SQL Database
@@ -408,13 +407,12 @@ class TSQL(Dialect):
             [ { transaction_name | @tran_name_variable }
             [ WITH MARK [ 'description' ] ]
             ]
-            [ ; ]
             """
             if self._match_texts(("TRAN", "TRANSACTION")):
-                # we have a transaction and not a BEGIN
                 transaction = self.expression(exp.Transaction, this=self._parse_id_var())
                 if self._match_text_seq("WITH", "MARK"):
                     transaction.set("mark", self._parse_string())
+
                 return transaction
 
             return self._parse_as_command(self._prev)
@@ -598,15 +596,10 @@ class TSQL(Dialect):
 
         def transaction_sql(self, expression: exp.Transaction) -> str:
             this = self.sql(expression, "this")
-            if this in ["TRAN", "TRANSACTION"]:
-                mark = self.sql(expression, "mark")
-                mark = f" WITH MARK {mark}" if mark else ""
-                return f"BEGIN TRANSACTION{mark}"
-            else:
-                this = f" {this}" if this else ""
-                mark = self.sql(expression, "mark")
-                mark = f" WITH MARK {mark}" if mark else ""
-                return f"BEGIN TRANSACTION{this}{mark}"
+            this = f" {this}" if this else ""
+            mark = self.sql(expression, "mark")
+            mark = f" WITH MARK {mark}" if mark else ""
+            return f"BEGIN TRANSACTION{this}{mark}"
 
         def commit_sql(self, expression: exp.Commit) -> str:
             this = self.sql(expression, "this")

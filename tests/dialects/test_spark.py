@@ -235,7 +235,9 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={
+                "bigquery": "SELECT REGEXP_CONTAINS('John Doe', 'John.*')",
                 "hive": "SELECT 'John Doe' RLIKE 'John.*'",
+                "postgres": "SELECT 'John Doe' ~ 'John.*'",
                 "snowflake": "SELECT REGEXP_LIKE('John Doe', 'John.*')",
                 "spark": "SELECT 'John Doe' RLIKE 'John.*'",
             },

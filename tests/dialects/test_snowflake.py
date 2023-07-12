@@ -386,7 +386,9 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT RLIKE(a, b)",
             write={
+                "hive": "SELECT a RLIKE b",
                 "snowflake": "SELECT REGEXP_LIKE(a, b)",
+                "spark": "SELECT a RLIKE b",
             },
         )
         self.validate_all(

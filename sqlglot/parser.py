@@ -327,6 +327,7 @@ class Parser(metaclass=_Parser):
         TokenType.PRIMARY_KEY,
         TokenType.RANGE,
         TokenType.REPLACE,
+        TokenType.RLIKE,
         TokenType.ROW,
         TokenType.UNNEST,
         TokenType.VAR,

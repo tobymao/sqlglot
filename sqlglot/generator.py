@@ -260,8 +260,9 @@ class Generator:
 
     # Expressions whose comments are separated from them for better formatting
     WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
-        exp.Select,
+        exp.Drop,
         exp.From,
+        exp.Select,
         exp.Where,
         exp.With,
     )

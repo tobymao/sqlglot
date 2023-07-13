@@ -654,7 +654,10 @@ def _traverse_tables(scope):
             else:
                 sources[source_name] = expression
 
-            expressions.extend(join.this for join in expression.args.get("joins") or [])
+            # Make sure to not include the joins twice
+            if expression is not scope.expression:
+                expressions.extend(join.this for join in expression.args.get("joins") or [])
+
             continue
 
         if not isinstance(expression, exp.DerivedTable):

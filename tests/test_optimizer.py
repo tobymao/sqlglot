@@ -427,6 +427,27 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             {"s.b"},
         )
 
+        # Check that parentheses don't introduce new scope unless an alias is attached
+        sql = "SELECT * FROM (((SELECT * FROM (t1 JOIN t2) AS t3) JOIN (SELECT * FROM t4)))"
+        expression = parse_one(sql)
+        for scopes in traverse_scope(expression), list(build_scope(expression).traverse()):
+            self.assertEqual(len(scopes), 4)
+
+            self.assertEqual(scopes[0].expression.sql(), "t1, t2")
+            self.assertEqual(set(scopes[0].sources), {"t1", "t2"})
+
+            self.assertEqual(scopes[1].expression.sql(), "SELECT * FROM (t1, t2) AS t3")
+            self.assertEqual(set(scopes[1].sources), {"t3"})
+
+            self.assertEqual(scopes[2].expression.sql(), "SELECT * FROM t4")
+            self.assertEqual(set(scopes[2].sources), {"t4"})
+
+            self.assertEqual(
+                scopes[3].expression.sql(),
+                "SELECT * FROM (((SELECT * FROM (t1, t2) AS t3), (SELECT * FROM t4)))",
+            )
+            self.assertEqual(set(scopes[3].sources), {""})
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)

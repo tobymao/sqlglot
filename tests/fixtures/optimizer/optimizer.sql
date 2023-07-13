@@ -858,3 +858,35 @@ FROM (
     JOIN "y" AS "y"
       ON "x"."a" = "y"."b"
 );
+
+# title: select * from wrapped join of subqueries (unknown schema)
+# execute: false
+SELECT * FROM ((SELECT * FROM t1) JOIN (SELECT * FROM t2));
+WITH "_q_0" AS (
+  SELECT
+    *
+  FROM "t1" AS "t1"
+), "_q_1" AS (
+  SELECT
+    *
+  FROM "t2" AS "t2"
+)
+SELECT
+  *
+FROM (
+  "_q_0" AS "_q_0"
+    CROSS JOIN "_q_1" AS "_q_1"
+);
+
+# title: select * from wrapped join of subqueries
+SELECT * FROM ((SELECT * FROM x) INNER JOIN (SELECT * FROM y) ON a = c);
+SELECT
+  "x"."a" AS "a",
+  "x"."b" AS "b",
+  "y"."b" AS "b",
+  "y"."c" AS "c"
+FROM (
+  "x" AS "x"
+    JOIN "y" AS "y"
+      ON "x"."a" = "y"."c"
+);

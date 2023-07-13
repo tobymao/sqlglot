@@ -13,6 +13,27 @@ from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 
 
+def _into_temp_table(e: exp.Expression) -> exp.Expression:
+    """Preprocessor translate:
+    INSERT INTO #temptable into CREATE TEMPORARY VIEW statement for spark sql
+    """
+    into = e.find(exp.Into)
+    if into:
+        table = into.find(exp.Table)
+        if table:
+            name = table.name
+            if name.startswith("#"):
+                select = e.find(exp.Select)
+                if select and select.args["into"]:
+                    del select.args["into"]
+                    r = select.ctas(table=name[1:])
+                    r.args["temporary"] = True
+                    r.args["kind"] = "TEMPORARY VIEW"
+
+                return r
+    return e
+
+
 def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
     kind = e.args["kind"]
     properties = e.args.get("properties")
@@ -199,6 +220,7 @@ class Spark2(Hive):
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.Select: transforms.preprocess([_into_temp_table]),
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
             ),

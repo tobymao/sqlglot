@@ -372,3 +372,27 @@ FROM x AS x
 LEFT JOIN i AS i
   ON x.a = i.a;
 WITH i AS (SELECT x.a AS a FROM y AS y JOIN x AS x ON y.b = x.b) SELECT x.a AS a FROM x AS x LEFT JOIN i AS i ON x.a = i.a;
+
+# title: Outer scope selects from wrapped table with a join (unknown schema)
+# execute: false
+WITH _q_0 AS (SELECT t1.c AS c FROM t1 AS t1) SELECT * FROM (_q_0 AS _q_0 CROSS JOIN t2 AS t2);
+WITH _q_0 AS (SELECT t1.c AS c FROM t1 AS t1) SELECT * FROM (_q_0 AS _q_0 CROSS JOIN t2 AS t2);
+
+# title: Outer scope selects single column from wrapped table with a join
+WITH _q_0 AS (
+  SELECT
+    x.a AS a
+  FROM x AS x
+), y_2 AS (
+  SELECT
+    y.b AS b
+  FROM y AS y
+)
+SELECT
+  y.b AS b
+FROM (
+  _q_0 AS _q_0
+    JOIN y_2 AS y
+      ON _q_0.a = y.b
+);
+SELECT y.b AS b FROM (x AS x JOIN y AS y ON x.a = y.b);

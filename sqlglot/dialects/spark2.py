@@ -220,7 +220,14 @@ class Spark2(Hive):
             exp.Reduce: rename_func("AGGREGATE"),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.Select: transforms.preprocess([_into_temp_table]),
+            exp.Select: transforms.preprocess(
+                [
+                    _into_temp_table,
+                    transforms.eliminate_distinct_on,
+                    transforms.unnest_to_explode,
+                    transforms.eliminate_qualify,
+                ]
+            ),
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
             ),

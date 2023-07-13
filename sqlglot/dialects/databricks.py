@@ -7,6 +7,27 @@ from sqlglot.dialects.tsql import generate_date_delta_with_unit_sql
 from sqlglot.tokens import TokenType
 
 
+def _into_temp_table(e: exp.Expression) -> exp.Expression:
+    """Preprocessor translate:
+    INSERT INTO #temptable into CREATE TEMPORARY VIEW statement for spark sql
+    """
+    into = e.find(exp.Into)
+    if into:
+        table = into.find(exp.Table)
+        if table:
+            name = table.name
+            if name.startswith("#"):
+                select = e.find(exp.Select)
+                if select and select.args["into"]:
+                    del select.args["into"]
+                    r = select.ctas(table=name[1:])
+                    r.args["temporary"] = True
+                    r.args["kind"] = "TEMPORARY VIEW"
+
+                return r
+    return e
+
+
 class Databricks(Spark):
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True

@@ -28,6 +28,7 @@ def _into_temp_table(e: exp.Expression) -> exp.Expression:
                     del select.args["into"]
                     r = select.ctas(table=name[1:])
                     r.args["temporary"] = True
+                    r.args["replace"] = True
                     r.args["kind"] = "TEMPORARY VIEW"
 
                 return r

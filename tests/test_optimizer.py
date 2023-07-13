@@ -427,7 +427,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             {"s.b"},
         )
 
-        # Check that parentheses don't introduce new scope unless an alias is attached
+        # Check that parentheses don't introduce a new scope unless an alias is attached
         sql = "SELECT * FROM (((SELECT * FROM (t1 JOIN t2) AS t3) JOIN (SELECT * FROM t4)))"
         expression = parse_one(sql)
         for scopes in traverse_scope(expression), list(build_scope(expression).traverse()):

@@ -878,7 +878,7 @@ FROM (
     CROSS JOIN "_q_1" AS "_q_1"
 );
 
-# title: select * from wrapped join of subqueries
+# title: select * from wrapped join of subqueries (known schema)
 SELECT * FROM ((SELECT * FROM x) INNER JOIN (SELECT * FROM y) ON a = c);
 SELECT
   "x"."a" AS "a",

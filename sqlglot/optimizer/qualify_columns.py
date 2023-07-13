@@ -29,12 +29,13 @@ def qualify_columns(
         'SELECT tbl.col AS col FROM tbl'
 
     Args:
-        expression: expression to qualify
-        schema: Database schema
-        expand_alias_refs: whether or not to expand references to aliases
-        infer_schema: whether or not to infer the schema if missing
+        expression: Expression to qualify.
+        schema: Database schema.
+        expand_alias_refs: Whether or not to expand references to aliases.
+        infer_schema: Whether or not to infer the schema if missing.
+
     Returns:
-        sqlglot.Expression: qualified expression
+        The qualified expression.
     """
     schema = ensure_schema(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
@@ -410,7 +411,9 @@ def _expand_stars(
             else:
                 return
 
-    scope.expression.set("expressions", new_selections)
+    # Ensures we don't overwrite the initial selections with an empty list
+    if new_selections:
+        scope.expression.set("expressions", new_selections)
 
 
 def _add_except_columns(

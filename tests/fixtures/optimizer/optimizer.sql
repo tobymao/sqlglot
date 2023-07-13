@@ -806,3 +806,55 @@ LEFT JOIN (
       ON "y"."c" = "z"."c"
 )
   ON "x"."b" = "y"."b";
+
+# title: select * from wrapped subquery
+# execute: false
+SELECT * FROM ((SELECT * FROM tbl));
+WITH "_q_0" AS (
+  SELECT
+    *
+  FROM "tbl" AS "tbl"
+)
+SELECT
+  *
+FROM (
+  "_q_0" AS "_q_0"
+);
+
+# title: select * from wrapped subquery joined to a table (known schema)
+SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c);
+SELECT
+  "x"."a" AS "a",
+  "x"."b" AS "b",
+  "y"."b" AS "b",
+  "y"."c" AS "c"
+FROM (
+  "x" AS "x"
+    JOIN "y" AS "y"
+      ON "x"."a" = "y"."c"
+);
+
+# title: select * from wrapped subquery joined to a table (unknown schema)
+# execute: false
+SELECT * FROM ((SELECT c FROM t1) JOIN t2);
+WITH "_q_0" AS (
+  SELECT
+    "t1"."c" AS "c"
+  FROM "t1" AS "t1"
+)
+SELECT
+  *
+FROM (
+  "_q_0" AS "_q_0"
+    CROSS JOIN "t2" AS "t2"
+);
+
+# title: select specific columns from wrapped subquery joined to a table
+SELECT b FROM ((SELECT a FROM x) INNER JOIN y ON a = b);
+SELECT
+  "y"."b" AS "b"
+FROM (
+  "x" AS "x"
+    JOIN "y" AS "y"
+      ON "x"."a" = "y"."b"
+);

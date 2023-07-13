@@ -99,6 +99,9 @@ class Oracle(Dialect):
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
         TABLE_HINTS = False
+        COLUMN_JOIN_MARKS_SUPPORTED = True
+
+        LIMIT_FETCH = "FETCH"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -110,6 +113,7 @@ class Oracle(Dialect):
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
             exp.DataType.Type.VARCHAR: "VARCHAR2",
             exp.DataType.Type.NVARCHAR: "NVARCHAR2",
+            exp.DataType.Type.NCHAR: "NCHAR",
             exp.DataType.Type.TEXT: "CLOB",
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.VARBINARY: "BLOB",
@@ -140,14 +144,8 @@ class Oracle(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        LIMIT_FETCH = "FETCH"
-
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
-
-        def column_sql(self, expression: exp.Column) -> str:
-            column = super().column_sql(expression)
-            return f"{column} (+)" if expression.args.get("join_mark") else column
 
         def xmltable_sql(self, expression: exp.XMLTable) -> str:
             this = self.sql(expression, "this")

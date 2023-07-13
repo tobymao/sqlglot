@@ -122,7 +122,11 @@ class Scope:
                 self._udtfs.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
-            elif isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)):
+            elif (
+                isinstance(node, exp.Subquery)
+                and isinstance(parent, (exp.From, exp.Join))
+                and _is_derived_table(node)
+            ):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.Subqueryable):
                 self._subqueries.append(node)
@@ -274,6 +278,7 @@ class Scope:
                     not ancestor
                     or column.table
                     or isinstance(ancestor, exp.Select)
+                    or (isinstance(ancestor, exp.Table) and not isinstance(ancestor.this, exp.Func))
                     or (
                         isinstance(ancestor, exp.Order)
                         and (
@@ -339,23 +344,6 @@ class Scope:
             for alias, scope in self.sources.items()
             if isinstance(scope, Scope) and scope.is_cte
         }
-
-    @property
-    def selects(self):
-        """
-        Select expressions of this scope.
-
-        For example, for the following expression:
-            SELECT 1 as a, 2 as b FROM x
-
-        The outputs are the "1 as a" and "2 as b" expressions.
-
-        Returns:
-            list[exp.Expression]: expressions
-        """
-        if isinstance(self.expression, exp.Union):
-            return self.expression.unnest().selects
-        return self.expression.selects
 
     @property
     def external_columns(self):
@@ -549,7 +537,6 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, exp.Subquery):
         yield from _traverse_subqueries(scope)
     elif isinstance(scope.expression, exp.Table):
-        # This case corresponds to a "join construct", i.e. (tbl1 JOIN tbl2 ON ..)
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
         pass
@@ -623,6 +610,15 @@ def _traverse_ctes(scope):
     scope.sources.update(sources)
 
 
+def _is_derived_table(expression: exp.Subquery) -> bool:
+    """
+    We represent (tbl1 JOIN tbl2) as a Subquery, but it's not really a "derived table",
+    as it doesn't introduce a new scope. If an alias is present, it shadows all names
+    under the Subquery, so that's one exception to this rule.
+    """
+    return bool(expression.alias or not isinstance(expression.unnest(), exp.Table))
+
+
 def _traverse_tables(scope):
     sources = {}
 
@@ -657,6 +653,8 @@ def _traverse_tables(scope):
                 sources[find_new_name(sources, table_name)] = expression
             else:
                 sources[source_name] = expression
+
+            expressions.extend(join.this for join in expression.args.get("joins") or [])
             continue
 
         if not isinstance(expression, exp.DerivedTable):
@@ -666,10 +664,15 @@ def _traverse_tables(scope):
             lateral_sources = sources
             scope_type = ScopeType.UDTF
             scopes = scope.udtf_scopes
-        else:
+        elif _is_derived_table(expression):
             lateral_sources = None
             scope_type = ScopeType.DERIVED_TABLE
             scopes = scope.derived_table_scopes
+        else:
+            # Makes sure we check for possible sources in nested table constructs
+            expressions.append(expression.this)
+            expressions.extend(join.this for join in expression.args.get("joins") or [])
+            continue
 
         for child_scope in _traverse_scope(
             scope.branch(
@@ -730,7 +733,11 @@ def walk_in_scope(expression, bfs=True):
             continue
         if (
             isinstance(node, exp.CTE)
-            or (isinstance(node, exp.Subquery) and isinstance(parent, (exp.From, exp.Join)))
+            or (
+                isinstance(node, exp.Subquery)
+                and isinstance(parent, (exp.From, exp.Join))
+                and _is_derived_table(node)
+            )
             or isinstance(node, exp.UDTF)
             or isinstance(node, exp.Subqueryable)
         ):

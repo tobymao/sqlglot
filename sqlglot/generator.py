@@ -155,6 +155,12 @@ class Generator:
     # Whether or not to generate the limit as TOP <value> instead of LIMIT <value>
     LIMIT_IS_TOP = False
 
+    # Whether or not to generate INSERT INTO ... RETURNING or INSERT INTO RETURNING ...
+    RETURNING_END = True
+
+    # Whether or not to generate the (+) suffix for columns used in old-style join conditions
+    COLUMN_JOIN_MARKS_SUPPORTED = False
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -556,7 +562,13 @@ class Generator:
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
     def column_sql(self, expression: exp.Column) -> str:
-        return ".".join(
+        join_mark = " (+)" if expression.args.get("join_mark") else ""
+
+        if join_mark and not self.COLUMN_JOIN_MARKS_SUPPORTED:
+            join_mark = ""
+            self.unsupported("Outer join syntax using the (+) operator is not supported.")
+
+        column = ".".join(
             self.sql(part)
             for part in (
                 expression.args.get("catalog"),
@@ -566,6 +578,8 @@ class Generator:
             )
             if part
         )
+
+        return f"{column}{join_mark}"
 
     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
         this = self.sql(expression, "this")
@@ -836,8 +850,11 @@ class Generator:
         limit = self.sql(expression, "limit")
         tables = self.expressions(expression, key="tables")
         tables = f" {tables}" if tables else ""
-        sql = f"DELETE{tables}{this}{using}{where}{returning}{limit}"
-        return self.prepend_ctes(expression, sql)
+        if self.RETURNING_END:
+            expression_sql = f"{this}{using}{where}{returning}{limit}"
+        else:
+            expression_sql = f"{returning}{this}{using}{where}{limit}"
+        return self.prepend_ctes(expression, f"DELETE{tables}{expression_sql}")
 
     def drop_sql(self, expression: exp.Drop) -> str:
         this = self.sql(expression, "this")
@@ -887,7 +904,8 @@ class Generator:
         unique = "UNIQUE " if expression.args.get("unique") else ""
         primary = "PRIMARY " if expression.args.get("primary") else ""
         amp = "AMP " if expression.args.get("amp") else ""
-        name = f"{expression.name} " if expression.name else ""
+        name = self.sql(expression, "this")
+        name = f"{name} " if name else ""
         table = self.sql(expression, "table")
         table = f"{self.INDEX_ON} {table} " if table else ""
         using = self.sql(expression, "using")
@@ -1134,7 +1152,13 @@ class Generator:
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         conflict = self.sql(expression, "conflict")
         returning = self.sql(expression, "returning")
-        sql = f"INSERT{alternative}{ignore}{this}{exists}{partition_sql}{where}{expression_sql}{conflict}{returning}"
+
+        if self.RETURNING_END:
+            expression_sql = f"{expression_sql}{conflict}{returning}"
+        else:
+            expression_sql = f"{returning}{expression_sql}{conflict}"
+
+        sql = f"INSERT{alternative}{ignore}{this}{exists}{partition_sql}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1275,7 +1299,11 @@ class Generator:
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
         limit = self.sql(expression, "limit")
-        sql = f"UPDATE {this} SET {set_sql}{from_sql}{where_sql}{returning}{limit}"
+        if self.RETURNING_END:
+            expression_sql = f"{from_sql}{where_sql}{returning}{limit}"
+        else:
+            expression_sql = f"{returning}{from_sql}{where_sql}{limit}"
+        sql = f"UPDATE {this} SET {set_sql}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:
@@ -2015,6 +2043,9 @@ class Generator:
     def and_sql(self, expression: exp.And) -> str:
         return self.connector_sql(expression, "AND")
 
+    def xor_sql(self, expression: exp.And) -> str:
+        return self.connector_sql(expression, "XOR")
+
     def connector_sql(self, expression: exp.Connector, op: str) -> str:
         if not self.pretty:
             return self.binary(expression, op)
@@ -2289,11 +2320,14 @@ class Generator:
 
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []
-        for arg_value in expression.args.values():
+
+        for key in expression.arg_types:
+            arg_value = expression.args.get(key)
+
             if isinstance(arg_value, list):
                 for value in arg_value:
                     args.append(value)
-            else:
+            elif arg_value is not None:
                 args.append(arg_value)
 
         return self.func(expression.sql_name(), *args)

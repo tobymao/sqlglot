@@ -327,6 +327,7 @@ class Parser(metaclass=_Parser):
         TokenType.PRIMARY_KEY,
         TokenType.RANGE,
         TokenType.REPLACE,
+        TokenType.RLIKE,
         TokenType.ROW,
         TokenType.UNNEST,
         TokenType.VAR,
@@ -1708,6 +1709,8 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             this = self._parse_table(schema=True)
 
+        returning = self._parse_returning()
+
         return self.expression(
             exp.Insert,
             this=this,
@@ -1717,7 +1720,7 @@ class Parser(metaclass=_Parser):
             and self._parse_conjunction(),
             expression=self._parse_ddl_select(),
             conflict=self._parse_on_conflict(),
-            returning=self._parse_returning(),
+            returning=returning or self._parse_returning(),
             overwrite=overwrite,
             alternative=alternative,
             ignore=ignore,
@@ -1761,8 +1764,11 @@ class Parser(metaclass=_Parser):
     def _parse_returning(self) -> t.Optional[exp.Returning]:
         if not self._match(TokenType.RETURNING):
             return None
-
-        return self.expression(exp.Returning, expressions=self._parse_csv(self._parse_column))
+        return self.expression(
+            exp.Returning,
+            expressions=self._parse_csv(self._parse_expression),
+            into=self._match(TokenType.INTO) and self._parse_table_part(),
+        )
 
     def _parse_row(self) -> t.Optional[exp.RowFormatSerdeProperty | exp.RowFormatDelimitedProperty]:
         if not self._match(TokenType.FORMAT):
@@ -1824,25 +1830,30 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.FROM, advance=False):
             tables = self._parse_csv(self._parse_table) or None
 
+        returning = self._parse_returning()
+
         return self.expression(
             exp.Delete,
             tables=tables,
             this=self._match(TokenType.FROM) and self._parse_table(joins=True),
             using=self._match(TokenType.USING) and self._parse_table(joins=True),
             where=self._parse_where(),
-            returning=self._parse_returning(),
+            returning=returning or self._parse_returning(),
             limit=self._parse_limit(),
         )
 
     def _parse_update(self) -> exp.Update:
+        this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
+        expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
+        returning = self._parse_returning()
         return self.expression(
             exp.Update,
             **{  # type: ignore
-                "this": self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
-                "expressions": self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
+                "this": this,
+                "expressions": expressions,
                 "from": self._parse_from(joins=True),
                 "where": self._parse_where(),
-                "returning": self._parse_returning(),
+                "returning": returning or self._parse_returning(),
                 "limit": self._parse_limit(),
             },
         )
@@ -1969,9 +1980,8 @@ class Parser(metaclass=_Parser):
 
             self._match_r_paren()
 
-            # early return so that subquery unions aren't parsed again
-            # SELECT * FROM (SELECT 1) UNION ALL SELECT 1
-            # Union ALL should be a property of the top select node, not the subquery
+            # We return early here so that the UNION isn't attached to the subquery by the
+            # following call to _parse_set_operations, but instead becomes the parent node
             return self._parse_subquery(this, parse_alias=parse_subquery_alias)
         elif self._match(TokenType.VALUES):
             this = self.expression(
@@ -2292,6 +2302,7 @@ class Parser(metaclass=_Parser):
             else:
                 joins = None
                 self._retreat(index)
+
             kwargs["this"].set("joins", joins)
 
         return self.expression(exp.Join, **kwargs)
@@ -3064,7 +3075,13 @@ class Parser(metaclass=_Parser):
         if self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
             this = exp.DataType(
                 this=exp.DataType.Type.ARRAY,
-                expressions=[exp.DataType.build(type_token.value, expressions=expressions)],
+                expressions=[
+                    exp.DataType(
+                        this=exp.DataType.Type[type_token.value],
+                        expressions=expressions,
+                        nested=nested,
+                    )
+                ],
                 nested=True,
             )
 
@@ -3125,7 +3142,7 @@ class Parser(metaclass=_Parser):
             return value
 
         return exp.DataType(
-            this=exp.DataType.Type[type_token.value.upper()],
+            this=exp.DataType.Type[type_token.value],
             expressions=expressions,
             nested=nested,
             values=values,
@@ -4060,7 +4077,10 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression], alias: bool = False
     ) -> t.Optional[exp.Expression]:
         if self._match_pair(TokenType.FILTER, TokenType.L_PAREN):
-            this = self.expression(exp.Filter, this=this, expression=self._parse_where())
+            self._match(TokenType.WHERE)
+            this = self.expression(
+                exp.Filter, this=this, expression=self._parse_where(skip_where_token=True)
+            )
             self._match_r_paren()
 
         # T-SQL allows the OVER (...) syntax after WITHIN GROUP.
@@ -4335,7 +4355,7 @@ class Parser(metaclass=_Parser):
             self._parse_set_operations(self._parse_select(nested=True, parse_subquery_alias=False))
         )
 
-    def _parse_transaction(self) -> exp.Transaction:
+    def _parse_transaction(self) -> exp.Transaction | exp.Command:
         this = None
         if self._match_texts(self.TRANSACTION_KIND):
             this = self._prev.text

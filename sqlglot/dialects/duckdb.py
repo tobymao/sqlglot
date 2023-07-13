@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     no_properties_sql,
     no_safe_divide_sql,
     pivot_column_names,
+    regexp_extract_sql,
     rename_func,
     str_position_sql,
     str_to_time_sql,
@@ -88,19 +89,6 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
-def _regexp_extract_sql(self: generator.Generator, expression: exp.RegexpExtract) -> str:
-    bad_args = list(filter(expression.args.get, ("position", "occurrence")))
-    if bad_args:
-        self.unsupported(f"REGEXP_EXTRACT does not support arg(s) {bad_args}")
-
-    return self.func(
-        "REGEXP_EXTRACT",
-        expression.args.get("this"),
-        expression.args.get("expression"),
-        expression.args.get("group"),
-    )
-
-
 def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
     sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
     return f"CAST({sql} AS TEXT)"
@@ -156,6 +144,9 @@ class DuckDB(Dialect):
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_VALUE": exp.Array.from_arg_list,
+            "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
+                this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
+            ),
             "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
             "STRFTIME": format_time_lambda(exp.TimeToStr, "duckdb"),
             "STRING_SPLIT": exp.Split.from_arg_list,
@@ -227,7 +218,7 @@ class DuckDB(Dialect):
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.Properties: no_properties_sql,
-            exp.RegexpExtract: _regexp_extract_sql,
+            exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,

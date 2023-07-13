@@ -108,43 +108,33 @@ class Spark2(Hive):
     class Parser(Hive.Parser):
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,
-            "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
-            "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
-            "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-            ),
-            "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1),
-            ),
-            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
-            "IIF": exp.If.from_arg_list,
             "AGGREGATE": exp.Reduce.from_arg_list,
-            "DAYOFWEEK": lambda args: exp.DayOfWeek(
-                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-            ),
-            "DAYOFMONTH": lambda args: exp.DayOfMonth(
-                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-            ),
-            "DAYOFYEAR": lambda args: exp.DayOfYear(
-                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-            ),
-            "WEEKOFYEAR": lambda args: exp.WeekOfYear(
-                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-            ),
-            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
-                this=seq_get(args, 1),
-                unit=exp.var(seq_get(args, 0)),
-            ),
-            "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
+            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "BOOLEAN": _parse_as_cast("boolean"),
             "DATE": _parse_as_cast("date"),
+            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
+                this=seq_get(args, 1), unit=exp.var(seq_get(args, 0))
+            ),
+            "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "DOUBLE": _parse_as_cast("double"),
             "FLOAT": _parse_as_cast("float"),
+            "IIF": exp.If.from_arg_list,
             "INT": _parse_as_cast("int"),
+            "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
+            "RLIKE": exp.RegexpLike.from_arg_list,
+            "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
+                this=seq_get(args, 0), expression=seq_get(args, 1)
+            ),
+            "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
+                this=seq_get(args, 0), expression=seq_get(args, 1)
+            ),
             "STRING": _parse_as_cast("string"),
             "TIMESTAMP": _parse_as_cast("timestamp"),
+            "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
+            "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
+            "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         }
 
         FUNCTION_PARSERS = {

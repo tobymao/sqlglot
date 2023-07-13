@@ -70,7 +70,7 @@ We'd love to hear from you. Join our community [Slack channel](https://tobikodat
 
 ### Formatting and Transpiling
 
-Easily translate from one dialect to another. For example, date/time functions vary from dialects and can be hard to deal with:
+Easily translate from one dialect to another. For example, date/time functions vary between dialects and can be hard to deal with:
 
 ```python
 import sqlglot

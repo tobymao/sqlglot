@@ -183,6 +183,8 @@ class TestExpressions(unittest.TestCase):
             exp.table_name(parse_one("foo.`{bar,er}`", read="databricks"), dialect="databricks"),
             "foo.`{bar,er}`",
         )
+        self.assertEqual(exp.table_name(exp.to_table("a-1.b.c", dialect="bigquery")), '"a-1".b.c')
+        self.assertEqual(exp.table_name(exp.to_table("a.b.c.d.e", dialect="bigquery")), "a.b.c.d.e")
 
     def test_table(self):
         self.assertEqual(exp.table_("a", alias="b"), parse_one("select * from a b").find(exp.Table))
@@ -442,18 +444,30 @@ class TestExpressions(unittest.TestCase):
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
 
-    def test_pop(self):
+    def test_arg_deletion(self):
+        # Using the pop helper method
         expression = parse_one("SELECT a, b FROM x")
         expression.find(exp.Column).pop()
         self.assertEqual(expression.sql(), "SELECT b FROM x")
+
         expression.find(exp.Column).pop()
         self.assertEqual(expression.sql(), "SELECT FROM x")
+
         expression.pop()
         self.assertEqual(expression.sql(), "SELECT FROM x")
 
         expression = parse_one("WITH x AS (SELECT a FROM x) SELECT * FROM x")
         expression.find(exp.With).pop()
         self.assertEqual(expression.sql(), "SELECT * FROM x")
+
+        # Manually deleting by setting to None
+        expression = parse_one("SELECT * FROM foo JOIN bar")
+        self.assertEqual(len(expression.args.get("joins", [])), 1)
+
+        expression.set("joins", None)
+        self.assertEqual(expression.sql(), "SELECT * FROM foo")
+        self.assertEqual(expression.args.get("joins", []), [])
+        self.assertIsNone(expression.args.get("joins"))
 
     def test_walk(self):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")
@@ -539,6 +553,9 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("ARRAY(time, foo)"), exp.Array)
         self.assertIsInstance(parse_one("STANDARD_HASH('hello', 'sha256')"), exp.StandardHash)
         self.assertIsInstance(parse_one("DATE(foo)"), exp.Date)
+        self.assertIsInstance(parse_one("HEX(foo)"), exp.Hex)
+        self.assertIsInstance(parse_one("TO_HEX(foo)", read="bigquery"), exp.Hex)
+        self.assertIsInstance(parse_one("TO_HEX(MD5(foo))", read="bigquery"), exp.MD5)
 
     def test_column(self):
         column = parse_one("a.b.c.d")

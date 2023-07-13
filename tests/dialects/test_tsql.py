@@ -6,6 +6,11 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b INTO @y FROM y")
+        self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b FROM y")
+        self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b INTO l SELECT * FROM z")
+        self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b SELECT * FROM z")
+        self.validate_identity("DELETE x OUTPUT x.a FROM z")
         self.validate_identity("SELECT * FROM t WITH (TABLOCK, INDEX(myindex))")
         self.validate_identity("SELECT * FROM t WITH (NOWAIT)")
         self.validate_identity("SELECT CASE WHEN a > 1 THEN b END")
@@ -206,6 +211,30 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "CAST(x as FLOAT(32))",
+            write={"tsql": "CAST(x AS FLOAT(32))", "hive": "CAST(x AS FLOAT)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(64))",
+            write={"tsql": "CAST(x AS FLOAT(64))", "spark": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(6))", write={"tsql": "CAST(x AS FLOAT(6))", "hive": "CAST(x AS FLOAT)"}
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(36))",
+            write={"tsql": "CAST(x AS FLOAT(36))", "hive": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
+            "CAST(x as FLOAT(99))",
+            write={"tsql": "CAST(x AS FLOAT(99))", "hive": "CAST(x AS DOUBLE)"},
+        )
+
+        self.validate_all(
             "CAST(x as DOUBLE)",
             write={
                 "spark": "CAST(x AS DOUBLE)",
@@ -232,7 +261,7 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x as MONEY)",
             write={
-                "spark": "CAST(x AS DECIMAL(19, 4))",
+                "spark": "CAST(x AS DECIMAL(15, 4))",
                 "tsql": "CAST(x AS MONEY)",
             },
         )
@@ -360,7 +389,58 @@ class TestTSQL(Validator):
             },
         )
 
+    def test_ddl(self):
+        self.validate_all(
+            "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
+            write={
+                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIMESTAMP(4), d FLOAT(24))"
+            },
+        )
+
+    def test_transaction(self):
+        # BEGIN { TRAN | TRANSACTION }
+        #    [ { transaction_name | @tran_name_variable }
+        #    [ WITH MARK [ 'description' ] ]
+        #    ]
+        # [ ; ]
+        self.validate_identity("BEGIN TRANSACTION")
+        self.validate_all("BEGIN TRAN", write={"tsql": "BEGIN TRANSACTION"})
+        self.validate_identity("BEGIN TRANSACTION transaction_name")
+        self.validate_identity("BEGIN TRANSACTION @tran_name_variable")
+        self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")
+
+    def test_commit(self):
+        # COMMIT [ { TRAN | TRANSACTION }  [ transaction_name | @tran_name_variable ] ] [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ] [ ; ]
+
+        self.validate_all("COMMIT", write={"tsql": "COMMIT TRANSACTION"})
+        self.validate_all("COMMIT TRAN", write={"tsql": "COMMIT TRANSACTION"})
+        self.validate_identity("COMMIT TRANSACTION")
+        self.validate_identity("COMMIT TRANSACTION transaction_name")
+        self.validate_identity("COMMIT TRANSACTION @tran_name_variable")
+
+        self.validate_identity(
+            "COMMIT TRANSACTION @tran_name_variable WITH (DELAYED_DURABILITY = ON)"
+        )
+        self.validate_identity(
+            "COMMIT TRANSACTION transaction_name WITH (DELAYED_DURABILITY = OFF)"
+        )
+
+    def test_rollback(self):
+        # Applies to SQL Server and Azure SQL Database
+        # ROLLBACK { TRAN | TRANSACTION }
+        #     [ transaction_name | @tran_name_variable
+        #     | savepoint_name | @savepoint_variable ]
+        # [ ; ]
+        self.validate_all("ROLLBACK", write={"tsql": "ROLLBACK TRANSACTION"})
+        self.validate_all("ROLLBACK TRAN", write={"tsql": "ROLLBACK TRANSACTION"})
+        self.validate_identity("ROLLBACK TRANSACTION")
+        self.validate_identity("ROLLBACK TRANSACTION transaction_name")
+        self.validate_identity("ROLLBACK TRANSACTION @tran_name_variable")
+
     def test_udf(self):
+        self.validate_identity(
+            "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)"
+        )
         self.validate_identity(
             "CREATE PROCEDURE foo @a INTEGER, @b INTEGER AS SELECT @a = SUM(bla) FROM baz AS bar"
         )
@@ -417,6 +497,12 @@ WHERE
             pretty=True,
         )
 
+    def test_procedure_keywords(self):
+        self.validate_identity("BEGIN")
+        self.validate_identity("END")
+        self.validate_identity("SET XACT_ABORT ON")
+
+    def test_fullproc(self):
         sql = """
             CREATE procedure [TRANSF].[SP_Merge_Sales_Real]
                 @Loadid INTEGER
@@ -809,7 +895,8 @@ WHERE
             write={"spark": "SELECT FORMAT_NUMBER(1000000.01, '###,###.###')"},
         )
         self.validate_all(
-            "SELECT FORMAT(1234567, 'f')", write={"spark": "SELECT FORMAT_NUMBER(1234567, 'f')"}
+            "SELECT FORMAT(1234567, 'f')",
+            write={"spark": "SELECT FORMAT_NUMBER(1234567, 'f')"},
         )
         self.validate_all(
             "SELECT FORMAT('01-01-1991', 'dd.mm.yyyy')",
@@ -824,7 +911,8 @@ WHERE
             write={"spark": "SELECT DATE_FORMAT(date_col, 'MMMM d')"},
         )
         self.validate_all(
-            "SELECT FORMAT(num_col, 'c')", write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"}
+            "SELECT FORMAT(num_col, 'c')",
+            write={"spark": "SELECT FORMAT_NUMBER(num_col, 'c')"},
         )
 
     def test_string(self):

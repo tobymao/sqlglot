@@ -430,6 +430,10 @@ SELECT x.a AS a, x.b AS b FROM x AS x QUALIFY COUNT(x.a) OVER (PARTITION BY x.b)
 -- Expand laterals
 --------------------------------------
 
+# execute: false
+select 2 AS d, d + 1 FROM x WHERE d = 2 GROUP BY d;
+SELECT 2 AS d, 2 + 1 AS _col_1 FROM x AS x WHERE 2 = 2 GROUP BY 1;
+
 # title: expand alias reference
 SELECT
   x.a + 1 AS i,

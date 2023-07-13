@@ -424,6 +424,7 @@ SELECT 1 INTERSECT SELECT 2
 SELECT 1 AS delete, 2 AS alter
 SELECT * FROM (x)
 SELECT * FROM ((x))
+SELECT * FROM (((x)))
 SELECT * FROM ((SELECT 1))
 SELECT * FROM (x CROSS JOIN foo LATERAL VIEW EXPLODE(y))
 SELECT * FROM (SELECT 1) AS x
@@ -433,6 +434,14 @@ SELECT * FROM (SELECT 1 UNION ALL SELECT 2)
 SELECT * FROM ((SELECT 1) AS a UNION ALL (SELECT 2) AS b)
 SELECT * FROM ((SELECT 1) AS a(b))
 SELECT * FROM ((SELECT 1) UNION (SELECT 2) UNION (SELECT 3))
+SELECT * FROM (table1 AS t1 LEFT JOIN table2 AS t2 ON 1 = 1)
+SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)
+SELECT * FROM (tbl1, tbl2 JOIN tbl3 ON TRUE)
+SELECT * FROM (tbl1 CROSS JOIN tbl2)
+SELECT * FROM (tbl1 CROSS JOIN tbl2) AS t
+SELECT * FROM (tbl AS tbl) AS t
+SELECT * FROM (tbl1 JOIN (tbl2 CROSS JOIN tbl3) ON bla = foo)
+SELECT * FROM (tbl1, LATERAL (SELECT * FROM bla) AS tbl)
 SELECT * FROM x AS y(a, b)
 SELECT * EXCEPT (a, b)
 SELECT * EXCEPT (a, b) FROM y
@@ -608,6 +617,7 @@ CREATE FUNCTION a() LANGUAGE sql RETURNS INT
 CREATE FUNCTION a.b(x INT) RETURNS INT AS RETURN x + 1
 CREATE FUNCTION a.b.c()
 CREATE INDEX abc ON t (a)
+CREATE INDEX "abc" ON t (a)
 CREATE INDEX abc ON t (a, b, b)
 CREATE INDEX abc ON t (a NULLS LAST)
 CREATE INDEX pointloc ON points USING GIST(BOX(location, location))
@@ -701,6 +711,7 @@ UPDATE tbl_name SET foo = 123
 UPDATE tbl_name SET foo = 123, bar = 345
 UPDATE db.tbl_name SET foo = 123 WHERE tbl_name.bar = 234
 UPDATE db.tbl_name SET foo = 123, foo_1 = 234 WHERE tbl_name.bar = 234
+UPDATE products SET price = price * 1.10 WHERE price <= 99.99 RETURNING name, price AS new_price
 TRUNCATE TABLE x
 OPTIMIZE TABLE y
 VACUUM FREEZE my_table
@@ -722,11 +733,6 @@ WITH a AS ((SELECT 1 AS b) UNION ALL (SELECT 1 AS b)) SELECT * FROM a
 SELECT (WITH x AS (SELECT 1 AS y) SELECT * FROM x) AS z
 SELECT ((SELECT 1) + 1)
 SELECT * FROM project.dataset.INFORMATION_SCHEMA.TABLES
-SELECT * FROM (table1 AS t1 LEFT JOIN table2 AS t2 ON 1 = 1)
-SELECT * FROM (tbl1 LEFT JOIN tbl2 ON 1 = 1)
-SELECT * FROM (tbl1, tbl2 JOIN tbl3 ON TRUE)
-SELECT * FROM (tbl1 JOIN (tbl2 CROSS JOIN tbl3) ON bla = foo)
-SELECT * FROM (tbl1, LATERAL (SELECT * FROM bla) AS tbl)
 SELECT CAST(x AS INT) /* comment */ FROM foo
 SELECT a /* x */, b /* x */
 SELECT a /* x */ /* y */ /* z */, b /* k */ /* m */
@@ -838,3 +844,4 @@ SELECT * FROM schema.case
 SELECT * FROM current_date
 SELECT * FROM schema.current_date
 SELECT /*+ SOME_HINT(foo) */ 1
+SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1)

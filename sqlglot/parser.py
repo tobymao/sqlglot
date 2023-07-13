@@ -1145,6 +1145,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Drop,
+            comments=start.comments,
             exists=self._parse_exists(),
             this=self._parse_table(schema=True),
             kind=kind,

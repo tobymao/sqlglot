@@ -9,7 +9,7 @@ class TestSpark(Validator):
     def test_into_temp_table(self):
         self.validate_all(
             "CREATE TEMPORARY VIEW MyTempTable AS SELECT Column1, Column2 FROM Source_Table",
-            read={"tsql":"SELECT Column1, Column2 INTO #MyTempTable FROM Source_Table"}
+            read={"tsql": "SELECT Column1, Column2 INTO #MyTempTable FROM Source_Table"},
         )
 
     def test_ddl(self):

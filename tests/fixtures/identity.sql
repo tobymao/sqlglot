@@ -76,6 +76,7 @@ map.x
 SELECT update
 SELECT x.update
 SELECT call.x
+SELECT end
 a.b.INT(1.234)
 INT(x / 100)
 time * 100

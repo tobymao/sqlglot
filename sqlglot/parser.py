@@ -1234,11 +1234,14 @@ class Parser(metaclass=_Parser):
             expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
+                # exp.Properties.Location.POST_EXPRESSION
+                extend_props(self._parse_properties())
+
                 indexes = []
                 while True:
                     index = self._parse_index()
 
-                    # exp.Properties.Location.POST_EXPRESSION and POST_INDEX
+                    # exp.Properties.Location.POST_INDEX
                     extend_props(self._parse_properties())
 
                     if not index:
@@ -1385,7 +1388,6 @@ class Parser(metaclass=_Parser):
     def _parse_with_property(
         self,
     ) -> t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]]:
-        self._match(TokenType.WITH)
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_property)
 

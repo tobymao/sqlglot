@@ -61,6 +61,9 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
             if remove_unused_selections:
                 _remove_unused_selections(scope, parent_selections, schema)
 
+            if scope.expression.is_star:
+                continue
+
             # Group columns by source name
             selects = defaultdict(set)
             for col in scope.columns:

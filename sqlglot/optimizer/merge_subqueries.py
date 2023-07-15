@@ -176,6 +176,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
 
     return (
         isinstance(outer_scope.expression, exp.Select)
+        and not outer_scope.expression.is_star
         and isinstance(inner_select, exp.Select)
         and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
         and inner_select.args.get("from")
@@ -242,6 +243,7 @@ def _merge_from(outer_scope, inner_scope, node_to_replace, alias):
         alias (str)
     """
     new_subquery = inner_scope.expression.args["from"].this
+    new_subquery.set("joins", node_to_replace.args.get("joins"))
     node_to_replace.replace(new_subquery)
     for join_hint in outer_scope.join_hints:
         tables = join_hint.find_all(exp.Table)

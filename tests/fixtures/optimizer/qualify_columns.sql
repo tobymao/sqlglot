@@ -307,6 +307,11 @@ SELECT x.b AS b, y.b AS b, y.c AS c FROM x AS x, y AS y;
 SELECT * EXCEPT(a) FROM x;
 SELECT x.b AS b FROM x AS x;
 
+# execute: false
+# note: this query would fail in the engine level because there are 0 selected columns
+SELECT * EXCEPT (a, b) FROM x;
+SELECT * EXCEPT (x.a, x.b) FROM x AS x;
+
 --------------------------------------
 -- Using
 --------------------------------------

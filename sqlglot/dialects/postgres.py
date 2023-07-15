@@ -318,6 +318,11 @@ class Postgres(Dialect):
             TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
         }
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.END: lambda self: self._parse_commit_or_rollback(),
+        }
+
         def _parse_factor(self) -> t.Optional[exp.Expression]:
             return self._parse_tokens(self._parse_exponent, self.FACTOR)
 

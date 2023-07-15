@@ -224,6 +224,7 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
+        self.validate_identity("REFRESH table a.b.c")
         self.validate_identity("INTERVAL -86 days")
         self.validate_identity("SELECT UNIX_TIMESTAMP()")
         self.validate_identity("TRIM('    SparkSQL   ')")

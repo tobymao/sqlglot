@@ -93,3 +93,7 @@ WITH cte2 AS (SELECT a FROM x), cte1 AS (SELECT t.a FROM cte2 AS t) SELECT a FRO
 -- Duplicate CTE nested in CTE
 WITH cte1 AS (SELECT a FROM x), cte2 AS (WITH cte3 AS (SELECT a FROM x) SELECT a FROM cte3) SELECT a FROM cte2;
 WITH cte1 AS (SELECT a FROM x), cte2 AS (SELECT a FROM cte1 AS cte3) SELECT a FROM cte2;
+
+-- Wrapped subquery joined with table
+SELECT * FROM ((SELECT c FROM t1) JOIN t2);
+WITH cte AS (SELECT c FROM t1) SELECT * FROM (cte AS cte, t2);

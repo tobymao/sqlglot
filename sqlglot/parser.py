@@ -506,7 +506,6 @@ class Parser(metaclass=_Parser):
         TokenType.DESC: lambda self: self._parse_describe(),
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
-        TokenType.END: lambda self: self._parse_commit_or_rollback(),
         TokenType.FROM: lambda self: exp.select("*").from_(
             t.cast(exp.From, self._parse_from(skip_from_token=True))
         ),
@@ -1145,6 +1144,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Drop,
+            comments=start.comments,
             exists=self._parse_exists(),
             this=self._parse_table(schema=True),
             kind=kind,

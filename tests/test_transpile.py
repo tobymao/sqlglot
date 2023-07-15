@@ -285,6 +285,47 @@ FROM v""",
             "SELECT 1 /* hi this is a comment */",
             read="snowflake",
         )
+        self.validate(
+            "-- comment\nDROP TABLE IF EXISTS foo",
+            "/* comment */ DROP TABLE IF EXISTS foo",
+        )
+        self.validate(
+            """
+            -- comment1
+            -- comment2
+
+            -- comment3
+            DROP TABLE IF EXISTS db.tba
+            """,
+            """/* comment1 */
+/* comment2 */
+/* comment3 */
+DROP TABLE IF EXISTS db.tba""",
+            pretty=True,
+        )
+        self.validate(
+            """
+            CREATE TABLE db.tba AS
+            SELECT a, b, c
+            FROM tb_01
+            WHERE
+            -- comment5
+              a = 1 AND b = 2 --comment6
+              -- and c = 1
+            -- comment7
+            """,
+            """CREATE TABLE db.tba AS
+SELECT
+  a,
+  b,
+  c
+FROM tb_01
+WHERE
+  a /* comment5 */ = 1 AND b = 2 /* comment6 */
+  /* and c = 1 */
+  /* comment7 */""",
+            pretty=True,
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

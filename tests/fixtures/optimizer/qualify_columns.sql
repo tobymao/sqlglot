@@ -307,6 +307,11 @@ SELECT x.b AS b, y.b AS b, y.c AS c FROM x AS x, y AS y;
 SELECT * EXCEPT(a) FROM x;
 SELECT x.b AS b FROM x AS x;
 
+# execute: false
+# note: this query would fail in the engine level because there are 0 selected columns
+SELECT * EXCEPT (a, b) FROM x;
+SELECT * EXCEPT (x.a, x.b) FROM x AS x;
+
 --------------------------------------
 -- Using
 --------------------------------------
@@ -410,8 +415,7 @@ SELECT _q_0.c AS c FROM (SELECT 1 AS a) AS x LATERAL VIEW EXPLODE(x.a) _q_0 AS c
 --------------------------------------
 -- Window functions
 --------------------------------------
-
--- ORDER BY in window function
+# title: ORDER BY in window function
 SELECT a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY a) AS row_num FROM x;
 SELECT x.a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a) AS row_num FROM x AS x;
 
@@ -429,7 +433,6 @@ SELECT x.a AS a, x.b AS b FROM x AS x QUALIFY COUNT(x.a) OVER (PARTITION BY x.b)
 --------------------------------------
 -- Expand laterals
 --------------------------------------
-
 # execute: false
 select 2 AS d, d + 1 FROM x WHERE d = 2 GROUP BY d;
 SELECT 2 AS d, 2 + 1 AS _col_1 FROM x AS x WHERE 2 = 2 GROUP BY 1;
@@ -457,3 +460,38 @@ FROM (
   FROM x
 );
 SELECT _q_0.i AS i, _q_0.j AS j FROM (SELECT x.a + 1 AS i, x.a + 1 + 1 AS j FROM x AS x) AS _q_0;
+
+--------------------------------------
+-- Wrapped tables / join constructs
+--------------------------------------
+# execute: false
+SELECT * FROM ((tbl));
+SELECT * FROM ((tbl AS tbl));
+
+SELECT a, c FROM (x LEFT JOIN y ON a = c);
+SELECT x.a AS a, y.c AS c FROM (x AS x LEFT JOIN y AS y ON x.a = y.c);
+
+# execute: false
+SELECT * FROM ((a CROSS JOIN ((b CROSS JOIN c) CROSS JOIN (d CROSS JOIN e))));
+SELECT * FROM ((a AS a CROSS JOIN ((b AS b CROSS JOIN c AS c) CROSS JOIN (d AS d CROSS JOIN e AS e))));
+
+# execute: false
+SELECT * FROM ((SELECT * FROM tbl));
+SELECT * FROM ((SELECT * FROM tbl AS tbl) AS _q_0);
+
+# execute: false
+SELECT * FROM ((SELECT c FROM t1) JOIN t2);
+SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _q_0, t2 AS t2);
+
+# execute: false
+SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c);
+SELECT y.b AS b, y.c AS c, _q_0.a AS a, _q_0.b AS b FROM ((SELECT x.a AS a, x.b AS b FROM x AS x) AS _q_0 INNER JOIN y AS y ON _q_0.a = y.c);
+
+SELECT x.a, y.b, z.c FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
+SELECT x.a AS a, y.b AS b, z.c AS c FROM x AS x LEFT JOIN (y AS y INNER JOIN z AS z ON y.c = z.c) ON x.b = y.b;
+
+SELECT * FROM ((SELECT * FROM x) INNER JOIN (SELECT * FROM y) ON a = c);
+SELECT _q_0.a AS a, _q_0.b AS b, _q_1.b AS b, _q_1.c AS c FROM ((SELECT x.a AS a, x.b AS b FROM x AS x) AS _q_0 INNER JOIN (SELECT y.b AS b, y.c AS c FROM y AS y) AS _q_1 ON _q_0.a = _q_1.c);
+
+SELECT b FROM ((SELECT a FROM x) INNER JOIN y ON a = b);
+SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _q_0 INNER JOIN y AS y ON _q_0.a = y.b);

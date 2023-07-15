@@ -144,8 +144,9 @@ def _eliminate_derived_table(scope, existing_ctes, taken):
     name, cte = _new_cte(scope, existing_ctes, taken)
 
     table = exp.alias_(exp.table_(name), alias=parent.alias or name)
-    parent.replace(table)
+    table.set("joins", parent.args.get("joins"))
 
+    parent.replace(table)
     return cte
 
 

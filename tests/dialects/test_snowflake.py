@@ -915,6 +915,58 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
             },
         )
 
+    @mock.patch("sqlglot.generator.logger")
+    def test_regexp_replace(self, logger):
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern)",
+            write={
+                "bigquery": "REGEXP_REPLACE(subject, pattern, '')",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, '')",
+                "hive": "REGEXP_REPLACE(subject, pattern, '')",
+                "snowflake": "REGEXP_REPLACE(subject, pattern, '')",
+                "spark": "REGEXP_REPLACE(subject, pattern, '')",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement)",
+            read={
+                "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "spark": "REGEXP_REPLACE(subject, pattern, replacement)",
+            },
+            write={
+                "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "spark": "REGEXP_REPLACE(subject, pattern, replacement)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, position)",
+            read={
+                "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
+            },
+            write={
+                "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position)",
+                "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
+            },
+        )
+        self.validate_all(
+            "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
+            write={
+                "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
+                "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",
+            },
+        )
+
     def test_match_recognize(self):
         for row in (
             "ONE ROW PER MATCH",

@@ -137,6 +137,11 @@ class TestClickhouse(Validator):
                 + " GROUP BY loyalty ORDER BY loyalty"
             },
         )
+        self.validate_identity("SELECT s, arr FROM arrays_test ARRAY JOIN arr")
+        self.validate_identity("SELECT s, arr, a FROM arrays_test LEFT ARRAY JOIN arr AS a")
+        self.validate_identity(
+            "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
+        )
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

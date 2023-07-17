@@ -2254,7 +2254,9 @@ class Parser(metaclass=_Parser):
             self._match_set(self.JOIN_KINDS) and self._prev,
         )
 
-    def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Join]:
+    def _parse_join(
+        self, skip_join_token: bool = False, parse_bracket: bool = False
+    ) -> t.Optional[exp.Join]:
         if self._match(TokenType.COMMA):
             return self.expression(exp.Join, this=self._parse_table())
 
@@ -2278,7 +2280,7 @@ class Parser(metaclass=_Parser):
         if outer_apply:
             side = Token(TokenType.LEFT, "LEFT")
 
-        kwargs: t.Dict[str, t.Any] = {"this": self._parse_table()}
+        kwargs: t.Dict[str, t.Any] = {"this": self._parse_table(parse_bracket=parse_bracket)}
 
         if method:
             kwargs["method"] = method.text
@@ -2414,6 +2416,7 @@ class Parser(metaclass=_Parser):
         schema: bool = False,
         joins: bool = False,
         alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+        parse_bracket: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -2433,7 +2436,9 @@ class Parser(metaclass=_Parser):
                 subquery.set("pivots", self._parse_pivots())
             return subquery
 
-        this: exp.Expression = self._parse_table_parts(schema=schema)
+        bracket = parse_bracket and self._parse_bracket(None)
+        bracket = self.expression(exp.Table, this=bracket) if bracket else None
+        this: exp.Expression = bracket or self._parse_table_parts(schema=schema)
 
         if schema:
             return self._parse_schema(this=this)

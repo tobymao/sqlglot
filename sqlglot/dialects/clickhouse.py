@@ -95,6 +95,7 @@ class ClickHouse(Dialect):
             TokenType.ASOF,
             TokenType.ANTI,
             TokenType.SEMI,
+            TokenType.ARRAY,
         }
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {
@@ -103,6 +104,7 @@ class ClickHouse(Dialect):
             TokenType.ANTI,
             TokenType.SETTINGS,
             TokenType.FORMAT,
+            TokenType.ARRAY,
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -205,11 +207,25 @@ class ClickHouse(Dialect):
             )
 
         def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Join]:
+            is_left_array_join = self._match_pair(TokenType.LEFT, TokenType.ARRAY, False)
+            if is_left_array_join:
+                self._advance(1)
+            if self._match_pair(TokenType.ARRAY, TokenType.JOIN):
+                return self._parse_array_join(is_left_array_join)
+
             join = super()._parse_join(skip_join_token)
 
             if join:
                 join.set("global", join.args.pop("method", None))
             return join
+
+        def _parse_array_join(self, is_left_join: bool) -> t.Optional[exp.Join]:
+            kind = Token(TokenType.ARRAY, "ARRAY")
+            kwargs: t.Dict[str, t.Any] = {"this": self._parse_expression(), "kind": kind.text}
+            if is_left_join:
+                side = Token(TokenType.LEFT, "LEFT")
+                kwargs["side"] = side.text
+            return self.expression(exp.Join, **kwargs)
 
         def _parse_function(
             self,

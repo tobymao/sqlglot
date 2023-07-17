@@ -163,6 +163,14 @@ class ClickHouse(Dialect):
             joins: bool = False,
             alias_tokens: t.Optional[t.Collection[TokenType]] = None,
         ) -> t.Optional[exp.Expression]:
+            if (
+                self._index >= 2
+                and self._tokens[self._index - 2].token_type == TokenType.ARRAY
+                and self._prev.token_type == TokenType.JOIN
+                and self._curr.token_type == TokenType.L_BRACKET
+            ):  # e.g. ARRAY JOIN [1, 2, 3]
+                return self._parse_expression()
+
             this = super()._parse_table(schema=schema, joins=joins, alias_tokens=alias_tokens)
 
             if self._match(TokenType.FINAL):
@@ -207,25 +215,11 @@ class ClickHouse(Dialect):
             )
 
         def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Join]:
-            is_left_array_join = self._match_pair(TokenType.LEFT, TokenType.ARRAY, False)
-            if is_left_array_join:
-                self._advance(1)
-            if self._match_pair(TokenType.ARRAY, TokenType.JOIN):
-                return self._parse_array_join(is_left_array_join)
-
             join = super()._parse_join(skip_join_token)
 
             if join:
                 join.set("global", join.args.pop("method", None))
             return join
-
-        def _parse_array_join(self, is_left_join: bool) -> t.Optional[exp.Join]:
-            kind = Token(TokenType.ARRAY, "ARRAY")
-            kwargs: t.Dict[str, t.Any] = {"this": self._parse_expression(), "kind": kind.text}
-            if is_left_join:
-                side = Token(TokenType.LEFT, "LEFT")
-                kwargs["side"] = side.text
-            return self.expression(exp.Join, **kwargs)
 
         def _parse_function(
             self,

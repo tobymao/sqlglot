@@ -630,6 +630,16 @@ def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
     )
 
 
+def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
+    bad_args = list(filter(expression.args.get, ("position", "occurrence", "parameters")))
+    if bad_args:
+        self.unsupported(f"REGEXP_REPLACE does not support the following arg(s): {bad_args}")
+
+    return self.func(
+        "REGEXP_REPLACE", expression.this, expression.expression, expression.args["replacement"]
+    )
+
+
 def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectType) -> t.List[str]:
     names = []
     for agg in aggregations:

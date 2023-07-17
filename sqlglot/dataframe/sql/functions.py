@@ -875,8 +875,16 @@ def regexp_extract(str: ColumnOrName, pattern: str, idx: t.Optional[int] = None)
     )
 
 
-def regexp_replace(str: ColumnOrName, pattern: str, replacement: str) -> Column:
-    return Column.invoke_anonymous_function(str, "REGEXP_REPLACE", lit(pattern), lit(replacement))
+def regexp_replace(
+    str: ColumnOrName, pattern: str, replacement: str, position: t.Optional[int] = None
+) -> Column:
+    return Column.invoke_expression_over_column(
+        str,
+        expression.RegexpReplace,
+        expression=lit(pattern),
+        replacement=lit(replacement),
+        position=position,
+    )
 
 
 def initcap(col: ColumnOrName) -> Column:

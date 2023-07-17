@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     no_ilike_sql,
     parse_date_delta_with_interval,
+    regexp_replace_sql,
     rename_func,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
@@ -415,6 +416,7 @@ class BigQuery(Dialect):
                 e.args.get("position"),
                 e.args.get("occurrence"),
             ),
+            exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Select: transforms.preprocess(

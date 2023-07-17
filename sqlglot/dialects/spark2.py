@@ -197,6 +197,13 @@ class Spark2(Hive):
             exp.Map: _map_sql,
             exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
             exp.Reduce: rename_func("AGGREGATE"),
+            exp.RegexpReplace: lambda self, e: self.func(
+                "REGEXP_REPLACE",
+                e.this,
+                e.expression,
+                e.args["replacement"],
+                e.args.get("position"),
+            ),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimestampTrunc: lambda self, e: self.func(

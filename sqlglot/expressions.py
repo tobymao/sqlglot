@@ -4431,6 +4431,17 @@ class RegexpExtract(Func):
     }
 
 
+class RegexpReplace(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "replacement": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+    }
+
+
 class RegexpLike(Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 

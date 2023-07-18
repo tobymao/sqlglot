@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, parser, transforms
 from sqlglot.dialects.dialect import (
     create_with_partitions_sql,
+    format_time_lambda,
     pivot_column_names,
     rename_func,
     trim_sql,
@@ -132,6 +133,9 @@ class Spark2(Hive):
             ),
             "STRING": _parse_as_cast("string"),
             "TIMESTAMP": _parse_as_cast("timestamp"),
+            "TO_TIMESTAMP": lambda args: _parse_as_cast("timestamp")(args)
+            if len(args) == 1
+            else format_time_lambda(exp.StrToTime, "spark")(args),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
             "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
@@ -221,6 +225,7 @@ class Spark2(Hive):
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
         TRANSFORMS.pop(exp.Left)
+        TRANSFORMS.pop(exp.MonthsBetween)
         TRANSFORMS.pop(exp.Right)
 
         WRAP_DERIVED_VALUES = False

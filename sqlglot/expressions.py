@@ -4098,6 +4098,10 @@ class WeekOfYear(Func):
     _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 
 
+class MonthsBetween(Func):
+    arg_types = {"this": True, "expression": True, "roundoff": False}
+
+
 class LastDateOfMonth(Func):
     pass
 

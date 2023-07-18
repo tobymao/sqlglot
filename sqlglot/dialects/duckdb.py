@@ -218,6 +218,12 @@ class DuckDB(Dialect):
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.MonthsBetween: lambda self, e: self.func(
+                "DATEDIFF",
+                "'month'",
+                exp.cast(e.expression, "timestamp"),
+                exp.cast(e.this, "timestamp"),
+            ),
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpReplace: regexp_replace_sql,

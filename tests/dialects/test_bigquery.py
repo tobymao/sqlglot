@@ -521,6 +521,12 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SELECT * FROM UNNEST([STRUCT(1 AS id)]) CROSS JOIN UNNEST([STRUCT(1 AS id)])",
+            read={
+                "postgres": "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",
+            },
+        )
+        self.validate_all(
             "SELECT cola, colb, colc FROM (VALUES (1, 'test', NULL)) AS tab(cola, colb, colc)",
             write={
                 "spark": "SELECT cola, colb, colc FROM VALUES (1, 'test', NULL) AS tab(cola, colb, colc)",

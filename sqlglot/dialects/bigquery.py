@@ -40,7 +40,7 @@ def _date_add_sql(
 
 
 def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.Values) -> str:
-    if not expression.find_ancestor(exp.From, exp.Select):
+    if not expression.find_ancestor(exp.From, exp.Join):
         return self.values_sql(expression)
 
     alias = expression.args.get("alias")

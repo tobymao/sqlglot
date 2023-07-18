@@ -365,6 +365,7 @@ class Hive(Dialect):
             exp.Max: max_or_greatest,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
+            exp.MonthsBetween: lambda self, e: self.func("MONTHS_BETWEEN", e.this, e.expression),
             exp.VarMap: var_map_sql,
             exp.Create: create_with_partitions_sql,
             exp.Quantile: rename_func("PERCENTILE"),

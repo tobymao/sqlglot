@@ -851,9 +851,9 @@ class TestFunctions(unittest.TestCase):
 
     def test_to_timestamp(self):
         col_str = SF.to_timestamp("cola")
-        self.assertEqual("TO_TIMESTAMP(cola)", col_str.sql())
+        self.assertEqual("CAST(cola AS TIMESTAMP)", col_str.sql())
         col = SF.to_timestamp(SF.col("cola"))
-        self.assertEqual("TO_TIMESTAMP(cola)", col.sql())
+        self.assertEqual("CAST(cola AS TIMESTAMP)", col.sql())
         col_with_format = SF.to_timestamp("cola", "yyyy-MM-dd")
         self.assertEqual("TO_TIMESTAMP(cola, 'yyyy-MM-dd')", col_with_format.sql())
 

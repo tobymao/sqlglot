@@ -114,7 +114,7 @@ class Column:
         return self.inverse_binary_op(exp.Or, other)
 
     @classmethod
-    def ensure_col(cls, value: t.Optional[t.Union[ColumnOrLiteral, exp.Expression]]):
+    def ensure_col(cls, value: t.Optional[t.Union[ColumnOrLiteral, exp.Expression]]) -> Column:
         return cls(value)
 
     @classmethod
@@ -259,7 +259,7 @@ class Column:
         new_expression = exp.Not(this=exp.Is(this=self.column_expression, expression=exp.Null()))
         return Column(new_expression)
 
-    def cast(self, dataType: t.Union[str, DataType]):
+    def cast(self, dataType: t.Union[str, DataType]) -> Column:
         """
         Functionality Difference: PySpark cast accepts a datatype instance of the datatype class
         Sqlglot doesn't currently replicate this class so it only accepts a string

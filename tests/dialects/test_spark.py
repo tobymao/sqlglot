@@ -238,6 +238,10 @@ TBLPROPERTIES (
             read={
                 "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
             },
+            write={
+                "spark": "SELECT DATEDIFF(month, TO_DATE(CAST('1996-10-30' AS TIMESTAMP)), TO_DATE(CAST('1997-02-28 10:30:00' AS TIMESTAMP)))",
+                "spark2": "SELECT MONTHS_BETWEEN(TO_DATE(CAST('1997-02-28 10:30:00' AS TIMESTAMP)), TO_DATE(CAST('1996-10-30' AS TIMESTAMP)))",
+            },
         )
         self.validate_all(
             "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",

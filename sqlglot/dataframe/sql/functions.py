@@ -600,8 +600,13 @@ def months_between(
     date1: ColumnOrName, date2: ColumnOrName, roundOff: t.Optional[bool] = None
 ) -> Column:
     if roundOff is None:
-        return Column.invoke_anonymous_function(date1, "MONTHS_BETWEEN", date2)
-    return Column.invoke_anonymous_function(date1, "MONTHS_BETWEEN", date2, roundOff)
+        return Column.invoke_expression_over_column(
+            date1, expression.MonthsBetween, expression=date2
+        )
+
+    return Column.invoke_expression_over_column(
+        date1, expression.MonthsBetween, expression=date2, roundoff=roundOff
+    )
 
 
 def to_date(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
@@ -614,8 +619,9 @@ def to_date(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
 
 def to_timestamp(col: ColumnOrName, format: t.Optional[str] = None) -> Column:
     if format is not None:
-        return Column.invoke_anonymous_function(col, "TO_TIMESTAMP", lit(format))
-    return Column.invoke_anonymous_function(col, "TO_TIMESTAMP")
+        return Column.invoke_expression_over_column(col, expression.StrToTime, format=lit(format))
+
+    return Column.ensure_col(col).cast("timestamp")
 
 
 def trunc(col: ColumnOrName, format: str) -> Column:

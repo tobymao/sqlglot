@@ -234,6 +234,51 @@ TBLPROPERTIES (
         self.validate_identity("SPLIT(str, pattern, lim)")
 
         self.validate_all(
+            "SELECT DATEDIFF(month, CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+            read={
+                "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+            },
+            write={
+                "spark": "SELECT DATEDIFF(month, TO_DATE(CAST('1996-10-30' AS TIMESTAMP)), TO_DATE(CAST('1997-02-28 10:30:00' AS TIMESTAMP)))",
+                "spark2": "SELECT MONTHS_BETWEEN(TO_DATE(CAST('1997-02-28 10:30:00' AS TIMESTAMP)), TO_DATE(CAST('1996-10-30' AS TIMESTAMP)))",
+            },
+        )
+        self.validate_all(
+            "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
+            write={
+                "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+                "hive": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
+                "spark": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
+            },
+        )
+        self.validate_all(
+            "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30', FALSE)",
+            write={
+                "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
+                "hive": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
+                "spark": "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30', FALSE)",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-12-31 00:12:00')",
+            write={
+                "": "SELECT CAST('2016-12-31 00:12:00' AS TIMESTAMP)",
+                "duckdb": "SELECT CAST('2016-12-31 00:12:00' AS TIMESTAMP)",
+                "spark": "SELECT CAST('2016-12-31 00:12:00' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            read={
+                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
+            },
+            write={
+                "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%m-%d')",
+                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
+                "spark": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            },
+        )
+        self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={
                 "bigquery": "SELECT REGEXP_CONTAINS('John Doe', 'John.*')",

@@ -211,9 +211,12 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             -- comment 1
             AND bar
             -- comment 2
-            AND bla;
+            AND bla
+            -- comment 3
+            LIMIT 10
+            ;
             """,
-            "SELECT a FROM b WHERE foo AND /* comment 1 */ bar AND /* comment 2 */ bla",
+            "SELECT a FROM b WHERE foo AND /* comment 1 */ bar AND /* comment 2 */ bla LIMIT 10 /* comment 3 */",
         )
         self.validate(
             """

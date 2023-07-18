@@ -2766,6 +2766,7 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression] = None, top: bool = False
     ) -> t.Optional[exp.Expression]:
         if self._match(TokenType.TOP if top else TokenType.LIMIT):
+            comments = self._prev_comments
             limit_paren = self._match(TokenType.L_PAREN)
             expression = self._parse_number() if top else self._parse_term()
 
@@ -2775,7 +2776,9 @@ class Parser(metaclass=_Parser):
             else:
                 offset = None
 
-            limit_exp = self.expression(exp.Limit, this=this, expression=expression, offset=offset)
+            limit_exp = self.expression(
+                exp.Limit, this=this, expression=expression, offset=offset, comments=comments
+            )
 
             if limit_paren:
                 self._match_r_paren()

@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 from enum import auto
 
+from sqlglot.errors import TokenError
 from sqlglot.helper import AutoName
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
@@ -800,7 +801,7 @@ class Tokenizer(metaclass=_Tokenizer):
             start = max(self._current - 50, 0)
             end = min(self._current + 50, self.size - 1)
             context = self.sql[start:end]
-            raise ValueError(f"Error tokenizing '{context}'") from e
+            raise TokenError(f"Error tokenizing '{context}'") from e
 
         return self.tokens
 
@@ -1097,7 +1098,7 @@ class Tokenizer(metaclass=_Tokenizer):
             try:
                 int(text, base)
             except:
-                raise RuntimeError(
+                raise TokenError(
                     f"Numeric string contains invalid characters from {self._line}:{self._start}"
                 )
         else:
@@ -1140,7 +1141,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 if self._current + 1 < self.size:
                     self._advance(2)
                 else:
-                    raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._current}")
+                    raise TokenError(f"Missing {delimiter} from {self._line}:{self._current}")
             else:
                 if self._chars(delim_size) == delimiter:
                     if delim_size > 1:
@@ -1148,7 +1149,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     break
 
                 if self._end:
-                    raise RuntimeError(f"Missing {delimiter} from {self._line}:{self._start}")
+                    raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 current = self._current - 1
                 self._advance(alnum=True)

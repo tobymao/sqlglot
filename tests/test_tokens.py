@@ -1,6 +1,7 @@
 import unittest
 
 from sqlglot.dialects import BigQuery
+from sqlglot.errors import TokenError
 from sqlglot.tokens import Tokenizer, TokenType
 
 
@@ -65,7 +66,7 @@ x"""
         self.assertEqual(tokens[3].token_type, TokenType.SEMICOLON)
 
     def test_error_msg(self):
-        with self.assertRaisesRegex(ValueError, "Error tokenizing 'select /'"):
+        with self.assertRaisesRegex(TokenError, "Error tokenizing 'select /'"):
             Tokenizer().tokenize("select /*")
 
     def test_jinja(self):

@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, transpile
+from sqlglot import ErrorLevel, ParseError, TokenError, UnsupportedError, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -8,7 +8,7 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")
 
         # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators

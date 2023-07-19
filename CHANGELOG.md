@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v17.6.0] - 2023-07-19
+### :sparkles: New Features
+- [`2510999`](https://github.com/tobymao/sqlglot/commit/2510999192aa98e74d4ea713eb3e7f7d5b4b846f) - isin unnest builder *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v17.5.0] - 2023-07-18
 ### :sparkles: New Features
 - [`e6b3a01`](https://github.com/tobymao/sqlglot/commit/e6b3a017da747fb38d298617ca310bb7657711da) - **tsql**: improve support for transaction statements *(PR [#1907](https://github.com/tobymao/sqlglot/pull/1907) by [@dmoore247](https://github.com/dmoore247))*
@@ -888,3 +893,4 @@ Changelog
 [v17.4.0]: https://github.com/tobymao/sqlglot/compare/v17.3.0...v17.4.0
 [v17.4.1]: https://github.com/tobymao/sqlglot/compare/v17.4.0...v17.4.1
 [v17.5.0]: https://github.com/tobymao/sqlglot/compare/v17.4.1...v17.5.0
+[v17.6.0]: https://github.com/tobymao/sqlglot/compare/v17.5.0...v17.6.0

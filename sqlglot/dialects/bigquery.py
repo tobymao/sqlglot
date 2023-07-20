@@ -8,6 +8,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
+    binary_from_function,
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
@@ -280,7 +281,7 @@ class BigQuery(Dialect):
             ),
             "DATETIME_ADD": parse_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
-            "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
+            "DIV": binary_from_function(exp.IntDiv),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _parse_to_hex,

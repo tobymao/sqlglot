@@ -339,6 +339,7 @@ class Parser(metaclass=_Parser):
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.WINDOW,
+        TokenType.XOR,
         *TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }

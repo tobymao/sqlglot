@@ -7,28 +7,57 @@ class TestHive(Validator):
     def test_bits(self):
         self.validate_all(
             "x & 1",
-            write={
+            read={
                 "duckdb": "x & 1",
                 "presto": "BITWISE_AND(x, 1)",
+                "spark": "x & 1",
+            },
+            write={
+                "duckdb": "x & 1",
                 "hive": "x & 1",
+                "presto": "BITWISE_AND(x, 1)",
                 "spark": "x & 1",
             },
         )
         self.validate_all(
-            "~x",
+            "x & 1 > 0",
+            read={
+                "duckdb": "x & 1 > 0",
+                "presto": "BITWISE_AND(x, 1) > 0",
+                "spark": "x & 1 > 0",
+            },
             write={
+                "duckdb": "x & 1 > 0",
+                "presto": "BITWISE_AND(x, 1) > 0",
+                "hive": "x & 1 > 0",
+                "spark": "x & 1 > 0",
+            },
+        )
+        self.validate_all(
+            "~x",
+            read={
                 "duckdb": "~x",
                 "presto": "BITWISE_NOT(x)",
+                "spark": "~x",
+            },
+            write={
+                "duckdb": "~x",
                 "hive": "~x",
+                "presto": "BITWISE_NOT(x)",
                 "spark": "~x",
             },
         )
         self.validate_all(
             "x | 1",
-            write={
+            read={
                 "duckdb": "x | 1",
                 "presto": "BITWISE_OR(x, 1)",
+                "spark": "x | 1",
+            },
+            write={
+                "duckdb": "x | 1",
                 "hive": "x | 1",
+                "presto": "BITWISE_OR(x, 1)",
                 "spark": "x | 1",
             },
         )
@@ -54,15 +83,6 @@ class TestHive(Validator):
                 "presto": "BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)",
                 "hive": "x >> 1",
                 "spark": "SHIFTRIGHT(x, 1)",
-            },
-        )
-        self.validate_all(
-            "x & 1 > 0",
-            write={
-                "duckdb": "x & 1 > 0",
-                "presto": "BITWISE_AND(x, 1) > 0",
-                "hive": "x & 1 > 0",
-                "spark": "x & 1 > 0",
             },
         )
 

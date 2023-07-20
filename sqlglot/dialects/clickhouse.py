@@ -58,11 +58,6 @@ class ClickHouse(Dialect):
         }
 
     class Parser(parser.Parser):
-        FUNC_TOKENS = {
-            *parser.Parser.FUNC_TOKENS,
-            TokenType.XOR,
-        }
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,

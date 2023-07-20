@@ -4488,7 +4488,7 @@ class RegexpReplace(Func):
     }
 
 
-class RegexpLike(Func):
+class RegexpLike(Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 

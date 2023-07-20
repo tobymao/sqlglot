@@ -12,6 +12,8 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
+B = t.TypeVar("B", bound=exp.Binary)
+
 
 class Dialects(str, Enum):
     DIALECT = ""
@@ -660,3 +662,7 @@ def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectTyp
             names.append(agg_all_unquoted.sql(dialect=dialect, normalize_functions="lower"))
 
     return names
+
+
+def binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:
+    return lambda args: expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))

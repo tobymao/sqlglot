@@ -58,12 +58,18 @@ class ClickHouse(Dialect):
         }
 
     class Parser(parser.Parser):
+        FUNC_TOKENS = {
+            *parser.Parser.FUNC_TOKENS,
+            TokenType.XOR,
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
+            "XOR": lambda args: exp.Xor(expressions=args),
         }
 
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
@@ -325,6 +331,7 @@ class ClickHouse(Dialect):
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
         }
 
         PROPERTIES_LOCATION = {

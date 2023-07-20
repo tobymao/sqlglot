@@ -3554,10 +3554,6 @@ class Or(Connector):
     pass
 
 
-class Xor(Connector):
-    pass
-
-
 class BitwiseAnd(Binary):
     pass
 
@@ -4235,6 +4231,10 @@ class GroupConcat(Func):
 
 class Hex(Func):
     pass
+
+
+class Xor(Connector, Func):
+    arg_types = {"this": False, "expression": False, "expressions": False}
 
 
 class If(Func):

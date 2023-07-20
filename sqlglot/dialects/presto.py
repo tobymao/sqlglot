@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    binary_from_function,
     date_trunc_to_time,
     format_time_lambda,
     if_sql,
@@ -198,6 +199,10 @@ class Presto(Dialect):
             **parser.Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "APPROX_PERCENTILE": _approx_percentile,
+            "BITWISE_AND": binary_from_function(exp.BitwiseAnd),
+            "BITWISE_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
+            "BITWISE_OR": binary_from_function(exp.BitwiseOr),
+            "BITWISE_XOR": binary_from_function(exp.BitwiseXor),
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "CONTAINS": exp.ArrayContains.from_arg_list,
             "DATE_ADD": lambda args: exp.DateAdd(

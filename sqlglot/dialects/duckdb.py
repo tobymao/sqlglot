@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    binary_from_function,
     date_trunc_to_time,
     datestrtodate_sql,
     format_time_lambda,
@@ -163,6 +164,7 @@ class DuckDB(Dialect):
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
+            "XOR": binary_from_function(exp.BitwiseXor),
         }
 
         TYPE_TOKENS = {
@@ -195,6 +197,7 @@ class DuckDB(Dialect):
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.BitwiseXor: lambda self, e: self.func("XOR", e.this, e.expression),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CurrentDate: lambda self, e: "CURRENT_DATE",
             exp.CurrentTime: lambda self, e: "CURRENT_TIME",

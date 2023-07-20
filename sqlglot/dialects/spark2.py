@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, parser, transforms
 from sqlglot.dialects.dialect import (
+    binary_from_function,
     create_with_partitions_sql,
     format_time_lambda,
     pivot_column_names,
@@ -125,12 +126,8 @@ class Spark2(Hive):
             "INT": _parse_as_cast("int"),
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
-            "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
-                this=seq_get(args, 0), expression=seq_get(args, 1)
-            ),
-            "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
-                this=seq_get(args, 0), expression=seq_get(args, 1)
-            ),
+            "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
+            "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
             "STRING": _parse_as_cast("string"),
             "TIMESTAMP": _parse_as_cast("timestamp"),
             "TO_TIMESTAMP": lambda args: _parse_as_cast("timestamp")(args)

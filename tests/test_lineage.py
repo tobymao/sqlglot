@@ -186,3 +186,16 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.alias, "")
 
         self.assertEqual(downstream.downstream, [])
+
+    def test_lineage_union(self) -> None:
+        node = lineage(
+            "x",
+            "SELECT ax AS x FROM a UNION SELECT bx FROM b UNION SELECT cx FROM c",
+        )
+        assert len(node.downstream) == 3
+
+        node = lineage(
+            "x",
+            "SELECT x FROM (SELECT ax AS x FROM a UNION SELECT bx FROM b UNION SELECT cx FROM c)",
+        )
+        assert len(node.downstream) == 3

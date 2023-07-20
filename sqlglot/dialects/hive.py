@@ -274,7 +274,7 @@ class Hive(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "TRANSFORM": lambda self: self._parse_query_transform(),
+            "TRANSFORM": lambda self: self._parse_transform(),
         }
 
         PROPERTY_PARSERS = {
@@ -284,7 +284,7 @@ class Hive(Dialect):
             ),
         }
 
-        def _parse_query_transform(self) -> exp.Transform | exp.QueryTransform:
+        def _parse_transform(self) -> exp.Transform | exp.QueryTransform:
             args = self._parse_csv(self._parse_lambda)
             self._match_r_paren()
 

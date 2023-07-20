@@ -286,8 +286,6 @@ class Hive(Dialect):
 
         def _parse_query_transform(self) -> exp.Transform | exp.QueryTransform:
             args = self._parse_csv(self._parse_lambda)
-
-            index = self._index
             self._match_r_paren()
 
             row_format_before = self._parse_row_format(match_row=True)
@@ -297,7 +295,6 @@ class Hive(Dialect):
                 record_writer = self._parse_string()
 
             if not self._match(TokenType.USING):
-                self._retreat(index)
                 return exp.Transform.from_arg_list(args)
 
             command_script = self._parse_string()

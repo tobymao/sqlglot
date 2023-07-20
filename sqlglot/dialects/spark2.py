@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, parser, transforms
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     create_with_partitions_sql,
     format_time_lambda,
@@ -142,7 +142,7 @@ class Spark2(Hive):
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **Hive.Parser.FUNCTION_PARSERS,
             "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
             "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
             "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),

@@ -1200,7 +1200,9 @@ def transform(
     f: t.Union[t.Callable[[Column], Column], t.Callable[[Column, Column], Column]],
 ) -> Column:
     f_expression = _get_lambda_from_func(f)
-    return Column.invoke_anonymous_function(col, "TRANSFORM", Column(f_expression))
+    return Column.invoke_expression_over_column(
+        col, expression.Transform, expression=Column(f_expression)
+    )
 
 
 def exists(col: ColumnOrName, f: t.Callable[[Column], Column]) -> Column:

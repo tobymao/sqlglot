@@ -224,6 +224,8 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
+        self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), x -> x + 1)")
+        self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), (x, i) -> x + i)")
         self.validate_identity("REFRESH table a.b.c")
         self.validate_identity("INTERVAL -86 days")
         self.validate_identity("SELECT UNIX_TIMESTAMP()")
@@ -501,4 +503,22 @@ TBLPROPERTIES (
         self.validate_all(
             "CURRENT_USER()",
             write={"spark": "CURRENT_USER()"},
+        )
+
+    def test_transform_query(self):
+        self.validate_identity("SELECT TRANSFORM(x) USING 'x' AS (x INT) FROM t")
+        self.validate_identity(
+            "SELECT TRANSFORM(zip_code, name, age) USING 'cat' AS (a, b, c) FROM person WHERE zip_code > 94511"
+        )
+        self.validate_identity(
+            "SELECT TRANSFORM(zip_code, name, age) USING 'cat' AS (a STRING, b STRING, c STRING) FROM person WHERE zip_code > 94511"
+        )
+        self.validate_identity(
+            "SELECT TRANSFORM(name, age) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' NULL DEFINED AS 'NULL' USING 'cat' AS (name_age STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY '@' LINES TERMINATED BY '\n' NULL DEFINED AS 'NULL' FROM person"
+        )
+        self.validate_identity(
+            "SELECT TRANSFORM(zip_code, name, age) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim'='\t') USING 'cat' AS (a STRING, b STRING, c STRING) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim'='\t') FROM person WHERE zip_code > 94511"
+        )
+        self.validate_identity(
+            "SELECT TRANSFORM(zip_code, name, age) USING 'cat' FROM person WHERE zip_code > 94500"
         )

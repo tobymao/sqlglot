@@ -272,12 +272,54 @@ class Hive(Dialect):
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "TRANSFORM": lambda self: self._parse_query_transform(),
+        }
+
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "WITH SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
+
+        def _parse_query_transform(self) -> exp.Anonymous | exp.QueryTransform:
+            args = self._parse_csv(self._parse_lambda)
+
+            index = self._index
+            self._match_r_paren()
+
+            row_format_before = self._parse_row_format(match_row=True)
+
+            record_writer = None
+            if self._match_text_seq("RECORDWRITER"):
+                record_writer = self._parse_string()
+
+            if not self._match(TokenType.USING):
+                self._retreat(index)
+                return self.expression(exp.Anonymous, this="TRANSFORM", expressions=args)
+
+            command_script = self._parse_string()
+
+            self._match(TokenType.ALIAS)
+            schema = self._parse_schema()
+
+            row_format_after = self._parse_row_format(match_row=True)
+            record_reader = None
+            if self._match_text_seq("RECORDREADER"):
+                record_reader = self._parse_string()
+
+            return self.expression(
+                exp.QueryTransform,
+                expressions=args,
+                command_script=command_script,
+                schema=schema,
+                row_format_before=row_format_before,
+                record_writer=record_writer,
+                row_format_after=row_format_after,
+                record_reader=record_reader,
+            )
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False
@@ -400,7 +442,6 @@ class Hive(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
-            exp.RowFormatSerdeProperty: lambda self, e: f"ROW FORMAT SERDE {self.sql(e, 'this')}",
             exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
@@ -413,6 +454,11 @@ class Hive(Dialect):
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def rowformatserdeproperty_sql(self, expression: exp.RowFormatSerdeProperty) -> str:
+            serde_props = self.sql(expression, "serde_properties")
+            serde_props = f" {serde_props}" if serde_props else ""
+            return f"ROW FORMAT SERDE {self.sql(expression, 'this')}{serde_props}"
 
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
             return self.func(

@@ -2031,7 +2031,20 @@ class RowFormatDelimitedProperty(Property):
 
 
 class RowFormatSerdeProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "serde_properties": False}
+
+
+# https://spark.apache.org/docs/3.1.2/sql-ref-syntax-qry-select-transform.html
+class QueryTransform(Expression):
+    arg_types = {
+        "expressions": True,
+        "command_script": True,
+        "schema": False,
+        "row_format_before": False,
+        "record_writer": False,
+        "row_format_after": False,
+        "record_reader": False,
+    }
 
 
 class SchemaCommentProperty(Property):
@@ -3874,6 +3887,11 @@ class ParameterizedAgg(AggFunc):
 
 class Abs(Func):
     pass
+
+
+# https://spark.apache.org/docs/latest/api/sql/index.html#transform
+class Transform(Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class Anonymous(Func):

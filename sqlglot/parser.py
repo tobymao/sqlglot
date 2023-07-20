@@ -716,7 +716,7 @@ class Parser(metaclass=_Parser):
 
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
-    FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+    FUNCTION_PARSERS = {
         "ANY_VALUE": lambda self: self._parse_any_value(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONCAT": lambda self: self._parse_concat(),
@@ -1784,7 +1784,17 @@ class Parser(metaclass=_Parser):
             return None
 
         if self._match_text_seq("SERDE"):
-            return self.expression(exp.RowFormatSerdeProperty, this=self._parse_string())
+            this = self._parse_string()
+
+            serde_properties = None
+            if self._match(TokenType.SERDE_PROPERTIES):
+                serde_properties = self.expression(
+                    exp.SerdeProperties, expressions=self._parse_wrapped_csv(self._parse_property)
+                )
+
+            return self.expression(
+                exp.RowFormatSerdeProperty, this=this, serde_properties=serde_properties
+            )
 
         self._match_text_seq("DELIMITED")
 
@@ -3331,7 +3341,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
-        self._match_r_paren(this)
+        self._match(TokenType.R_PAREN, expression=this)
         return self._parse_window(this)
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:

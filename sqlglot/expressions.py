@@ -4235,7 +4235,6 @@ class Hex(Func):
 
 class Xor(Connector, Func):
     arg_types = {"this": False, "expression": False, "expressions": False}
-    is_var_len_args = True
 
 
 class If(Func):

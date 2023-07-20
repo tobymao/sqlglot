@@ -284,7 +284,7 @@ class Hive(Dialect):
             ),
         }
 
-        def _parse_query_transform(self) -> exp.Anonymous | exp.QueryTransform:
+        def _parse_query_transform(self) -> exp.Transform | exp.QueryTransform:
             args = self._parse_csv(self._parse_lambda)
 
             index = self._index
@@ -298,7 +298,7 @@ class Hive(Dialect):
 
             if not self._match(TokenType.USING):
                 self._retreat(index)
-                return self.expression(exp.Anonymous, this="TRANSFORM", expressions=args)
+                return exp.Transform.from_arg_list(args)
 
             command_script = self._parse_string()
 

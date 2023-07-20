@@ -3889,6 +3889,11 @@ class Abs(Func):
     pass
 
 
+# https://spark.apache.org/docs/latest/api/sql/index.html#transform
+class Transform(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Anonymous(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

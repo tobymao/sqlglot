@@ -24,6 +24,8 @@ from sqlglot.errors import UnsupportedError
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 
+B = t.TypeVar("B", bound=exp.Binary)
+
 
 def _approx_distinct_sql(self: generator.Generator, expression: exp.ApproxDistinct) -> str:
     accuracy = expression.args.get("accuracy")
@@ -173,6 +175,10 @@ def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:
+    return lambda args: expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
@@ -198,6 +204,10 @@ class Presto(Dialect):
             **parser.Parser.FUNCTIONS,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "APPROX_PERCENTILE": _approx_percentile,
+            "BITWISE_AND": _binary_from_function(exp.BitwiseAnd),
+            "BITWISE_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
+            "BITWISE_OR": _binary_from_function(exp.BitwiseOr),
+            "BITWISE_XOR": _binary_from_function(exp.BitwiseXor),
             "CARDINALITY": exp.ArraySize.from_arg_list,
             "CONTAINS": exp.ArrayContains.from_arg_list,
             "DATE_ADD": lambda args: exp.DateAdd(

@@ -104,7 +104,6 @@ class DuckDB(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "~": TokenType.RLIKE,
             ":=": TokenType.EQ,
             "//": TokenType.DIV,
             "ATTACH": TokenType.COMMAND,
@@ -128,6 +127,11 @@ class DuckDB(Dialect):
 
     class Parser(parser.Parser):
         CONCAT_NULL_OUTPUTS_STRING = True
+
+        BITWISE = {
+            **parser.Parser.BITWISE,
+            TokenType.TILDA: exp.RegexpLike,
+        }
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

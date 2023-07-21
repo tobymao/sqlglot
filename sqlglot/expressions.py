@@ -992,7 +992,6 @@ class Uncache(Expression):
 
 class Create(Expression):
     arg_types = {
-        "with": False,
         "this": True,
         "kind": True,
         "expression": False,
@@ -1527,7 +1526,6 @@ class Index(Expression):
 
 class Insert(Expression):
     arg_types = {
-        "with": False,
         "this": True,
         "expression": False,
         "conflict": False,

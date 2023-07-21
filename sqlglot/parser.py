@@ -1933,6 +1933,12 @@ class Parser(metaclass=_Parser):
 
             if "with" in this.arg_types:
                 this.set("with", cte)
+            elif this.key == "create":
+                # Connect it to the select expression instead
+                this.expression.set("with", cte)
+            elif this.key == "insert":
+                # Connect it to the select expression instead
+                this.expression.set("with", cte)
             else:
                 self.raise_error(f"{this.key} does not support CTE")
                 this = cte

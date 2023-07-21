@@ -9,6 +9,14 @@ class TestPresto(Validator):
 
     def test_cast(self):
         self.validate_all(
+            "SELECT CAST('10C' AS INTEGER)",
+            read={
+                "postgres": "SELECT CAST('10C' AS INTEGER)",
+                "presto": "SELECT CAST('10C' AS INTEGER)",
+                "redshift": "SELECT CAST('10C' AS INTEGER)",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_DIFF('week', CAST(CAST('2009-01-01' AS TIMESTAMP) AS DATE), CAST(CAST('2009-12-31' AS TIMESTAMP) AS DATE))",
             read={"redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')"},
         )
@@ -17,7 +25,7 @@ class TestPresto(Validator):
             read={"redshift": "SELECT DATEADD(month, 18, '2008-02-28')"},
         )
         self.validate_all(
-            "SELECT TRY_CAST('1970-01-01 00:00:00' AS TIMESTAMP)",
+            "SELECT CAST('1970-01-01 00:00:00' AS TIMESTAMP)",
             read={"postgres": "SELECT 'epoch'::TIMESTAMP"},
         )
         self.validate_all(

@@ -282,7 +282,6 @@ class Postgres(Dialect):
         VAR_SINGLE_TOKENS = {"$"}
 
     class Parser(parser.Parser):
-        STRICT_CAST = False
         CONCAT_NULL_OUTPUTS_STRING = True
 
         FUNCTIONS = {

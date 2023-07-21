@@ -27,6 +27,11 @@ class Redshift(Postgres):
     class Parser(Postgres.Parser):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
+            "ADD_MONTHS": lambda args: exp.DateAdd(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+                expression=seq_get(args, 1),
+                unit=exp.var("month"),
+            ),
             "DATEADD": lambda args: exp.DateAdd(
                 this=exp.TsOrDsToDate(this=seq_get(args, 2)),
                 expression=seq_get(args, 1),
@@ -37,7 +42,6 @@ class Redshift(Postgres):
                 expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
                 unit=seq_get(args, 0),
             ),
-            "NVL": exp.Coalesce.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
         }
 

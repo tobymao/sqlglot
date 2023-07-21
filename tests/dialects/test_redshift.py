@@ -11,6 +11,13 @@ class TestRedshift(Validator):
         self.validate_identity("$foo")
 
         self.validate_all(
+            "SELECT ADD_MONTHS('2008-03-31', 1)",
+            write={
+                "redshift": "SELECT DATEADD(month, 1, '2008-03-31')",
+                "trino": "SELECT DATE_ADD('month', 1, CAST(CAST('2008-03-31' AS TIMESTAMP) AS DATE))",
+            },
+        )
+        self.validate_all(
             "SELECT STRTOL('abc', 16)",
             read={
                 "trino": "SELECT FROM_BASE('abc', 16)",

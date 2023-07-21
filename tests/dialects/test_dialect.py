@@ -224,13 +224,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "TRY_CAST(a AS DOUBLE)",
+            "CAST(a AS DOUBLE)",
             read={
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
             },
             write={
-                "duckdb": "TRY_CAST(a AS DOUBLE)",
+                "duckdb": "CAST(a AS DOUBLE)",
                 "drill": "CAST(a AS DOUBLE)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
@@ -634,7 +634,7 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(TRY_CAST(x AS DATE), day)",
+            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
             read={"postgres": "DATE_TRUNC('day', x::DATE)"},
         )
         self.validate_all(

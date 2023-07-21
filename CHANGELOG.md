@@ -1,6 +1,18 @@
 Changelog
 =========
 
+## [v17.6.1] - 2023-07-21
+### :sparkles: New Features
+- [`4b7e9f1`](https://github.com/tobymao/sqlglot/commit/4b7e9f1d2e3de9eb9b96acfd9e6d8566663666c4) - **clickhouse**: add support for the logical xor function *(PR [#1937](https://github.com/tobymao/sqlglot/pull/1937) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#1936](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`1d2b5e0`](https://github.com/tobymao/sqlglot/commit/1d2b5e0a8519692cb7ffdb461d2360304349b415) - **hive**: add support for the query TRANSFORM clause *(PR [#1935](https://github.com/tobymao/sqlglot/pull/1935) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#1933](undefined) opened by [@sangongs](https://github.com/sangongs)*
+
+### :bug: Bug Fixes
+- [`b8de650`](https://github.com/tobymao/sqlglot/commit/b8de650ca6b9e21e65c29f037dd3c1167e3bf29a) - union lineage with > 2 sources closes [#1934](https://github.com/tobymao/sqlglot/pull/1934) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`79efb42`](https://github.com/tobymao/sqlglot/commit/79efb42fde0b8c6e0f878b55ca292cac5a535535) - **duckdb, presto**: improve bitwise support *(PR [#1938](https://github.com/tobymao/sqlglot/pull/1938) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.6.0] - 2023-07-19
 ### :sparkles: New Features
 - [`2510999`](https://github.com/tobymao/sqlglot/commit/2510999192aa98e74d4ea713eb3e7f7d5b4b846f) - isin unnest builder *(commit by [@tobymao](https://github.com/tobymao))*
@@ -894,3 +906,4 @@ Changelog
 [v17.4.1]: https://github.com/tobymao/sqlglot/compare/v17.4.0...v17.4.1
 [v17.5.0]: https://github.com/tobymao/sqlglot/compare/v17.4.1...v17.5.0
 [v17.6.0]: https://github.com/tobymao/sqlglot/compare/v17.5.0...v17.6.0
+[v17.6.1]: https://github.com/tobymao/sqlglot/compare/v17.6.0...v17.6.1

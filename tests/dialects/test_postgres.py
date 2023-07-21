@@ -255,8 +255,8 @@ class TestPostgres(Validator):
             "GENERATE_SERIES('2019-01-01'::TIMESTAMP, NOW(), '1day')",
             write={
                 "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1 day')",
-                "presto": "SEQUENCE(TRY_CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
-                "trino": "SEQUENCE(TRY_CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+                "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+                "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
             },
         )
         self.validate_all(
@@ -470,7 +470,7 @@ class TestPostgres(Validator):
             """SELECT JSON_ARRAY_ELEMENTS((foo->'sections')::JSON) AS sections""",
             write={
                 "postgres": """SELECT JSON_ARRAY_ELEMENTS(CAST((foo -> 'sections') AS JSON)) AS sections""",
-                "presto": """SELECT JSON_ARRAY_ELEMENTS(TRY_CAST((JSON_EXTRACT(foo, 'sections')) AS JSON)) AS sections""",
+                "presto": """SELECT JSON_ARRAY_ELEMENTS(CAST((JSON_EXTRACT(foo, 'sections')) AS JSON)) AS sections""",
             },
         )
         self.validate_all(
@@ -570,7 +570,7 @@ class TestPostgres(Validator):
             },
         )
 
-        self.assertIsInstance(parse_one("id::UUID", read="postgres"), exp.TryCast)
+        self.assertIsInstance(parse_one("id::UUID", read="postgres"), exp.Cast)
 
     def test_bool_or(self):
         self.validate_all(

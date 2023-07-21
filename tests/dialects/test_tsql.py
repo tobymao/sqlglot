@@ -33,15 +33,15 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
-            "SELECT DATEPART(year, TRY_CAST('2017-01-01' AS DATE))",
+            "SELECT DATEPART(year, CAST('2017-01-01' AS DATE))",
             read={"postgres": "SELECT DATE_PART('year', '2017-01-01'::DATE)"},
         )
         self.validate_all(
-            "SELECT DATEPART(month, TRY_CAST('2017-03-01' AS DATE))",
+            "SELECT DATEPART(month, CAST('2017-03-01' AS DATE))",
             read={"postgres": "SELECT DATE_PART('month', '2017-03-01'::DATE)"},
         )
         self.validate_all(
-            "SELECT DATEPART(day, TRY_CAST('2017-01-02' AS DATE))",
+            "SELECT DATEPART(day, CAST('2017-01-02' AS DATE))",
             read={"postgres": "SELECT DATE_PART('day', '2017-01-02'::DATE)"},
         )
         self.validate_all(

@@ -211,7 +211,7 @@ class DuckDB(Dialect):
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.DateSub: _date_delta_sql,
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", f"'{e.args.get('unit', 'day')}'", e.expression, e.this
+                "DATE_DIFF", f"'{e.args.get('unit') or 'day'}'", e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",

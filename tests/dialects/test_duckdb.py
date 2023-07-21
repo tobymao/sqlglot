@@ -57,6 +57,15 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "DATE_DIFF('day', CAST(b AS DATE), CAST(a AS DATE))",
+            read={
+                "duckdb": "DATE_DIFF('day', CAST(b AS DATE), CAST(a AS DATE))",
+                "hive": "DATEDIFF(a, b)",
+                "spark": "DATEDIFF(a, b)",
+                "spark2": "DATEDIFF(a, b)",
+            },
+        )
+        self.validate_all(
             "XOR(a, b)",
             read={
                 "": "a ^ b",

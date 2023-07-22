@@ -2828,7 +2828,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.OFFSET):
             return this
 
-        count = self._parse_number()
+        count = self._parse_term()
         self._match_set((TokenType.ROW, TokenType.ROWS))
         return self.expression(exp.Offset, this=this, expression=count)
 

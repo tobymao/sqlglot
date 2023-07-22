@@ -2778,8 +2778,14 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         if self._match(TokenType.TOP if top else TokenType.LIMIT):
             comments = self._prev_comments
-            limit_paren = self._match(TokenType.L_PAREN)
-            expression = self._parse_number() if top else self._parse_term()
+            if top:
+                limit_paren = self._match(TokenType.L_PAREN)
+                expression = self._parse_number()
+
+                if limit_paren:
+                    self._match_r_paren()
+            else:
+                expression = self._parse_term()
 
             if self._match(TokenType.COMMA):
                 offset = expression
@@ -2790,9 +2796,6 @@ class Parser(metaclass=_Parser):
             limit_exp = self.expression(
                 exp.Limit, this=this, expression=expression, offset=offset, comments=comments
             )
-
-            if limit_paren:
-                self._match_r_paren()
 
             return limit_exp
 

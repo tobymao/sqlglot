@@ -509,7 +509,9 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     Returns:
         list[Scope]: scope instances
     """
-    if not isinstance(expression, exp.Unionable):
+    if isinstance(expression, exp.Create):
+        return list(_traverse_scope(Scope(expression)))
+    elif not isinstance(expression, exp.Unionable):
         return []
     return list(_traverse_scope(Scope(expression)))
 
@@ -540,6 +542,8 @@ def _traverse_scope(scope):
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
         pass
+    elif isinstance(scope.expression, exp.Create):
+        yield from _traverse_create(scope)
     else:
         logger.warning(
             "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
@@ -709,6 +713,12 @@ def _traverse_subqueries(scope):
             yield child_scope
             top = child_scope
         scope.subquery_scopes.append(top)
+
+
+def _traverse_create(scope):
+    yield from _traverse_ctes(scope)
+    yield from _traverse_subqueries(scope)
+    yield from _traverse_tables(Scope(scope.expression.expression))
 
 
 def walk_in_scope(expression, bfs=True):

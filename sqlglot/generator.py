@@ -164,6 +164,11 @@ class Generator:
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
+    # Whether or not VALUES statements can be used as derived tables.
+    # MySQL 5 and Redshift do not allow this, so when False, it will convert
+    # SELECT * VALUES into SELECT UNION
+    VALUES_AS_TABLE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1308,15 +1313,45 @@ class Generator:
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:
-        args = self.expressions(expression)
-        alias = self.sql(expression, "alias")
-        values = f"VALUES{self.seg('')}{args}"
-        values = (
-            f"({values})"
-            if self.WRAP_DERIVED_VALUES and (alias or isinstance(expression.parent, exp.From))
-            else values
-        )
-        return f"{values} AS {alias}" if alias else values
+        # The VALUES clause is still valid in an `INSERT INTO ..` statement, for example
+        if self.VALUES_AS_TABLE or not expression.find_ancestor(exp.From, exp.Join):
+            args = self.expressions(expression)
+            alias = self.sql(expression, "alias")
+            values = f"VALUES{self.seg('')}{args}"
+            values = (
+                f"({values})"
+                if self.WRAP_DERIVED_VALUES and (alias or isinstance(expression.parent, exp.From))
+                else values
+            )
+            return f"{values} AS {alias}" if alias else values
+
+        # Converts `VALUES...` expression into a series of select unions.
+        # Note: If you have a lot of unions then this will result in a large number of recursive statements to
+        # evaluate the expression. You may need to increase `sys.setrecursionlimit` to run and it can also be
+        # very slow.
+        expression = expression.copy()
+        column_names = expression.alias and expression.args["alias"].columns
+
+        selects = []
+
+        for i, tup in enumerate(expression.expressions):
+            row = tup.expressions
+
+            if i == 0 and column_names:
+                row = [
+                    exp.alias_(value, column_name) for value, column_name in zip(row, column_names)
+                ]
+
+            selects.append(exp.Select(expressions=row))
+
+        subquery_expression: exp.Select | exp.Union = selects[0]
+        if len(selects) > 1:
+            for select in selects[1:]:
+                subquery_expression = exp.union(
+                    subquery_expression, select, distinct=False, copy=False
+                )
+
+        return self.subquery_sql(subquery_expression.subquery(expression.alias, copy=False))
 
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")

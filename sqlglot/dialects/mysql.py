@@ -427,6 +427,7 @@ class MySQL(Dialect):
         TABLE_HINTS = True
         DUPLICATE_KEY_UPDATE_WITH_SET = False
         QUERY_HINT_SEP = " "
+        VALUES_AS_TABLE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

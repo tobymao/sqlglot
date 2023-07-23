@@ -91,6 +91,7 @@ class Redshift(Postgres):
         LOCKING_READS_SUPPORTED = False
         RENAME_TABLE_WITH_DB = False
         QUERY_HINTS = False
+        VALUES_AS_TABLE = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
@@ -132,40 +133,6 @@ class Redshift(Postgres):
         TRANSFORMS.pop(exp.Pow)
 
         RESERVED_KEYWORDS = {*Postgres.Generator.RESERVED_KEYWORDS, "snapshot", "type"}
-
-        def values_sql(self, expression: exp.Values) -> str:
-            """
-            Converts `VALUES...` expression into a series of unions.
-
-            Note: If you have a lot of unions then this will result in a large number of recursive statements to
-            evaluate the expression. You may need to increase `sys.setrecursionlimit` to run and it can also be
-            very slow.
-            """
-
-            # The VALUES clause is still valid in an `INSERT INTO ..` statement, for example
-            if not expression.find_ancestor(exp.From, exp.Join):
-                return super().values_sql(expression)
-
-            column_names = expression.alias and expression.args["alias"].columns
-
-            selects = []
-            rows = [tuple_exp.expressions for tuple_exp in expression.expressions]
-
-            for i, row in enumerate(rows):
-                if i == 0 and column_names:
-                    row = [
-                        exp.alias_(value, column_name)
-                        for value, column_name in zip(row, column_names)
-                    ]
-
-                selects.append(exp.Select(expressions=row))
-
-            subquery_expression: exp.Select | exp.Union = selects[0]
-            if len(selects) > 1:
-                for select in selects[1:]:
-                    subquery_expression = exp.union(subquery_expression, select, distinct=False)
-
-            return self.subquery_sql(subquery_expression.subquery(expression.alias))
 
         def with_properties(self, properties: exp.Properties) -> str:
             """Redshift doesn't have `WITH` as part of their with_properties so we remove it"""

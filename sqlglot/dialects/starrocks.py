@@ -20,6 +20,8 @@ class StarRocks(MySQL):
         }
 
     class Generator(MySQL.Generator):
+        CAST_MAPPING = {}
+
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
             exp.DataType.Type.TEXT: "STRING",

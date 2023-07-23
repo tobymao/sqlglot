@@ -186,7 +186,7 @@ WHERE
             */
             SELECT
               tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
-              CAST(x AS INT), # comment 3
+              CAST(x AS CHAR), # comment 3
               y               -- comment 4
             FROM
               bar /* comment 5 */,
@@ -198,7 +198,7 @@ WHERE
             */
 SELECT
   tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
-  CAST(x AS INT), /* comment 3 */
+  CAST(x AS CHAR), /* comment 3 */
   y /* comment 4 */
 FROM bar /* comment 5 */, tbl /*          comment 6 */""",
             read="mysql",

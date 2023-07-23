@@ -54,7 +54,7 @@ class TestTSQL(Validator):
         self.validate_all(
             "CONVERT(INT, CONVERT(NUMERIC, '444.75'))",
             write={
-                "mysql": "CAST(CAST('444.75' AS DECIMAL) AS INT)",
+                "mysql": "CAST(CAST('444.75' AS DECIMAL) AS SIGNED)",
                 "tsql": "CAST(CAST('444.75' AS NUMERIC) AS INTEGER)",
             },
         )
@@ -753,14 +753,14 @@ WHERE
         self.validate_all(
             "SELECT CONVERT(VARCHAR(10), testdb.dbo.test.x, 120) y FROM testdb.dbo.test",
             write={
-                "mysql": "SELECT CAST(DATE_FORMAT(testdb.dbo.test.x, '%Y-%m-%d %T') AS VARCHAR(10)) AS y FROM testdb.dbo.test",
+                "mysql": "SELECT CAST(DATE_FORMAT(testdb.dbo.test.x, '%Y-%m-%d %T') AS CHAR(10)) AS y FROM testdb.dbo.test",
                 "spark": "SELECT CAST(DATE_FORMAT(testdb.dbo.test.x, 'yyyy-MM-dd HH:mm:ss') AS VARCHAR(10)) AS y FROM testdb.dbo.test",
             },
         )
         self.validate_all(
             "SELECT CONVERT(VARCHAR(10), y.x) z FROM testdb.dbo.test y",
             write={
-                "mysql": "SELECT CAST(y.x AS VARCHAR(10)) AS z FROM testdb.dbo.test AS y",
+                "mysql": "SELECT CAST(y.x AS CHAR(10)) AS z FROM testdb.dbo.test AS y",
                 "spark": "SELECT CAST(y.x AS VARCHAR(10)) AS z FROM testdb.dbo.test AS y",
             },
         )

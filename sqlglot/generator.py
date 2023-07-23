@@ -824,7 +824,11 @@ class Generator:
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         type_value = expression.this
-        type_sql = self.TYPE_MAPPING.get(type_value, type_value.value)
+        type_sql = (
+            self.TYPE_MAPPING.get(type_value, type_value.value)
+            if isinstance(type_value, exp.DataType.Type)
+            else type_value
+        )
         nested = ""
         interior = self.expressions(expression, flat=True)
         values = ""

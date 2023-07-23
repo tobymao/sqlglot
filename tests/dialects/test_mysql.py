@@ -83,7 +83,7 @@ class TestMySQL(Validator):
         self.validate_identity("CAST(x AS SET('a', 'b'))")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
         self.validate_identity("x ->> '$.name'")
-        self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
+        self.validate_identity("SELECT CAST(`a`.`b` AS CHAR) FROM foo")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(TRAILING 'bla' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(BOTH 'bla' FROM ' XXX ')")
@@ -436,6 +436,14 @@ class TestMySQL(Validator):
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
 
     def test_mysql(self):
+        self.validate_all(
+            "CAST(x AS TEXT)",
+            write={
+                "mysql": "CAST(x AS CHAR)",
+                "presto": "CAST(x AS VARCHAR)",
+                "starrocks": "CAST(x AS STRING)",
+            },
+        )
         self.validate_all("CAST(x AS SIGNED)", write={"mysql": "CAST(x AS SIGNED)"})
         self.validate_all("CAST(x AS SIGNED INTEGER)", write={"mysql": "CAST(x AS SIGNED)"})
         self.validate_all("CAST(x AS UNSIGNED)", write={"mysql": "CAST(x AS UNSIGNED)"})

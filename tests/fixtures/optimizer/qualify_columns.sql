@@ -94,6 +94,16 @@ SELECT 'a' AS a FROM x GROUP BY 1;
 SELECT 'a' AS a FROM x AS x GROUP BY 1;
 
 # execute: false
+# dialect: oracle
+SELECT t."col" FROM tbl t;
+SELECT T."col" AS "col" FROM TBL T;
+
+# execute: false
+# dialect: oracle
+WITH base AS (SELECT x.dummy AS COL_1 FROM dual x) SELECT b."COL_1" FROM base b;
+WITH BASE AS (SELECT X.DUMMY AS COL_1 FROM DUAL X) SELECT B.COL_1 AS COL_1 FROM BASE B;
+
+# execute: false
 -- this query seems to be invalid in postgres and duckdb but valid in bigquery
 SELECT 2 a FROM x GROUP BY 1 HAVING a > 1;
 SELECT 2 AS a FROM x AS x GROUP BY 1 HAVING a > 1;

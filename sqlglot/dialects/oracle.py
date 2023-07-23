@@ -30,6 +30,9 @@ def _parse_xml_table(self: parser.Parser) -> exp.XMLTable:
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
 
+    # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
+    RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
+
     # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes
     TIME_MAPPING = {

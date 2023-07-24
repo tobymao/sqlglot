@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v17.8.0] - 2023-07-24
+### :sparkles: New Features
+- [`75d49b7`](https://github.com/tobymao/sqlglot/commit/75d49b736b767496479a1138581960c5322cb7a3) - **schema**: improve overridability of normalization setting *(PR [#1954](https://github.com/tobymao/sqlglot/pull/1954) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`da5a4d1`](https://github.com/tobymao/sqlglot/commit/da5a4d1d06835d97ec0a01fc193422984a0b9707) - **oracle**: improve handling of KEEP (...) OVER (...) window syntax *(PR [#1953](https://github.com/tobymao/sqlglot/pull/1953) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#1952](undefined) opened by [@push2prod](https://github.com/push2prod)*
+
+
 ## [v17.7.0] - 2023-07-23
 ### :boom: BREAKING CHANGES
 - due to [`2aa62d1`](https://github.com/tobymao/sqlglot/commit/2aa62d19252c2ed6eb26d962ff8253d988ff32e5) - mysql 5 does not support select * from values *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -927,3 +936,4 @@ Changelog
 [v17.6.0]: https://github.com/tobymao/sqlglot/compare/v17.5.0...v17.6.0
 [v17.6.1]: https://github.com/tobymao/sqlglot/compare/v17.6.0...v17.6.1
 [v17.7.0]: https://github.com/tobymao/sqlglot/compare/v17.6.1...v17.7.0
+[v17.8.0]: https://github.com/tobymao/sqlglot/compare/v17.7.0...v17.8.0

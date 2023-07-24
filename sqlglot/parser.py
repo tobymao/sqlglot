@@ -4172,7 +4172,7 @@ class Parser(metaclass=_Parser):
 
         self._match_r_paren()
 
-        return self.expression(
+        window = self.expression(
             exp.Window,
             this=this,
             partition_by=partition,
@@ -4182,6 +4182,12 @@ class Parser(metaclass=_Parser):
             over=over,
             first=first,
         )
+
+        # This covers Oracle's FIRST/LAST syntax: aggregate KEEP (...) OVER (...)
+        if self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS, advance=False):
+            return self._parse_window(window, alias=alias)
+
+        return window
 
     def _parse_window_spec(self) -> t.Dict[str, t.Optional[str | exp.Expression]]:
         self._match(TokenType.BETWEEN)

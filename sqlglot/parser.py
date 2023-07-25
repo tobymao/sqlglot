@@ -1692,6 +1692,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Describe, this=this, kind=kind)
 
     def _parse_insert(self) -> exp.Insert:
+        comments = ensure_list(self._prev_comments)
         overwrite = self._match(TokenType.OVERWRITE)
         ignore = self._match(TokenType.IGNORE)
         local = self._match_text_seq("LOCAL")
@@ -1709,6 +1710,7 @@ class Parser(metaclass=_Parser):
                 alternative = self._match_texts(self.INSERT_ALTERNATIVES) and self._prev.text
 
             self._match(TokenType.INTO)
+            comments += ensure_list(self._prev_comments)
             self._match(TokenType.TABLE)
             this = self._parse_table(schema=True)
 
@@ -1716,6 +1718,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Insert,
+            comments=comments,
             this=this,
             exists=self._parse_exists(),
             partition=self._parse_partition(),
@@ -1840,6 +1843,7 @@ class Parser(metaclass=_Parser):
         # This handles MySQL's "Multiple-Table Syntax"
         # https://dev.mysql.com/doc/refman/8.0/en/delete.html
         tables = None
+        comments = self._prev_comments
         if not self._match(TokenType.FROM, advance=False):
             tables = self._parse_csv(self._parse_table) or None
 
@@ -1847,6 +1851,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Delete,
+            comments=comments,
             tables=tables,
             this=self._match(TokenType.FROM) and self._parse_table(joins=True),
             using=self._match(TokenType.USING) and self._parse_table(joins=True),
@@ -1856,11 +1861,13 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_update(self) -> exp.Update:
+        comments = self._prev_comments
         this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
         expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
         returning = self._parse_returning()
         return self.expression(
             exp.Update,
+            comments=comments,
             **{  # type: ignore
                 "this": this,
                 "expressions": expressions,

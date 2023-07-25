@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     no_trycast_sql,
     regexp_extract_sql,
+    regexp_replace_sql,
     rename_func,
     right_to_substring_sql,
     strposition_to_locate_sql,
@@ -271,12 +272,51 @@ class Hive(Dialect):
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 
+        FUNCTION_PARSERS = {
+            **parser.Parser.FUNCTION_PARSERS,
+            "TRANSFORM": lambda self: self._parse_transform(),
+        }
+
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "WITH SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
+
+        def _parse_transform(self) -> exp.Transform | exp.QueryTransform:
+            args = self._parse_csv(self._parse_lambda)
+            self._match_r_paren()
+
+            row_format_before = self._parse_row_format(match_row=True)
+
+            record_writer = None
+            if self._match_text_seq("RECORDWRITER"):
+                record_writer = self._parse_string()
+
+            if not self._match(TokenType.USING):
+                return exp.Transform.from_arg_list(args)
+
+            command_script = self._parse_string()
+
+            self._match(TokenType.ALIAS)
+            schema = self._parse_schema()
+
+            row_format_after = self._parse_row_format(match_row=True)
+            record_reader = None
+            if self._match_text_seq("RECORDREADER"):
+                record_reader = self._parse_string()
+
+            return self.expression(
+                exp.QueryTransform,
+                expressions=args,
+                command_script=command_script,
+                schema=schema,
+                row_format_before=row_format_before,
+                record_writer=record_writer,
+                row_format_after=row_format_after,
+                record_reader=record_reader,
+            )
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False
@@ -364,11 +404,13 @@ class Hive(Dialect):
             exp.Max: max_or_greatest,
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
+            exp.MonthsBetween: lambda self, e: self.func("MONTHS_BETWEEN", e.this, e.expression),
             exp.VarMap: var_map_sql,
             exp.Create: create_with_partitions_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             exp.RegexpExtract: regexp_extract_sql,
+            exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "RLIKE"),
             exp.RegexpSplit: rename_func("SPLIT"),
             exp.Right: right_to_substring_sql,
@@ -397,7 +439,6 @@ class Hive(Dialect):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
-            exp.RowFormatSerdeProperty: lambda self, e: f"ROW FORMAT SERDE {self.sql(e, 'this')}",
             exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
@@ -410,6 +451,11 @@ class Hive(Dialect):
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def rowformatserdeproperty_sql(self, expression: exp.RowFormatSerdeProperty) -> str:
+            serde_props = self.sql(expression, "serde_properties")
+            serde_props = f" {serde_props}" if serde_props else ""
+            return f"ROW FORMAT SERDE {self.sql(expression, 'this')}{serde_props}"
 
         def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
             return self.func(

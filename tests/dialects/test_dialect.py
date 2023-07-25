@@ -81,7 +81,7 @@ class TestDialect(Validator):
                 "clickhouse": "CAST(a AS TEXT)",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
-                "mysql": "CAST(a AS TEXT)",
+                "mysql": "CAST(a AS CHAR)",
                 "hive": "CAST(a AS STRING)",
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
@@ -160,7 +160,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(a AS STRING)",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
-                "mysql": "CAST(a AS TEXT)",
+                "mysql": "CAST(a AS CHAR)",
                 "hive": "CAST(a AS STRING)",
                 "oracle": "CAST(a AS CLOB)",
                 "postgres": "CAST(a AS TEXT)",
@@ -177,7 +177,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(a AS STRING)",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
-                "mysql": "CAST(a AS VARCHAR)",
+                "mysql": "CAST(a AS CHAR)",
                 "hive": "CAST(a AS STRING)",
                 "oracle": "CAST(a AS VARCHAR2)",
                 "postgres": "CAST(a AS VARCHAR)",
@@ -194,7 +194,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(a AS STRING)",
                 "drill": "CAST(a AS VARCHAR(3))",
                 "duckdb": "CAST(a AS TEXT(3))",
-                "mysql": "CAST(a AS VARCHAR(3))",
+                "mysql": "CAST(a AS CHAR(3))",
                 "hive": "CAST(a AS VARCHAR(3))",
                 "oracle": "CAST(a AS VARCHAR2(3))",
                 "postgres": "CAST(a AS VARCHAR(3))",
@@ -224,13 +224,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "TRY_CAST(a AS DOUBLE)",
+            "CAST(a AS DOUBLE)",
             read={
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
             },
             write={
-                "duckdb": "TRY_CAST(a AS DOUBLE)",
+                "duckdb": "CAST(a AS DOUBLE)",
                 "drill": "CAST(a AS DOUBLE)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
@@ -634,7 +634,7 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(TRY_CAST(x AS DATE), day)",
+            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
             read={"postgres": "DATE_TRUNC('day', x::DATE)"},
         )
         self.validate_all(

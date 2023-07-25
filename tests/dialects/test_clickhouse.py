@@ -6,6 +6,7 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_identity("SELECT xor(TRUE, FALSE)")
         self.validate_identity("ATTACH DATABASE DEFAULT ENGINE = ORDINARY")
         self.validate_identity("CAST(['hello'], 'Array(Enum8(''hello'' = 1))')")
         self.validate_identity("SELECT x, COUNT() FROM y GROUP BY x WITH TOTALS")
@@ -52,6 +53,34 @@ class TestClickhouse(Validator):
             "CREATE MATERIALIZED VIEW test_view (id UInt8) TO db.table1 AS SELECT * FROM test_data"
         )
 
+        self.validate_all(
+            "SELECT xor(1, 0)",
+            read={
+                "clickhouse": "SELECT xor(1, 0)",
+                "mysql": "SELECT 1 XOR 0",
+            },
+            write={
+                "mysql": "SELECT 1 XOR 0",
+            },
+        )
+        self.validate_all(
+            "SELECT xor(0, 1, xor(1, 0, 0))",
+            write={
+                "clickhouse": "SELECT xor(0, 1, xor(1, 0, 0))",
+                "mysql": "SELECT 0 XOR 1 XOR 1 XOR 0 XOR 0",
+            },
+        )
+        self.validate_all(
+            "SELECT xor(xor(1, 0), 1)",
+            read={
+                "clickhouse": "SELECT xor(xor(1, 0), 1)",
+                "mysql": "SELECT 1 XOR 0 XOR 1",
+            },
+            write={
+                "clickhouse": "SELECT xor(xor(1, 0), 1)",
+                "mysql": "SELECT 1 XOR 0 XOR 1",
+            },
+        )
         self.validate_all(
             "CONCAT(CASE WHEN COALESCE(CAST(a AS TEXT), '') IS NULL THEN COALESCE(CAST(a AS TEXT), '') ELSE CAST(COALESCE(CAST(a AS TEXT), '') AS TEXT) END, CASE WHEN COALESCE(CAST(b AS TEXT), '') IS NULL THEN COALESCE(CAST(b AS TEXT), '') ELSE CAST(COALESCE(CAST(b AS TEXT), '') AS TEXT) END)",
             read={"postgres": "CONCAT(a, b)"},
@@ -136,6 +165,11 @@ class TestClickhouse(Validator):
                 "clickhouse": "SELECT loyalty, COUNT() FROM hits LEFT SEMI JOIN users USING (UserID)"
                 + " GROUP BY loyalty ORDER BY loyalty"
             },
+        )
+        self.validate_identity("SELECT s, arr FROM arrays_test ARRAY JOIN arr")
+        self.validate_identity("SELECT s, arr, a FROM arrays_test LEFT ARRAY JOIN arr AS a")
+        self.validate_identity(
+            "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
         )
 
     def test_cte(self):

@@ -427,6 +427,7 @@ class MySQL(Dialect):
         TABLE_HINTS = True
         DUPLICATE_KEY_UPDATE_WITH_SET = False
         QUERY_HINT_SEP = " "
+        VALUES_AS_TABLE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -473,19 +474,32 @@ class MySQL(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
+        # MySQL doesn't support many datatypes in cast.
+        # https://dev.mysql.com/doc/refman/8.0/en/cast-functions.html#function_cast
+        CAST_MAPPING = {
+            exp.DataType.Type.BIGINT: "SIGNED",
+            exp.DataType.Type.BOOLEAN: "SIGNED",
+            exp.DataType.Type.INT: "SIGNED",
+            exp.DataType.Type.TEXT: "CHAR",
+            exp.DataType.Type.UBIGINT: "UNSIGNED",
+            exp.DataType.Type.VARCHAR: "CHAR",
+        }
+
+        def xor_sql(self, expression: exp.Xor) -> str:
+            if expression.expressions:
+                return self.expressions(expression, sep=" XOR ")
+            return super().xor_sql(expression)
+
         def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
             return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            """(U)BIGINT is not allowed in a CAST expression, so we use (UN)SIGNED instead."""
-            if expression.to.this == exp.DataType.Type.BIGINT:
-                to = "SIGNED"
-            elif expression.to.this == exp.DataType.Type.UBIGINT:
-                to = "UNSIGNED"
-            else:
-                return super().cast_sql(expression)
+            to = self.CAST_MAPPING.get(expression.to.this)
 
-            return f"CAST({self.sql(expression, 'this')} AS {to})"
+            if to:
+                expression = expression.copy()
+                expression.to.set("this", to)
+            return super().cast_sql(expression)
 
         def show_sql(self, expression: exp.Show) -> str:
             this = f" {expression.name}"

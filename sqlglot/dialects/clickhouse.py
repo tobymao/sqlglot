@@ -64,6 +64,7 @@ class ClickHouse(Dialect):
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
+            "XOR": lambda args: exp.Xor(expressions=args),
         }
 
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
@@ -95,6 +96,7 @@ class ClickHouse(Dialect):
             TokenType.ASOF,
             TokenType.ANTI,
             TokenType.SEMI,
+            TokenType.ARRAY,
         }
 
         TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {
@@ -103,6 +105,7 @@ class ClickHouse(Dialect):
             TokenType.ANTI,
             TokenType.SETTINGS,
             TokenType.FORMAT,
+            TokenType.ARRAY,
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -160,8 +163,11 @@ class ClickHouse(Dialect):
             schema: bool = False,
             joins: bool = False,
             alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+            parse_bracket: bool = False,
         ) -> t.Optional[exp.Expression]:
-            this = super()._parse_table(schema=schema, joins=joins, alias_tokens=alias_tokens)
+            this = super()._parse_table(
+                schema=schema, joins=joins, alias_tokens=alias_tokens, parse_bracket=parse_bracket
+            )
 
             if self._match(TokenType.FINAL):
                 this = self.expression(exp.Final, this=this)
@@ -204,8 +210,10 @@ class ClickHouse(Dialect):
                 self._match_set(self.JOIN_KINDS) and self._prev,
             )
 
-        def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Join]:
-            join = super()._parse_join(skip_join_token)
+        def _parse_join(
+            self, skip_join_token: bool = False, parse_bracket: bool = False
+        ) -> t.Optional[exp.Join]:
+            join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
 
             if join:
                 join.set("global", join.args.pop("method", None))
@@ -318,6 +326,7 @@ class ClickHouse(Dialect):
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
+            exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
         }
 
         PROPERTIES_LOCATION = {

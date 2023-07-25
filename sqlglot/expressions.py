@@ -759,12 +759,24 @@ class Condition(Expression):
         )
 
     def isin(
-        self, *expressions: t.Any, query: t.Optional[ExpOrStr] = None, copy: bool = True, **opts
+        self,
+        *expressions: t.Any,
+        query: t.Optional[ExpOrStr] = None,
+        unnest: t.Optional[ExpOrStr] | t.Collection[ExpOrStr] = None,
+        copy: bool = True,
+        **opts,
     ) -> In:
         return In(
             this=_maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
             query=maybe_parse(query, copy=copy, **opts) if query else None,
+            unnest=Unnest(
+                expressions=[
+                    maybe_parse(t.cast(ExpOrStr, e), copy=copy, **opts) for e in ensure_list(unnest)
+                ]
+            )
+            if unnest
+            else None,
         )
 
     def between(self, low: t.Any, high: t.Any, copy: bool = True, **opts) -> Between:
@@ -2019,7 +2031,20 @@ class RowFormatDelimitedProperty(Property):
 
 
 class RowFormatSerdeProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "serde_properties": False}
+
+
+# https://spark.apache.org/docs/3.1.2/sql-ref-syntax-qry-select-transform.html
+class QueryTransform(Expression):
+    arg_types = {
+        "expressions": True,
+        "command_script": True,
+        "schema": False,
+        "row_format_before": False,
+        "record_writer": False,
+        "row_format_after": False,
+        "record_reader": False,
+    }
 
 
 class SchemaCommentProperty(Property):
@@ -2149,12 +2174,24 @@ class Tuple(Expression):
     arg_types = {"expressions": False}
 
     def isin(
-        self, *expressions: t.Any, query: t.Optional[ExpOrStr] = None, copy: bool = True, **opts
+        self,
+        *expressions: t.Any,
+        query: t.Optional[ExpOrStr] = None,
+        unnest: t.Optional[ExpOrStr] | t.Collection[ExpOrStr] = None,
+        copy: bool = True,
+        **opts,
     ) -> In:
         return In(
             this=_maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
             query=maybe_parse(query, copy=copy, **opts) if query else None,
+            unnest=Unnest(
+                expressions=[
+                    maybe_parse(t.cast(ExpOrStr, e), copy=copy, **opts) for e in ensure_list(unnest)
+                ]
+            )
+            if unnest
+            else None,
         )
 
 
@@ -3530,10 +3567,6 @@ class Or(Connector):
     pass
 
 
-class Xor(Connector):
-    pass
-
-
 class BitwiseAnd(Binary):
     pass
 
@@ -3856,6 +3889,11 @@ class Abs(Func):
     pass
 
 
+# https://spark.apache.org/docs/latest/api/sql/index.html#transform
+class Transform(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Anonymous(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
@@ -4098,6 +4136,10 @@ class WeekOfYear(Func):
     _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 
 
+class MonthsBetween(Func):
+    arg_types = {"this": True, "expression": True, "roundoff": False}
+
+
 class LastDateOfMonth(Func):
     pass
 
@@ -4207,6 +4249,10 @@ class GroupConcat(Func):
 
 class Hex(Func):
     pass
+
+
+class Xor(Connector, Func):
+    arg_types = {"this": False, "expression": False, "expressions": False}
 
 
 class If(Func):
@@ -4431,7 +4477,18 @@ class RegexpExtract(Func):
     }
 
 
-class RegexpLike(Func):
+class RegexpReplace(Func):
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "replacement": True,
+        "position": False,
+        "occurrence": False,
+        "parameters": False,
+    }
+
+
+class RegexpLike(Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 

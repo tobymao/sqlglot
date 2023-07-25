@@ -238,3 +238,7 @@ class TestSchema(unittest.TestCase):
         schema = MappingSchema(schema={"Foo": {"`BaR`": "int"}}, dialect="bigquery")
         self.assertEqual(schema.column_names("Foo"), ["bar"])
         self.assertEqual(schema.column_names("foo"), [])
+
+        # Check that the schema's normalization setting can be overridden
+        schema = MappingSchema(schema={"X": {"y": "int"}}, normalize=False, dialect="snowflake")
+        self.assertEqual(schema.column_names("x", normalize=True), ["y"])

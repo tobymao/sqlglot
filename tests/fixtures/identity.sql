@@ -270,6 +270,8 @@ SELECT x LIKE '%x%' FROM test
 SELECT * FROM test LIMIT 100
 SELECT * FROM test LIMIT 1 + 1
 SELECT * FROM test LIMIT 100 OFFSET 200
+SELECT * FROM test LIMIT (SELECT 1)
+SELECT * FROM test LIMIT (SELECT 1) OFFSET (SELECT 1)
 SELECT * FROM test FETCH FIRST ROWS ONLY
 SELECT * FROM test FETCH FIRST 1 ROWS ONLY
 SELECT * FROM test ORDER BY id DESC FETCH FIRST 10 ROWS WITH TIES
@@ -846,3 +848,6 @@ SELECT * FROM current_date
 SELECT * FROM schema.current_date
 SELECT /*+ SOME_HINT(foo) */ 1
 SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1)
+/* comment1 */ INSERT INTO x /* comment2 */ VALUES (1, 2, 3)
+/* comment1 */ UPDATE tbl /* comment2 */ SET x = 2 WHERE x < 2
+/* comment1 */ DELETE FROM x /* comment2 */ WHERE y > 1

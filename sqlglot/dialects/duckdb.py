@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    binary_from_function,
     date_trunc_to_time,
     datestrtodate_sql,
     format_time_lambda,
@@ -16,6 +17,7 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     pivot_column_names,
     regexp_extract_sql,
+    regexp_replace_sql,
     rename_func,
     str_position_sql,
     str_to_time_sql,
@@ -103,7 +105,6 @@ class DuckDB(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "~": TokenType.RLIKE,
             ":=": TokenType.EQ,
             "//": TokenType.DIV,
             "ATTACH": TokenType.COMMAND,
@@ -127,6 +128,11 @@ class DuckDB(Dialect):
 
     class Parser(parser.Parser):
         CONCAT_NULL_OUTPUTS_STRING = True
+
+        BITWISE = {
+            **parser.Parser.BITWISE,
+            TokenType.TILDA: exp.RegexpLike,
+        }
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -158,6 +164,7 @@ class DuckDB(Dialect):
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
+            "XOR": binary_from_function(exp.BitwiseXor),
         }
 
         TYPE_TOKENS = {
@@ -190,6 +197,7 @@ class DuckDB(Dialect):
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
+            exp.BitwiseXor: lambda self, e: self.func("XOR", e.this, e.expression),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CurrentDate: lambda self, e: "CURRENT_DATE",
             exp.CurrentTime: lambda self, e: "CURRENT_TIME",
@@ -203,7 +211,7 @@ class DuckDB(Dialect):
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.DateSub: _date_delta_sql,
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", f"'{e.args.get('unit', 'day')}'", e.expression, e.this
+                "DATE_DIFF", f"'{e.args.get('unit') or 'day'}'", e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
@@ -217,8 +225,15 @@ class DuckDB(Dialect):
             exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
+            exp.MonthsBetween: lambda self, e: self.func(
+                "DATEDIFF",
+                "'month'",
+                exp.cast(e.expression, "timestamp"),
+                exp.cast(e.this, "timestamp"),
+            ),
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: regexp_extract_sql,
+            exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
             exp.SafeDivide: no_safe_divide_sql,

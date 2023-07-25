@@ -11,6 +11,13 @@ class TestRedshift(Validator):
         self.validate_identity("$foo")
 
         self.validate_all(
+            "SELECT ADD_MONTHS('2008-03-31', 1)",
+            write={
+                "redshift": "SELECT DATEADD(month, 1, '2008-03-31')",
+                "trino": "SELECT DATE_ADD('month', 1, CAST(CAST('2008-03-31' AS TIMESTAMP) AS DATE))",
+            },
+        )
+        self.validate_all(
             "SELECT STRTOL('abc', 16)",
             read={
                 "trino": "SELECT FROM_BASE('abc', 16)",
@@ -104,7 +111,7 @@ class TestRedshift(Validator):
             "SELECT ST_AsEWKT(ST_GeomFromEWKT('SRID=4326;POINT(10 20)')::geography)",
             write={
                 "redshift": "SELECT ST_ASEWKT(CAST(ST_GEOMFROMEWKT('SRID=4326;POINT(10 20)') AS GEOGRAPHY))",
-                "bigquery": "SELECT ST_AsEWKT(SAFE_CAST(ST_GeomFromEWKT('SRID=4326;POINT(10 20)') AS GEOGRAPHY))",
+                "bigquery": "SELECT ST_AsEWKT(CAST(ST_GeomFromEWKT('SRID=4326;POINT(10 20)') AS GEOGRAPHY))",
             },
         )
         self.validate_all(
@@ -222,7 +229,11 @@ class TestRedshift(Validator):
     def test_values(self):
         self.validate_all(
             "SELECT * FROM (VALUES (1, 2)) AS t",
-            write={"redshift": "SELECT * FROM (SELECT 1, 2) AS t"},
+            write={
+                "redshift": "SELECT * FROM (SELECT 1, 2) AS t",
+                "mysql": "SELECT * FROM (SELECT 1, 2) AS t",
+                "presto": "SELECT * FROM (VALUES (1, 2)) AS t",
+            },
         )
         self.validate_all(
             "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",

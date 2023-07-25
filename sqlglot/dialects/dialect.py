@@ -12,6 +12,8 @@ from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
+B = t.TypeVar("B", bound=exp.Binary)
+
 
 class Dialects(str, Enum):
     DIALECT = ""
@@ -630,6 +632,16 @@ def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
     )
 
 
+def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
+    bad_args = list(filter(expression.args.get, ("position", "occurrence", "parameters")))
+    if bad_args:
+        self.unsupported(f"REGEXP_REPLACE does not support the following arg(s): {bad_args}")
+
+    return self.func(
+        "REGEXP_REPLACE", expression.this, expression.expression, expression.args["replacement"]
+    )
+
+
 def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectType) -> t.List[str]:
     names = []
     for agg in aggregations:
@@ -650,3 +662,7 @@ def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectTyp
             names.append(agg_all_unquoted.sql(dialect=dialect, normalize_functions="lower"))
 
     return names
+
+
+def binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:
+    return lambda args: expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))

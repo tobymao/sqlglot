@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, transpile
+from sqlglot import ErrorLevel, ParseError, TokenError, UnsupportedError, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -8,7 +8,7 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
 
     def test_bigquery(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")
 
         # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
@@ -518,6 +518,12 @@ class TestBigQuery(Validator):
             "SELECT cola, colb FROM (VALUES (1, 'test'))",
             write={
                 "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS _c0, 'test' AS _c1)])",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM UNNEST([STRUCT(1 AS id)]) CROSS JOIN UNNEST([STRUCT(1 AS id)])",
+            read={
+                "postgres": "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",
             },
         )
         self.validate_all(

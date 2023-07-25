@@ -31,6 +31,7 @@ class Schema(abc.ABC):
         table: exp.Table | str,
         column_mapping: t.Optional[ColumnMapping] = None,
         dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
     ) -> None:
         """
         Register or update a table. Some implementing classes may require column information to also be provided.
@@ -39,6 +40,7 @@ class Schema(abc.ABC):
             table: the `Table` expression instance or string representing the table.
             column_mapping: a column mapping that describes the structure of the table.
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
+            normalize: whether to normalize identifiers according to the dialect of interest.
         """
 
     @abc.abstractmethod
@@ -47,6 +49,7 @@ class Schema(abc.ABC):
         table: exp.Table | str,
         only_visible: bool = False,
         dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
     ) -> t.List[str]:
         """
         Get the column names for a table.
@@ -55,6 +58,7 @@ class Schema(abc.ABC):
             table: the `Table` expression instance.
             only_visible: whether to include invisible columns.
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
+            normalize: whether to normalize identifiers according to the dialect of interest.
 
         Returns:
             The list of column names.
@@ -66,6 +70,7 @@ class Schema(abc.ABC):
         table: exp.Table | str,
         column: exp.Column,
         dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
     ) -> exp.DataType:
         """
         Get the `sqlglot.exp.DataType` type of a column in the schema.
@@ -74,6 +79,7 @@ class Schema(abc.ABC):
             table: the source table.
             column: the target column.
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
+            normalize: whether to normalize identifiers according to the dialect of interest.
 
         Returns:
             The resulting column type.
@@ -200,6 +206,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             schema=mapping_schema.mapping,
             visible=mapping_schema.visible,
             dialect=mapping_schema.dialect,
+            normalize=mapping_schema.normalize,
         )
 
     def copy(self, **kwargs) -> MappingSchema:
@@ -208,6 +215,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
                 "schema": self.mapping.copy(),
                 "visible": self.visible.copy(),
                 "dialect": self.dialect,
+                "normalize": self.normalize,
                 **kwargs,
             }
         )
@@ -217,6 +225,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         table: exp.Table | str,
         column_mapping: t.Optional[ColumnMapping] = None,
         dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
     ) -> None:
         """
         Register or update a table. Updates are only performed if a new column mapping is provided.
@@ -225,11 +234,12 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             table: the `Table` expression instance or string representing the table.
             column_mapping: a column mapping that describes the structure of the table.
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
+            normalize: whether to normalize identifiers according to the dialect of interest.
         """
-        normalized_table = self._normalize_table(table, dialect=dialect)
+        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
 
         normalized_column_mapping = {
-            self._normalize_name(key, dialect=dialect): value
+            self._normalize_name(key, dialect=dialect, normalize=normalize): value
             for key, value in ensure_column_mapping(column_mapping).items()
         }
 
@@ -247,8 +257,9 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         table: exp.Table | str,
         only_visible: bool = False,
         dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
     ) -> t.List[str]:
-        normalized_table = self._normalize_table(table, dialect=dialect)
+        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
 
         schema = self.find(normalized_table)
         if schema is None:
@@ -265,11 +276,12 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         table: exp.Table | str,
         column: exp.Column,
         dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
     ) -> exp.DataType:
-        normalized_table = self._normalize_table(table, dialect=dialect)
+        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
 
         normalized_column_name = self._normalize_name(
-            column if isinstance(column, str) else column.this, dialect=dialect
+            column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
         )
 
         table_schema = self.find(normalized_table, raise_on_missing=False)
@@ -312,7 +324,12 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
 
         return normalized_mapping
 
-    def _normalize_table(self, table: exp.Table | str, dialect: DialectType = None) -> exp.Table:
+    def _normalize_table(
+        self,
+        table: exp.Table | str,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> exp.Table:
         normalized_table = exp.maybe_parse(
             table, into=exp.Table, dialect=dialect or self.dialect, copy=True
         )
@@ -322,15 +339,24 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             if isinstance(value, (str, exp.Identifier)):
                 normalized_table.set(
                     arg,
-                    exp.to_identifier(self._normalize_name(value, dialect=dialect, is_table=True)),
+                    exp.to_identifier(
+                        self._normalize_name(
+                            value, dialect=dialect, is_table=True, normalize=normalize
+                        )
+                    ),
                 )
 
         return normalized_table
 
     def _normalize_name(
-        self, name: str | exp.Identifier, dialect: DialectType = None, is_table: bool = False
+        self,
+        name: str | exp.Identifier,
+        dialect: DialectType = None,
+        is_table: bool = False,
+        normalize: t.Optional[bool] = None,
     ) -> str:
         dialect = dialect or self.dialect
+        normalize = self.normalize if normalize is None else normalize
 
         try:
             identifier = sqlglot.maybe_parse(name, dialect=dialect, into=exp.Identifier)
@@ -338,7 +364,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             return name if isinstance(name, str) else name.name
 
         name = identifier.name
-        if not self.normalize:
+        if not normalize:
             return name
 
         # This can be useful for normalize_identifier

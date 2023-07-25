@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, parser, transforms
+from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
+    binary_from_function,
     create_with_partitions_sql,
+    format_time_lambda,
     pivot_column_names,
     rename_func,
     trim_sql,
@@ -124,21 +126,20 @@ class Spark2(Hive):
             "INT": _parse_as_cast("int"),
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
-            "SHIFTLEFT": lambda args: exp.BitwiseLeftShift(
-                this=seq_get(args, 0), expression=seq_get(args, 1)
-            ),
-            "SHIFTRIGHT": lambda args: exp.BitwiseRightShift(
-                this=seq_get(args, 0), expression=seq_get(args, 1)
-            ),
+            "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
+            "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
             "STRING": _parse_as_cast("string"),
             "TIMESTAMP": _parse_as_cast("timestamp"),
+            "TO_TIMESTAMP": lambda args: _parse_as_cast("timestamp")(args)
+            if len(args) == 1
+            else format_time_lambda(exp.StrToTime, "spark")(args),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
             "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         }
 
         FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+            **Hive.Parser.FUNCTION_PARSERS,
             "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
             "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
             "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
@@ -197,6 +198,13 @@ class Spark2(Hive):
             exp.Map: _map_sql,
             exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
             exp.Reduce: rename_func("AGGREGATE"),
+            exp.RegexpReplace: lambda self, e: self.func(
+                "REGEXP_REPLACE",
+                e.this,
+                e.expression,
+                e.args["replacement"],
+                e.args.get("position"),
+            ),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimestampTrunc: lambda self, e: self.func(
@@ -214,6 +222,7 @@ class Spark2(Hive):
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
         TRANSFORMS.pop(exp.Left)
+        TRANSFORMS.pop(exp.MonthsBetween)
         TRANSFORMS.pop(exp.Right)
 
         WRAP_DERIVED_VALUES = False

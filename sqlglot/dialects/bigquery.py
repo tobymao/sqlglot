@@ -8,6 +8,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
+    binary_from_function,
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
@@ -15,6 +16,7 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     no_ilike_sql,
     parse_date_delta_with_interval,
+    regexp_replace_sql,
     rename_func,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
@@ -39,7 +41,7 @@ def _date_add_sql(
 
 
 def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.Values) -> str:
-    if not isinstance(expression.unnest().parent, exp.From):
+    if not expression.find_ancestor(exp.From, exp.Join):
         return self.values_sql(expression)
 
     alias = expression.args.get("alias")
@@ -279,7 +281,7 @@ class BigQuery(Dialect):
             ),
             "DATETIME_ADD": parse_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
-            "DIV": lambda args: exp.IntDiv(this=seq_get(args, 0), expression=seq_get(args, 1)),
+            "DIV": binary_from_function(exp.IntDiv),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _parse_to_hex,
@@ -415,6 +417,7 @@ class BigQuery(Dialect):
                 e.args.get("position"),
                 e.args.get("occurrence"),
             ),
+            exp.RegexpReplace: regexp_replace_sql,
             exp.RegexpLike: rename_func("REGEXP_CONTAINS"),
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Select: transforms.preprocess(

@@ -339,6 +339,7 @@ class Parser(metaclass=_Parser):
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.WINDOW,
+        TokenType.XOR,
         *TYPE_TOKENS,
         *SUBQUERY_PREDICATES,
     }
@@ -716,7 +717,7 @@ class Parser(metaclass=_Parser):
 
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
-    FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
+    FUNCTION_PARSERS = {
         "ANY_VALUE": lambda self: self._parse_any_value(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONCAT": lambda self: self._parse_concat(),
@@ -1234,11 +1235,14 @@ class Parser(metaclass=_Parser):
             expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
+                # exp.Properties.Location.POST_EXPRESSION
+                extend_props(self._parse_properties())
+
                 indexes = []
                 while True:
                     index = self._parse_index()
 
-                    # exp.Properties.Location.POST_EXPRESSION and POST_INDEX
+                    # exp.Properties.Location.POST_INDEX
                     extend_props(self._parse_properties())
 
                     if not index:
@@ -1385,7 +1389,6 @@ class Parser(metaclass=_Parser):
     def _parse_with_property(
         self,
     ) -> t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]]:
-        self._match(TokenType.WITH)
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_property)
 
@@ -1689,6 +1692,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Describe, this=this, kind=kind)
 
     def _parse_insert(self) -> exp.Insert:
+        comments = ensure_list(self._prev_comments)
         overwrite = self._match(TokenType.OVERWRITE)
         ignore = self._match(TokenType.IGNORE)
         local = self._match_text_seq("LOCAL")
@@ -1706,6 +1710,7 @@ class Parser(metaclass=_Parser):
                 alternative = self._match_texts(self.INSERT_ALTERNATIVES) and self._prev.text
 
             self._match(TokenType.INTO)
+            comments += ensure_list(self._prev_comments)
             self._match(TokenType.TABLE)
             this = self._parse_table(schema=True)
 
@@ -1713,6 +1718,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Insert,
+            comments=comments,
             this=this,
             exists=self._parse_exists(),
             partition=self._parse_partition(),
@@ -1782,7 +1788,17 @@ class Parser(metaclass=_Parser):
             return None
 
         if self._match_text_seq("SERDE"):
-            return self.expression(exp.RowFormatSerdeProperty, this=self._parse_string())
+            this = self._parse_string()
+
+            serde_properties = None
+            if self._match(TokenType.SERDE_PROPERTIES):
+                serde_properties = self.expression(
+                    exp.SerdeProperties, expressions=self._parse_wrapped_csv(self._parse_property)
+                )
+
+            return self.expression(
+                exp.RowFormatSerdeProperty, this=this, serde_properties=serde_properties
+            )
 
         self._match_text_seq("DELIMITED")
 
@@ -1827,6 +1843,7 @@ class Parser(metaclass=_Parser):
         # This handles MySQL's "Multiple-Table Syntax"
         # https://dev.mysql.com/doc/refman/8.0/en/delete.html
         tables = None
+        comments = self._prev_comments
         if not self._match(TokenType.FROM, advance=False):
             tables = self._parse_csv(self._parse_table) or None
 
@@ -1834,6 +1851,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Delete,
+            comments=comments,
             tables=tables,
             this=self._match(TokenType.FROM) and self._parse_table(joins=True),
             using=self._match(TokenType.USING) and self._parse_table(joins=True),
@@ -1843,11 +1861,13 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_update(self) -> exp.Update:
+        comments = self._prev_comments
         this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
         expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
         returning = self._parse_returning()
         return self.expression(
             exp.Update,
+            comments=comments,
             **{  # type: ignore
                 "this": this,
                 "expressions": expressions,
@@ -2252,7 +2272,9 @@ class Parser(metaclass=_Parser):
             self._match_set(self.JOIN_KINDS) and self._prev,
         )
 
-    def _parse_join(self, skip_join_token: bool = False) -> t.Optional[exp.Join]:
+    def _parse_join(
+        self, skip_join_token: bool = False, parse_bracket: bool = False
+    ) -> t.Optional[exp.Join]:
         if self._match(TokenType.COMMA):
             return self.expression(exp.Join, this=self._parse_table())
 
@@ -2276,7 +2298,7 @@ class Parser(metaclass=_Parser):
         if outer_apply:
             side = Token(TokenType.LEFT, "LEFT")
 
-        kwargs: t.Dict[str, t.Any] = {"this": self._parse_table()}
+        kwargs: t.Dict[str, t.Any] = {"this": self._parse_table(parse_bracket=parse_bracket)}
 
         if method:
             kwargs["method"] = method.text
@@ -2412,6 +2434,7 @@ class Parser(metaclass=_Parser):
         schema: bool = False,
         joins: bool = False,
         alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+        parse_bracket: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -2431,7 +2454,9 @@ class Parser(metaclass=_Parser):
                 subquery.set("pivots", self._parse_pivots())
             return subquery
 
-        this: exp.Expression = self._parse_table_parts(schema=schema)
+        bracket = parse_bracket and self._parse_bracket(None)
+        bracket = self.expression(exp.Table, this=bracket) if bracket else None
+        this: exp.Expression = bracket or self._parse_table_parts(schema=schema)
 
         if schema:
             return self._parse_schema(this=this)
@@ -2759,8 +2784,15 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression] = None, top: bool = False
     ) -> t.Optional[exp.Expression]:
         if self._match(TokenType.TOP if top else TokenType.LIMIT):
-            limit_paren = self._match(TokenType.L_PAREN)
-            expression = self._parse_number() if top else self._parse_term()
+            comments = self._prev_comments
+            if top:
+                limit_paren = self._match(TokenType.L_PAREN)
+                expression = self._parse_number()
+
+                if limit_paren:
+                    self._match_r_paren()
+            else:
+                expression = self._parse_term()
 
             if self._match(TokenType.COMMA):
                 offset = expression
@@ -2768,10 +2800,9 @@ class Parser(metaclass=_Parser):
             else:
                 offset = None
 
-            limit_exp = self.expression(exp.Limit, this=this, expression=expression, offset=offset)
-
-            if limit_paren:
-                self._match_r_paren()
+            limit_exp = self.expression(
+                exp.Limit, this=this, expression=expression, offset=offset, comments=comments
+            )
 
             return limit_exp
 
@@ -2804,7 +2835,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.OFFSET):
             return this
 
-        count = self._parse_number()
+        count = self._parse_term()
         self._match_set((TokenType.ROW, TokenType.ROWS))
         return self.expression(exp.Offset, this=this, expression=count)
 
@@ -3321,7 +3352,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
-        self._match_r_paren(this)
+        self._match(TokenType.R_PAREN, expression=this)
         return self._parse_window(this)
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
@@ -4148,7 +4179,7 @@ class Parser(metaclass=_Parser):
 
         self._match_r_paren()
 
-        return self.expression(
+        window = self.expression(
             exp.Window,
             this=this,
             partition_by=partition,
@@ -4158,6 +4189,12 @@ class Parser(metaclass=_Parser):
             over=over,
             first=first,
         )
+
+        # This covers Oracle's FIRST/LAST syntax: aggregate KEEP (...) OVER (...)
+        if self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS, advance=False):
+            return self._parse_window(window, alias=alias)
+
+        return window
 
     def _parse_window_spec(self) -> t.Dict[str, t.Optional[str | exp.Expression]]:
         self._match(TokenType.BETWEEN)

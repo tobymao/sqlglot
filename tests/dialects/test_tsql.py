@@ -23,8 +23,22 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
         self.validate_identity("INSERT INTO @TestTable VALUES (1, 'Value1', 12, 20)")
         self.validate_identity('SELECT "x"."y" FROM foo')
-        self.validate_identity("SELECT * FROM #foo")
-        self.validate_identity("SELECT * FROM ##foo")
+
+        self.validate_all(
+            "SELECT * from #foo",
+            write={
+                "tsql": "SELECT * FROM #foo",
+                "spark": "SELECT * FROM foo",
+                "duckdb": "SELECT * FROM foo",
+            },
+        )
+
+        # global temp table
+        self.validate_all(
+            "SELECT * FROM ##foo",
+            write={"tsql": "SELECT * FROM ##foo", "oracle": "SELECT * FROM foo"},
+        )
+
         self.validate_identity(
             "SELECT x FROM @MyTableVar AS m JOIN Employee ON m.EmployeeID = Employee.EmployeeID"
         )
@@ -392,6 +406,7 @@ class TestTSQL(Validator):
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE #mytemptable (a INTEGER)",
+            read={"duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)"},
             write={
                 "tsql": "CREATE TABLE #mytemptable (a INTEGER)",
                 "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",

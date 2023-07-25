@@ -988,8 +988,9 @@ class Generator:
     ) -> str:
         if properties.expressions:
             expressions = self.expressions(properties, sep=sep, indent=False)
-            expressions = self.wrap(expressions) if wrapped else expressions
-            return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
+            if expressions:
+                expressions = self.wrap(expressions) if wrapped else expressions
+                return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
@@ -2415,7 +2416,7 @@ class Generator:
             return ""
 
         if flat:
-            return sep.join(self.sql(e) for e in expressions)
+            return sep.join(sql for sql in (self.sql(e) for e in expressions) if sql)
 
         num_sqls = len(expressions)
 
@@ -2426,6 +2427,9 @@ class Generator:
         result_sqls = []
         for i, e in enumerate(expressions):
             sql = self.sql(e, comment=False)
+            if not sql:
+                continue
+
             comments = self.maybe_comment("", e) if isinstance(e, exp.Expression) else ""
 
             if self.pretty:

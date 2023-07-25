@@ -1715,7 +1715,6 @@ class Parser(metaclass=_Parser):
             this = self._parse_table(schema=True)
 
         returning = self._parse_returning()
-        comments = comments if comments else None
 
         return self.expression(
             exp.Insert,

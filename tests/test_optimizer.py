@@ -245,6 +245,7 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "qualify_columns", qualify_columns, execute=True, schema=self.schema, set_dialect=True
         )
+        self.check_file("qualify_columns_create", qualify_columns, execute=True, schema=self.schema)
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
@@ -807,14 +808,4 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 parse_one("SELECT * FROM a"), schema=MappingSchema(schema, dialect="bigquery")
             ),
             parse_one('SELECT "a"."a" AS "a", "a"."b" AS "b" FROM "a" AS "a"'),
-        )
-
-    def test_qualify_columns_create_with_cte(self):
-        self.assertEqual(
-            optimizer.qualify_columns.qualify_columns(
-                parse_one("WITH cte AS (SELECT a FROM db.y) CREATE TABLE x AS SELECT * FROM cte"),
-                schema={"db": {"y": {"a": "int"}}},
-                infer_schema=False,
-            ).sql(),
-            "WITH cte AS (SELECT y.a AS a FROM db.y) CREATE TABLE x AS SELECT cte.a AS a FROM cte",
         )

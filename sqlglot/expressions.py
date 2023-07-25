@@ -990,7 +990,28 @@ class Uncache(Expression):
     arg_types = {"this": True, "exists": False}
 
 
-class Create(Expression):
+class TableChange(Expression):
+    @property
+    def ctes(self):
+        with_ = self.args.get("with")
+        if not with_:
+            return []
+        return with_.expressions
+
+    @property
+    def named_selects(self) -> t.List[str]:
+        if isinstance(self.expression, Subqueryable):
+            return self.expression.named_selects
+        return []
+
+    @property
+    def selects(self) -> t.List[Expression]:
+        if isinstance(self.expression, Subqueryable):
+            return self.expression.selects
+        return []
+
+
+class Create(TableChange):
     arg_types = {
         "with": False,
         "this": True,
@@ -1005,31 +1026,6 @@ class Create(Expression):
         "begin": False,
         "clone": False,
     }
-
-    @property
-    def ctes(self):
-        with_ = self.args.get("with")
-        if not with_:
-            return []
-        return with_.expressions
-
-    @property
-    def named_selects(self) -> t.List[str]:
-        if isinstance(self.expression, Select):
-            return self.expression.named_selects
-        return []
-
-    @property
-    def is_star(self) -> bool:
-        if isinstance(self.expression, Select):
-            return self.expression.is_star
-        return False
-
-    @property
-    def selects(self) -> t.List[Expression]:
-        if isinstance(self.expression, Select):
-            return self.expression.selects
-        return []
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-clone

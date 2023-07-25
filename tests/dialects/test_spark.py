@@ -6,6 +6,22 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_temp_tables(self):
+        """tsql
+        declare @table mytable (id int)
+        create table #mytable (id int)
+        create table ##mytable (id int)
+        select * into #mytable from xyz
+        """
+
+        self.validate_all("SELECT * FROM mytemptable", read={"tsql":"SELECT * FROM ##mytemptable"})
+        self.validate_all("SELECT * FROM mytemptable", read={"tsql":"SELECT * FROM ##mytemptable"})
+        self.validate_all("SELECT * FROM mytemptable", read={"tsql":"SELECT * FROM @mytemptable"})
+        
+        self.validate_identity("CREATE TABLE #mytable (id INT)")
+        self.validate_identity("CREATE TABLE ##mytable (id INT)")
+        self.validate_identity("SELECT * INTO #mytable FROM xyz")
+
     def test_ddl(self):
         self.validate_identity("CREATE TABLE foo (col VARCHAR(50))")
         self.validate_identity("CREATE TABLE foo (col STRUCT<struct_col_a: VARCHAR((50))>)")

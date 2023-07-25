@@ -519,8 +519,8 @@ class TSQL(Dialect):
             any_token: bool = True,
             tokens: t.Optional[t.Collection[TokenType]] = None,
         ) -> t.Optional[exp.Expression]:
-            is_global = self._match_pair(TokenType.HASH, TokenType.HASH)
-            is_temporary = not is_global and self._match(TokenType.HASH)
+            is_temporary = self._match(TokenType.HASH)
+            is_global = is_temporary and self._match(TokenType.HASH)
 
             this = super()._parse_id_var(any_token=any_token, tokens=tokens)
             if this:

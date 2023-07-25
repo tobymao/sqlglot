@@ -307,10 +307,6 @@ class TSQL(Dialect):
             "SYSTEM_USER": TokenType.CURRENT_USER,
         }
 
-        # TSQL allows @, # to appear as a variable/identifier prefix
-        SINGLE_TOKENS = tokens.Tokenizer.SINGLE_TOKENS.copy()
-        SINGLE_TOKENS.pop("#")
-
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -518,6 +514,36 @@ class TSQL(Dialect):
             expressions = self._parse_csv(self._parse_function_parameter)
             return self.expression(exp.UserDefinedFunction, this=this, expressions=expressions)
 
+        def _parse_id_var(
+            self,
+            any_token: bool = True,
+            tokens: t.Optional[t.Collection[TokenType]] = None,
+        ) -> t.Optional[exp.Expression]:
+            is_global = self._match_pair(TokenType.HASH, TokenType.HASH)
+            is_temporary = not is_global and self._match(TokenType.HASH)
+
+            this = super()._parse_id_var(any_token=any_token, tokens=tokens)
+            if this:
+                if is_global:
+                    this.set("global", True)
+                elif is_temporary:
+                    this.set("temporary", True)
+
+            return this
+
+        def _parse_create(self) -> exp.Create | exp.Command:
+            create = super()._parse_create()
+
+            if isinstance(create, exp.Create):
+                table = create.this.this if isinstance(create.this, exp.Schema) else create.this
+                if isinstance(table, exp.Table) and table.this.args.get("temporary"):
+                    if not create.args.get("properties"):
+                        create.set("properties", exp.Properties(expressions=[]))
+
+                    create.args["properties"].append("expressions", exp.TemporaryProperty())
+
+            return create
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         LIMIT_IS_TOP = True
@@ -552,6 +578,7 @@ class TSQL(Dialect):
                 exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"),
                 e.this,
             ),
+            exp.TemporaryProperty: lambda self, e: "",
             exp.TimeToStr: _format_sql,
         }
 
@@ -563,6 +590,22 @@ class TSQL(Dialect):
         }
 
         LIMIT_FETCH = "FETCH"
+
+        def createable_sql(
+            self,
+            expression: exp.Create,
+            locations: dict[exp.Properties.Location, list[exp.Property]],
+        ) -> str:
+            sql = self.sql(expression, "this")
+            properties = expression.args.get("properties")
+
+            if sql[:1] != "#" and any(
+                isinstance(prop, exp.TemporaryProperty)
+                for prop in (properties.expressions if properties else [])
+            ):
+                sql = f"#{sql}"
+
+            return sql
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
@@ -616,3 +659,13 @@ class TSQL(Dialect):
             this = self.sql(expression, "this")
             this = f" {this}" if this else ""
             return f"ROLLBACK TRANSACTION{this}"
+
+        def identifier_sql(self, expression: exp.Identifier) -> str:
+            identifier = super().identifier_sql(expression)
+
+            if expression.args.get("global"):
+                identifier = f"##{identifier}"
+            elif expression.args.get("temporary"):
+                identifier = f"#{identifier}"
+
+            return identifier

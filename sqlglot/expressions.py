@@ -1496,7 +1496,7 @@ class JoinHint(Expression):
 
 
 class Identifier(Expression):
-    arg_types = {"this": True, "quoted": False}
+    arg_types = {"this": True, "quoted": False, "global": False, "temporary": False}
 
     @property
     def quoted(self) -> bool:

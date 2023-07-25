@@ -8,19 +8,23 @@ class TestSpark(Validator):
 
     def test_temp_tables(self):
         """tsql
-        declare @table mytable (id int)
-        create table #mytable (id int)
-        create table ##mytable (id int)
-        select * into #mytable from xyz
+        declare @table mytemptable (id int)
+        create table #mytemptable (id int)
+        create table ##mytemptable (id int)
+        select * into #mytemptable from xyz
+        select * from #mytemptable
+
+        spark sql
+        -- declare @table mytemptable (id int)
+        create temporary table mytemptable (id int)
+        -- create table ##mytemptable (id int)
+        -- select * into mytemptable from xyz
+        select * from mytemptable
         """
 
-        self.validate_all("SELECT * FROM mytemptable", read={"tsql":"SELECT * FROM ##mytemptable"})
-        self.validate_all("SELECT * FROM mytemptable", read={"tsql":"SELECT * FROM ##mytemptable"})
-        self.validate_all("SELECT * FROM mytemptable", read={"tsql":"SELECT * FROM @mytemptable"})
-        
-        self.validate_identity("CREATE TABLE #mytable (id INT)")
-        self.validate_identity("CREATE TABLE ##mytable (id INT)")
-        self.validate_identity("SELECT * INTO #mytable FROM xyz")
+        self.validate_all("SELECT * FROM mytemptable", read={"tsql": "SELECT * FROM #mytemptable"})
+        self.validate_all("SELECT * FROM mytemptable", read={"tsql": "SELECT * FROM ##mytemptable"})
+        self.validate_all("SELECT * FROM mytemptable", read={"tsql": "SELECT * FROM @mytemptable"})
 
     def test_ddl(self):
         self.validate_identity("CREATE TABLE foo (col VARCHAR(50))")

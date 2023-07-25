@@ -394,16 +394,16 @@ class TestTSQL(Validator):
             "CREATE TABLE #mytemptable (a INTEGER)",
             write={
                 "tsql": "CREATE TABLE #mytemptable (a INTEGER)",
-                "snowflake":"CREATE TEMPORARY TABLE mytemptable (a INT)",
-                "duckdb":"CREATE TEMPORARY TABLE mytemptable (a INT)",
-                "oracle":"CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
+                "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "oracle": "CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
             },
         )
         self.validate_all(
             "CREATE TABLE ##myglobaltemp (a INTEGER)",
             write={
                 "tsql": "CREATE TABLE ##myglobaltemp (a INTEGER)",
-                "oracle":"CREATE GLOBAL TEMPORARY TABLE myglobaltemp (a NUMBER) ON COMMIT PRESERVE ROWS",
+                "oracle": "CREATE GLOBAL TEMPORARY TABLE myglobaltemp (a NUMBER) ON COMMIT PRESERVE ROWS",
             },
         )
         self.validate_all(
@@ -413,14 +413,14 @@ class TestTSQL(Validator):
                 "snowflake": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
                 "duckdb": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
                 "oracle": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
-                #"hive": "CREATE TEMPORARY VIEW mytemptable AS SELECT a FROM Source_Table",
+                # "hive": "CREATE TEMPORARY VIEW mytemptable AS SELECT a FROM Source_Table",
             },
         )
         self.validate_all(
             "CREATE TABLE ##mytemptable AS SELECT a FROM Source_Table",
             write={
                 "tsql": "CREATE TABLE ##mytemptable AS SELECT a FROM Source_Table",
-                #"oracle":"CREATE GLOBAL TEMPORARY TABLE myglobaltemp ON COMMIT PRESERVE ROWS AS SELECT a FROM Source_Table",
+                # "oracle":"CREATE GLOBAL TEMPORARY TABLE myglobaltemp ON COMMIT PRESERVE ROWS AS SELECT a FROM Source_Table",
             },
         )
         self.validate_all(

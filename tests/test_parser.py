@@ -253,7 +253,7 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("INTERVAL '1' DAY").args["unit"], exp.Var)
         self.assertEqual(parse_one("SELECT @JOIN, @'foo'").sql(), "SELECT @JOIN, @'foo'")
 
-    def test_comments(self):
+    def test_comments_select(self):
         expression = parse_one(
             """
             --comment1.1
@@ -276,6 +276,120 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.expressions[3].comments, ["comment4 --foo"])
         self.assertEqual(expression.expressions[4].comments, [""])
         self.assertEqual(expression.expressions[5].comments, [" space"])
+
+    def test_comments_select_cte(self):
+        expression = parse_one(
+            """
+            /*comment1.1*/
+            /*comment1.2*/
+            WITH a AS (SELECT 1)
+            SELECT /*comment2*/
+                a.*
+            FROM /*comment3*/
+                a
+        """
+        )
+
+        self.assertEqual(expression.comments, ["comment2"])
+        self.assertEqual(expression.args.get("from").comments, ["comment3"])
+        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+
+    def test_comments_insert(self):
+        expression = parse_one(
+            """
+            --comment1.1
+            --comment1.2
+            INSERT INTO /*comment1.3*/
+                x       /*comment2*/
+            VALUES      /*comment3*/
+                (1, 'a', 2.0)
+        """
+        )
+
+        self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
+        self.assertEqual(expression.this.comments, ["comment2"])
+
+    def test_comments_insert_cte(self):
+        expression = parse_one(
+            """
+            /*comment1.1*/
+            /*comment1.2*/
+            WITH a AS (SELECT 1)
+            INSERT INTO /*comment2*/
+                b /*comment3*/
+            SELECT * FROM a
+        """
+        )
+
+        self.assertEqual(expression.comments, ["comment2"])
+        self.assertEqual(expression.this.comments, ["comment3"])
+        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+
+    def test_comments_update(self):
+        expression = parse_one(
+            """
+            --comment1.1
+            --comment1.2
+            UPDATE  /*comment1.3*/
+                tbl /*comment2*/
+            SET     /*comment3*/
+                x = 2
+            WHERE /*comment4*/
+                x <> 2
+        """
+        )
+
+        self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
+        self.assertEqual(expression.this.comments, ["comment2"])
+        self.assertEqual(expression.args.get("where").comments, ["comment4"])
+
+    def test_comments_update_cte(self):
+        expression = parse_one(
+            """
+            /*comment1.1*/
+            /*comment1.2*/
+            WITH a AS (SELECT * FROM b)
+            UPDATE /*comment2*/
+                a  /*comment3*/
+            SET col = 1
+        """
+        )
+
+        self.assertEqual(expression.comments, ["comment2"])
+        self.assertEqual(expression.this.comments, ["comment3"])
+        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+
+    def test_comments_delete(self):
+        expression = parse_one(
+            """
+            --comment1.1
+            --comment1.2
+            DELETE /*comment1.3*/
+            FROM   /*comment2*/
+                x  /*comment3*/
+            WHERE  /*comment4*/
+                y > 1
+        """
+        )
+
+        self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
+        self.assertEqual(expression.this.comments, ["comment3"])
+        self.assertEqual(expression.args.get("where").comments, ["comment4"])
+
+    def test_comments_delete_cte(self):
+        expression = parse_one(
+            """
+            /*comment1.1*/
+            /*comment1.2*/
+            WITH a AS (SELECT * FROM b)
+            --comment2
+            DELETE FROM a /*comment3*/
+        """
+        )
+
+        self.assertEqual(expression.comments, ["comment2"])
+        self.assertEqual(expression.this.comments, ["comment3"])
+        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
 
     def test_type_literals(self):
         self.assertEqual(parse_one("int 1"), parse_one("CAST(1 AS INT)"))

@@ -486,7 +486,7 @@ class Scope:
 
 def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     """
-    Traverse an expression by it's "scopes".
+    Traverse an expression by its "scopes".
 
     "Scope" represents the current context of a Select statement.
 
@@ -712,28 +712,32 @@ def _traverse_subqueries(scope):
 
 
 def _traverse_udtfs(scope):
-    sources = {}
-
     if isinstance(scope.expression, exp.Unnest):
-        unnested_source = scope.expression.expressions[0]
-        if isinstance(unnested_source, exp.Subquery) and _is_derived_table(unnested_source):
+        expressions = scope.expression.expressions
+    else:
+        expressions = []
+
+    sources = {}
+    for expression in expressions:
+        if isinstance(expression, exp.Subquery) and _is_derived_table(expression):
             top = None
             for child_scope in _traverse_scope(
                 scope.branch(
-                    unnested_source,
+                    expression,
                     scope_type=ScopeType.DERIVED_TABLE,
-                    outer_column_list=unnested_source.alias_column_names,
+                    outer_column_list=expression.alias_column_names,
                 )
             ):
                 yield child_scope
                 top = child_scope
 
-                alias = unnested_source.alias
+                alias = expression.alias
                 sources[alias] = child_scope
 
             scope.derived_table_scopes.append(top)
+            scope.table_scopes.append(top)
 
-        scope.sources.update(sources)
+    scope.sources.update(sources)
 
 
 def walk_in_scope(expression, bfs=True):

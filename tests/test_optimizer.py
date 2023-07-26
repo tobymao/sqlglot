@@ -450,6 +450,23 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             )
             self.assertEqual(set(scopes[3].sources), {""})
 
+        sql = "SELECT a FROM foo CROSS JOIN UNNEST( (SELECT bar FROM baz) )"
+        expression = parse_one(sql)
+        for scopes in traverse_scope(expression), list(build_scope(expression).traverse()):
+            self.assertEqual(len(scopes), 3)
+
+            self.assertEqual(scopes[0].expression.sql(), "SELECT bar FROM baz")
+            self.assertEqual(set(scopes[0].sources), {"baz"})
+
+            self.assertEqual(scopes[1].expression.sql(), "UNNEST((SELECT bar FROM baz))")
+            self.assertEqual(set(scopes[1].sources), {"", "foo"})  # foo is a lateral source here
+
+            self.assertEqual(
+                scopes[2].expression.sql(),
+                "SELECT a FROM foo CROSS JOIN UNNEST((SELECT bar FROM baz))",
+            )
+            self.assertEqual(set(scopes[2].sources), {"", "foo"})
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)

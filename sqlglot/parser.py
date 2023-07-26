@@ -2242,7 +2242,12 @@ class Parser(metaclass=_Parser):
             return None
 
         if not this:
-            this = self._parse_function() or self._parse_id_var(any_token=False)
+            this = (
+                self._parse_unnest()
+                or self._parse_function()
+                or self._parse_id_var(any_token=False)
+            )
+
             while self._match(TokenType.DOT):
                 this = exp.Dot(
                     this=this,

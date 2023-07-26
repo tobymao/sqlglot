@@ -435,7 +435,10 @@ class Scope:
     @property
     def is_correlated_subquery(self):
         """Determine if this scope is a correlated subquery"""
-        return bool(self.is_subquery and self.external_columns)
+        return bool(
+            (self.is_subquery or (self.parent and isinstance(self.parent.expression, exp.Lateral)))
+            and self.external_columns
+        )
 
     def rename_source(self, old_name, new_name):
         """Rename a source in this scope"""
@@ -713,6 +716,8 @@ def _traverse_subqueries(scope):
 def _traverse_udtfs(scope):
     if isinstance(scope.expression, exp.Unnest):
         expressions = scope.expression.expressions
+    elif isinstance(scope.expression, exp.Lateral):
+        expressions = [scope.expression.this]
     else:
         expressions = []
 

@@ -122,7 +122,7 @@ LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
 
-Comments are also preserved in a best-effort basis when transpiling SQL code:
+Comments are also preserved on a best-effort basis when transpiling SQL code:
 
 ```python
 sql = """

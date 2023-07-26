@@ -539,7 +539,7 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, exp.Table):
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
-        pass
+        yield from _traverse_udtfs(scope)
     else:
         logger.warning(
             "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
@@ -709,6 +709,31 @@ def _traverse_subqueries(scope):
             yield child_scope
             top = child_scope
         scope.subquery_scopes.append(top)
+
+
+def _traverse_udtfs(scope):
+    sources = {}
+
+    if isinstance(scope.expression, exp.Unnest):
+        unnested_source = scope.expression.expressions[0]
+        if isinstance(unnested_source, exp.Subquery) and _is_derived_table(unnested_source):
+            top = None
+            for child_scope in _traverse_scope(
+                scope.branch(
+                    unnested_source,
+                    scope_type=ScopeType.DERIVED_TABLE,
+                    outer_column_list=unnested_source.alias_column_names,
+                )
+            ):
+                yield child_scope
+                top = child_scope
+
+                alias = unnested_source.alias
+                sources[alias] = child_scope
+
+            scope.derived_table_scopes.append(top)
+
+        scope.sources.update(sources)
 
 
 def walk_in_scope(expression, bfs=True):

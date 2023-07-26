@@ -435,7 +435,10 @@ class Scope:
     @property
     def is_correlated_subquery(self):
         """Determine if this scope is a correlated subquery"""
-        return bool(self.is_subquery and self.external_columns)
+        return bool(
+            (self.is_subquery or (self.parent and isinstance(self.parent.expression, exp.Lateral)))
+            and self.external_columns
+        )
 
     def rename_source(self, old_name, new_name):
         """Rename a source in this scope"""
@@ -486,7 +489,7 @@ class Scope:
 
 def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     """
-    Traverse an expression by it's "scopes".
+    Traverse an expression by its "scopes".
 
     "Scope" represents the current context of a Select statement.
 
@@ -539,7 +542,7 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, exp.Table):
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
-        pass
+        yield from _traverse_udtfs(scope)
     else:
         logger.warning(
             "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
@@ -692,8 +695,7 @@ def _traverse_tables(scope):
             # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
             # Until then, this means that only a single, unaliased derived table is allowed (rather,
             # the latest one wins.
-            alias = expression.alias
-            sources[alias] = child_scope
+            sources[expression.alias] = child_scope
 
         # append the final child_scope yielded
         scopes.append(child_scope)
@@ -709,6 +711,35 @@ def _traverse_subqueries(scope):
             yield child_scope
             top = child_scope
         scope.subquery_scopes.append(top)
+
+
+def _traverse_udtfs(scope):
+    if isinstance(scope.expression, exp.Unnest):
+        expressions = scope.expression.expressions
+    elif isinstance(scope.expression, exp.Lateral):
+        expressions = [scope.expression.this]
+    else:
+        expressions = []
+
+    sources = {}
+    for expression in expressions:
+        if isinstance(expression, exp.Subquery) and _is_derived_table(expression):
+            top = None
+            for child_scope in _traverse_scope(
+                scope.branch(
+                    expression,
+                    scope_type=ScopeType.DERIVED_TABLE,
+                    outer_column_list=expression.alias_column_names,
+                )
+            ):
+                yield child_scope
+                top = child_scope
+                sources[expression.alias] = child_scope
+
+            scope.derived_table_scopes.append(top)
+            scope.table_scopes.append(top)
+
+    scope.sources.update(sources)
 
 
 def walk_in_scope(expression, bfs=True):

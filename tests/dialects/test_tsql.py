@@ -393,7 +393,30 @@ class TestTSQL(Validator):
         self.validate_all(
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={
-                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIMESTAMP(4), d FLOAT(24))"
+                "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT)",
+                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIMESTAMP(4), d FLOAT(24))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE #mytemptable (a INTEGER)",
+            read={
+                "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+            },
+            write={
+                "tsql": "CREATE TABLE #mytemptable (a INTEGER)",
+                "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "oracle": "CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE #mytemptable AS SELECT a FROM Source_Table",
+            write={
+                "duckdb": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
+                "oracle": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
+                "snowflake": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
+                "spark": "CREATE TEMPORARY VIEW mytemptable AS SELECT a FROM Source_Table",
+                "tsql": "CREATE TABLE #mytemptable AS SELECT a FROM Source_Table",
             },
         )
 
@@ -956,7 +979,14 @@ WHERE
         expr = parse_one("#x", read="tsql")
         self.assertIsInstance(expr, exp.Column)
         self.assertIsInstance(expr.this, exp.Identifier)
+        self.assertTrue(expr.this.args.get("temporary"))
         self.assertEqual(expr.sql("tsql"), "#x")
+
+        expr = parse_one("##x", read="tsql")
+        self.assertIsInstance(expr, exp.Column)
+        self.assertIsInstance(expr.this, exp.Identifier)
+        self.assertTrue(expr.this.args.get("global"))
+        self.assertEqual(expr.sql("tsql"), "##x")
 
         expr = parse_one("@x", read="tsql")
         self.assertIsInstance(expr, exp.Parameter)
@@ -967,6 +997,24 @@ WHERE
         self.assertIsInstance(table, exp.Table)
         self.assertIsInstance(table.this, exp.Parameter)
         self.assertIsInstance(table.this.this, exp.Var)
+
+    def test_temp_table(self):
+        self.validate_all(
+            "SELECT * FROM #mytemptable",
+            write={
+                "duckdb": "SELECT * FROM mytemptable",
+                "spark": "SELECT * FROM mytemptable",
+                "tsql": "SELECT * FROM #mytemptable",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM ##mytemptable",
+            write={
+                "duckdb": "SELECT * FROM mytemptable",
+                "spark": "SELECT * FROM mytemptable",
+                "tsql": "SELECT * FROM ##mytemptable",
+            },
+        )
 
     def test_system_time(self):
         self.validate_all(

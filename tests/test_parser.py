@@ -642,7 +642,7 @@ class TestParser(unittest.TestCase):
         now = time.time()
         query = parse_one(
             """
-            select *
+            SELECT *
             FROM a
             LEFT JOIN b ON a.id = b.id
             LEFT JOIN b ON a.id = b.id

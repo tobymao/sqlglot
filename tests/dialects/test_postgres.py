@@ -122,6 +122,10 @@ class TestPostgres(Validator):
         )
 
     def test_postgres(self):
+        expr = parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
+        unnest = expr.args["joins"][0].this.this
+        unnest.assert_is(exp.Unnest)
+
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")
@@ -414,7 +418,7 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM r CROSS JOIN LATERAL unnest(array(1)) AS s(location)",
+            "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)",
             write={
                 "postgres": "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)",
             },

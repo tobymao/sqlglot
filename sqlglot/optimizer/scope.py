@@ -692,8 +692,7 @@ def _traverse_tables(scope):
             # This shouldn't be a problem once qualify_columns runs, as it adds aliases on everything.
             # Until then, this means that only a single, unaliased derived table is allowed (rather,
             # the latest one wins.
-            alias = expression.alias
-            sources[alias] = child_scope
+            sources[expression.alias] = child_scope
 
         # append the final child_scope yielded
         scopes.append(child_scope)
@@ -730,9 +729,7 @@ def _traverse_udtfs(scope):
             ):
                 yield child_scope
                 top = child_scope
-
-                alias = expression.alias
-                sources[alias] = child_scope
+                sources[expression.alias] = child_scope
 
             scope.derived_table_scopes.append(top)
             scope.table_scopes.append(top)

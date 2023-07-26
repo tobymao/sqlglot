@@ -137,7 +137,7 @@ def _eliminate_union(scope, existing_ctes, taken):
 
 def _eliminate_derived_table(scope, existing_ctes, taken):
     # This ensures we don't drop the "pivot" arg from a pivoted subquery
-    if scope.parent.pivots:
+    if scope.parent.pivots or isinstance(scope.parent.expression, exp.Lateral):
         return None
 
     parent = scope.expression.parent

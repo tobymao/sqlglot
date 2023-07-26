@@ -796,7 +796,20 @@ WHERE
 
     def test_date_diff(self):
         self.validate_identity("SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')")
-
+        self.validate_all(
+            "SELECT DATEDIFF(quarter, 0, '2021/01/01')",
+            write={
+                "tsql": "SELECT DATEDIFF(quarter, '1900/01/01', '2021/01/01')",
+                "spark": "SELECT DATEDIFF(quarter, '1900/01/01', '2021/01/01')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(week, 1, '2021/01/01')",
+            write={
+                "tsql": "SELECT DATEDIFF(week, '1900/01/02', '2021/01/01')",
+                "spark": "SELECT DATEDIFF(week, '1900/01/02', '2021/01/01')",
+            },
+        )
         self.validate_all(
             "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
             write={

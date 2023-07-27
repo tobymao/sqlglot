@@ -553,6 +553,15 @@ class MySQL(Dialect):
             exp.DataType.Type.VARCHAR: "CHAR",
         }
 
+        def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
+            if not isinstance(expression.expression, exp.Literal):
+                from sqlglot.optimizer.simplify import simplify
+
+                expression = expression.copy()
+                simplify(expression.expression)
+
+            return super().limit_sql(expression, top=top)
+
         def xor_sql(self, expression: exp.Xor) -> str:
             if expression.expressions:
                 return self.expressions(expression, sep=" XOR ")

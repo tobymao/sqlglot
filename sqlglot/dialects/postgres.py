@@ -41,14 +41,14 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         from sqlglot.optimizer.simplify import simplify
 
+        expression = expression.copy()
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
-        expression = simplify(expression.args["expression"])
 
+        expression = simplify(expression.expression)
         if not isinstance(expression, exp.Literal):
             self.unsupported("Cannot add non literal")
 
-        expression = expression.copy()
         expression.args["is_string"] = True
         return f"{this} {kind} {self.sql(exp.Interval(this=expression, unit=unit))}"
 

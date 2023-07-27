@@ -313,7 +313,8 @@ class MySQL(Dialect):
 
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
-            "FULLTEXT" "INDEX",
+            "FULLTEXT",
+            "INDEX",
             "KEY",
             "SPATIAL",
         }

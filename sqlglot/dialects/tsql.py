@@ -180,10 +180,14 @@ def _parse_date_delta(
 
         start_date = seq_get(args, 1)
         if start_date and start_date.is_number:
-            # numeric types are valid DATETIME values
-            number = int(start_date.this) if start_date.is_int else float(start_date.this)
-            adds = DEFAULT_START_DATE + datetime.timedelta(days=number)
-            start_date = exp.Literal.string(adds.strftime("%F"))
+            # Numeric types are valid DATETIME values
+            if start_date.is_int:
+                adds = DEFAULT_START_DATE + datetime.timedelta(days=int(start_date.this))
+                start_date = exp.Literal.string(adds.strftime("%F"))
+            else:
+                # We currently don't handle float values, i.e. they're not converted to equivalent DATETIMEs.
+                # This is not a problem when generating T-SQL code, it is when transpiling to other dialects.
+                return exp_class(this=seq_get(args, 2), expression=start_date, unit=unit)
 
         return exp_class(
             this=exp.TimeStrToTime(this=seq_get(args, 2)),

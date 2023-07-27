@@ -1206,6 +1206,19 @@ class MergeTreeTTL(Expression):
     }
 
 
+# https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+class IndexConstraintOption(Expression):
+    arg_types = {
+        "key_block_size": False,
+        "using": False,
+        "parser": False,
+        "comment": False,
+        "visible": False,
+        "engine_attr": False,
+        "secondary_engine_attr": False,
+    }
+
+
 class ColumnConstraint(Expression):
     arg_types = {"this": False, "kind": True}
 
@@ -1270,6 +1283,11 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
         "maxvalue": False,
         "cycle": False,
     }
+
+
+# https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+class IndexColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": False, "schema": True, "kind": False, "type": False, "options": False}
 
 
 class InlineLengthColumnConstraint(ColumnConstraintKind):

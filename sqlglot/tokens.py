@@ -147,6 +147,7 @@ class TokenType(AutoName):
     VARIANT = auto()
     OBJECT = auto()
     INET = auto()
+    IPADDRESS = auto()
     ENUM = auto()
 
     # keywords

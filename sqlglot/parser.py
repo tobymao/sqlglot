@@ -185,6 +185,7 @@ class Parser(metaclass=_Parser):
         TokenType.VARIANT,
         TokenType.OBJECT,
         TokenType.INET,
+        TokenType.IPADDRESS,
         TokenType.ENUM,
         *NESTED_TYPE_TOKENS,
     }

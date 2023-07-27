@@ -192,6 +192,7 @@ class Presto(Dialect):
             "START": TokenType.BEGIN,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "ROW": TokenType.STRUCT,
+            "IPADDRESS": TokenType.IPADDRESS,
         }
 
     class Parser(parser.Parser):

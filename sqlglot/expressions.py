@@ -2865,7 +2865,7 @@ class Select(Subqueryable):
         self,
         expression: ExpOrStr,
         on: t.Optional[ExpOrStr] = None,
-        using: t.Optional[ExpOrStr | t.List[ExpOrStr]] = None,
+        using: t.Optional[ExpOrStr | t.Collection[ExpOrStr]] = None,
         append: bool = True,
         join_type: t.Optional[str] = None,
         join_alias: t.Optional[Identifier | str] = None,
@@ -2943,6 +2943,7 @@ class Select(Subqueryable):
                 arg="using",
                 append=append,
                 copy=copy,
+                into=Identifier,
                 **opts,
             )
 

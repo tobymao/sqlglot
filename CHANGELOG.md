@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v17.8.3] - 2023-07-27
+### :bug: Bug Fixes
+- [`75b418c`](https://github.com/tobymao/sqlglot/commit/75b418c1a7dd2efc616639285438a67ebc2c6b08) - **mysql**: generate DATETIME instead of TIMESTAMP for TimeStrToTime *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.8.2] - 2023-07-27
 ### :sparkles: New Features
 - [`5e641c2`](https://github.com/tobymao/sqlglot/commit/5e641c2aa898aa55dd920fc7cff11bef90408379) - **presto**: add IPADDRESS/IPPREFIX data types *(PR [#1965](https://github.com/tobymao/sqlglot/pull/1965) by [@roykoand](https://github.com/roykoand))*
@@ -964,3 +969,4 @@ Changelog
 [v17.8.0]: https://github.com/tobymao/sqlglot/compare/v17.7.0...v17.8.0
 [v17.8.1]: https://github.com/tobymao/sqlglot/compare/v17.8.0...v17.8.1
 [v17.8.2]: https://github.com/tobymao/sqlglot/compare/v17.8.1...v17.8.2
+[v17.8.3]: https://github.com/tobymao/sqlglot/compare/v17.8.2...v17.8.3

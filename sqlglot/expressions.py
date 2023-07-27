@@ -1206,6 +1206,7 @@ class MergeTreeTTL(Expression):
     }
 
 
+# https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 class IndexConstraintOption(Expression):
     arg_types = {
         "key_block_size": False,

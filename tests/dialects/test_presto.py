@@ -459,6 +459,14 @@ class TestPresto(Validator):
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
+        self.validate_all(
+            "STARTS_WITH('abc', 'a')",
+            read={"spark": "STARTSWITH('abc', 'a')"},
+            write={
+                "presto": "STARTS_WITH('abc', 'a')",
+                "spark": "STARTSWITH('abc', 'a')",
+            },
+        )
         self.validate_all("VALUES 1, 2, 3", write={"presto": "VALUES (1), (2), (3)"})
         self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' day"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})

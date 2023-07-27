@@ -4550,6 +4550,11 @@ class StandardHash(Func):
     arg_types = {"this": True, "expression": False}
 
 
+class StartsWith(Func):
+    _sql_names = ["STARTS_WITH", "STARTSWITH"]
+    arg_types = {"this": True, "expression": True}
+
+
 class StrPosition(Func):
     arg_types = {
         "this": True,

@@ -336,7 +336,7 @@ class TestTSQL(Validator):
             "CAST(x as TIME(4))",
             write={
                 "spark": "CAST(x AS TIMESTAMP)",
-                "tsql": "CAST(x AS TIMESTAMP(4))",
+                "tsql": "CAST(x AS TIME(4))",
             },
         )
 
@@ -352,7 +352,7 @@ class TestTSQL(Validator):
             "CAST(x as DATETIMEOFFSET)",
             write={
                 "spark": "CAST(x AS TIMESTAMP)",
-                "tsql": "CAST(x AS TIMESTAMPTZ)",
+                "tsql": "CAST(x AS DATETIMEOFFSET)",
             },
         )
 
@@ -394,7 +394,7 @@ class TestTSQL(Validator):
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={
                 "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT)",
-                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIMESTAMP(4), d FLOAT(24))",
+                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             },
         )
         self.validate_all(
@@ -818,31 +818,49 @@ WHERE
         )
 
     def test_date_diff(self):
-        self.validate_identity("SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')")
-
+        self.validate_identity(
+            "SELECT DATEDIFF(year, '2020-01-01', '2021-01-01')",
+            "SELECT DATEDIFF(year, CAST('2020-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+        )
         self.validate_all(
-            "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+            "SELECT DATEDIFF(quarter, 0, '2021-01-01')",
             write={
-                "tsql": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
-                "spark": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
-                "spark2": "SELECT MONTHS_BETWEEN('2021/01/01', '2020/01/01') / 12",
+                "tsql": "SELECT DATEDIFF(quarter, CAST('1900-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                "spark": "SELECT DATEDIFF(quarter, CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                "duckdb": "SELECT DATE_DIFF('quarter', CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT DATEDIFF(mm, 'start','end')",
+            "SELECT DATEDIFF(day, 1, '2021-01-01')",
             write={
-                "databricks": "SELECT DATEDIFF(month, 'start', 'end')",
-                "spark2": "SELECT MONTHS_BETWEEN('end', 'start')",
-                "tsql": "SELECT DATEDIFF(month, 'start', 'end')",
+                "tsql": "SELECT DATEDIFF(day, CAST('1900-01-02' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                "spark": "SELECT DATEDIFF(day, CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                "duckdb": "SELECT DATE_DIFF('day', CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+            write={
+                "tsql": "SELECT DATEDIFF(year, CAST('2020/01/01' AS DATETIME2), CAST('2021/01/01' AS DATETIME2))",
+                "spark": "SELECT DATEDIFF(year, CAST('2020/01/01' AS TIMESTAMP), CAST('2021/01/01' AS TIMESTAMP))",
+                "spark2": "SELECT MONTHS_BETWEEN(CAST('2021/01/01' AS TIMESTAMP), CAST('2020/01/01' AS TIMESTAMP)) / 12",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(mm, 'start', 'end')",
+            write={
+                "databricks": "SELECT DATEDIFF(month, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                "spark2": "SELECT MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP))",
+                "tsql": "SELECT DATEDIFF(month, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(quarter, 'start', 'end')",
             write={
-                "databricks": "SELECT DATEDIFF(quarter, 'start', 'end')",
-                "spark": "SELECT DATEDIFF(quarter, 'start', 'end')",
-                "spark2": "SELECT MONTHS_BETWEEN('end', 'start') / 3",
-                "tsql": "SELECT DATEDIFF(quarter, 'start', 'end')",
+                "databricks": "SELECT DATEDIFF(quarter, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                "spark": "SELECT DATEDIFF(quarter, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                "spark2": "SELECT MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) / 3",
+                "tsql": "SELECT DATEDIFF(quarter, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
             },
         )
 

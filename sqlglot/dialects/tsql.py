@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import re
 import typing as t
 
@@ -10,6 +11,7 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     parse_date_delta,
     rename_func,
+    timestrtotime_sql,
 )
 from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
@@ -51,6 +53,8 @@ DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{
 
 # N = Numeric, C=Currency
 TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
+
+DEFAULT_START_DATE = datetime.date(1900, 1, 1)
 
 
 def _format_time_lambda(
@@ -164,6 +168,26 @@ def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> s
 
     separator = expression.args.get("separator") or exp.Literal.string(",")
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
+
+
+def _parse_date_delta(
+    exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
+) -> t.Callable[[t.List], E]:
+    def inner_func(args: t.List) -> E:
+        unit_based = len(args) == 3
+        this = exp.TimeStrToTime(this=args[2] if unit_based else seq_get(args, 0))
+        unit = args[0] if unit_based else exp.Literal.string("DAY")
+        unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
+
+        start_date = seq_get(args, 1)
+        if isinstance(start_date, exp.Literal) and start_date.this.isnumeric():
+            # numeric types are valid DATETIME values
+            adds = DEFAULT_START_DATE + datetime.timedelta(days=int(start_date.this))
+            start_date = exp.Literal.string(adds.strftime("%F"))
+
+        return exp_class(this=this, expression=exp.TimeStrToTime(this=start_date), unit=unit)
+
+    return inner_func
 
 
 class TSQL(Dialect):
@@ -298,7 +322,6 @@ class TSQL(Dialect):
             "SMALLDATETIME": TokenType.DATETIME,
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
-            "TIME": TokenType.TIMESTAMP,
             "TOP": TokenType.TOP,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "VARCHAR(MAX)": TokenType.TEXT,
@@ -316,7 +339,7 @@ class TSQL(Dialect):
                 position=seq_get(args, 2),
             ),
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
-            "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
+            "DATEDIFF": _parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": _format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _format_time_lambda(exp.TimeToStr),
             "EOMONTH": _parse_eomonth,
@@ -552,9 +575,11 @@ class TSQL(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.INT: "INTEGER",
             exp.DataType.Type.DECIMAL: "NUMERIC",
             exp.DataType.Type.DATETIME: "DATETIME2",
+            exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.TIMESTAMP: "DATETIME2",
+            exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
         }
 
@@ -579,6 +604,7 @@ class TSQL(Dialect):
                 e.this,
             ),
             exp.TemporaryProperty: lambda self, e: "",
+            exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: _format_sql,
         }
 

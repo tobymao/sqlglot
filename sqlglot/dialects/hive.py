@@ -362,11 +362,12 @@ class Hive(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.VARBINARY: "BINARY",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.BIT: "BOOLEAN",
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.TIME: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.VARBINARY: "BINARY",
         }
 
         TRANSFORMS = {

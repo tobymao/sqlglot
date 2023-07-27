@@ -96,7 +96,7 @@
                 
                         <div class="docstring"><p><img src="sqlglot.svg" alt="SQLGlot logo" /></p>
 
-<p>SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between <a href="https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py">19 different dialects</a> like <a href="https://duckdb.org/">DuckDB</a>, <a href="https://prestodb.io/">Presto</a>, <a href="https://spark.apache.org/">Spark</a>, <a href="https://www.snowflake.com/en/">Snowflake</a>, and <a href="https://cloud.google.com/bigquery/">BigQuery</a>. It aims to read a wide variety of SQL inputs and output syntactically correct SQL in the targeted dialects.</p>
+<p>SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between <a href="https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py">19 different dialects</a> like <a href="https://duckdb.org/">DuckDB</a>, <a href="https://prestodb.io/">Presto</a>, <a href="https://spark.apache.org/">Spark</a>, <a href="https://www.snowflake.com/en/">Snowflake</a>, and <a href="https://cloud.google.com/bigquery/">BigQuery</a>. It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.</p>
 
 <p>It is a very comprehensive generic SQL parser with a robust <a href="https://github.com/tobymao/sqlglot/blob/main/tests/">test suite</a>. It is also quite <a href="#benchmarks">performant</a>, while being written purely in Python.</p>
 
@@ -227,7 +227,7 @@
 </code></pre>
 </div>
 
-<p>Comments are also preserved in a best-effort basis when transpiling SQL code:</p>
+<p>Comments are also preserved on a best-effort basis when transpiling SQL code:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>

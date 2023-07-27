@@ -2569,6 +2569,51 @@ class Generator:
         record_reader = f" RECORDREADER {record_reader}" if record_reader else ""
         return f"{transform}{row_format_before}{record_writer}{using}{schema}{row_format_after}{record_reader}"
 
+    def indexconstraintoption_sql(self, expression: exp.IndexConstraintOption) -> str:
+        key_block_size = self.sql(expression, "key_block_size")
+        if key_block_size:
+            return f"KEY_BLOCK_SIZE = {key_block_size}"
+
+        using = self.sql(expression, "using")
+        if using:
+            return f"USING {using}"
+
+        parser = self.sql(expression, "parser")
+        if parser:
+            return f"WITH PARSER {parser}"
+
+        comment = self.sql(expression, "comment")
+        if comment:
+            return f"COMMENT {comment}"
+
+        visible = expression.args.get("visible")
+        if visible is not None:
+            return "VISIBLE" if visible else "INVISIBLE"
+
+        engine_attr = self.sql(expression, "engine_attr")
+        if engine_attr:
+            return f"ENGINE_ATTRIBUTE = {engine_attr}"
+
+        secondary_engine_attr = self.sql(expression, "secondary_engine_attr")
+        if secondary_engine_attr:
+            return f"SECONDARY_ENGINE_ATTRIBUTE = {secondary_engine_attr}"
+
+        self.unsupported("Unsupported index constraint option.")
+        return ""
+
+    def indexcolumnconstraint_sql(self, expression: exp.IndexColumnConstraint) -> str:
+        kind = self.sql(expression, "kind")
+        kind = f"{kind} INDEX" if kind else "INDEX"
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        type_ = self.sql(expression, "type")
+        type_ = f" USING {type_}" if type_ else ""
+        schema = self.sql(expression, "schema")
+        schema = f" {schema}" if schema else ""
+        options = self.expressions(expression, key="options")
+        options = f" {options}" if options else ""
+        return f"{kind}{this}{type_}{schema}{options}"
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

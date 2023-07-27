@@ -380,7 +380,7 @@ class ClickHouse(Dialect):
             ]
 
         def parameterizedagg_sql(self, expression: exp.Anonymous) -> str:
-            params = self.expressions(expression, "params", flat=True)
+            params = self.expressions(expression, key="params", flat=True)
             return self.func(expression.name, *expression.expressions) + f"({params})"
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:

@@ -67,6 +67,12 @@ class TestMySQL(Validator):
                 "mysql": "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
             },
         )
+        self.validate_all(
+            "CREATE TABLE IF NOT EXISTS industry_info (a bigint(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c varchar(1000), PRIMARY KEY (a), UNIQUE KEY d (b), KEY e (b))",
+            write={
+                "mysql": "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("SELECT 1 XOR 0")

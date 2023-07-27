@@ -132,10 +132,10 @@ def generate_date_delta_with_unit_sql(
     func = "DATEADD" if isinstance(expression, exp.DateAdd) else "DATEDIFF"
     return self.func(func, expression.text("unit"), expression.expression, expression.this)
 
-
 def _parse_date_delta(
     exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
 ) -> t.Callable[[t.List], E]:
+
     def inner_func(args: t.List) -> E:
         unit_based = len(args) == 3
         this = args[2] if unit_based else seq_get(args, 0)
@@ -144,7 +144,7 @@ def _parse_date_delta(
 
         start_date = str(seq_get(args, 1))
         if start_date.isnumeric():
-            # perform date addition
+            # numeric types are valid DATETIME values
             days = int(start_date)
             epoc = datetime.datetime.strptime("1900-01-01", "%Y-%M-%d")
             adds = epoc + datetime.timedelta(days=days)

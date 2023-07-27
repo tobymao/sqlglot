@@ -1,6 +1,19 @@
 Changelog
 =========
 
+## [v17.8.1] - 2023-07-27
+### :sparkles: New Features
+- [`59847f5`](https://github.com/tobymao/sqlglot/commit/59847f52e30f61734568c4e02dff5df2c0ea3352) - **parser**: improved comment parsing *(PR [#1956](https://github.com/tobymao/sqlglot/pull/1956) by [@mpf82](https://github.com/mpf82))*
+- [`8448141`](https://github.com/tobymao/sqlglot/commit/8448141e100f5408b888fd36cca848b8333ffc48) - **tsql**: improve transpilation of temp table DDLs *(PR [#1958](https://github.com/tobymao/sqlglot/pull/1958) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`92849bd`](https://github.com/tobymao/sqlglot/commit/92849bdda4edb056db9a7598f1761fbe93635caf) - **optimizer**: traverse UNNEST scope *(PR [#1960](https://github.com/tobymao/sqlglot/pull/1960) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`7f79592`](https://github.com/tobymao/sqlglot/commit/7f79592ed87fe2241ae7924a8f421e66b5feffcc) - using type *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`4ed04d5`](https://github.com/tobymao/sqlglot/commit/4ed04d5ab710cd88f26a0eb26593eaa4be5b8a66) - minor README addition *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.8.0] - 2023-07-24
 ### :sparkles: New Features
 - [`75d49b7`](https://github.com/tobymao/sqlglot/commit/75d49b736b767496479a1138581960c5322cb7a3) - **schema**: improve overridability of normalization setting *(PR [#1954](https://github.com/tobymao/sqlglot/pull/1954) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -937,3 +950,4 @@ Changelog
 [v17.6.1]: https://github.com/tobymao/sqlglot/compare/v17.6.0...v17.6.1
 [v17.7.0]: https://github.com/tobymao/sqlglot/compare/v17.6.1...v17.7.0
 [v17.8.0]: https://github.com/tobymao/sqlglot/compare/v17.7.0...v17.8.0
+[v17.8.1]: https://github.com/tobymao/sqlglot/compare/v17.8.0...v17.8.1

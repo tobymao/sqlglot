@@ -467,6 +467,17 @@ class TestPresto(Validator):
                 "spark": "STARTSWITH('abc', 'a')",
             },
         )
+        self.validate_all(
+            "IS_NAN(x)",
+            read={
+                "spark": "ISNAN(x)",
+            },
+            write={
+                "presto": "IS_NAN(x)",
+                "spark": "ISNAN(x)",
+                "spark2": "ISNAN(x)",
+            },
+        )
         self.validate_all("VALUES 1, 2, 3", write={"presto": "VALUES (1), (2), (3)"})
         self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' day"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})

@@ -386,7 +386,7 @@ def input_file_name() -> Column:
 
 
 def isnan(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "ISNAN")
+    return Column.invoke_expression_over_column(col, expression.IsNan)
 
 
 def isnull(col: ColumnOrName) -> Column:

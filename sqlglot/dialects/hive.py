@@ -396,6 +396,7 @@ class Hive(Dialect):
             exp.FromBase64: rename_func("UNBASE64"),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
+            exp.IsNan: rename_func("ISNAN"),
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
             exp.JSONFormat: _json_format_sql,

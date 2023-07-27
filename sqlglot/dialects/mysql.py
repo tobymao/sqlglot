@@ -355,8 +355,6 @@ class MySQL(Dialect):
 
             options = []
             while True:
-                opt = None
-
                 if self._match_text_seq("KEY_BLOCK_SIZE"):
                     self._match(TokenType.EQ)
                     opt = exp.IndexConstraintOption(key_block_size=self._parse_number())
@@ -379,6 +377,8 @@ class MySQL(Dialect):
                 elif self._match_text_seq("SECONDARY_ENGINE_ATTRIBUTE"):
                     self._match(TokenType.EQ)
                     opt = exp.IndexConstraintOption(secondary_engine_attr=self._parse_string())
+                else:
+                    opt = None
 
                 if not opt:
                     break

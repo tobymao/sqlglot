@@ -19,7 +19,6 @@ from sqlglot.dialects.dialect import (
     parse_date_delta_with_interval,
     rename_func,
     strposition_to_locate_sql,
-    timestrtotime_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -522,7 +521,7 @@ class MySQL(Dialect):
             exp.StrToTime: _str_to_date_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimeStrToTime: timestrtotime_sql,
+            exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime")),
             exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,

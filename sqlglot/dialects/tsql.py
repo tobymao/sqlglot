@@ -179,9 +179,10 @@ def _parse_date_delta(
             unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name))
 
         start_date = seq_get(args, 1)
-        if isinstance(start_date, exp.Literal) and start_date.this.isnumeric():
+        if start_date and start_date.is_number:
             # numeric types are valid DATETIME values
-            adds = DEFAULT_START_DATE + datetime.timedelta(days=int(start_date.this))
+            number = int(start_date.this) if start_date.is_int else float(start_date.this)
+            adds = DEFAULT_START_DATE + datetime.timedelta(days=number)
             start_date = exp.Literal.string(adds.strftime("%F"))
 
         return exp_class(

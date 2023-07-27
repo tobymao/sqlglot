@@ -4264,6 +4264,10 @@ class Initcap(Func):
     arg_types = {"this": True, "expression": False}
 
 
+class IsNan(Func):
+    _sql_names = ["IS_NAN", "ISNAN"]
+
+
 class JSONKeyValue(Expression):
     arg_types = {"this": True, "expression": True}
 

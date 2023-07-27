@@ -9,6 +9,12 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (id BIGINT)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
+        self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
+        self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
+        self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
+        self.validate_identity(
+            "CREATE TABLE foo (a BIGINT, INDEX b USING HASH (c) COMMENT 'd' VISIBLE ENGINE_ATTRIBUTE = 'e' WITH PARSER foo)"
+        )
         self.validate_identity(
             "DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id = t2.id WHERE t2.id IS NULL"
         )
@@ -68,7 +74,7 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
-            "CREATE TABLE IF NOT EXISTS industry_info (a bigint(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c varchar(1000), PRIMARY KEY (a), UNIQUE KEY d (b), KEY e (b))",
+            "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE KEY d (b), KEY e (b))",
             write={
                 "mysql": "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
             },

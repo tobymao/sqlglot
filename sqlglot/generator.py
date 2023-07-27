@@ -2610,7 +2610,7 @@ class Generator:
         type_ = f" USING {type_}" if type_ else ""
         schema = self.sql(expression, "schema")
         schema = f" {schema}" if schema else ""
-        options = self.expressions(expression, key="options")
+        options = self.expressions(expression, key="options", sep=" ")
         options = f" {options}" if options else ""
         return f"{kind}{this}{type_}{schema}{options}"
 

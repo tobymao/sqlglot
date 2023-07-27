@@ -349,7 +349,7 @@ class MySQL(Dialect):
             if kind:
                 self._match_texts({"INDEX", "KEY"})
 
-            this = self._parse_id_var()
+            this = self._parse_id_var(any_token=False)
             type_ = self._match(TokenType.USING) and self._advance_any() and self._prev.text
             schema = self._parse_schema()
 

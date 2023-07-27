@@ -460,7 +460,7 @@ class TestMySQL(Validator):
         self.validate_all("CAST(x AS SIGNED INTEGER)", write={"mysql": "CAST(x AS SIGNED)"})
         self.validate_all("CAST(x AS UNSIGNED)", write={"mysql": "CAST(x AS UNSIGNED)"})
         self.validate_all("CAST(x AS UNSIGNED INTEGER)", write={"mysql": "CAST(x AS UNSIGNED)"})
-        self.validate_all("TIME_STR_TO_TIME(x)", write={"mysql": "CAST(x AS TIMESTAMP)"})
+        self.validate_all("TIME_STR_TO_TIME(x)", write={"mysql": "CAST(x AS DATETIME)"})
         self.validate_all(
             """SELECT 17 MEMBER OF('[23, "abc", 17, "ab", 10]')""",
             write={

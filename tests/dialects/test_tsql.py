@@ -818,6 +818,7 @@ WHERE
         )
 
     def test_date_diff(self):
+        self.validate_identity("SELECT DATEDIFF(hour, 1.5, '2021-01-01')")
         self.validate_identity(
             "SELECT DATEDIFF(year, '2020-01-01', '2021-01-01')",
             "SELECT DATEDIFF(year, CAST('2020-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
@@ -836,14 +837,6 @@ WHERE
                 "tsql": "SELECT DATEDIFF(day, CAST('1900-01-02' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
                 "spark": "SELECT DATEDIFF(day, CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
                 "duckdb": "SELECT DATE_DIFF('day', CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-            },
-        )
-        self.validate_all(
-            "SELECT DATEDIFF(quarter, 1.5, '2021-01-01')",
-            write={
-                "tsql": "SELECT DATEDIFF(quarter, CAST('1900-01-02' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
-                "spark": "SELECT DATEDIFF(quarter, CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-                "duckdb": "SELECT DATE_DIFF('quarter', CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
             },
         )
         self.validate_all(

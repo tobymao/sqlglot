@@ -449,6 +449,13 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT * FROM test LIMIT 0 + 1, 0 + 1",
+            write={
+                "mysql": "SELECT * FROM test LIMIT 1 OFFSET 1",
+                "postgres": "SELECT * FROM test LIMIT 0 + 1 OFFSET 0 + 1",
+            },
+        )
+        self.validate_all(
             "CAST(x AS TEXT)",
             write={
                 "mysql": "CAST(x AS CHAR)",

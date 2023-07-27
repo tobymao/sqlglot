@@ -767,7 +767,7 @@ class Condition(Expression):
         **opts,
     ) -> In:
         return In(
-            this=_maybe_copy(self, copy),
+            this=maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
             query=maybe_parse(query, copy=copy, **opts) if query else None,
             unnest=Unnest(
@@ -781,7 +781,7 @@ class Condition(Expression):
 
     def between(self, low: t.Any, high: t.Any, copy: bool = True, **opts) -> Between:
         return Between(
-            this=_maybe_copy(self, copy),
+            this=maybe_copy(self, copy),
             low=convert(low, copy=copy, **opts),
             high=convert(high, copy=copy, **opts),
         )
@@ -2200,7 +2200,7 @@ class Tuple(Expression):
         **opts,
     ) -> In:
         return In(
-            this=_maybe_copy(self, copy),
+            this=maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
             query=maybe_parse(query, copy=copy, **opts) if query else None,
             unnest=Unnest(
@@ -2230,7 +2230,7 @@ class Subqueryable(Unionable):
         Returns:
             Alias: the subquery
         """
-        instance = _maybe_copy(self, copy)
+        instance = maybe_copy(self, copy)
         if not isinstance(alias, Expression):
             alias = TableAlias(this=to_identifier(alias)) if alias else None
 
@@ -3111,7 +3111,7 @@ class Select(Subqueryable):
         Returns:
             Select: the modified expression.
         """
-        instance = _maybe_copy(self, copy)
+        instance = maybe_copy(self, copy)
         on = Tuple(expressions=[maybe_parse(on, copy=copy) for on in ons if on]) if ons else None
         instance.set("distinct", Distinct(on=on) if distinct else None)
         return instance
@@ -3142,7 +3142,7 @@ class Select(Subqueryable):
         Returns:
             The new Create expression.
         """
-        instance = _maybe_copy(self, copy)
+        instance = maybe_copy(self, copy)
         table_expression = maybe_parse(
             table,
             into=Table,
@@ -3178,7 +3178,7 @@ class Select(Subqueryable):
         Returns:
             The modified expression.
         """
-        inst = _maybe_copy(self, copy)
+        inst = maybe_copy(self, copy)
         inst.set("locks", [Lock(update=update)])
 
         return inst
@@ -3200,7 +3200,7 @@ class Select(Subqueryable):
         Returns:
             The modified expression.
         """
-        inst = _maybe_copy(self, copy)
+        inst = maybe_copy(self, copy)
         inst.set(
             "hint", Hint(expressions=[maybe_parse(h, copy=copy, dialect=dialect) for h in hints])
         )
@@ -4008,7 +4008,7 @@ class Case(Func):
     arg_types = {"this": False, "ifs": True, "default": False}
 
     def when(self, condition: ExpOrStr, then: ExpOrStr, copy: bool = True, **opts) -> Case:
-        instance = _maybe_copy(self, copy)
+        instance = maybe_copy(self, copy)
         instance.append(
             "ifs",
             If(
@@ -4019,7 +4019,7 @@ class Case(Func):
         return instance
 
     def else_(self, condition: ExpOrStr, copy: bool = True, **opts) -> Case:
-        instance = _maybe_copy(self, copy)
+        instance = maybe_copy(self, copy)
         instance.set("default", maybe_parse(condition, copy=copy, **opts))
         return instance
 
@@ -4834,7 +4834,7 @@ def maybe_parse(
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 
-def _maybe_copy(instance: E, copy: bool = True) -> E:
+def maybe_copy(instance: E, copy: bool = True) -> E:
     return instance.copy() if copy else instance
 
 
@@ -4854,7 +4854,7 @@ def _apply_builder(
 ):
     if _is_wrong_expression(expression, into):
         expression = into(this=expression)
-    instance = _maybe_copy(instance, copy)
+    instance = maybe_copy(instance, copy)
     expression = maybe_parse(
         sql_or_expression=expression,
         prefix=prefix,
@@ -4878,7 +4878,7 @@ def _apply_child_list_builder(
     properties=None,
     **opts,
 ):
-    instance = _maybe_copy(instance, copy)
+    instance = maybe_copy(instance, copy)
     parsed = []
     for expression in expressions:
         if expression is not None:
@@ -4917,7 +4917,7 @@ def _apply_list_builder(
     dialect=None,
     **opts,
 ):
-    inst = _maybe_copy(instance, copy)
+    inst = maybe_copy(instance, copy)
 
     expressions = [
         maybe_parse(
@@ -4953,7 +4953,7 @@ def _apply_conjunction_builder(
     if not expressions:
         return instance
 
-    inst = _maybe_copy(instance, copy)
+    inst = maybe_copy(instance, copy)
 
     existing = inst.args.get(arg)
     if append and existing is not None:
@@ -5428,7 +5428,7 @@ def to_identifier(name, quoted=None, copy=True):
         return None
 
     if isinstance(name, Identifier):
-        identifier = _maybe_copy(name, copy)
+        identifier = maybe_copy(name, copy)
     elif isinstance(name, str):
         identifier = Identifier(
             this=name,
@@ -5765,7 +5765,7 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         Expression: the equivalent expression object.
     """
     if isinstance(value, Expression):
-        return _maybe_copy(value, copy)
+        return maybe_copy(value, copy)
     if isinstance(value, str):
         return Literal.string(value)
     if isinstance(value, bool):

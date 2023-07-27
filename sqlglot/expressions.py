@@ -3377,6 +3377,8 @@ class DataType(Expression):
         HSTORE = auto()
         IMAGE = auto()
         INET = auto()
+        IPADDRESS = auto()
+        IPPREFIX = auto()
         INT = auto()
         INT128 = auto()
         INT256 = auto()

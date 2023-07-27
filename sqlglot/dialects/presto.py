@@ -193,6 +193,7 @@ class Presto(Dialect):
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "ROW": TokenType.STRUCT,
             "IPADDRESS": TokenType.IPADDRESS,
+            "IPPREFIX": TokenType.IPPREFIX,
         }
 
     class Parser(parser.Parser):

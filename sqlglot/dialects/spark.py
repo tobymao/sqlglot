@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.spark2 import Spark2
 from sqlglot.helper import seq_get
 
@@ -47,7 +48,11 @@ class Spark(Spark2):
             exp.DataType.Type.SMALLMONEY: "DECIMAL(6, 4)",
             exp.DataType.Type.UNIQUEIDENTIFIER: "STRING",
         }
-        TRANSFORMS = Spark2.Generator.TRANSFORMS.copy()
+
+        TRANSFORMS = {
+            **Spark2.Generator.TRANSFORMS,
+            exp.StartsWith: rename_func("STARTSWITH"),
+        }
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)
 

@@ -148,6 +148,7 @@ class TokenType(AutoName):
     OBJECT = auto()
     INET = auto()
     IPADDRESS = auto()
+    IPPREFIX = auto()
     ENUM = auto()
 
     # keywords

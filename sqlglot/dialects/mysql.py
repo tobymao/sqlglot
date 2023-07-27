@@ -555,12 +555,23 @@ class MySQL(Dialect):
 
         def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
             if not isinstance(expression.expression, exp.Literal):
+                # MySQL requires simple literal values for its LIMIT clause.
                 from sqlglot.optimizer.simplify import simplify
 
                 expression = expression.copy()
                 simplify(expression.expression)
 
             return super().limit_sql(expression, top=top)
+
+        def offset_sql(self, expression: exp.Offset) -> str:
+            if not isinstance(expression.expression, exp.Literal):
+                # MySQL requires simple literal values for its OFFSET clause.
+                from sqlglot.optimizer.simplify import simplify
+
+                expression = expression.copy()
+                simplify(expression.expression)
+
+            return super().offset_sql(expression)
 
         def xor_sql(self, expression: exp.Xor) -> str:
             if expression.expressions:

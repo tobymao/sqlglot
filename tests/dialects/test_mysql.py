@@ -448,12 +448,11 @@ class TestMySQL(Validator):
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
 
     def test_mysql(self):
-        self.validate_all("SELECT 1 LIMIT 1", write={"mysql": "SELECT 1 LIMIT 1"})
         self.validate_all(
-            "SELECT * FROM test LIMIT 0 + 1",
+            "SELECT * FROM test LIMIT 0 + 1, 0 + 1",
             write={
-                "mysql": "SELECT * FROM test LIMIT 1",
-                "postgres": "SELECT * FROM test LIMIT 0 + 1",
+                "mysql": "SELECT * FROM test LIMIT 1 OFFSET 1",
+                "postgres": "SELECT * FROM test LIMIT 0 + 1 OFFSET 0 + 1",
             },
         )
         self.validate_all(

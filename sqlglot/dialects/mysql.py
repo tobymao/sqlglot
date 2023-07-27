@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     parse_date_delta_with_interval,
     rename_func,
+    simplify_expression,
     strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
@@ -554,23 +555,13 @@ class MySQL(Dialect):
         }
 
         def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
-            if not isinstance(expression.expression, exp.Literal):
-                # MySQL requires simple literal values for its LIMIT clause.
-                from sqlglot.optimizer.simplify import simplify
-
-                expression = expression.copy()
-                simplify(expression.expression)
-
+            # MySQL requires simple literal values for its LIMIT clause.
+            expression = simplify_expression(expression)
             return super().limit_sql(expression, top=top)
 
         def offset_sql(self, expression: exp.Offset) -> str:
-            if not isinstance(expression.expression, exp.Literal):
-                # MySQL requires simple literal values for its OFFSET clause.
-                from sqlglot.optimizer.simplify import simplify
-
-                expression = expression.copy()
-                simplify(expression.expression)
-
+            # MySQL requires simple literal values for its OFFSET clause.
+            expression = simplify_expression(expression)
             return super().offset_sql(expression)
 
         def xor_sql(self, expression: exp.Xor) -> str:

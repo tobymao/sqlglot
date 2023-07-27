@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
+    simplify_expression,
     str_position_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
@@ -39,13 +40,10 @@ DATE_DIFF_FACTOR = {
 
 def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
-        from sqlglot.optimizer.simplify import simplify
-
-        expression = expression.copy()
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
 
-        expression = simplify(expression.expression)
+        expression = simplify_expression(expression.copy(), copy=False).expression
         if not isinstance(expression, exp.Literal):
             self.unsupported("Cannot add non literal")
 

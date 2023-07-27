@@ -17,7 +17,7 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     rename_func,
-    simplify_expression,
+    simplify_literal,
     str_position_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
@@ -43,7 +43,7 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
 
-        expression = simplify_expression(expression.copy(), copy=False).expression
+        expression = simplify_literal(expression.copy(), copy=False).expression
         if not isinstance(expression, exp.Literal):
             self.unsupported("Cannot add non literal")
 

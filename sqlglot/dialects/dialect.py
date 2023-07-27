@@ -665,7 +665,7 @@ def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectTyp
     return names
 
 
-def simplify_expression(expression: E, copy: bool = True) -> E:
+def simplify_literal(expression: E, copy: bool = True) -> E:
     if not isinstance(expression.expression, exp.Literal):
         from sqlglot.optimizer.simplify import simplify
 

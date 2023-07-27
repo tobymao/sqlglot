@@ -665,5 +665,15 @@ def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectTyp
     return names
 
 
+def simplify_literal(expression: E, copy: bool = True) -> E:
+    if not isinstance(expression.expression, exp.Literal):
+        from sqlglot.optimizer.simplify import simplify
+
+        expression = exp.maybe_copy(expression, copy)
+        simplify(expression.expression)
+
+    return expression
+
+
 def binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:
     return lambda args: expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))

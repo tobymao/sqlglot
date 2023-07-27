@@ -4,6 +4,8 @@ import datetime
 import re
 import typing as t
 
+import dateutil.parser
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -12,7 +14,7 @@ from sqlglot.dialects.dialect import (
     parse_date_delta,
     rename_func,
 )
-from sqlglot.expressions import DataType
+from sqlglot.expressions import DataType, convert
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -132,25 +134,38 @@ def generate_date_delta_with_unit_sql(
     func = "DATEADD" if isinstance(expression, exp.DateAdd) else "DATEDIFF"
     return self.func(func, expression.text("unit"), expression.expression, expression.this)
 
+
 def _parse_date_delta(
     exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
 ) -> t.Callable[[t.List], E]:
-
     def inner_func(args: t.List) -> E:
         unit_based = len(args) == 3
         this = args[2] if unit_based else seq_get(args, 0)
         unit = args[0] if unit_based else exp.Literal.string("DAY")
         unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
 
-        start_date = str(seq_get(args, 1))
-        if start_date.isnumeric():
-            # numeric types are valid DATETIME values
-            days = int(start_date)
-            epoc = datetime.datetime.strptime("1900-01-01", "%Y-%M-%d")
+        start_date = seq_get(args, 1)
+        start_date_str = str(start_date)
+        end_date = this
+        if start_date_str.isnumeric():
+            # numeric types are in common use and are valid DATETIME values via implicit type conversion
+            days = int(start_date_str)
+            epoc = datetime.datetime.strptime("1900-01-01 00:00:00", "%Y-%m-%d %H:%M:%S")
             adds = epoc + datetime.timedelta(days=days)
-            start_date = f"'{adds.strftime('%F')}'"
+            start_date = convert(adds.date(), copy=True)
+        else:
+            try:
+                start_date = convert(dateutil.parser.parse(start_date_str).date())
+            except:
+                {}  # must be a column or variable?
 
-        return exp_class(this=this, expression=start_date, unit=unit)
+        if this.is_string and this.key == "literal":
+            try:
+                end_date = convert(dateutil.parser.parse(str(this.name)).date())
+            except:
+                {}  # must be a column or variable?
+
+        return exp_class(this=end_date, expression=start_date, unit=unit)
 
     return inner_func
 
@@ -585,6 +600,7 @@ class TSQL(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
+            exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.Extract: rename_func("DATEPART"),

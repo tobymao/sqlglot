@@ -820,27 +820,35 @@ WHERE
     def test_date_diff(self):
         self.validate_identity("SELECT DATEDIFF(year, '2020-01-01', '2021-01-01')")
         self.validate_all(
-            "SELECT DATEDIFF(quarter, 0, '2021-01-01')",
+            "SELECT DATEDIFF(quarter, 0, '2021-01-07')",
             write={
-                "tsql": "SELECT DATEDIFF(quarter, '1900-01-01', '2021-01-01')",
-                "spark": "SELECT DATEDIFF(quarter, '1900-01-01', '2021-01-01')",
-                #"duckdb": "SELECT DATE_DIFF('quarter', CAST('1900-01-01' AS DATE), CAST('2021-01-01' AS DATE))",
+                "tsql": "SELECT DATEDIFF(quarter, '1900-01-01', '2021-01-07')",
+                "spark": "SELECT DATEDIFF(quarter, TO_DATE('1900-01-01'), TO_DATE('2021-01-07'))",
+                "duckdb": "SELECT DATE_DIFF('quarter', CAST('1900-01-01' AS DATE), CAST('2021-01-07' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(quarter, 0, mytable.mydate)",
+            write={
+                "tsql": "SELECT DATEDIFF(quarter, '1900-01-01', mytable.mydate)",
+                "spark": "SELECT DATEDIFF(quarter, TO_DATE('1900-01-01'), mytable.mydate)",
+                "duckdb": "SELECT DATE_DIFF('quarter', CAST('1900-01-01' AS DATE), mytable.mydate)",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(day, 1, '2021-01-01')",
             write={
                 "tsql": "SELECT DATEDIFF(day, '1900-01-02', '2021-01-01')",
-                "spark": "SELECT DATEDIFF(day, '1900-01-02', '2021-01-01')",
-                #"duckdb": "SELECT DATE_DIFF('day', CAST('1900-01-02' AS DATE), CAST('2021-01-01' AS DATE))",
+                "spark": "SELECT DATEDIFF(day, TO_DATE('1900-01-02'), TO_DATE('2021-01-01'))",
+                "duckdb": "SELECT DATE_DIFF('day', CAST('1900-01-02' AS DATE), CAST('2021-01-01' AS DATE))",
             },
         )
         self.validate_all(
-            "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
+            "SELECT DATEDIFF(year, '2019-01-01', '2021-01-01')",
             write={
-                "tsql": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
-                "spark": "SELECT DATEDIFF(year, '2020/01/01', '2021/01/01')",
-                "spark2": "SELECT MONTHS_BETWEEN('2021/01/01', '2020/01/01') / 12",
+                "tsql": "SELECT DATEDIFF(year, '2019-01-01', '2021-01-01')",
+                "spark": "SELECT DATEDIFF(year, TO_DATE('2019-01-01'), TO_DATE('2021-01-01'))",
+                "spark2": "SELECT MONTHS_BETWEEN(TO_DATE('2021-01-01'), TO_DATE('2019-01-01')) / 12",
             },
         )
         self.validate_all(

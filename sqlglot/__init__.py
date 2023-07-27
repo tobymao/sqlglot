@@ -67,19 +67,22 @@ schema = MappingSchema()
 """The default schema used by SQLGlot (e.g. in the optimizer)."""
 
 
-def parse(sql: str, read: DialectType = None, **opts) -> t.List[t.Optional[Expression]]:
+def parse(
+    sql: str, read: DialectType = None, dialect: DialectType = None, **opts
+) -> t.List[t.Optional[Expression]]:
     """
     Parses the given SQL string into a collection of syntax trees, one per parsed SQL statement.
 
     Args:
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
+        dialect: the SQL dialect (alias for read).
         **opts: other `sqlglot.parser.Parser` options.
 
     Returns:
         The resulting syntax tree collection.
     """
-    dialect = Dialect.get_or_raise(read)()
+    dialect = Dialect.get_or_raise(read or dialect)()
     return dialect.parse(sql, **opts)
 
 

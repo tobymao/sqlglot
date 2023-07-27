@@ -174,10 +174,9 @@ def _parse_date_delta(
     exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
 ) -> t.Callable[[t.List], E]:
     def inner_func(args: t.List) -> E:
-        unit_based = len(args) == 3
-        this = exp.TimeStrToTime(this=args[2] if unit_based else seq_get(args, 0))
-        unit = args[0] if unit_based else exp.Literal.string("DAY")
-        unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
+        unit = seq_get(args, 0)
+        if unit and unit_mapping:
+            unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name))
 
         start_date = seq_get(args, 1)
         if isinstance(start_date, exp.Literal) and start_date.this.isnumeric():
@@ -185,7 +184,11 @@ def _parse_date_delta(
             adds = DEFAULT_START_DATE + datetime.timedelta(days=int(start_date.this))
             start_date = exp.Literal.string(adds.strftime("%F"))
 
-        return exp_class(this=this, expression=exp.TimeStrToTime(this=start_date), unit=unit)
+        return exp_class(
+            this=exp.TimeStrToTime(this=seq_get(args, 2)),
+            expression=exp.TimeStrToTime(this=start_date),
+            unit=unit,
+        )
 
     return inner_func
 

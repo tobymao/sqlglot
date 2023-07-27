@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import re
 import typing as t
 
@@ -130,6 +131,28 @@ def generate_date_delta_with_unit_sql(
 ) -> str:
     func = "DATEADD" if isinstance(expression, exp.DateAdd) else "DATEDIFF"
     return self.func(func, expression.text("unit"), expression.expression, expression.this)
+
+
+def _parse_date_delta(
+    exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
+) -> t.Callable[[t.List], E]:
+    def inner_func(args: t.List) -> E:
+        unit_based = len(args) == 3
+        this = args[2] if unit_based else seq_get(args, 0)
+        unit = args[0] if unit_based else exp.Literal.string("DAY")
+        unit = exp.var(unit_mapping.get(unit.name.lower(), unit.name)) if unit_mapping else unit
+
+        start_date = str(seq_get(args, 1))
+        if start_date.isnumeric():
+            # perform date addition
+            days = int(start_date)
+            epoc = datetime.datetime.strptime("1900-01-01", "%Y-%M-%d")
+            adds = epoc + datetime.timedelta(days=days)
+            start_date = f"'{adds.strftime('%F')}'"
+
+        return exp_class(this=this, expression=start_date, unit=unit)
+
+    return inner_func
 
 
 def _format_sql(self: generator.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
@@ -316,7 +339,7 @@ class TSQL(Dialect):
                 position=seq_get(args, 2),
             ),
             "DATEADD": parse_date_delta(exp.DateAdd, unit_mapping=DATE_DELTA_INTERVAL),
-            "DATEDIFF": parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
+            "DATEDIFF": _parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": _format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _format_time_lambda(exp.TimeToStr),
             "EOMONTH": _parse_eomonth,

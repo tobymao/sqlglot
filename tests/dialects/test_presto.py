@@ -109,6 +109,8 @@ class TestPresto(Validator):
                 "spark": "CAST(x AS TIMESTAMP)",
             },
         )
+        self.validate_identity("CAST(x AS IPADDRESS)")
+        self.validate_identity("CAST(x AS IPPREFIX)")
 
     def test_regex(self):
         self.validate_all(

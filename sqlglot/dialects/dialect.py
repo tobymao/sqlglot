@@ -669,7 +669,7 @@ def simplify_literal(expression: E, copy: bool = True) -> E:
     if not isinstance(expression.expression, exp.Literal):
         from sqlglot.optimizer.simplify import simplify
 
-        expression = exp._maybe_copy(expression, copy)
+        expression = exp.maybe_copy(expression, copy)
         simplify(expression.expression)
 
     return expression

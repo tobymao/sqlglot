@@ -638,7 +638,7 @@ SELECT
 FROM "users" AS "u"
 CROSS JOIN LATERAL (
   SELECT
-    "l"."log_date"
+    "l"."log_date" AS "log_date"
   FROM "logs" AS "l"
   WHERE
     "l"."log_date" <= 100 AND "l"."user_id" = "u"."user_id"

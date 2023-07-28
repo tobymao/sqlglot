@@ -990,28 +990,7 @@ class Uncache(Expression):
     arg_types = {"this": True, "exists": False}
 
 
-class TableChange(Expression):
-    @property
-    def ctes(self):
-        with_ = self.args.get("with")
-        if not with_:
-            return []
-        return with_.expressions
-
-    @property
-    def named_selects(self) -> t.List[str]:
-        if isinstance(self.expression, Subqueryable):
-            return self.expression.named_selects
-        return []
-
-    @property
-    def selects(self) -> t.List[Expression]:
-        if isinstance(self.expression, Subqueryable):
-            return self.expression.selects
-        return []
-
-
-class Create(TableChange):
+class Create(Expression):
     arg_types = {
         "with": False,
         "this": True,

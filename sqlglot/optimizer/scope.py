@@ -745,6 +745,7 @@ def _traverse_udtfs(scope):
 
     scope.sources.update(sources)
 
+
 def _traverse_create(scope):
     yield from _traverse_ctes(scope)
     yield from _traverse_subqueries(scope)

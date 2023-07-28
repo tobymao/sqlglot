@@ -4299,19 +4299,19 @@ class Parser(metaclass=_Parser):
     def _parse_null(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.NULL):
             return self.PRIMARY_PARSERS[TokenType.NULL](self, self._prev)
-        return None
+        return self._parse_placeholder()
 
     def _parse_boolean(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.TRUE):
             return self.PRIMARY_PARSERS[TokenType.TRUE](self, self._prev)
         if self._match(TokenType.FALSE):
             return self.PRIMARY_PARSERS[TokenType.FALSE](self, self._prev)
-        return None
+        return self._parse_placeholder()
 
     def _parse_star(self) -> t.Optional[exp.Expression]:
         if self._match(TokenType.STAR):
             return self.PRIMARY_PARSERS[TokenType.STAR](self, self._prev)
-        return None
+        return self._parse_placeholder()
 
     def _parse_parameter(self) -> exp.Parameter:
         wrapped = self._match(TokenType.L_BRACE)

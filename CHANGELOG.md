@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v17.8.5] - 2023-07-28
+### :sparkles: New Features
+- [`9d67283`](https://github.com/tobymao/sqlglot/commit/9d67283b3185baa43f2591a75c01493455948d40) - **optimizer**: add support for resolving CTEs in CREATE statements *(PR [#1949](https://github.com/tobymao/sqlglot/pull/1949) by [@gtoonstra](https://github.com/gtoonstra))*
+
+### :bug: Bug Fixes
+- [`2874ae5`](https://github.com/tobymao/sqlglot/commit/2874ae5175c3c522b75bfd7764fdbcd928cc94b4) - **tsql**: improve UDF parsing *(PR [#1973](https://github.com/tobymao/sqlglot/pull/1973) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#1966](undefined) opened by [@bayees](https://github.com/bayees)*
+- [`89c8635`](https://github.com/tobymao/sqlglot/commit/89c8635a73ae3f415d9ed8f13da1ab23400446cc) - **parser,bigquery**: make separator optional in STRING_AGG parser *(PR [#1974](https://github.com/tobymao/sqlglot/pull/1974) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.8.4] - 2023-07-28
 ### :sparkles: New Features
 - [`7440e4a`](https://github.com/tobymao/sqlglot/commit/7440e4adbc5b62f53db54c6e50b0e5a69f5bffc2) - **tsql**: improve support for the DATEDIFF function *(PR [#1967](https://github.com/tobymao/sqlglot/pull/1967) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -983,3 +993,4 @@ Changelog
 [v17.8.2]: https://github.com/tobymao/sqlglot/compare/v17.8.1...v17.8.2
 [v17.8.3]: https://github.com/tobymao/sqlglot/compare/v17.8.2...v17.8.3
 [v17.8.4]: https://github.com/tobymao/sqlglot/compare/v17.8.3...v17.8.4
+[v17.8.5]: https://github.com/tobymao/sqlglot/compare/v17.8.4...v17.8.5

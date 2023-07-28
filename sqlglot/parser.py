@@ -3861,13 +3861,11 @@ class Parser(metaclass=_Parser):
             args = self._parse_csv(self._parse_conjunction)
 
         index = self._index
-        if not self._match(TokenType.R_PAREN):
+        if not self._match(TokenType.R_PAREN) and args:
             # postgres: STRING_AGG([DISTINCT] expression, separator [ORDER BY expression1 {ASC | DESC} [, ...]])
-            return self.expression(
-                exp.GroupConcat,
-                this=seq_get(args, 0),
-                separator=self._parse_order(this=seq_get(args, 1)),
-            )
+            # bigquery: STRING_AGG([DISTINCT] expression [, separator] [ORDER BY key [{ASC | DESC}] [, ... ]] [LIMIT n])
+            args[-1] = self._parse_limit(this=self._parse_order(this=args[-1]))
+            return self.expression(exp.GroupConcat, this=args[0], separator=seq_get(args, 1))
 
         # Checks if we can parse an order clause: WITHIN GROUP (ORDER BY <order_by_expression_list> [ASC | DESC]).
         # This is done "manually", instead of letting _parse_window parse it into an exp.WithinGroup node, so that

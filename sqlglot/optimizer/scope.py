@@ -512,9 +512,12 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     Returns:
         list[Scope]: scope instances
     """
-    if not isinstance(expression, exp.Unionable):
-        return []
-    return list(_traverse_scope(Scope(expression)))
+    if isinstance(expression, exp.Unionable) or (
+        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Subqueryable)
+    ):
+        return list(_traverse_scope(Scope(expression)))
+
+    return []
 
 
 def build_scope(expression: exp.Expression) -> t.Optional[Scope]:
@@ -543,6 +546,8 @@ def _traverse_scope(scope):
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
+    elif isinstance(scope.expression, exp.DDL):
+        yield from _traverse_ddl(scope)
     else:
         logger.warning(
             "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
@@ -579,10 +584,10 @@ def _traverse_ctes(scope):
     for cte in scope.ctes:
         recursive_scope = None
 
-        # if the scope is a recursive cte, it must be in the form of
-        # base_case UNION recursive. thus the recursive scope is the first
-        # section of the union.
-        if scope.expression.args["with"].recursive:
+        # if the scope is a recursive cte, it must be in the form of base_case UNION recursive.
+        # thus the recursive scope is the first section of the union.
+        with_ = scope.expression.args.get("with")
+        if with_ and with_.recursive:
             union = cte.this
 
             if isinstance(union, exp.Union):
@@ -740,6 +745,18 @@ def _traverse_udtfs(scope):
             scope.table_scopes.append(top)
 
     scope.sources.update(sources)
+
+
+def _traverse_ddl(scope):
+    yield from _traverse_ctes(scope)
+
+    query_scope = scope.branch(
+        scope.expression.expression, scope_type=ScopeType.DERIVED_TABLE, chain_sources=scope.sources
+    )
+    query_scope._collect()
+    query_scope._ctes = scope.ctes + query_scope._ctes
+
+    yield from _traverse_scope(query_scope)
 
 
 def walk_in_scope(expression, bfs=True):

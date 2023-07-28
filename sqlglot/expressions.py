@@ -1931,6 +1931,10 @@ class EngineProperty(Property):
     arg_types = {"this": True}
 
 
+class HeapProperty(Property):
+    arg_types = {}
+
+
 class ToTableProperty(Property):
     arg_types = {"this": True}
 

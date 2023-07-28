@@ -605,6 +605,7 @@ class Parser(metaclass=_Parser):
         "FALLBACK": lambda self, **kwargs: self._parse_fallback(**kwargs),
         "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "FREESPACE": lambda self: self._parse_freespace(),
+        "HEAP": lambda self: self.expression(exp.HeapProperty),
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
@@ -1189,7 +1190,7 @@ class Parser(metaclass=_Parser):
 
         exists = self._parse_exists(not_=True)
         this = None
-        expression = None
+        expression: t.Optional[exp.Expression] = None
         indexes = None
         no_schema_binding = None
         begin = None
@@ -1209,12 +1210,16 @@ class Parser(metaclass=_Parser):
             extend_props(self._parse_properties())
 
             self._match(TokenType.ALIAS)
-            begin = self._match(TokenType.BEGIN)
-            return_ = self._match_text_seq("RETURN")
-            expression = self._parse_statement()
 
-            if return_:
-                expression = self.expression(exp.Return, this=expression)
+            if self._match(TokenType.COMMAND):
+                expression = self._parse_as_command(self._prev)
+            else:
+                begin = self._match(TokenType.BEGIN)
+                return_ = self._match_text_seq("RETURN")
+                expression = self._parse_statement()
+
+                if return_:
+                    expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index(index=self._parse_id_var())
         elif create_token.token_type in self.DB_CREATABLES:

@@ -1,6 +1,48 @@
 Changelog
 =========
 
+## [v17.8.4] - 2023-07-28
+### :sparkles: New Features
+- [`7440e4a`](https://github.com/tobymao/sqlglot/commit/7440e4adbc5b62f53db54c6e50b0e5a69f5bffc2) - **tsql**: improve support for the DATEDIFF function *(PR [#1967](https://github.com/tobymao/sqlglot/pull/1967) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`2d5d714`](https://github.com/tobymao/sqlglot/commit/2d5d714b33c3b7ac2bcafd4b9484d7b8c3e25032) - **tsql**: revert float-to-datetime coercions *(PR [#1970](https://github.com/tobymao/sqlglot/pull/1970) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`35f55e9`](https://github.com/tobymao/sqlglot/commit/35f55e9434bdb87449abd85683ee93f39d0c740f) - **mysql**: simplify LIMIT, OFFSET when their expression is complex *(PR [#1971](https://github.com/tobymao/sqlglot/pull/1971) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :wrench: Chores
+- [`5695667`](https://github.com/tobymao/sqlglot/commit/5695667e85adb62821e3ea2210855244982c451c) - add dialect parameter to parse for parity with parse_one *(PR [#1969](https://github.com/tobymao/sqlglot/pull/1969) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
+## [v17.8.3] - 2023-07-27
+### :bug: Bug Fixes
+- [`75b418c`](https://github.com/tobymao/sqlglot/commit/75b418c1a7dd2efc616639285438a67ebc2c6b08) - **mysql**: generate DATETIME instead of TIMESTAMP for TimeStrToTime *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
+## [v17.8.2] - 2023-07-27
+### :sparkles: New Features
+- [`5e641c2`](https://github.com/tobymao/sqlglot/commit/5e641c2aa898aa55dd920fc7cff11bef90408379) - **presto**: add IPADDRESS/IPPREFIX data types *(PR [#1965](https://github.com/tobymao/sqlglot/pull/1965) by [@roykoand](https://github.com/roykoand))*
+- [`d2685dd`](https://github.com/tobymao/sqlglot/commit/d2685dd4b52123c70e9b4f62e95b948a5b4b6f5f) - **mysql**: improve support for DDL index column constraints *(PR [#1961](https://github.com/tobymao/sqlglot/pull/1961) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#1959](undefined) opened by [@ninja96826](https://github.com/ninja96826)*
+
+### :bug: Bug Fixes
+- [`7082b61`](https://github.com/tobymao/sqlglot/commit/7082b617e07c8e84e9a3e2a840a4f559d3bd2991) - trino->spark starts_with closes [#1963](https://github.com/tobymao/sqlglot/pull/1963) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`9787329`](https://github.com/tobymao/sqlglot/commit/97873293ccfd522867c4ae074a05ce97a44adef9) - trino->spark is_nan closes [#1964](https://github.com/tobymao/sqlglot/pull/1964) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`1ebe49f`](https://github.com/tobymao/sqlglot/commit/1ebe49fe475c86bf64ba39e9b67a11be9b2f65cd) - **mysql**: generate TimeStrToTime as a cast to TIMESTAMP *(PR [#1968](https://github.com/tobymao/sqlglot/pull/1968) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
+## [v17.8.1] - 2023-07-27
+### :sparkles: New Features
+- [`59847f5`](https://github.com/tobymao/sqlglot/commit/59847f52e30f61734568c4e02dff5df2c0ea3352) - **parser**: improved comment parsing *(PR [#1956](https://github.com/tobymao/sqlglot/pull/1956) by [@mpf82](https://github.com/mpf82))*
+- [`8448141`](https://github.com/tobymao/sqlglot/commit/8448141e100f5408b888fd36cca848b8333ffc48) - **tsql**: improve transpilation of temp table DDLs *(PR [#1958](https://github.com/tobymao/sqlglot/pull/1958) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`92849bd`](https://github.com/tobymao/sqlglot/commit/92849bdda4edb056db9a7598f1761fbe93635caf) - **optimizer**: traverse UNNEST scope *(PR [#1960](https://github.com/tobymao/sqlglot/pull/1960) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`7f79592`](https://github.com/tobymao/sqlglot/commit/7f79592ed87fe2241ae7924a8f421e66b5feffcc) - using type *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`4ed04d5`](https://github.com/tobymao/sqlglot/commit/4ed04d5ab710cd88f26a0eb26593eaa4be5b8a66) - minor README addition *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.8.0] - 2023-07-24
 ### :sparkles: New Features
 - [`75d49b7`](https://github.com/tobymao/sqlglot/commit/75d49b736b767496479a1138581960c5322cb7a3) - **schema**: improve overridability of normalization setting *(PR [#1954](https://github.com/tobymao/sqlglot/pull/1954) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -937,3 +979,7 @@ Changelog
 [v17.6.1]: https://github.com/tobymao/sqlglot/compare/v17.6.0...v17.6.1
 [v17.7.0]: https://github.com/tobymao/sqlglot/compare/v17.6.1...v17.7.0
 [v17.8.0]: https://github.com/tobymao/sqlglot/compare/v17.7.0...v17.8.0
+[v17.8.1]: https://github.com/tobymao/sqlglot/compare/v17.8.0...v17.8.1
+[v17.8.2]: https://github.com/tobymao/sqlglot/compare/v17.8.1...v17.8.2
+[v17.8.3]: https://github.com/tobymao/sqlglot/compare/v17.8.2...v17.8.3
+[v17.8.4]: https://github.com/tobymao/sqlglot/compare/v17.8.3...v17.8.4

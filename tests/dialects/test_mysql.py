@@ -9,6 +9,12 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (id BIGINT)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
+        self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
+        self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
+        self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
+        self.validate_identity(
+            "CREATE TABLE foo (a BIGINT, INDEX b USING HASH (c) COMMENT 'd' VISIBLE ENGINE_ATTRIBUTE = 'e' WITH PARSER foo)"
+        )
         self.validate_identity(
             "DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id = t2.id WHERE t2.id IS NULL"
         )
@@ -65,6 +71,12 @@ class TestMySQL(Validator):
             "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
             write={
                 "mysql": "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE KEY d (b), KEY e (b))",
+            write={
+                "mysql": "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
             },
         )
 
@@ -437,6 +449,13 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT * FROM test LIMIT 0 + 1, 0 + 1",
+            write={
+                "mysql": "SELECT * FROM test LIMIT 1 OFFSET 1",
+                "postgres": "SELECT * FROM test LIMIT 0 + 1 OFFSET 0 + 1",
+            },
+        )
+        self.validate_all(
             "CAST(x AS TEXT)",
             write={
                 "mysql": "CAST(x AS CHAR)",
@@ -448,6 +467,7 @@ class TestMySQL(Validator):
         self.validate_all("CAST(x AS SIGNED INTEGER)", write={"mysql": "CAST(x AS SIGNED)"})
         self.validate_all("CAST(x AS UNSIGNED)", write={"mysql": "CAST(x AS UNSIGNED)"})
         self.validate_all("CAST(x AS UNSIGNED INTEGER)", write={"mysql": "CAST(x AS UNSIGNED)"})
+        self.validate_all("TIME_STR_TO_TIME(x)", write={"mysql": "CAST(x AS DATETIME)"})
         self.validate_all(
             """SELECT 17 MEMBER OF('[23, "abc", 17, "ab", 10]')""",
             write={

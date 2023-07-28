@@ -555,11 +555,11 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
 
 
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
-    return f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
+    return self.sql(exp.cast(expression.this, "timestamp"))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
-    return f"CAST({self.sql(expression, 'this')} AS DATE)"
+    return self.sql(exp.cast(expression.this, "date"))
 
 
 def min_or_least(self: Generator, expression: exp.Min) -> str:
@@ -608,8 +608,9 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
         _dialect = Dialect.get_or_raise(dialect)
         time_format = self.format_time(expression)
         if time_format and time_format not in (_dialect.TIME_FORMAT, _dialect.DATE_FORMAT):
-            return f"CAST({str_to_time_sql(self, expression)} AS DATE)"
-        return f"CAST({self.sql(expression, 'this')} AS DATE)"
+            return self.sql(exp.cast(str_to_time_sql(self, expression), "date"))
+
+        return self.sql(exp.cast(self.sql(expression, "this"), "date"))
 
     return _ts_or_ds_to_date_sql
 
@@ -662,6 +663,16 @@ def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectTyp
             names.append(agg_all_unquoted.sql(dialect=dialect, normalize_functions="lower"))
 
     return names
+
+
+def simplify_literal(expression: E, copy: bool = True) -> E:
+    if not isinstance(expression.expression, exp.Literal):
+        from sqlglot.optimizer.simplify import simplify
+
+        expression = exp.maybe_copy(expression, copy)
+        simplify(expression.expression)
+
+    return expression
 
 
 def binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:

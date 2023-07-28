@@ -265,9 +265,12 @@ class Generator:
 
     # Expressions whose comments are separated from them for better formatting
     WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
+        exp.Delete,
         exp.Drop,
         exp.From,
+        exp.Insert,
         exp.Select,
+        exp.Update,
         exp.Where,
         exp.With,
     )
@@ -985,8 +988,9 @@ class Generator:
     ) -> str:
         if properties.expressions:
             expressions = self.expressions(properties, sep=sep, indent=False)
-            expressions = self.wrap(expressions) if wrapped else expressions
-            return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
+            if expressions:
+                expressions = self.wrap(expressions) if wrapped else expressions
+                return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:
@@ -2412,7 +2416,7 @@ class Generator:
             return ""
 
         if flat:
-            return sep.join(self.sql(e) for e in expressions)
+            return sep.join(sql for sql in (self.sql(e) for e in expressions) if sql)
 
         num_sqls = len(expressions)
 
@@ -2423,6 +2427,9 @@ class Generator:
         result_sqls = []
         for i, e in enumerate(expressions):
             sql = self.sql(e, comment=False)
+            if not sql:
+                continue
+
             comments = self.maybe_comment("", e) if isinstance(e, exp.Expression) else ""
 
             if self.pretty:
@@ -2561,6 +2568,51 @@ class Generator:
         record_reader = self.sql(expression, "record_reader")
         record_reader = f" RECORDREADER {record_reader}" if record_reader else ""
         return f"{transform}{row_format_before}{record_writer}{using}{schema}{row_format_after}{record_reader}"
+
+    def indexconstraintoption_sql(self, expression: exp.IndexConstraintOption) -> str:
+        key_block_size = self.sql(expression, "key_block_size")
+        if key_block_size:
+            return f"KEY_BLOCK_SIZE = {key_block_size}"
+
+        using = self.sql(expression, "using")
+        if using:
+            return f"USING {using}"
+
+        parser = self.sql(expression, "parser")
+        if parser:
+            return f"WITH PARSER {parser}"
+
+        comment = self.sql(expression, "comment")
+        if comment:
+            return f"COMMENT {comment}"
+
+        visible = expression.args.get("visible")
+        if visible is not None:
+            return "VISIBLE" if visible else "INVISIBLE"
+
+        engine_attr = self.sql(expression, "engine_attr")
+        if engine_attr:
+            return f"ENGINE_ATTRIBUTE = {engine_attr}"
+
+        secondary_engine_attr = self.sql(expression, "secondary_engine_attr")
+        if secondary_engine_attr:
+            return f"SECONDARY_ENGINE_ATTRIBUTE = {secondary_engine_attr}"
+
+        self.unsupported("Unsupported index constraint option.")
+        return ""
+
+    def indexcolumnconstraint_sql(self, expression: exp.IndexColumnConstraint) -> str:
+        kind = self.sql(expression, "kind")
+        kind = f"{kind} INDEX" if kind else "INDEX"
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        type_ = self.sql(expression, "type")
+        type_ = f" USING {type_}" if type_ else ""
+        schema = self.sql(expression, "schema")
+        schema = f" {schema}" if schema else ""
+        options = self.expressions(expression, key="options", sep=" ")
+        options = f" {options}" if options else ""
+        return f"{kind}{this}{type_}{schema}{options}"
 
 
 def cached_generator(

@@ -19,9 +19,13 @@ def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
     kind = e.args["kind"]
     properties = e.args.get("properties")
 
-    if kind.upper() == "TABLE" and any(
-        isinstance(prop, exp.TemporaryProperty)
-        for prop in (properties.expressions if properties else [])
+    if (
+        kind.upper() == "TABLE"
+        and e.expression
+        and any(
+            isinstance(prop, exp.TemporaryProperty)
+            for prop in (properties.expressions if properties else [])
+        )
     ):
         return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
     return create_with_partitions_sql(self, e)

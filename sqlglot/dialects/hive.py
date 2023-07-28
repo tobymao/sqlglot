@@ -362,11 +362,12 @@ class Hive(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.DATETIME: "TIMESTAMP",
-            exp.DataType.Type.VARBINARY: "BINARY",
-            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.BIT: "BOOLEAN",
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.TIME: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.VARBINARY: "BINARY",
         }
 
         TRANSFORMS = {
@@ -396,6 +397,7 @@ class Hive(Dialect):
             exp.FromBase64: rename_func("UNBASE64"),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
+            exp.IsNan: rename_func("ISNAN"),
             exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
             exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
             exp.JSONFormat: _json_format_sql,

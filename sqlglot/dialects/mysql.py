@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     parse_date_delta_with_interval,
     rename_func,
+    simplify_literal,
     strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
@@ -303,6 +304,22 @@ class MySQL(Dialect):
             "NAMES": lambda self: self._parse_set_item_names(),
         }
 
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "FULLTEXT": lambda self: self._parse_index_constraint(kind="FULLTEXT"),
+            "INDEX": lambda self: self._parse_index_constraint(),
+            "KEY": lambda self: self._parse_index_constraint(),
+            "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
+        }
+
+        SCHEMA_UNNAMED_CONSTRAINTS = {
+            *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
+            "FULLTEXT",
+            "INDEX",
+            "KEY",
+            "SPATIAL",
+        }
+
         PROFILE_TYPES = {
             "ALL",
             "BLOCK IO",
@@ -326,6 +343,57 @@ class MySQL(Dialect):
         }
 
         LOG_DEFAULTS_TO_LN = True
+
+        def _parse_index_constraint(
+            self, kind: t.Optional[str] = None
+        ) -> exp.IndexColumnConstraint:
+            if kind:
+                self._match_texts({"INDEX", "KEY"})
+
+            this = self._parse_id_var(any_token=False)
+            type_ = self._match(TokenType.USING) and self._advance_any() and self._prev.text
+            schema = self._parse_schema()
+
+            options = []
+            while True:
+                if self._match_text_seq("KEY_BLOCK_SIZE"):
+                    self._match(TokenType.EQ)
+                    opt = exp.IndexConstraintOption(key_block_size=self._parse_number())
+                elif self._match(TokenType.USING):
+                    opt = exp.IndexConstraintOption(using=self._advance_any() and self._prev.text)
+                elif self._match_text_seq("WITH", "PARSER"):
+                    opt = exp.IndexConstraintOption(parser=self._parse_var(any_token=True))
+                elif self._match(TokenType.COMMENT):
+                    opt = exp.IndexConstraintOption(comment=self._parse_string())
+                elif self._match_text_seq("VISIBLE"):
+                    opt = exp.IndexConstraintOption(visible=True)
+                elif self._match_text_seq("INVISIBLE"):
+                    opt = exp.IndexConstraintOption(visible=False)
+                elif self._match_text_seq("ENGINE_ATTRIBUTE"):
+                    self._match(TokenType.EQ)
+                    opt = exp.IndexConstraintOption(engine_attr=self._parse_string())
+                elif self._match_text_seq("ENGINE_ATTRIBUTE"):
+                    self._match(TokenType.EQ)
+                    opt = exp.IndexConstraintOption(engine_attr=self._parse_string())
+                elif self._match_text_seq("SECONDARY_ENGINE_ATTRIBUTE"):
+                    self._match(TokenType.EQ)
+                    opt = exp.IndexConstraintOption(secondary_engine_attr=self._parse_string())
+                else:
+                    opt = None
+
+                if not opt:
+                    break
+
+                options.append(opt)
+
+            return self.expression(
+                exp.IndexColumnConstraint,
+                this=this,
+                schema=schema,
+                kind=kind,
+                type=type_,
+                options=options,
+            )
 
         def _parse_show_mysql(
             self,
@@ -454,6 +522,7 @@ class MySQL(Dialect):
             exp.StrToTime: _str_to_date_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime")),
             exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
@@ -484,6 +553,16 @@ class MySQL(Dialect):
             exp.DataType.Type.UBIGINT: "UNSIGNED",
             exp.DataType.Type.VARCHAR: "CHAR",
         }
+
+        def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
+            # MySQL requires simple literal values for its LIMIT clause.
+            expression = simplify_literal(expression)
+            return super().limit_sql(expression, top=top)
+
+        def offset_sql(self, expression: exp.Offset) -> str:
+            # MySQL requires simple literal values for its OFFSET clause.
+            expression = simplify_literal(expression)
+            return super().offset_sql(expression)
 
         def xor_sql(self, expression: exp.Xor) -> str:
             if expression.expressions:

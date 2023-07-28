@@ -22,6 +22,13 @@ class TestTeradata(Validator):
             },
         )
 
+    def test_statistics(self):
+        self.validate_identity("COLLECT STATISTICS ON tbl INDEX(col)")
+        self.validate_identity("COLLECT STATS ON tbl COLUMNS(col)")
+        self.validate_identity("COLLECT STATS COLUMNS(col) ON tbl")
+        self.validate_identity("HELP STATISTICS personel.employee")
+        self.validate_identity("HELP STATISTICS personnel.employee FROM my_qcd")
+
     def test_create(self):
         self.validate_identity("CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)")
         self.validate_identity("CREATE TABLE x (y INT) PARTITION BY y INDEX (y)")

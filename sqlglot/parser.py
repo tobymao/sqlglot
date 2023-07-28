@@ -3863,11 +3863,16 @@ class Parser(metaclass=_Parser):
         index = self._index
         if not self._match(TokenType.R_PAREN):
             # postgres: STRING_AGG([DISTINCT] expression, separator [ORDER BY expression1 {ASC | DESC} [, ...]])
-            return self.expression(
-                exp.GroupConcat,
-                this=seq_get(args, 0),
-                separator=self._parse_order(this=seq_get(args, 1)),
-            )
+            # bigquery: STRING_AGG([DISTINCT] expression [, separator] [ORDER BY key [{ASC | DESC}] [, ... ]] [LIMIT n])
+            this = seq_get(args, 0)
+            sep = seq_get(args, 1)
+
+            if sep:
+                sep = self._parse_limit(this=self._parse_order(this=sep))
+            else:
+                this = self._parse_limit(this=self._parse_order(this=this))
+
+            return self.expression(exp.GroupConcat, this=this, separator=sep)
 
         # Checks if we can parse an order clause: WITHIN GROUP (ORDER BY <order_by_expression_list> [ASC | DESC]).
         # This is done "manually", instead of letting _parse_window parse it into an exp.WithinGroup node, so that

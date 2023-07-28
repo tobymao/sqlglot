@@ -890,3 +890,19 @@ FROM (
     JOIN "y" AS "y"
       ON "x"."a" = "y"."c"
 );
+
+# title: optimize a create with cte
+# execute: false
+WITH cte AS (SELECT a FROM x) CREATE TABLE s AS SELECT * FROM cte;
+CREATE TABLE "s" AS
+SELECT
+  "x"."a" AS "a"
+FROM "x" AS "x";
+
+# title: optimize a complex create with cte and subquery
+# execute: false
+WITH cte AS (SELECT a FROM x) CREATE TABLE s AS SELECT * FROM (SELECT a FROM (SELECT a FROM cte));
+CREATE TABLE "s" AS
+SELECT
+  "x"."a" AS "a"
+FROM "x" AS "x";

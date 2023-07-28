@@ -512,7 +512,9 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     Returns:
         list[Scope]: scope instances
     """
-    if isinstance(expression, (exp.Unionable, exp.DDL)):
+    if isinstance(expression, exp.Unionable) or (
+        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Subqueryable)
+    ):
         return list(_traverse_scope(Scope(expression)))
 
     return []
@@ -582,10 +584,10 @@ def _traverse_ctes(scope):
     for cte in scope.ctes:
         recursive_scope = None
 
-        # if the scope is a recursive cte, it must be in the form of
-        # base_case UNION recursive. thus the recursive scope is the first
-        # section of the union.
-        if scope.expression.args["with"].recursive:
+        # if the scope is a recursive cte, it must be in the form of base_case UNION recursive.
+        # thus the recursive scope is the first section of the union.
+        with_ = scope.expression.args.get("with")
+        if with_ and with_.recursive:
             union = cte.this
 
             if isinstance(union, exp.Union):
@@ -747,8 +749,14 @@ def _traverse_udtfs(scope):
 
 def _traverse_ddl(scope):
     yield from _traverse_ctes(scope)
-    yield from _traverse_subqueries(scope)
-    yield from _traverse_tables(Scope(scope.expression.expression))
+
+    query_scope = scope.branch(
+        scope.expression.expression, scope_type=ScopeType.DERIVED_TABLE, chain_sources=scope.sources
+    )
+    query_scope._collect()
+    query_scope._ctes = scope.ctes + query_scope._ctes
+
+    yield from _traverse_scope(query_scope)
 
 
 def walk_in_scope(expression, bfs=True):

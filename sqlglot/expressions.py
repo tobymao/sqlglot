@@ -2520,7 +2520,7 @@ class Unnest(UDTF):
     }
 
 
-class Update(DDL):
+class Update(Expression):
     arg_types = {
         "with": False,
         "this": False,

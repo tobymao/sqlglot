@@ -558,6 +558,30 @@ WHERE
         for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
             self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
+        sql = """
+            CREATE PROC [dbo].[transform_proc] AS
+
+            DECLARE @CurrentDate VARCHAR(20);
+            SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120);
+
+            CREATE TABLE [target_schema].[target_table]
+            WITH (DISTRIBUTION = REPLICATE, HEAP)
+            AS
+
+            SELECT
+                @CurrentDate AS DWCreatedDate
+            FROM source_schema.sourcetable;
+        """
+
+        expected_sqls = [
+            'CREATE PROC "dbo"."transform_proc" AS DECLARE @CurrentDate VARCHAR(20)',
+            "SET @CurrentDate = CAST(FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss') AS VARCHAR(20))",
+            'CREATE TABLE "target_schema"."target_table" WITH (DISTRIBUTION=REPLICATE, HEAP) AS SELECT @CurrentDate AS DWCreatedDate FROM source_schema.sourcetable',
+        ]
+
+        for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
+            self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
+
     def test_charindex(self):
         self.validate_all(
             "CHARINDEX(x, y, 9)",

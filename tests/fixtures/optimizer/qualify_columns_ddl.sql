@@ -31,5 +31,5 @@ WITH cte AS (SELECT b FROM y) INSERT INTO s SELECT * FROM cte;
 WITH cte AS (SELECT y.b AS b FROM y AS y) INSERT INTO s SELECT cte.b AS b FROM cte;
 
 # title: Insert without CTE
-INSERT INTO foo AS SELECT a FROM tbl;
-INSERT INTO foo AS SELECT tbl.a FROM tbl AS tbl;
+INSERT INTO foo SELECT a FROM tbl;
+INSERT INTO foo SELECT tbl.a FROM tbl AS tbl;

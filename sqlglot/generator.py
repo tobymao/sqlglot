@@ -162,6 +162,9 @@ class Generator:
     # Whether or not to generate the (+) suffix for columns used in old-style join conditions
     COLUMN_JOIN_MARKS_SUPPORTED = False
 
+    # Whether or not to generate an unquoted value for EXTRACT's date part argument
+    EXTRACT_ALLOWS_QUOTES = True
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -1911,7 +1914,7 @@ class Generator:
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
 
     def extract_sql(self, expression: exp.Extract) -> str:
-        this = self.sql(expression, "this")
+        this = self.sql(expression, "this") if self.EXTRACT_ALLOWS_QUOTES else expression.this.name
         expression_sql = self.sql(expression, "expression")
         return f"EXTRACT({this} FROM {expression_sql})"
 

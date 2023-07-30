@@ -45,6 +45,14 @@ class TestSnowflake(Validator):
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all(
+            "SELECT DATE_PART('year', TIMESTAMP '2020-01-01')",
+            write={
+                "hive": "SELECT EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMP))",
+                "snowflake": "SELECT DATE_PART('year', CAST('2020-01-01' AS TIMESTAMPNTZ))",
+                "spark": "SELECT EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM (VALUES (0) foo(bar))",
             write={"snowflake": "SELECT * FROM (VALUES (0)) AS foo(bar)"},
         )

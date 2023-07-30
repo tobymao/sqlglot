@@ -359,6 +359,7 @@ class Hive(Dialect):
         TABLE_HINTS = False
         QUERY_HINTS = False
         INDEX_ON = "ON TABLE"
+        EXTRACT_ALLOWS_QUOTES = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

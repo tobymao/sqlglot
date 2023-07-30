@@ -67,8 +67,9 @@ class Expression(metaclass=_Expression):
             uses to refer to it.
         comments: a list of comments that are associated with a given expression. This is used in
             order to preserve comments when transpiling SQL code.
-        _type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
+        type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
             optimizer, in order to enable some transformations that require type information.
+        meta: a dictionary that can be used to store useful metadata for a given expression.
 
     Example:
         >>> class Foo(Expression):

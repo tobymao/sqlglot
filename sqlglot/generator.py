@@ -2379,7 +2379,7 @@ class Generator:
             elif arg_value is not None:
                 args.append(arg_value)
 
-        if not self.NORMALIZE_FUNCTIONS:
+        if not self.normalize_functions:
             name = (expression._meta and expression.meta.get("name")) or expression.sql_name()
         else:
             name = expression.sql_name()

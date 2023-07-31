@@ -66,7 +66,7 @@ class TestDrill(Validator):
             write={
                 "drill": "SELECT * FROM (SELECT education_level, salary, marital_status, "
                 "EXTRACT(year FROM age(birth_date)) AS age FROM cp.`employee.json`) "
-                "PIVOT(AVG(salary) AS avg_salary, AVG(age) AS avg_age FOR marital_status "
+                "PIVOT(avg(salary) AS avg_salary, avg(age) AS avg_age FOR marital_status "
                 "IN ('M' AS married, 'S' AS single))"
             },
         )

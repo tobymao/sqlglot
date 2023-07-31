@@ -6,6 +6,12 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        expr = parse_one("count(x)")
+        self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
+        self.assertIsNone(expr._meta)
+
+        self.validate_identity("SELECT isNaN(1.0)")
+        self.validate_identity("SELECT startsWith('Spider-Man', 'Spi')")
         self.validate_identity("SELECT xor(TRUE, FALSE)")
         self.validate_identity("ATTACH DATABASE DEFAULT ENGINE = ORDINARY")
         self.validate_identity("CAST(['hello'], 'Array(Enum8(''hello'' = 1))')")
@@ -162,7 +168,7 @@ class TestClickhouse(Validator):
             ORDER BY loyalty ASC
             """,
             write={
-                "clickhouse": "SELECT loyalty, COUNT() FROM hits LEFT SEMI JOIN users USING (UserID)"
+                "clickhouse": "SELECT loyalty, count() FROM hits LEFT SEMI JOIN users USING (UserID)"
                 + " GROUP BY loyalty ORDER BY loyalty"
             },
         )
@@ -247,7 +253,7 @@ class TestClickhouse(Validator):
         for data_type in data_types:
             self.validate_all(
                 f"pow(2, 32)::{data_type}",
-                write={"clickhouse": f"CAST(POWER(2, 32) AS {data_type})"},
+                write={"clickhouse": f"CAST(pow(2, 32) AS {data_type})"},
             )
 
     def test_ddl(self):
@@ -304,8 +310,8 @@ GROUP BY
   id,
   toStartOfDay(timestamp)
 SET
-  max_hits = MAX(max_hits),
-  sum_hits = SUM(sum_hits)""",
+  max_hits = max(max_hits),
+  sum_hits = sum(sum_hits)""",
             },
             pretty=True,
         )
@@ -447,8 +453,8 @@ GROUP BY
   k1,
   k2
 SET
-  x = MAX(x),
-  y = MIN(y)""",
+  x = max(x),
+  y = min(y)""",
             },
             pretty=True,
         )

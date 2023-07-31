@@ -390,7 +390,7 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
-            "current_timestamp",
+            "CURRENT_TIMESTAMP",
             write={
                 "bigquery": "CURRENT_TIMESTAMP()",
                 "duckdb": "CURRENT_TIMESTAMP",
@@ -401,7 +401,7 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
-            "current_timestamp()",
+            "CURRENT_TIMESTAMP()",
             write={
                 "bigquery": "CURRENT_TIMESTAMP()",
                 "duckdb": "CURRENT_TIMESTAMP",

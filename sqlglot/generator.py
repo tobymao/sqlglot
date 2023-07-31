@@ -2379,7 +2379,12 @@ class Generator:
             elif arg_value is not None:
                 args.append(arg_value)
 
-        return self.func(expression.sql_name(), *args)
+        if self.normalize_functions:
+            name = expression.sql_name()
+        else:
+            name = (expression._meta and expression.meta.get("name")) or expression.sql_name()
+
+        return self.func(name, *args)
 
     def func(
         self,

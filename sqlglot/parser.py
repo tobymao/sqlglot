@@ -835,6 +835,7 @@ class Parser(metaclass=_Parser):
     UNNEST_COLUMN_ONLY: bool = False
     ALIAS_POST_TABLESAMPLE: bool = False
     STRICT_STRING_CONCAT = False
+    NORMALIZE_FUNCTIONS = "upper"
     NULL_ORDERING: str = "nulls_are_small"
     SHOW_TRIE: t.Dict = {}
     SET_TRIE: t.Dict = {}
@@ -3360,7 +3361,10 @@ class Parser(metaclass=_Parser):
             args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
             if function and not anonymous:
-                this = self.validate_expression(function(args), args)
+                func = self.validate_expression(function(args), args)
+                if not self.NORMALIZE_FUNCTIONS:
+                    func.meta["name"] = this
+                this = func
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 

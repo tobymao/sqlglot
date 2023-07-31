@@ -211,6 +211,10 @@ class BigQuery(Dialect):
         "TZH": "%z",
     }
 
+    # The _PARTITIONTIME and _PARTITIONDATE pseudo-columns are not returned by a SELECT * statement
+    # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
+    PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
+
     @classmethod
     def normalize_identifier(cls, expression: E) -> E:
         # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).

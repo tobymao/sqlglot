@@ -39,6 +39,7 @@ def qualify_columns(
     """
     schema = ensure_schema(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
+    pseudocolumns = Dialect.get_or_raise(schema.dialect).PSEUDOCOLUMNS
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
@@ -55,7 +56,7 @@ def qualify_columns(
             _expand_alias_refs(scope, resolver)
 
         if not isinstance(scope.expression, exp.UDTF):
-            _expand_stars(scope, resolver, using_column_tables)
+            _expand_stars(scope, resolver, using_column_tables, pseudocolumns)
             _qualify_outputs(scope)
         _expand_group_by(scope)
         _expand_order_by(scope, resolver)
@@ -326,7 +327,10 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
 
 
 def _expand_stars(
-    scope: Scope, resolver: Resolver, using_column_tables: t.Dict[str, t.Any]
+    scope: Scope,
+    resolver: Resolver,
+    using_column_tables: t.Dict[str, t.Any],
+    pseudocolumns: t.Set[str],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -367,14 +371,8 @@ def _expand_stars(
 
             columns = resolver.get_source_columns(table, only_visible=True)
 
-            # The _PARTITIONTIME and _PARTITIONDATE pseudo-columns are not returned by a SELECT * statement
-            # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
-            if resolver.schema.dialect == "bigquery":
-                columns = [
-                    name
-                    for name in columns
-                    if name.upper() not in ("_PARTITIONTIME", "_PARTITIONDATE")
-                ]
+            if pseudocolumns:
+                columns = [name for name in columns if name.upper() not in pseudocolumns]
 
             if columns and "*" not in columns:
                 if pivot and has_pivoted_source and pivot_columns and pivot_output_columns:

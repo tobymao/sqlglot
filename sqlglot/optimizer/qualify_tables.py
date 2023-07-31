@@ -80,7 +80,9 @@ def qualify_tables(
                         header = next(reader)
                         columns = next(reader)
                         schema.add_table(
-                            source, {k: type(v).__name__ for k, v in zip(header, columns)}
+                            source,
+                            {k: type(v).__name__ for k, v in zip(header, columns)},
+                            match_depth=False,
                         )
             elif isinstance(source, Scope) and source.is_udtf:
                 udtf = source.expression

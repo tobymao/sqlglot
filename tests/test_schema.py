@@ -264,3 +264,11 @@ class TestSchema(unittest.TestCase):
             str(ctx.exception),
             "Table z must match the schema's nesting level: 2.",
         )
+
+        with self.assertRaises(SchemaError) as ctx:
+            MappingSchema({"x": {"y": {"c1": "int"}}, "z": {"c2": "int"}})
+
+        self.assertEqual(
+            str(ctx.exception),
+            "Table z must match the schema's nesting level: 2.",
+        )

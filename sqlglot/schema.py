@@ -32,15 +32,18 @@ class Schema(abc.ABC):
         column_mapping: t.Optional[ColumnMapping] = None,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
+        match_depth: bool = True,
     ) -> None:
         """
         Register or update a table. Some implementing classes may require column information to also be provided.
+        The added table must have the necessary number of qualifiers in its path to match the schema's nesting level.
 
         Args:
             table: the `Table` expression instance or string representing the table.
             column_mapping: a column mapping that describes the structure of the table.
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
             normalize: whether to normalize identifiers according to the dialect of interest.
+            match_depth: whether to enforce that the table must match the schema's depth or not.
         """
 
     @abc.abstractmethod
@@ -105,7 +108,7 @@ class AbstractMappingSchema(t.Generic[T]):
     ) -> None:
         self.mapping = mapping or {}
         self.mapping_trie = new_trie(
-            tuple(reversed(t)) for t in flatten_schema(self.mapping, depth=self._depth())
+            tuple(reversed(t)) for t in flatten_schema(self.mapping, depth=self.depth())
         )
         self._supported_table_args: t.Tuple[str, ...] = tuple()
 
@@ -113,13 +116,13 @@ class AbstractMappingSchema(t.Generic[T]):
     def empty(self) -> bool:
         return not self.mapping
 
-    def _depth(self) -> int:
+    def depth(self) -> int:
         return dict_depth(self.mapping)
 
     @property
     def supported_table_args(self) -> t.Tuple[str, ...]:
         if not self._supported_table_args and self.mapping:
-            depth = self._depth()
+            depth = self.depth()
 
             if not depth:  # None
                 self._supported_table_args = tuple()
@@ -197,6 +200,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         self.visible = visible or {}
         self.normalize = normalize
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
+        self._depth = 0
 
         super().__init__(self._normalize(schema or {}))
 
@@ -226,17 +230,26 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         column_mapping: t.Optional[ColumnMapping] = None,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
+        match_depth: bool = True,
     ) -> None:
         """
         Register or update a table. Updates are only performed if a new column mapping is provided.
+        The added table must have the necessary number of qualifiers in its path to match the schema's nesting level.
 
         Args:
             table: the `Table` expression instance or string representing the table.
             column_mapping: a column mapping that describes the structure of the table.
             dialect: the SQL dialect that will be used to parse `table` if it's a string.
             normalize: whether to normalize identifiers according to the dialect of interest.
+            match_depth: whether to enforce that the table must match the schema's depth or not.
         """
         normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+
+        if match_depth and not self.empty and len(normalized_table.parts) != self.depth():
+            raise SchemaError(
+                f"Table {normalized_table.sql(dialect=self.dialect)} must match the "
+                f"schema's nesting level: {self.depth()}."
+            )
 
         normalized_column_mapping = {
             self._normalize_name(key, dialect=dialect, normalize=normalize): value
@@ -305,12 +318,16 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         Returns:
             The normalized schema mapping.
         """
+        normalized_mapping: t.Dict = {}
         flattened_schema = flatten_schema(schema, depth=dict_depth(schema) - 1)
 
-        normalized_mapping: t.Dict = {}
         for keys in flattened_schema:
             columns = nested_get(schema, *zip(keys, keys))
-            assert columns is not None
+
+            if not isinstance(columns, dict):
+                raise SchemaError(
+                    f"Table {'.'.join(keys[:-1])} must match the schema's nesting level: {len(flattened_schema[0])}."
+                )
 
             normalized_keys = [
                 self._normalize_name(key, dialect=self.dialect, is_table=True) for key in keys
@@ -371,9 +388,11 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         identifier.meta["is_table"] = is_table
         return Dialect.get_or_raise(dialect).normalize_identifier(identifier).name
 
-    def _depth(self) -> int:
-        # The columns themselves are a mapping, but we don't want to include those
-        return super()._depth() - 1
+    def depth(self) -> int:
+        if not self.empty and not self._depth:
+            # The columns themselves are a mapping, but we don't want to include those
+            self._depth = super().depth() - 1
+        return self._depth
 
     def _to_data_type(self, schema_type: str, dialect: DialectType = None) -> exp.DataType:
         """

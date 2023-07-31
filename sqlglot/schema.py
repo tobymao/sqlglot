@@ -321,13 +321,12 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         normalized_mapping: t.Dict = {}
         flattened_schema = flatten_schema(schema, depth=dict_depth(schema) - 1)
 
-        depth = len(seq_get(flattened_schema, 0) or [])
         for keys in flattened_schema:
             columns = nested_get(schema, *zip(keys, keys))
 
             if not isinstance(columns, dict):
                 raise SchemaError(
-                    f"Table {'.'.join(keys[:-1])} must match the schema's nesting level: {depth}."
+                    f"Table {'.'.join(keys[:-1])} must match the schema's nesting level: {len(flattened_schema[0])}."
                 )
 
             normalized_keys = [

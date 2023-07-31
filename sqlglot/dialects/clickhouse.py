@@ -225,7 +225,6 @@ class ClickHouse(Dialect):
             anonymous: bool = False,
             optional_parens: bool = True,
         ) -> t.Optional[exp.Expression]:
-            name = self._curr and self._curr.text
             func = super()._parse_function(
                 functions=functions, anonymous=anonymous, optional_parens=optional_parens
             )
@@ -240,9 +239,6 @@ class ClickHouse(Dialect):
                         expressions=func.expressions,
                         params=params,
                     )
-
-            if func and name:
-                func.meta["name"] = name
 
             return func
 
@@ -356,9 +352,6 @@ class ClickHouse(Dialect):
             "FUNCTION",
             "NAMED COLLECTION",
         }
-
-        def function_name(self, expression: exp.Func) -> str:
-            return (expression._meta and expression.meta.get("name")) or expression.sql_name()
 
         def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
             # Clickhouse errors out if we try to cast a NULL value to TEXT

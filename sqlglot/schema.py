@@ -8,7 +8,7 @@ from sqlglot import expressions as exp
 from sqlglot._typing import T
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import ParseError, SchemaError
-from sqlglot.helper import dict_depth, seq_get
+from sqlglot.helper import dict_depth
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:

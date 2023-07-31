@@ -2367,6 +2367,9 @@ class Generator:
         op = self.maybe_comment(op, comments=expression.comments)
         return f"{self.sql(expression, 'this')} {op} {self.sql(expression, 'expression')}"
 
+    def function_name(self, expression: exp.Func) -> str:
+        return expression.sql_name()
+
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []
 
@@ -2379,7 +2382,7 @@ class Generator:
             elif arg_value is not None:
                 args.append(arg_value)
 
-        return self.func(expression.sql_name(), *args)
+        return self.func(self.function_name(expression), *args)
 
     def func(
         self,

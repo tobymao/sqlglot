@@ -890,3 +890,20 @@ FROM (
     JOIN "y" AS "y"
       ON "x"."a" = "y"."c"
 );
+
+# title: replace scalar subquery, wrap resulting column in a MAX
+SELECT a, SUM(c) / (SELECT SUM(c) FROM y) * 100 AS foo FROM y INNER JOIN x ON y.b = x.b GROUP BY a;
+WITH "_u_0" AS (
+  SELECT
+    SUM("y"."c") AS "_col_0"
+  FROM "y" AS "y"
+)
+SELECT
+  "x"."a" AS "a",
+  SUM("y"."c") / MAX("_u_0"."_col_0") * 100 AS "foo"
+FROM "y" AS "y"
+CROSS JOIN "_u_0" AS "_u_0"
+JOIN "x" AS "x"
+  ON "y"."b" = "x"."b"
+GROUP BY
+  "x"."a";

@@ -29,6 +29,9 @@ class TestBigQuery(Validator):
         with self.assertRaises(ParseError):
             transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
 
+        with self.assertRaises(ParseError):
+            transpile("DATE_ADD(x, day)", read="bigquery")
+
         self.validate_identity("STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)")
         self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")

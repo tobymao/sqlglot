@@ -956,7 +956,7 @@ JOIN "date_dim" AS "d"
 JOIN "item" AS "i"
   ON "s"."ss_item_sk" = "i"."i_item_sk"
 JOIN "_u_0" AS "_u_0"
-  ON "d"."d_month_seq" = MAX("_u_0"."d_month_seq")
+  ON "d"."d_month_seq" = "_u_0"."d_month_seq"
 LEFT JOIN "_u_1" AS "_u_1"
   ON "_u_1"."_u_2" = "i"."i_category"
 WHERE
@@ -6609,9 +6609,9 @@ WITH "cs_or_ws_sales" AS (
     ON "customer_address"."ca_county" = "store"."s_county"
     AND "customer_address"."ca_state" = "store"."s_state"
   JOIN "_u_0" AS "_u_0"
-    ON "date_dim"."d_month_seq" >= MAX("_u_0"."_col_0")
+    ON "date_dim"."d_month_seq" >= "_u_0"."_col_0"
   JOIN "_u_1" AS "_u_1"
-    ON "date_dim"."d_month_seq" <= MAX("_u_1"."_col_0")
+    ON "date_dim"."d_month_seq" <= "_u_1"."_col_0"
   GROUP BY
     "my_customers"."c_customer_sk"
 )

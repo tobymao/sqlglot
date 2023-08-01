@@ -48,13 +48,21 @@ def unnest(select, parent_select, next_alias_name):
 
     # This subquery returns a scalar and can just be converted to a cross join
     if not isinstance(predicate, (exp.In, exp.Any)):
-        having = predicate.find_ancestor(exp.Having)
         column = exp.column(select.selects[0].alias_or_name, alias)
 
+        clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)
+        clause_parent_select = clause.parent_select if clause else None
+
         if (
-            (having and having.parent_select is parent_select)
-            or parent_select.args.get("group")
-            or any(projection.find(exp.AggFunc) for projection in parent_select.selects)
+            (isinstance(clause, exp.Having) and clause_parent_select is parent_select)
+            or not clause
+            or (
+                clause_parent_select is not parent_select
+                and (
+                    parent_select.args.get("group")
+                    or any(projection.find(exp.AggFunc) for projection in parent_select.selects)
+                )
+            )
         ):
             column = exp.Max(this=column)
 

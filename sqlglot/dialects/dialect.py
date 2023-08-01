@@ -5,6 +5,7 @@ from enum import Enum
 
 from sqlglot import exp
 from sqlglot._typing import E
+from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
@@ -501,6 +502,10 @@ def parse_date_delta_with_interval(
             return None
 
         interval = args[1]
+
+        if not isinstance(interval, exp.Interval):
+            raise ParseError(f"INTERVAL expression expected but got '{interval}'")
+
         expression = interval.this
         if expression and expression.is_string:
             expression = exp.Literal.number(expression.this)

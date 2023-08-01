@@ -53,15 +53,11 @@ def unnest(select, parent_select, next_alias_name):
         clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)
         clause_parent_select = clause.parent_select if clause else None
 
-        if (
-            (isinstance(clause, exp.Having) and clause_parent_select is parent_select)
-            or not clause
-            or (
-                clause_parent_select is not parent_select
-                and (
-                    parent_select.args.get("group")
-                    or any(projection.find(exp.AggFunc) for projection in parent_select.selects)
-                )
+        if (isinstance(clause, exp.Having) and clause_parent_select is parent_select) or (
+            (not clause or clause_parent_select is not parent_select)
+            and (
+                parent_select.args.get("group")
+                or any(projection.find(exp.AggFunc) for projection in parent_select.selects)
             )
         ):
             column = exp.Max(this=column)

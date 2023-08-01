@@ -53,8 +53,8 @@ def unnest(select, parent_select, next_alias_name):
 
         if (
             (having and having.parent_select is parent_select)
-            or any(projection.find(exp.AggFunc) for projection in parent_select.selects)
             or parent_select.args.get("group")
+            or any(projection.find(exp.AggFunc) for projection in parent_select.selects)
         ):
             column = exp.Max(this=column)
 

@@ -100,7 +100,8 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
         outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
         qualify_filters = expression.args["qualify"].pop().this
 
-        for expr in qualify_filters.find_all((exp.Window, exp.Column)):
+        select_candidates = exp.Window if expression.is_star else (exp.Window, exp.Column)
+        for expr in qualify_filters.find_all(select_candidates):
             if isinstance(expr, exp.Window):
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(expr, alias), copy=False)

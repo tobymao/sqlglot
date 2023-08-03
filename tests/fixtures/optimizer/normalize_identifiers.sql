@@ -1,3 +1,10 @@
+foo;
+foo;
+
+# dialect: snowflake
+foo + "bar".baz;
+FOO + "bar".BAZ;
+
 SELECT a FROM x;
 SELECT a FROM x;
 

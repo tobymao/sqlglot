@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v17.9.1] - 2023-08-03
+### :sparkles: New Features
+- [`57df0b7`](https://github.com/tobymao/sqlglot/commit/57df0b77f8b44dc1ef08d47818b4364db242520d) - **optimizer**: allow normalize_identifiers to accept strings *(PR [#1992](https://github.com/tobymao/sqlglot/pull/1992) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`652d1c9`](https://github.com/tobymao/sqlglot/commit/652d1c9a87db6dda3a82a01b3305e240b7e3ffbb) - **optimizer**: wrap scalar subquery replacement in a MAX call *(PR [#1988](https://github.com/tobymao/sqlglot/pull/1988) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#1987](undefined) opened by [@laurentiupiciu](https://github.com/laurentiupiciu)*
+- [`1865959`](https://github.com/tobymao/sqlglot/commit/18659596058d503845597b9e82d46899aaf46d08) - ensure eliminate_qualify won't introduce duplicate projections *(PR [#1990](https://github.com/tobymao/sqlglot/pull/1990) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.9.0] - 2023-08-01
 ### :sparkles: New Features
 - [`ea7c7da`](https://github.com/tobymao/sqlglot/commit/ea7c7da1aaf0ea157f73efce7622e326b0d0f419) - **teradata**: parse [COLLECT|HELP] STATISTICS as Commands *(PR [#1979](https://github.com/tobymao/sqlglot/pull/1979) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1014,3 +1024,4 @@ Changelog
 [v17.8.4]: https://github.com/tobymao/sqlglot/compare/v17.8.3...v17.8.4
 [v17.8.5]: https://github.com/tobymao/sqlglot/compare/v17.8.4...v17.8.5
 [v17.9.0]: https://github.com/tobymao/sqlglot/compare/v17.8.6...v17.9.0
+[v17.9.1]: https://github.com/tobymao/sqlglot/compare/v17.9.0...v17.9.1

@@ -369,7 +369,6 @@ class Parser(metaclass=_Parser):
         TokenType.CARET: exp.BitwiseXor,
         TokenType.PIPE: exp.BitwiseOr,
         TokenType.DPIPE: exp.DPipe,
-        TokenType.DQMARK: exp.Coalesce,
     }
 
     TERM = {
@@ -3021,14 +3020,13 @@ class Parser(metaclass=_Parser):
 
         while True:
             if self._match_set(self.BITWISE):
-                if self._prev.token_type == TokenType.DQMARK:
-                    this = self.expression(exp.Coalesce, this=this, expressions=self._parse_term())
-                else:
-                    this = self.expression(
-                        self.BITWISE[self._prev.token_type],
-                        this=this,
-                        expression=self._parse_term(),
-                    )
+                this = self.expression(
+                    self.BITWISE[self._prev.token_type],
+                    this=this,
+                    expression=self._parse_term(),
+                )
+            elif self._match(TokenType.DQMARK):
+                this = self.expression(exp.Coalesce, this=this, expressions=self._parse_term())
             elif self._match_pair(TokenType.LT, TokenType.LT):
                 this = self.expression(
                     exp.BitwiseLeftShift, this=this, expression=self._parse_term()
@@ -3228,10 +3226,6 @@ class Parser(metaclass=_Parser):
                 field = self._parse_types()
                 if not field:
                     self.raise_error("Expected type")
-            elif op_token == TokenType.DQMARK:
-                field = self._parse_column()
-                if not field:
-                    self.raise_error("Expected column")
             elif op and self._curr:
                 self._advance()
                 value = self._prev.text

@@ -21,6 +21,7 @@ class TokenType(AutoName):
     PLUS = auto()
     COLON = auto()
     DCOLON = auto()
+    DQMARK = auto()
     SEMICOLON = auto()
     STAR = auto()
     BACKSLASH = auto()
@@ -504,6 +505,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
         "&&": TokenType.DAMP,
+        "??": TokenType.DQMARK,
         "ALL": TokenType.ALL,
         "ALWAYS": TokenType.ALWAYS,
         "AND": TokenType.AND,

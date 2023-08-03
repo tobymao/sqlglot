@@ -3021,8 +3021,12 @@ class Parser(metaclass=_Parser):
         while True:
             if self._match_set(self.BITWISE):
                 this = self.expression(
-                    self.BITWISE[self._prev.token_type], this=this, expression=self._parse_term()
+                    self.BITWISE[self._prev.token_type],
+                    this=this,
+                    expression=self._parse_term(),
                 )
+            elif self._match(TokenType.DQMARK):
+                this = self.expression(exp.Coalesce, this=this, expressions=self._parse_term())
             elif self._match_pair(TokenType.LT, TokenType.LT):
                 this = self.expression(
                     exp.BitwiseLeftShift, this=this, expression=self._parse_term()

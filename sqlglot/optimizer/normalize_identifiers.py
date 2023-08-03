@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import Dialect, DialectType

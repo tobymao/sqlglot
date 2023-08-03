@@ -694,3 +694,14 @@ class TestParser(unittest.TestCase):
 
     def test_parse_floats(self):
         self.assertTrue(parse_one("1. ").is_number)
+
+    def test_parse_terse_coalesce(self):
+        self.assertIsNotNone(parse_one("SELECT x ?? y FROM z").find(exp.Coalesce))
+        self.assertEqual(
+            parse_one("SELECT a, b ?? 'No Data' FROM z").sql(),
+            "SELECT a, COALESCE(b, 'No Data') FROM z",
+        )
+        self.assertEqual(
+            parse_one("SELECT a, b ?? c ?? 'No Data' FROM z").sql(),
+            "SELECT a, COALESCE(b, COALESCE(c, 'No Data')) FROM z",
+        )

@@ -442,6 +442,11 @@ class Parser(metaclass=_Parser):
             this=this,
             to=to,
         ),
+        TokenType.DQMARK: lambda self, this, expressions: self.expression(
+            exp.Coalesce,
+            this=this,
+            expressions=expressions,
+        ),
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
             this=this,
@@ -3222,6 +3227,10 @@ class Parser(metaclass=_Parser):
                 field = self._parse_types()
                 if not field:
                     self.raise_error("Expected type")
+            elif op_token == TokenType.DQMARK:
+                field = self._parse_column()
+                if not field:
+                    self.raise_error("Expected column")
             elif op and self._curr:
                 self._advance()
                 value = self._prev.text

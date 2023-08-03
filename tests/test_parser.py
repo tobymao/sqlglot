@@ -703,5 +703,5 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual(
             parse_one("SELECT a, b ?? c ?? 'No Data' FROM z").sql(),
-            "SELECT a, COALESCE(b, COALESCE(c, 'No Data')) FROM z",
+            "SELECT a, COALESCE(COALESCE(b, c), 'No Data') FROM z",
         )

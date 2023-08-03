@@ -3037,10 +3037,6 @@ class Parser(metaclass=_Parser):
                 this = self.expression(
                     exp.BitwiseRightShift, this=this, expression=self._parse_term()
                 )
-            elif self._match_pair(TokenType.GT, TokenType.GT):
-                this = self.expression(
-                    exp.BitwiseRightShift, this=this, expression=self._parse_term()
-                )
             else:
                 break
 

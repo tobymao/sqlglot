@@ -5,15 +5,16 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
-        self.validate_identity("SELECT * FROM #x")
-        self.validate_identity("SELECT INTERVAL '5 day'")
-        self.validate_identity("foo$")
-        self.validate_identity("$foo")
-
+        self.validate_all(
+            "SELECT INTERVAL '5 days'",
+            read={
+                "": "SELECT INTERVAL '5' days",
+            },
+        )
         self.validate_all(
             "SELECT ADD_MONTHS('2008-03-31', 1)",
             write={
-                "redshift": "SELECT DATEADD(month, 1, '2008-03-31')",
+                "redshift": "SELECT DATEADD(month, 1, CAST('2008-03-31' AS DATE))",
                 "trino": "SELECT DATE_ADD('month', 1, CAST(CAST('2008-03-31' AS TIMESTAMP) AS DATE))",
             },
         )
@@ -87,11 +88,6 @@ class TestRedshift(Validator):
                 "redshift": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
                 "snowflake": "SELECT DATE_PART(month, CAST('20220502' AS DATE))",
             },
-        )
-        self.validate_all("SELECT INTERVAL '5 days'", read={"": "SELECT INTERVAL '5' days"})
-        self.validate_all("CONVERT(INT, x)", write={"redshift": "CAST(x AS INTEGER)"})
-        self.validate_all(
-            "DATEADD('day', ndays, caldate)", write={"redshift": "DATEADD(day, ndays, caldate)"}
         )
         self.validate_all(
             'create table "group" ("col" char(10))',
@@ -186,7 +182,7 @@ class TestRedshift(Validator):
         self.validate_all(
             "DATEDIFF('day', a, b)",
             write={
-                "redshift": "DATEDIFF(day, a, b)",
+                "redshift": "DATEDIFF(day, CAST(a AS DATE), CAST(b AS DATE))",
                 "presto": "DATE_DIFF('day', CAST(CAST(a AS TIMESTAMP) AS DATE), CAST(CAST(b AS TIMESTAMP) AS DATE))",
             },
         )
@@ -198,15 +194,18 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT * FROM #x")
+        self.validate_identity("SELECT INTERVAL '5 day'")
+        self.validate_identity("foo$")
+        self.validate_identity("$foo")
         self.validate_identity("CAST('bla' AS SUPER)")
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")
         self.validate_identity("CAST('foo' AS HLLSKETCH)")
-        self.validate_identity("SELECT DATEADD(day, 1, 'today')")
         self.validate_identity("'abc' SIMILAR TO '(b|c)%'")
+        self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
         self.validate_identity(
             "SELECT caldate + INTERVAL '1 second' AS dateplus FROM date WHERE caldate = '12-31-2008'"
         )
-        self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
         self.validate_identity(
             "SELECT COUNT(*) FROM event WHERE eventname LIKE '%Ring%' OR eventname LIKE '%Die%'"
         )
@@ -224,6 +223,18 @@ class TestRedshift(Validator):
         )
         self.validate_identity(
             "CREATE TABLE SOUP (SOUP1 VARCHAR(50) NOT NULL ENCODE ZSTD, SOUP2 VARCHAR(70) NULL ENCODE DELTA)"
+        )
+        self.validate_identity(
+            "SELECT DATEADD(day, 1, 'today')",
+            "SELECT DATEADD(day, 1, CAST('today' AS DATE))",
+        )
+        self.validate_identity(
+            "SELECT DATEADD('day', ndays, caldate)",
+            "SELECT DATEADD(day, ndays, CAST(caldate AS DATE))",
+        )
+        self.validate_identity(
+            "CONVERT(INT, x)",
+            "CAST(x AS INTEGER)",
         )
 
     def test_values(self):

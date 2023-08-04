@@ -6,6 +6,10 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        projection = parse_one("SELECT a = 1", read="tsql").selects[0]
+        projection.assert_is(exp.Alias)
+        projection.args["alias"].assert_is(exp.Identifier)
+
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b INTO @y FROM y")
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b FROM y")
         self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b INTO l SELECT * FROM z")
@@ -25,6 +29,10 @@ class TestTSQL(Validator):
         self.validate_identity('SELECT "x"."y" FROM foo')
         self.validate_identity("SELECT * FROM #foo")
         self.validate_identity("SELECT * FROM ##foo")
+        self.validate_identity("SELECT a = 1", "SELECT 1 AS a")
+        self.validate_identity(
+            "SELECT a = 1 UNION ALL SELECT a = b", "SELECT 1 AS a UNION ALL SELECT b AS a"
+        )
         self.validate_identity(
             "SELECT x FROM @MyTableVar AS m JOIN Employee ON m.EmployeeID = Employee.EmployeeID"
         )

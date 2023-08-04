@@ -1935,6 +1935,9 @@ class Parser(metaclass=_Parser):
         # https://prestodb.io/docs/current/sql/values.html
         return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
 
+    def _parse_projections(self) -> t.List[t.Optional[exp.Expression]]:
+        return self._parse_expressions()
+
     def _parse_select(
         self, nested: bool = False, table: bool = False, parse_subquery_alias: bool = True
     ) -> t.Optional[exp.Expression]:
@@ -1974,14 +1977,14 @@ class Parser(metaclass=_Parser):
                 self.raise_error("Cannot specify both ALL and DISTINCT after SELECT")
 
             limit = self._parse_limit(top=True)
-            expressions = self._parse_expressions()
+            projections = self._parse_projections()
 
             this = self.expression(
                 exp.Select,
                 kind=kind,
                 hint=hint,
                 distinct=distinct,
-                expressions=expressions,
+                expressions=projections,
                 limit=limit,
             )
             this.comments = comments

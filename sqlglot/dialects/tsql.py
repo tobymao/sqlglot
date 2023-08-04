@@ -395,24 +395,19 @@ class TSQL(Dialect):
 
         CONCAT_NULL_OUTPUTS_STRING = True
 
-        def _parse_set_operations(
-            self, this: t.Optional[exp.Expression]
-        ) -> t.Optional[exp.Expression]:
+        def _parse_projections(self) -> t.List[t.Optional[exp.Expression]]:
             """
             T-SQL supports the syntax alias = expression in the SELECT's projection list,
-            so we transform all parsed Select expressions to convert their EQ projections
-            into Alias expressions. This transformation is implemented here because all
-            Selects flow into this method at the end of _parse_select.
+            so we transform all parsed Selects to convert their EQ projections into Aliases.
 
             See: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-clause-transact-sql?view=sql-server-ver16#syntax
             """
-            if isinstance(this, exp.Select):
-                for select in this.selects:
-                    if isinstance(select, exp.EQ) and isinstance(select.this, exp.Column):
-                        select.replace(
-                            exp.alias_(select.expression.pop(), select.this.pop().this, copy=False)
-                        )
-            return super()._parse_set_operations(this)
+            return [
+                exp.alias_(projection.expression, projection.this.this, copy=False)
+                if isinstance(projection, exp.EQ) and isinstance(projection.this, exp.Column)
+                else projection
+                for projection in super()._parse_projections()
+            ]
 
         def _parse_commit_or_rollback(self) -> exp.Commit | exp.Rollback:
             """Applies to SQL Server and Azure SQL Database

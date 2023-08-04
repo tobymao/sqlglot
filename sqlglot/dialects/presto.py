@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
     date_trunc_to_time,
+    encode_decode_sql,
     format_time_lambda,
     if_sql,
     left_to_substring_sql,
@@ -21,7 +22,6 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.errors import UnsupportedError
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 
@@ -57,16 +57,6 @@ def _explode_to_unnest_sql(self: generator.Generator, expression: exp.Lateral) -
 def _initcap_sql(self: generator.Generator, expression: exp.Initcap) -> str:
     regex = r"(\w)(\w*)"
     return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
-
-
-def _decode_sql(self: generator.Generator, expression: exp.Decode) -> str:
-    _ensure_utf8(expression.args["charset"])
-    return self.func("FROM_UTF8", expression.this, expression.args.get("replace"))
-
-
-def _encode_sql(self: generator.Generator, expression: exp.Encode) -> str:
-    _ensure_utf8(expression.args["charset"])
-    return f"TO_UTF8({self.sql(expression, 'this')})"
 
 
 def _no_sort_array(self: generator.Generator, expression: exp.SortArray) -> str:
@@ -121,11 +111,6 @@ def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> s
         expression.expression,
         this,
     )
-
-
-def _ensure_utf8(charset: exp.Literal) -> None:
-    if charset.name.lower() != "utf-8":
-        raise UnsupportedError(f"Unsupported charset {charset}")
 
 
 def _approx_percentile(args: t.List) -> exp.Expression:
@@ -288,9 +273,9 @@ class Presto(Dialect):
             ),
             exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.DATE_FORMAT}) AS DATE)",
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
-            exp.Decode: _decode_sql,
+            exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
-            exp.Encode: _encode_sql,
+            exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hex: rename_func("TO_HEX"),

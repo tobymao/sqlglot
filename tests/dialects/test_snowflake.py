@@ -8,6 +8,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("WEEKOFYEAR(tstamp)")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")

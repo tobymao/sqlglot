@@ -5,7 +5,7 @@ from enum import Enum
 
 from sqlglot import exp
 from sqlglot._typing import E
-from sqlglot.errors import ParseError, UnsupportedError
+from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
@@ -577,7 +577,7 @@ def encode_decode_sql(self: Generator, expression: exp.Expression, name: str) ->
         charset = expression.args["charset"]
 
         if charset.name.lower() != "utf-8":
-            raise UnsupportedError(f"Unsupported charset {charset}")
+            self.unsupported(f"Unsupported charset {charset}")
 
         expression = expression.copy()
         del expression.args["charset"]

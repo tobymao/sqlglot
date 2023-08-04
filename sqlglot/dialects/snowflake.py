@@ -382,6 +382,7 @@ class Snowflake(Dialect):
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         }
 
         TYPE_MAPPING = {

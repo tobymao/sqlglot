@@ -3,7 +3,11 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
-from sqlglot.dialects.dialect import concat_to_dpipe_sql, rename_func
+from sqlglot.dialects.dialect import (
+    concat_to_dpipe_sql,
+    rename_func,
+    ts_or_ds_to_date_sql,
+)
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -123,7 +127,7 @@ class Redshift(Postgres):
             exp.SafeConcat: concat_to_dpipe_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
-            exp.TsOrDsToDate: lambda self, e: self.sql(e.this),
+            exp.TsOrDsToDate: ts_or_ds_to_date_sql("redshift"),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots

@@ -572,17 +572,14 @@ def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
 
 
 # Used for Presto and Duckdb which use functions that don't support charset, and assume utf-8
-def encode_decode_sql(self: Generator, expression: exp.Expression, name: str) -> str:
-    if "charset" in expression.args:
-        charset = expression.args["charset"]
+def encode_decode_sql(
+    self: Generator, expression: exp.Expression, name: str, replace: bool = True
+) -> str:
+    charset = expression.args.get("charset")
+    if charset and charset.name.lower() != "utf-8":
+        self.unsupported(f"Expected utf-8 character set, got {charset}.")
 
-        if charset.name.lower() != "utf-8":
-            self.unsupported(f"Unsupported charset {charset}")
-
-        expression = expression.copy()
-        del expression.args["charset"]
-
-    return rename_func(name)(self, expression)
+    return self.func(name, expression.this, expression.args.get("replace") if replace else None)
 
 
 def min_or_least(self: Generator, expression: exp.Min) -> str:

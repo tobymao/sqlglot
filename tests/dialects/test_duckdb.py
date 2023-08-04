@@ -583,6 +583,32 @@ class TestDuckDB(Validator):
             write={"duckdb": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
 
+    def test_encode_decode(self):
+        self.validate_all(
+            "ENCODE(x)",
+            read={
+                "spark": "ENCODE(x, 'utf-8')",
+                "presto": "TO_UTF8(x)",
+            },
+            write={
+                "duckdb": "ENCODE(x)",
+                "spark": "ENCODE(x, 'utf-8')",
+                "presto": "TO_UTF8(x)",
+            },
+        )
+        self.validate_all(
+            "DECODE(x)",
+            read={
+                "spark": "DECODE(x, 'utf-8')",
+                "presto": "FROM_UTF8(x)",
+            },
+            write={
+                "duckdb": "DECODE(x)",
+                "spark": "DECODE(x, 'utf-8')",
+                "presto": "FROM_UTF8(x)",
+            },
+        )
+
     def test_rename_table(self):
         self.validate_all(
             "ALTER TABLE db.t1 RENAME TO db.t2",

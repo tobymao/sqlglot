@@ -29,9 +29,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
-if t.TYPE_CHECKING:
-    from sqlglot._typing import E
-
 
 def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
@@ -173,8 +170,12 @@ class DuckDB(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            "ENCODE": lambda self: self._parse_encode_decode(exp.Encode),
-            "DECODE": lambda self: self._parse_encode_decode(exp.Decode),
+            "DECODE": lambda self: self.expression(
+                exp.Decode, this=self._parse_conjunction(), charset=exp.Literal.string("utf-8")
+            ),
+            "ENCODE": lambda self: self.expression(
+                exp.Encode, this=self._parse_conjunction(), charset=exp.Literal.string("utf-8")
+            ),
         }
 
         TYPE_TOKENS = {
@@ -184,12 +185,6 @@ class DuckDB(Dialect):
             TokenType.USMALLINT,
             TokenType.UTINYINT,
         }
-
-        def _parse_encode_decode(self, expression: t.Type[E]) -> E:
-            args = self._parse_csv(self._parse_conjunction)
-            return self.expression(
-                expression, this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
-            )
 
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
             if len(aggregations) == 1:
@@ -231,9 +226,9 @@ class DuckDB(Dialect):
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
-            exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE"),
+            exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
-            exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE"),
+            exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.JSONExtract: arrow_json_extract_sql,

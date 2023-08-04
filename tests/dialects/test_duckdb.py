@@ -608,6 +608,12 @@ class TestDuckDB(Validator):
                 "presto": "FROM_UTF8(x)",
             },
         )
+        self.validate_all(
+            "DECODE(x)",
+            read={
+                "presto": "FROM_UTF8(x, y)",
+            },
+        )
 
     def test_rename_table(self):
         self.validate_all(

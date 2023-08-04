@@ -740,36 +740,30 @@ class TestPresto(Validator):
         )
 
     def test_encode_decode(self):
+        self.validate_identity("FROM_UTF8(x, y)")
+
         self.validate_all(
             "TO_UTF8(x)",
-            write={
-                "spark": "ENCODE(x, 'utf-8')",
+            read={
                 "duckdb": "ENCODE(x)",
+                "spark": "ENCODE(x, 'utf-8')",
+            },
+            write={
+                "duckdb": "ENCODE(x)",
+                "presto": "TO_UTF8(x)",
+                "spark": "ENCODE(x, 'utf-8')",
             },
         )
         self.validate_all(
             "FROM_UTF8(x)",
-            write={
-                "spark": "DECODE(x, 'utf-8')",
+            read={
                 "duckdb": "DECODE(x)",
+                "spark": "DECODE(x, 'utf-8')",
             },
-        )
-        self.validate_all(
-            "FROM_UTF8(x, y)",
             write={
-                "presto": "FROM_UTF8(x, y)",
-            },
-        )
-        self.validate_all(
-            "ENCODE(x, 'utf-8')",
-            write={
-                "presto": "TO_UTF8(x)",
-            },
-        )
-        self.validate_all(
-            "DECODE(x, 'utf-8')",
-            write={
+                "duckdb": "DECODE(x)",
                 "presto": "FROM_UTF8(x)",
+                "spark": "DECODE(x, 'utf-8')",
             },
         )
         self.validate_all(

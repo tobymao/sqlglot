@@ -586,21 +586,12 @@ class TestDuckDB(Validator):
     def test_encode_decode(self):
         self.validate_all(
             "ENCODE(x)",
-            write={
+            read={
                 "spark": "ENCODE(x, 'utf-8')",
                 "presto": "TO_UTF8(x)",
             },
-        )
-        self.validate_all(
-            "DECODE(x)",
             write={
-                "spark": "DECODE(x, 'utf-8')",
-                "presto": "FROM_UTF8(x)",
-            },
-        )
-        self.validate_all(
-            "ENCODE(x)",
-            read={
+                "duckdb": "ENCODE(x)",
                 "spark": "ENCODE(x, 'utf-8')",
                 "presto": "TO_UTF8(x)",
             },
@@ -611,17 +602,10 @@ class TestDuckDB(Validator):
                 "spark": "DECODE(x, 'utf-8')",
                 "presto": "FROM_UTF8(x)",
             },
-        )
-        self.validate_all(
-            "ENCODE(x, 'invalid')",
             write={
-                "duckdb": UnsupportedError,
-            },
-        )
-        self.validate_all(
-            "DECODE(x, 'invalid')",
-            write={
-                "duckdb": UnsupportedError,
+                "duckdb": "DECODE(x)",
+                "spark": "DECODE(x, 'utf-8')",
+                "presto": "FROM_UTF8(x)",
             },
         )
 

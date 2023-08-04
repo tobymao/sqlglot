@@ -776,12 +776,14 @@ class TestPresto(Validator):
             "ENCODE(x, 'invalid')",
             write={
                 "presto": UnsupportedError,
+                "duckdb": UnsupportedError,
             },
         )
         self.validate_all(
             "DECODE(x, 'invalid')",
             write={
                 "presto": UnsupportedError,
+                "duckdb": UnsupportedError,
             },
         )
 

@@ -5,7 +5,7 @@ from enum import Enum
 
 from sqlglot import exp
 from sqlglot._typing import E
-from sqlglot.errors import ParseError
+from sqlglot.errors import ParseError, UnsupportedError
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
@@ -569,6 +569,20 @@ def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
     return self.sql(exp.cast(expression.this, "date"))
+
+
+# Used for Presto and Duckdb which use functions that don't support charset, and assume utf-8
+def encode_decode_sql(self: Generator, expression: exp.Expression, name: str) -> str:
+    if "charset" in expression.args:
+        charset = expression.args["charset"]
+
+        if charset.name.lower() != "utf-8":
+            raise UnsupportedError(f"Unsupported charset {charset}")
+
+        expression = expression.copy()
+        del expression.args["charset"]
+
+    return rename_func(name)(self, expression)
 
 
 def min_or_least(self: Generator, expression: exp.Min) -> str:

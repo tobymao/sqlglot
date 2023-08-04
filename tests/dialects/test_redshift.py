@@ -19,12 +19,6 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_ADD('day', 1, DATE('2023-01-01'))",
-            write={
-                "redshift": "SELECT DATEADD(day, 1, DATE('2023-01-01'))",
-            },
-        )
-        self.validate_all(
             "SELECT STRTOL('abc', 16)",
             read={
                 "trino": "SELECT FROM_BASE('abc', 16)",
@@ -241,6 +235,10 @@ class TestRedshift(Validator):
         self.validate_identity(
             "CONVERT(INT, x)",
             "CAST(x AS INTEGER)",
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD('day', 1, DATE('2023-01-01'))",
+            "SELECT DATEADD(day, 1, CAST(DATE('2023-01-01') AS DATE))",
         )
 
     def test_values(self):

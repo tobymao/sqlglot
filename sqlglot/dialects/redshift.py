@@ -17,6 +17,14 @@ def _json_sql(self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONEx
     return f'{self.sql(expression, "this")}."{expression.expression.name}"'
 
 
+def _parse_date_add(args: t.List) -> exp.DateAdd:
+    return exp.DateAdd(
+        this=exp.TsOrDsToDate(this=seq_get(args, 2)),
+        expression=seq_get(args, 1),
+        unit=seq_get(args, 0),
+    )
+
+
 class Redshift(Postgres):
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -36,16 +44,8 @@ class Redshift(Postgres):
                 expression=seq_get(args, 1),
                 unit=exp.var("month"),
             ),
-            "DATEADD": lambda args: exp.DateAdd(
-                this=exp.TsOrDsToDate(this=seq_get(args, 2)),
-                expression=seq_get(args, 1),
-                unit=seq_get(args, 0),
-            ),
-            "DATE_ADD": lambda args: exp.DateAdd(
-                this=exp.TsOrDsToDate(this=seq_get(args, 2)),
-                expression=seq_get(args, 1),
-                unit=seq_get(args, 0),
-            ),
+            "DATEADD": _parse_date_add,
+            "DATE_ADD": _parse_date_add,
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=exp.TsOrDsToDate(this=seq_get(args, 2)),
                 expression=exp.TsOrDsToDate(this=seq_get(args, 1)),

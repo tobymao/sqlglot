@@ -41,6 +41,11 @@ class Redshift(Postgres):
                 expression=seq_get(args, 1),
                 unit=seq_get(args, 0),
             ),
+            "DATE_ADD": lambda args: exp.DateAdd(
+                this=exp.TsOrDsToDate(this=seq_get(args, 2)),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 0),
+            ),
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=exp.TsOrDsToDate(this=seq_get(args, 2)),
                 expression=exp.TsOrDsToDate(this=seq_get(args, 1)),

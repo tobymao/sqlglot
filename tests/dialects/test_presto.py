@@ -744,12 +744,14 @@ class TestPresto(Validator):
             "TO_UTF8(x)",
             write={
                 "spark": "ENCODE(x, 'utf-8')",
+                "duckdb": "ENCODE(x)",
             },
         )
         self.validate_all(
             "FROM_UTF8(x)",
             write={
                 "spark": "DECODE(x, 'utf-8')",
+                "duckdb": "DECODE(x)",
             },
         )
         self.validate_all(

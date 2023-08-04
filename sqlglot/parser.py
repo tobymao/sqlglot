@@ -726,6 +726,7 @@ class Parser(metaclass=_Parser):
         "CONCAT": lambda self: self._parse_concat(),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
+        "ENCODE": lambda self: self._parse_encode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "LOG": lambda self: self._parse_logarithm(),
@@ -3913,6 +3914,11 @@ class Parser(metaclass=_Parser):
         """
         args = self._parse_csv(self._parse_conjunction)
 
+        if len(args) < 2:
+            return self.expression(
+                exp.Decode, this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
+            )
+
         if len(args) < 3:
             return self.expression(exp.Decode, this=seq_get(args, 0), charset=seq_get(args, 1))
 
@@ -3946,6 +3952,16 @@ class Parser(metaclass=_Parser):
                 ifs.append(exp.If(this=cond, true=result))
 
         return exp.Case(ifs=ifs, default=expressions[-1] if len(expressions) % 2 == 1 else None)
+
+    def _parse_encode(self) -> exp.Encode:
+        args = self._parse_csv(self._parse_conjunction)
+
+        if len(args) < 2:
+            return self.expression(
+                exp.Encode, this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
+            )
+
+        return self.expression(exp.Encode, this=seq_get(args, 0), charset=seq_get(args, 1))
 
     def _parse_json_key_value(self) -> t.Optional[exp.JSONKeyValue]:
         self._match_text_seq("KEY")

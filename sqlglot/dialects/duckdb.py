@@ -25,6 +25,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
 )
+from sqlglot.errors import UnsupportedError
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
@@ -94,6 +95,21 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
 def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
     sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
     return f"CAST({sql} AS TEXT)"
+
+
+def _ensure_utf8(charset: exp.Literal) -> None:
+    if charset.name.lower() != "utf-8":
+        raise UnsupportedError(f"Unsupported charset {charset}")
+
+
+def _decode_sql(self: generator.Generator, expression: exp.Decode) -> str:
+    _ensure_utf8(expression.args["charset"])
+    return self.func("DECODE", expression.this, expression.args.get("replace"))
+
+
+def _encode_sql(self: generator.Generator, expression: exp.Encode) -> str:
+    _ensure_utf8(expression.args["charset"])
+    return f"ENCODE({self.sql(expression, 'this')})"
 
 
 class DuckDB(Dialect):
@@ -216,6 +232,8 @@ class DuckDB(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
+            exp.Decode: _decode_sql,
+            exp.Encode: _encode_sql,
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.JSONExtract: arrow_json_extract_sql,

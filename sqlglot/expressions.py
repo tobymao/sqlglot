@@ -4254,7 +4254,7 @@ class Day(Func):
 
 
 class Decode(Func):
-    arg_types = {"this": True, "charset": True, "replace": False}
+    arg_types = {"this": True, "charset": False, "replace": False}
 
 
 class DiToDate(Func):
@@ -4262,7 +4262,7 @@ class DiToDate(Func):
 
 
 class Encode(Func):
-    arg_types = {"this": True, "charset": True}
+    arg_types = {"this": True, "charset": False}
 
 
 class Exp(Func):

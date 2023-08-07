@@ -924,7 +924,7 @@ FROM "cte" AS "cte"("a");
 WITH cte(x) AS (SELECT 1) SELECT a FROM cte AS cte(a);
 WITH "cte" AS (
   SELECT
-    1 AS "_"
+    1 AS "x"
 )
 SELECT
   "cte"."a" AS "a"
@@ -937,7 +937,7 @@ WITH "m" AS (
     1 AS "a"
 ), "n" AS (
   SELECT
-    1 AS "_"
+    1 AS "b"
 )
 SELECT
   COALESCE("m"."a", "foo"."a") AS "a"

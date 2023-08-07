@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 import typing as t
+
 from sqlglot import exp, generator
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
@@ -9,7 +11,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 
-
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
     "YEAR": ("ADD_MONTHS", 12),
@@ -18,6 +19,7 @@ DATE_DELTA_INTERVAL = {
     "WEEK": ("DATE_ADD", 7),
     "DAY": ("DATE_ADD", 1),
 }
+
 
 # TRANSFORMS.pop(exp.DateTrunc)
 def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
@@ -38,12 +40,14 @@ def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateS
 
     return self.func(func, expression.this, modified_increment)
 
+
 def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
     this = self.sql(expression, "this")
-    time_format = self.format_time(expression)
+    self.format_time(expression)
     # if time_format and time_format not in (Doris.TIME_FORMAT, Doris.DATE_FORMAT):
     #     return f"TO_DATE({this}, {time_format})"
     return f"TO_DATE({this})"
+
 
 def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
@@ -60,8 +64,10 @@ def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> st
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS TIMESTAMP)"
 
+
 def _str_to_unix_sql(self: generator.Generator, expression: exp.StrToUnix) -> str:
     return self.func("UNIX_TIMESTAMP", expression.this, _time_format(self, expression))
+
 
 def _time_format(
     self: generator.Generator, expression: exp.UnixToStr | exp.StrToUnix
@@ -71,9 +77,8 @@ def _time_format(
         return None
     return time_format
 
-def var_map_sql(
-    self, expression: exp.Map | exp.VarMap, map_func_name: str = "ARRAY_MAP"
-) -> str:
+
+def var_map_sql(self, expression: exp.Map | exp.VarMap, map_func_name: str = "ARRAY_MAP") -> str:
     keys = expression.args["keys"]
     values = expression.args["values"]
 
@@ -86,10 +91,10 @@ def var_map_sql(
         args.append(self.sql(key))
         args.append(self.sql(value))
 
-    return self.func(*args,map_func_name)
+    return self.func(*args, map_func_name)
+
 
 class Doris(MySQL):
-
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
@@ -102,7 +107,6 @@ class Doris(MySQL):
         "%e": "%-d",
         "%h": "%I",
         "%i": "%M",
-        "%s": "%S",
         "%S": "%S",
         "%u": "%W",
         "%k": "%-H",
@@ -114,6 +118,7 @@ class Doris(MySQL):
         "%s": "%%-S",
         "%": "%%",
     }
+
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
@@ -156,7 +161,7 @@ class Doris(MySQL):
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.SetAgg: rename_func("COLLECT_SET"),
-            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})", # Only for day level
+            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",  # Only for day level
             exp.TsOrDsToDate: _to_date_sql,
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_time_sql,
@@ -167,9 +172,5 @@ class Doris(MySQL):
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             # exp.StrToUnix: _str_to_unix_sql,
-
         }
         # TRANSFORMS.pop(exp.Map)
-
-
-

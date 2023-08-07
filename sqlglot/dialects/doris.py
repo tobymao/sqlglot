@@ -1,6 +1,6 @@
 from __future__ import annotations
 import typing as t
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
@@ -8,7 +8,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
-from sqlglot.tokens import TokenType
+
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {

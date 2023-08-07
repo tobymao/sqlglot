@@ -7,7 +7,7 @@ from sqlglot import alias, exp
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import ensure_list, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
 from sqlglot.schema import Schema, ensure_schema
 
@@ -112,17 +112,15 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
 
         columns = {}
 
-        for source_name, (source, _) in scope.selected_sources.items():
+        for source_name in scope.selected_sources:
             if source_name in ordered:
-                for column_name in resolver.get_source_columns(source_name, source=source):
+                for column_name in resolver.get_source_columns(source_name):
                     if column_name not in columns:
                         columns[column_name] = source_name
 
         source_table = ordered[-1]
         ordered.append(join_table)
-        join_columns = resolver.get_source_columns(
-            join_table, source=_get_source_node(scope, join_table)
-        )
+        join_columns = resolver.get_source_columns(join_table)
         conditions = []
 
         for identifier in using:
@@ -287,9 +285,7 @@ def _qualify_columns(scope: Scope, resolver: Resolver) -> None:
         column_name = column.name
 
         if column_table and column_table in scope.sources:
-            source_columns = resolver.get_source_columns(
-                column_table, source=_get_source_node(scope, column_table)
-            )
+            source_columns = resolver.get_source_columns(column_table)
             if source_columns and column_name not in source_columns and "*" not in source_columns:
                 raise OptimizeError(f"Unknown column: {column_name}")
 
@@ -374,9 +370,7 @@ def _expand_stars(
             if table not in scope.sources:
                 raise OptimizeError(f"Unknown table: {table}")
 
-            columns = resolver.get_source_columns(
-                table, source=_get_source_node(scope, table), only_visible=True
-            )
+            columns = resolver.get_source_columns(table, only_visible=True)
 
             if pseudocolumns:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
@@ -472,10 +466,6 @@ def _qualify_outputs(scope: Scope) -> None:
     scope.expression.set("expressions", new_selections)
 
 
-def _get_source_node(scope: Scope, source_name: str) -> t.Optional[exp.Expression]:
-    return seq_get(scope.selected_sources.get(source_name) or [], 0)
-
-
 def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool = True) -> E:
     """Makes sure all identifiers that need to be quoted are quoted."""
     return expression.transform(
@@ -547,12 +537,7 @@ class Resolver:
             }
         return self._all_columns
 
-    def get_source_columns(
-        self,
-        name: str,
-        source: t.Optional[exp.Expression | Scope] = None,
-        only_visible: bool = False,
-    ) -> t.List[str]:
+    def get_source_columns(self, name: str, only_visible: bool = False) -> t.List[str]:
         """Resolve the source columns for a given source `name`."""
         if name not in self.scope.sources:
             raise OptimizeError(f"Unknown table: {name}")
@@ -570,6 +555,7 @@ class Resolver:
             # Otherwise, if referencing another scope, return that scope's named selects
             columns = original_source.expression.named_selects
 
+        source = seq_get(self.scope.selected_sources.get(name) or [], 0)
         if isinstance(source, Scope):
             column_aliases = source.expression.alias_column_names
         elif isinstance(source, exp.Expression):
@@ -582,8 +568,8 @@ class Resolver:
     def _get_all_source_columns(self) -> t.Dict[str, t.List[str]]:
         if self._source_columns is None:
             self._source_columns = {
-                name: self.get_source_columns(name, source=seq_get(ensure_list(source), 0))
-                for name, source in itertools.chain(
+                source_name: self.get_source_columns(source_name)
+                for source_name, source in itertools.chain(
                     self.scope.selected_sources.items(), self.scope.lateral_sources.items()
                 )
             }

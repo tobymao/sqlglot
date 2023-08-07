@@ -112,11 +112,11 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
 
         columns = {}
 
-        for name, (source, _) in scope.selected_sources.items():
-            if name in ordered:
-                for column_name in resolver.get_source_columns(name, source=source):
+        for source_name, (source, _) in scope.selected_sources.items():
+            if source_name in ordered:
+                for column_name in resolver.get_source_columns(source_name, source=source):
                     if column_name not in columns:
-                        columns[column_name] = name
+                        columns[column_name] = source_name
 
         source_table = ordered[-1]
         ordered.append(join_table)

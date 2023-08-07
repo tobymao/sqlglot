@@ -39,7 +39,7 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
     for scope in reversed(traverse_scope(expression)):
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
 
-        if scope.expression.args.get("distinct") or scope.parent and scope.parent.pivots:
+        if scope.expression.args.get("distinct") or (scope.parent and scope.parent.pivots):
             # We can't remove columns SELECT DISTINCT nor UNION DISTINCT. The same holds if
             # we select from a pivoted source in the parent scope.
             parent_selections = {SELECT_ALL}
@@ -93,10 +93,12 @@ def _remove_unused_selections(scope, parent_selections, schema):
     removed = False
     star = False
 
+    select_all = SELECT_ALL in parent_selections
+
     for selection in scope.expression.selects:
         name = selection.alias_or_name
 
-        if SELECT_ALL in parent_selections or name in parent_selections or name in order_refs:
+        if select_all or name in parent_selections or name in order_refs:
             new_selections.append(selection)
         else:
             if selection.is_star:

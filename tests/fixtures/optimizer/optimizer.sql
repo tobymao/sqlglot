@@ -907,3 +907,40 @@ JOIN "x" AS "x"
   ON "y"."b" = "x"."b"
 GROUP BY
   "x"."a";
+
+# title: select * from a cte, which had one of its two columns aliased
+WITH cte(x, y) AS (SELECT 1, 2) SELECT * FROM cte AS cte(a);
+WITH "cte" AS (
+  SELECT
+    1 AS "x",
+    2 AS "y"
+)
+SELECT
+  "cte"."a" AS "a",
+  "cte"."y" AS "y"
+FROM "cte" AS "cte"("a");
+
+# title: select single column from a cte using its alias
+WITH cte(x) AS (SELECT 1) SELECT a FROM cte AS cte(a);
+WITH "cte" AS (
+  SELECT
+    1 AS "_"
+)
+SELECT
+  "cte"."a" AS "a"
+FROM "cte" AS "cte"("a");
+
+# title: joined ctes with a "using" clause, one of which has had its column aliased
+WITH m(a) AS (SELECT 1), n(b) AS (SELECT 1) SELECT * FROM m JOIN n AS foo(a) USING (a);
+WITH "m" AS (
+  SELECT
+    1 AS "a"
+), "n" AS (
+  SELECT
+    1 AS "_"
+)
+SELECT
+  COALESCE("m"."a", "foo"."a") AS "a"
+FROM "m"
+JOIN "n" AS "foo"("a")
+  ON "m"."a" = "foo"."a";

@@ -192,6 +192,13 @@ class Expression(metaclass=_Expression):
         return self.text("alias")
 
     @property
+    def alias_column_names(self) -> t.List[str]:
+        table_alias = self.args.get("alias")
+        if not table_alias:
+            return []
+        return [c.name for c in table_alias.args.get("columns") or []]
+
+    @property
     def name(self) -> str:
         return self.text("this")
 
@@ -883,13 +890,6 @@ class Predicate(Condition):
 
 
 class DerivedTable(Expression):
-    @property
-    def alias_column_names(self) -> t.List[str]:
-        table_alias = self.args.get("alias")
-        if not table_alias:
-            return []
-        return [c.name for c in table_alias.args.get("columns") or []]
-
     @property
     def selects(self) -> t.List[Expression]:
         return self.this.selects if isinstance(self.this, Subqueryable) else []

@@ -328,6 +328,10 @@ class TestExpressions(unittest.TestCase):
         cte = expression.find(exp.CTE)
         self.assertEqual(cte.alias_column_names, ["a", "b"])
 
+        expression = parse_one("SELECT * FROM tbl AS tbl(a, b)")
+        table = expression.find(exp.Table)
+        self.assertEqual(table.alias_column_names, ["a", "b"])
+
     def test_ctes(self):
         expression = parse_one("SELECT a FROM x")
         self.assertEqual(expression.ctes, [])

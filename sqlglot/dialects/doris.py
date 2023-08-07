@@ -120,7 +120,6 @@ class Doris(MySQL):
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
-            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
         }
 
     class Generator(MySQL.Generator):

@@ -466,6 +466,7 @@ class TestPresto(Validator):
             read={"spark": "STARTSWITH('abc', 'a')"},
             write={
                 "presto": "STARTS_WITH('abc', 'a')",
+                "snowflake": "STARTSWITH('abc', 'a')",
                 "spark": "STARTSWITH('abc', 'a')",
             },
         )

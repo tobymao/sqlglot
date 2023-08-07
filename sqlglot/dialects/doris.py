@@ -124,24 +124,7 @@ class Doris(MySQL):
         }
 
     class Generator(MySQL.Generator):
-        CAST_MAPPING = {
-            exp.DataType.Type.BIGINT: "BIGINT",
-            exp.DataType.Type.BOOLEAN: "BOOLEAN",
-            exp.DataType.Type.TEXT: "STRING",
-            exp.DataType.Type.UBIGINT: "UNSIGNED",
-            exp.DataType.Type.VARCHAR: "VARCHAR",
-            exp.DataType.Type.BINARY: "STRING",
-            exp.DataType.Type.BIT: "BOOLEAN",
-            exp.DataType.Type.DATETIME64: "DATETIME",
-            exp.DataType.Type.ENUM: "STRING",
-            exp.DataType.Type.IMAGE: "UNSUPPORTED",
-            exp.DataType.Type.INT128: "LARGEINT",
-            exp.DataType.Type.INT256: "STRING",
-            exp.DataType.Type.UINT128: "STRING",
-            exp.DataType.Type.JSONB: "JSON",
-            exp.DataType.Type.LONGTEXT: "STRING",
-            exp.DataType.Type.MONEY: "DECIMAL",
-        }
+        CAST_MAPPING = {}
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,

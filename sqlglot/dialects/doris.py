@@ -5,6 +5,7 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
     rename_func,
+    var_map_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
@@ -71,6 +72,23 @@ def _time_format(
         return None
     return time_format
 
+def var_map_sql(
+    self, expression: exp.Map | exp.VarMap, map_func_name: str = "ARRAY_MAP"
+) -> str:
+    keys = expression.args["keys"]
+    values = expression.args["values"]
+
+    if not isinstance(keys, exp.Array) or not isinstance(values, exp.Array):
+        self.unsupported("Cannot convert array columns into map.")
+        return self.func(map_func_name, keys, values)
+
+    args = []
+    for key, value in zip(keys.expressions, values.expressions):
+        args.append(self.sql(key))
+        args.append(self.sql(value))
+
+    return self.func(*args,map_func_name)
+
 class Doris(MySQL):
 
     DATE_FORMAT = "'yyyy-MM-dd'"
@@ -80,6 +98,7 @@ class Doris(MySQL):
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
         "%M": "%B",
+        "%m": "%%-M",
         "%c": "%-m",
         "%e": "%-d",
         "%h": "%I",
@@ -89,8 +108,12 @@ class Doris(MySQL):
         "%u": "%W",
         "%k": "%-H",
         "%l": "%-I",
-        "%T": "%H:%M:%S",
         "%W": "%a",
+        "%Y": "%Y",
+        "%d": "%%-d",
+        "%H": "%%-H",
+        "%s": "%%-S",
+        "%": "%%",
     }
     class Parser(MySQL.Parser):
         FUNCTIONS = {
@@ -138,6 +161,7 @@ class Doris(MySQL):
             exp.RegexpLike: rename_func("REGEXP"),
             exp.Coalesce: rename_func("NVL"),
             exp.CurrentTimestamp: lambda self, e: "NOW()",
+            # exp.CurrentTime: lambda self, e: "NOW()",
             exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             # exp.StrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
@@ -156,11 +180,16 @@ class Doris(MySQL):
             exp.TsOrDsToDate: _to_date_sql,
             exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: _str_to_time_sql,
-            # exp.CurrentDate:  rename_func("NOW"),
+            exp.Map: rename_func("ARRAY_MAP"),
+            exp.VarMap: var_map_sql,
+            exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
+            exp.Split: rename_func("SPLIT_BY_STRING"),
+            exp.Quantile: rename_func("PERCENTILE"),
+            exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             # exp.StrToUnix: _str_to_unix_sql,
 
         }
-        # TRANSFORMS.pop(exp.UnixToStr)
+        # TRANSFORMS.pop(exp.Map)
 
 
 

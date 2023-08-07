@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
+from sqlglot.optimizer.simplify import simplify_parens
 from sqlglot.schema import Schema, ensure_schema
 
 
@@ -183,6 +184,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
         for column, *_ in walk_in_scope(node):
             if not isinstance(column, exp.Column):
                 continue
+
             table = resolver.get_table(column.name) if resolve_table and not column.table else None
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
             double_agg = (
@@ -198,7 +200,10 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
                     if literal_index:
                         column.replace(exp.Literal.number(i))
                 else:
-                    column.replace(alias_expr.copy())
+                    column = column.replace(exp.paren(alias_expr))
+                    simplified = simplify_parens(column)
+                    if simplified is not column:
+                        column.replace(simplified)
 
     for i, projection in enumerate(scope.expression.selects):
         replace_columns(projection)

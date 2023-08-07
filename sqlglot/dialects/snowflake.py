@@ -363,6 +363,7 @@ class Snowflake(Dialect):
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
+            exp.StartsWith: rename_func("STARTSWITH"),
             exp.StrPosition: lambda self, e: self.func(
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),

@@ -125,7 +125,7 @@ SELECT COALESCE(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
 SELECT COALESCE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY COALESCE(x.a);
 
 SELECT a + 1 AS d FROM x WHERE d > 1;
-SELECT x.a + 1 AS d FROM x AS x WHERE x.a + 1 > 1;
+SELECT x.a + 1 AS d FROM x AS x WHERE (x.a + 1) > 1;
 
 # execute: false
 SELECT a + 1 AS d, d + 2 FROM x;
@@ -444,7 +444,7 @@ SELECT x.a AS a, x.b AS b FROM x AS x QUALIFY COUNT(x.a) OVER (PARTITION BY x.b)
 -- Expand laterals
 --------------------------------------
 # execute: false
-select 2 AS d, d + 1 FROM x WHERE d = 2 GROUP BY d;
+SELECT 2 AS d, d + 1 FROM x WHERE d = 2 GROUP BY d;
 SELECT 2 AS d, 2 + 1 AS _col_1 FROM x AS x WHERE 2 = 2 GROUP BY 1;
 
 # title: expand alias reference
@@ -470,6 +470,16 @@ FROM (
   FROM x
 );
 SELECT _q_0.i AS i, _q_0.j AS j FROM (SELECT x.a + 1 AS i, x.a + 1 + 1 AS j FROM x AS x) AS _q_0;
+
+# title: wrap expanded alias to ensure operator precedence isn't broken
+# execute: false
+SELECT x.a + x.b AS f, f * x.b FROM x;
+SELECT x.a + x.b AS f, (x.a + x.b) * x.b AS _col_1 FROM x AS x;
+
+# title: no need to wrap expanded alias
+# execute: false
+SELECT x.a + x.b AS f, f FROM x;
+SELECT x.a + x.b AS f, x.a + x.b AS _col_1 FROM x AS x;
 
 --------------------------------------
 -- Wrapped tables / join constructs

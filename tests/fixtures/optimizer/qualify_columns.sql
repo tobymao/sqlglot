@@ -478,8 +478,8 @@ SELECT x.a + x.b AS f, (x.a + x.b) * x.b AS _col_1 FROM x AS x;
 
 # title: no need to wrap expanded alias
 # execute: false
-SELECT x.a + x.b AS f, f FROM x;
-SELECT x.a + x.b AS f, x.a + x.b AS _col_1 FROM x AS x;
+SELECT x.a + x.b AS f, f, f + 5 FROM x;
+SELECT x.a + x.b AS f, x.a + x.b AS _col_1, x.a + x.b + 5 AS _col_2 FROM x AS x;
 
 --------------------------------------
 -- Wrapped tables / join constructs

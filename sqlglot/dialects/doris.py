@@ -5,7 +5,6 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
     rename_func,
-    var_map_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
@@ -128,7 +127,6 @@ class Doris(MySQL):
         CAST_MAPPING = {
             exp.DataType.Type.BIGINT: "BIGINT",
             exp.DataType.Type.BOOLEAN: "BOOLEAN",
-            exp.DataType.Type.INT: "INT",
             exp.DataType.Type.TEXT: "STRING",
             exp.DataType.Type.UBIGINT: "UNSIGNED",
             exp.DataType.Type.VARCHAR: "VARCHAR",
@@ -168,7 +166,7 @@ class Doris(MySQL):
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
             ),
-            exp.TimeStrToDate: rename_func("TO_DATE"),
+            exp.TimeStrToDate: rename_func("STR_TO_DATE"),
             # exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, _time_format(self, e)

@@ -17,6 +17,7 @@ class StarRocks(MySQL):
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "REGEXP": exp.RegexpLike.from_arg_list,
         }
 
     class Generator(MySQL.Generator):
@@ -34,7 +35,6 @@ class StarRocks(MySQL):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
-            exp.DateDiff: rename_func("DATEDIFF"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimestampTrunc: lambda self, e: self.func(

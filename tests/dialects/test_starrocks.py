@@ -13,8 +13,9 @@ class TestMySQL(Validator):
 
     def test_regex(self):
         self.validate_all(
-            "SELECT REGEXP_LIKE(abc, '%foo%')",
-            write={
+            "SELECT REGEXP(abc, '%foo%')",
+            read={
+                "mysql": "SELECT REGEXP_LIKE(abc, '%foo%')",
                 "starrocks": "SELECT REGEXP(abc, '%foo%')",
             },
         )

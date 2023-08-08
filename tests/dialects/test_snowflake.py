@@ -34,11 +34,20 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
+        self.validate_identity("REGEXP_REPLACE('target', 'pattern', '\n')")
         self.validate_identity(
             'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)'
         )
         self.validate_identity(
             "SELECT state, city, SUM(retail_price * quantity) AS gross_revenue FROM sales GROUP BY ALL"
+        )
+        self.validate_identity(
+            r"SELECT RLIKE(a, $$regular expression with \ characters: \d{2}-\d{3}-\d{4}$$, 'i') FROM log_source",
+            r"SELECT REGEXP_LIKE(a, 'regular expression with \\ characters: \\d{2}-\\d{3}-\\d{4}', 'i') FROM log_source",
+        )
+        self.validate_identity(
+            r"SELECT $$a ' \ \t \x21 z $ $$",
+            r"SELECT 'a \' \\ \\t \\x21 z $ '",
         )
 
         self.validate_all("CAST(x AS BYTEINT)", write={"snowflake": "CAST(x AS INT)"})
@@ -385,13 +394,6 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT 'a'",
             },
         )
-        self.validate_all(
-            r"SELECT $$a ' \ \t \x21 z $ $$",
-            write={
-                "snowflake": r"SELECT 'a \' \ \t \x21 z $ '",
-            },
-        )
-        self.validate_identity("REGEXP_REPLACE('target', 'pattern', '\n')")
         self.validate_all(
             "SELECT RLIKE(a, b)",
             write={

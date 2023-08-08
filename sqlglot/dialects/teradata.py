@@ -209,4 +209,5 @@ class Teradata(Dialect):
                 )
                 this_schema = self.schema_columns_sql(expression.this)
                 return f"{this_name}{this_properties}{self.sep()}{this_schema}"
+
             return super().createable_sql(expression, locations)

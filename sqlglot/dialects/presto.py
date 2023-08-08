@@ -41,6 +41,7 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
 
 def _explode_to_unnest_sql(self: generator.Generator, expression: exp.Lateral) -> str:
     if isinstance(expression.this, (exp.Explode, exp.Posexplode)):
+        expression = expression.copy()
         return self.sql(
             exp.Join(
                 this=exp.Unnest(
@@ -96,14 +97,14 @@ def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDat
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
         return exp.cast(_str_to_time_sql(self, expression), "DATE").sql(dialect="presto")
-    return exp.cast(exp.cast(expression.this, "TIMESTAMP"), "DATE").sql(dialect="presto")
+    return exp.cast(exp.cast(expression.this, "TIMESTAMP", copy=True), "DATE").sql(dialect="presto")
 
 
 def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
     this = expression.this
 
     if not isinstance(this, exp.CurrentDate):
-        this = exp.cast(exp.cast(expression.this, "TIMESTAMP"), "DATE")
+        this = exp.cast(exp.cast(expression.this, "TIMESTAMP", copy=True), "DATE")
 
     return self.func(
         "DATE_ADD",

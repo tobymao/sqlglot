@@ -355,6 +355,7 @@ class ClickHouse(Dialect):
 
         def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
             # Clickhouse errors out if we try to cast a NULL value to TEXT
+            expression = expression.copy()
             return self.func(
                 "CONCAT",
                 *[
@@ -402,4 +403,5 @@ class ClickHouse(Dialect):
                 )
                 this_schema = self.schema_columns_sql(expression.this)
                 return f"{this_name}{self.sep()}{this_properties}{self.sep()}{this_schema}"
+
             return super().createable_sql(expression, locations)

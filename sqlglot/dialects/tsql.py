@@ -642,7 +642,7 @@ class TSQL(Dialect):
         def createable_sql(
             self,
             expression: exp.Create,
-            locations: dict[exp.Properties.Location, list[exp.Property]],
+            locations: t.DefaultDict[exp.Properties.Location, list[exp.Property]],
         ) -> str:
             sql = self.sql(expression, "this")
             properties = expression.args.get("properties")

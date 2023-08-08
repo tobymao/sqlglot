@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, max_or_greatest, min_or_least
 from sqlglot.tokens import TokenType
@@ -197,7 +199,7 @@ class Teradata(Dialect):
         def createable_sql(
             self,
             expression: exp.Create,
-            locations: dict[exp.Properties.Location, list[exp.Property]],
+            locations: t.DefaultDict[exp.Properties.Location, list[exp.Property]],
         ) -> str:
             kind = self.sql(expression, "kind").upper()
             if kind == "TABLE" and locations.get(exp.Properties.Location.POST_NAME):

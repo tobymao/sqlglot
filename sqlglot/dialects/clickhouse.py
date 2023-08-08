@@ -393,7 +393,7 @@ class ClickHouse(Dialect):
         def createable_sql(
             self,
             expression: exp.Create,
-            locations: dict[exp.Properties.Location, list[exp.Property]],
+            locations: t.DefaultDict[exp.Properties.Location, list[exp.Property]],
         ) -> str:
             kind = self.sql(expression, "kind").upper()
             if kind in self.ON_CLUSTER_TARGETS and locations.get(exp.Properties.Location.POST_NAME):

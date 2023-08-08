@@ -1955,6 +1955,7 @@ class Generator:
         return f"PRIMARY KEY ({expressions}){options}"
 
     def if_sql(self, expression: exp.If) -> str:
+        expression = expression.copy()
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
 
     def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:

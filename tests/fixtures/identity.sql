@@ -87,6 +87,7 @@ x IN ('a', 'a''a')
 x IN ((1))
 x BETWEEN -1 AND 1
 x BETWEEN 'a' || b AND 'c' || d
+((a, b) AS c)
 NOT x IS NULL
 x IS TRUE
 x IS FALSE

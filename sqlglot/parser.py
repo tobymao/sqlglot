@@ -3710,7 +3710,11 @@ class Parser(metaclass=_Parser):
                 self.expression(exp.Slice, expression=self._parse_conjunction())
             ]
         else:
-            expressions = self._parse_csv(lambda: self._parse_slice(self._parse_conjunction()))
+            expressions = self._parse_csv(
+                lambda: self._parse_slice(
+                    self._parse_alias(self._parse_conjunction(), explicit=True)
+                )
+            )
 
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:

@@ -34,7 +34,7 @@ def _date_add_sql(
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
         unit = exp.var(unit.name.upper() if unit else "DAY")
-        interval = exp.Interval(this=expression.expression, unit=unit)
+        interval = exp.Interval(this=expression.expression.copy(), unit=unit)
         return f"{data_type}_{kind}({this}, {self.sql(interval)})"
 
     return func
@@ -76,16 +76,12 @@ def _returnsproperty_sql(self: generator.Generator, expression: exp.ReturnsPrope
 def _create_sql(self: generator.Generator, expression: exp.Create) -> str:
     kind = expression.args["kind"]
     returns = expression.find(exp.ReturnsProperty)
+
     if kind.upper() == "FUNCTION" and returns and returns.args.get("is_table"):
         expression = expression.copy()
         expression.set("kind", "TABLE FUNCTION")
-        if isinstance(
-            expression.expression,
-            (
-                exp.Subquery,
-                exp.Literal,
-            ),
-        ):
+
+        if isinstance(expression.expression, (exp.Subquery, exp.Literal)):
             expression.set("expression", expression.expression.this)
 
         return self.create_sql(expression)

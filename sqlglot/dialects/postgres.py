@@ -40,10 +40,12 @@ DATE_DIFF_FACTOR = {
 
 def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+        expression = expression.copy()
+
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
 
-        expression = simplify_literal(expression.copy(), copy=False).expression
+        expression = simplify_literal(expression).expression
         if not isinstance(expression, exp.Literal):
             self.unsupported("Cannot add non literal")
 

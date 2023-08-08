@@ -639,11 +639,7 @@ class TSQL(Dialect):
 
         LIMIT_FETCH = "FETCH"
 
-        def createable_sql(
-            self,
-            expression: exp.Create,
-            locations: dict[exp.Properties.Location, list[exp.Property]],
-        ) -> str:
+        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             sql = self.sql(expression, "this")
             properties = expression.args.get("properties")
 

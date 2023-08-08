@@ -687,7 +687,7 @@ class Generator:
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
         properties = expression.args.get("properties")
-        properties_locs: t.DefaultDict[exp.Properties.Location, list[exp.Property]] = (
+        properties_locs: t.DefaultDict = (
             self.locate_properties(properties) if properties else defaultdict()
         )
 

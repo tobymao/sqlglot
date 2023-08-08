@@ -17,6 +17,12 @@ class StarRocks(MySQL):
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "DATEDIFF": lambda args: exp.DateDiff(
+                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
+            ),
+            "DATE_DIFF": lambda args: exp.DateDiff(
+                this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
+            ),
             "REGEXP": exp.RegexpLike.from_arg_list,
         }
 
@@ -33,6 +39,9 @@ class StarRocks(MySQL):
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.DateDiff: lambda self, e: self.func(
+                "DATE_DIFF", exp.Literal.string(e.text("unit") or "DAY"), e.this, e.expression
+            ),
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.RegexpLike: rename_func("REGEXP"),

@@ -1,7 +1,7 @@
 from tests.dialects.test_dialect import Validator
 
 
-class TestMySQL(Validator):
+class TestStarrocks(Validator):
     dialect = "starrocks"
 
     def test_identity(self):
@@ -10,6 +10,12 @@ class TestMySQL(Validator):
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
+        self.validate_identity(
+            "SELECT DATE_DIFF('second', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
+        )
+        self.validate_identity(
+            "SELECT DATE_DIFF('minute', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
+        )
 
     def test_regex(self):
         self.validate_all(
@@ -17,5 +23,8 @@ class TestMySQL(Validator):
             read={
                 "mysql": "SELECT REGEXP_LIKE(abc, '%foo%')",
                 "starrocks": "SELECT REGEXP(abc, '%foo%')",
+            },
+            write={
+                "mysql": "SELECT REGEXP_LIKE(abc, '%foo%')",
             },
         )

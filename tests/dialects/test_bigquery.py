@@ -112,6 +112,14 @@ class TestBigQuery(Validator):
         self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
         self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
         self.validate_all(
+            'SELECT TIMESTAMP_ADD(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
+            write={
+                "bigquery": "SELECT TIMESTAMP_ADD(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL 10 MINUTE)",
+                "hive": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) + INTERVAL 10 MINUTE",
+                "spark": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) + INTERVAL 10 MINUTE",
+            },
+        )
+        self.validate_all(
             "MD5(x)",
             write={
                 "": "MD5_DIGEST(x)",

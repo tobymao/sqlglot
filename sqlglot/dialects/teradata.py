@@ -196,11 +196,7 @@ class Teradata(Dialect):
 
             return f"RANGE_N({this} BETWEEN {expressions_sql}{each_sql})"
 
-        def createable_sql(
-            self,
-            expression: exp.Create,
-            locations: t.DefaultDict[exp.Properties.Location, list[exp.Property]],
-        ) -> str:
+        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             kind = self.sql(expression, "kind").upper()
             if kind == "TABLE" and locations.get(exp.Properties.Location.POST_NAME):
                 this_name = self.sql(expression.this, "this")

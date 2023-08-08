@@ -390,11 +390,7 @@ class ClickHouse(Dialect):
         def oncluster_sql(self, expression: exp.OnCluster) -> str:
             return f"ON CLUSTER {self.sql(expression, 'this')}"
 
-        def createable_sql(
-            self,
-            expression: exp.Create,
-            locations: t.DefaultDict[exp.Properties.Location, list[exp.Property]],
-        ) -> str:
+        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             kind = self.sql(expression, "kind").upper()
             if kind in self.ON_CLUSTER_TARGETS and locations.get(exp.Properties.Location.POST_NAME):
                 this_name = self.sql(expression.this, "this")

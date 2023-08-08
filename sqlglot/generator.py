@@ -677,19 +677,13 @@ class Generator:
         this = f" {this}" if this else ""
         return f"UNIQUE{this}"
 
-    def createable_sql(
-        self,
-        expression: exp.Create,
-        locations: t.DefaultDict[exp.Properties.Location, list[exp.Property]],
-    ) -> str:
+    def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
         return self.sql(expression, "this")
 
     def create_sql(self, expression: exp.Create) -> str:
         kind = self.sql(expression, "kind").upper()
         properties = expression.args.get("properties")
-        properties_locs: t.DefaultDict = (
-            self.locate_properties(properties) if properties else defaultdict()
-        )
+        properties_locs = self.locate_properties(properties) if properties else defaultdict()
 
         this = self.createable_sql(expression, properties_locs)
 
@@ -1006,9 +1000,7 @@ class Generator:
     def with_properties(self, properties: exp.Properties) -> str:
         return self.properties(properties, prefix=self.seg("WITH"))
 
-    def locate_properties(
-        self, properties: exp.Properties
-    ) -> t.DefaultDict[exp.Properties.Location, list[exp.Property]]:
+    def locate_properties(self, properties: exp.Properties) -> t.DefaultDict:
         properties_locs = defaultdict(list)
         for p in properties.expressions:
             p_loc = self.PROPERTIES_LOCATION[p.__class__]

@@ -542,24 +542,22 @@ class Resolver:
         if name not in self.scope.sources:
             raise OptimizeError(f"Unknown table: {name}")
 
-        original_source = self.scope.sources[name]
+        source = self.scope.sources[name]
 
-        if isinstance(original_source, exp.Table):
+        if isinstance(source, exp.Table):
             # If referencing a table, return the columns from the schema
-            columns = self.schema.column_names(original_source, only_visible)
-        elif isinstance(original_source, Scope) and isinstance(
-            original_source.expression, exp.Values
-        ):
-            columns = original_source.expression.alias_column_names
+            columns = self.schema.column_names(source, only_visible)
+        elif isinstance(source, Scope) and isinstance(source.expression, exp.Values):
+            columns = source.expression.alias_column_names
         else:
             # Otherwise, if referencing another scope, return that scope's named selects
-            columns = original_source.expression.named_selects
+            columns = source.expression.named_selects
 
-        source = seq_get(self.scope.selected_sources.get(name) or [], 0)
-        if isinstance(source, Scope):
-            column_aliases = source.expression.alias_column_names
-        elif isinstance(source, exp.Expression):
-            column_aliases = source.alias_column_names
+        node, _ = self.scope.selected_sources.get(name) or (None, None)
+        if isinstance(node, Scope):
+            column_aliases = node.expression.alias_column_names
+        elif isinstance(node, exp.Expression):
+            column_aliases = node.alias_column_names
         else:
             column_aliases = []
 

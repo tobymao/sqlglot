@@ -545,12 +545,10 @@ class Resolver:
         source = self.scope.sources[name]
 
         if isinstance(source, exp.Table):
-            # If referencing a table, return the columns from the schema
             columns = self.schema.column_names(source, only_visible)
         elif isinstance(source, Scope) and isinstance(source.expression, exp.Values):
             columns = source.expression.alias_column_names
         else:
-            # Otherwise, if referencing another scope, return that scope's named selects
             columns = source.expression.named_selects
 
         node, _ = self.scope.selected_sources.get(name) or (None, None)
@@ -561,6 +559,7 @@ class Resolver:
         else:
             column_aliases = []
 
+        # If the source's columns are aliased, their aliases shadow the corresponding column names
         return [alias or name for (name, alias) in itertools.zip_longest(columns, column_aliases)]
 
     def _get_all_source_columns(self) -> t.Dict[str, t.List[str]]:

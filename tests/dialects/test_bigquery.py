@@ -200,8 +200,15 @@ class TestBigQuery(Validator):
         )
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",
-            read={"bigquery": "REGEXP_CONTAINS('foo', '.*')"},
-            write={"mysql": "REGEXP_LIKE('foo', '.*')"},
+            read={
+                "bigquery": "REGEXP_CONTAINS('foo', '.*')",
+                "mysql": "REGEXP_LIKE('foo', '.*')",
+                "starrocks": "REGEXP('foo', '.*')",
+            },
+            write={
+                "mysql": "REGEXP_LIKE('foo', '.*')",
+                "starrocks": "REGEXP('foo', '.*')",
+            },
         ),
         self.validate_all(
             '"""x"""',
@@ -481,13 +488,21 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "DATE_DIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE), DAY)",
                 "mysql": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
+                "starrocks": "DATE_DIFF('DAY', CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "DATE_DIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE), DAY)",
+            read={
+                "mysql": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
+                "starrocks": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
             },
         )
         self.validate_all(
             "DATE_DIFF(DATE '2010-07-07', DATE '2008-12-25', MINUTE)",
             write={
                 "bigquery": "DATE_DIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE), MINUTE)",
-                "mysql": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
+                "starrocks": "DATE_DIFF('MINUTE', CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
             },
         )
         self.validate_all(

@@ -41,5 +41,6 @@ def normalize_identifiers(expression, dialect=None):
     Returns:
         The transformed expression.
     """
-    expression = exp.maybe_parse(expression, dialect=dialect)
+    if isinstance(expression, str):
+        expression = exp.to_identifier(expression)
     return expression.transform(Dialect.get_or_raise(dialect).normalize_identifier, copy=False)

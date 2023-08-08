@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v17.10.1] - 2023-08-08
+### :bug: Bug Fixes
+- [`f6fe54a`](https://github.com/tobymao/sqlglot/commit/f6fe54a535ae1d985c9f298afa1fc77f14a9943e) - **optimizer**: wrap expanded alias expressions *(PR [#2004](https://github.com/tobymao/sqlglot/pull/2004) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2003](undefined) opened by [@z3z1ma](https://github.com/z3z1ma)*
+- [`900bec3`](https://github.com/tobymao/sqlglot/commit/900bec32f2d04d3ab5f12ab93679f1a14d9ac548) - if_sql mutation *(commit by [@tobymao](https://github.com/tobymao))*
+- [`c73790d`](https://github.com/tobymao/sqlglot/commit/c73790d0249cf0f21f855ed4921c9a8727e2d5ff) - **optimizer**: ensure TableAlias column names shadow source columns *(PR [#2002](https://github.com/tobymao/sqlglot/pull/2002) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`caf2adc`](https://github.com/tobymao/sqlglot/commit/caf2adc2153a650c4a4062f35d004d2cb94d6d71) - **snowflake**: tokenize $$ as raw string delimiters *(PR [#2007](https://github.com/tobymao/sqlglot/pull/2007) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2005](undefined) opened by [@wezham](https://github.com/wezham)*
+- [`289493b`](https://github.com/tobymao/sqlglot/commit/289493bf213f71cc4c9efef1349bbed372a0d4b3) - remove several mutations in Generator methods *(PR [#2009](https://github.com/tobymao/sqlglot/pull/2009) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.10.0] - 2023-08-07
 ### :sparkles: New Features
 - [`12c2e9b`](https://github.com/tobymao/sqlglot/commit/12c2e9be97580642c94571f726a0d26a16f40a63) - add terse coalesce operator *(PR [#1991](https://github.com/tobymao/sqlglot/pull/1991) by [@z3z1ma](https://github.com/z3z1ma))*
@@ -1037,3 +1048,4 @@ Changelog
 [v17.9.0]: https://github.com/tobymao/sqlglot/compare/v17.8.6...v17.9.0
 [v17.9.1]: https://github.com/tobymao/sqlglot/compare/v17.9.0...v17.9.1
 [v17.10.0]: https://github.com/tobymao/sqlglot/compare/v17.9.1...v17.10.0
+[v17.10.1]: https://github.com/tobymao/sqlglot/compare/v17.10.0...v17.10.1

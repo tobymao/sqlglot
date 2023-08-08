@@ -4860,8 +4860,18 @@ def maybe_parse(
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 
+@t.overload
+def maybe_copy(instance: None, copy: bool = True) -> None:
+    ...
+
+
+@t.overload
 def maybe_copy(instance: E, copy: bool = True) -> E:
-    return instance.copy() if copy else instance
+    ...
+
+
+def maybe_copy(instance, copy=True):
+    return instance.copy() if copy and instance else instance
 
 
 def _is_wrong_expression(expression, into):

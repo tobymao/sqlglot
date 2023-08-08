@@ -33,14 +33,14 @@ from sqlglot.tokens import TokenType
 def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
-    return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
+    return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))}"
 
 
 def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     op = "+" if isinstance(expression, exp.DateAdd) else "-"
-    return f"{this} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
+    return f"{this} {op} {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))}"
 
 
 # BigQuery -> DuckDB conversion for the DATE function
@@ -241,8 +241,8 @@ class DuckDB(Dialect):
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",
                 "'month'",
-                exp.cast(e.expression, "timestamp"),
-                exp.cast(e.this, "timestamp"),
+                exp.cast(e.expression, "timestamp", copy=True),
+                exp.cast(e.this, "timestamp", copy=True),
             ),
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: regexp_extract_sql,
@@ -303,7 +303,7 @@ class DuckDB(Dialect):
                 multiplier = 90
 
             if multiplier:
-                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('day')))})"
+                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this.copy(), unit=exp.var('day')))})"
 
             return super().interval_sql(expression)
 

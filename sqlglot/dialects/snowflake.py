@@ -297,9 +297,10 @@ class Snowflake(Dialect):
             return super()._parse_id_var(any_token=any_token, tokens=tokens)
 
     class Tokenizer(tokens.Tokenizer):
-        QUOTES = ["'", "$$"]
+        QUOTES = ["'"]
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
+        RAW_STRINGS = ["$$"]
         COMMENTS = ["--", "//", ("/*", "*/")]
 
         KEYWORDS = {

@@ -202,6 +202,8 @@ class TestBigQuery(Validator):
             "REGEXP_CONTAINS('foo', '.*')",
             read={
                 "bigquery": "REGEXP_CONTAINS('foo', '.*')",
+                "mysql": "REGEXP_LIKE('foo', '.*')",
+                "starrocks": "REGEXP('foo', '.*')",
             },
             write={
                 "mysql": "REGEXP_LIKE('foo', '.*')",

@@ -87,9 +87,7 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
     def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
-        return (
-            f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
-        )
+        return f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))})"
 
     return func
 
@@ -522,7 +520,7 @@ class MySQL(Dialect):
             exp.StrToTime: _str_to_date_sql,
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime")),
+            exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime", copy=True)),
             exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
@@ -556,12 +554,12 @@ class MySQL(Dialect):
 
         def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
             # MySQL requires simple literal values for its LIMIT clause.
-            expression = simplify_literal(expression)
+            expression = simplify_literal(expression.copy())
             return super().limit_sql(expression, top=top)
 
         def offset_sql(self, expression: exp.Offset) -> str:
             # MySQL requires simple literal values for its OFFSET clause.
-            expression = simplify_literal(expression)
+            expression = simplify_literal(expression.copy())
             return super().offset_sql(expression)
 
         def xor_sql(self, expression: exp.Xor) -> str:

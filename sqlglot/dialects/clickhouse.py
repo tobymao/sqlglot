@@ -355,6 +355,7 @@ class ClickHouse(Dialect):
 
         def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
             # Clickhouse errors out if we try to cast a NULL value to TEXT
+            expression = expression.copy()
             return self.func(
                 "CONCAT",
                 *[
@@ -389,11 +390,7 @@ class ClickHouse(Dialect):
         def oncluster_sql(self, expression: exp.OnCluster) -> str:
             return f"ON CLUSTER {self.sql(expression, 'this')}"
 
-        def createable_sql(
-            self,
-            expression: exp.Create,
-            locations: dict[exp.Properties.Location, list[exp.Property]],
-        ) -> str:
+        def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             kind = self.sql(expression, "kind").upper()
             if kind in self.ON_CLUSTER_TARGETS and locations.get(exp.Properties.Location.POST_NAME):
                 this_name = self.sql(expression.this, "this")
@@ -402,4 +399,5 @@ class ClickHouse(Dialect):
                 )
                 this_schema = self.schema_columns_sql(expression.this)
                 return f"{this_name}{self.sep()}{this_properties}{self.sep()}{this_schema}"
+
             return super().createable_sql(expression, locations)

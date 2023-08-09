@@ -879,6 +879,11 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
         self._prev_token_line = self._line
+
+        if self._comments and token_type == TokenType.SEMICOLON and self.tokens:
+            self.tokens[-1].comments.extend(self._comments)
+            self._comments = []
+
         self.tokens.append(
             Token(
                 token_type,

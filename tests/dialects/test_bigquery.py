@@ -115,8 +115,8 @@ class TestBigQuery(Validator):
             'SELECT TIMESTAMP_ADD(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
             write={
                 "bigquery": "SELECT TIMESTAMP_ADD(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL 10 MINUTE)",
-                "hive": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) + INTERVAL 10 MINUTE",
-                "spark": "SELECT CAST('2008-12-25 15:30:00+00' AS TIMESTAMP) + INTERVAL 10 MINUTE",
+                "databricks": "SELECT DATEADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "spark": "SELECT DATEADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
             },
         )
         self.validate_all(

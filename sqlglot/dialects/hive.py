@@ -426,7 +426,6 @@ class Hive(Dialect):
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: _str_to_unix_sql,
             exp.StructExtract: struct_extract_sql,
-            exp.TimestampAdd: lambda self, e: f"{self.sql(e, 'this')} + {self.sql(exp.Interval(this=e.expression.copy(), unit=e.text('unit') or 'DAY'))}",
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),

@@ -248,7 +248,6 @@ class Parser(metaclass=_Parser):
         TokenType.FILTER,
         TokenType.FORMAT,
         TokenType.FULL,
-        TokenType.IF,
         TokenType.IS,
         TokenType.ISNULL,
         TokenType.INTERVAL,
@@ -1158,7 +1157,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_exists(self, not_: bool = False) -> t.Optional[bool]:
         return (
-            self._match(TokenType.IF)
+            self._match_text_seq("IF")
             and (not not_ or self._match(TokenType.NOT))
             and self._match(TokenType.EXISTS)
         )
@@ -3780,6 +3779,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_next_value_for(self) -> t.Optional[exp.Expression]:
         if not self._match_text_seq("VALUE", "FOR"):
+            self._retreat(self._index - 1)
             return None
 
         return self.expression(

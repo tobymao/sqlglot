@@ -284,7 +284,11 @@ class Hive(Dialect):
             ),
         }
 
-        def _parse_transform(self) -> exp.Transform | exp.QueryTransform:
+        def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:
+            if not self._match(TokenType.L_PAREN, advance=False):
+                self._retreat(self._index - 1)
+                return None
+
             args = self._parse_wrapped_csv(self._parse_lambda)
             row_format_before = self._parse_row_format(match_row=True)
 

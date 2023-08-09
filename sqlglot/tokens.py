@@ -216,7 +216,6 @@ class TokenType(AutoName):
     GROUPING_SETS = auto()
     HAVING = auto()
     HINT = auto()
-    IF = auto()
     IGNORE = auto()
     ILIKE = auto()
     ILIKE_ANY = auto()
@@ -564,7 +563,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
-        "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,

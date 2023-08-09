@@ -219,6 +219,9 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("WITH cte AS (SELECT * FROM x)")
 
+        with self.assertRaises(ParseError):
+            parse_one("SELECT foo( FROM bar")
+
         self.assertEqual(
             parse_one(
                 "CREATE TABLE t (i UInt8) ENGINE = AggregatingMergeTree() ORDER BY tuple()",

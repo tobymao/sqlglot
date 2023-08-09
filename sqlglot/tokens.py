@@ -249,7 +249,6 @@ class TokenType(AutoName):
     MOD = auto()
     NATURAL = auto()
     NEXT = auto()
-    NEXT_VALUE_FOR = auto()
     NOTNULL = auto()
     NULL = auto()
     OFFSET = auto()
@@ -588,7 +587,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
-        "NEXT VALUE FOR": TokenType.NEXT_VALUE_FOR,
         "NOT": TokenType.NOT,
         "NOTNULL": TokenType.NOTNULL,
         "NULL": TokenType.NULL,

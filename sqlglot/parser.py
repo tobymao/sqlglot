@@ -708,14 +708,10 @@ class Parser(metaclass=_Parser):
     SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE"}
 
     NO_PAREN_FUNCTION_PARSERS = {
-        TokenType.ANY: lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
-        TokenType.CASE: lambda self: self._parse_case(),
-        TokenType.IF: lambda self: self._parse_if(),
-        TokenType.NEXT_VALUE_FOR: lambda self: self.expression(
-            exp.NextValueFor,
-            this=self._parse_column(),
-            order=self._match(TokenType.OVER) and self._parse_wrapped(self._parse_order),
-        ),
+        "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
+        "CASE": lambda self: self._parse_case(),
+        "IF": lambda self: self._parse_if(),
+        "NEXT": lambda self: self._parse_next_value_for(),
     }
 
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
@@ -3329,9 +3325,13 @@ class Parser(metaclass=_Parser):
             return None
 
         token_type = self._curr.token_type
+        this = self._curr.text
+        upper = this.upper()
 
-        if optional_parens and self._match_set(self.NO_PAREN_FUNCTION_PARSERS):
-            return self.NO_PAREN_FUNCTION_PARSERS[token_type](self)
+        parser = self.NO_PAREN_FUNCTION_PARSERS.get(upper)
+        if optional_parens and parser:
+            self._advance()
+            return parser(self)
 
         if not self._next or self._next.token_type != TokenType.L_PAREN:
             if optional_parens and token_type in self.NO_PAREN_FUNCTIONS:
@@ -3343,12 +3343,9 @@ class Parser(metaclass=_Parser):
         if token_type not in self.FUNC_TOKENS:
             return None
 
-        this = self._curr.text
-        upper = this.upper()
         self._advance(2)
 
         parser = self.FUNCTION_PARSERS.get(upper)
-
         if parser and not anonymous:
             this = parser(self)
         else:
@@ -3375,7 +3372,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
-        self._match(TokenType.R_PAREN, expression=this)
+        self._match_r_paren(this)
         return self._parse_window(this)
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
@@ -3780,6 +3777,16 @@ class Parser(metaclass=_Parser):
             this = self.expression(exp.If, this=condition, true=true, false=false)
 
         return self._parse_window(this)
+
+    def _parse_next_value_for(self) -> t.Optional[exp.Expression]:
+        if not self._match_text_seq("VALUE", "FOR"):
+            return None
+
+        return self.expression(
+            exp.NextValueFor,
+            this=self._parse_column(),
+            order=self._match(TokenType.OVER) and self._parse_wrapped(self._parse_order),
+        )
 
     def _parse_extract(self) -> exp.Extract:
         this = self._parse_function() or self._parse_var() or self._parse_type()

@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    parse_timestamp_trunc,
     rename_func,
     simplify_literal,
     str_position_sql,
@@ -286,9 +287,7 @@ class Postgres(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
-                this=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
+            "DATE_TRUNC": parse_timestamp_trunc,
             "GENERATE_SERIES": _generate_series,
             "NOW": exp.CurrentTimestamp.from_arg_list,
             "TO_CHAR": format_time_lambda(exp.TimeToStr, "postgres"),

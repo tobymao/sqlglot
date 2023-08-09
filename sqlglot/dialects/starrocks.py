@@ -4,6 +4,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
+    parse_timestamp_trunc,
     rename_func,
 )
 from sqlglot.dialects.mysql import MySQL
@@ -14,9 +15,7 @@ class StarRocks(MySQL):
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
-            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
-                this=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
+            "DATE_TRUNC": parse_timestamp_trunc,
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
             ),

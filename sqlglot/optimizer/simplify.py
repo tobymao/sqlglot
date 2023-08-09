@@ -436,7 +436,6 @@ CONSTANTS = (
     exp.Literal,
     exp.Boolean,
     exp.Null,
-    exp.Date,
 )
 
 

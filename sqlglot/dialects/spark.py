@@ -52,6 +52,9 @@ class Spark(Spark2):
         TRANSFORMS = {
             **Spark2.Generator.TRANSFORMS,
             exp.StartsWith: rename_func("STARTSWITH"),
+            exp.TimestampAdd: lambda self, e: self.func(
+                "DATEADD", e.args.get("unit") or "DAY", e.expression, e.this
+            ),
         }
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)

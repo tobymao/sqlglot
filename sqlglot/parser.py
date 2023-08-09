@@ -1165,6 +1165,8 @@ class Parser(metaclass=_Parser):
     def _parse_create(self) -> exp.Create | exp.Command:
         # Note: this can't be None because we've matched a statement parser
         start = self._prev
+        comments = self._prev_comments
+
         replace = start.text.upper() == "REPLACE" or self._match_pair(
             TokenType.OR, TokenType.REPLACE
         )
@@ -1273,6 +1275,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Create,
+            comments=comments,
             this=this,
             kind=create_token.text,
             replace=replace,

@@ -90,6 +90,7 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
+        self.validate("SELECT\n  foo\n/* comments */\n;", "SELECT foo /* comments */")
         self.validate(
             "SELECT * FROM a INNER /* comments */ JOIN b",
             "SELECT * FROM a /* comments */ INNER JOIN b",
@@ -320,6 +321,7 @@ DROP TABLE IF EXISTS db.tba""",
         )
         self.validate(
             """
+            -- comment4
             CREATE TABLE db.tba AS
             SELECT a, b, c
             FROM tb_01
@@ -328,8 +330,10 @@ DROP TABLE IF EXISTS db.tba""",
               a = 1 AND b = 2 --comment6
               -- and c = 1
             -- comment7
+            ;
             """,
-            """CREATE TABLE db.tba AS
+            """/* comment4 */
+CREATE TABLE db.tba AS
 SELECT
   a,
   b,

@@ -17,6 +17,7 @@ class TestTokens(unittest.TestCase):
             ("foo /*comment 1*/ /*comment 2*/", ["comment 1", "comment 2"]),
             ("foo\n-- comment", [" comment"]),
             ("1 /*/2 */", ["/2 "]),
+            ("1\n/*comment*/;", ["comment"]),
         ]
 
         for sql, comment in sql_comment:

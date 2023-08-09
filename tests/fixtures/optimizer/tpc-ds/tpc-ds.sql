@@ -10833,9 +10833,11 @@ LEFT JOIN "ws"
   AND "ws"."ws_item_sk" = "ss"."ss_item_sk"
   AND "ws"."ws_sold_year" = "ss"."ss_sold_year"
 WHERE
-  "ss"."ss_sold_year" = 1999
-  AND COALESCE("cs"."cs_qty", 0) > 0
-  AND COALESCE("ws"."ws_qty", 0) > 0
+  "cs"."cs_qty" > 0
+  AND "ss"."ss_sold_year" = 1999
+  AND "ws"."ws_qty" > 0
+  AND NOT "cs"."cs_qty" IS NULL
+  AND NOT "ws"."ws_qty" IS NULL
 ORDER BY
   "ss_item_sk",
   "ss"."ss_qty" DESC,

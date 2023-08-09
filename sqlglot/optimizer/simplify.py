@@ -66,6 +66,7 @@ def simplify(expression):
         node.parent = expression.parent
         node = simplify_literals(node, root)
         node = simplify_parens(node)
+        node = simplify_coalesce(node)
         if root:
             expression.replace(node)
         return node
@@ -184,6 +185,7 @@ COMPARISONS = (
     *GT_GTE,
     exp.EQ,
     exp.NEQ,
+    exp.Is,
 )
 
 INVERSE_COMPARISONS = {
@@ -427,6 +429,74 @@ def simplify_parens(expression):
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
     ):
         return expression.this
+    return expression
+
+
+CONSTANTS = (
+    exp.Literal,
+    exp.Boolean,
+    exp.Null,
+    exp.Date,
+)
+
+
+def simplify_coalesce(expression):
+    # COALESCE(x) -> x
+    if (
+        isinstance(expression, exp.Coalesce)
+        and not expression.expressions
+        # COALESCE is also used as a Spark partitioning hint
+        and not isinstance(expression.parent, exp.Hint)
+    ):
+        return expression.this
+
+    if not isinstance(expression, COMPARISONS):
+        return expression
+
+    if isinstance(expression.left, exp.Coalesce):
+        coalesce = expression.left
+        other = expression.right
+    elif isinstance(expression.right, exp.Coalesce):
+        coalesce = expression.right
+        other = expression.left
+    else:
+        return expression
+
+    # COALESCE(x, y, z)
+    #                ^ grab that guy
+    coalesce_args = coalesce.expressions
+    if coalesce_args:
+        rightmost_arg = coalesce_args[-1]
+    else:
+        return expression
+
+    # 'COALESCE(x, 1) = 2' ->
+    #     '(
+    #         NOT COALESCE(x) IS NULL
+    #         AND COALESCE(x) = 2
+    #      )
+    #      OR (
+    #          COALESCE(x) IS NULL
+    #          AND 1 = 2
+    #      )
+    # This may seem more complex, but subsequent simplify steps will further reduce this.
+    #
+    # This transformation is valid for non-constants,
+    # but I think it really only does anything if they are both constants.
+    if isinstance(rightmost_arg, CONSTANTS) and isinstance(other, CONSTANTS):
+        rightmost_arg.pop()
+
+        return exp.or_(
+            exp.and_(
+                coalesce.copy().is_(exp.null()).not_(),
+                expression.copy(),
+            ),
+            exp.and_(
+                coalesce.copy().is_(exp.null()),
+                type(expression)(this=rightmost_arg.copy(), expression=other.copy()),
+            ),
+        )
+
     return expression
 
 

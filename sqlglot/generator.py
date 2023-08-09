@@ -271,10 +271,12 @@ class Generator:
 
     # Expressions whose comments are separated from them for better formatting
     WITH_SEPARATED_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
+        exp.Create,
         exp.Delete,
         exp.Drop,
         exp.From,
         exp.Insert,
+        exp.Join,
         exp.Select,
         exp.Update,
         exp.Where,

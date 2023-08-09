@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v17.10.2] - 2023-08-09
+### :sparkles: New Features
+- [`12a66dd`](https://github.com/tobymao/sqlglot/commit/12a66dd6879df0e9b242036ae5058ddbd01a39bb) - parse alias in tuples *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`7ccfd35`](https://github.com/tobymao/sqlglot/commit/7ccfd352acda6061fd712bb7d778c8e853a10a22) - **optimizer**: don't parse str argument in normalize_identifiers *(PR [#2010](https://github.com/tobymao/sqlglot/pull/2010) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v17.10.1] - 2023-08-08
 ### :bug: Bug Fixes
 - [`f6fe54a`](https://github.com/tobymao/sqlglot/commit/f6fe54a535ae1d985c9f298afa1fc77f14a9943e) - **optimizer**: wrap expanded alias expressions *(PR [#2004](https://github.com/tobymao/sqlglot/pull/2004) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1049,3 +1057,4 @@ Changelog
 [v17.9.1]: https://github.com/tobymao/sqlglot/compare/v17.9.0...v17.9.1
 [v17.10.0]: https://github.com/tobymao/sqlglot/compare/v17.9.1...v17.10.0
 [v17.10.1]: https://github.com/tobymao/sqlglot/compare/v17.10.0...v17.10.1
+[v17.10.2]: https://github.com/tobymao/sqlglot/compare/v17.10.1...v17.10.2

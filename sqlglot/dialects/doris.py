@@ -12,7 +12,7 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 
 
-def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
+def _to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -> str:
     this = self.sql(expression, "this")
     self.format_time(expression)
     return f"TO_DATE({this})"
@@ -59,6 +59,7 @@ class Doris(MySQL):
             "DATE_TRUNC": lambda args: exp.TimestampTrunc(
                 this=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "REGEXP": exp.RegexpLike.from_arg_list,
         }
 
     class Generator(MySQL.Generator):
@@ -74,38 +75,31 @@ class Doris(MySQL):
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.ArrayAgg: rename_func("COLLECT_LIST"),
+            exp.Coalesce: rename_func("NVL"),
+            exp.CurrentTimestamp: lambda *_: "NOW()",
+            exp.DateTrunc: lambda self, e: self.func(
+                "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
+            ),
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
-            exp.DateDiff: rename_func("DATEDIFF"),
             exp.RegexpLike: rename_func("REGEXP"),
-            exp.Coalesce: rename_func("NVL"),
-            exp.CurrentTimestamp: lambda self, e: "NOW()",
-            exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.ToChar: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
+            exp.SetAgg: rename_func("COLLECT_SET"),
             exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.TimestampTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
-            ),
+            exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.TimeStrToDate: rename_func("TO_DATE"),
+            exp.ToChar: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",# Only for day level
+            exp.TsOrDsToDate: _to_date_sql,
+            exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
+            exp.TimestampTrunc: lambda self, e: self.func(
+                "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
+            ),
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, _time_format(self, e)
             ),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
-            exp.ArrayAgg: rename_func("COLLECT_LIST"),
-            exp.SetAgg: rename_func("COLLECT_SET"),
-            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",  # Only for day level
-            exp.TsOrDsToDate: _to_date_sql,
             exp.Map: rename_func("ARRAY_MAP"),
-            exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
-            exp.Split: rename_func("SPLIT_BY_STRING"),
-            exp.Quantile: rename_func("PERCENTILE"),
-            exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
-            exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.DateTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
-            ),
-            exp.TimestampTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
-            ),
         }

@@ -723,3 +723,24 @@ class TestExecutor(unittest.TestCase):
                 result = execute(sql, tables=tables)
                 self.assertEqual(result.columns, columns)
                 self.assertEqual(result.rows, expected)
+
+    def test_dict_values(self):
+        tables = {
+            "foo": [{"raw": {"name": "Hello, World"}}],
+        }
+        result = execute("SELECT raw:name AS name FROM foo", read="snowflake", tables=tables)
+
+        self.assertEqual(result.columns, ("NAME",))
+        self.assertEqual(result.rows, [("Hello, World",)])
+
+        tables = {
+            '"ITEM"': [
+                {"id": 1, "attributes": {"flavor": "cherry", "taste": "sweet"}},
+                {"id": 2, "attributes": {"flavor": "lime", "taste": "sour"}},
+                {"id": 3, "attributes": {"flavor": "apple", "taste": None}},
+            ]
+        }
+        result = execute("SELECT i.attributes.flavor FROM `ITEM` i", read="bigquery", tables=tables)
+
+        self.assertEqual(result.columns, ("flavor",))
+        self.assertEqual(result.rows, [("cherry",), ("lime",), ("apple",)])

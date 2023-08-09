@@ -90,6 +90,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
+                "doris": "CAST(a AS STRING)",
             },
         )
         self.validate_all(
@@ -169,6 +170,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
+                "doris": "CAST(a AS STRING)",
             },
         )
         self.validate_all(
@@ -186,6 +188,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS VARCHAR)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS VARCHAR)",
+                "doris": "CAST(a AS VARCHAR)",
             },
         )
         self.validate_all(
@@ -203,6 +206,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS VARCHAR(3))",
                 "spark": "CAST(a AS VARCHAR(3))",
                 "starrocks": "CAST(a AS VARCHAR(3))",
+                "doris": "CAST(a AS VARCHAR(3))",
             },
         )
         self.validate_all(
@@ -221,6 +225,7 @@ class TestDialect(Validator):
                 "spark": "CAST(a AS SMALLINT)",
                 "sqlite": "CAST(a AS INTEGER)",
                 "starrocks": "CAST(a AS SMALLINT)",
+                "doris": "CAST(a AS SMALLINT)",
             },
         )
         self.validate_all(
@@ -234,6 +239,7 @@ class TestDialect(Validator):
                 "drill": "CAST(a AS DOUBLE)",
                 "postgres": "CAST(a AS DOUBLE PRECISION)",
                 "redshift": "CAST(a AS DOUBLE PRECISION)",
+                "doris": "CAST(a AS DOUBLE)",
             },
         )
 
@@ -267,6 +273,7 @@ class TestDialect(Validator):
             write={
                 "starrocks": "CAST(a AS DATETIME)",
                 "redshift": "CAST(a AS TIMESTAMP)",
+                "doris": "CAST(a AS DATETIME)",
             },
         )
         self.validate_all(
@@ -274,6 +281,7 @@ class TestDialect(Validator):
             write={
                 "starrocks": "CAST(a AS DATETIME)",
                 "redshift": "CAST(a AS TIMESTAMPTZ)",
+                "doris": "CAST(a AS DATETIME)",
             },
         )
         self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS NUMBER)"})
@@ -408,6 +416,7 @@ class TestDialect(Validator):
                 "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-mm-dd')",
                 "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%i-%d'))",
                 "starrocks": "UNIX_TIMESTAMP('2020-01-01', '%Y-%i-%d')",
+                "doris": "UNIX_TIMESTAMP('2020-01-01', '%Y-%M-%d')",
             },
         )
         self.validate_all(
@@ -418,6 +427,7 @@ class TestDialect(Validator):
                 "hive": "TO_DATE('2020-01-01')",
                 "presto": "CAST('2020-01-01' AS TIMESTAMP)",
                 "starrocks": "TO_DATE('2020-01-01')",
+                "doris": "TO_DATE('2020-01-01')",
             },
         )
         self.validate_all(
@@ -428,6 +438,7 @@ class TestDialect(Validator):
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "presto": "CAST('2020-01-01' AS TIMESTAMP)",
                 "sqlite": "'2020-01-01'",
+                "doris": "CAST('2020-01-01' AS DATETIME)",
             },
         )
         self.validate_all(
@@ -437,6 +448,7 @@ class TestDialect(Validator):
                 "hive": "UNIX_TIMESTAMP('2020-01-01')",
                 "mysql": "UNIX_TIMESTAMP('2020-01-01')",
                 "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d %T'))",
+                "doris": "UNIX_TIMESTAMP('2020-01-01')",
             },
         )
         self.validate_all(
@@ -449,6 +461,7 @@ class TestDialect(Validator):
                 "postgres": "TO_CHAR(x, 'YYYY-MM-DD')",
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d')",
                 "redshift": "TO_CHAR(x, 'YYYY-MM-DD')",
+                "doris": "DATE_FORMAT(x, '%Y-%m-%d')",
             },
         )
         self.validate_all(
@@ -459,6 +472,7 @@ class TestDialect(Validator):
                 "hive": "CAST(x AS STRING)",
                 "presto": "CAST(x AS VARCHAR)",
                 "redshift": "CAST(x AS VARCHAR(MAX))",
+                "doris": "CAST(x AS STRING)",
             },
         )
         self.validate_all(
@@ -468,6 +482,7 @@ class TestDialect(Validator):
                 "duckdb": "EPOCH(x)",
                 "hive": "UNIX_TIMESTAMP(x)",
                 "presto": "TO_UNIXTIME(x)",
+                "doris": "UNIX_TIMESTAMP(x)",
             },
         )
         self.validate_all(
@@ -476,6 +491,7 @@ class TestDialect(Validator):
                 "duckdb": "SUBSTRING(CAST(x AS TEXT), 1, 10)",
                 "hive": "SUBSTRING(CAST(x AS STRING), 1, 10)",
                 "presto": "SUBSTRING(CAST(x AS VARCHAR), 1, 10)",
+                "doris": "SUBSTRING(CAST(x AS STRING), 1, 10)",
             },
         )
         self.validate_all(
@@ -487,6 +503,7 @@ class TestDialect(Validator):
                 "postgres": "CAST(x AS DATE)",
                 "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
                 "snowflake": "CAST(x AS DATE)",
+                "doris": "TO_DATE(x)",
             },
         )
         self.validate_all(
@@ -505,6 +522,7 @@ class TestDialect(Validator):
                 "hive": "FROM_UNIXTIME(x, y)",
                 "presto": "DATE_FORMAT(FROM_UNIXTIME(x), y)",
                 "starrocks": "FROM_UNIXTIME(x, y)",
+                "doris": "FROM_UNIXTIME(x, y)",
             },
         )
         self.validate_all(
@@ -516,6 +534,7 @@ class TestDialect(Validator):
                 "postgres": "TO_TIMESTAMP(x)",
                 "presto": "FROM_UNIXTIME(x)",
                 "starrocks": "FROM_UNIXTIME(x)",
+                "doris": "FROM_UNIXTIME(x)",
             },
         )
         self.validate_all(
@@ -582,6 +601,7 @@ class TestDialect(Validator):
                 "sqlite": "DATE(x, '1 DAY')",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "tsql": "DATEADD(DAY, 1, x)",
+                "doris": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
         )
         self.validate_all(
@@ -595,6 +615,7 @@ class TestDialect(Validator):
                 "presto": "DATE_ADD('day', 1, x)",
                 "spark": "DATE_ADD(x, 1)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
+                "doris": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
         )
         self.validate_all(
@@ -612,6 +633,7 @@ class TestDialect(Validator):
                 "snowflake": "DATE_TRUNC('day', x)",
                 "starrocks": "DATE_TRUNC('day', x)",
                 "spark": "TRUNC(x, 'day')",
+                "doris": "DATE_TRUNC(x, 'day')",
             },
         )
         self.validate_all(
@@ -624,6 +646,7 @@ class TestDialect(Validator):
                 "snowflake": "DATE_TRUNC('day', x)",
                 "starrocks": "DATE_TRUNC('day', x)",
                 "spark": "DATE_TRUNC('day', x)",
+                "doris": "DATE_TRUNC('day', x)",
             },
         )
         self.validate_all(
@@ -684,6 +707,7 @@ class TestDialect(Validator):
                 "snowflake": "DATE_TRUNC('year', x)",
                 "starrocks": "DATE_TRUNC('year', x)",
                 "spark": "TRUNC(x, 'year')",
+                "doris": "DATE_TRUNC(x, 'year')",
             },
         )
         self.validate_all(
@@ -698,6 +722,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "TIMESTAMP_TRUNC(x, year)",
                 "spark": "DATE_TRUNC('year', x)",
+                "doris": "DATE_TRUNC(x, 'year')",
             },
         )
         self.validate_all(
@@ -719,6 +744,7 @@ class TestDialect(Validator):
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%T') AS DATE)",
                 "spark": "TO_DATE(x, 'yyyy-MM-ddTHH:mm:ss')",
+                "doris": "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
             },
         )
         self.validate_all(
@@ -730,6 +756,7 @@ class TestDialect(Validator):
                 "hive": "CAST(x AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
                 "spark": "TO_DATE(x)",
+                "doris": "STR_TO_DATE(x, '%Y-%m-%d')",
             },
         )
         self.validate_all(
@@ -784,6 +811,7 @@ class TestDialect(Validator):
                 "mysql": "CAST('2022-01-01' AS TIMESTAMP)",
                 "starrocks": "CAST('2022-01-01' AS DATETIME)",
                 "hive": "CAST('2022-01-01' AS TIMESTAMP)",
+                "doris": "CAST('2022-01-01' AS DATETIME)",
             },
         )
         self.validate_all(
@@ -792,6 +820,7 @@ class TestDialect(Validator):
                 "mysql": "TIMESTAMP('2022-01-01')",
                 "starrocks": "TIMESTAMP('2022-01-01')",
                 "hive": "TIMESTAMP('2022-01-01')",
+                "doris": "TIMESTAMP('2022-01-01')",
             },
         )
 
@@ -807,6 +836,7 @@ class TestDialect(Validator):
                         "mysql",
                         "presto",
                         "starrocks",
+                        "doris",
                     )
                 },
                 write={
@@ -820,6 +850,7 @@ class TestDialect(Validator):
                         "hive",
                         "spark",
                         "starrocks",
+                        "doris",
                     )
                 },
             )
@@ -886,6 +917,7 @@ class TestDialect(Validator):
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
                 "starrocks": "x -> 'y'",
+                "doris": "x -> 'y'",
             },
             write={
                 "mysql": "JSON_EXTRACT(x, 'y')",
@@ -893,6 +925,7 @@ class TestDialect(Validator):
                 "postgres": "x -> 'y'",
                 "presto": "JSON_EXTRACT(x, 'y')",
                 "starrocks": "x -> 'y'",
+                "doris": "x -> 'y'",
             },
         )
         self.validate_all(
@@ -1115,6 +1148,7 @@ class TestDialect(Validator):
                 "sqlite": "LOWER(x) LIKE '%y'",
                 "starrocks": "LOWER(x) LIKE '%y'",
                 "trino": "LOWER(x) LIKE '%y'",
+                "doris": "LOWER(x) LIKE '%y'",
             },
         )
         self.validate_all(

@@ -272,8 +272,8 @@ class Hive(Dialect):
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 
-        FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
             "TRANSFORM": lambda self: self._parse_transform(),
         }
 
@@ -284,10 +284,12 @@ class Hive(Dialect):
             ),
         }
 
-        def _parse_transform(self) -> exp.Transform | exp.QueryTransform:
-            args = self._parse_csv(self._parse_lambda)
-            self._match_r_paren()
+        def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:
+            if not self._match(TokenType.L_PAREN, advance=False):
+                self._retreat(self._index - 1)
+                return None
 
+            args = self._parse_wrapped_csv(self._parse_lambda)
             row_format_before = self._parse_row_format(match_row=True)
 
             record_writer = None

@@ -390,6 +390,7 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("SELECT transform")
         self.validate_identity("SELECT * FROM test DISTRIBUTE BY y SORT BY x DESC ORDER BY l")
         self.validate_identity(
             "SELECT * FROM test WHERE RAND() <= 0.1 DISTRIBUTE BY RAND() SORT BY RAND()"

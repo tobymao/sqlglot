@@ -216,7 +216,6 @@ class TokenType(AutoName):
     GROUPING_SETS = auto()
     HAVING = auto()
     HINT = auto()
-    IF = auto()
     IGNORE = auto()
     ILIKE = auto()
     ILIKE_ANY = auto()
@@ -249,7 +248,6 @@ class TokenType(AutoName):
     MOD = auto()
     NATURAL = auto()
     NEXT = auto()
-    NEXT_VALUE_FOR = auto()
     NOTNULL = auto()
     NULL = auto()
     OFFSET = auto()
@@ -565,7 +563,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "GROUP BY": TokenType.GROUP_BY,
         "GROUPING SETS": TokenType.GROUPING_SETS,
         "HAVING": TokenType.HAVING,
-        "IF": TokenType.IF,
         "ILIKE": TokenType.ILIKE,
         "IN": TokenType.IN,
         "INDEX": TokenType.INDEX,
@@ -588,7 +585,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "MERGE": TokenType.MERGE,
         "NATURAL": TokenType.NATURAL,
         "NEXT": TokenType.NEXT,
-        "NEXT VALUE FOR": TokenType.NEXT_VALUE_FOR,
         "NOT": TokenType.NOT,
         "NOTNULL": TokenType.NOTNULL,
         "NULL": TokenType.NULL,

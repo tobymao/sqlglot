@@ -853,3 +853,4 @@ SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1)
 /* comment1 */ INSERT INTO x /* comment2 */ VALUES (1, 2, 3)
 /* comment1 */ UPDATE tbl /* comment2 */ SET x = 2 WHERE x < 2
 /* comment1 */ DELETE FROM x /* comment2 */ WHERE y > 1
+SELECT next, transform, if

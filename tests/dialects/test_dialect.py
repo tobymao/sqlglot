@@ -410,13 +410,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "STR_TO_UNIX('2020-01-01', '%Y-%M-%d')",
+            "STR_TO_UNIX('2020-01-01', '%Y-%m-%d')",
             write={
-                "duckdb": "EPOCH(STRPTIME('2020-01-01', '%Y-%M-%d'))",
-                "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-mm-dd')",
-                "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%i-%d'))",
-                "starrocks": "UNIX_TIMESTAMP('2020-01-01', '%Y-%i-%d')",
-                "doris": "UNIX_TIMESTAMP('2020-01-01', '%Y-%M-%d')",
+                "duckdb": "EPOCH(STRPTIME('2020-01-01', '%Y-%m-%d'))",
+                "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
+                "presto": "TO_UNIXTIME(DATE_PARSE('2020-01-01', '%Y-%m-%d'))",
+                "starrocks": "UNIX_TIMESTAMP('2020-01-01', '%Y-%m-%d')",
+                "doris": "UNIX_TIMESTAMP('2020-01-01', '%Y-%m-%d')",
             },
         )
         self.validate_all(

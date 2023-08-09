@@ -16,9 +16,6 @@ class Doris(MySQL):
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
-    TIME_MAPPING = MySQL.TIME_MAPPING.copy()
-    TIME_MAPPING.pop("%i")
-
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,

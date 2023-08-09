@@ -461,6 +461,20 @@ def format_time_lambda(
     return _format_time
 
 
+def time_format(
+    dialect: DialectType = None,
+) -> t.Callable[[Generator, exp.UnixToStr | exp.StrToUnix], t.Optional[str]]:
+    def _time_format(self: Generator, expression: exp.UnixToStr | exp.StrToUnix) -> t.Optional[str]:
+        """
+        Returns the time format for a given expression, unless it's equivalent
+        to the default time format of the dialect of interest.
+        """
+        time_format = self.format_time(expression)
+        return time_format if time_format != Dialect.get_or_raise(dialect).TIME_FORMAT else None
+
+    return _time_format
+
+
 def create_with_partitions_sql(self: Generator, expression: exp.Create) -> str:
     """
     In Hive and Spark, the PARTITIONED BY property acts as an extension of a table's schema. When the
@@ -700,3 +714,8 @@ def simplify_literal(expression: E) -> E:
 
 def binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:
     return lambda args: expr_type(this=seq_get(args, 0), expression=seq_get(args, 1))
+
+
+# Used to represent DATE_TRUNC in Doris, Postgres and Starrocks dialects
+def parse_timestamp_trunc(args: t.List) -> exp.TimestampTrunc:
+    return exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0))

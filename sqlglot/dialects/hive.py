@@ -59,7 +59,7 @@ def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateS
     if expression.expression.is_number:
         modified_increment = exp.Literal.number(int(expression.text("expression")) * multiplier)
     else:
-        modified_increment = expression.expression
+        modified_increment = expression.expression.copy()
         if multiplier != 1:
             modified_increment = exp.Mul(  # type: ignore
                 this=modified_increment, expression=exp.Literal.number(multiplier)

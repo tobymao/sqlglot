@@ -347,7 +347,9 @@ def inline_array_sql(self: Generator, expression: exp.Array) -> str:
 
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
     return self.like_sql(
-        exp.Like(this=exp.Lower(this=expression.this), expression=expression.expression)
+        exp.Like(
+            this=exp.Lower(this=expression.this.copy()), expression=expression.expression.copy()
+        )
     )
 
 
@@ -411,7 +413,7 @@ def str_position_sql(self: Generator, expression: exp.StrPosition) -> str:
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
     this = self.sql(expression, "this")
-    struct_key = self.sql(exp.Identifier(this=expression.expression, quoted=True))
+    struct_key = self.sql(exp.Identifier(this=expression.expression.copy(), quoted=True))
     return f"{this}.{struct_key}"
 
 
@@ -600,7 +602,7 @@ def count_if_to_sum(self: Generator, expression: exp.CountIf) -> str:
         cond = expression.this.expressions[0]
         self.unsupported("DISTINCT is not supported when converting COUNT_IF to SUM")
 
-    return self.func("sum", exp.func("if", cond, 1, 0))
+    return self.func("sum", exp.func("if", cond.copy(), 1, 0))
 
 
 def trim_sql(self: Generator, expression: exp.Trim) -> str:
@@ -637,6 +639,7 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
 
 
 def concat_to_dpipe_sql(self: Generator, expression: exp.Concat | exp.SafeConcat) -> str:
+    expression = expression.copy()
     this, *rest_args = expression.expressions
     for arg in rest_args:
         this = exp.DPipe(this=this, expression=arg)
@@ -686,11 +689,10 @@ def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectTyp
     return names
 
 
-def simplify_literal(expression: E, copy: bool = True) -> E:
+def simplify_literal(expression: E) -> E:
     if not isinstance(expression.expression, exp.Literal):
         from sqlglot.optimizer.simplify import simplify
 
-        expression = exp.maybe_copy(expression, copy)
         simplify(expression.expression)
 
     return expression

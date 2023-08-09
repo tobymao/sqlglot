@@ -469,15 +469,16 @@ def simplify_coalesce(expression):
     else:
         return expression
 
-    # 'COALESCE(x, 1) = 2' ->
-    #     '(
-    #         NOT COALESCE(x) IS NULL
-    #         AND COALESCE(x) = 2
-    #      )
-    #      OR (
-    #          COALESCE(x) IS NULL
-    #          AND 1 = 2
-    #      )
+    # COALESCE(x, 1) = 2
+    # becomes
+    # (
+    #     NOT COALESCE(x) IS NULL
+    #     AND COALESCE(x) = 2
+    # )
+    # OR (
+    #     COALESCE(x) IS NULL
+    #     AND 1 = 2
+    # )
     # This may seem more complex, but subsequent simplify steps will further reduce this.
     #
     # This transformation is valid for non-constants,

@@ -97,19 +97,12 @@ class MySQL(Dialect):
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
-        "%m": "%m",
-        "%d": "%d",
-        "%Y": "%Y",
-        "%y": "%y",
-        "%H": "%H",
-        "%a": "%a",
         "%M": "%B",
         "%c": "%-m",
         "%e": "%-d",
         "%h": "%I",
         "%i": "%M",
         "%s": "%S",
-        "%S": "%S",
         "%u": "%W",
         "%k": "%-H",
         "%l": "%-I",

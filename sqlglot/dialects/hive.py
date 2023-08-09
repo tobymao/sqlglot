@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     right_to_substring_sql,
     strposition_to_locate_sql,
     struct_extract_sql,
+    time_format,
     timestrtotime_sql,
     var_map_sql,
 )
@@ -113,7 +114,7 @@ def _property_sql(self: generator.Generator, expression: exp.Property) -> str:
 
 
 def _str_to_unix_sql(self: generator.Generator, expression: exp.StrToUnix) -> str:
-    return self.func("UNIX_TIMESTAMP", expression.this, _time_format(self, expression))
+    return self.func("UNIX_TIMESTAMP", expression.this, time_format("hive")(self, expression))
 
 
 def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> str:
@@ -130,15 +131,6 @@ def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> st
     if time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS TIMESTAMP)"
-
-
-def _time_format(
-    self: generator.Generator, expression: exp.UnixToStr | exp.StrToUnix
-) -> t.Optional[str]:
-    time_format = self.format_time(expression)
-    if time_format == Hive.TIME_FORMAT:
-        return None
-    return time_format
 
 
 def _time_to_str(self: generator.Generator, expression: exp.TimeToStr) -> str:
@@ -439,7 +431,7 @@ class Hive(Dialect):
             exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToStr: lambda self, e: self.func(
-                "FROM_UNIXTIME", e.this, _time_format(self, e)
+                "FROM_UNIXTIME", e.this, time_format("hive")(self, e)
             ),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),

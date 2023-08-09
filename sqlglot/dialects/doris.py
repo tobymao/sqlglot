@@ -1,30 +1,14 @@
 from __future__ import annotations
 
-import typing as t
-
-from sqlglot import exp, generator
+from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
+    parse_timestamp_trunc,
     rename_func,
+    time_format,
 )
 from sqlglot.dialects.mysql import MySQL
-from sqlglot.helper import seq_get
-
-
-def _to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -> str:
-    this = self.sql(expression, "this")
-    self.format_time(expression)
-    return f"TO_DATE({this})"
-
-
-def _time_format(
-    self: generator.Generator, expression: exp.UnixToStr | exp.StrToUnix
-) -> t.Optional[str]:
-    time_format = self.format_time(expression)
-    if time_format == Doris.TIME_FORMAT:
-        return None
-    return time_format
 
 
 class Doris(MySQL):
@@ -33,32 +17,16 @@ class Doris(MySQL):
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 
     TIME_MAPPING = {
-        "%M": "%B",
-        "%m": "%%-M",
-        "%c": "%-m",
-        "%e": "%-d",
-        "%h": "%I",
-        "%S": "%S",
-        "%u": "%W",
-        "%k": "%-H",
-        "%l": "%-I",
-        "%W": "%a",
-        "%Y": "%Y",
-        "%d": "%%-d",
-        "%H": "%%-H",
-        "%s": "%%-S",
-        "%D": "%%-j",
-        "%a": "%%p",
-        "%y": "%%Y",
+        **MySQL.TIME_MAPPING,
         "%": "%%",
+        "%M": "%M",
     }
+    TIME_MAPPING.pop("%i")
 
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
-            "DATE_TRUNC": lambda args: exp.TimestampTrunc(
-                this=seq_get(args, 1), unit=seq_get(args, 0)
-            ),
+            "DATE_TRUNC": parse_timestamp_trunc,
             "REGEXP": exp.RegexpLike.from_arg_list,
         }
 
@@ -92,13 +60,12 @@ class Doris(MySQL):
             exp.ToChar: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",  # Only for day level
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
-            exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
             ),
             exp.UnixToStr: lambda self, e: self.func(
-                "FROM_UNIXTIME", e.this, _time_format(self, e)
+                "FROM_UNIXTIME", e.this, time_format("doris")(self, e)
             ),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
             exp.Map: rename_func("ARRAY_MAP"),

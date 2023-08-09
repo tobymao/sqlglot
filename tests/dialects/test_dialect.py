@@ -744,7 +744,7 @@ class TestDialect(Validator):
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%T') AS DATE)",
                 "spark": "TO_DATE(x, 'yyyy-MM-ddTHH:mm:ss')",
-                "doris": "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
+                "doris": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
             },
         )
         self.validate_all(

@@ -28,6 +28,11 @@ if t.TYPE_CHECKING:
     from sqlglot.schema import Schema
 
 
+PYTHON_TYPE_TO_SQLGLOT = {
+    "dict": "MAP",
+}
+
+
 def execute(
     sql: str | Expression,
     schema: t.Optional[t.Dict | Schema] = None,
@@ -50,7 +55,7 @@ def execute(
     Returns:
         Simple columnar data structure.
     """
-    tables_ = ensure_tables(tables)
+    tables_ = ensure_tables(tables, dialect=read)
 
     if not schema:
         schema = {}
@@ -61,7 +66,8 @@ def execute(
             assert table is not None
 
             for column in table.columns:
-                nested_set(schema, [*keys, column], type(table[0][column]).__name__)
+                py_type = type(table[0][column]).__name__
+                nested_set(schema, [*keys, column], PYTHON_TYPE_TO_SQLGLOT.get(py_type) or py_type)
 
     schema = ensure_schema(schema, dialect=read)
 

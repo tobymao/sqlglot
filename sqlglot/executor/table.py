@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
+from sqlglot.dialects.dialect import DialectType
 from sqlglot.helper import dict_depth
-from sqlglot.schema import AbstractMappingSchema
+from sqlglot.schema import AbstractMappingSchema, normalize_name
 
 
 class Table:
@@ -108,26 +109,37 @@ class Tables(AbstractMappingSchema[Table]):
     pass
 
 
-def ensure_tables(d: t.Optional[t.Dict]) -> Tables:
-    return Tables(_ensure_tables(d))
+def ensure_tables(d: t.Optional[t.Dict], dialect: DialectType = None) -> Tables:
+    return Tables(_ensure_tables(d, dialect=dialect))
 
 
-def _ensure_tables(d: t.Optional[t.Dict]) -> t.Dict:
+def _ensure_tables(d: t.Optional[t.Dict], dialect: DialectType = None) -> t.Dict:
     if not d:
         return {}
 
     depth = dict_depth(d)
-
     if depth > 1:
-        return {k: _ensure_tables(v) for k, v in d.items()}
+        return {
+            normalize_name(k, dialect=dialect, is_table=True): _ensure_tables(v, dialect=dialect)
+            for k, v in d.items()
+        }
 
     result = {}
-    for name, table in d.items():
+    for table_name, table in d.items():
+        table_name = normalize_name(table_name, dialect=dialect)
+
         if isinstance(table, Table):
-            result[name] = table
+            result[table_name] = table
         else:
-            columns = tuple(table[0]) if table else ()
-            rows = [tuple(row[c] for c in columns) for row in table]
-            result[name] = Table(columns=columns, rows=rows)
+            table = [
+                {
+                    normalize_name(column_name, dialect=dialect): value
+                    for column_name, value in row.items()
+                }
+                for row in table
+            ]
+            column_names = tuple(column_name for column_name in table[0]) if table else ()
+            rows = [tuple(row[name] for name in column_names) for row in table]
+            result[table_name] = Table(columns=column_names, rows=rows)
 
     return result

@@ -372,21 +372,12 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
         is_table: bool = False,
         normalize: t.Optional[bool] = None,
     ) -> str:
-        dialect = dialect or self.dialect
-        normalize = self.normalize if normalize is None else normalize
-
-        try:
-            identifier = sqlglot.maybe_parse(name, dialect=dialect, into=exp.Identifier)
-        except ParseError:
-            return name if isinstance(name, str) else name.name
-
-        name = identifier.name
-        if not normalize:
-            return name
-
-        # This can be useful for normalize_identifier
-        identifier.meta["is_table"] = is_table
-        return Dialect.get_or_raise(dialect).normalize_identifier(identifier).name
+        return normalize_name(
+            name,
+            dialect=dialect or self.dialect,
+            is_table=is_table,
+            normalize=self.normalize if normalize is None else normalize,
+        )
 
     def depth(self) -> int:
         if not self.empty and not self._depth:
@@ -416,6 +407,26 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
                 raise SchemaError(f"Failed to build type '{schema_type}'{in_dialect}.")
 
         return self._type_mapping_cache[schema_type]
+
+
+def normalize_name(
+    name: str | exp.Identifier,
+    dialect: DialectType = None,
+    is_table: bool = False,
+    normalize: t.Optional[bool] = True,
+) -> str:
+    try:
+        identifier = sqlglot.maybe_parse(name, dialect=dialect, into=exp.Identifier)
+    except ParseError:
+        return name if isinstance(name, str) else name.name
+
+    name = identifier.name
+    if not normalize:
+        return name
+
+    # This can be useful for normalize_identifier
+    identifier.meta["is_table"] = is_table
+    return Dialect.get_or_raise(dialect).normalize_identifier(identifier).name
 
 
 def ensure_schema(schema: Schema | t.Optional[t.Dict], **kwargs: t.Any) -> Schema:

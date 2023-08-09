@@ -399,7 +399,7 @@ class TestDuckDB(Validator):
                 "bigquery": "TIME_TO_STR(x, '%y-%-m-%S')",
                 "duckdb": "STRFTIME(x, '%y-%-m-%S')",
                 "postgres": "TO_CHAR(x, 'YY-FMMM-SS')",
-                "presto": "DATE_FORMAT(x, '%y-%c-%S')",
+                "presto": "DATE_FORMAT(x, '%y-%c-%s')",
                 "spark": "DATE_FORMAT(x, 'yy-M-ss')",
             },
         )

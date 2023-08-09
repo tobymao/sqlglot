@@ -2338,7 +2338,8 @@ class Parser(metaclass=_Parser):
 
             kwargs["this"].set("joins", joins)
 
-        return self.expression(exp.Join, **kwargs)
+        comments = [c for token in (method, side, kind) if token for c in token.comments]
+        return self.expression(exp.Join, comments=comments, **kwargs)
 
     def _parse_index(
         self,
@@ -3738,6 +3739,7 @@ class Parser(metaclass=_Parser):
         ifs = []
         default = None
 
+        comments = self._prev_comments
         expression = self._parse_conjunction()
 
         while self._match(TokenType.WHEN):
@@ -3753,7 +3755,7 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected END after CASE", self._prev)
 
         return self._parse_window(
-            self.expression(exp.Case, this=expression, ifs=ifs, default=default)
+            self.expression(exp.Case, comments=comments, this=expression, ifs=ifs, default=default)
         )
 
     def _parse_if(self) -> t.Optional[exp.Expression]:

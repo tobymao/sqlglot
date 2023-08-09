@@ -90,6 +90,18 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
+        self.validate(
+            "SELECT * FROM a INNER /* comments */ JOIN b",
+            "SELECT * FROM a /* comments */ INNER JOIN b",
+        )
+        self.validate(
+            "SELECT * FROM a LEFT /* comment 1 */ OUTER /* comment 2 */ JOIN b",
+            "SELECT * FROM a /* comment 1 */ /* comment 2 */ LEFT OUTER JOIN b",
+        )
+        self.validate(
+            "SELECT CASE /* test */ WHEN a THEN b ELSE c END",
+            "SELECT CASE WHEN a THEN b ELSE c END /* test */",
+        )
         self.validate("SELECT 1 /*/2 */", "SELECT 1 /* /2 */")
         self.validate("SELECT */*comment*/", "SELECT * /* comment */")
         self.validate(
@@ -327,6 +339,44 @@ WHERE
   a /* comment5 */ = 1 AND b = 2 /* comment6 */
   /* and c = 1 */
   /* comment7 */""",
+            pretty=True,
+        )
+        self.validate(
+            """
+            SELECT
+               -- This is testing comments
+                col,
+            -- 2nd testing comments
+            CASE WHEN a THEN b ELSE c END as d
+            FROM t
+            """,
+            """SELECT
+  col, /* This is testing comments */
+  CASE WHEN a THEN b ELSE c END /* 2nd testing comments */ AS d
+FROM t""",
+            pretty=True,
+        )
+        self.validate(
+            """
+            SELECT * FROM a
+            -- comments
+            INNER JOIN b
+            """,
+            """SELECT
+  *
+FROM a
+/* comments */
+INNER JOIN b""",
+            pretty=True,
+        )
+        self.validate(
+            "SELECT * FROM a LEFT /* comment 1 */ OUTER /* comment 2 */ JOIN b",
+            """SELECT
+  *
+FROM a
+/* comment 1 */
+/* comment 2 */
+LEFT OUTER JOIN b""",
             pretty=True,
         )
 

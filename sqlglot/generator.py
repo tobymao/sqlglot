@@ -275,6 +275,7 @@ class Generator:
         exp.Drop,
         exp.From,
         exp.Insert,
+        exp.Join,
         exp.Select,
         exp.Update,
         exp.Where,

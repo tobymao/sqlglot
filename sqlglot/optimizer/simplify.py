@@ -66,6 +66,7 @@ def simplify(expression):
         node.parent = expression.parent
         node = simplify_literals(node, root)
         node = simplify_parens(node)
+        node = simplify_coalesce(node)
         if root:
             expression.replace(node)
         return node
@@ -184,6 +185,7 @@ COMPARISONS = (
     *GT_GTE,
     exp.EQ,
     exp.NEQ,
+    exp.Is,
 )
 
 INVERSE_COMPARISONS = {
@@ -428,6 +430,66 @@ def simplify_parens(expression):
     ):
         return expression.this
     return expression
+
+
+CONSTANTS = (
+    exp.Literal,
+    exp.Boolean,
+    exp.Null,
+)
+
+
+def simplify_coalesce(expression):
+    # COALESCE(x) -> x
+    if (
+        isinstance(expression, exp.Coalesce)
+        and not expression.expressions
+        # COALESCE is also used as a Spark partitioning hint
+        and not isinstance(expression.parent, exp.Hint)
+    ):
+        return expression.this
+
+    if not isinstance(expression, COMPARISONS):
+        return expression
+
+    if isinstance(expression.left, exp.Coalesce):
+        coalesce = expression.left
+        other = expression.right
+    elif isinstance(expression.right, exp.Coalesce):
+        coalesce = expression.right
+        other = expression.left
+    else:
+        return expression
+
+    # This transformation is valid for non-constants,
+    # but it really only does anything if they are both constants.
+    if not isinstance(other, CONSTANTS):
+        return expression
+
+    # Find the first constant arg
+    for arg_index, arg in enumerate(coalesce.expressions):
+        if isinstance(arg, CONSTANTS):
+            break
+    else:
+        return expression
+
+    coalesce.set("expressions", coalesce.expressions[:arg_index])
+
+    # Remove the COALESCE function. This is an optimization, skipping a simplify iteration,
+    # since we already remove COALESCE at the top of this function.
+    coalesce = coalesce if coalesce.expressions else coalesce.this
+
+    # This expression is more complex than when we started, but it will get simplified further
+    return exp.or_(
+        exp.and_(
+            coalesce.is_(exp.null()).not_(),
+            expression,
+        ),
+        exp.and_(
+            coalesce.is_(exp.null()),
+            type(expression)(this=arg.copy(), expression=other.copy()),
+        ),
+    )
 
 
 def remove_where_true(expression):

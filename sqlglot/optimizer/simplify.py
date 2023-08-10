@@ -461,47 +461,35 @@ def simplify_coalesce(expression):
     else:
         return expression
 
-    # COALESCE(x, y, z)
-    #                ^ grab that guy
-    coalesce_args = coalesce.expressions
-    if coalesce_args:
-        rightmost_arg = coalesce_args[-1]
+    # This transformation is valid for non-constants,
+    # but it really only does anything if they are both constants.
+    if not isinstance(other, CONSTANTS):
+        return expression
+
+    # Find the first constant arg
+    for arg_index, arg in enumerate(coalesce.expressions):
+        if isinstance(arg, CONSTANTS):
+            break
     else:
         return expression
 
-    # COALESCE(x, 1) = 2
-    # becomes
-    # (
-    #     NOT COALESCE(x) IS NULL
-    #     AND COALESCE(x) = 2
-    # )
-    # OR (
-    #     COALESCE(x) IS NULL
-    #     AND 1 = 2
-    # )
-    # This may seem more complex, but subsequent simplify steps will further reduce this.
-    #
-    # This transformation is valid for non-constants,
-    # but I think it really only does anything if they are both constants.
-    if isinstance(rightmost_arg, CONSTANTS) and isinstance(other, CONSTANTS):
-        rightmost_arg.pop()
+    coalesce.set("expressions", coalesce.expressions[:arg_index])
 
-        # Remove the COALESCE function. This is an optimization, skipping a simplify iteration,
-        # since we already remove COALESCE at the top of this function.
-        coalesce = coalesce if coalesce.expressions else coalesce.this
+    # Remove the COALESCE function. This is an optimization, skipping a simplify iteration,
+    # since we already remove COALESCE at the top of this function.
+    coalesce = coalesce if coalesce.expressions else coalesce.this
 
-        return exp.or_(
-            exp.and_(
-                coalesce.is_(exp.null()).not_(),
-                expression,
-            ),
-            exp.and_(
-                coalesce.is_(exp.null()),
-                type(expression)(this=rightmost_arg.copy(), expression=other.copy()),
-            ),
-        )
-
-    return expression
+    # This expression is more complex than when we started, but it will get simplified further
+    return exp.or_(
+        exp.and_(
+            coalesce.is_(exp.null()).not_(),
+            expression,
+        ),
+        exp.and_(
+            coalesce.is_(exp.null()),
+            type(expression)(this=arg.copy(), expression=other.copy()),
+        ),
+    )
 
 
 def remove_where_true(expression):

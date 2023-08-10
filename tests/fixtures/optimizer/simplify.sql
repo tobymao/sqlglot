@@ -618,6 +618,9 @@ x = 2 AND NOT x IS NULL;
 COALESCE(x, 1, 1) = 1 + 1;
 x = 2 AND NOT x IS NULL;
 
+COALESCE(x, 1, 2) = 2;
+x = 2 AND NOT x IS NULL;
+
 COALESCE(x, 3) <= 2;
 x <= 2 AND NOT x IS NULL;
 

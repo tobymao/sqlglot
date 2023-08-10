@@ -486,13 +486,17 @@ def simplify_coalesce(expression):
     if isinstance(rightmost_arg, CONSTANTS) and isinstance(other, CONSTANTS):
         rightmost_arg.pop()
 
+        # Remove the COALESCE function. This is an optimization, skipping a simplify iteration,
+        # since we already remove COALESCE at the top of this function.
+        coalesce = coalesce if coalesce.expressions else coalesce.this
+
         return exp.or_(
             exp.and_(
-                coalesce.copy().is_(exp.null()).not_(),
-                expression.copy(),
+                coalesce.is_(exp.null()).not_(),
+                expression,
             ),
             exp.and_(
-                coalesce.copy().is_(exp.null()),
+                coalesce.is_(exp.null()),
                 type(expression)(this=rightmost_arg.copy(), expression=other.copy()),
             ),
         )

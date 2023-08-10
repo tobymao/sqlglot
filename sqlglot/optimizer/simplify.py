@@ -482,13 +482,16 @@ def simplify_coalesce(expression):
     # This expression is more complex than when we started, but it will get simplified further
     return exp.or_(
         exp.and_(
-            coalesce.is_(exp.null()).not_(),
-            expression,
+            coalesce.is_(exp.null()).not_(copy=False),
+            expression.copy(),
+            copy=False,
         ),
         exp.and_(
             coalesce.is_(exp.null()),
             type(expression)(this=arg.copy(), expression=other.copy()),
+            copy=False,
         ),
+        copy=False,
     )
 
 

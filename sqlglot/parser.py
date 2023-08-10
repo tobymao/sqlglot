@@ -2623,11 +2623,18 @@ class Parser(metaclass=_Parser):
 
     def _parse_pivot(self) -> t.Optional[exp.Pivot]:
         index = self._index
+        include_nulls = None
 
         if self._match(TokenType.PIVOT):
             unpivot = False
         elif self._match(TokenType.UNPIVOT):
             unpivot = True
+
+            # https://docs.databricks.com/en/sql/language-manual/sql-ref-syntax-qry-select-unpivot.html#syntax
+            if self._match_text_seq("INCLUDE", "NULLS"):
+                include_nulls = True
+            elif self._match_text_seq("EXCLUDE", "NULLS"):
+                include_nulls = False
         else:
             return None
 
@@ -2658,7 +2665,13 @@ class Parser(metaclass=_Parser):
 
         self._match_r_paren()
 
-        pivot = self.expression(exp.Pivot, expressions=expressions, field=field, unpivot=unpivot)
+        pivot = self.expression(
+            exp.Pivot,
+            expressions=expressions,
+            field=field,
+            unpivot=unpivot,
+            include_nulls=include_nulls,
+        )
 
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
             pivot.set("alias", self._parse_table_alias())

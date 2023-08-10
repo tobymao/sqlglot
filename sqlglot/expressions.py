@@ -3309,6 +3309,7 @@ class Pivot(Expression):
         "using": False,
         "group": False,
         "columns": False,
+        "include_nulls": False,
     }
 
 

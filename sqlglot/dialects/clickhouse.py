@@ -41,7 +41,6 @@ class ClickHouse(Dialect):
             "FLOAT32": TokenType.FLOAT,
             "FLOAT64": TokenType.DOUBLE,
             "GLOBAL": TokenType.GLOBAL,
-            "INT128": TokenType.INT128,
             "INT16": TokenType.SMALLINT,
             "INT256": TokenType.INT256,
             "INT32": TokenType.INT,

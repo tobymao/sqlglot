@@ -14,6 +14,9 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "SELECT * FROM sales UNPIVOT INCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`))"
         )
+        self.validate_identity(
+            "SELECT * FROM sales UNPIVOT EXCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`))"
+        )
 
         self.validate_all(
             "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",

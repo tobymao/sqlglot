@@ -1290,7 +1290,12 @@ class Generator:
         unpivot = expression.args.get("unpivot")
         direction = "UNPIVOT" if unpivot else "PIVOT"
         field = self.sql(expression, "field")
-        return f"{direction}({expressions} FOR {field}){alias}"
+        include_nulls = expression.args.get("include_nulls")
+        if include_nulls is not None:
+            nulls = " INCLUDE NULLS " if include_nulls else " EXCLUDE NULLS "
+        else:
+            nulls = ""
+        return f"{direction}{nulls}({expressions} FOR {field}){alias}"
 
     def tuple_sql(self, expression: exp.Tuple) -> str:
         return f"({self.expressions(expression, flat=True)})"

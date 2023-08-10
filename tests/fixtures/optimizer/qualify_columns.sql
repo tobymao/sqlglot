@@ -431,6 +431,14 @@ SELECT x.a AS a, i.b AS b FROM x AS x CROSS JOIN UNNEST(SPLIT(x.b, ',')) AS i(b)
 SELECT c FROM (SELECT 1 a) AS x LATERAL VIEW EXPLODE(a) AS c;
 SELECT _q_0.c AS c FROM (SELECT 1 AS a) AS x LATERAL VIEW EXPLODE(x.a) _q_0 AS c;
 
+# execute: false
+SELECT * FROM foo(bar) AS t(c1, c2, c3);
+SELECT t.c1 AS c1, t.c2 AS c2, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
+
+# execute: false
+SELECT c1, c3 FROM foo(bar) AS t(c1, c2, c3);
+SELECT t.c1 AS c1, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
+
 --------------------------------------
 -- Window functions
 --------------------------------------

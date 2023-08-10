@@ -110,14 +110,14 @@ class DuckDB(Dialect):
             "//": TokenType.DIV,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,
-            "BPCHAR": TokenType.TEXT,
             "BITSTRING": TokenType.BIT,
+            "BPCHAR": TokenType.TEXT,
             "CHAR": TokenType.TEXT,
             "CHARACTER VARYING": TokenType.TEXT,
             "EXCLUDE": TokenType.EXCEPT,
+            "HUGEINT": TokenType.INT128,
             "INT1": TokenType.TINYINT,
             "LOGICAL": TokenType.BOOLEAN,
-            "NUMERIC": TokenType.DOUBLE,
             "PIVOT_WIDER": TokenType.PIVOT,
             "SIGNED": TokenType.INT,
             "STRING": TokenType.VARCHAR,
@@ -185,6 +185,22 @@ class DuckDB(Dialect):
             TokenType.USMALLINT,
             TokenType.UTINYINT,
         }
+
+        def _parse_types(
+            self, check_func: bool = False, schema: bool = False
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_types(check_func=check_func, schema=schema)
+
+            # DuckDB treats NUMERIC and DECIMAL without precision as DECIMAL(18, 3)
+            # See: https://duckdb.org/docs/sql/data_types/numeric
+            if (
+                isinstance(this, exp.DataType)
+                and this.is_type("numeric", "decimal")
+                and not this.expressions
+            ):
+                return exp.DataType.build("DECIMAL(18, 3)")
+
+            return this
 
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
             if len(aggregations) == 1:

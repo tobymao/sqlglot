@@ -659,6 +659,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TINYINT": TokenType.TINYINT,
         "SHORT": TokenType.SMALLINT,
         "SMALLINT": TokenType.SMALLINT,
+        "INT128": TokenType.INT128,
         "INT2": TokenType.SMALLINT,
         "INTEGER": TokenType.INT,
         "INT": TokenType.INT,

@@ -497,8 +497,12 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS USMALLINT)")
         self.validate_identity("CAST(x AS UTINYINT)")
         self.validate_identity("CAST(x AS TEXT)")
+        self.validate_identity("CAST(x AS INT128)")
+        self.validate_identity("CAST(x AS DOUBLE)")
+        self.validate_identity("CAST(x AS DECIMAL(15, 4))")
 
-        self.validate_all("CAST(x AS NUMERIC)", write={"duckdb": "CAST(x AS DOUBLE)"})
+        self.validate_all("CAST(x AS NUMERIC(1, 2))", write={"duckdb": "CAST(x AS DECIMAL(1, 2))"})
+        self.validate_all("CAST(x AS HUGEINT)", write={"duckdb": "CAST(x AS INT128)"})
         self.validate_all("CAST(x AS CHAR)", write={"duckdb": "CAST(x AS TEXT)"})
         self.validate_all("CAST(x AS BPCHAR)", write={"duckdb": "CAST(x AS TEXT)"})
         self.validate_all("CAST(x AS STRING)", write={"duckdb": "CAST(x AS TEXT)"})
@@ -513,6 +517,20 @@ class TestDuckDB(Validator):
         self.validate_all("CAST(x AS BINARY)", write={"duckdb": "CAST(x AS BLOB)"})
         self.validate_all("CAST(x AS VARBINARY)", write={"duckdb": "CAST(x AS BLOB)"})
         self.validate_all("CAST(x AS LOGICAL)", write={"duckdb": "CAST(x AS BOOLEAN)"})
+        self.validate_all(
+            "CAST(x AS NUMERIC)",
+            write={
+                "duckdb": "CAST(x AS DECIMAL(18, 3))",
+                "postgres": "CAST(x AS DECIMAL(18, 3))",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS DECIMAL)",
+            write={
+                "duckdb": "CAST(x AS DECIMAL(18, 3))",
+                "postgres": "CAST(x AS DECIMAL(18, 3))",
+            },
+        )
         self.validate_all(
             "CAST(x AS BIT)",
             read={

@@ -495,6 +495,17 @@ def simplify_coalesce(expression):
     )
 
 
+# CROSS joins result in an empty table if the right table is empty.
+# So we can only simplify certain types of joins to CROSS.
+# Or in other words, LEFT JOIN x ON TRUE != CROSS JOIN x
+JOINS = {
+    ("", ""),
+    ("", "INNER"),
+    ("RIGHT", ""),
+    ("RIGHT", "OUTER"),
+}
+
+
 def remove_where_true(expression):
     for where in expression.find_all(exp.Where):
         if always_true(where.this):
@@ -504,6 +515,7 @@ def remove_where_true(expression):
             always_true(join.args.get("on"))
             and not join.args.get("using")
             and not join.args.get("method")
+            and (join.side, join.kind) in JOINS
         ):
             join.set("on", None)
             join.set("side", None)

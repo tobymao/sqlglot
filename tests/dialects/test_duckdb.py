@@ -337,6 +337,8 @@ class TestDuckDB(Validator):
                 unsupported_level=ErrorLevel.IMMEDIATE,
             )
 
+        self.validate_identity("SELECT ISNAN(x)")
+
     def test_time(self):
         self.validate_identity("SELECT CURRENT_DATE")
         self.validate_identity("SELECT CURRENT_TIMESTAMP")

@@ -862,7 +862,10 @@ class Generator:
                 nested = f"({interior})"
 
         type_sql = f"{type_sql}{nested}{values}"
-        if self.TZ_TO_WITH_TIME_ZONE and expression.is_type("timestamptz", "timetz"):
+        if self.TZ_TO_WITH_TIME_ZONE and type_value in (
+            exp.DataType.Type.TIMETZ,
+            exp.DataType.Type.TIMESTAMPTZ,
+        ):
             type_sql = f"{type_sql} WITH TIME ZONE"
 
         return type_sql

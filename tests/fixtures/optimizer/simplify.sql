@@ -657,8 +657,8 @@ x;
 CONCAT('a', 'b', 'c');
 'abc';
 
-CONCAT('a', x, 'b', 'c');
-CONCAT('a', x, 'bc');
+CONCAT('a', x, y, 'b', 'c');
+CONCAT('a', x, y, 'bc');
 
 'a' || 'b';
 'ab';

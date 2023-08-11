@@ -128,6 +128,7 @@ class Parser(metaclass=_Parser):
         TokenType.UINT128,
         TokenType.INT256,
         TokenType.UINT256,
+        TokenType.FIXEDSTRING,
         TokenType.FLOAT,
         TokenType.DOUBLE,
         TokenType.CHAR,

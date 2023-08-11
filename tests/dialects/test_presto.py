@@ -8,6 +8,23 @@ class TestPresto(Validator):
     dialect = "presto"
 
     def test_cast(self):
+        self.validate_identity("CAST(x AS IPADDRESS)")
+        self.validate_identity("CAST(x AS IPPREFIX)")
+
+        self.validate_all(
+            "CAST(x AS INTERVAL YEAR TO MONTH)",
+            write={
+                "oracle": "CAST(x AS INTERVAL YEAR TO MONTH)",
+                "presto": "CAST(x AS INTERVAL YEAR TO MONTH)",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS INTERVAL DAY TO SECOND)",
+            write={
+                "oracle": "CAST(x AS INTERVAL DAY TO SECOND)",
+                "presto": "CAST(x AS INTERVAL DAY TO SECOND)",
+            },
+        )
         self.validate_all(
             "SELECT CAST('10C' AS INTEGER)",
             read={
@@ -109,8 +126,6 @@ class TestPresto(Validator):
                 "spark": "CAST(x AS TIMESTAMP)",
             },
         )
-        self.validate_identity("CAST(x AS IPADDRESS)")
-        self.validate_identity("CAST(x AS IPPREFIX)")
 
     def test_regex(self):
         self.validate_all(

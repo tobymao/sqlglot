@@ -102,12 +102,17 @@ class Parser(metaclass=_Parser):
         TokenType.CURRENT_USER: exp.CurrentUser,
     }
 
+    STRUCT_TYPE_TOKENS = {
+        TokenType.NESTED,
+        TokenType.STRUCT,
+    }
+
     NESTED_TYPE_TOKENS = {
         TokenType.ARRAY,
         TokenType.LOWCARDINALITY,
         TokenType.MAP,
         TokenType.NULLABLE,
-        TokenType.STRUCT,
+        *STRUCT_TYPE_TOKENS,
     }
 
     ENUM_TYPE_TOKENS = {
@@ -3117,7 +3122,7 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.PseudoType, this=self._prev.text)
 
         nested = type_token in self.NESTED_TYPE_TOKENS
-        is_struct = type_token == TokenType.STRUCT
+        is_struct = type_token in self.STRUCT_TYPE_TOKENS
         expressions = None
         maybe_func = False
 

@@ -10,6 +10,10 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("CAST(x AS Enum('hello' = 1, 'world' = 2))")
+        self.validate_identity("CAST(x AS Enum('hello', 'world'))")
+        self.validate_identity("CAST(x AS Enum('hello' = 1, 'world'))")
+        self.validate_identity("CAST(x AS Enum8('hello' = -123, 'world'))")
         self.validate_identity("CAST(x AS FixedString(1))")
         self.validate_identity("CAST(x AS LowCardinality(FixedString))")
         self.validate_identity("SELECT isNaN(1.0)")

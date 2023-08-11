@@ -112,6 +112,8 @@ class Parser(metaclass=_Parser):
 
     ENUM_TYPE_TOKENS = {
         TokenType.ENUM,
+        TokenType.ENUM8,
+        TokenType.ENUM16,
     }
 
     TYPE_TOKENS = {
@@ -189,7 +191,7 @@ class Parser(metaclass=_Parser):
         TokenType.INET,
         TokenType.IPADDRESS,
         TokenType.IPPREFIX,
-        TokenType.ENUM,
+        *ENUM_TYPE_TOKENS,
         *NESTED_TYPE_TOKENS,
     }
 
@@ -3127,7 +3129,7 @@ class Parser(metaclass=_Parser):
                     lambda: self._parse_types(check_func=check_func, schema=schema)
                 )
             elif type_token in self.ENUM_TYPE_TOKENS:
-                expressions = self._parse_csv(self._parse_primary)
+                expressions = self._parse_csv(self._parse_equality)
             else:
                 expressions = self._parse_csv(self._parse_type_size)
 

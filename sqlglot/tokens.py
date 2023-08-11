@@ -151,6 +151,7 @@ class TokenType(AutoName):
     IPADDRESS = auto()
     IPPREFIX = auto()
     ENUM = auto()
+    FIXEDSTRING = auto()
 
     # keywords
     ALIAS = auto()

@@ -103,6 +103,7 @@ class TestMySQL(Validator):
         self.validate_identity("@@GLOBAL.max_connections")
         self.validate_identity("CREATE TABLE A LIKE B")
         self.validate_identity("SELECT * FROM t1, t2 FOR SHARE OF t1, t2 SKIP LOCKED")
+        self.validate_identity("SELECT a || b", "SELECT a OR b")
         self.validate_identity(
             """SELECT * FROM foo WHERE 3 MEMBER OF(JSON_EXTRACT(info, '$.value'))"""
         )

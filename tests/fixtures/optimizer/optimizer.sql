@@ -944,3 +944,9 @@ SELECT
 FROM "m"
 JOIN "n" AS "foo"("a")
   ON "m"."a" = "foo"."a";
+
+# title: reduction of string concatenation that uses CONCAT(..), || and +
+# execute: false
+SELECT CONCAT('a', 'b') || CONCAT(CONCAT('c', 'd'), CONCAT('e', 'f')) + ('g' || 'h' || 'i');
+SELECT
+  'abcdefghi' AS "_col_0";

@@ -857,7 +857,7 @@ WITH "salesreturns" AS (
 ), "cte_10" AS (
   SELECT
     'catalog channel' AS "channel",
-    'catalog_page' || "csr"."cp_catalog_page_id" AS "id",
+    CONCAT('catalog_page', "csr"."cp_catalog_page_id") AS "id",
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" - "csr"."profit_loss" AS "profit"
@@ -865,7 +865,7 @@ WITH "salesreturns" AS (
   UNION ALL
   SELECT
     'web channel' AS "channel",
-    'web_site' || "wsr"."web_site_id" AS "id",
+    CONCAT('web_site', "wsr"."web_site_id") AS "id",
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" - "wsr"."profit_loss" AS "profit"
@@ -873,7 +873,7 @@ WITH "salesreturns" AS (
 ), "x" AS (
   SELECT
     'store channel' AS "channel",
-    'store' || "ssr"."s_store_id" AS "id",
+    CONCAT('store', "ssr"."s_store_id") AS "id",
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" - "ssr"."profit_loss" AS "profit"
@@ -8611,7 +8611,7 @@ WITH "date_dim_2" AS (
     "warehouse"."w_county" AS "w_county",
     "warehouse"."w_state" AS "w_state",
     "warehouse"."w_country" AS "w_country",
-    'ZOUROS' || ',' || 'ZHOU' AS "ship_carriers",
+    'ZOUROS,ZHOU' AS "ship_carriers",
     "date_dim"."d_year" AS "year1",
     SUM(
       CASE
@@ -8806,7 +8806,7 @@ WITH "date_dim_2" AS (
     "warehouse"."w_county" AS "w_county",
     "warehouse"."w_state" AS "w_state",
     "warehouse"."w_country" AS "w_country",
-    'ZOUROS' || ',' || 'ZHOU' AS "ship_carriers",
+    'ZOUROS,ZHOU' AS "ship_carriers",
     "date_dim"."d_year" AS "year1",
     SUM(
       CASE
@@ -11123,7 +11123,7 @@ WITH "date_dim_2" AS (
 ), "cte_4" AS (
   SELECT
     'catalog channel' AS "channel",
-    'catalog_page' || "csr"."catalog_page_id" AS "id",
+    CONCAT('catalog_page', "csr"."catalog_page_id") AS "id",
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" AS "profit"
@@ -11131,7 +11131,7 @@ WITH "date_dim_2" AS (
   UNION ALL
   SELECT
     'web channel' AS "channel",
-    'web_site' || "wsr"."web_site_id" AS "id",
+    CONCAT('web_site', "wsr"."web_site_id") AS "id",
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" AS "profit"
@@ -11139,7 +11139,7 @@ WITH "date_dim_2" AS (
 ), "x" AS (
   SELECT
     'store channel' AS "channel",
-    'store' || "ssr"."store_id" AS "id",
+    CONCAT('store', "ssr"."store_id") AS "id",
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" AS "profit"
@@ -11571,7 +11571,7 @@ ORDER  BY c_customer_id
 LIMIT 100;
 SELECT
   "customer"."c_customer_id" AS "customer_id",
-  "customer"."c_last_name" || ', ' || "customer"."c_first_name" AS "customername"
+  CONCAT("customer"."c_last_name", ', ', "customer"."c_first_name") AS "customername"
 FROM "customer" AS "customer"
 JOIN "customer_address" AS "customer_address"
   ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"

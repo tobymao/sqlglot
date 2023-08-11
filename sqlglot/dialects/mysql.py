@@ -94,6 +94,7 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
 
 class MySQL(Dialect):
     TIME_FORMAT = "'%Y-%m-%d %T'"
+    DPIPE_IS_STRING_CONCAT = False
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
@@ -195,7 +196,13 @@ class MySQL(Dialect):
             **parser.Parser.CONJUNCTION,
             TokenType.DAMP: exp.And,
             TokenType.XOR: exp.Xor,
+            TokenType.DPIPE: exp.Or,
         }
+
+        # MySQL uses || as a synonym to the logical OR operator
+        # https://dev.mysql.com/doc/refman/8.0/en/logical-operators.html#operator_or
+        BITWISE = parser.Parser.BITWISE.copy()
+        BITWISE.pop(TokenType.DPIPE)
 
         TABLE_ALIAS_TOKENS = (
             parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS

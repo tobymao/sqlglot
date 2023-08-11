@@ -122,7 +122,7 @@ class _Dialect(type):
                 if hasattr(subclass, name):
                     setattr(subclass, name, value)
 
-        if not klass.STRICT_STRING_CONCAT:
+        if not klass.STRICT_STRING_CONCAT and klass.DPIPE_IS_STRING_CONCAT:
             klass.parser_class.BITWISE[TokenType.DPIPE] = exp.SafeDPipe
 
         klass.generator_class.can_identify = klass.can_identify
@@ -146,6 +146,9 @@ class Dialect(metaclass=_Dialect):
 
     # Determines whether or not an unquoted identifier can start with a digit
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
+
+    # Determines whether or not the DPIPE token ('||') is a string concatenation operator
+    DPIPE_IS_STRING_CONCAT = True
 
     # Determines whether or not CONCAT's arguments must be strings
     STRICT_STRING_CONCAT = False

@@ -3405,6 +3405,8 @@ class DataType(Expression):
         DECIMAL = auto()
         DOUBLE = auto()
         ENUM = auto()
+        ENUM8 = auto()
+        ENUM16 = auto()
         FIXEDSTRING = auto()
         FLOAT = auto()
         GEOGRAPHY = auto()

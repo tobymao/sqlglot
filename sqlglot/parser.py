@@ -154,6 +154,7 @@ class Parser(metaclass=_Parser):
         TokenType.JSONB,
         TokenType.INTERVAL,
         TokenType.TIME,
+        TokenType.TIMETZ,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.TIMESTAMPLTZ,
@@ -393,11 +394,16 @@ class Parser(metaclass=_Parser):
         TokenType.STAR: exp.Mul,
     }
 
-    TIMESTAMPS = {
+    TIMES = {
         TokenType.TIME,
+        TokenType.TIMETZ,
+    }
+
+    TIMESTAMPS = {
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
         TokenType.TIMESTAMPLTZ,
+        *TIMES,
     }
 
     SET_OPERATIONS = {
@@ -3165,7 +3171,12 @@ class Parser(metaclass=_Parser):
         if type_token in self.TIMESTAMPS:
             if self._match_text_seq("WITH", "TIME", "ZONE"):
                 maybe_func = False
-                this = exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ, expressions=expressions)
+                tz_type = (
+                    exp.DataType.Type.TIMETZ
+                    if type_token in self.TIMES
+                    else exp.DataType.Type.TIMESTAMPTZ
+                )
+                this = exp.DataType(this=tz_type, expressions=expressions)
             elif self._match_text_seq("WITH", "LOCAL", "TIME", "ZONE"):
                 maybe_func = False
                 this = exp.DataType(this=exp.DataType.Type.TIMESTAMPLTZ, expressions=expressions)

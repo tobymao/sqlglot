@@ -6,6 +6,26 @@ class TestRedshift(Validator):
 
     def test_redshift(self):
         self.validate_all(
+            "SELECT CAST('01:03:05.124' AS TIME(2) WITH TIME ZONE)",
+            read={
+                "postgres": "SELECT CAST('01:03:05.124' AS TIMETZ(2))",
+            },
+            write={
+                "postgres": "SELECT CAST('01:03:05.124' AS TIMETZ(2))",
+                "redshift": "SELECT CAST('01:03:05.124' AS TIME(2) WITH TIME ZONE)",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('2020-02-02 01:03:05.124' AS TIMESTAMP(2) WITH TIME ZONE)",
+            read={
+                "postgres": "SELECT CAST('2020-02-02 01:03:05.124' AS TIMESTAMPTZ(2))",
+            },
+            write={
+                "postgres": "SELECT CAST('2020-02-02 01:03:05.124' AS TIMESTAMPTZ(2))",
+                "redshift": "SELECT CAST('2020-02-02 01:03:05.124' AS TIMESTAMP(2) WITH TIME ZONE)",
+            },
+        )
+        self.validate_all(
             "SELECT INTERVAL '5 days'",
             read={
                 "": "SELECT INTERVAL '5' days",

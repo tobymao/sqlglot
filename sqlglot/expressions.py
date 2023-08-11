@@ -3452,6 +3452,7 @@ class DataType(Expression):
         SUPER = auto()
         TEXT = auto()
         TIME = auto()
+        TIMETZ = auto()
         TIMESTAMP = auto()
         TIMESTAMPLTZ = auto()
         TIMESTAMPTZ = auto()
@@ -3501,6 +3502,7 @@ class DataType(Expression):
 
     TEMPORAL_TYPES = {
         Type.TIME,
+        Type.TIMETZ,
         Type.TIMESTAMP,
         Type.TIMESTAMPTZ,
         Type.TIMESTAMPLTZ,

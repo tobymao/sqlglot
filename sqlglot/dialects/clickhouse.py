@@ -67,11 +67,6 @@ class ClickHouse(Dialect):
             "XOR": lambda args: exp.Xor(expressions=args),
         }
 
-        TYPE_TOKENS = {
-            *parser.Parser.TYPE_TOKENS,
-            TokenType.FIXEDSTRING,
-        }
-
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
 
         FUNCTION_PARSERS = {

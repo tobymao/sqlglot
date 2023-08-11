@@ -9,6 +9,10 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_ddl(self):
+        self.validate_identity(
+            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
+            "CREATE TABLE test (x TIMESTAMP[][])",
+        )
         self.validate_identity("CREATE TABLE test (elems JSONB[])")
         self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
         self.validate_identity("CREATE TABLE test (foo HSTORE)")

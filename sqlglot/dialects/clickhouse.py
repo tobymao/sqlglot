@@ -38,6 +38,7 @@ class ClickHouse(Dialect):
             "DATETIME64": TokenType.DATETIME64,
             "DICTIONARY": TokenType.DICTIONARY,
             "FINAL": TokenType.FINAL,
+            "FIXEDSTRING": TokenType.FIXEDSTRING,
             "FLOAT32": TokenType.FLOAT,
             "FLOAT64": TokenType.DOUBLE,
             "GLOBAL": TokenType.GLOBAL,
@@ -64,6 +65,11 @@ class ClickHouse(Dialect):
             "MATCH": exp.RegexpLike.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
+        }
+
+        TYPE_TOKENS = {
+            *parser.Parser.TYPE_TOKENS,
+            TokenType.FIXEDSTRING,
         }
 
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
@@ -293,6 +299,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.BIGINT: "Int64",
             exp.DataType.Type.DATETIME64: "DateTime64",
             exp.DataType.Type.DOUBLE: "Float64",
+            exp.DataType.Type.FIXEDSTRING: "FixedString",
             exp.DataType.Type.FLOAT: "Float32",
             exp.DataType.Type.INT: "Int32",
             exp.DataType.Type.INT128: "Int128",

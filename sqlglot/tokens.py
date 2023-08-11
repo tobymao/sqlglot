@@ -151,6 +151,8 @@ class TokenType(AutoName):
     IPADDRESS = auto()
     IPPREFIX = auto()
     ENUM = auto()
+    ENUM8 = auto()
+    ENUM16 = auto()
     FIXEDSTRING = auto()
     LOWCARDINALITY = auto()
 

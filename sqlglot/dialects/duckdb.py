@@ -90,6 +90,10 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[]"
 
+    # Type TIMESTAMP / TIME WITH TIME ZONE does not support any modifiers
+    if expression.is_type("timestamptz", "timetz"):
+        return expression.this.value
+
     return self.datatype_sql(expression)
 
 
@@ -215,7 +219,6 @@ class DuckDB(Dialect):
         LIMIT_FETCH = "LIMIT"
         STRUCT_DELIMITER = ("(", ")")
         RENAME_TABLE_WITH_DB = False
-        TIME_ZONE_WITH_PRECISION = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

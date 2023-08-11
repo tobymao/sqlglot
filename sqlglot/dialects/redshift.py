@@ -85,8 +85,6 @@ class Redshift(Postgres):
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
             "SYSDATE": TokenType.CURRENT_TIMESTAMP,
-            "TIME": TokenType.TIMESTAMP,
-            "TIMETZ": TokenType.TIMESTAMPTZ,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
@@ -101,13 +99,15 @@ class Redshift(Postgres):
         RENAME_TABLE_WITH_DB = False
         QUERY_HINTS = False
         VALUES_AS_TABLE = False
-        TIME_ZONE_WITH_PRECISION = False
+        TZ_TO_WITH_TIME_ZONE = True
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
             exp.DataType.Type.BINARY: "VARBYTE",
-            exp.DataType.Type.VARBINARY: "VARBYTE",
             exp.DataType.Type.INT: "INTEGER",
+            exp.DataType.Type.TIMETZ: "TIME",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.VARBINARY: "VARBYTE",
         }
 
         PROPERTIES_LOCATION = {

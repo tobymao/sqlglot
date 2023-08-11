@@ -168,8 +168,8 @@ class Generator:
     # Whether or not to generate an unquoted value for EXTRACT's date part argument
     EXTRACT_ALLOWS_QUOTES = True
 
-    # Whether or not the types TIME / TIMEZONE with time zone info can have their precision set
-    TIME_ZONE_WITH_PRECISION = True
+    # Whether or not TIMETZ / TIMESTAMPTZ will be generated using the "WITH TIME ZONE" syntax
+    TZ_TO_WITH_TIME_ZONE = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
@@ -845,14 +845,6 @@ class Generator:
             else type_value
         )
 
-        if (
-            type_value in (exp.DataType.Type.TIMESTAMPTZ, exp.DataType.Type.TIMETZ)
-            and not self.TIME_ZONE_WITH_PRECISION
-        ):
-            if expression.find(exp.DataTypeSize):
-                self.unsupported(f"Precision parameter unsupported in {type_value.value}.")
-            return expression.this.value
-
         nested = ""
         interior = self.expressions(expression, flat=True)
         values = ""
@@ -869,7 +861,11 @@ class Generator:
             else:
                 nested = f"({interior})"
 
-        return f"{type_sql}{nested}{values}"
+        type_sql = f"{type_sql}{nested}{values}"
+        if self.TZ_TO_WITH_TIME_ZONE and expression.is_type("timestamptz", "timetz"):
+            type_sql = f"{type_sql} WITH TIME ZONE"
+
+        return type_sql
 
     def directory_sql(self, expression: exp.Directory) -> str:
         local = "LOCAL " if expression.args.get("local") else ""

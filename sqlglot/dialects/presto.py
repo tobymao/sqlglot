@@ -32,13 +32,6 @@ def _approx_distinct_sql(self: generator.Generator, expression: exp.ApproxDistin
     return f"APPROX_DISTINCT({self.sql(expression, 'this')}{accuracy})"
 
 
-def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
-    sql = self.datatype_sql(expression)
-    if expression.is_type("timestamptz", "timetz"):
-        sql = f"{sql} WITH TIME ZONE"
-    return sql
-
-
 def _explode_to_unnest_sql(self: generator.Generator, expression: exp.Lateral) -> str:
     if isinstance(expression.this, (exp.Explode, exp.Posexplode)):
         expression = expression.copy()
@@ -231,6 +224,7 @@ class Presto(Dialect):
         TABLE_HINTS = False
         QUERY_HINTS = False
         IS_BOOL_ALLOWED = False
+        TZ_TO_WITH_TIME_ZONE = True
         STRUCT_DELIMITER = ("(", ")")
 
         PROPERTIES_LOCATION = {
@@ -266,7 +260,6 @@ class Presto(Dialect):
             exp.BitwiseXor: lambda self, e: f"BITWISE_XOR({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.DataType: _datatype_sql,
             exp.DateAdd: lambda self, e: self.func(
                 "DATE_ADD", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
             ),

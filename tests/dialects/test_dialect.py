@@ -280,7 +280,7 @@ class TestDialect(Validator):
             "CAST(a AS TIMESTAMPTZ)",
             write={
                 "starrocks": "CAST(a AS DATETIME)",
-                "redshift": "CAST(a AS TIMESTAMPTZ)",
+                "redshift": "CAST(a AS TIMESTAMP WITH TIME ZONE)",
                 "doris": "CAST(a AS DATETIME)",
             },
         )

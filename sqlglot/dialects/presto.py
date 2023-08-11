@@ -225,6 +225,7 @@ class Presto(Dialect):
         QUERY_HINTS = False
         IS_BOOL_ALLOWED = False
         TZ_TO_WITH_TIME_ZONE = True
+        NVL2_SUPPORTED = False
         STRUCT_DELIMITER = ("(", ")")
 
         PROPERTIES_LOCATION = {

@@ -343,6 +343,7 @@ class Postgres(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False
+        NVL2_SUPPORTED = False
         PARAMETER_TOKEN = "$"
 
         TYPE_MAPPING = {

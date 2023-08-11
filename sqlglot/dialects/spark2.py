@@ -169,6 +169,7 @@ class Spark2(Hive):
 
     class Generator(Hive.Generator):
         QUERY_HINTS = True
+        NVL2_SUPPORTED = True
 
         TYPE_MAPPING = {
             **Hive.Generator.TYPE_MAPPING,

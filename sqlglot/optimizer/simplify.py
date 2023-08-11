@@ -54,11 +54,17 @@ def simplify(expression):
     def _simplify(expression, root=True):
         if expression.meta.get(FINAL):
             return expression
+
+        # Pre-order transformations
         node = expression
         node = rewrite_between(node)
         node = uniq_sort(node, generate, root)
         node = absorb_and_eliminate(node, root)
+        node = simplify_concat(node)
+
         exp.replace_children(node, lambda e: _simplify(e, False))
+
+        # Post-order transformations
         node = simplify_not(node)
         node = flatten(node)
         node = simplify_connectors(node, root)
@@ -67,8 +73,10 @@ def simplify(expression):
         node = simplify_literals(node, root)
         node = simplify_parens(node)
         node = simplify_coalesce(node)
+
         if root:
             expression.replace(node)
+
         return node
 
     expression = while_changing(expression, _simplify)
@@ -493,6 +501,29 @@ def simplify_coalesce(expression):
         ),
         copy=False,
     )
+
+
+CONCATS = (exp.Concat, exp.DPipe)
+SAFE_CONCATS = (exp.SafeConcat, exp.SafeDPipe)
+
+
+def simplify_concat(expression):
+    """Reduces all groups that contain string literals by concatenating them."""
+    if not isinstance(expression, CONCATS):
+        return expression
+
+    new_args = []
+    for is_string_group, group in itertools.groupby(
+        expression.expressions or expression.flatten(), lambda e: e.is_string
+    ):
+        if is_string_group:
+            new_args.append(exp.Literal.string("".join(string.name for string in group)))
+        else:
+            new_args.extend(group)
+
+    # Ensures we preserve the right concat type, i.e. whether it's "safe" or not
+    concat_type = exp.SafeConcat if isinstance(expression, SAFE_CONCATS) else exp.Concat
+    return new_args[0] if len(new_args) == 1 else concat_type(expressions=new_args)
 
 
 # CROSS joins result in an empty table if the right table is empty.

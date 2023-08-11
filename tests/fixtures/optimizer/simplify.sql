@@ -644,3 +644,24 @@ x = 1 OR x IS NULL;
 
 COALESCE(x, 1) IS NULL;
 FALSE;
+
+--------------------------------------
+-- CONCAT
+--------------------------------------
+CONCAT(x, y);
+CONCAT(x, y);
+
+CONCAT(x);
+x;
+
+CONCAT('a', 'b', 'c');
+'abc';
+
+CONCAT('a', x, 'b', 'c');
+CONCAT('a', x, 'bc');
+
+'a' || 'b';
+'ab';
+
+'a' || 'b' || x;
+CONCAT('ab', x);

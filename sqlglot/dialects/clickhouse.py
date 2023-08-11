@@ -292,6 +292,7 @@ class ClickHouse(Dialect):
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
+        NVL2_SUPPORTED = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

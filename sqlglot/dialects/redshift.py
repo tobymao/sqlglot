@@ -100,6 +100,7 @@ class Redshift(Postgres):
         QUERY_HINTS = False
         VALUES_AS_TABLE = False
         TZ_TO_WITH_TIME_ZONE = True
+        NVL2_SUPPORTED = True
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,

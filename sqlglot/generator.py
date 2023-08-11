@@ -171,6 +171,9 @@ class Generator:
     # Whether or not TIMETZ / TIMESTAMPTZ will be generated using the "WITH TIME ZONE" syntax
     TZ_TO_WITH_TIME_ZONE = False
 
+    # Whether or not the NVL2 function is supported
+    NVL2_SUPPORTED = True
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -2630,6 +2633,21 @@ class Generator:
         options = self.expressions(expression, key="options", sep=" ")
         options = f" {options}" if options else ""
         return f"{kind}{this}{type_}{schema}{options}"
+
+    def nvl2_sql(self, expression: exp.Nvl2) -> str:
+        if self.NVL2_SUPPORTED:
+            return self.function_fallback_sql(expression)
+
+        case = exp.Case().when(
+            expression.this.is_(exp.null()).not_(copy=False),
+            expression.args["true"].copy(),
+            copy=False,
+        )
+        else_cond = expression.args.get("false")
+        if else_cond:
+            case.else_(else_cond.copy(), copy=False)
+
+        return self.sql(case)
 
 
 def cached_generator(

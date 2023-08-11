@@ -367,6 +367,60 @@ class TestDialect(Validator):
             },
         )
 
+    def test_nvl2(self):
+        self.validate_all(
+            "SELECT NVL2(a, b, c)",
+            write={
+                "": "SELECT NVL2(a, b, c)",
+                "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "databricks": "SELECT NVL2(a, b, c)",
+                "doris": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "drill": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "duckdb": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "hive": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "mysql": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "oracle": "SELECT NVL2(a, b, c)",
+                "postgres": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "presto": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "redshift": "SELECT NVL2(a, b, c)",
+                "snowflake": "SELECT NVL2(a, b, c)",
+                "spark": "SELECT NVL2(a, b, c)",
+                "spark2": "SELECT NVL2(a, b, c)",
+                "sqlite": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "starrocks": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "teradata": "SELECT NVL2(a, b, c)",
+                "trino": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "tsql": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+            },
+        )
+        self.validate_all(
+            "SELECT NVL2(a, b)",
+            write={
+                "": "SELECT NVL2(a, b)",
+                "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "databricks": "SELECT NVL2(a, b)",
+                "doris": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "drill": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "duckdb": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "hive": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "mysql": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "oracle": "SELECT NVL2(a, b)",
+                "postgres": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "presto": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "redshift": "SELECT NVL2(a, b)",
+                "snowflake": "SELECT NVL2(a, b)",
+                "spark": "SELECT NVL2(a, b)",
+                "spark2": "SELECT NVL2(a, b)",
+                "sqlite": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "starrocks": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "teradata": "SELECT NVL2(a, b)",
+                "trino": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "tsql": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+            },
+        )
+
     def test_time(self):
         self.validate_all(
             "STR_TO_TIME(x, '%Y-%m-%dT%H:%M:%S')",

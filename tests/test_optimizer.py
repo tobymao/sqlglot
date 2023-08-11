@@ -277,6 +277,20 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression))
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression.this))
 
+        # CONCAT in (e.g.) Presto is parsed as Concat instead of SafeConcat which is the default type
+        # This test checks that simplify_concat preserves the corresponding expression types.
+        concat = parse_one("CONCAT('a', x, 'b', 'c')", read="presto")
+        simplified_concat = optimizer.simplify.simplify(concat)
+
+        safe_concat = parse_one("CONCAT('a', x, 'b', 'c')")
+        simplified_safe_concat = optimizer.simplify.simplify(safe_concat)
+
+        self.assertIs(type(simplified_concat), exp.Concat)
+        self.assertIs(type(simplified_safe_concat), exp.SafeConcat)
+
+        self.assertEqual("CONCAT('a', x, 'bc')", simplified_concat.sql(dialect="presto"))
+        self.assertEqual("CONCAT('a', x, 'bc')", simplified_safe_concat.sql())
+
     def test_unnest_subqueries(self):
         self.check_file(
             "unnest_subqueries",

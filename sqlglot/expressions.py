@@ -3427,6 +3427,7 @@ class DataType(Expression):
         JSONB = auto()
         LONGBLOB = auto()
         LONGTEXT = auto()
+        LOWCARDINALITY = auto()
         MAP = auto()
         MEDIUMBLOB = auto()
         MEDIUMTEXT = auto()

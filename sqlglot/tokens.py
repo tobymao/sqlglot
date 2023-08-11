@@ -152,6 +152,7 @@ class TokenType(AutoName):
     IPPREFIX = auto()
     ENUM = auto()
     FIXEDSTRING = auto()
+    LOWCARDINALITY = auto()
 
     # keywords
     ALIAS = auto()

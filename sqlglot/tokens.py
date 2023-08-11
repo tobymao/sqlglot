@@ -155,6 +155,7 @@ class TokenType(AutoName):
     ENUM16 = auto()
     FIXEDSTRING = auto()
     LOWCARDINALITY = auto()
+    NESTED = auto()
 
     # keywords
     ALIAS = auto()

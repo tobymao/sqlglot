@@ -3435,6 +3435,7 @@ class DataType(Expression):
         MEDIUMTEXT = auto()
         MONEY = auto()
         NCHAR = auto()
+        NESTED = auto()
         NULL = auto()
         NULLABLE = auto()
         NUMMULTIRANGE = auto()

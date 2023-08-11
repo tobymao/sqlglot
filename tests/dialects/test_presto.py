@@ -119,7 +119,7 @@ class TestPresto(Validator):
         self.validate_all(
             "CAST(x AS TIME(5) WITH TIME ZONE)",
             write={
-                "duckdb": "CAST(x AS TIMESTAMPTZ)",
+                "duckdb": "CAST(x AS TIMETZ)",
                 "postgres": "CAST(x AS TIMETZ(5))",
                 "presto": "CAST(x AS TIME(5) WITH TIME ZONE)",
             },

@@ -11,6 +11,7 @@ class TestClickhouse(Validator):
         self.assertIsNone(expr._meta)
 
         self.validate_identity("CAST(x AS FixedString(1))")
+        self.validate_identity("CAST(x AS LowCardinality(FixedString))")
         self.validate_identity("SELECT isNaN(1.0)")
         self.validate_identity("SELECT startsWith('Spider-Man', 'Spi')")
         self.validate_identity("SELECT xor(TRUE, FALSE)")

@@ -78,6 +78,7 @@ class SQLite(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False
+        NVL2_SUPPORTED = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

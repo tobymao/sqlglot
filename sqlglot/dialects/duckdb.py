@@ -219,6 +219,7 @@ class DuckDB(Dialect):
         LIMIT_FETCH = "LIMIT"
         STRUCT_DELIMITER = ("(", ")")
         RENAME_TABLE_WITH_DB = False
+        NVL2_SUPPORTED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

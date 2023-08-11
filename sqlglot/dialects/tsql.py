@@ -594,6 +594,7 @@ class TSQL(Dialect):
         LIMIT_IS_TOP = True
         QUERY_HINTS = False
         RETURNING_END = False
+        NVL2_SUPPORTED = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

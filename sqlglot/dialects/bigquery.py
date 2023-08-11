@@ -383,6 +383,7 @@ class BigQuery(Dialect):
         LIMIT_FETCH = "LIMIT"
         RENAME_TABLE_WITH_DB = False
         ESCAPE_LINE_BREAK = True
+        NVL2_SUPPORTED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

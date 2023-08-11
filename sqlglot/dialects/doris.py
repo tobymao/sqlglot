@@ -37,7 +37,6 @@ class Doris(MySQL):
             **MySQL.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
-            exp.Coalesce: rename_func("NVL"),
             exp.CurrentTimestamp: lambda *_: "NOW()",
             exp.DateTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"

@@ -3184,10 +3184,17 @@ class Parser(metaclass=_Parser):
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
-            unit = self._parse_var()
+            span: t.Optional[t.List[exp.Expression]] = None
+            if self._match_text_seq("YEAR", "TO", "MONTH"):
+                span = [exp.IntervalYearToMonthSpan()]
+            elif self._match_text_seq("DAY", "TO", "SECOND"):
+                span = [exp.IntervalDayToSecondSpan()]
 
+            unit = not span and self._parse_var()
             if not unit:
-                value = self.expression(exp.DataType, this=exp.DataType.Type.INTERVAL)
+                value = self.expression(
+                    exp.DataType, this=exp.DataType.Type.INTERVAL, expressions=span
+                )
             else:
                 value = self.expression(exp.Interval, unit=unit)
 

@@ -71,6 +71,8 @@ class Generator:
         exp.ExternalProperty: lambda self, e: "EXTERNAL",
         exp.HeapProperty: lambda self, e: "HEAP",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
+        exp.IntervalDayToSecondSpan: "DAY TO SECOND",
+        exp.IntervalYearToMonthSpan: "YEAR TO MONTH",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
@@ -848,6 +850,8 @@ class Generator:
                     delimiters = ("[", "]") if type_value == exp.DataType.Type.ARRAY else ("(", ")")
                     values = self.expressions(expression, key="values", flat=True)
                     values = f"{delimiters[0]}{values}{delimiters[1]}"
+            elif type_value == exp.DataType.Type.INTERVAL:
+                nested = f" {interior}"
             else:
                 nested = f"({interior})"
 

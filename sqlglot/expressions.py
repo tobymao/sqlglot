@@ -3859,6 +3859,18 @@ class TimeUnit(Expression):
         super().__init__(**args)
 
 
+# https://www.oracletutorial.com/oracle-basics/oracle-interval/
+# https://trino.io/docs/current/language/types.html#interval-year-to-month
+class IntervalYearToMonthSpan(Expression):
+    arg_types = {}
+
+
+# https://www.oracletutorial.com/oracle-basics/oracle-interval/
+# https://trino.io/docs/current/language/types.html#interval-day-to-second
+class IntervalDayToSecondSpan(Expression):
+    arg_types = {}
+
+
 class Interval(TimeUnit):
     arg_types = {"this": False, "unit": False}
 

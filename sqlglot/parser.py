@@ -3144,29 +3144,9 @@ class Parser(metaclass=_Parser):
 
             maybe_func = True
 
-        if self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-            this = exp.DataType(
-                this=exp.DataType.Type.ARRAY,
-                expressions=[
-                    exp.DataType(
-                        this=exp.DataType.Type[type_token.value],
-                        expressions=expressions,
-                        nested=nested,
-                    )
-                ],
-                nested=True,
-            )
-
-            while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
-                this = exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[this], nested=True)
-
-            return this
-
-        if self._match(TokenType.L_BRACKET):
-            self._retreat(index)
-            return None
-
+        this: t.Optional[exp.Expression] = None
         values: t.Optional[t.List[t.Optional[exp.Expression]]] = None
+
         if nested and self._match(TokenType.LT):
             if is_struct:
                 expressions = self._parse_csv(self._parse_struct_types)
@@ -3182,14 +3162,13 @@ class Parser(metaclass=_Parser):
                 values = self._parse_csv(self._parse_conjunction)
                 self._match_set((TokenType.R_BRACKET, TokenType.R_PAREN))
 
-        value: t.Optional[exp.Expression] = None
         if type_token in self.TIMESTAMPS:
             if self._match_text_seq("WITH", "TIME", "ZONE"):
                 maybe_func = False
-                value = exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ, expressions=expressions)
+                this = exp.DataType(this=exp.DataType.Type.TIMESTAMPTZ, expressions=expressions)
             elif self._match_text_seq("WITH", "LOCAL", "TIME", "ZONE"):
                 maybe_func = False
-                value = exp.DataType(this=exp.DataType.Type.TIMESTAMPLTZ, expressions=expressions)
+                this = exp.DataType(this=exp.DataType.Type.TIMESTAMPLTZ, expressions=expressions)
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
@@ -3202,11 +3181,11 @@ class Parser(metaclass=_Parser):
 
             unit = not span and self._parse_var()
             if not unit:
-                value = self.expression(
+                this = self.expression(
                     exp.DataType, this=exp.DataType.Type.INTERVAL, expressions=span
                 )
             else:
-                value = self.expression(exp.Interval, unit=unit)
+                this = self.expression(exp.Interval, unit=unit)
 
         if maybe_func and check_func:
             index2 = self._index
@@ -3218,16 +3197,19 @@ class Parser(metaclass=_Parser):
 
             self._retreat(index2)
 
-        if value:
-            return value
+        if not this:
+            this = exp.DataType(
+                this=exp.DataType.Type[type_token.value],
+                expressions=expressions,
+                nested=nested,
+                values=values,
+                prefix=prefix,
+            )
 
-        return exp.DataType(
-            this=exp.DataType.Type[type_token.value],
-            expressions=expressions,
-            nested=nested,
-            values=values,
-            prefix=prefix,
-        )
+        while self._match_pair(TokenType.L_BRACKET, TokenType.R_BRACKET):
+            this = exp.DataType(this=exp.DataType.Type.ARRAY, expressions=[this], nested=True)
+
+        return this
 
     def _parse_struct_types(self) -> t.Optional[exp.Expression]:
         this = self._parse_type() or self._parse_id_var()

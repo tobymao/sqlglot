@@ -509,7 +509,7 @@ SAFE_CONCATS = (exp.SafeConcat, exp.SafeDPipe)
 
 def simplify_concat(expression):
     """Reduces all groups that contain string literals by concatenating them."""
-    if not isinstance(expression, CONCATS):
+    if not isinstance(expression, CONCATS) or isinstance(expression, exp.ConcatWs):
         return expression
 
     new_args = []

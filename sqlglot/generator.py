@@ -168,6 +168,9 @@ class Generator:
     # Whether or not to generate an unquoted value for EXTRACT's date part argument
     EXTRACT_ALLOWS_QUOTES = True
 
+    # Whether or not TIMETZ / TIMESTAMPTZ will be generated using the "WITH TIME ZONE" syntax
+    TZ_TO_WITH_TIME_ZONE = False
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -835,14 +838,17 @@ class Generator:
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         type_value = expression.this
+
         type_sql = (
             self.TYPE_MAPPING.get(type_value, type_value.value)
             if isinstance(type_value, exp.DataType.Type)
             else type_value
         )
+
         nested = ""
         interior = self.expressions(expression, flat=True)
         values = ""
+
         if interior:
             if expression.args.get("nested"):
                 nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"
@@ -855,7 +861,14 @@ class Generator:
             else:
                 nested = f"({interior})"
 
-        return f"{type_sql}{nested}{values}"
+        type_sql = f"{type_sql}{nested}{values}"
+        if self.TZ_TO_WITH_TIME_ZONE and type_value in (
+            exp.DataType.Type.TIMETZ,
+            exp.DataType.Type.TIMESTAMPTZ,
+        ):
+            type_sql = f"{type_sql} WITH TIME ZONE"
+
+        return type_sql
 
     def directory_sql(self, expression: exp.Directory) -> str:
         local = "LOCAL " if expression.args.get("local") else ""

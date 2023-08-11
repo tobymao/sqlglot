@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import UnsupportedError
+from sqlglot import UnsupportedError, exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -117,10 +117,19 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "CAST(x AS TIME(5) WITH TIME ZONE)",
+            write={
+                "duckdb": "CAST(x AS TIMETZ)",
+                "postgres": "CAST(x AS TIMETZ(5))",
+                "presto": "CAST(x AS TIME(5) WITH TIME ZONE)",
+                "redshift": "CAST(x AS TIME(5) WITH TIME ZONE)",
+            },
+        )
+        self.validate_all(
             "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
             write={
                 "bigquery": "CAST(x AS TIMESTAMP)",
-                "duckdb": "CAST(x AS TIMESTAMPTZ(9))",
+                "duckdb": "CAST(x AS TIMESTAMPTZ)",
                 "presto": "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
                 "hive": "CAST(x AS TIMESTAMP)",
                 "spark": "CAST(x AS TIMESTAMP)",
@@ -194,6 +203,9 @@ class TestPresto(Validator):
             )
 
     def test_time(self):
+        expr = parse_one("TIME(7) WITH TIME ZONE", into=exp.DataType, read="presto")
+        self.assertEqual(expr.this, exp.DataType.Type.TIMETZ)
+
         self.validate_identity("FROM_UNIXTIME(a, b)")
         self.validate_identity("FROM_UNIXTIME(a, b, c)")
         self.validate_identity("TRIM(a, b)")

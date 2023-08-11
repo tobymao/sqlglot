@@ -168,6 +168,9 @@ class Generator:
     # Whether or not to generate an unquoted value for EXTRACT's date part argument
     EXTRACT_ALLOWS_QUOTES = True
 
+    # Whether or not the types TIME / TIMEZONE with time zone info can have their precision set
+    TIME_ZONE_WITH_PRECISION = True
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
@@ -835,14 +838,25 @@ class Generator:
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         type_value = expression.this
+
         type_sql = (
             self.TYPE_MAPPING.get(type_value, type_value.value)
             if isinstance(type_value, exp.DataType.Type)
             else type_value
         )
+
+        if (
+            type_value in (exp.DataType.Type.TIMESTAMPTZ, exp.DataType.Type.TIMETZ)
+            and not self.TIME_ZONE_WITH_PRECISION
+        ):
+            if expression.find(exp.DataTypeSize):
+                self.unsupported(f"Precision parameter unsupported in {type_value.value}.")
+            return expression.this.value
+
         nested = ""
         interior = self.expressions(expression, flat=True)
         values = ""
+
         if interior:
             if expression.args.get("nested"):
                 nested = f"{self.STRUCT_DELIMITER[0]}{interior}{self.STRUCT_DELIMITER[1]}"

@@ -101,6 +101,7 @@ class Redshift(Postgres):
         RENAME_TABLE_WITH_DB = False
         QUERY_HINTS = False
         VALUES_AS_TABLE = False
+        TIME_ZONE_WITH_PRECISION = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,

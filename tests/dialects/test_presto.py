@@ -122,7 +122,7 @@ class TestPresto(Validator):
                 "duckdb": "CAST(x AS TIMETZ)",
                 "postgres": "CAST(x AS TIMETZ(5))",
                 "presto": "CAST(x AS TIME(5) WITH TIME ZONE)",
-                "redshift": "CAST(x AS TIMETZ(5))",
+                "redshift": "CAST(x AS TIMETZ)",
             },
         )
         self.validate_all(

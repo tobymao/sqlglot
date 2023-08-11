@@ -34,7 +34,7 @@ def _approx_distinct_sql(self: generator.Generator, expression: exp.ApproxDistin
 
 def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     sql = self.datatype_sql(expression)
-    if expression.is_type("timestamptz"):
+    if expression.is_type("timestamptz", "timetz"):
         sql = f"{sql} WITH TIME ZONE"
     return sql
 
@@ -245,6 +245,7 @@ class Presto(Dialect):
             exp.DataType.Type.FLOAT: "REAL",
             exp.DataType.Type.BINARY: "VARBINARY",
             exp.DataType.Type.TEXT: "VARCHAR",
+            exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.STRUCT: "ROW",
         }

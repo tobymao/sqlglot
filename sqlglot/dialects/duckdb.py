@@ -89,6 +89,11 @@ def _struct_sql(self: generator.Generator, expression: exp.Struct) -> str:
 def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[]"
+
+    # Type TIMESTAMP WITH TIME ZONE does not support any modifiers
+    if expression.is_type("timestamptz", "timetz"):
+        return "TIMESTAMPTZ"
+
     return self.datatype_sql(expression)
 
 

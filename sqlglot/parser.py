@@ -812,6 +812,7 @@ class Parser(metaclass=_Parser):
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
+    PARTITION_BY_TOKENS = {TokenType.PARTITION_BY}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
@@ -1623,7 +1624,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_partition_by(self) -> t.List[t.Optional[exp.Expression]]:
-        if self._match(TokenType.PARTITION_BY):
+        if self._match_set(self.PARTITION_BY_TOKENS):
             return self._parse_csv(self._parse_conjunction)
         return []
 

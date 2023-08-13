@@ -390,6 +390,9 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity(
+            "SELECT ROW() OVER (DISTRIBUTE BY x)", "SELECT ROW() OVER (PARTITION BY x)"
+        )
         self.validate_identity("SELECT transform")
         self.validate_identity("SELECT * FROM test DISTRIBUTE BY y SORT BY x DESC ORDER BY l")
         self.validate_identity(

@@ -38,8 +38,14 @@ class Spark(Spark2):
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
+            "ANY_VALUE": lambda args: exp.AnyValue(
+                this=seq_get(args, 0), ignore_nulls=seq_get(args, 1)
+            ),
             "DATEDIFF": _parse_datediff,
         }
+
+        FUNCTION_PARSERS = Spark2.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS.pop("ANY_VALUE")
 
     class Generator(Spark2.Generator):
         TYPE_MAPPING = {
@@ -59,6 +65,9 @@ class Spark(Spark2):
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)
+
+        def anyvalue_sql(self, expression: exp.AnyValue) -> str:
+            return self.function_fallback_sql(expression)
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:
             unit = self.sql(expression, "unit")

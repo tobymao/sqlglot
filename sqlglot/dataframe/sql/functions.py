@@ -368,9 +368,7 @@ def covar_samp(col1: ColumnOrName, col2: ColumnOrName) -> Column:
 
 
 def first(col: ColumnOrName, ignorenulls: t.Optional[bool] = None) -> Column:
-    if ignorenulls is not None:
-        return Column.invoke_anonymous_function(col, "FIRST", ignorenulls)
-    return Column.invoke_anonymous_function(col, "FIRST")
+    return Column.invoke_expression_over_column(col, expression.First, ignore_nulls=ignorenulls)
 
 
 def grouping_id(*cols: ColumnOrName) -> Column:
@@ -394,9 +392,7 @@ def isnull(col: ColumnOrName) -> Column:
 
 
 def last(col: ColumnOrName, ignorenulls: t.Optional[bool] = None) -> Column:
-    if ignorenulls is not None:
-        return Column.invoke_anonymous_function(col, "LAST", ignorenulls)
-    return Column.invoke_anonymous_function(col, "LAST")
+    return Column.invoke_expression_over_column(col, expression.Last, ignore_nulls=ignorenulls)
 
 
 def monotonically_increasing_id() -> Column:

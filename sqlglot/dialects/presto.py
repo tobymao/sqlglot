@@ -153,6 +153,20 @@ def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _first_last_sql(self: generator.Generator, expression: exp.First | exp.Last) -> str:
+    """
+    Trino doesn't support FIRST / LAST as functions, but they're valid in the context
+    of MATCH_RECOGNIZE, so we need to preserve them in that case. In all other cases
+    they're converted into an ARBITRARY call.
+
+    Reference: https://trino.io/docs/current/sql/match-recognize.html#logical-navigation-functions
+    """
+    if isinstance(expression.find_ancestor(exp.MatchRecognize, exp.Select), exp.MatchRecognize):
+        return self.function_fallback_sql(expression)
+
+    return rename_func("ARBITRARY")(self, expression)
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
@@ -206,6 +220,7 @@ class Presto(Dialect):
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
             ),
+            "ROW": exp.Struct.from_arg_list,
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "STRPOS": lambda args: exp.StrPosition(
                 this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
@@ -275,11 +290,13 @@ class Presto(Dialect):
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
+            exp.First: _first_last_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hex: rename_func("TO_HEX"),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
+            exp.Last: _first_last_sql,
             exp.Lateral: _explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
@@ -306,6 +323,7 @@ class Presto(Dialect):
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
+            exp.Struct: rename_func("ROW"),
             exp.StructExtract: struct_extract_sql,
             exp.Table: transforms.preprocess([_unnest_sequence]),
             exp.TimestampTrunc: timestamptrunc_sql,

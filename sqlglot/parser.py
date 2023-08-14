@@ -3356,7 +3356,7 @@ class Parser(metaclass=_Parser):
         upper = this.upper()
 
         parser = self.NO_PAREN_FUNCTION_PARSERS.get(upper)
-        if optional_parens and parser:
+        if optional_parens and parser and token_type != TokenType.IDENTIFIER:
             self._advance()
             return parser(self)
 

@@ -1149,7 +1149,7 @@ class Parser(metaclass=_Parser):
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
         return self._parse_query_modifiers(expression)
 
-    def _parse_drop(self) -> exp.Drop | exp.Command:
+    def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
         start = self._prev
         temporary = self._match(TokenType.TEMPORARY)
         materialized = self._match_text_seq("MATERIALIZED")
@@ -1161,7 +1161,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Drop,
             comments=start.comments,
-            exists=self._parse_exists(),
+            exists=exists or self._parse_exists(),
             this=self._parse_table(schema=True),
             kind=kind,
             temporary=temporary,

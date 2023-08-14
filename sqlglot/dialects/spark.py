@@ -56,7 +56,6 @@ class Spark(Spark2):
                 "DATEADD", e.args.get("unit") or "DAY", e.expression, e.this
             ),
         }
-        TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)
 

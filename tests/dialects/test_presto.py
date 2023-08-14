@@ -480,19 +480,6 @@ class TestPresto(Validator):
 
     @mock.patch("sqlglot.helper.logger")
     def test_presto(self, logger):
-        self.validate_all(
-            "ARBITRARY(x)",
-            read={
-                "presto": "ANY_VALUE(x)",
-                "hive": "FIRST(x)",
-            },
-            write={
-                "hive": "FIRST(x)",
-                "presto": "ARBITRARY(x)",
-                "spark": "ANY_VALUE(x)",
-            },
-        )
-
         self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
@@ -501,6 +488,26 @@ class TestPresto(Validator):
         self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
 
+        self.validate_all(
+            "SELECT ROW(1, 2)",
+            read={
+                "spark": "SELECT STRUCT(1, 2)",
+            },
+            write={
+                "presto": "SELECT ROW(1, 2)",
+                "spark": "SELECT STRUCT(1, 2)",
+            },
+        )
+        self.validate_all(
+            "ARBITRARY(x)",
+            read={
+                "spark": "ANY_VALUE(x)",
+            },
+            write={
+                "presto": "ARBITRARY(x)",
+                "spark": "ANY_VALUE(x)",
+            },
+        )
         self.validate_all(
             "STARTS_WITH('abc', 'a')",
             read={"spark": "STARTSWITH('abc', 'a')"},

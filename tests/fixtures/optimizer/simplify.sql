@@ -645,6 +645,9 @@ x = 1 OR x IS NULL;
 COALESCE(x, 1) IS NULL;
 FALSE;
 
+COALESCE(ROW() OVER (), 1) = 1;
+ROW() OVER () = 1 OR ROW() OVER () IS NULL;
+
 --------------------------------------
 -- CONCAT
 --------------------------------------

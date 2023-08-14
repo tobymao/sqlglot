@@ -79,22 +79,23 @@ def _format_time_lambda(
 
 
 def _parse_format(args: t.List) -> exp.Expression:
-    assert len(args) == 2
+    this = seq_get(args, 0)
+    fmt = seq_get(args, 1)
+    culture = seq_get(args, 2)
 
-    fmt = args[1]
-    number_fmt = fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name)
+    number_fmt = fmt and (fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name))
 
     if number_fmt:
-        return exp.NumberToStr(this=args[0], format=fmt)
+        return exp.NumberToStr(this=this, format=fmt, culture=culture)
 
-    return exp.TimeToStr(
-        this=args[0],
-        format=exp.Literal.string(
+    if fmt:
+        fmt = exp.Literal.string(
             format_time(fmt.name, TSQL.FORMAT_TIME_MAPPING)
             if len(fmt.name) == 1
             else format_time(fmt.name, TSQL.TIME_MAPPING)
-        ),
-    )
+        )
+
+    return exp.TimeToStr(this=this, format=fmt, culture=culture)
 
 
 def _parse_eomonth(args: t.List) -> exp.Expression:
@@ -147,7 +148,7 @@ def _format_sql(self: generator.Generator, expression: exp.NumberToStr | exp.Tim
             )
         )
     )
-    return self.func("FORMAT", expression.this, fmt)
+    return self.func("FORMAT", expression.this, fmt, expression.args.get("culture"))
 
 
 def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> str:

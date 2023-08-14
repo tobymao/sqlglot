@@ -178,6 +178,7 @@ class Presto(Dialect):
     class Parser(parser.Parser):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "ARBITRARY": exp.AnyValue.from_arg_list,
             "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
             "APPROX_PERCENTILE": _approx_percentile,
             "BITWISE_AND": binary_from_function(exp.BitwiseAnd),
@@ -247,6 +248,7 @@ class Presto(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.AnyValue: rename_func("ARBITRARY"),
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",

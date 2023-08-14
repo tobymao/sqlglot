@@ -480,6 +480,19 @@ class TestPresto(Validator):
 
     @mock.patch("sqlglot.helper.logger")
     def test_presto(self, logger):
+        self.validate_all(
+            "ARBITRARY(x)",
+            read={
+                "presto": "ANY_VALUE(x)",
+                "hive": "FIRST(x)",
+            },
+            write={
+                "hive": "FIRST(x)",
+                "presto": "ARBITRARY(x)",
+                "spark": "ANY_VALUE(x)",
+            },
+        )
+
         self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")

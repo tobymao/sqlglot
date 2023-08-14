@@ -378,6 +378,7 @@ class Hive(Dialect):
                 ]
             ),
             exp.Property: _property_sql,
+            exp.AnyValue: rename_func("FIRST"),
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayJoin: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),

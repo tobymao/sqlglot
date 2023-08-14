@@ -4649,7 +4649,7 @@ class StrToUnix(Func):
 
 
 class NumberToStr(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": True, "format": True, "culture": False}
 
 
 class FromBase(Func):
@@ -4686,7 +4686,7 @@ class StddevSamp(AggFunc):
 
 
 class TimeToStr(Func):
-    arg_types = {"this": True, "format": True}
+    arg_types = {"this": True, "format": True, "culture": False}
 
 
 class TimeToTimeStr(Func):

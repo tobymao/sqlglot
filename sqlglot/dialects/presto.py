@@ -161,7 +161,7 @@ def _first_last_sql(self: generator.Generator, expression: exp.First | exp.Last)
 
     Reference: https://trino.io/docs/current/sql/match-recognize.html#logical-navigation-functions
     """
-    if expression.find_ancestor(exp.MatchRecognize):
+    if isinstance(expression.find_ancestor(exp.MatchRecognize, exp.Select), exp.MatchRecognize):
         return self.function_fallback_sql(expression)
 
     return rename_func("ARBITRARY")(self, expression)

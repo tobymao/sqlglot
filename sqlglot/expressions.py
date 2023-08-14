@@ -4656,6 +4656,17 @@ class StrToUnix(Func):
     arg_types = {"this": False, "format": False}
 
 
+# https://prestodb.io/docs/current/functions/string.html
+# https://spark.apache.org/docs/latest/api/sql/index.html#str_to_map
+class StrToMap(Func):
+    arg_types = {
+        "this": True,
+        "pair_delim": False,
+        "key_value_delim": False,
+        "duplicate_resolution_callback": False,
+    }
+
+
 class NumberToStr(Func):
     arg_types = {"this": True, "format": True, "culture": False}
 

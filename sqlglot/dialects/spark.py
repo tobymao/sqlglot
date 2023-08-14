@@ -38,11 +38,14 @@ class Spark(Spark2):
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
+            "ANY_VALUE": lambda args: exp.AnyValue(
+                this=seq_get(args, 0), ignore_nulls=seq_get(args, 1)
+            ),
             "DATEDIFF": _parse_datediff,
         }
 
-        def _parse_any_value(self) -> exp.AnyValue:
-            return exp.AnyValue.from_arg_list(self._parse_csv(self._parse_lambda))
+        FUNCTION_PARSERS = Spark2.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS.pop("ANY_VALUE")
 
     class Generator(Spark2.Generator):
         TYPE_MAPPING = {

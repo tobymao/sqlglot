@@ -1,5 +1,6 @@
 from unittest import mock
 
+from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -224,7 +225,10 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
-        self.validate_identity("SELECT ANY_VALUE(col, TRUE) FROM VALUES (10), (5) AS tab(col)")
+        expr = parse_one("any_value(col, true)", read="spark")
+        self.assertIsInstance(expr.args.get("ignore_nulls"), exp.Boolean)
+        self.assertEqual(expr.sql(dialect="spark"), "ANY_VALUE(col, TRUE)")
+
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), x -> x + 1)")
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), (x, i) -> x + i)")
         self.validate_identity("REFRESH table a.b.c")

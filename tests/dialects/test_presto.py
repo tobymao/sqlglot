@@ -501,6 +501,7 @@ class TestPresto(Validator):
         self.validate_all(
             "ARBITRARY(x)",
             read={
+                "hive": "FIRST(x)",
                 "spark": "ANY_VALUE(x)",
             },
             write={

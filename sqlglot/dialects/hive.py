@@ -258,6 +258,11 @@ class Hive(Dialect):
             ),
             "SIZE": exp.ArraySize.from_arg_list,
             "SPLIT": exp.RegexpSplit.from_arg_list,
+            "STR_TO_MAP": lambda args: exp.StrToMap(
+                this=seq_get(args, 0),
+                pair_delim=seq_get(args, 1) or exp.Literal.string(","),
+                key_value_delim=seq_get(args, 2) or exp.Literal.string(":"),
+            ),
             "TO_DATE": format_time_lambda(exp.TsOrDsToDate, "hive"),
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "UNBASE64": exp.FromBase64.from_arg_list,

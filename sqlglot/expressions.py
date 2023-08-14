@@ -3313,7 +3313,7 @@ class Pivot(Expression):
     }
 
 
-class Window(Expression):
+class Window(Condition):
     arg_types = {
         "this": True,
         "partition_by": False,

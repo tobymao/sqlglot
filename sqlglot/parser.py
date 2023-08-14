@@ -728,6 +728,11 @@ class Parser(metaclass=_Parser):
         "NEXT": lambda self: self._parse_next_value_for(),
     }
 
+    INVALID_FUNC_NAME_TOKENS = {
+        TokenType.IDENTIFIER,
+        TokenType.STRING,
+    }
+
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
     FUNCTION_PARSERS = {
@@ -3356,7 +3361,7 @@ class Parser(metaclass=_Parser):
         upper = this.upper()
 
         parser = self.NO_PAREN_FUNCTION_PARSERS.get(upper)
-        if optional_parens and parser and token_type != TokenType.IDENTIFIER:
+        if optional_parens and parser and token_type not in self.INVALID_FUNC_NAME_TOKENS:
             self._advance()
             return parser(self)
 

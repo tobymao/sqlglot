@@ -217,6 +217,9 @@ class TestParser(unittest.TestCase):
             parse_one("IF(a > 0)")
 
         with self.assertRaises(ParseError):
+            parse_one("SELECT CASE FROM x")
+
+        with self.assertRaises(ParseError):
             parse_one("WITH cte AS (SELECT * FROM x)")
 
         with self.assertRaises(ParseError):

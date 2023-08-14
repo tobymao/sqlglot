@@ -855,3 +855,4 @@ SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1)
 /* comment1 */ DELETE FROM x /* comment2 */ WHERE y > 1
 /* comment */ CREATE TABLE foo AS SELECT 1
 SELECT next, transform, if
+SELECT "any", "case", "if", "next"

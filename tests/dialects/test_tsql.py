@@ -10,6 +10,13 @@ class TestTSQL(Validator):
         projection.assert_is(exp.Alias)
         projection.args["alias"].assert_is(exp.Identifier)
 
+        self.validate_all(
+            "IF OBJECT_ID('tempdb.dbo.#TempTableName', 'U') IS NOT NULL DROP TABLE #TempTableName",
+            write={
+                "tsql": "DROP TABLE IF EXISTS #TempTableName",
+                "spark": "DROP TABLE IF EXISTS TempTableName",
+            },
+        )
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b INTO @y FROM y")
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b FROM y")
         self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b INTO l SELECT * FROM z")
@@ -898,6 +905,9 @@ WHERE
         )
 
     def test_iif(self):
+        self.validate_identity(
+            "SELECT IF(cond, 'True', 'False')", "SELECT IIF(cond, 'True', 'False')"
+        )
         self.validate_identity("SELECT IIF(cond, 'True', 'False')")
         self.validate_all(
             "SELECT IIF(cond, 'True', 'False');",

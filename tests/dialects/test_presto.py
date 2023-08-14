@@ -506,6 +506,7 @@ class TestPresto(Validator):
             write={
                 "presto": "ARBITRARY(x)",
                 "spark": "ANY_VALUE(x)",
+                "spark2": "FIRST(x)",
             },
         )
         self.validate_all(

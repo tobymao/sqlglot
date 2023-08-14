@@ -41,6 +41,9 @@ class Spark(Spark2):
             "DATEDIFF": _parse_datediff,
         }
 
+        def _parse_any_value(self) -> exp.AnyValue:
+            return exp.AnyValue.from_arg_list(self._parse_csv(self._parse_lambda))
+
     class Generator(Spark2.Generator):
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,
@@ -56,8 +59,12 @@ class Spark(Spark2):
                 "DATEADD", e.args.get("unit") or "DAY", e.expression, e.this
             ),
         }
+        TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)
+
+        def anyvalue_sql(self, expression: exp.AnyValue) -> str:
+            return self.function_fallback_sql(expression)
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:
             unit = self.sql(expression, "unit")

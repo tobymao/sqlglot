@@ -4047,7 +4047,7 @@ class Avg(AggFunc):
 
 
 class AnyValue(AggFunc):
-    arg_types = {"this": True, "having": False, "max": False}
+    arg_types = {"this": True, "having": False, "max": False, "ignore_nulls": False}
 
 
 class Case(Func):

@@ -1,6 +1,18 @@
 Changelog
 =========
 
+## [v17.14.0] - 2023-08-14
+### :boom: BREAKING CHANGES
+- due to [`2e73a4f`](https://github.com/tobymao/sqlglot/commit/2e73a4f455f32a4d4bab45e3c7860aeb32ceaa03) - dict conversion had incorrect ast *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  dict conversion had incorrect ast
+
+
+### :bug: Bug Fixes
+- [`2e73a4f`](https://github.com/tobymao/sqlglot/commit/2e73a4f455f32a4d4bab45e3c7860aeb32ceaa03) - dict conversion had incorrect ast *(commit by [@tobymao](https://github.com/tobymao))*
+- [`8affeff`](https://github.com/tobymao/sqlglot/commit/8affeff26022894d719132d78ccb40c22e3122a9) - coalesce simplify window func *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v17.13.0] - 2023-08-14
 ### :sparkles: New Features
 - [`c817e19`](https://github.com/tobymao/sqlglot/commit/c817e1942b87bbd81e67f5142e0473e7dc31dc52) - improve support for NVL2 function *(PR [#2042](https://github.com/tobymao/sqlglot/pull/2042) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1112,3 +1124,4 @@ Changelog
 [v17.10.2]: https://github.com/tobymao/sqlglot/compare/v17.10.1...v17.10.2
 [v17.12.0]: https://github.com/tobymao/sqlglot/compare/v17.11.0...v17.12.0
 [v17.13.0]: https://github.com/tobymao/sqlglot/compare/v17.12.0...v17.13.0
+[v17.14.0]: https://github.com/tobymao/sqlglot/compare/v17.13.0...v17.14.0

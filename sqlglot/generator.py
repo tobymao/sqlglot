@@ -2528,10 +2528,21 @@ class Generator:
         return f"WHEN {matched}{source}{condition} THEN {then}"
 
     def merge_sql(self, expression: exp.Merge) -> str:
-        this = self.sql(expression, "this")
+        table = expression.this
+        table_alias = ""
+
+        hints = table.args.get("hints")
+        if hints and table.alias and isinstance(hints[0], exp.WithTableHint):
+            # T-SQL syntax is MERGE ... <target_table> [WITH (<merge_hint>)] [[AS] table_alias]
+            table = table.copy()
+            table_alias = f" AS {self.sql(table.args['alias'].pop())}"
+
+        this = self.sql(table)
         using = f"USING {self.sql(expression, 'using')}"
         on = f"ON {self.sql(expression, 'on')}"
-        return f"MERGE INTO {this} {using} {on} {self.expressions(expression, sep=' ')}"
+        expressions = self.expressions(expression, sep=" ")
+
+        return f"MERGE INTO {this}{table_alias} {using} {on} {expressions}"
 
     def tochar_sql(self, expression: exp.ToChar) -> str:
         if expression.args.get("format"):

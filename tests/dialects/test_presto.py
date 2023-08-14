@@ -503,6 +503,7 @@ class TestPresto(Validator):
             read={
                 "hive": "FIRST(x)",
                 "spark": "ANY_VALUE(x)",
+                "spark2": "FIRST(x)",
             },
             write={
                 "presto": "ARBITRARY(x)",

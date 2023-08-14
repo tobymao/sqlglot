@@ -153,6 +153,20 @@ def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _first_last_sql(self: generator.Generator, expression: exp.First | exp.Last) -> str:
+    """
+    Trino doesn't support FIRST / LAST as functions, but they're valid in the context
+    of MATCH_RECOGNIZE, so we need to preserve them in that case. In all other cases
+    they're converted into an ARBITRARY call.
+
+    Reference: https://trino.io/docs/current/sql/match-recognize.html#logical-navigation-functions
+    """
+    if expression.find_ancestor(exp.MatchRecognize):
+        return self.function_fallback_sql(expression)
+
+    return rename_func("ARBITRARY")(self, expression)
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
@@ -276,11 +290,13 @@ class Presto(Dialect):
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
+            exp.First: _first_last_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hex: rename_func("TO_HEX"),
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
+            exp.Last: _first_last_sql,
             exp.Lateral: _explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),

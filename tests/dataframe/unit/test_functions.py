@@ -524,11 +524,11 @@ class TestFunctions(unittest.TestCase):
 
     def test_first(self):
         col_str = SF.first("cola")
-        self.assertEqual("ANY_VALUE(cola)", col_str.sql())
+        self.assertEqual("FIRST(cola)", col_str.sql())
         col = SF.first(SF.col("cola"))
-        self.assertEqual("ANY_VALUE(cola)", col.sql())
+        self.assertEqual("FIRST(cola)", col.sql())
         ignore_nulls = SF.first("cola", True)
-        self.assertEqual("ANY_VALUE(cola, TRUE)", ignore_nulls.sql())
+        self.assertEqual("FIRST(cola, TRUE)", ignore_nulls.sql())
 
     def test_grouping_id(self):
         col_str = SF.grouping_id("cola", "colb")
@@ -558,11 +558,11 @@ class TestFunctions(unittest.TestCase):
 
     def test_last(self):
         col_str = SF.last("cola")
-        self.assertEqual("ANY_VALUE(cola)", col_str.sql())
+        self.assertEqual("LAST(cola)", col_str.sql())
         col = SF.last(SF.col("cola"))
-        self.assertEqual("ANY_VALUE(cola)", col.sql())
+        self.assertEqual("LAST(cola)", col.sql())
         ignore_nulls = SF.last("cola", True)
-        self.assertEqual("ANY_VALUE(cola, TRUE)", ignore_nulls.sql())
+        self.assertEqual("LAST(cola, TRUE)", ignore_nulls.sql())
 
     def test_monotonically_increasing_id(self):
         col = SF.monotonically_increasing_id()

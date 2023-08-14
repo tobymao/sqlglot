@@ -4047,8 +4047,15 @@ class Avg(AggFunc):
 
 
 class AnyValue(AggFunc):
-    _sql_names = ["ANY_VALUE", "FIRST"]
     arg_types = {"this": True, "having": False, "max": False, "ignore_nulls": False}
+
+
+class First(Func):
+    arg_types = {"this": True, "ignore_nulls": False}
+
+
+class Last(Func):
+    arg_types = {"this": True, "ignore_nulls": False}
 
 
 class Case(Func):

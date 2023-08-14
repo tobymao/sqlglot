@@ -666,7 +666,7 @@ class TestExpressions(unittest.TestCase):
             (True, "TRUE"),
             ((1, "2", None), "(1, '2', NULL)"),
             ([1, "2", None], "ARRAY(1, '2', NULL)"),
-            ({"x": None}, "MAP('x', NULL)"),
+            ({"x": None}, "MAP(ARRAY('x'), ARRAY(NULL))"),
             (
                 datetime.datetime(2022, 10, 1, 1, 1, 1, 1),
                 "TIME_STR_TO_TIME('2022-10-01T01:01:01.000001+00:00')",
@@ -680,6 +680,11 @@ class TestExpressions(unittest.TestCase):
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)
+
+        self.assertEqual(
+            exp.convert({"test": "value"}).sql(dialect="spark"),
+            "MAP_FROM_ARRAYS(ARRAY('test'), ARRAY('value'))",
+        )
 
     def test_comment_alias(self):
         sql = """

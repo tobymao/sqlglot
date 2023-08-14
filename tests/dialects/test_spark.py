@@ -239,7 +239,22 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
+        self.validate_identity(
+            "SELECT STR_TO_MAP('a:1,b:2,c:3')",
+            "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
+        )
 
+        self.validate_all(
+            "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
+            read={
+                "presto": "SELECT SPLIT_TO_MAP('a:1,b:2,c:3', ',', ':')",
+                "spark": "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
+            },
+            write={
+                "presto": "SELECT SPLIT_TO_MAP('a:1,b:2,c:3', ',', ':')",
+                "spark": "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
+            },
+        )
         self.validate_all(
             "SELECT DATEDIFF(month, CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
             read={

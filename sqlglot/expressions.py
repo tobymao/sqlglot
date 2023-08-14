@@ -5863,8 +5863,8 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         return Array(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, dict):
         return Map(
-            keys=[convert(k, copy=copy) for k in value],
-            values=[convert(v, copy=copy) for v in value.values()],
+            keys=Array(expressions=[convert(k, copy=copy) for k in value]),
+            values=Array(expressions=[convert(v, copy=copy) for v in value.values()]),
         )
     raise ValueError(f"Cannot convert {value}")
 

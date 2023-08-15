@@ -1,6 +1,6 @@
 from sqlglot import exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import build_scope
+from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
 
 
@@ -82,7 +82,7 @@ def pushdown_cnf(predicates, scope, scope_ref_count):
             if isinstance(node, exp.Select):
                 predicate.replace(exp.true())
                 inner_predicate = replace_aliases(node, predicate)
-                if inner_predicate.find(exp.AggFunc):
+                if find_in_scope(inner_predicate, exp.AggFunc):
                     node.having(inner_predicate, copy=False)
                 else:
                     node.where(inner_predicate, copy=False)

@@ -758,6 +758,24 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(exp.DataType.Type.INT, expression.selects[0].type.this)
         self.assertEqual(exp.DataType.Type.INT, expression.selects[1].type.this)
 
+    def test_nested_type_annotation(self):
+        schema = {"order": {"customer_id": "bigint", "item_id": "bigint", "item_price": "numeric"}}
+        sql = """
+            SELECT ARRAY_AGG(DISTINCT order.item_id) FILTER (WHERE order.item_price > 10) AS items,
+            FROM order AS order
+            GROUP BY order.customer_id
+        """
+        expression = annotate_types(parse_one(sql), schema=schema)
+
+        self.assertEqual(exp.DataType.Type.ARRAY, expression.selects[0].type.this)
+        self.assertEqual(expression.selects[0].type.sql(), "ARRAY<BIGINT>")
+
+        expression = annotate_types(
+            parse_one("SELECT ARRAY_CAT(ARRAY[1,2,3], ARRAY[4,5])", read="postgres")
+        )
+        self.assertEqual(exp.DataType.Type.ARRAY, expression.selects[0].type.this)
+        self.assertEqual(expression.selects[0].type.sql(), "ARRAY<INT>")
+
     def test_recursive_cte(self):
         query = parse_one(
             """

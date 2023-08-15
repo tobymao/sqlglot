@@ -4005,6 +4005,7 @@ class ArrayAny(Func):
 
 
 class ArrayConcat(Func):
+    _sql_names = ["ARRAY_CONCAT", "ARRAY_CAT"]
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 

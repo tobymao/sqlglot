@@ -528,11 +528,14 @@ class TestPresto(Validator):
                 "hive": "FIRST(x)",
                 "mysql": "ANY_VALUE(x)",
                 "oracle": "ANY_VALUE(x)",
+                "postgres": "MAX(x)",
                 "presto": "ARBITRARY(x)",
                 "redshift": "ANY_VALUE(x)",
                 "snowflake": "ANY_VALUE(x)",
                 "spark": "ANY_VALUE(x)",
                 "spark2": "FIRST(x)",
+                "sqlite": "MAX(x)",
+                "tsql": "MAX(x)",
             },
         )
         self.validate_all(

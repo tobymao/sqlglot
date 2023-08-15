@@ -257,6 +257,9 @@ TBLPROPERTIES (
                 "spark": "MAP()",
                 "trino": "MAP()",
             },
+            write={
+                "trino": "MAP(ARRAY[], ARRAY[])",
+            },
         )
         self.validate_all(
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",

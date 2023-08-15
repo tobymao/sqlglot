@@ -264,6 +264,9 @@ TRUE;
 (FALSE);
 FALSE;
 
+((TRUE));
+TRUE;
+
 (FALSE OR TRUE);
 TRUE;
 
@@ -619,19 +622,19 @@ COALESCE(x);
 x;
 
 COALESCE(x, 1) = 2;
-(x = 2 AND NOT x IS NULL);
+x = 2 AND NOT x IS NULL;
 
 2 = COALESCE(x, 1);
-(2 = x AND NOT x IS NULL);
+2 = x AND NOT x IS NULL;
 
 COALESCE(x, 1, 1) = 1 + 1;
-(x = 2 AND NOT x IS NULL);
+x = 2 AND NOT x IS NULL;
 
 COALESCE(x, 1, 2) = 2;
-(x = 2 AND NOT x IS NULL);
+x = 2 AND NOT x IS NULL;
 
 COALESCE(x, 3) <= 2;
-(x <= 2 AND NOT x IS NULL);
+x <= 2 AND NOT x IS NULL;
 
 COALESCE(x, 1) <> 2;
 x <> 2 OR x IS NULL;

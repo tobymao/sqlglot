@@ -69,10 +69,10 @@ def simplify(expression):
         node = flatten(node)
         node = simplify_connectors(node, root)
         node = remove_compliments(node, root)
+        node = simplify_coalesce(node)
         node.parent = expression.parent
         node = simplify_literals(node, root)
         node = simplify_parens(node)
-        node = simplify_coalesce(node)
 
         if root:
             expression.replace(node)
@@ -431,12 +431,13 @@ def simplify_parens(expression):
     if not isinstance(this, exp.Select) and (
         not isinstance(parent, (exp.Condition, exp.Binary))
         or isinstance(this, exp.Predicate)
+        or isinstance(parent, exp.Paren)
         or not isinstance(this, exp.Binary)
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
         or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
     ):
-        return expression.this
+        return this
     return expression
 
 

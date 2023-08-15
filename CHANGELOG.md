@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v17.14.1] - 2023-08-15
+### :bug: Bug Fixes
+- [`0126d01`](https://github.com/tobymao/sqlglot/commit/0126d01458273724321aa16e4a4f5ce32d3741b2) - parenthesize coalesce simplification *(PR [#2057](https://github.com/tobymao/sqlglot/pull/2057) by [@barakalon](https://github.com/barakalon))*
+
+
 ## [v17.14.0] - 2023-08-14
 ### :boom: BREAKING CHANGES
 - due to [`2e73a4f`](https://github.com/tobymao/sqlglot/commit/2e73a4f455f32a4d4bab45e3c7860aeb32ceaa03) - dict conversion had incorrect ast *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -1125,3 +1130,4 @@ Changelog
 [v17.12.0]: https://github.com/tobymao/sqlglot/compare/v17.11.0...v17.12.0
 [v17.13.0]: https://github.com/tobymao/sqlglot/compare/v17.12.0...v17.13.0
 [v17.14.0]: https://github.com/tobymao/sqlglot/compare/v17.13.0...v17.14.0
+[v17.14.1]: https://github.com/tobymao/sqlglot/compare/v17.14.0...v17.14.1

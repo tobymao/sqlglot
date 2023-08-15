@@ -6,7 +6,7 @@ from enum import Enum, auto
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import find_new_name
+from sqlglot.helper import ensure_collection, find_new_name
 
 logger = logging.getLogger("sqlglot")
 
@@ -141,38 +141,10 @@ class Scope:
         return walk_in_scope(self.expression, bfs=bfs)
 
     def find(self, *expression_types, bfs=True):
-        """
-        Returns the first node in this scope which matches at least one of the specified types.
-
-        This does NOT traverse into subscopes.
-
-        Args:
-            expression_types (type): the expression type(s) to match.
-            bfs (bool): True to use breadth-first search, False to use depth-first.
-
-        Returns:
-            exp.Expression: the node which matches the criteria or None if no node matching
-            the criteria was found.
-        """
-        return next(self.find_all(*expression_types, bfs=bfs), None)
+        return find_in_scope(self.expression, expression_types, bfs=bfs)
 
     def find_all(self, *expression_types, bfs=True):
-        """
-        Returns a generator object which visits all nodes in this scope and only yields those that
-        match at least one of the specified expression types.
-
-        This does NOT traverse into subscopes.
-
-        Args:
-            expression_types (type): the expression type(s) to match.
-            bfs (bool): True to use breadth-first search, False to use depth-first.
-
-        Yields:
-            exp.Expression: nodes
-        """
-        for expression, *_ in self.walk(bfs=bfs):
-            if isinstance(expression, expression_types):
-                yield expression
+        return find_all_in_scope(self.expression, expression_types, bfs=bfs)
 
     def replace(self, old, new):
         """
@@ -800,3 +772,41 @@ def walk_in_scope(expression, bfs=True):
                 for key in ("joins", "laterals", "pivots"):
                     for arg in node.args.get(key) or []:
                         yield from walk_in_scope(arg, bfs=bfs)
+
+
+def find_all_in_scope(expression, expression_types, bfs=True):
+    """
+    Returns a generator object which visits all nodes in this scope and only yields those that
+    match at least one of the specified expression types.
+
+    This does NOT traverse into subscopes.
+
+    Args:
+        expression (exp.Expression):
+        expression_types (tuple[type]|type): the expression type(s) to match.
+        bfs (bool): True to use breadth-first search, False to use depth-first.
+
+    Yields:
+        exp.Expression: nodes
+    """
+    for expression, *_ in walk_in_scope(expression, bfs=bfs):
+        if isinstance(expression, tuple(ensure_collection(expression_types))):
+            yield expression
+
+
+def find_in_scope(expression, expression_types, bfs=True):
+    """
+    Returns the first node in this scope which matches at least one of the specified types.
+
+    This does NOT traverse into subscopes.
+
+    Args:
+        expression (exp.Expression):
+        expression_types (tuple[type]|type): the expression type(s) to match.
+        bfs (bool): True to use breadth-first search, False to use depth-first.
+
+    Returns:
+        exp.Expression: the node which matches the criteria or None if no node matching
+        the criteria was found.
+    """
+    return next(find_all_in_scope(expression, expression_types, bfs=bfs), None)

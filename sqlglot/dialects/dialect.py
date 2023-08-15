@@ -722,3 +722,7 @@ def binary_from_function(expr_type: t.Type[B]) -> t.Callable[[t.List], B]:
 # Used to represent DATE_TRUNC in Doris, Postgres and Starrocks dialects
 def parse_timestamp_trunc(args: t.List) -> exp.TimestampTrunc:
     return exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0))
+
+
+def any_value_to_max_sql(self: Generator, expression: exp.AnyValue) -> str:
+    return self.func("MAX", expression.this)

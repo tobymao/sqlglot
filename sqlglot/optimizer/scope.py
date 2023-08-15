@@ -6,7 +6,7 @@ from enum import Enum, auto
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import find_new_name, ensure_collection
+from sqlglot.helper import ensure_collection, find_new_name
 
 logger = logging.getLogger("sqlglot")
 

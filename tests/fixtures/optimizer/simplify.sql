@@ -264,6 +264,9 @@ TRUE;
 (FALSE);
 FALSE;
 
+((TRUE));
+TRUE;
+
 (FALSE OR TRUE);
 TRUE;
 
@@ -647,6 +650,9 @@ FALSE;
 
 COALESCE(ROW() OVER (), 1) = 1;
 ROW() OVER () = 1 OR ROW() OVER () IS NULL;
+
+a AND b AND COALESCE(ROW() OVER (), 1) = 1;
+a AND b AND (ROW() OVER () = 1 OR ROW() OVER () IS NULL);
 
 --------------------------------------
 -- CONCAT

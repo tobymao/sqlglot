@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    any_value_to_max_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
     datestrtodate_sql,
@@ -358,6 +359,7 @@ class Postgres(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.AnyValue: any_value_to_max_sql,
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
             exp.Explode: rename_func("UNNEST"),

@@ -143,6 +143,9 @@ class Redshift(Postgres):
         # Redshift uses the POW | POWER (expr1, expr2) syntax instead of expr1 ^ expr2 (postgres)
         TRANSFORMS.pop(exp.Pow)
 
+        # Redshift supports ANY_VALUE(..)
+        TRANSFORMS.pop(exp.AnyValue)
+
         RESERVED_KEYWORDS = {*Postgres.Generator.RESERVED_KEYWORDS, "snapshot", "type"}
 
         def with_properties(self, properties: exp.Properties) -> str:

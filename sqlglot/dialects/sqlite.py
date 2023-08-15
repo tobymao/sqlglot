@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    any_value_to_max_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
     concat_to_dpipe_sql,
@@ -104,6 +105,7 @@ class SQLite(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.AnyValue: any_value_to_max_sql,
             exp.Concat: concat_to_dpipe_sql,
             exp.CountIf: count_if_to_sum,
             exp.Create: transforms.preprocess([_transform_create]),

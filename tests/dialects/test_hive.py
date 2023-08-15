@@ -720,9 +720,7 @@ class TestHive(Validator):
         self.validate_identity("'\\\\n'")
         self.validate_identity("''")
         self.validate_identity("'\\\\'")
-        self.validate_identity("'\z'")
         self.validate_identity("'\\z'")
-        self.validate_identity("'\\\z'")
         self.validate_identity("'\\\\z'")
 
     def test_data_type(self):

@@ -249,7 +249,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "r'x\\y'",
             write={
-                "bigquery": "'x\\\y'",
+                "bigquery": "'x\\\\y'",
                 "hive": "'x\\\\y'",
             },
         )

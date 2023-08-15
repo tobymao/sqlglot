@@ -245,6 +245,23 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
+            "MAP(1, 2, 3, 4)",
+            write={
+                "spark": "MAP(1, 2, 3, 4)",
+                "trino": "MAP(ARRAY[1, 3], ARRAY[2, 4])",
+            },
+        )
+        self.validate_all(
+            "MAP()",
+            read={
+                "spark": "MAP()",
+                "trino": "MAP()",
+            },
+            write={
+                "trino": "MAP(ARRAY[], ARRAY[])",
+            },
+        )
+        self.validate_all(
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
             read={
                 "presto": "SELECT SPLIT_TO_MAP('a:1,b:2,c:3', ',', ':')",

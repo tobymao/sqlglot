@@ -81,7 +81,11 @@ def pushdown_cnf(predicates, scope, scope_ref_count):
                 break
             if isinstance(node, exp.Select):
                 predicate.replace(exp.true())
-                node.where(replace_aliases(node, predicate), copy=False)
+                inner_predicate = replace_aliases(node, predicate)
+                if inner_predicate.find(exp.AggFunc):
+                    node.having(inner_predicate, copy=False)
+                else:
+                    node.where(inner_predicate, copy=False)
 
 
 def pushdown_dnf(predicates, scope, scope_ref_count):

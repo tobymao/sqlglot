@@ -146,7 +146,11 @@ def pushdown_dnf(predicates, scope, scope_ref_count):
             if isinstance(node, exp.Join):
                 node.on(predicate, copy=False)
             elif isinstance(node, exp.Select):
-                node.where(replace_aliases(node, predicate), copy=False)
+                inner_predicate = replace_aliases(node, predicate)
+                if find_in_scope(inner_predicate, exp.AggFunc):
+                    node.having(inner_predicate, copy=False)
+                else:
+                    node.where(inner_predicate, copy=False)
 
 
 def nodes_for_predicate(predicate, sources, scope_ref_count):

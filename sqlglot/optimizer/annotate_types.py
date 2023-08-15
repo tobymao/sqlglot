@@ -203,10 +203,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             for expr_type in expressions
         },
         exp.Anonymous: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
+        exp.Array: lambda self, e: self._annotate_by_args(e, "expressions", array=True),
+        exp.ArrayAgg: lambda self, e: self._annotate_by_args(e, "this", array=True),
+        exp.ArrayConcat: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Cast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),
         exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
+        exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
         exp.Interval: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
         exp.Least: lambda self, e: self._annotate_by_args(e, "expressions"),
@@ -218,6 +223,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
+    }
+
+    NESTED_TYPES = {
+        exp.DataType.Type.ARRAY,
     }
 
     # Specifies what types a given type can be coerced into (autofilled)
@@ -299,19 +308,22 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     def _maybe_coerce(
         self, type1: exp.DataType | exp.DataType.Type, type2: exp.DataType | exp.DataType.Type
-    ) -> exp.DataType.Type:
-        # We propagate the NULL / UNKNOWN types upwards if found
-        if isinstance(type1, exp.DataType):
-            type1 = type1.this
-        if isinstance(type2, exp.DataType):
-            type2 = type2.this
+    ) -> exp.DataType | exp.DataType.Type:
+        type1_value = type1.this if isinstance(type1, exp.DataType) else type1
+        type2_value = type2.this if isinstance(type2, exp.DataType) else type2
 
-        if exp.DataType.Type.NULL in (type1, type2):
+        # We propagate the NULL / UNKNOWN types upwards if found
+        if exp.DataType.Type.NULL in (type1_value, type2_value):
             return exp.DataType.Type.NULL
-        if exp.DataType.Type.UNKNOWN in (type1, type2):
+        if exp.DataType.Type.UNKNOWN in (type1_value, type2_value):
             return exp.DataType.Type.UNKNOWN
 
-        return type2 if type2 in self.coerces_to.get(type1, {}) else type1  # type: ignore
+        if type1_value in self.NESTED_TYPES:
+            return type1
+        if type2_value in self.NESTED_TYPES:
+            return type2
+
+        return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value  # type: ignore
 
     # Note: the following "no_type_check" decorators were added because mypy was yelling due
     # to assigning Type values to expression.type (since its getter returns Optional[DataType]).
@@ -368,7 +380,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return self._annotate_args(expression)
 
     @t.no_type_check
-    def _annotate_by_args(self, expression: E, *args: str, promote: bool = False) -> E:
+    def _annotate_by_args(
+        self, expression: E, *args: str, promote: bool = False, array: bool = False
+    ) -> E:
         self._annotate_args(expression)
 
         expressions: t.List[exp.Expression] = []
@@ -387,5 +401,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 expression.type = exp.DataType.Type.BIGINT
             elif expression.type.this in exp.DataType.FLOAT_TYPES:
                 expression.type = exp.DataType.Type.DOUBLE
+
+        if array:
+            expression.type = exp.DataType(
+                this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
+            )
 
         return expression

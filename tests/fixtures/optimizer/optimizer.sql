@@ -950,3 +950,40 @@ JOIN "n" AS "foo"("a")
 SELECT CONCAT('a', 'b') || CONCAT(CONCAT('c', 'd'), CONCAT('e', 'f')) + ('g' || 'h' || 'i');
 SELECT
   'abcdefghi' AS "_col_0";
+
+# title: complex query with derived tables and redundant parentheses
+# execute: false
+# dialect: snowflake
+SELECT
+  ("SUBQUERY_0"."KEY") AS "SUBQUERY_1_COL_0"
+FROM
+  (
+    SELECT
+      *
+    FROM
+      (((
+          SELECT
+            *
+          FROM
+            (
+              SELECT
+                event_name AS key,
+                insert_ts
+              FROM
+                (
+                  SELECT
+                    insert_ts,
+                    event_name
+                  FROM
+                    sales
+                  WHERE
+                    insert_ts > '2023-08-07 21:03:35.590 -0700'
+                )
+            )
+      ))) AS "SF_CONNECTOR_QUERY_ALIAS"
+  ) AS "SUBQUERY_0";
+SELECT
+  "SALES"."EVENT_NAME" AS "SUBQUERY_1_COL_0"
+FROM "SALES" AS "SALES"
+WHERE
+  "SALES"."INSERT_TS" > '2023-08-07 21:03:35.590 -0700';

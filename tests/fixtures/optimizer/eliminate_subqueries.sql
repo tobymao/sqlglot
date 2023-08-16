@@ -97,3 +97,7 @@ WITH cte1 AS (SELECT a FROM x), cte2 AS (SELECT a FROM cte1 AS cte3) SELECT a FR
 -- Wrapped subquery joined with table
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
 WITH cte AS (SELECT c FROM t1) SELECT * FROM (cte AS cte, t2);
+
+-- Wrapped subquery with redundant parentheses
+SELECT * FROM (((SELECT * FROM tbl)));
+WITH cte AS (SELECT * FROM tbl) SELECT * FROM cte AS cte;

@@ -353,6 +353,7 @@ class TestMySQL(Validator):
             write={
                 "": "MATCH(col1, col2, col3) AGAINST('abc')",
                 "mysql": "MATCH(col1, col2, col3) AGAINST('abc')",
+                "postgres": "(col1 @@ 'abc' OR col2 @@ 'abc' OR col3 @@ 'abc')",  # not quite correct because it's not ts_query
             },
         )
         self.validate_all(

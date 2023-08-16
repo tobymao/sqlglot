@@ -821,6 +821,8 @@ class Parser(metaclass=_Parser):
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
+    DISTINCT_TOKENS = {TokenType.DISTINCT}
+
     STRICT_CAST = True
 
     # A NULL arg in CONCAT yields NULL by default
@@ -1978,7 +1980,7 @@ class Parser(metaclass=_Parser):
 
             hint = self._parse_hint()
             all_ = self._match(TokenType.ALL)
-            distinct = self._match(TokenType.DISTINCT)
+            distinct = self._match_set(self.DISTINCT_TOKENS)
 
             kind = (
                 self._match(TokenType.ALIAS)

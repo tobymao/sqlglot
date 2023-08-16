@@ -220,6 +220,11 @@ class Presto(Dialect):
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
             ),
+            "REGEXP_REPLACE": lambda args: exp.RegexpReplace(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                replacement=seq_get(args, 2) or exp.Literal.string(""),
+            ),
             "ROW": exp.Struct.from_arg_list,
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
             "SPLIT_TO_MAP": exp.StrToMap.from_arg_list,

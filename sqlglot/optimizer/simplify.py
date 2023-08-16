@@ -350,7 +350,8 @@ def absorb_and_eliminate(expression, root=True):
 def simplify_literals(expression, root=True):
     if isinstance(expression, exp.Binary) and not isinstance(expression, exp.Connector):
         return _flat_simplify(expression, _simplify_binary, root)
-    elif isinstance(expression, exp.Neg):
+
+    if isinstance(expression, exp.Neg):
         this = expression.this
         if this.is_number:
             value = this.name
@@ -645,7 +646,7 @@ def _flat_simplify(expression, simplifier, root=True):
             for b in queue:
                 result = simplifier(expression, a, b)
 
-                if result:
+                if result and result is not expression:
                     queue.remove(b)
                     queue.appendleft(result)
                     break

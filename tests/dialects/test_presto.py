@@ -138,6 +138,13 @@ class TestPresto(Validator):
 
     def test_regex(self):
         self.validate_all(
+            "REGEXP_REPLACE('abcd', '[ab]')",
+            write={
+                "presto": "REGEXP_REPLACE('abcd', '[ab]', '')",
+                "spark": "REGEXP_REPLACE('abcd', '[ab]', '')",
+            },
+        )
+        self.validate_all(
             "REGEXP_LIKE(a, 'x')",
             write={
                 "duckdb": "REGEXP_MATCHES(a, 'x')",

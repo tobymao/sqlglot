@@ -255,6 +255,7 @@ class Postgres(Dialect):
             "~~*": TokenType.ILIKE,
             "~*": TokenType.IRLIKE,
             "~": TokenType.RLIKE,
+            "@@": TokenType.DAT,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
             "BEGIN": TokenType.COMMAND,
@@ -313,6 +314,9 @@ class Postgres(Dialect):
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+            TokenType.DAT: lambda self, this: self.expression(
+                exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
+            ),
             TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
             TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
         }
@@ -420,3 +424,9 @@ class Postgres(Dialect):
                 expression.set("this", exp.paren(expression.this, copy=False))
 
             return super().bracket_sql(expression)
+
+        def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
+            this = self.sql(expression, "this")
+            expressions = [f"{self.sql(e)} @@ {this}" for e in expression.expressions]
+            sql = " OR ".join(expressions)
+            return f"({sql})" if len(expressions) > 1 else sql

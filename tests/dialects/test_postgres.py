@@ -126,6 +126,8 @@ class TestPostgres(Validator):
         )
 
     def test_postgres(self):
+        self.validate_identity("x @@ y")
+
         expr = parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)

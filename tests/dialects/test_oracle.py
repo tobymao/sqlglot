@@ -28,6 +28,10 @@ class TestOracle(Validator):
             'OVER (PARTITION BY department_id) AS "Worst", MAX(salary) KEEP (DENSE_RANK LAST ORDER BY commission_pct) '
             'OVER (PARTITION BY department_id) AS "Best" FROM employees ORDER BY department_id, salary, last_name'
         )
+        self.validate_identity(
+            "SELECT UNIQUE col1, col2 FROM table",
+            "SELECT DISTINCT col1, col2 FROM table",
+        )
 
         self.validate_all(
             "NVL(NULL, 1)",

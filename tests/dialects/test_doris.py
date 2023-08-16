@@ -19,3 +19,19 @@ class TestDoris(Validator):
                 "doris": "SELECT REGEXP(abc, '%foo%')",
             },
         )
+
+    def test_trunc(self):
+        self.validate_all(
+            "SELECT TRUNC(sysdate)",
+            write={
+                "doris": "SELECT DATE(NOW())",
+            },
+        )
+
+    def test_trunc(self):
+        self.validate_all(
+            "SELECT DATE_TRUNC('day', sysdate)",
+            write={
+                "doris": "SELECT DATE_TRUNC(NOW(), 'day')",
+            },
+        )

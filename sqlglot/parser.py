@@ -92,6 +92,9 @@ class Parser(metaclass=_Parser):
             length=exp.Literal.number(10),
         ),
         "VAR_MAP": parse_var_map,
+        "TRUNC": lambda args: exp.DateTrunc(
+            this=seq_get(args, 0), unit=exp.Literal.string(seq_get(args, 1))
+        ),
     }
 
     NO_PAREN_FUNCTIONS = {

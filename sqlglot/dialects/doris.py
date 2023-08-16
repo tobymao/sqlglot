@@ -9,6 +9,21 @@ from sqlglot.dialects.dialect import (
     time_format,
 )
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.dialects.tsql import DATE_DELTA_INTERVAL
+
+
+def handle_date_trunc(self, expression: exp.DateTrunc) -> str:
+    expr = self.sql(expression, "this")
+    unit = expression.text("unit").lower()
+    if unit == "none":
+        return f"DATE({expr})"
+    else:
+        mapped_unit = (
+            DATE_DELTA_INTERVAL.get(unit[1:-1])
+            if DATE_DELTA_INTERVAL.get(unit[1:-1]) != None
+            else unit
+        )
+        return f"DATE_TRUNC({expr}, '{mapped_unit}')"
 
 
 class Doris(MySQL):
@@ -38,9 +53,7 @@ class Doris(MySQL):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.CurrentTimestamp: lambda *_: "NOW()",
-            exp.DateTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
-            ),
+            exp.DateTrunc: handle_date_trunc,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.RegexpLike: rename_func("REGEXP"),

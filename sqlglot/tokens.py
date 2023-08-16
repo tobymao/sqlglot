@@ -739,6 +739,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TRUNCATE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
         "USER-DEFINED": TokenType.USERDEFINED,
+        "SYSDATE": TokenType.CURRENT_TIMESTAMP,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {

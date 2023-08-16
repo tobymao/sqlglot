@@ -78,6 +78,10 @@ class Oracle(Dialect):
             )
         }
 
+        # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..
+        # Reference: https://stackoverflow.com/a/336455
+        DISTINCT_TOKENS = {TokenType.DISTINCT, TokenType.UNIQUE}
+
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()
             if column:

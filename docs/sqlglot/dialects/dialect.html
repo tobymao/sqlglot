@@ -387,6 +387,9 @@
             <li>
                     <a class="function" href="#parse_timestamp_trunc">parse_timestamp_trunc</a>
             </li>
+            <li>
+                    <a class="function" href="#any_value_to_max_sql">any_value_to_max_sql</a>
+            </li>
     </ul>
 
 
@@ -1134,6 +1137,10 @@
 </span><span id="L-722"><a href="#L-722"><span class="linenos">722</span></a><span class="c1"># Used to represent DATE_TRUNC in Doris, Postgres and Starrocks dialects</span>
 </span><span id="L-723"><a href="#L-723"><span class="linenos">723</span></a><span class="k">def</span> <span class="nf">parse_timestamp_trunc</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">TimestampTrunc</span><span class="p">:</span>
 </span><span id="L-724"><a href="#L-724"><span class="linenos">724</span></a>    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">TimestampTrunc</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">seq_get</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">unit</span><span class="o">=</span><span class="n">seq_get</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</span><span id="L-725"><a href="#L-725"><span class="linenos">725</span></a>
+</span><span id="L-726"><a href="#L-726"><span class="linenos">726</span></a>
+</span><span id="L-727"><a href="#L-727"><span class="linenos">727</span></a><span class="k">def</span> <span class="nf">any_value_to_max_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">AnyValue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-728"><a href="#L-728"><span class="linenos">728</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;MAX&quot;</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -3570,6 +3577,25 @@ columns are removed from the create statement.</p>
     <a class="headerlink" href="#parse_timestamp_trunc"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="parse_timestamp_trunc-724"><a href="#parse_timestamp_trunc-724"><span class="linenos">724</span></a><span class="k">def</span> <span class="nf">parse_timestamp_trunc</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">TimestampTrunc</span><span class="p">:</span>
 </span><span id="parse_timestamp_trunc-725"><a href="#parse_timestamp_trunc-725"><span class="linenos">725</span></a>    <span class="k">return</span> <span class="n">exp</span><span class="o">.</span><span class="n">TimestampTrunc</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">seq_get</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">unit</span><span class="o">=</span><span class="n">seq_get</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="any_value_to_max_sql">
+                            <input id="any_value_to_max_sql-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">any_value_to_max_sql</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span><span class="p">:</span> <span class="n"><a href="../generator.html#Generator">sqlglot.generator.Generator</a></span>,</span><span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#AnyValue">sqlglot.expressions.AnyValue</a></span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+                <label class="view-source-button" for="any_value_to_max_sql-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#any_value_to_max_sql"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="any_value_to_max_sql-728"><a href="#any_value_to_max_sql-728"><span class="linenos">728</span></a><span class="k">def</span> <span class="nf">any_value_to_max_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">AnyValue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="any_value_to_max_sql-729"><a href="#any_value_to_max_sql-729"><span class="linenos">729</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;MAX&quot;</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">)</span>
 </span></pre></div>
 
 

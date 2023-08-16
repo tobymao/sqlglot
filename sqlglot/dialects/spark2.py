@@ -32,9 +32,13 @@ def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
 
 
 def _map_sql(self: Hive.Generator, expression: exp.Map) -> str:
-    keys = self.sql(expression.args["keys"])
-    values = self.sql(expression.args["values"])
-    return f"MAP_FROM_ARRAYS({keys}, {values})"
+    keys = expression.args.get("keys")
+    values = expression.args.get("values")
+
+    if not keys or not values:
+        return "MAP()"
+
+    return f"MAP_FROM_ARRAYS({self.sql(keys)}, {self.sql(values)})"
 
 
 def _parse_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expression]:

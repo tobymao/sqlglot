@@ -379,7 +379,7 @@ class ClickHouse(Dialect):
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             # String is the standard ClickHouse type, every other variant is just an alias.
-            # Additionally, any supplied length parameter will be ignored by.
+            # Additionally, any supplied length parameter will be ignored.
             #
             # https://clickhouse.com/docs/en/sql-reference/data-types/string
             if expression.this in self.STRING_TYPE_MAPPING:

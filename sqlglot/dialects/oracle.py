@@ -22,7 +22,7 @@ def _parse_xml_table(self: parser.Parser) -> exp.XMLTable:
     by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
 
     if self._match_text_seq("COLUMNS"):
-        columns = self._parse_csv(lambda: self._parse_column_def(self._parse_field(any_token=True)))
+        columns = self._parse_csv(self._parse_field_def)
 
     return self.expression(exp.XMLTable, this=this, passing=passing, columns=columns, by_ref=by_ref)
 

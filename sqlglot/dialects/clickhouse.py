@@ -321,6 +321,13 @@ class ClickHouse(Dialect):
             exp.DataType.Type.UINT256: "UInt256",
             exp.DataType.Type.USMALLINT: "UInt16",
             exp.DataType.Type.UTINYINT: "UInt8",
+            exp.DataType.Type.CHAR: "String",
+            exp.DataType.Type.VARCHAR: "String",
+            exp.DataType.Type.LONGTEXT: "String",
+            exp.DataType.Type.MEDIUMTEXT: "String",
+            exp.DataType.Type.TEXT: "String",
+            exp.DataType.Type.LONGBLOB: "String",
+            exp.DataType.Type.MEDIUMBLOB: "String",
         }
 
         TRANSFORMS = {

@@ -608,7 +608,7 @@ class TestPostgres(Validator):
             "a || b",
             write={
                 "": "a || b",
-                "clickhouse": "CONCAT(CAST(a AS TEXT), CAST(b AS TEXT))",
+                "clickhouse": "CONCAT(CAST(a AS String), CAST(b AS String))",
                 "duckdb": "a || b",
                 "postgres": "a || b",
                 "presto": "CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR))",

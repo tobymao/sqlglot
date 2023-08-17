@@ -78,7 +78,7 @@ class TestDialect(Validator):
             "CAST(a AS TEXT)",
             write={
                 "bigquery": "CAST(a AS STRING)",
-                "clickhouse": "CAST(a AS TEXT)",
+                "clickhouse": "CAST(a AS String)",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS CHAR)",
@@ -133,7 +133,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CAST(MAP('a', '1') AS MAP(TEXT, TEXT))",
             write={
-                "clickhouse": "CAST(map('a', '1') AS Map(TEXT, TEXT))",
+                "clickhouse": "CAST(map('a', '1') AS Map(String, String))",
             },
         )
         self.validate_all(

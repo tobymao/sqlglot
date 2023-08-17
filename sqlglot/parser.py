@@ -3489,13 +3489,13 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.L_PAREN):
             return this
 
-        args = self._parse_csv(
-            lambda: self._parse_constraint()
-            or self._parse_column_def(self._parse_field(any_token=True))
-        )
+        args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def())
 
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
+
+    def _parse_field_def(self) -> t.Optional[exp.Expression]:
+        return self._parse_column_def(self._parse_field(any_token=True))
 
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         # column defs are not really columns, they're identifiers
@@ -4506,7 +4506,7 @@ class Parser(metaclass=_Parser):
 
         self._match(TokenType.COLUMN)
         exists_column = self._parse_exists(not_=True)
-        expression = self._parse_column_def(self._parse_field(any_token=True))
+        expression = self._parse_field_def()
 
         if expression:
             expression.set("exists", exists_column)

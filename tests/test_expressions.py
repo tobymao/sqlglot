@@ -891,3 +891,8 @@ FROM foo""",
 
         ast = parse_one("SELECT * FROM (((SELECT * FROM t)))")
         self.assertIs(ast.args["from"].this.unnest(), list(ast.find_all(exp.Select))[1])
+
+        ast = parse_one("SELECT * FROM ((((SELECT * FROM t))) AS foo)")
+        second_subquery = ast.args["from"].this.this
+        innermost_subquery = list(ast.find_all(exp.Select))[1].parent
+        self.assertIs(second_subquery, innermost_subquery.reversed_unnest())

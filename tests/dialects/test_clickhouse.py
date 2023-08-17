@@ -48,7 +48,7 @@ class TestClickhouse(Validator):
         self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)")
         self.validate_identity(
-            'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(TEXT))'
+            'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(String))'
         )
         self.validate_identity(
             "CREATE TABLE test (id UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()"
@@ -95,11 +95,11 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "CONCAT(CASE WHEN COALESCE(CAST(a AS TEXT), '') IS NULL THEN COALESCE(CAST(a AS TEXT), '') ELSE CAST(COALESCE(CAST(a AS TEXT), '') AS TEXT) END, CASE WHEN COALESCE(CAST(b AS TEXT), '') IS NULL THEN COALESCE(CAST(b AS TEXT), '') ELSE CAST(COALESCE(CAST(b AS TEXT), '') AS TEXT) END)",
+            "CONCAT(CASE WHEN COALESCE(CAST(a AS String), '') IS NULL THEN COALESCE(CAST(a AS String), '') ELSE CAST(COALESCE(CAST(a AS String), '') AS String) END, CASE WHEN COALESCE(CAST(b AS String), '') IS NULL THEN COALESCE(CAST(b AS String), '') ELSE CAST(COALESCE(CAST(b AS String), '') AS String) END)",
             read={"postgres": "CONCAT(a, b)"},
         )
         self.validate_all(
-            "CONCAT(CASE WHEN a IS NULL THEN a ELSE CAST(a AS TEXT) END, CASE WHEN b IS NULL THEN b ELSE CAST(b AS TEXT) END)",
+            "CONCAT(CASE WHEN a IS NULL THEN a ELSE CAST(a AS String) END, CASE WHEN b IS NULL THEN b ELSE CAST(b AS String) END)",
             read={"mysql": "CONCAT(a, b)"},
         )
         self.validate_all(
@@ -233,7 +233,7 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT {abc: UInt32}, {b: String}, {c: DateTime},{d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",
             write={
-                "clickhouse": "SELECT {abc: UInt32}, {b: TEXT}, {c: DATETIME}, {d: Map(TEXT, Array(UInt8))}, {e: Tuple(UInt8, String)}",
+                "clickhouse": "SELECT {abc: UInt32}, {b: String}, {c: DATETIME}, {d: Map(String, Array(UInt8))}, {e: Tuple(UInt8, String)}",
                 "": "SELECT :abc, :b, :c, :d, :e",
             },
         )
@@ -283,8 +283,8 @@ class TestClickhouse(Validator):
                 "clickhouse": """CREATE TABLE example1 (
   timestamp DATETIME,
   x UInt32 TTL now() + INTERVAL '1' MONTH,
-  y TEXT TTL timestamp + INTERVAL '1' DAY,
-  z TEXT
+  y String TTL timestamp + INTERVAL '1' DAY,
+  z String
 )
 ENGINE=MergeTree
 ORDER BY tuple()""",
@@ -305,7 +305,7 @@ ORDER BY tuple()""",
                 "clickhouse": """CREATE TABLE test (
   id UInt64,
   timestamp DateTime64,
-  data TEXT,
+  data String,
   max_hits UInt64,
   sum_hits UInt64
 )
@@ -332,8 +332,8 @@ SET
             """,
             write={
                 "clickhouse": """CREATE TABLE test (
-  id TEXT,
-  data TEXT
+  id String,
+  data String
 )
 ENGINE=AggregatingMergeTree()
 ORDER BY tuple()
@@ -416,7 +416,7 @@ WHERE
                 "clickhouse": """CREATE TABLE table_for_recompression (
   d DATETIME,
   key UInt64,
-  value TEXT
+  value String
 )
 ENGINE=MergeTree()
 ORDER BY tuple()
@@ -512,9 +512,9 @@ RANGE(MIN discount_start_date MAX discount_end_date)""",
             """,
             write={
                 "clickhouse": """CREATE DICTIONARY my_ip_trie_dictionary (
-  prefix TEXT,
+  prefix String,
   asn UInt32,
-  cca2 TEXT DEFAULT '??'
+  cca2 String DEFAULT '??'
 )
 PRIMARY KEY (prefix)
 SOURCE(CLICKHOUSE(
@@ -540,7 +540,7 @@ LIFETIME(MIN 0 MAX 3600)""",
             write={
                 "clickhouse": """CREATE DICTIONARY polygons_test_dictionary (
   key Array(Array(Array(Tuple(Float64, Float64)))),
-  name TEXT
+  name String
 )
 PRIMARY KEY (key)
 SOURCE(CLICKHOUSE(

@@ -207,6 +207,9 @@ class DuckDB(Dialect):
 
             return this
 
+        def _parse_struct_types(self) -> t.Optional[exp.Expression]:
+            return self._parse_field_def()
+
         def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
             if len(aggregations) == 1:
                 return super()._pivot_column_names(aggregations)

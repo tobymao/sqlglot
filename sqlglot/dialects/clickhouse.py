@@ -294,8 +294,20 @@ class ClickHouse(Dialect):
         STRUCT_DELIMITER = ("(", ")")
         NVL2_SUPPORTED = False
 
+        STRING_TYPE_MAPPING = {
+            exp.DataType.Type.CHAR: "String",
+            exp.DataType.Type.LONGBLOB: "String",
+            exp.DataType.Type.LONGTEXT: "String",
+            exp.DataType.Type.MEDIUMBLOB: "String",
+            exp.DataType.Type.MEDIUMTEXT: "String",
+            exp.DataType.Type.TEXT: "String",
+            exp.DataType.Type.VARBINARY: "String",
+            exp.DataType.Type.VARCHAR: "String",
+        }
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
+            **STRING_TYPE_MAPPING,
             exp.DataType.Type.ARRAY: "Array",
             exp.DataType.Type.BIGINT: "Int64",
             exp.DataType.Type.DATETIME64: "DateTime64",
@@ -321,13 +333,6 @@ class ClickHouse(Dialect):
             exp.DataType.Type.UINT256: "UInt256",
             exp.DataType.Type.USMALLINT: "UInt16",
             exp.DataType.Type.UTINYINT: "UInt8",
-            exp.DataType.Type.CHAR: "String",
-            exp.DataType.Type.VARCHAR: "String",
-            exp.DataType.Type.LONGTEXT: "String",
-            exp.DataType.Type.MEDIUMTEXT: "String",
-            exp.DataType.Type.TEXT: "String",
-            exp.DataType.Type.LONGBLOB: "String",
-            exp.DataType.Type.MEDIUMBLOB: "String",
         }
 
         TRANSFORMS = {
@@ -371,6 +376,16 @@ class ClickHouse(Dialect):
             "FUNCTION",
             "NAMED COLLECTION",
         }
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            # String is the standard ClickHouse type, every other variant is just an alias.
+            # Additionally, any supplied length parameter will be ignored.
+            #
+            # https://clickhouse.com/docs/en/sql-reference/data-types/string
+            if expression.this in self.STRING_TYPE_MAPPING:
+                return "String"
+
+            return super().datatype_sql(expression)
 
         def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
             # Clickhouse errors out if we try to cast a NULL value to TEXT

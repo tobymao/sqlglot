@@ -47,6 +47,8 @@ class TestClickhouse(Validator):
         self.validate_identity("position(haystack, needle)")
         self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)")
+        self.validate_identity("CAST(x AS VARCHAR(255))", "CAST(x AS String)")
+        self.validate_identity("CAST(x AS BLOB)", "CAST(x AS String)")
         self.validate_identity(
             'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(String))'
         )

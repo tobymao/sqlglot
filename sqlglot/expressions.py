@@ -3263,6 +3263,23 @@ class Subquery(DerivedTable, Unionable):
             expression = expression.this
         return expression
 
+    def unwrap(self) -> Subquery:
+        expression = self
+        while expression.same_parent and expression.is_wrapper:
+            expression = t.cast(Subquery, expression.parent)
+        return expression
+
+    @property
+    def is_wrapper(self) -> bool:
+        """
+        Whether this Subquery acts as a simple wrapper around another expression.
+
+        SELECT * FROM (((SELECT * FROM t)))
+                      ^
+                      This corresponds to a "wrapper" Subquery node
+        """
+        return all(v is None for k, v in self.args.items() if k != "this")
+
     @property
     def is_star(self) -> bool:
         return self.this.is_star

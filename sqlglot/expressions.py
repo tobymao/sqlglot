@@ -3269,7 +3269,7 @@ class Subquery(DerivedTable, Unionable):
             reverse: when set to True, this returns the first Subquery ancestor (or self) which
                 doesn't just act as a "wrapper" around the actual query, or the farthest wrapper
                 Subquery ancestor. If a Subquery has an alias or other args such as joins, etc.,
-                then it's not treated as a simple wrapper, because it has additional info attached.
+                then it's not treated as a simple wrapper.
 
         For example: SELECT * FROM (((SELECT * FROM t)))
                                    ^

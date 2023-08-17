@@ -3265,7 +3265,7 @@ class Subquery(DerivedTable, Unionable):
 
     def reversed_unnest(self) -> Subquery:
         expression = self
-        while expression.same_parent and self.is_paren:
+        while expression.same_parent and expression.is_paren:
             expression = t.cast(Subquery, expression.parent)
         return expression
 

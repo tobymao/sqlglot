@@ -143,7 +143,7 @@ def _eliminate_derived_table(scope, existing_ctes, taken):
         return None
 
     # Get rid of redundant exp.Subquery expressions, i.e. those that are just used as wrappers
-    to_replace = scope.expression.parent.reversed_unnest()
+    to_replace = scope.expression.parent.unwrap()
     name, cte = _new_cte(scope, existing_ctes, taken)
     table = exp.alias_(exp.table_(name), alias=to_replace.alias or name)
     table.set("joins", to_replace.args.get("joins"))

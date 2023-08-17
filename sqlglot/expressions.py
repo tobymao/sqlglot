@@ -3263,7 +3263,7 @@ class Subquery(DerivedTable, Unionable):
             expression = expression.this
         return expression
 
-    def reversed_unnest(self) -> Subquery:
+    def unwrap(self) -> Subquery:
         expression = self
         while expression.same_parent and expression.is_wrapper:
             expression = t.cast(Subquery, expression.parent)

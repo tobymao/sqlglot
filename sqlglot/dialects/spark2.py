@@ -115,9 +115,9 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
 
 
 def _insert_sql(self: Hive.Generator, expression: exp.Insert) -> str:
-    expression = expression.copy()
-    with_ = expression.expression.args.pop("with", None)
-    expression.set("with", with_)
+    if expression.expression.args.get("with"):
+        expression = expression.copy()
+        expression.set("with", expression.expression.args.pop("with"))
     return self.insert_sql(expression)
 
 

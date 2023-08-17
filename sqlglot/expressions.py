@@ -3265,12 +3265,12 @@ class Subquery(DerivedTable, Unionable):
 
     def reversed_unnest(self) -> Subquery:
         expression = self
-        while expression.same_parent and expression.is_paren:
+        while expression.same_parent and expression.is_wrapper:
             expression = t.cast(Subquery, expression.parent)
         return expression
 
     @property
-    def is_paren(self) -> bool:
+    def is_wrapper(self) -> bool:
         """
         Whether this Subquery acts as a simple wrapper around another expression.
 

@@ -411,6 +411,12 @@ class TestTSQL(Validator):
 
     def test_ddl(self):
         self.validate_all(
+            "IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE SCHEMA_NAME = foo) EXEC('CREATE SCHEMA foo')",
+            read={
+                "": "CREATE SCHEMA IF NOT EXISTS foo",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={
                 "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT)",

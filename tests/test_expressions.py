@@ -884,3 +884,22 @@ FROM foo""",
 
         ast.meta["some_other_meta_key"] = "some_other_meta_value"
         self.assertEqual(ast.meta.get("some_other_meta_key"), "some_other_meta_value")
+
+    def test_unnest(self):
+        ast = parse_one("SELECT (((1)))")
+        literal = ast.find(exp.Literal)
+        outermost_paren = ast.selects[0]
+        innermost_paren = literal.parent
+
+        self.assertIs(outermost_paren.unnest(), literal)
+        self.assertIs(innermost_paren.unnest(reverse=True), ast)
+        self.assertIs(literal.unnest(reverse=True), literal)
+
+        ast = parse_one("SELECT * FROM (((SELECT * FROM t))) AS t")
+        inner_subquery = list(ast.find_all(exp.Select))[1].parent
+        inner_subquery.parent
+        outer_subquery = ast.args["from"].this
+
+        self.assertIs(outer_subquery.unnest(), inner_subquery.this)
+        self.assertIs(outer_subquery.unnest(reverse=True), outer_subquery)
+        self.assertIs(inner_subquery.unnest(reverse=True), outer_subquery)

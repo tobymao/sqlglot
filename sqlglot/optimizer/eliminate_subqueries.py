@@ -142,15 +142,8 @@ def _eliminate_derived_table(scope, existing_ctes, taken):
     if scope.parent.pivots or isinstance(scope.parent.expression, exp.Lateral):
         return None
 
-    # Get rid of redundant exp.Subquery expressions, i.e. those that are used as parentheses
-    to_replace = scope.expression.parent
-    while (
-        isinstance(to_replace, exp.Subquery)
-        and to_replace.same_parent
-        and not any(v is not None and k != "this" for k, v in to_replace.args.items())
-    ):
-        to_replace = to_replace.parent
-
+    # Get rid of redundant exp.Subquery expressions, i.e. those that are just used as wrappers
+    to_replace = scope.expression.parent.unnest(reverse=True)
     name, cte = _new_cte(scope, existing_ctes, taken)
     table = exp.alias_(exp.table_(name), alias=to_replace.alias or name)
     table.set("joins", to_replace.args.get("joins"))

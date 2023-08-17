@@ -445,13 +445,20 @@ class Expression(metaclass=_Expression):
             for k, v in item.iter_expressions():
                 queue.append((v, item, k))
 
-    def unnest(self):
+    def unnest(self, reverse: bool = False):
         """
-        Returns the first non parenthesis child or self.
+        Returns the first non parenthesis descendant or self.
+
+        Args:
+            reverse: when set to True, this returns the first non parenthesis ancestor
+                instead of the first descendant.
+
+        Returns:
+            The nearest non parenthesis ancestor or descendant, depending on the value of `reverse`.
         """
         expression = self
         while type(expression) is Paren:
-            expression = expression.this
+            expression = expression.parent if reverse else expression.this
         return expression
 
     def unalias(self):
@@ -3254,13 +3261,43 @@ class Subquery(DerivedTable, Unionable):
         **QUERY_MODIFIERS,
     }
 
-    def unnest(self):
+    def unnest(self, reverse: bool = False):
         """
-        Returns the first non subquery.
+        Returns the first non subquery descendant.
+
+        Args:
+            reverse: when set to True, the unnest returns the first Subquery ancestor (or self)
+                which doesn't just act as a "wrapper" around the actual query, or the farthest
+                wrapper Subquery ancestor. If a Subquery has an alias or other args such as
+                joins, laterals, etc., then it's not treated as a simple wrapper, because it
+                has additional information attached into it.
+
+        For example: SELECT * FROM (((SELECT * FROM t)))
+                                   ^
+                                   This is the farthest Subquery node that acts as a wrapper around
+                                   the actual query
+
+                     SELECT * FROM (((SELECT * FROM t))) AS t
+                                   ^
+                                   This is the first Subquery ancestor that doesn't act as a wrapper,
+                                   because it has an alias attached to it
+
+        Returns:
+            The farthest Subquery ancestor or the first non subquery descendant, depending on the value
+            of `reverse`.
         """
-        expression = self
+        expression: t.Optional[Expression] = self
         while isinstance(expression, Subquery):
-            expression = expression.this
+            if reverse:
+                if not expression.same_parent or any(
+                    v is not None and k != "this" for k, v in expression.args.items()
+                ):
+                    break
+
+                expression = expression.parent
+            else:
+                expression = expression.this
+
         return expression
 
     @property

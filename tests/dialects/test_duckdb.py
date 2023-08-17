@@ -508,6 +508,10 @@ class TestDuckDB(Validator):
         self.validate_identity("CAST(x AS INT128)")
         self.validate_identity("CAST(x AS DOUBLE)")
         self.validate_identity("CAST(x AS DECIMAL(15, 4))")
+        self.validate_identity("CAST(x AS STRUCT(number BIGINT))")
+        self.validate_identity(
+            "CAST(ROW(1, ROW(1)) AS STRUCT(number BIGINT, row STRUCT(number BIGINT)))"
+        )
 
         self.validate_all("CAST(x AS NUMERIC(1, 2))", write={"duckdb": "CAST(x AS DECIMAL(1, 2))"})
         self.validate_all("CAST(x AS HUGEINT)", write={"duckdb": "CAST(x AS INT128)"})

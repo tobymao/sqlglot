@@ -438,7 +438,7 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("TIMESTAMP('2022-01-01')"), exp.Func)
         self.assertIsInstance(parse_one("TIMESTAMP()"), exp.Func)
         self.assertIsInstance(parse_one("map.x"), exp.Column)
-        self.assertIsInstance(parse_one("CAST(x AS CHAR(5))").to.expressions[0], exp.DataTypeSize)
+        self.assertIsInstance(parse_one("CAST(x AS CHAR(5))").to.expressions[0], exp.DataTypeParam)
         self.assertEqual(parse_one("1::int64", dialect="bigquery"), parse_one("CAST(1 AS BIGINT)"))
 
     def test_set_expression(self):

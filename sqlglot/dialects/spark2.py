@@ -182,10 +182,6 @@ class Spark2(Hive):
         QUERY_HINTS = True
         NVL2_SUPPORTED = True
 
-        TYPE_MAPPING = {
-            **Hive.Generator.TYPE_MAPPING,
-        }
-
         PROPERTIES_LOCATION = {
             **Hive.Generator.PROPERTIES_LOCATION,
             exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,

@@ -480,7 +480,7 @@ class Hive(Dialect):
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
             elif expression.is_type("float"):
-                size_expression = expression.find(exp.DataTypeSize)
+                size_expression = expression.find(exp.DataTypeParam)
                 if size_expression:
                     size = int(size_expression.name)
                     expression = (

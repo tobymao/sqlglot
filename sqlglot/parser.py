@@ -3111,13 +3111,13 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_type_size(self) -> t.Optional[exp.DataTypeSize]:
+    def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:
         this = self._parse_type()
         if not this:
             return None
 
         return self.expression(
-            exp.DataTypeSize, this=this, expression=self._parse_var(any_token=True)
+            exp.DataTypeParam, this=this, expression=self._parse_var(any_token=True)
         )
 
     def _parse_types(

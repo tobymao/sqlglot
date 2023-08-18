@@ -833,7 +833,7 @@ class Generator:
         string = self.escape_str(expression.this.replace("\\", "\\\\"))
         return f"{self.QUOTE_START}{string}{self.QUOTE_END}"
 
-    def datatypesize_sql(self, expression: exp.DataTypeSize) -> str:
+    def datatypeparam_sql(self, expression: exp.DataTypeParam) -> str:
         this = self.sql(expression, "this")
         specifier = self.sql(expression, "expression")
         specifier = f" {specifier}" if specifier else ""

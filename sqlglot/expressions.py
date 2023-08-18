@@ -4115,15 +4115,19 @@ class Cast(Func):
         return self.to.is_type(*dtypes)
 
 
-class CastToStrType(Func):
-    arg_types = {"this": True, "expression": True}
-
-
-class Collate(Binary):
+class TryCast(Cast):
     pass
 
 
-class TryCast(Cast):
+class CastToStrType(Func):
+    arg_types = {"this": True, "to": True}
+
+
+class CastToUserDefinedType(Func):
+    arg_types = {"this": True, "to": True}
+
+
+class Collate(Binary):
     pass
 
 

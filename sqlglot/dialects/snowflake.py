@@ -216,6 +216,7 @@ class Snowflake(Dialect):
 
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
+        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

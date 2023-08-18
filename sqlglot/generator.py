@@ -2660,6 +2660,9 @@ class Generator:
 
         return self.sql(case)
 
+    def casttouserdefinedtype_sql(self, expression: exp.CastToUserDefinedType) -> str:
+        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')})"
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

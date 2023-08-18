@@ -833,6 +833,8 @@ class Parser(metaclass=_Parser):
     LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
 
+    SUPPORTS_USER_DEFINED_TYPES = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3853,17 +3855,17 @@ class Parser(metaclass=_Parser):
 
         if not self._match(TokenType.ALIAS):
             if self._match(TokenType.COMMA):
-                return self.expression(
-                    exp.CastToStrType, this=this, expression=self._parse_string()
-                )
-            else:
-                self.raise_error("Expected AS after CAST")
+                return self.expression(exp.CastToStrType, this=this, to=self._parse_string())
+
+            self.raise_error("Expected AS after CAST")
 
         fmt = None
-        to = self._parse_types()
+        to = self._parse_types() or (self.SUPPORTS_USER_DEFINED_TYPES and self._parse_id_var())
 
         if not to:
             self.raise_error("Expected TYPE after CAST")
+        elif isinstance(to, exp.Identifier):
+            return self.expression(exp.CastToUserDefinedType, this=this, to=to)
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())

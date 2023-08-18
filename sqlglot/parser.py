@@ -3864,8 +3864,6 @@ class Parser(metaclass=_Parser):
 
         if not to:
             self.raise_error("Expected TYPE after CAST")
-        elif isinstance(to, exp.Identifier):
-            return self.expression(exp.CastToUserDefinedType, this=this, to=to)
         elif to.this == exp.DataType.Type.CHAR:
             if self._match(TokenType.CHARACTER_SET):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())

@@ -4112,7 +4112,11 @@ class Cast(Func):
         return self.name
 
     def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
-        return self.to.is_type(*dtypes)
+        to = self.to
+        if isinstance(to, Identifier):
+            return any(to == to_identifier(dtype) for dtype in dtypes if isinstance(dtype, str))
+
+        return to.is_type(*dtypes)
 
 
 class TryCast(Cast):
@@ -4120,10 +4124,6 @@ class TryCast(Cast):
 
 
 class CastToStrType(Func):
-    arg_types = {"this": True, "to": True}
-
-
-class CastToUserDefinedType(Func):
     arg_types = {"this": True, "to": True}
 
 

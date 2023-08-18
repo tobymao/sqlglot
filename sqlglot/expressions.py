@@ -4114,7 +4114,7 @@ class Cast(Func):
     def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
         to = self.to
         if isinstance(to, Identifier):
-            return any(to.name == dtype for dtype in dtypes if isinstance(dtype, str))
+            return any(to.name == dtype for dtype in dtypes)
 
         return to.is_type(*dtypes)
 

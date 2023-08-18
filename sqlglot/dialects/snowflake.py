@@ -250,11 +250,6 @@ class Snowflake(Dialect):
         }
         FUNCTION_PARSERS.pop("TRIM")
 
-        FUNC_TOKENS = {
-            *parser.Parser.FUNC_TOKENS,
-            TokenType.TABLE,
-        }
-
         COLUMN_OPERATORS = {
             **parser.Parser.COLUMN_OPERATORS,
             TokenType.COLON: lambda self, this, path: self.expression(
@@ -297,7 +292,6 @@ class Snowflake(Dialect):
             return super()._parse_id_var(any_token=any_token, tokens=tokens)
 
     class Tokenizer(tokens.Tokenizer):
-        QUOTES = ["'"]
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         RAW_STRINGS = ["$$"]

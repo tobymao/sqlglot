@@ -183,14 +183,6 @@ class DuckDB(Dialect):
             ),
         }
 
-        TYPE_TOKENS = {
-            *parser.Parser.TYPE_TOKENS,
-            TokenType.UBIGINT,
-            TokenType.UINT,
-            TokenType.USMALLINT,
-            TokenType.UTINYINT,
-        }
-
         def _parse_types(
             self, check_func: bool = False, schema: bool = False
         ) -> t.Optional[exp.Expression]:

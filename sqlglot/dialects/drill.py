@@ -73,7 +73,6 @@ class Drill(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
-        QUOTES = ["'"]
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
         ENCODE = "utf-8"

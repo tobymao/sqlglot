@@ -7,6 +7,8 @@ class TestOracle(Validator):
 
     def test_oracle(self):
         self.validate_identity("SELECT * FROM TABLE(foo)")
+        self.validate_identity("SELECT a$x#b")
+        self.validate_identity("SELECT :OBJECT")
         self.validate_identity("SELECT * FROM t FOR UPDATE")
         self.validate_identity("SELECT * FROM t FOR UPDATE WAIT 5")
         self.validate_identity("SELECT * FROM t FOR UPDATE NOWAIT")

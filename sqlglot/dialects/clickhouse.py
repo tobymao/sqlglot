@@ -249,7 +249,7 @@ class ClickHouse(Dialect):
 
         def _parse_func_params(
             self, this: t.Optional[exp.Func] = None
-        ) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
+        ) -> t.Optional[t.List[exp.Expression]]:
             if self._match_pair(TokenType.R_PAREN, TokenType.L_PAREN):
                 return self._parse_csv(self._parse_lambda)
 
@@ -267,9 +267,7 @@ class ClickHouse(Dialect):
                 return self.expression(exp.Quantile, this=params[0], quantile=this)
             return self.expression(exp.Quantile, this=this, quantile=exp.Literal.number(0.5))
 
-        def _parse_wrapped_id_vars(
-            self, optional: bool = False
-        ) -> t.List[t.Optional[exp.Expression]]:
+        def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expression]:
             return super()._parse_wrapped_id_vars(optional=True)
 
         def _parse_primary_key(

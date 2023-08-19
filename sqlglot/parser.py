@@ -817,7 +817,6 @@ class Parser(metaclass=_Parser):
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
-    PARTITION_BY_TOKENS = {TokenType.PARTITION_BY}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
@@ -1417,7 +1416,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_with_property(
         self,
-    ) -> t.Optional[exp.Expression] | t.List[t.Optional[exp.Expression]]:
+    ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_property)
 
@@ -1630,8 +1629,8 @@ class Parser(metaclass=_Parser):
             override=override,
         )
 
-    def _parse_partition_by(self) -> t.List[t.Optional[exp.Expression]]:
-        if self._match_set(self.PARTITION_BY_TOKENS):
+    def _parse_partition_by(self) -> t.List[exp.Expression]:
+        if self._match(TokenType.PARTITION_BY):
             return self._parse_csv(self._parse_conjunction)
         return []
 
@@ -1956,7 +1955,7 @@ class Parser(metaclass=_Parser):
         # https://prestodb.io/docs/current/sql/values.html
         return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
 
-    def _parse_projections(self) -> t.List[t.Optional[exp.Expression]]:
+    def _parse_projections(self) -> t.List[exp.Expression]:
         return self._parse_expressions()
 
     def _parse_select(
@@ -2768,7 +2767,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Group, **elements)  # type: ignore
 
-    def _parse_grouping_sets(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
+    def _parse_grouping_sets(self) -> t.Optional[t.List[exp.Expression]]:
         if not self._match(TokenType.GROUPING_SETS):
             return None
 
@@ -3159,7 +3158,7 @@ class Parser(metaclass=_Parser):
             maybe_func = True
 
         this: t.Optional[exp.Expression] = None
-        values: t.Optional[t.List[t.Optional[exp.Expression]]] = None
+        values: t.Optional[t.List[exp.Expression]] = None
 
         if nested and self._match(TokenType.LT):
             if is_struct:
@@ -3450,7 +3449,9 @@ class Parser(metaclass=_Parser):
         index = self._index
 
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(self._parse_id_var)
+            expressions = t.cast(
+                t.List[t.Optional[exp.Expression]], self._parse_csv(self._parse_id_var)
+            )
 
             if not self._match(TokenType.R_PAREN):
                 self._retreat(index)
@@ -3737,7 +3738,7 @@ class Parser(metaclass=_Parser):
         bracket_kind = self._prev.token_type
 
         if self._match(TokenType.COLON):
-            expressions: t.List[t.Optional[exp.Expression]] = [
+            expressions: t.List[exp.Expression] = [
                 self.expression(exp.Slice, expression=self._parse_conjunction())
             ]
         else:
@@ -3916,7 +3917,7 @@ class Parser(metaclass=_Parser):
             if self._match(TokenType.COMMA):
                 args.extend(self._parse_csv(self._parse_conjunction))
         else:
-            args = self._parse_csv(self._parse_conjunction)
+            args = self._parse_csv(self._parse_conjunction)  # type: ignore
 
         index = self._index
         if not self._match(TokenType.R_PAREN) and args:
@@ -4124,7 +4125,7 @@ class Parser(metaclass=_Parser):
         # Postgres supports the form: substring(string [from int] [for int])
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 
-        args = self._parse_csv(self._parse_bitwise)
+        args = t.cast(t.List[t.Optional[exp.Expression]], self._parse_csv(self._parse_bitwise))
 
         if self._match(TokenType.FROM):
             args.append(self._parse_bitwise())
@@ -4157,7 +4158,7 @@ class Parser(metaclass=_Parser):
             exp.Trim, this=this, position=position, expression=expression, collation=collation
         )
 
-    def _parse_window_clause(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
+    def _parse_window_clause(self) -> t.Optional[t.List[exp.Expression]]:
         return self._match(TokenType.WINDOW) and self._parse_csv(self._parse_named_window)
 
     def _parse_named_window(self) -> t.Optional[exp.Expression]:
@@ -4224,8 +4225,7 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("LAST"):
             first = False
 
-        partition = self._parse_partition_by()
-        order = self._parse_order()
+        partition, order = self._parse_partition_and_order()
         kind = self._match_set((TokenType.ROWS, TokenType.RANGE)) and self._prev.text
 
         if kind:
@@ -4263,6 +4263,11 @@ class Parser(metaclass=_Parser):
             return self._parse_window(window, alias=alias)
 
         return window
+
+    def _parse_partition_and_order(
+        self,
+    ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
+        return self._parse_partition_by(), self._parse_order()
 
     def _parse_window_spec(self) -> t.Dict[str, t.Optional[str | exp.Expression]]:
         self._match(TokenType.BETWEEN)
@@ -4385,14 +4390,14 @@ class Parser(metaclass=_Parser):
             self._advance(-1)
         return None
 
-    def _parse_except(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
+    def _parse_except(self) -> t.Optional[t.List[exp.Expression]]:
         if not self._match(TokenType.EXCEPT):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_column)
         return self._parse_csv(self._parse_column)
 
-    def _parse_replace(self) -> t.Optional[t.List[t.Optional[exp.Expression]]]:
+    def _parse_replace(self) -> t.Optional[t.List[exp.Expression]]:
         if not self._match(TokenType.REPLACE):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
@@ -4401,7 +4406,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_csv(
         self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.List[exp.Expression]:
         parse_result = parse_method()
         items = [parse_result] if parse_result is not None else []
 
@@ -4428,12 +4433,12 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[t.Optional[exp.Expression]]:
+    def _parse_wrapped_id_vars(self, optional: bool = False) -> t.List[exp.Expression]:
         return self._parse_wrapped_csv(self._parse_id_var, optional=optional)
 
     def _parse_wrapped_csv(
         self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA, optional: bool = False
-    ) -> t.List[t.Optional[exp.Expression]]:
+    ) -> t.List[exp.Expression]:
         return self._parse_wrapped(
             lambda: self._parse_csv(parse_method, sep=sep), optional=optional
         )
@@ -4447,7 +4452,7 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
         return parse_result
 
-    def _parse_expressions(self) -> t.List[t.Optional[exp.Expression]]:
+    def _parse_expressions(self) -> t.List[exp.Expression]:
         return self._parse_csv(self._parse_expression)
 
     def _parse_select_or_expression(self, alias: bool = False) -> t.Optional[exp.Expression]:
@@ -4557,7 +4562,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.AddConstraint, this=this, expression=expression)
 
-    def _parse_alter_table_add(self) -> t.List[t.Optional[exp.Expression]]:
+    def _parse_alter_table_add(self) -> t.List[exp.Expression]:
         index = self._index - 1
 
         if self._match_set(self.ADD_CONSTRAINT_TOKENS):
@@ -4584,7 +4589,7 @@ class Parser(metaclass=_Parser):
             using=self._match(TokenType.USING) and self._parse_conjunction(),
         )
 
-    def _parse_alter_table_drop(self) -> t.List[t.Optional[exp.Expression]]:
+    def _parse_alter_table_drop(self) -> t.List[exp.Expression]:
         index = self._index - 1
 
         partition_exists = self._parse_exists()

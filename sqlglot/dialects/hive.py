@@ -220,7 +220,6 @@ class Hive(Dialect):
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False
-        PARTITION_BY_TOKENS = {*parser.Parser.PARTITION_BY_TOKENS, TokenType.DISTRIBUTE_BY}
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -350,6 +349,16 @@ class Hive(Dialect):
                 )
 
             return this
+
+        def _parse_partition_and_order(
+            self,
+        ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
+            return (
+                self._parse_csv(self._parse_conjunction)
+                if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
+                else [],
+                super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY)),
+            )
 
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"

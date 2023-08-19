@@ -397,7 +397,7 @@ class TSQL(Dialect):
 
         CONCAT_NULL_OUTPUTS_STRING = True
 
-        def _parse_projections(self) -> t.List[t.Optional[exp.Expression]]:
+        def _parse_projections(self) -> t.List[exp.Expression]:
             """
             T-SQL supports the syntax alias = expression in the SELECT's projection list,
             so we transform all parsed Selects to convert their EQ projections into Aliases.

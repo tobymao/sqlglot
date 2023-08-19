@@ -137,9 +137,9 @@ def subclasses(
 
 def apply_index_offset(
     this: exp.Expression,
-    expressions: t.List[t.Optional[E]],
+    expressions: t.List[E],
     offset: int,
-) -> t.List[t.Optional[E]]:
+) -> t.List[E]:
     """
     Applies an offset to a given integer literal expression.
 
@@ -170,15 +170,14 @@ def apply_index_offset(
     ):
         return expressions
 
-    if expression:
-        if not expression.type:
-            annotate_types(expression)
-        if t.cast(exp.DataType, expression.type).this in exp.DataType.INTEGER_TYPES:
-            logger.warning("Applying array index offset (%s)", offset)
-            expression = simplify(
-                exp.Add(this=expression.copy(), expression=exp.Literal.number(offset))
-            )
-            return [expression]
+    if not expression.type:
+        annotate_types(expression)
+    if t.cast(exp.DataType, expression.type).this in exp.DataType.INTEGER_TYPES:
+        logger.warning("Applying array index offset (%s)", offset)
+        expression = simplify(
+            exp.Add(this=expression.copy(), expression=exp.Literal.number(offset))
+        )
+        return [expression]
 
     return expressions
 

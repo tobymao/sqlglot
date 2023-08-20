@@ -587,7 +587,7 @@ class BigQuery(Dialect):
 
             # BigQuery allows CAST(.. AS {STRING|TIMESTAMP} [FORMAT <fmt> [AT TIME ZONE <tz>]]).
             # Only the TIMESTAMP one should use the below conversion, when AT TIME ZONE is included.
-            if not isinstance(parent, exp.Cast) or not parent.to.is_type("text"):
+            if not isinstance(parent, exp.Cast) or not parent.to.is_type("text", only_kind=True):
                 return self.func(
                     "TIMESTAMP", self.func("DATETIME", expression.this, expression.args.get("zone"))
                 )

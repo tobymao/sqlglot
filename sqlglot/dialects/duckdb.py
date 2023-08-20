@@ -87,11 +87,11 @@ def _struct_sql(self: generator.Generator, expression: exp.Struct) -> str:
 
 
 def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
-    if expression.is_type("array"):
+    if expression.is_type("array", only_kind=True):
         return f"{self.expressions(expression, flat=True)}[]"
 
     # Type TIMESTAMP / TIME WITH TIME ZONE does not support any modifiers
-    if expression.is_type("timestamptz", "timetz"):
+    if expression.is_type("timestamptz", "timetz", only_kind=True):
         return expression.this.value
 
     return self.datatype_sql(expression)
@@ -191,11 +191,7 @@ class DuckDB(Dialect):
 
             # DuckDB treats NUMERIC and DECIMAL without precision as DECIMAL(18, 3)
             # See: https://duckdb.org/docs/sql/data_types/numeric
-            if (
-                isinstance(this, exp.DataType)
-                and this.is_type("numeric", "decimal")
-                and not this.expressions
-            ):
+            if isinstance(this, exp.DataType) and this.is_type("numeric", "decimal"):
                 return exp.DataType.build("DECIMAL(18, 3)")
 
             return this

@@ -242,10 +242,12 @@ class Spark2(Hive):
         CREATE_FUNCTION_RETURN_AS = False
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if isinstance(expression.this, exp.Cast) and expression.this.is_type("json"):
+            if isinstance(expression.this, exp.Cast) and expression.this.is_type(
+                "json", only_kind=True
+            ):
                 schema = f"'{self.sql(expression, 'to')}'"
                 return self.func("FROM_JSON", expression.this.this, schema)
-            if expression.is_type("json"):
+            if expression.is_type("json", only_kind=True):
                 return self.func("TO_JSON", expression.this)
 
             return super(Hive.Generator, self).cast_sql(expression, safe_prefix=safe_prefix)
@@ -255,7 +257,7 @@ class Spark2(Hive):
                 expression,
                 sep=": "
                 if isinstance(expression.parent, exp.DataType)
-                and expression.parent.is_type("struct")
+                and expression.parent.is_type("struct", only_kind=True)
                 else sep,
             )
 

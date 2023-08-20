@@ -896,3 +896,25 @@ FROM foo""",
         second_subquery = ast.args["from"].this.this
         innermost_subquery = list(ast.find_all(exp.Select))[1].parent
         self.assertIs(second_subquery, innermost_subquery.unwrap())
+
+    def test_is_type(self):
+        ast = parse_one("CAST(x AS INT)")
+        assert ast.is_type("INT")
+        assert not ast.is_type("FLOAT")
+
+        ast = parse_one("CAST(x AS ARRAY<INT>)")
+        assert ast.is_type("ARRAY", only_kind=True)
+        assert ast.is_type("ARRAY<INT>", only_kind=True)
+        assert not ast.is_type("ARRAY<FLOAT>")
+
+        ast = parse_one("CAST(x AS STRUCT<a INT, b FLOAT>)")
+        assert ast.is_type("STRUCT", only_kind=True)
+        assert ast.is_type("STRUCT<a INT, b FLOAT>")
+        assert not ast.is_type("STRUCT<a VARCHAR, b INT>")
+
+        dtype = exp.DataType.build("foo", udt=True)
+        assert dtype.is_type("foo")
+        assert not dtype.is_type("bar")
+
+        with self.assertRaises(ValueError):
+            exp.DataType.build("foo")

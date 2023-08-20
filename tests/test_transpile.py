@@ -393,6 +393,7 @@ LEFT OUTER JOIN b""",
         self.validate("x::INT y", "CAST(x AS INT) AS y")
         self.validate("x::INT AS y", "CAST(x AS INT) AS y")
         self.validate("x::INT::BOOLEAN", "CAST(CAST(x AS INT) AS BOOLEAN)")
+        self.validate("interval::int", "CAST(interval AS INT)")
         self.validate("CAST(x::INT AS BOOLEAN)", "CAST(CAST(x AS INT) AS BOOLEAN)")
         self.validate("CAST(x AS INT)::BOOLEAN", "CAST(CAST(x AS INT) AS BOOLEAN)")
 

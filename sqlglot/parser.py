@@ -3024,6 +3024,8 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Escape, this=this, expression=self._parse_string())
 
     def _parse_interval(self) -> t.Optional[exp.Interval]:
+        index = self._index
+
         if not self._match(TokenType.INTERVAL):
             return None
 
@@ -3031,6 +3033,10 @@ class Parser(metaclass=_Parser):
             this = self._parse_primary()
         else:
             this = self._parse_term()
+
+        if not this:
+            self._retreat(index)
+            return None
 
         unit = self._parse_function() or self._parse_var()
 

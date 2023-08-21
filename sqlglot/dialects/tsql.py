@@ -334,6 +334,7 @@ class TSQL(Dialect):
             "SQL_VARIANT": TokenType.VARIANT,
             "TOP": TokenType.TOP,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
+            "UPDATE STATISTICS": TokenType.COMMAND,
             "VARCHAR(MAX)": TokenType.TEXT,
             "XML": TokenType.XML,
             "OUTPUT": TokenType.RETURNING,

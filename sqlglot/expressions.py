@@ -3571,18 +3571,15 @@ class DataType(Expression):
         if isinstance(dtype, str):
             upper = dtype.upper()
             if upper in DataType.META_TYPES:
-                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type[upper])
+                data_type_exp = DataType(this=DataType.Type[upper])
             else:
                 try:
                     data_type_exp = parse_one(dtype, read=dialect, into=DataType)
-                except ParseError:
+                except ParseError as e:
                     if udt:
                         return DataType(this=DataType.Type.USERDEFINED, expression=dtype, **kwargs)
 
-                    raise
-
-            if data_type_exp is None:
-                raise ValueError(f"Unparsable data type value: {dtype}")
+                    raise ValueError(f"Unparsable data type value: {dtype}.") from e
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
         elif isinstance(dtype, DataType):

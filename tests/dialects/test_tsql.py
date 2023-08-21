@@ -22,6 +22,7 @@ class TestTSQL(Validator):
             "MERGE INTO mytable WITH (HOLDLOCK) AS T USING mytable_merge AS S "
             "ON (T.user_id = S.user_id) WHEN NOT MATCHED THEN INSERT (c1, c2) VALUES (S.c1, S.c2)"
         )
+        self.validate_identity("UPDATE STATISTICS x")
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b INTO @y FROM y")
         self.validate_identity("UPDATE x SET y = 1 OUTPUT x.a, x.b FROM y")
         self.validate_identity("INSERT INTO x (y) OUTPUT x.a, x.b INTO l SELECT * FROM z")

@@ -2,7 +2,7 @@ import datetime
 import math
 import unittest
 
-from sqlglot import alias, exp, parse_one
+from sqlglot import ParseError, alias, exp, parse_one
 
 
 class TestExpressions(unittest.TestCase):
@@ -917,5 +917,5 @@ FROM foo""",
         assert dtype.is_type("foo")
         assert not dtype.is_type("bar")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ParseError):
             exp.DataType.build("foo")

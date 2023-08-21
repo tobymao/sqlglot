@@ -3532,7 +3532,18 @@ class DataType(Expression):
         Type.DATETIME64,
     }
 
-    META_TYPES = {"UNKNOWN", "NULL"}
+    NESTED_TYPES = {
+        Type.ARRAY,
+        Type.LOWCARDINALITY,
+        Type.MAP,
+        Type.NESTED,
+        Type.STRUCT,
+    }
+
+    META_TYPES = {
+        "UNKNOWN",
+        "NULL",
+    }
 
     @classmethod
     def build(
@@ -3568,7 +3579,7 @@ class DataType(Expression):
                     if udt:
                         return DataType(this=DataType.Type.USERDEFINED, expression=dtype, **kwargs)
 
-                    raise ValueError(f"Unparsable data type value: {dtype}. {ex}")
+                    raise
 
             if data_type_exp is None:
                 raise ValueError(f"Unparsable data type value: {dtype}")
@@ -3581,22 +3592,33 @@ class DataType(Expression):
 
         return DataType(**{**data_type_exp.args, **kwargs})
 
-    def is_type(self, *dtypes: str | DataType | DataType.Type, only_kind: bool = False) -> bool:
+    def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
         """
-        Checks whether this DataType matches one of the provided data types.
+        Checks whether this DataType matches one of the provided data types. Nested types like
+        arrays or structs will be compared using "structural equivalence" semantics, so e.g.
+        array<int> != array<float>.
 
         Args:
             dtypes: the data types to compare this DataType to.
-            only_kind: when True, the only the "kind" of the DataType is checked, i.e. its Type value.
-                Otherwise, the type is checked using "structural equivalence" semantics, so that for
-                example array<int> will be different from array<float>.
 
         Returns:
             True, if and only if there is a type in `dtype` which is equal to this DataType.
         """
-        if only_kind:
-            return any(self.this == DataType.build(dtype, udt=True).this for dtype in dtypes)
-        return any(self == DataType.build(dtype, udt=True) for dtype in dtypes)
+        if self.expressions and self.this in DataType.NESTED_TYPES:
+            for dtype in dtypes:
+                dtype = DataType.build(dtype, udt=True)
+                if dtype.expressions:
+                    if dtype == self:
+                        return True
+                elif dtype.this == self.this:
+                    return True
+
+            return False
+
+        if self.this == DataType.Type.USERDEFINED:
+            return any(self == DataType.build(dtype, udt=True) for dtype in dtypes)
+
+        return any(self.this == DataType.build(dtype, udt=True).this for dtype in dtypes)
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -4152,20 +4174,19 @@ class Cast(Func):
     def output_name(self) -> str:
         return self.name
 
-    def is_type(self, *dtypes: str | DataType | DataType.Type, only_kind: bool = False) -> bool:
+    def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
         """
-        Checks whether this Cast's DataType matches one of the provided data types.
+        Checks whether this Cast's DataType matches one of the provided data types. Nested types
+        like arrays or structs will be compared using "structural equivalence" semantics, so e.g.
+        array<int> != array<float>.
 
         Args:
             dtypes: the data types to compare this Cast's DataType to.
-            only_kind: when True, the only the "kind" of the DataType is checked, i.e. its Type value.
-                Otherwise, the type is checked using "structural equality" semantics, so that for example
-                array<int> will be treated as a different type compared to array<float>.
 
         Returns:
             True, if and only if there is a type in `dtype` which is equal to this Cast's DataType.
         """
-        return self.to.is_type(*dtypes, only_kind=only_kind)
+        return self.to.is_type(*dtypes)
 
 
 class TryCast(Cast):

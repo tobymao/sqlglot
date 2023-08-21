@@ -377,7 +377,7 @@ class Presto(Dialect):
             else:
                 target_type = None
 
-            if target_type and target_type.is_type("timestamp", only_kind=True):
+            if target_type and target_type.is_type("timestamp"):
                 to = target_type.copy()
 
                 if target_type is start.to:

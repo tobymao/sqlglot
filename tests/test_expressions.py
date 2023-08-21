@@ -898,17 +898,18 @@ FROM foo""",
         self.assertIs(second_subquery, innermost_subquery.unwrap())
 
     def test_is_type(self):
-        ast = parse_one("CAST(x AS INT)")
-        assert ast.is_type("INT")
+        ast = parse_one("CAST(x AS VARCHAR)")
+        assert ast.is_type("VARCHAR")
+        assert ast.is_type("VARCHAR(5)")
         assert not ast.is_type("FLOAT")
 
         ast = parse_one("CAST(x AS ARRAY<INT>)")
-        assert ast.is_type("ARRAY", only_kind=True)
-        assert ast.is_type("ARRAY<INT>", only_kind=True)
+        assert ast.is_type("ARRAY")
+        assert ast.is_type("ARRAY<INT>")
         assert not ast.is_type("ARRAY<FLOAT>")
 
         ast = parse_one("CAST(x AS STRUCT<a INT, b FLOAT>)")
-        assert ast.is_type("STRUCT", only_kind=True)
+        assert ast.is_type("STRUCT")
         assert ast.is_type("STRUCT<a INT, b FLOAT>")
         assert not ast.is_type("STRUCT<a VARCHAR, b INT>")
 

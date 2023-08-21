@@ -89,7 +89,7 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
 
 def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
     this = expression.this
-    if isinstance(this, exp.Cast) and this.is_type("json", only_kind=True) and this.this.is_string:
+    if isinstance(this, exp.Cast) and this.is_type("json") and this.this.is_string:
         # Since FROM_JSON requires a nested type, we always wrap the json string with
         # an array to ensure that "naked" strings like "'a'" will be handled correctly
         wrapped_json = exp.Literal.string(f"[{this.this.name}]")
@@ -344,8 +344,7 @@ class Hive(Dialect):
             if this and not schema:
                 return this.transform(
                     lambda node: node.replace(exp.DataType.build("text"))
-                    if isinstance(node, exp.DataType)
-                    and node.is_type("char", "varchar", only_kind=True)
+                    if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
                     else node,
                     copy=False,
                 )
@@ -490,7 +489,7 @@ class Hive(Dialect):
                 expression = exp.DataType.build("text")
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
-            elif expression.is_type("float", only_kind=True):
+            elif expression.is_type("float"):
                 size_expression = expression.find(exp.DataTypeParam)
                 if size_expression:
                     size = int(size_expression.name)

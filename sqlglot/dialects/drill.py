@@ -80,6 +80,7 @@ class Drill(Dialect):
     class Parser(parser.Parser):
         STRICT_CAST = False
         CONCAT_NULL_OUTPUTS_STRING = True
+        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

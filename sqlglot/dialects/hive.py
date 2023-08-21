@@ -220,6 +220,7 @@ class Hive(Dialect):
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False
+        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

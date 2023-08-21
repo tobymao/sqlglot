@@ -63,6 +63,8 @@ class ClickHouse(Dialect):
         }
 
     class Parser(parser.Parser):
+        SUPPORTS_USER_DEFINED_TYPES = False
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,

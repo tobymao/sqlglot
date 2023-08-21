@@ -900,13 +900,26 @@ FROM foo""",
     def test_is_type(self):
         ast = parse_one("CAST(x AS VARCHAR)")
         assert ast.is_type("VARCHAR")
+        assert not ast.is_type("VARCHAR(5)")
+        assert not ast.is_type("FLOAT")
+
+        ast = parse_one("CAST(x AS VARCHAR(5))")
+        assert ast.is_type("VARCHAR")
         assert ast.is_type("VARCHAR(5)")
+        assert not ast.is_type("VARCHAR(4)")
         assert not ast.is_type("FLOAT")
 
         ast = parse_one("CAST(x AS ARRAY<INT>)")
         assert ast.is_type("ARRAY")
         assert ast.is_type("ARRAY<INT>")
         assert not ast.is_type("ARRAY<FLOAT>")
+        assert not ast.is_type("INT")
+
+        ast = parse_one("CAST(x AS ARRAY)")
+        assert ast.is_type("ARRAY")
+        assert not ast.is_type("ARRAY<INT>")
+        assert not ast.is_type("ARRAY<FLOAT>")
+        assert not ast.is_type("INT")
 
         ast = parse_one("CAST(x AS STRUCT<a INT, b FLOAT>)")
         assert ast.is_type("STRUCT")

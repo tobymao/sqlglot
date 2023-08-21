@@ -3532,14 +3532,6 @@ class DataType(Expression):
         Type.DATETIME64,
     }
 
-    NESTED_TYPES = {
-        Type.ARRAY,
-        Type.LOWCARDINALITY,
-        Type.MAP,
-        Type.NESTED,
-        Type.STRUCT,
-    }
-
     META_TYPES = {
         "UNKNOWN",
         "NULL",
@@ -3590,9 +3582,8 @@ class DataType(Expression):
 
     def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
         """
-        Checks whether this DataType matches one of the provided data types. Nested types like
-        arrays or structs will be compared using "structural equivalence" semantics, so e.g.
-        array<int> != array<float>.
+        Checks whether this DataType matches one of the provided data types. Nested types or precision
+        will be compared using "structural equivalence" semantics, so e.g. array<int> != array<float>.
 
         Args:
             dtypes: the data types to compare this DataType to.
@@ -3600,21 +3591,21 @@ class DataType(Expression):
         Returns:
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
-        if self.expressions and self.this in DataType.NESTED_TYPES:
-            for dtype in dtypes:
-                dtype = DataType.build(dtype, udt=True)
-                if dtype.expressions:
-                    if dtype == self:
-                        return True
-                elif dtype.this == self.this:
-                    return True
+        for dtype in dtypes:
+            other = DataType.build(dtype, udt=True)
 
-            return False
+            if (
+                other.expressions
+                or self.this == DataType.Type.USERDEFINED
+                or other.this == DataType.Type.USERDEFINED
+            ):
+                matches = self == other
+            else:
+                matches = self.this == other.this
 
-        if self.this == DataType.Type.USERDEFINED:
-            return any(self == DataType.build(dtype, udt=True) for dtype in dtypes)
-
-        return any(self.this == DataType.build(dtype, udt=True).this for dtype in dtypes)
+            if matches:
+                return True
+        return False
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html

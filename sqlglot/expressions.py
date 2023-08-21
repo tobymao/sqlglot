@@ -3575,11 +3575,10 @@ class DataType(Expression):
             else:
                 try:
                     data_type_exp = parse_one(dtype, read=dialect, into=DataType)
-                except ParseError as e:
+                except ParseError:
                     if udt:
                         return DataType(this=DataType.Type.USERDEFINED, expression=dtype, **kwargs)
-
-                    raise ValueError(f"Unparsable data type value: {dtype}.") from e
+                    raise
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
         elif isinstance(dtype, DataType):

@@ -3602,7 +3602,7 @@ class DataType(Expression):
             dtypes: the data types to compare this DataType to.
 
         Returns:
-            True, if and only if there is a type in `dtype` which is equal to this DataType.
+            True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
         if self.expressions and self.this in DataType.NESTED_TYPES:
             for dtype in dtypes:
@@ -4184,7 +4184,7 @@ class Cast(Func):
             dtypes: the data types to compare this Cast's DataType to.
 
         Returns:
-            True, if and only if there is a type in `dtype` which is equal to this Cast's DataType.
+            True, if and only if there is a type in `dtypes` which is equal to this Cast's DataType.
         """
         return self.to.is_type(*dtypes)
 

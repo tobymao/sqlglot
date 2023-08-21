@@ -1,6 +1,13 @@
 import unittest
 
-from sqlglot import Dialect, Dialects, ErrorLevel, UnsupportedError, parse_one
+from sqlglot import (
+    Dialect,
+    Dialects,
+    ErrorLevel,
+    ParseError,
+    UnsupportedError,
+    parse_one,
+)
 from sqlglot.dialects import Hive
 
 
@@ -1764,3 +1771,19 @@ SELECT
                 "tsql": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
             },
         )
+
+    def test_cast_to_user_defined_type(self):
+        self.validate_all(
+            "CAST(x AS some_udt)",
+            write={
+                "": "CAST(x AS some_udt)",
+                "oracle": "CAST(x AS some_udt)",
+                "postgres": "CAST(x AS some_udt)",
+                "presto": "CAST(x AS some_udt)",
+                "teradata": "CAST(x AS some_udt)",
+                "tsql": "CAST(x AS some_udt)",
+            },
+        )
+
+        with self.assertRaises(ParseError):
+            parse_one("CAST(x AS some_udt)", read="bigquery")

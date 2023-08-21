@@ -270,6 +270,8 @@ class BigQuery(Dialect):
         LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
+        SUPPORTS_USER_DEFINED_TYPES = False
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE": _parse_date,

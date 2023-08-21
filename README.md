@@ -178,7 +178,7 @@ for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
 
 ### Parser Errors
 
-When the parser detects an error in the syntax, it raises a ParserError:
+When the parser detects an error in the syntax, it raises a ParseError:
 
 ```python
 import sqlglot

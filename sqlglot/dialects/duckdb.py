@@ -134,6 +134,7 @@ class DuckDB(Dialect):
 
     class Parser(parser.Parser):
         CONCAT_NULL_OUTPUTS_STRING = True
+        SUPPORTS_USER_DEFINED_TYPES = False
 
         BITWISE = {
             **parser.Parser.BITWISE,

@@ -3399,6 +3399,7 @@ class DataTypeParam(Expression):
 class DataType(Expression):
     arg_types = {
         "this": True,
+        "expression": False,
         "expressions": False,
         "nested": False,
         "values": False,
@@ -3515,7 +3516,10 @@ class DataType(Expression):
         Type.DOUBLE,
     }
 
-    NUMERIC_TYPES = {*INTEGER_TYPES, *FLOAT_TYPES}
+    NUMERIC_TYPES = {
+        *INTEGER_TYPES,
+        *FLOAT_TYPES,
+    }
 
     TEMPORAL_TYPES = {
         Type.TIME,
@@ -3528,23 +3532,45 @@ class DataType(Expression):
         Type.DATETIME64,
     }
 
-    META_TYPES = {"UNKNOWN", "NULL"}
+    META_TYPES = {
+        "UNKNOWN",
+        "NULL",
+    }
 
     @classmethod
     def build(
-        cls, dtype: str | DataType | DataType.Type, dialect: DialectType = None, **kwargs
+        cls,
+        dtype: str | DataType | DataType.Type,
+        dialect: DialectType = None,
+        udt: bool = False,
+        **kwargs,
     ) -> DataType:
+        """
+        Constructs a DataType object.
+
+        Args:
+            dtype: the data type of interest.
+            dialect: the dialect to use for parsing `dtype`, in case it's a string.
+            udt: when set to True, `dtype` will be used as-is if it can't be parsed into a
+                DataType, thus creating a user-defined type.
+            kawrgs: additional arguments to pass in the constructor of DataType.
+
+        Returns:
+            The constructed DataType object.
+        """
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
             upper = dtype.upper()
             if upper in DataType.META_TYPES:
-                data_type_exp: t.Optional[Expression] = DataType(this=DataType.Type[upper])
+                data_type_exp = DataType(this=DataType.Type[upper])
             else:
-                data_type_exp = parse_one(dtype, read=dialect, into=DataType)
-
-            if data_type_exp is None:
-                raise ValueError(f"Unparsable data type value: {dtype}")
+                try:
+                    data_type_exp = parse_one(dtype, read=dialect, into=DataType)
+                except ParseError:
+                    if udt:
+                        return DataType(this=DataType.Type.USERDEFINED, expression=dtype, **kwargs)
+                    raise
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
         elif isinstance(dtype, DataType):
@@ -3555,7 +3581,31 @@ class DataType(Expression):
         return DataType(**{**data_type_exp.args, **kwargs})
 
     def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
-        return any(self.this == DataType.build(dtype).this for dtype in dtypes)
+        """
+        Checks whether this DataType matches one of the provided data types. Nested types or precision
+        will be compared using "structural equivalence" semantics, so e.g. array<int> != array<float>.
+
+        Args:
+            dtypes: the data types to compare this DataType to.
+
+        Returns:
+            True, if and only if there is a type in `dtypes` which is equal to this DataType.
+        """
+        for dtype in dtypes:
+            other = DataType.build(dtype, udt=True)
+
+            if (
+                other.expressions
+                or self.this == DataType.Type.USERDEFINED
+                or other.this == DataType.Type.USERDEFINED
+            ):
+                matches = self == other
+            else:
+                matches = self.this == other.this
+
+            if matches:
+                return True
+        return False
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -4112,18 +4162,29 @@ class Cast(Func):
         return self.name
 
     def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
+        """
+        Checks whether this Cast's DataType matches one of the provided data types. Nested types
+        like arrays or structs will be compared using "structural equivalence" semantics, so e.g.
+        array<int> != array<float>.
+
+        Args:
+            dtypes: the data types to compare this Cast's DataType to.
+
+        Returns:
+            True, if and only if there is a type in `dtypes` which is equal to this Cast's DataType.
+        """
         return self.to.is_type(*dtypes)
 
 
-class CastToStrType(Func):
-    arg_types = {"this": True, "expression": True}
-
-
-class Collate(Binary):
+class TryCast(Cast):
     pass
 
 
-class TryCast(Cast):
+class CastToStrType(Func):
+    arg_types = {"this": True, "to": True}
+
+
+class Collate(Binary):
     pass
 
 

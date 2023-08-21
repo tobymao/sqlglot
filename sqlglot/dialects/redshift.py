@@ -37,6 +37,8 @@ class Redshift(Postgres):
     }
 
     class Parser(Postgres.Parser):
+        SUPPORTS_USER_DEFINED_TYPES = False
+
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.DateAdd(

@@ -13,3 +13,6 @@ class Trino(Presto):
 
     class Tokenizer(Presto.Tokenizer):
         HEX_STRINGS = [("X'", "'")]
+
+    class Parser(Presto.Parser):
+        SUPPORTS_USER_DEFINED_TYPES = False

@@ -3575,7 +3575,7 @@ class DataType(Expression):
             else:
                 try:
                     data_type_exp = parse_one(dtype, read=dialect, into=DataType)
-                except ParseError as ex:
+                except ParseError:
                     if udt:
                         return DataType(this=DataType.Type.USERDEFINED, expression=dtype, **kwargs)
 

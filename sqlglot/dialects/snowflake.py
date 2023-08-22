@@ -164,6 +164,17 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
+def _regexpilike_sql(self: generator.Generator, expression: exp.RegexpILike) -> str:
+    flag = expression.text("flag")
+
+    if "i" not in flag:
+        flag += "i"
+
+    return self.func(
+        "REGEXP_LIKE", expression.this, expression.expression, exp.Literal.string(flag)
+    )
+
+
 def _parse_convert_timezone(args: t.List) -> t.Union[exp.Anonymous, exp.AtTimeZone]:
     if len(args) == 3:
         return exp.Anonymous(this="CONVERT_TIMEZONE", expressions=args)
@@ -357,6 +368,7 @@ class Snowflake(Dialect):
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+            exp.RegexpILike: _regexpilike_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),

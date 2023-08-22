@@ -3543,7 +3543,18 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("FOR", "ORDINALITY"):
             return self.expression(exp.ColumnDef, this=this, ordinality=True)
 
-        constraints = []
+        constraints: t.List[exp.Expression] = []
+
+        if not kind and self._match(TokenType.ALIAS):
+            constraints.append(
+                self.expression(
+                    exp.ComputedColumnConstraint,
+                    this=self._parse_conjunction(),
+                    persisted=self._match_text_seq("PERSISTED"),
+                    not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
+                )
+            )
+
         while True:
             constraint = self._parse_column_constraint()
             if not constraint:

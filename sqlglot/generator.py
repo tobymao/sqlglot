@@ -630,6 +630,16 @@ class Generator:
         kind_sql = self.sql(expression, "kind").strip()
         return f"CONSTRAINT {this} {kind_sql}" if this else kind_sql
 
+    def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+        this = self.sql(expression, "this")
+        if expression.args.get("not_null"):
+            persisted = " PERSISTED NOT NULL"
+        elif expression.args.get("persisted"):
+            persisted = " PERSISTED"
+        else:
+            persisted = ""
+        return f"AS {this}{persisted}"
+
     def autoincrementcolumnconstraint_sql(self, _) -> str:
         return self.token_sql(TokenType.AUTO_INCREMENT)
 

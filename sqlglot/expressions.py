@@ -1345,6 +1345,12 @@ class PathColumnConstraint(ColumnConstraintKind):
     pass
 
 
+# computed column expression
+# https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-transact-sql?view=sql-server-ver16
+class ComputedColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True, "persisted": False, "not_null": False}
+
+
 class Constraint(Expression):
     arg_types = {"this": True, "expressions": True}
 

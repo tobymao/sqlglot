@@ -7,6 +7,10 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_identity(
+            "CREATE TABLE tbl (a AS (x + 1) PERSISTED, b AS (y + 2), c AS (y / 3) PERSISTED NOT NULL)"
+        )
+
+        self.validate_identity(
             "CREATE TABLE [db].[tbl]([a] [int])", 'CREATE TABLE "db"."tbl" ("a" INTEGER)'
         )
 

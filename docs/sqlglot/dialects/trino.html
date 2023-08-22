@@ -64,10 +64,7 @@
                                             <a class="variable" href="#Trino.Generator.IDENTIFIER_END">IDENTIFIER_END</a>
                                     </li>
                                     <li>
-                                            <a class="variable" href="#Trino.Generator.STRING_ESCAPE">STRING_ESCAPE</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Trino.Generator.IDENTIFIER_ESCAPE">IDENTIFIER_ESCAPE</a>
+                                            <a class="variable" href="#Trino.Generator.TOKENIZER_CLASS">TOKENIZER_CLASS</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#Trino.Generator.BIT_START">BIT_START</a>
@@ -95,6 +92,30 @@
                                         <ul class="memberlist">
                                     <li>
                                             <a class="variable" href="#Trino.Tokenizer.HEX_STRINGS">HEX_STRINGS</a>
+                                    </li>
+                            </ul>
+
+                        </li>
+                        <li>
+                                <a class="class" href="#Trino.Parser">Trino.Parser</a>
+                                        <ul class="memberlist">
+                                    <li>
+                                            <a class="variable" href="#Trino.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Parser.TOKENIZER_CLASS">TOKENIZER_CLASS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Parser.SHOW_TRIE">SHOW_TRIE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Parser.SET_TRIE">SET_TRIE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Parser.FORMAT_TRIE">FORMAT_TRIE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Parser.TIME_TRIE">TIME_TRIE</a>
                                     </li>
                             </ul>
 
@@ -191,6 +212,9 @@
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Presto</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;X&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)]</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">Presto</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -215,6 +239,9 @@
 </span><span id="Trino-14"><a href="#Trino-14"><span class="linenos">14</span></a>
 </span><span id="Trino-15"><a href="#Trino-15"><span class="linenos">15</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">Presto</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
 </span><span id="Trino-16"><a href="#Trino-16"><span class="linenos">16</span></a>        <span class="n">HEX_STRINGS</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;X&#39;&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)]</span>
+</span><span id="Trino-17"><a href="#Trino-17"><span class="linenos">17</span></a>
+</span><span id="Trino-18"><a href="#Trino-18"><span class="linenos">18</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">Presto</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Trino-19"><a href="#Trino-19"><span class="linenos">19</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -235,7 +262,7 @@
                             <div id="Trino.parser_class" class="classattr">
                                 <div class="attr variable">
             <span class="name">parser_class</span>        =
-<span class="default_value">&lt;class &#39;<a href="presto.html#Presto.Parser">sqlglot.dialects.presto.Presto.Parser</a>&#39;&gt;</span>
+<span class="default_value">&lt;class &#39;<a href="#Trino.Parser">sqlglot.dialects.trino.Trino.Parser</a>&#39;&gt;</span>
 
         
     </div>
@@ -438,7 +465,6 @@
                 <dd id="Trino.TIME_MAPPING" class="variable"><a href="presto.html#Presto.TIME_MAPPING">TIME_MAPPING</a></dd>
                 <dd id="Trino.STRICT_STRING_CONCAT" class="variable"><a href="presto.html#Presto.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
                 <dd id="Trino.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="variable"><a href="presto.html#Presto.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a></dd>
-                <dd id="Trino.Parser" class="class"><a href="presto.html#Presto.Parser">Parser</a></dd>
 
             </div>
             <div><dt><a href="dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></dt>
@@ -591,26 +617,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Trino.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Trino.Generator.can_identify-257"><a href="#Trino.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Trino.Generator.can_identify-258"><a href="#Trino.Generator.can_identify-258"><span class="linenos">258</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Trino.Generator.can_identify-259"><a href="#Trino.Generator.can_identify-259"><span class="linenos">259</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Trino.Generator.can_identify-260"><a href="#Trino.Generator.can_identify-260"><span class="linenos">260</span></a>
-</span><span id="Trino.Generator.can_identify-261"><a href="#Trino.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">        Args:</span>
-</span><span id="Trino.Generator.can_identify-262"><a href="#Trino.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Trino.Generator.can_identify-263"><a href="#Trino.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">            identify:</span>
-</span><span id="Trino.Generator.can_identify-264"><a href="#Trino.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Trino.Generator.can_identify-265"><a href="#Trino.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Trino.Generator.can_identify-266"><a href="#Trino.Generator.can_identify-266"><span class="linenos">266</span></a>
-</span><span id="Trino.Generator.can_identify-267"><a href="#Trino.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">        Returns:</span>
-</span><span id="Trino.Generator.can_identify-268"><a href="#Trino.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Trino.Generator.can_identify-269"><a href="#Trino.Generator.can_identify-269"><span class="linenos">269</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Trino.Generator.can_identify-270"><a href="#Trino.Generator.can_identify-270"><span class="linenos">270</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Trino.Generator.can_identify-271"><a href="#Trino.Generator.can_identify-271"><span class="linenos">271</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Trino.Generator.can_identify-272"><a href="#Trino.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="Trino.Generator.can_identify-273"><a href="#Trino.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Trino.Generator.can_identify-274"><a href="#Trino.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="Trino.Generator.can_identify-275"><a href="#Trino.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="Trino.Generator.can_identify-276"><a href="#Trino.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">return</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Trino.Generator.can_identify-256"><a href="#Trino.Generator.can_identify-256"><span class="linenos">256</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Trino.Generator.can_identify-257"><a href="#Trino.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Trino.Generator.can_identify-258"><a href="#Trino.Generator.can_identify-258"><span class="linenos">258</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Trino.Generator.can_identify-259"><a href="#Trino.Generator.can_identify-259"><span class="linenos">259</span></a>
+</span><span id="Trino.Generator.can_identify-260"><a href="#Trino.Generator.can_identify-260"><span class="linenos">260</span></a><span class="sd">        Args:</span>
+</span><span id="Trino.Generator.can_identify-261"><a href="#Trino.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Trino.Generator.can_identify-262"><a href="#Trino.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            identify:</span>
+</span><span id="Trino.Generator.can_identify-263"><a href="#Trino.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Trino.Generator.can_identify-264"><a href="#Trino.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Trino.Generator.can_identify-265"><a href="#Trino.Generator.can_identify-265"><span class="linenos">265</span></a>
+</span><span id="Trino.Generator.can_identify-266"><a href="#Trino.Generator.can_identify-266"><span class="linenos">266</span></a><span class="sd">        Returns:</span>
+</span><span id="Trino.Generator.can_identify-267"><a href="#Trino.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Trino.Generator.can_identify-268"><a href="#Trino.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Trino.Generator.can_identify-269"><a href="#Trino.Generator.can_identify-269"><span class="linenos">269</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Trino.Generator.can_identify-270"><a href="#Trino.Generator.can_identify-270"><span class="linenos">270</span></a>            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="Trino.Generator.can_identify-271"><a href="#Trino.Generator.can_identify-271"><span class="linenos">271</span></a>
+</span><span id="Trino.Generator.can_identify-272"><a href="#Trino.Generator.can_identify-272"><span class="linenos">272</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Trino.Generator.can_identify-273"><a href="#Trino.Generator.can_identify-273"><span class="linenos">273</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Trino.Generator.can_identify-274"><a href="#Trino.Generator.can_identify-274"><span class="linenos">274</span></a>
+</span><span id="Trino.Generator.can_identify-275"><a href="#Trino.Generator.can_identify-275"><span class="linenos">275</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -681,26 +707,14 @@ Default: True</li>
     
 
                             </div>
-                            <div id="Trino.Generator.STRING_ESCAPE" class="classattr">
+                            <div id="Trino.Generator.TOKENIZER_CLASS" class="classattr">
                                 <div class="attr variable">
-            <span class="name">STRING_ESCAPE</span>        =
-<span class="default_value">&#34;&#39;&#34;</span>
+            <span class="name">TOKENIZER_CLASS</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Trino.Tokenizer">sqlglot.dialects.trino.Trino.Tokenizer</a>&#39;&gt;</span>
 
         
     </div>
-    <a class="headerlink" href="#Trino.Generator.STRING_ESCAPE"></a>
-    
-    
-
-                            </div>
-                            <div id="Trino.Generator.IDENTIFIER_ESCAPE" class="classattr">
-                                <div class="attr variable">
-            <span class="name">IDENTIFIER_ESCAPE</span>        =
-<span class="default_value">&#39;&#34;&#39;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Trino.Generator.IDENTIFIER_ESCAPE"></a>
+    <a class="headerlink" href="#Trino.Generator.TOKENIZER_CLASS"></a>
     
     
 
@@ -844,6 +858,7 @@ Default: True</li>
                 <dd id="Trino.Generator.columnposition_sql" class="function"><a href="../generator.html#Generator.columnposition_sql">columnposition_sql</a></dd>
                 <dd id="Trino.Generator.columndef_sql" class="function"><a href="../generator.html#Generator.columndef_sql">columndef_sql</a></dd>
                 <dd id="Trino.Generator.columnconstraint_sql" class="function"><a href="../generator.html#Generator.columnconstraint_sql">columnconstraint_sql</a></dd>
+                <dd id="Trino.Generator.computedcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.computedcolumnconstraint_sql">computedcolumnconstraint_sql</a></dd>
                 <dd id="Trino.Generator.autoincrementcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.autoincrementcolumnconstraint_sql">autoincrementcolumnconstraint_sql</a></dd>
                 <dd id="Trino.Generator.compresscolumnconstraint_sql" class="function"><a href="../generator.html#Generator.compresscolumnconstraint_sql">compresscolumnconstraint_sql</a></dd>
                 <dd id="Trino.Generator.generatedasidentitycolumnconstraint_sql" class="function"><a href="../generator.html#Generator.generatedasidentitycolumnconstraint_sql">generatedasidentitycolumnconstraint_sql</a></dd>
@@ -862,7 +877,7 @@ Default: True</li>
                 <dd id="Trino.Generator.hexstring_sql" class="function"><a href="../generator.html#Generator.hexstring_sql">hexstring_sql</a></dd>
                 <dd id="Trino.Generator.bytestring_sql" class="function"><a href="../generator.html#Generator.bytestring_sql">bytestring_sql</a></dd>
                 <dd id="Trino.Generator.rawstring_sql" class="function"><a href="../generator.html#Generator.rawstring_sql">rawstring_sql</a></dd>
-                <dd id="Trino.Generator.datatypesize_sql" class="function"><a href="../generator.html#Generator.datatypesize_sql">datatypesize_sql</a></dd>
+                <dd id="Trino.Generator.datatypeparam_sql" class="function"><a href="../generator.html#Generator.datatypeparam_sql">datatypeparam_sql</a></dd>
                 <dd id="Trino.Generator.datatype_sql" class="function"><a href="../generator.html#Generator.datatype_sql">datatype_sql</a></dd>
                 <dd id="Trino.Generator.directory_sql" class="function"><a href="../generator.html#Generator.directory_sql">directory_sql</a></dd>
                 <dd id="Trino.Generator.delete_sql" class="function"><a href="../generator.html#Generator.delete_sql">delete_sql</a></dd>
@@ -1157,6 +1172,215 @@ Default: True</li>
             </div>
             <div><dt><a href="presto.html#Presto.Tokenizer">sqlglot.dialects.presto.Presto.Tokenizer</a></dt>
                                 <dd id="Trino.Tokenizer.KEYWORDS" class="variable"><a href="presto.html#Presto.Tokenizer.KEYWORDS">KEYWORDS</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="Trino.Parser">
+                            <input id="Trino.Parser-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">Trino.Parser</span><wbr>(<span class="base"><a href="presto.html#Presto.Parser">sqlglot.dialects.presto.Presto.Parser</a></span>):
+
+                <label class="view-source-button" for="Trino.Parser-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Trino.Parser"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Trino.Parser-18"><a href="#Trino.Parser-18"><span class="linenos">18</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">Presto</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Trino.Parser-19"><a href="#Trino.Parser-19"><span class="linenos">19</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Parser consumes a list of tokens produced by the Tokenizer and produces a parsed syntax tree.</p>
+
+<h6 id="arguments">Arguments:</h6>
+
+<ul>
+<li><strong>error_level:</strong>  The desired error level.
+Default: ErrorLevel.IMMEDIATE</li>
+<li><strong>error_message_context:</strong>  Determines the amount of context to capture from a
+query string when displaying the error message (in number of characters).
+Default: 100</li>
+<li><strong>max_errors:</strong>  Maximum number of error messages to include in a raised ParseError.
+This is only relevant if error_level is ErrorLevel.RAISE.
+Default: 3</li>
+</ul>
+</div>
+
+
+                            <div id="Trino.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Parser.TOKENIZER_CLASS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TOKENIZER_CLASS</span><span class="annotation">: Type[<a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a>]</span>        =
+<span class="default_value">&lt;class &#39;<a href="#Trino.Tokenizer">sqlglot.dialects.trino.Trino.Tokenizer</a>&#39;&gt;</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Parser.TOKENIZER_CLASS"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Parser.SHOW_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SHOW_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Parser.SHOW_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Parser.SET_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SET_TRIE</span><span class="annotation">: Dict</span>        =
+<span class="default_value">{&#39;GLOBAL&#39;: {0: True}, &#39;LOCAL&#39;: {0: True}, &#39;SESSION&#39;: {0: True}, &#39;TRANSACTION&#39;: {0: True}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Parser.SET_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Parser.FORMAT_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Trino.Parser.FORMAT_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.Parser.FORMAT_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Parser.FORMAT_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Parser.TIME_TRIE" class="classattr">
+                                <div class="attr variable">
+            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
+<input id="Trino.Parser.TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Trino.Parser.TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;M&#39;: {0: True}, &#39;c&#39;: {0: True}, &#39;e&#39;: {0: True}, &#39;h&#39;: {0: True}, &#39;i&#39;: {0: True}, &#39;s&#39;: {0: True}, &#39;u&#39;: {0: True}, &#39;k&#39;: {0: True}, &#39;l&#39;: {0: True}, &#39;T&#39;: {0: True}, &#39;W&#39;: {0: True}}}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Parser.TIME_TRIE"></a>
+    
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="../parser.html#Parser">sqlglot.parser.Parser</a></dt>
+                                <dd id="Trino.Parser.__init__" class="function"><a href="../parser.html#Parser.__init__">Parser</a></dd>
+                <dd id="Trino.Parser.NO_PAREN_FUNCTIONS" class="variable"><a href="../parser.html#Parser.NO_PAREN_FUNCTIONS">NO_PAREN_FUNCTIONS</a></dd>
+                <dd id="Trino.Parser.STRUCT_TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.STRUCT_TYPE_TOKENS">STRUCT_TYPE_TOKENS</a></dd>
+                <dd id="Trino.Parser.NESTED_TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.NESTED_TYPE_TOKENS">NESTED_TYPE_TOKENS</a></dd>
+                <dd id="Trino.Parser.ENUM_TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.ENUM_TYPE_TOKENS">ENUM_TYPE_TOKENS</a></dd>
+                <dd id="Trino.Parser.TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.TYPE_TOKENS">TYPE_TOKENS</a></dd>
+                <dd id="Trino.Parser.SUBQUERY_PREDICATES" class="variable"><a href="../parser.html#Parser.SUBQUERY_PREDICATES">SUBQUERY_PREDICATES</a></dd>
+                <dd id="Trino.Parser.RESERVED_KEYWORDS" class="variable"><a href="../parser.html#Parser.RESERVED_KEYWORDS">RESERVED_KEYWORDS</a></dd>
+                <dd id="Trino.Parser.DB_CREATABLES" class="variable"><a href="../parser.html#Parser.DB_CREATABLES">DB_CREATABLES</a></dd>
+                <dd id="Trino.Parser.CREATABLES" class="variable"><a href="../parser.html#Parser.CREATABLES">CREATABLES</a></dd>
+                <dd id="Trino.Parser.ID_VAR_TOKENS" class="variable"><a href="../parser.html#Parser.ID_VAR_TOKENS">ID_VAR_TOKENS</a></dd>
+                <dd id="Trino.Parser.INTERVAL_VARS" class="variable"><a href="../parser.html#Parser.INTERVAL_VARS">INTERVAL_VARS</a></dd>
+                <dd id="Trino.Parser.TABLE_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.TABLE_ALIAS_TOKENS">TABLE_ALIAS_TOKENS</a></dd>
+                <dd id="Trino.Parser.COMMENT_TABLE_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.COMMENT_TABLE_ALIAS_TOKENS">COMMENT_TABLE_ALIAS_TOKENS</a></dd>
+                <dd id="Trino.Parser.UPDATE_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.UPDATE_ALIAS_TOKENS">UPDATE_ALIAS_TOKENS</a></dd>
+                <dd id="Trino.Parser.TRIM_TYPES" class="variable"><a href="../parser.html#Parser.TRIM_TYPES">TRIM_TYPES</a></dd>
+                <dd id="Trino.Parser.FUNC_TOKENS" class="variable"><a href="../parser.html#Parser.FUNC_TOKENS">FUNC_TOKENS</a></dd>
+                <dd id="Trino.Parser.CONJUNCTION" class="variable"><a href="../parser.html#Parser.CONJUNCTION">CONJUNCTION</a></dd>
+                <dd id="Trino.Parser.EQUALITY" class="variable"><a href="../parser.html#Parser.EQUALITY">EQUALITY</a></dd>
+                <dd id="Trino.Parser.COMPARISON" class="variable"><a href="../parser.html#Parser.COMPARISON">COMPARISON</a></dd>
+                <dd id="Trino.Parser.BITWISE" class="variable"><a href="../parser.html#Parser.BITWISE">BITWISE</a></dd>
+                <dd id="Trino.Parser.TERM" class="variable"><a href="../parser.html#Parser.TERM">TERM</a></dd>
+                <dd id="Trino.Parser.FACTOR" class="variable"><a href="../parser.html#Parser.FACTOR">FACTOR</a></dd>
+                <dd id="Trino.Parser.TIMES" class="variable"><a href="../parser.html#Parser.TIMES">TIMES</a></dd>
+                <dd id="Trino.Parser.TIMESTAMPS" class="variable"><a href="../parser.html#Parser.TIMESTAMPS">TIMESTAMPS</a></dd>
+                <dd id="Trino.Parser.SET_OPERATIONS" class="variable"><a href="../parser.html#Parser.SET_OPERATIONS">SET_OPERATIONS</a></dd>
+                <dd id="Trino.Parser.JOIN_METHODS" class="variable"><a href="../parser.html#Parser.JOIN_METHODS">JOIN_METHODS</a></dd>
+                <dd id="Trino.Parser.JOIN_SIDES" class="variable"><a href="../parser.html#Parser.JOIN_SIDES">JOIN_SIDES</a></dd>
+                <dd id="Trino.Parser.JOIN_KINDS" class="variable"><a href="../parser.html#Parser.JOIN_KINDS">JOIN_KINDS</a></dd>
+                <dd id="Trino.Parser.JOIN_HINTS" class="variable"><a href="../parser.html#Parser.JOIN_HINTS">JOIN_HINTS</a></dd>
+                <dd id="Trino.Parser.LAMBDAS" class="variable"><a href="../parser.html#Parser.LAMBDAS">LAMBDAS</a></dd>
+                <dd id="Trino.Parser.COLUMN_OPERATORS" class="variable"><a href="../parser.html#Parser.COLUMN_OPERATORS">COLUMN_OPERATORS</a></dd>
+                <dd id="Trino.Parser.EXPRESSION_PARSERS" class="variable"><a href="../parser.html#Parser.EXPRESSION_PARSERS">EXPRESSION_PARSERS</a></dd>
+                <dd id="Trino.Parser.STATEMENT_PARSERS" class="variable"><a href="../parser.html#Parser.STATEMENT_PARSERS">STATEMENT_PARSERS</a></dd>
+                <dd id="Trino.Parser.UNARY_PARSERS" class="variable"><a href="../parser.html#Parser.UNARY_PARSERS">UNARY_PARSERS</a></dd>
+                <dd id="Trino.Parser.PRIMARY_PARSERS" class="variable"><a href="../parser.html#Parser.PRIMARY_PARSERS">PRIMARY_PARSERS</a></dd>
+                <dd id="Trino.Parser.PLACEHOLDER_PARSERS" class="variable"><a href="../parser.html#Parser.PLACEHOLDER_PARSERS">PLACEHOLDER_PARSERS</a></dd>
+                <dd id="Trino.Parser.RANGE_PARSERS" class="variable"><a href="../parser.html#Parser.RANGE_PARSERS">RANGE_PARSERS</a></dd>
+                <dd id="Trino.Parser.PROPERTY_PARSERS" class="variable"><a href="../parser.html#Parser.PROPERTY_PARSERS">PROPERTY_PARSERS</a></dd>
+                <dd id="Trino.Parser.CONSTRAINT_PARSERS" class="variable"><a href="../parser.html#Parser.CONSTRAINT_PARSERS">CONSTRAINT_PARSERS</a></dd>
+                <dd id="Trino.Parser.ALTER_PARSERS" class="variable"><a href="../parser.html#Parser.ALTER_PARSERS">ALTER_PARSERS</a></dd>
+                <dd id="Trino.Parser.SCHEMA_UNNAMED_CONSTRAINTS" class="variable"><a href="../parser.html#Parser.SCHEMA_UNNAMED_CONSTRAINTS">SCHEMA_UNNAMED_CONSTRAINTS</a></dd>
+                <dd id="Trino.Parser.NO_PAREN_FUNCTION_PARSERS" class="variable"><a href="../parser.html#Parser.NO_PAREN_FUNCTION_PARSERS">NO_PAREN_FUNCTION_PARSERS</a></dd>
+                <dd id="Trino.Parser.INVALID_FUNC_NAME_TOKENS" class="variable"><a href="../parser.html#Parser.INVALID_FUNC_NAME_TOKENS">INVALID_FUNC_NAME_TOKENS</a></dd>
+                <dd id="Trino.Parser.FUNCTIONS_WITH_ALIASED_ARGS" class="variable"><a href="../parser.html#Parser.FUNCTIONS_WITH_ALIASED_ARGS">FUNCTIONS_WITH_ALIASED_ARGS</a></dd>
+                <dd id="Trino.Parser.QUERY_MODIFIER_PARSERS" class="variable"><a href="../parser.html#Parser.QUERY_MODIFIER_PARSERS">QUERY_MODIFIER_PARSERS</a></dd>
+                <dd id="Trino.Parser.SET_PARSERS" class="variable"><a href="../parser.html#Parser.SET_PARSERS">SET_PARSERS</a></dd>
+                <dd id="Trino.Parser.SHOW_PARSERS" class="variable"><a href="../parser.html#Parser.SHOW_PARSERS">SHOW_PARSERS</a></dd>
+                <dd id="Trino.Parser.TYPE_LITERAL_PARSERS" class="variable"><a href="../parser.html#Parser.TYPE_LITERAL_PARSERS">TYPE_LITERAL_PARSERS</a></dd>
+                <dd id="Trino.Parser.MODIFIABLES" class="variable"><a href="../parser.html#Parser.MODIFIABLES">MODIFIABLES</a></dd>
+                <dd id="Trino.Parser.DDL_SELECT_TOKENS" class="variable"><a href="../parser.html#Parser.DDL_SELECT_TOKENS">DDL_SELECT_TOKENS</a></dd>
+                <dd id="Trino.Parser.PRE_VOLATILE_TOKENS" class="variable"><a href="../parser.html#Parser.PRE_VOLATILE_TOKENS">PRE_VOLATILE_TOKENS</a></dd>
+                <dd id="Trino.Parser.TRANSACTION_KIND" class="variable"><a href="../parser.html#Parser.TRANSACTION_KIND">TRANSACTION_KIND</a></dd>
+                <dd id="Trino.Parser.TRANSACTION_CHARACTERISTICS" class="variable"><a href="../parser.html#Parser.TRANSACTION_CHARACTERISTICS">TRANSACTION_CHARACTERISTICS</a></dd>
+                <dd id="Trino.Parser.INSERT_ALTERNATIVES" class="variable"><a href="../parser.html#Parser.INSERT_ALTERNATIVES">INSERT_ALTERNATIVES</a></dd>
+                <dd id="Trino.Parser.CLONE_KINDS" class="variable"><a href="../parser.html#Parser.CLONE_KINDS">CLONE_KINDS</a></dd>
+                <dd id="Trino.Parser.TABLE_INDEX_HINT_TOKENS" class="variable"><a href="../parser.html#Parser.TABLE_INDEX_HINT_TOKENS">TABLE_INDEX_HINT_TOKENS</a></dd>
+                <dd id="Trino.Parser.WINDOW_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_ALIAS_TOKENS">WINDOW_ALIAS_TOKENS</a></dd>
+                <dd id="Trino.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_BEFORE_PAREN_TOKENS">WINDOW_BEFORE_PAREN_TOKENS</a></dd>
+                <dd id="Trino.Parser.WINDOW_SIDES" class="variable"><a href="../parser.html#Parser.WINDOW_SIDES">WINDOW_SIDES</a></dd>
+                <dd id="Trino.Parser.ADD_CONSTRAINT_TOKENS" class="variable"><a href="../parser.html#Parser.ADD_CONSTRAINT_TOKENS">ADD_CONSTRAINT_TOKENS</a></dd>
+                <dd id="Trino.Parser.DISTINCT_TOKENS" class="variable"><a href="../parser.html#Parser.DISTINCT_TOKENS">DISTINCT_TOKENS</a></dd>
+                <dd id="Trino.Parser.STRICT_CAST" class="variable"><a href="../parser.html#Parser.STRICT_CAST">STRICT_CAST</a></dd>
+                <dd id="Trino.Parser.CONCAT_NULL_OUTPUTS_STRING" class="variable"><a href="../parser.html#Parser.CONCAT_NULL_OUTPUTS_STRING">CONCAT_NULL_OUTPUTS_STRING</a></dd>
+                <dd id="Trino.Parser.PREFIXED_PIVOT_COLUMNS" class="variable"><a href="../parser.html#Parser.PREFIXED_PIVOT_COLUMNS">PREFIXED_PIVOT_COLUMNS</a></dd>
+                <dd id="Trino.Parser.IDENTIFY_PIVOT_STRINGS" class="variable"><a href="../parser.html#Parser.IDENTIFY_PIVOT_STRINGS">IDENTIFY_PIVOT_STRINGS</a></dd>
+                <dd id="Trino.Parser.LOG_BASE_FIRST" class="variable"><a href="../parser.html#Parser.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
+                <dd id="Trino.Parser.LOG_DEFAULTS_TO_LN" class="variable"><a href="../parser.html#Parser.LOG_DEFAULTS_TO_LN">LOG_DEFAULTS_TO_LN</a></dd>
+                <dd id="Trino.Parser.UNNEST_COLUMN_ONLY" class="variable"><a href="../parser.html#Parser.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
+                <dd id="Trino.Parser.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../parser.html#Parser.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Trino.Parser.NORMALIZE_FUNCTIONS" class="variable"><a href="../parser.html#Parser.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Trino.Parser.FORMAT_MAPPING" class="variable"><a href="../parser.html#Parser.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
+                <dd id="Trino.Parser.error_level" class="variable"><a href="../parser.html#Parser.error_level">error_level</a></dd>
+                <dd id="Trino.Parser.error_message_context" class="variable"><a href="../parser.html#Parser.error_message_context">error_message_context</a></dd>
+                <dd id="Trino.Parser.max_errors" class="variable"><a href="../parser.html#Parser.max_errors">max_errors</a></dd>
+                <dd id="Trino.Parser.reset" class="function"><a href="../parser.html#Parser.reset">reset</a></dd>
+                <dd id="Trino.Parser.parse" class="function"><a href="../parser.html#Parser.parse">parse</a></dd>
+                <dd id="Trino.Parser.parse_into" class="function"><a href="../parser.html#Parser.parse_into">parse_into</a></dd>
+                <dd id="Trino.Parser.check_errors" class="function"><a href="../parser.html#Parser.check_errors">check_errors</a></dd>
+                <dd id="Trino.Parser.raise_error" class="function"><a href="../parser.html#Parser.raise_error">raise_error</a></dd>
+                <dd id="Trino.Parser.expression" class="function"><a href="../parser.html#Parser.expression">expression</a></dd>
+                <dd id="Trino.Parser.validate_expression" class="function"><a href="../parser.html#Parser.validate_expression">validate_expression</a></dd>
+                <dd id="Trino.Parser.errors" class="variable"><a href="../parser.html#Parser.errors">errors</a></dd>
+                <dd id="Trino.Parser.sql" class="variable"><a href="../parser.html#Parser.sql">sql</a></dd>
+
+            </div>
+            <div><dt><a href="presto.html#Presto.Parser">sqlglot.dialects.presto.Presto.Parser</a></dt>
+                                <dd id="Trino.Parser.FUNCTIONS" class="variable"><a href="presto.html#Presto.Parser.FUNCTIONS">FUNCTIONS</a></dd>
+                <dd id="Trino.Parser.FUNCTION_PARSERS" class="variable"><a href="presto.html#Presto.Parser.FUNCTION_PARSERS">FUNCTION_PARSERS</a></dd>
+                <dd id="Trino.Parser.INDEX_OFFSET" class="variable"><a href="presto.html#Presto.Parser.INDEX_OFFSET">INDEX_OFFSET</a></dd>
+                <dd id="Trino.Parser.STRICT_STRING_CONCAT" class="variable"><a href="presto.html#Presto.Parser.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
+                <dd id="Trino.Parser.NULL_ORDERING" class="variable"><a href="presto.html#Presto.Parser.NULL_ORDERING">NULL_ORDERING</a></dd>
+                <dd id="Trino.Parser.TIME_MAPPING" class="variable"><a href="presto.html#Presto.Parser.TIME_MAPPING">TIME_MAPPING</a></dd>
 
             </div>
                                 </dl>

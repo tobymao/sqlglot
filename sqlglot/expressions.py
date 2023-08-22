@@ -3532,11 +3532,6 @@ class DataType(Expression):
         Type.DATETIME64,
     }
 
-    META_TYPES = {
-        "UNKNOWN",
-        "NULL",
-    }
-
     @classmethod
     def build(
         cls,
@@ -3561,16 +3556,15 @@ class DataType(Expression):
         from sqlglot import parse_one
 
         if isinstance(dtype, str):
-            upper = dtype.upper()
-            if upper in DataType.META_TYPES:
-                data_type_exp = DataType(this=DataType.Type[upper])
-            else:
-                try:
-                    data_type_exp = parse_one(dtype, read=dialect, into=DataType)
-                except ParseError:
-                    if udt:
-                        return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)
-                    raise
+            if dtype.upper() == "UNKNOWN":
+                return DataType(this=DataType.Type.UNKNOWN, **kwargs)
+
+            try:
+                data_type_exp = parse_one(dtype, read=dialect, into=DataType)
+            except ParseError:
+                if udt:
+                    return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)
+                raise
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
         elif isinstance(dtype, DataType):

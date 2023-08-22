@@ -368,6 +368,7 @@ class Snowflake(Dialect):
                 "OBJECT_CONSTRUCT",
                 *(arg for expression in e.expressions for arg in expression.flatten()),
             ),
+            exp.Stuff: rename_func("INSERT"),
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func(

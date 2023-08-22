@@ -6,6 +6,14 @@ class TestRedshift(Validator):
 
     def test_redshift(self):
         self.validate_all(
+            "x ~* 'pat'",
+            write={
+                "redshift": "x ~* 'pat'",
+                "snowflake": "REGEXP_LIKE(x, 'pat', 'i')",
+            },
+        )
+
+        self.validate_all(
             "SELECT CAST('01:03:05.124' AS TIME(2) WITH TIME ZONE)",
             read={
                 "postgres": "SELECT CAST('01:03:05.124' AS TIMETZ(2))",

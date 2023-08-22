@@ -846,6 +846,9 @@ FROM foo""",
         )
         self.assertEqual(exp.DataType.build("USER-DEFINED").sql(), "USER-DEFINED")
 
+        self.assertEqual(exp.DataType.build("ARRAY<UNKNOWN>").sql(), "ARRAY<UNKNOWN>")
+        self.assertEqual(exp.DataType.build("ARRAY<NULL>").sql(), "ARRAY<NULL>")
+
     def test_rename_table(self):
         self.assertEqual(
             exp.rename_table("t1", "t2").sql(),

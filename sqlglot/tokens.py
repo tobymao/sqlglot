@@ -158,6 +158,7 @@ class TokenType(AutoName):
     FIXEDSTRING = auto()
     LOWCARDINALITY = auto()
     NESTED = auto()
+    UNKNOWN = auto()
 
     # keywords
     ALIAS = auto()
@@ -644,6 +645,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
         "UNION": TokenType.UNION,
+        "UNKNOWN": TokenType.UNKNOWN,
         "UNNEST": TokenType.UNNEST,
         "UNPIVOT": TokenType.UNPIVOT,
         "UPDATE": TokenType.UPDATE,

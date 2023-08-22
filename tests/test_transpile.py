@@ -394,11 +394,12 @@ LEFT OUTER JOIN b""",
         self.validate("x::INT AS y", "CAST(x AS INT) AS y")
         self.validate("x::INT::BOOLEAN", "CAST(CAST(x AS INT) AS BOOLEAN)")
         self.validate("interval::int", "CAST(interval AS INT)")
+        self.validate("x::user_defined_type", "CAST(x AS user_defined_type)")
         self.validate("CAST(x::INT AS BOOLEAN)", "CAST(CAST(x AS INT) AS BOOLEAN)")
         self.validate("CAST(x AS INT)::BOOLEAN", "CAST(CAST(x AS INT) AS BOOLEAN)")
 
         with self.assertRaises(ParseError):
-            transpile("x::z")
+            transpile("x::z", read="duckdb")
 
     def test_not_range(self):
         self.validate("a NOT LIKE b", "NOT a LIKE b")

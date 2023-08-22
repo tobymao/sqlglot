@@ -109,8 +109,7 @@ class _Dialect(type):
                 for k, v in vars(klass).items()
                 if not callable(v) and not isinstance(v, classmethod) and not k.startswith("__")
             },
-            "STRING_ESCAPE": klass.tokenizer_class.STRING_ESCAPES[0],
-            "IDENTIFIER_ESCAPE": klass.tokenizer_class.IDENTIFIER_ESCAPES[0],
+            "TOKENIZER_CLASS": klass.tokenizer_class,
         }
 
         if enum not in ("", "bigquery"):

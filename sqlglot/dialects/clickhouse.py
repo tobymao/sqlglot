@@ -149,7 +149,7 @@ class ClickHouse(Dialect):
 
             this = self._parse_id_var()
             self._match(TokenType.COLON)
-            kind = self._parse_types(check_func=False) or (
+            kind = self._parse_types(check_func=False, allow_identifiers=False) or (
                 self._match_text_seq("IDENTIFIER") and "Identifier"
             )
 

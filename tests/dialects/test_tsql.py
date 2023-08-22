@@ -6,6 +6,10 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity(
+            "CREATE TABLE [db].[tbl]([a] [int])", 'CREATE TABLE "db"."tbl" ("a" INTEGER)'
+        )
+
         projection = parse_one("SELECT a = 1", read="tsql").selects[0]
         projection.assert_is(exp.Alias)
         projection.args["alias"].assert_is(exp.Identifier)

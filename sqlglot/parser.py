@@ -487,7 +487,7 @@ class Parser(metaclass=_Parser):
         exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
         exp.Column: lambda self: self._parse_column(),
         exp.Condition: lambda self: self._parse_conjunction(),
-        exp.DataType: lambda self: self._parse_types(),
+        exp.DataType: lambda self: self._parse_types(allow_identifiers=False),
         exp.Expression: lambda self: self._parse_statement(),
         exp.From: lambda self: self._parse_from(),
         exp.Group: lambda self: self._parse_group(),
@@ -847,9 +847,11 @@ class Parser(metaclass=_Parser):
         "_next",
         "_prev",
         "_prev_comments",
+        "_tokenizer",
     )
 
     # Autofilled
+    TOKENIZER_CLASS: t.Type[Tokenizer] = Tokenizer
     INDEX_OFFSET: int = 0
     UNNEST_COLUMN_ONLY: bool = False
     ALIAS_POST_TABLESAMPLE: bool = False
@@ -872,6 +874,7 @@ class Parser(metaclass=_Parser):
         self.error_level = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context = error_message_context
         self.max_errors = max_errors
+        self._tokenizer = self.TOKENIZER_CLASS()
         self.reset()
 
     def reset(self):
@@ -3102,7 +3105,7 @@ class Parser(metaclass=_Parser):
             return interval
 
         index = self._index
-        data_type = self._parse_types(check_func=True)
+        data_type = self._parse_types(check_func=True, allow_identifiers=False)
         this = self._parse_column()
 
         if data_type:
@@ -3128,14 +3131,31 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_types(
-        self, check_func: bool = False, schema: bool = False
+        self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
     ) -> t.Optional[exp.Expression]:
         index = self._index
 
         prefix = self._match_text_seq("SYSUDTLIB", ".")
 
         if not self._match_set(self.TYPE_TOKENS):
-            return None
+            identifier = allow_identifiers and self._parse_id_var(
+                any_token=False, tokens=(TokenType.VAR,)
+            )
+
+            if identifier:
+                tokens = self._tokenizer.tokenize(identifier.name)
+
+                if len(tokens) != 1:
+                    self.raise_error("Unexpected identifier", self._prev)
+
+                if tokens[0].token_type in self.TYPE_TOKENS:
+                    self._prev = tokens[0]
+                elif self.SUPPORTS_USER_DEFINED_TYPES:
+                    return identifier
+                else:
+                    return None
+            else:
+                return None
 
         type_token = self._prev.token_type
 
@@ -3152,7 +3172,9 @@ class Parser(metaclass=_Parser):
                 expressions = self._parse_csv(self._parse_struct_types)
             elif nested:
                 expressions = self._parse_csv(
-                    lambda: self._parse_types(check_func=check_func, schema=schema)
+                    lambda: self._parse_types(
+                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                    )
                 )
             elif type_token in self.ENUM_TYPE_TOKENS:
                 expressions = self._parse_csv(self._parse_equality)
@@ -3173,7 +3195,9 @@ class Parser(metaclass=_Parser):
                 expressions = self._parse_csv(self._parse_struct_types)
             else:
                 expressions = self._parse_csv(
-                    lambda: self._parse_types(check_func=check_func, schema=schema)
+                    lambda: self._parse_types(
+                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                    )
                 )
 
             if not self._match(TokenType.GT):
@@ -3866,7 +3890,7 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected AS after CAST")
 
         fmt = None
-        to = self._parse_types() or (self.SUPPORTS_USER_DEFINED_TYPES and self._parse_id_var())
+        to = self._parse_types()
 
         if not to:
             self.raise_error("Expected TYPE after CAST")

@@ -3399,11 +3399,11 @@ class DataTypeParam(Expression):
 class DataType(Expression):
     arg_types = {
         "this": True,
-        "expression": False,
         "expressions": False,
         "nested": False,
         "values": False,
         "prefix": False,
+        "kind": False,
     }
 
     class Type(AutoName):
@@ -3569,7 +3569,7 @@ class DataType(Expression):
                     data_type_exp = parse_one(dtype, read=dialect, into=DataType)
                 except ParseError:
                     if udt:
-                        return DataType(this=DataType.Type.USERDEFINED, expression=dtype, **kwargs)
+                        return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)
                     raise
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)

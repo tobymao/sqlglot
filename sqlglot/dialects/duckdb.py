@@ -185,9 +185,11 @@ class DuckDB(Dialect):
         }
 
         def _parse_types(
-            self, check_func: bool = False, schema: bool = False
+            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:
-            this = super()._parse_types(check_func=check_func, schema=schema)
+            this = super()._parse_types(
+                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            )
 
             # DuckDB treats NUMERIC and DECIMAL without precision as DECIMAL(18, 3)
             # See: https://duckdb.org/docs/sql/data_types/numeric

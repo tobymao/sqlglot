@@ -4757,6 +4757,13 @@ class StructExtract(Func):
     arg_types = {"this": True, "expression": True}
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/stuff-transact-sql?view=sql-server-ver16
+# https://docs.snowflake.com/en/sql-reference/functions/insert
+class Stuff(Func):
+    _sql_names = ["STUFF", "INSERT"]
+    arg_types = {"this": True, "start": True, "length": True, "expression": True}
+
+
 class Sum(AggFunc):
     pass
 

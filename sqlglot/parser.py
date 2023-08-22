@@ -334,6 +334,7 @@ class Parser(metaclass=_Parser):
         TokenType.INDEX,
         TokenType.ISNULL,
         TokenType.ILIKE,
+        TokenType.INSERT,
         TokenType.LIKE,
         TokenType.MERGE,
         TokenType.OFFSET,

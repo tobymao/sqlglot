@@ -8,6 +8,20 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_all(
+            "SELECT INSERT(a, 0, 0, 'b')",
+            read={
+                "mysql": "SELECT INSERT(a, 0, 0, 'b')",
+                "snowflake": "SELECT INSERT(a, 0, 0, 'b')",
+                "tsql": "SELECT STUFF(a, 0, 0, 'b')",
+            },
+            write={
+                "mysql": "SELECT INSERT(a, 0, 0, 'b')",
+                "snowflake": "SELECT INSERT(a, 0, 0, 'b')",
+                "tsql": "SELECT STUFF(a, 0, 0, 'b')",
+            },
+        )
+
         self.validate_identity("WEEKOFYEAR(tstamp)")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")

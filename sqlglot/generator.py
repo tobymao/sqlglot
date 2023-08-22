@@ -8,7 +8,7 @@ from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.helper import apply_index_offset, csv, seq_get
 from sqlglot.time import format_time
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import Tokenizer, TokenType
 
 logger = logging.getLogger("sqlglot")
 
@@ -320,8 +320,7 @@ class Generator:
     QUOTE_END = "'"
     IDENTIFIER_START = '"'
     IDENTIFIER_END = '"'
-    STRING_ESCAPE = "'"
-    IDENTIFIER_ESCAPE = '"'
+    TOKENIZER_CLASS = Tokenizer
 
     # Delimiters for bit, hex, byte and raw literals
     BIT_START: t.Optional[str] = None
@@ -382,8 +381,10 @@ class Generator:
         )
 
         self.unsupported_messages: t.List[str] = []
-        self._escaped_quote_end: str = self.STRING_ESCAPE + self.QUOTE_END
-        self._escaped_identifier_end: str = self.IDENTIFIER_ESCAPE + self.IDENTIFIER_END
+        self._escaped_quote_end: str = self.TOKENIZER_CLASS.STRING_ESCAPES[0] + self.QUOTE_END
+        self._escaped_identifier_end: str = (
+            self.TOKENIZER_CLASS.IDENTIFIER_ESCAPES[0] + self.IDENTIFIER_END
+        )
         self._cache: t.Optional[t.Dict[int, str]] = None
 
     def generate(
@@ -842,8 +843,8 @@ class Generator:
     def datatype_sql(self, expression: exp.DataType) -> str:
         type_value = expression.this
 
-        if type_value == exp.DataType.Type.USERDEFINED and expression.expression:
-            type_sql = self.sql(expression.expression)
+        if type_value == exp.DataType.Type.USERDEFINED and expression.args.get("kind"):
+            type_sql = self.sql(expression, "kind")
         else:
             type_sql = (
                 self.TYPE_MAPPING.get(type_value, type_value.value)

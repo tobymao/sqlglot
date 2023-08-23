@@ -3468,6 +3468,7 @@ class DataType(Expression):
         LOWCARDINALITY = auto()
         MAP = auto()
         MEDIUMBLOB = auto()
+        MEDIUMINT = auto()
         MEDIUMTEXT = auto()
         MONEY = auto()
         NCHAR = auto()
@@ -3511,6 +3512,7 @@ class DataType(Expression):
         VARCHAR = auto()
         VARIANT = auto()
         XML = auto()
+        YEAR = auto()
 
     TEXT_TYPES = {
         Type.CHAR,

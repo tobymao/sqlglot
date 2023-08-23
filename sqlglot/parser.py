@@ -687,6 +687,9 @@ class Parser(metaclass=_Parser):
             exp.CommentColumnConstraint, this=self._parse_string()
         ),
         "COMPRESS": lambda self: self._parse_compress(),
+        "CLUSTERED": lambda self: self.expression(
+            exp.ClusteredColumnConstraint, this=self._parse_wrapped_csv(self._parse_ordered)
+        ),
         "DEFAULT": lambda self: self.expression(
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),
@@ -701,8 +704,11 @@ class Parser(metaclass=_Parser):
         "LIKE": lambda self: self._parse_create_like(),
         "NOT": lambda self: self._parse_not_constraint(),
         "NULL": lambda self: self.expression(exp.NotNullColumnConstraint, allow_null=True),
-        "ON": lambda self: self._match(TokenType.UPDATE)
-        and self.expression(exp.OnUpdateColumnConstraint, this=self._parse_function()),
+        "ON": lambda self: (
+            self._match(TokenType.UPDATE)
+            and self.expression(exp.OnUpdateColumnConstraint, this=self._parse_function())
+        )
+        or self.expression(exp.OnProperty, this=self._parse_id_var()),
         "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "REFERENCES": lambda self: self._parse_references(match=False),
@@ -712,6 +718,9 @@ class Parser(metaclass=_Parser):
         "TTL": lambda self: self.expression(exp.MergeTreeTTL, expressions=[self._parse_bitwise()]),
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
+        "WITH": lambda self: self.expression(
+            exp.Properties, expressions=self._parse_wrapped_csv(self._parse_property)
+        ),
     }
 
     ALTER_PARSERS = {
@@ -1667,9 +1676,9 @@ class Parser(metaclass=_Parser):
     def _parse_on_property(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("COMMIT", "PRESERVE", "ROWS"):
             return exp.OnCommitProperty()
-        elif self._match_text_seq("COMMIT", "DELETE", "ROWS"):
+        if self._match_text_seq("COMMIT", "DELETE", "ROWS"):
             return exp.OnCommitProperty(delete=True)
-        return None
+        return self.expression(exp.OnProperty, this=self._parse_id_var())
 
     def _parse_distkey(self) -> exp.DistKeyProperty:
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))

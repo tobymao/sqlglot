@@ -1320,6 +1320,10 @@ class InlineLengthColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class NotForReplicationColumnConstraint(ColumnConstraintKind):
+    arg_types = {}
+
+
 class NotNullColumnConstraint(ColumnConstraintKind):
     arg_types = {"allow_null": False}
 

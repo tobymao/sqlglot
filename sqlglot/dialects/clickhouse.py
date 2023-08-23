@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
 )
 from sqlglot.errors import ParseError
+from sqlglot.helper import seq_get
 from sqlglot.parser import parse_var_map
 from sqlglot.tokens import Token, TokenType
 
@@ -68,6 +69,18 @@ class ClickHouse(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
+            "DATE_ADD": lambda args: exp.DateAdd(
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
+            ),
+            "DATEADD": lambda args: exp.DateAdd(
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
+            ),
+            "DATE_DIFF": lambda args: exp.DateDiff(
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
+            ),
+            "DATEDIFF": lambda args: exp.DateDiff(
+                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
+            ),
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
@@ -341,6 +354,12 @@ class ClickHouse(Dialect):
             exp.ApproxDistinct: rename_func("uniq"),
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
+            exp.DateAdd: lambda self, e: self.func(
+                "DATE_ADD", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+            ),
+            exp.DateDiff: lambda self, e: self.func(
+                "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+            ),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",

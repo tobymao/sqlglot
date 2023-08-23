@@ -218,6 +218,7 @@ class Spark2(Hive):
                 e.args["replacement"],
                 e.args.get("position"),
             ),
+            exp.SHA256: lambda self, e: f"SHA2({self.sql(e, 'this')}, 256)",
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimestampTrunc: lambda self, e: self.func(

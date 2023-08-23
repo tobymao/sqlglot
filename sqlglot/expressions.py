@@ -4729,6 +4729,11 @@ class SHA2(Func):
     arg_types = {"this": True, "length": False}
 
 
+class SHA256(Func):
+    _sql_names = ["SHA256"]
+    arg_types = {"this": True, "length": False}
+
+
 class SortArray(Func):
     arg_types = {"this": True, "asc": False}
 

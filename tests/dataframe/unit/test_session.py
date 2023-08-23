@@ -1,9 +1,6 @@
-from unittest import mock
-
 import sqlglot
 from sqlglot.dataframe.sql import functions as F, types
 from sqlglot.dataframe.sql.session import SparkSession
-from sqlglot.schema import MappingSchema
 from tests.dataframe.unit.dataframe_sql_validator import DataFrameSQLValidator
 
 
@@ -68,7 +65,6 @@ class TestDataframeSession(DataFrameSQLValidator):
 
         self.compare_sql(df, expected)
 
-    @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_select_only(self):
         query = "SELECT cola, colb FROM table"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"}, dialect="spark")
@@ -78,16 +74,6 @@ class TestDataframeSession(DataFrameSQLValidator):
             df.sql(pretty=False)[0],
         )
 
-    @mock.patch("sqlglot.schema", MappingSchema())
-    def test_select_quoted(self):
-        sqlglot.schema.add_table("`TEST`", {"name": "string"}, dialect="spark")
-
-        self.assertEqual(
-            SparkSession().table("`TEST`").select(F.col("name")).sql(dialect="snowflake")[0],
-            '''SELECT "test"."name" AS "name" FROM "test" AS "test"''',
-        )
-
-    @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_with_aggs(self):
         query = "SELECT cola, colb FROM table"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"}, dialect="spark")
@@ -97,7 +83,6 @@ class TestDataframeSession(DataFrameSQLValidator):
             df.sql(pretty=False, optimize=False)[0],
         )
 
-    @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_create(self):
         query = "CREATE TABLE new_table AS WITH t1 AS (SELECT cola, colb FROM table) SELECT cola, colb, FROM t1"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"}, dialect="spark")
@@ -105,7 +90,6 @@ class TestDataframeSession(DataFrameSQLValidator):
         expected = "CREATE TABLE new_table AS SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`"
         self.compare_sql(df, expected)
 
-    @mock.patch("sqlglot.schema", MappingSchema())
     def test_sql_insert(self):
         query = "WITH t1 AS (SELECT cola, colb FROM table) INSERT INTO new_table SELECT cola, colb FROM t1"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"}, dialect="spark")
@@ -114,5 +98,4 @@ class TestDataframeSession(DataFrameSQLValidator):
         self.compare_sql(df, expected)
 
     def test_session_create_builder_patterns(self):
-        spark = SparkSession()
-        self.assertEqual(spark.builder.appName("abc").getOrCreate(), spark)
+        self.assertEqual(SparkSession.builder.appName("abc").getOrCreate(), SparkSession())

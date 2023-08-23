@@ -1375,7 +1375,11 @@ class Parser(metaclass=_Parser):
         if assignment:
             key = self._parse_var_or_string()
             self._match(TokenType.EQ)
-            return self.expression(exp.Property, this=key, value=self._parse_column())
+            return self.expression(
+                exp.Property,
+                this=key,
+                value=self._parse_column() or self._parse_var(any_token=True),
+            )
 
         return None
 

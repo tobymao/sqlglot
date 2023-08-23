@@ -1,10 +1,9 @@
-import unittest
-
 from sqlglot.dataframe.sql import functions as F
 from sqlglot.dataframe.sql.window import Window, WindowSpec
+from tests.dataframe.unit.dataframe_test_base import DataFrameTestBase
 
 
-class TestDataframeWindow(unittest.TestCase):
+class TestDataframeWindow(DataFrameTestBase):
     def test_window_spec_partition_by(self):
         partition_by = WindowSpec().partitionBy(F.col("cola"), F.col("colb"))
         self.assertEqual("OVER (PARTITION BY cola, colb)", partition_by.sql())

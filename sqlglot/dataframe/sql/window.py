@@ -48,7 +48,9 @@ class WindowSpec:
         return WindowSpec(self.expression.copy())
 
     def sql(self, **kwargs) -> str:
-        return self.expression.sql(dialect="spark", **kwargs)
+        from sqlglot.dataframe.sql.session import SparkSession
+
+        return self.expression.sql(dialect=SparkSession().dialect, **kwargs)
 
     def partitionBy(self, *cols: t.Union[ColumnOrName, t.List[ColumnOrName]]) -> WindowSpec:
         from sqlglot.dataframe.sql.column import Column

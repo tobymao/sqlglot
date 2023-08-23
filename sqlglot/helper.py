@@ -33,6 +33,15 @@ class AutoName(Enum):
         return name
 
 
+class classproperty(property):
+    """
+    Similar to a normal property but works for class methods
+    """
+
+    def __get__(self, obj: t.Any, owner: t.Any = None) -> t.Any:
+        return classmethod(self.fget).__get__(None, owner)()  # type: ignore
+
+
 def seq_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
     """Returns the value in `seq` at position `index`, or `None` if `index` is out of bounds."""
     try:

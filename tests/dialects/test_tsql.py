@@ -7,6 +7,18 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_identity(
+            """
+            CREATE TABLE x(
+                [zip_cd] [varchar](5) NULL
+                CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED
+                ([zip_cd_mkey] ASC)
+                WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF) ON [PRIMARY]
+            ) ON [PRIMARY]
+            """,
+            'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey") WITH (PAD_INDEX=OFF, STATISTICS_NORECOMPUTE=OFF) ON "PRIMARY") ON "PRIMARY"',
+        )
+
+        self.validate_identity(
             "CREATE TABLE tbl (a AS (x + 1) PERSISTED, b AS (y + 2), c AS (y / 3) PERSISTED NOT NULL)"
         )
 

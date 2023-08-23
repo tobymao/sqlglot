@@ -1269,6 +1269,10 @@ class CheckColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class ClusteredColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class CollateColumnConstraint(ColumnConstraintKind):
     pass
 
@@ -2051,8 +2055,12 @@ class NoPrimaryIndexProperty(Property):
     arg_types = {}
 
 
+class OnProperty(Property):
+    arg_types = {"this": True}
+
+
 class OnCommitProperty(Property):
-    arg_type = {"delete": False}
+    arg_types = {"delete": False}
 
 
 class PartitionedByProperty(Property):

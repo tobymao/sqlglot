@@ -21,10 +21,12 @@ Currently many of the common operations are covered and more functionality will 
       * Ex: `['cola', 'colb']`
       * The lack of types may limit functionality in future releases.
   * See [Registering Custom Schema](#registering-custom-schema-class) for information on how to skip this step if the information is stored externally.
+* If your output SQL dialect is not Spark, then configure the SparkSession to use that dialect
+  * Ex: `SparkSession().builder.config("sqlframe.dialect", "bigquery").getOrCreate()`
+  * See [dialects](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects) for a full list of dialects.
 * Add `.sql(pretty=True)` to your final DataFrame command to return a list of sql statements to run that command.
-  * In most cases a single SQL statement is returned. Currently the only exception is when caching DataFrames which isn't supported in other dialects.  
-  * Spark is the default output dialect. See [dialects](https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects) for a full list of dialects.
-  * Ex: `.sql(pretty=True, dialect='bigquery')`
+  * In most cases a single SQL statement is returned. Currently the only exception is when caching DataFrames which isn't supported in other dialects.
+  * Ex: `.sql(pretty=True)`
 
 ## Examples
 
@@ -32,6 +34,8 @@ Currently many of the common operations are covered and more functionality will 
 import sqlglot
 from sqlglot.dataframe.sql.session import SparkSession
 from sqlglot.dataframe.sql import functions as F
+
+dialect = "spark"
 
 sqlglot.schema.add_table(
   'employee',
@@ -41,10 +45,10 @@ sqlglot.schema.add_table(
     'lname': 'STRING',
     'age': 'INT',
   },
-  dialect="spark",
+  dialect=dialect,
 )  # Register the table structure prior to reading from the table
 
-spark = SparkSession()
+spark = SparkSession.builder.config("sqlframe.dialect", dialect).getOrCreate()
 
 df = (
     spark
@@ -53,7 +57,7 @@ df = (
     .agg(F.countDistinct(F.col("employee_id")).alias("num_employees")) 
 )
 
-print(df.sql(pretty=True))  # Spark will be the dialect used by default
+print(df.sql(pretty=True))
 ```
 
 ```sparksql
@@ -81,7 +85,7 @@ class ExternalSchema(Schema):
 
 sqlglot.schema = ExternalSchema()
 
-spark = SparkSession()
+spark = SparkSession()  # Spark will be used by default is not specific in SparkSession config
 
 df = (
     spark
@@ -119,11 +123,14 @@ schema = types.StructType([
 ])
 
 sql_statements = (
-    SparkSession()
+    SparkSession
+    .builder
+    .config("sqlframe.dialect", "bigquery")
+    .getOrCreate()
     .createDataFrame(data, schema)
     .groupBy(F.col("age"))
     .agg(F.countDistinct(F.col("employee_id")).alias("num_employees"))
-    .sql(dialect="bigquery")
+    .sql()
 )
 
 result = None
@@ -166,11 +173,14 @@ schema = types.StructType([
 ])
 
 sql_statements = (
-    SparkSession()
+    SparkSession
+    .builder
+    .config("sqlframe.dialect", "snowflake")
+    .getOrCreate()
     .createDataFrame(data, schema)
     .groupBy(F.col("age"))
     .agg(F.countDistinct(F.col("lname")).alias("num_employees"))
-    .sql(dialect="snowflake")
+    .sql()
 )
 
 try:
@@ -210,7 +220,7 @@ sql_statements = (
     .createDataFrame(data, schema)
     .groupBy(F.col("age"))
     .agg(F.countDistinct(F.col("employee_id")).alias("num_employees"))
-    .sql(dialect="spark")
+    .sql()
 )
 
 pyspark = PySparkSession.builder.master("local[*]").getOrCreate()

@@ -173,6 +173,8 @@ class TestMySQL(Validator):
         )
 
     def test_types(self):
+        self.validate_identity("CAST(x AS MEDIUMINT) + CAST(y AS YEAR(4))")
+
         self.validate_all(
             "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT)",
             read={

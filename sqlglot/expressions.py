@@ -2300,6 +2300,16 @@ class Subqueryable(Unionable):
     def named_selects(self) -> t.List[str]:
         raise NotImplementedError("Subqueryable objects must implement `named_selects`")
 
+    def select(
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Subqueryable:
+        raise NotImplementedError("Subqueryable objects must implement `select`")
+
     def with_(
         self,
         alias: ExpOrStr,

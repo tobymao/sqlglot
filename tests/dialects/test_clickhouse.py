@@ -6,6 +6,31 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_all(
+            "DATE_ADD('day', 1, x)",
+            read={
+                "clickhouse": "dateAdd(day, 1, x)",
+                "presto": "DATE_ADD('day', 1, x)",
+            },
+            write={
+                "clickhouse": "DATE_ADD('day', 1, x)",
+                "presto": "DATE_ADD('day', 1, x)",
+                "": "DATE_ADD(x, 1, 'day')",
+            },
+        )
+        self.validate_all(
+            "DATE_DIFF('day', a, b)",
+            read={
+                "clickhouse": "dateDiff('day', a, b)",
+                "presto": "DATE_DIFF('day', a, b)",
+            },
+            write={
+                "clickhouse": "DATE_DIFF('day', a, b)",
+                "presto": "DATE_DIFF('day', a, b)",
+                "": "DATEDIFF(b, a, day)",
+            },
+        )
+
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)

@@ -79,6 +79,7 @@ class Generator:
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.MaterializedProperty: lambda self, e: "MATERIALIZED",
         exp.NoPrimaryIndexProperty: lambda self, e: "NO PRIMARY INDEX",
+        exp.NotForReplicationColumnConstraint: lambda self, e: "NOT FOR REPLICATION",
         exp.OnCommitProperty: lambda self, e: f"ON COMMIT {'DELETE' if e.args.get('delete') else 'PRESERVE'} ROWS",
         exp.OnProperty: lambda self, e: f"ON {self.sql(e, 'this')}",
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
@@ -659,8 +660,8 @@ class Generator:
     ) -> str:
         this = ""
         if expression.this is not None:
-            on_null = "ON NULL " if expression.args.get("on_null") else ""
-            this = " ALWAYS " if expression.this else f" BY DEFAULT {on_null}"
+            on_null = " ON NULL" if expression.args.get("on_null") else ""
+            this = " ALWAYS" if expression.this else f" BY DEFAULT{on_null}"
 
         start = expression.args.get("start")
         start = f"START WITH {start}" if start else ""
@@ -685,7 +686,7 @@ class Generator:
         expr = self.sql(expression, "expression")
         expr = f"({expr})" if expr else "IDENTITY"
 
-        return f"GENERATED{this}AS {expr}{sequence_opts}"
+        return f"GENERATED{this} AS {expr}{sequence_opts}"
 
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"

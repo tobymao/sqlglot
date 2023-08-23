@@ -3644,11 +3644,13 @@ class Parser(metaclass=_Parser):
 
     def _parse_not_constraint(
         self,
-    ) -> t.Optional[exp.NotNullColumnConstraint | exp.CaseSpecificColumnConstraint]:
+    ) -> t.Optional[exp.Expression]:
         if self._match_text_seq("NULL"):
             return self.expression(exp.NotNullColumnConstraint)
         if self._match_text_seq("CASESPECIFIC"):
             return self.expression(exp.CaseSpecificColumnConstraint, not_=True)
+        if self._match_text_seq("FOR", "REPLICATION"):
+            return self.expression(exp.NotForReplicationColumnConstraint)
         return None
 
     def _parse_column_constraint(self) -> t.Optional[exp.Expression]:

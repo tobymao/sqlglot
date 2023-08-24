@@ -672,8 +672,10 @@ class TSQL(Dialect):
             exists = expression.args.get("exists")
 
             if exists and kind == "SCHEMA":
-                schema_name = self.sql(expression, "this")
-                return f"IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE SCHEMA_NAME = {schema_name}) EXEC('CREATE SCHEMA {schema_name}')"
+                schema_name = expression.this
+                string = self.sql(exp.Literal.string(schema_name.name))
+                identifier = self.sql(schema_name)
+                return f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE SCHEMA_NAME = {string}) EXEC('CREATE SCHEMA {identifier}')"""
 
             return super().create_sql(expression)
 

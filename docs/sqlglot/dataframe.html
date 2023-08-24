@@ -96,11 +96,15 @@
 </ul></li>
 <li>See <a href="#registering-custom-schema-class">Registering Custom Schema</a> for information on how to skip this step if the information is stored externally.</li>
 </ul></li>
+<li>If your output SQL dialect is not Spark, then configure the SparkSession to use that dialect
+<ul>
+<li>Ex: <code>SparkSession().builder.config("sqlframe.dialect", "bigquery").getOrCreate()</code></li>
+<li>See <a href="https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects">dialects</a> for a full list of dialects.</li>
+</ul></li>
 <li>Add <code>.sql(pretty=True)</code> to your final DataFrame command to return a list of sql statements to run that command.
 <ul>
-<li>In most cases a single SQL statement is returned. Currently the only exception is when caching DataFrames which isn't supported in other dialects.  </li>
-<li>Spark is the default output dialect. See <a href="https://github.com/tobymao/sqlglot/tree/main/sqlglot/dialects">dialects</a> for a full list of dialects.</li>
-<li>Ex: <code>.sql(pretty=True, dialect='bigquery')</code></li>
+<li>In most cases a single SQL statement is returned. Currently the only exception is when caching DataFrames which isn't supported in other dialects.</li>
+<li>Ex: <code>.sql(pretty=True)</code></li>
 </ul></li>
 </ul>
 
@@ -111,6 +115,8 @@
 <span class="kn">from</span> <span class="nn">sqlglot.dataframe.sql.session</span> <span class="kn">import</span> <span class="n">SparkSession</span>
 <span class="kn">from</span> <span class="nn"><a href="dataframe/sql.html">sqlglot.dataframe.sql</a></span> <span class="kn">import</span> <span class="n">functions</span> <span class="k">as</span> <span class="n">F</span>
 
+<span class="n">dialect</span> <span class="o">=</span> <span class="s2">&quot;spark&quot;</span>
+
 <span class="n">sqlglot</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span>
   <span class="s1">&#39;employee&#39;</span><span class="p">,</span>
   <span class="p">{</span>
@@ -119,10 +125,10 @@
     <span class="s1">&#39;lname&#39;</span><span class="p">:</span> <span class="s1">&#39;STRING&#39;</span><span class="p">,</span>
     <span class="s1">&#39;age&#39;</span><span class="p">:</span> <span class="s1">&#39;INT&#39;</span><span class="p">,</span>
   <span class="p">},</span>
-  <span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">,</span>
+  <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span>
 <span class="p">)</span>  <span class="c1"># Register the table structure prior to reading from the table</span>
 
-<span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="p">()</span>
+<span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="s2">&quot;sqlframe.dialect&quot;</span><span class="p">,</span> <span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">spark</span>
@@ -131,7 +137,7 @@
     <span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">countDistinct</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;employee_id&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;num_employees&quot;</span><span class="p">))</span> 
 <span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">pretty</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>  <span class="c1"># Spark will be the dialect used by default</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">pretty</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 </code></pre>
 </div>
 
@@ -159,7 +165,7 @@ GROUP BY
 
 <span class="n"><a href="schema.html">sqlglot.schema</a></span> <span class="o">=</span> <span class="n">ExternalSchema</span><span class="p">()</span>
 
-<span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="p">()</span>
+<span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="p">()</span>  <span class="c1"># Spark will be used by default is not specific in SparkSession config</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">spark</span>
@@ -199,11 +205,14 @@ GROUP BY
 <span class="p">])</span>
 
 <span class="n">sql_statements</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">SparkSession</span><span class="p">()</span>
+    <span class="n">SparkSession</span>
+    <span class="o">.</span><span class="n">builder</span>
+    <span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="s2">&quot;sqlframe.dialect&quot;</span><span class="p">,</span> <span class="s2">&quot;bigquery&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
     <span class="o">.</span><span class="n">createDataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
     <span class="o">.</span><span class="n">groupBy</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">))</span>
     <span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">countDistinct</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;employee_id&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;num_employees&quot;</span><span class="p">))</span>
-    <span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;bigquery&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sql</span><span class="p">()</span>
 <span class="p">)</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
@@ -248,11 +257,14 @@ GROUP BY
 <span class="p">])</span>
 
 <span class="n">sql_statements</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">SparkSession</span><span class="p">()</span>
+    <span class="n">SparkSession</span>
+    <span class="o">.</span><span class="n">builder</span>
+    <span class="o">.</span><span class="n">config</span><span class="p">(</span><span class="s2">&quot;sqlframe.dialect&quot;</span><span class="p">,</span> <span class="s2">&quot;snowflake&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
     <span class="o">.</span><span class="n">createDataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
     <span class="o">.</span><span class="n">groupBy</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">))</span>
     <span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">countDistinct</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;lname&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;num_employees&quot;</span><span class="p">))</span>
-    <span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;snowflake&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sql</span><span class="p">()</span>
 <span class="p">)</span>
 
 <span class="k">try</span><span class="p">:</span>
@@ -294,7 +306,7 @@ GROUP BY
     <span class="o">.</span><span class="n">createDataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
     <span class="o">.</span><span class="n">groupBy</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">))</span>
     <span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">countDistinct</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;employee_id&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;num_employees&quot;</span><span class="p">))</span>
-    <span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">sql</span><span class="p">()</span>
 <span class="p">)</span>
 
 <span class="n">pyspark</span> <span class="o">=</span> <span class="n">PySparkSession</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">master</span><span class="p">(</span><span class="s2">&quot;local[*]&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>

@@ -265,6 +265,8 @@ class Presto(Dialect):
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.STRUCT: "ROW",
+            exp.DataType.Type.DATETIME: "TIMESTAMP",
+            exp.DataType.Type.DATETIME64: "TIMESTAMP",
         }
 
         TRANSFORMS = {

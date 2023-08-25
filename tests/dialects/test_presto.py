@@ -346,6 +346,11 @@ class TestPresto(Validator):
                 "presto": "SELECT CAST('2012-10-31 00:00' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
             },
         )
+        self.validate_all(
+            "CAST(x AS TIMESTAMP)",
+            write={"presto": "CAST(x AS TIMESTAMP)"},
+            read={"mysql": "CAST(x AS DATETIME)", "clickhouse": "CAST(x AS DATETIME64)"},
+        )
 
     def test_ddl(self):
         self.validate_all(

@@ -30,9 +30,10 @@ class Validator(unittest.TestCase):
 
         Args:
             sql (str): Main SQL expression
-            dialect (str): dialect of `sql`
             read (dict): Mapping of dialect -> SQL
             write (dict): Mapping of dialect -> SQL
+            pretty (bool): prettify both read and write
+            identify (bool): quote identifiers in both read and write
         """
         expression = self.parse_one(sql)
 

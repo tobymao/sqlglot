@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v17.16.1] - 2023-08-26
+### :sparkles: New Features
+- [`6e0cfbe`](https://github.com/tobymao/sqlglot/commit/6e0cfbee31507ed6ef8321bdb21dfd7191d976ed) - **tsql**: partition schema closes [#2115](https://github.com/tobymao/sqlglot/pull/2115) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`fe37fc7`](https://github.com/tobymao/sqlglot/commit/fe37fc7ba274e73a66ee1bdf41ce3ceced2f3010) - **tsql**: create if not exist index *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v17.16.0] - 2023-08-26
 ### :sparkles: New Features
 - [`ca5c999`](https://github.com/tobymao/sqlglot/commit/ca5c9998258518fa939edef25fc7140070d25263) - start with connect by closes [#2112](https://github.com/tobymao/sqlglot/pull/2112) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1226,3 +1234,4 @@ Changelog
 [v17.15.0]: https://github.com/tobymao/sqlglot/compare/v17.14.2...v17.15.0
 [v17.15.1]: https://github.com/tobymao/sqlglot/compare/v17.15.0...v17.15.1
 [v17.16.0]: https://github.com/tobymao/sqlglot/compare/v17.15.1...v17.16.0
+[v17.16.1]: https://github.com/tobymao/sqlglot/compare/v17.16.0...v17.16.1

@@ -9,6 +9,16 @@ class TestSnowflake(Validator):
 
     def test_snowflake(self):
         self.validate_all(
+            "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+            read={
+                "oracle": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+            },
+            write={
+                "oracle": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+                "snowflake": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+            },
+        )
+        self.validate_all(
             "SELECT INSERT(a, 0, 0, 'b')",
             read={
                 "mysql": "SELECT INSERT(a, 0, 0, 'b')",

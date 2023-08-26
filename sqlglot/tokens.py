@@ -184,6 +184,7 @@ class TokenType(AutoName):
     COMMAND = auto()
     COMMENT = auto()
     COMMIT = auto()
+    CONNECT_BY = auto()
     CONSTRAINT = auto()
     CREATE = auto()
     CROSS = auto()
@@ -302,6 +303,7 @@ class TokenType(AutoName):
     SIMILAR_TO = auto()
     SOME = auto()
     SORT_BY = auto()
+    START_WITH = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
@@ -534,6 +536,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,
         "COMMIT": TokenType.COMMIT,
+        "CONNECT BY": TokenType.CONNECT_BY,
         "CONSTRAINT": TokenType.CONSTRAINT,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
@@ -640,6 +643,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "SIMILAR TO": TokenType.SIMILAR_TO,
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
+        "START WITH": TokenType.START_WITH,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

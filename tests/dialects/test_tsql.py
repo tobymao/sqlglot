@@ -436,11 +436,28 @@ class TestTSQL(Validator):
 
     def test_ddl(self):
         self.validate_all(
-            "IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE SCHEMA_NAME = 'foo') EXEC('CREATE SCHEMA foo')",
+            "IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = 'foo') EXEC('CREATE SCHEMA foo')",
             read={
                 "": "CREATE SCHEMA IF NOT EXISTS foo",
             },
         )
+        self.validate_all(
+            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'foo') EXEC('CREATE TABLE foo (a INTEGER)')",
+            read={
+                "": "CREATE TABLE IF NOT EXISTS foo (a INTEGER)",
+            },
+        )
+
+        self.validate_all(
+            "CREATE OR ALTER VIEW a.b AS SELECT 1",
+            read={
+                "": "CREATE OR REPLACE VIEW a.b AS SELECT 1",
+            },
+            write={
+                "tsql": "CREATE OR ALTER VIEW a.b AS SELECT 1",
+            },
+        )
+
         self.validate_all(
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={

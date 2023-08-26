@@ -676,16 +676,22 @@ class TSQL(Dialect):
             return sql
 
         def create_sql(self, expression: exp.Create) -> str:
+            expression = expression.copy()
             kind = self.sql(expression, "kind").upper()
-            exists = expression.args.get("exists")
+            exists = expression.args.pop("exists", None)
+            sql = super().create_sql(expression)
 
-            if exists and kind == "SCHEMA":
-                schema_name = expression.this
-                string = self.sql(exp.Literal.string(schema_name.name))
-                identifier = self.sql(schema_name)
-                return f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE SCHEMA_NAME = {string}) EXEC('CREATE SCHEMA {identifier}')"""
+            if exists:
+                table = expression.find(exp.Table)
+                identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
+                if kind == "SCHEMA":
+                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC('{sql}')"""
+                if kind == "TABLE":
+                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = {identifier}) EXEC('{sql}')"""
+            elif expression.args.get("replace"):
+                sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 
-            return super().create_sql(expression)
+            return sql
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"

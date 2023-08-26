@@ -7,6 +7,10 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_identity(
+            'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC))'
+        )
+
+        self.validate_identity(
             """
             CREATE TABLE x(
                 [zip_cd] [varchar](5) NULL NOT FOR REPLICATION

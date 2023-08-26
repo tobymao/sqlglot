@@ -1320,6 +1320,10 @@ class InlineLengthColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class NonClusteredColumnConstraint(ColumnConstraintKind):
+    pass
+
+
 class NotForReplicationColumnConstraint(ColumnConstraintKind):
     arg_types = {}
 

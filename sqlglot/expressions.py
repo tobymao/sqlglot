@@ -1503,6 +1503,15 @@ class Check(Expression):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/constructs/connect-by
+class Connect(Expression):
+    arg_types = {"start": False, "connect": True}
+
+
+class Prior(Expression):
+    pass
+
+
 class Directory(Expression):
     # https://spark.apache.org/docs/3.0.0-preview/sql-ref-syntax-dml-insert-overwrite-directory-hive.html
     arg_types = {"this": True, "local": False, "row_format": False}
@@ -2351,6 +2360,7 @@ QUERY_MODIFIERS = {
     "match": False,
     "laterals": False,
     "joins": False,
+    "connect": False,
     "pivots": False,
     "where": False,
     "group": False,

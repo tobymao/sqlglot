@@ -1446,6 +1446,16 @@ class Generator:
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
+    def connect_sql(self, expression: exp.Connect) -> str:
+        start = self.sql(expression, "start")
+        start = self.seg(f"START WITH {start}") if start else ""
+        connect = self.sql(expression, "connect")
+        connect = self.seg(f"CONNECT BY {connect}")
+        return start + connect
+
+    def prior_sql(self, expression: exp.Prior) -> str:
+        return f"PRIOR {self.sql(expression, 'this')}"
+
     def join_sql(self, expression: exp.Join) -> str:
         op_sql = " ".join(
             op
@@ -1688,6 +1698,7 @@ class Generator:
         return csv(
             *sqls,
             *[self.sql(join) for join in expression.args.get("joins") or []],
+            self.sql(expression, "connect"),
             self.sql(expression, "match"),
             *[self.sql(lateral) for lateral in expression.args.get("laterals") or []],
             self.sql(expression, "where"),

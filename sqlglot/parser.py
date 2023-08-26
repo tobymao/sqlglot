@@ -793,6 +793,8 @@ class Parser(metaclass=_Parser):
             self._parse_sort(exp.Distribute, TokenType.DISTRIBUTE_BY),
         ),
         TokenType.SORT_BY: lambda self: ("sort", self._parse_sort(exp.Sort, TokenType.SORT_BY)),
+        TokenType.CONNECT_BY: lambda self: ("connect", self._parse_connect(skip_start_token=True)),
+        TokenType.START_WITH: lambda self: ("connect", self._parse_connect()),
     }
 
     SET_PARSERS = {
@@ -2814,6 +2816,22 @@ class Parser(metaclass=_Parser):
             return None
         return self.expression(exp.Qualify, this=self._parse_conjunction())
 
+    def _parse_connect(self, skip_start_token: bool = False) -> t.Optional[exp.Connect]:
+        if skip_start_token:
+            start = None
+        elif self._match(TokenType.START_WITH):
+            start = self._parse_conjunction()
+        else:
+            return None
+
+        self._match(TokenType.CONNECT_BY)
+        self.NO_PAREN_FUNCTION_PARSERS["PRIOR"] = lambda self: self.expression(
+            exp.Prior, this=self._parse_bitwise()
+        )
+        connect = self._parse_conjunction()
+        self.NO_PAREN_FUNCTION_PARSERS.pop("PRIOR")
+        return self.expression(exp.Connect, start=start, connect=connect)
+
     def _parse_order(
         self, this: t.Optional[exp.Expression] = None, skip_order_token: bool = False
     ) -> t.Optional[exp.Expression]:
@@ -3623,7 +3641,7 @@ class Parser(metaclass=_Parser):
         identity = self._match_text_seq("IDENTITY")
 
         if self._match(TokenType.L_PAREN):
-            if self._match_text_seq("START", "WITH"):
+            if self._match(TokenType.START_WITH):
                 this.set("start", self._parse_bitwise())
             if self._match_text_seq("INCREMENT", "BY"):
                 this.set("increment", self._parse_bitwise())

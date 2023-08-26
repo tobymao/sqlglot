@@ -7,7 +7,7 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_identity(
-            'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC))'
+            'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)'
         )
 
         self.validate_identity(

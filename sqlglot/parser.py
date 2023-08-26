@@ -1689,7 +1689,7 @@ class Parser(metaclass=_Parser):
             return exp.OnCommitProperty()
         if self._match_text_seq("COMMIT", "DELETE", "ROWS"):
             return exp.OnCommitProperty(delete=True)
-        return self.expression(exp.OnProperty, this=self._parse_id_var())
+        return self.expression(exp.OnProperty, this=self._parse_schema(self._parse_id_var()))
 
     def _parse_distkey(self) -> exp.DistKeyProperty:
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))

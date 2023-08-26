@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v17.16.0] - 2023-08-26
+### :sparkles: New Features
+- [`ca5c999`](https://github.com/tobymao/sqlglot/commit/ca5c9998258518fa939edef25fc7140070d25263) - start with connect by closes [#2112](https://github.com/tobymao/sqlglot/pull/2112) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`0316f7f`](https://github.com/tobymao/sqlglot/commit/0316f7f73ef8c7e065dd3e373c0eea98cb0c3156) - **presto**: datetime -> timestamp *(PR [#2113](https://github.com/tobymao/sqlglot/pull/2113) by [@barakalon](https://github.com/barakalon))*
+
+
 ## [v17.15.1] - 2023-08-24
 ### :sparkles: New Features
 - [`dc5836c`](https://github.com/tobymao/sqlglot/commit/dc5836c3d82ec85c9f2bb98a6f0065ef66b80f43) - **tsql**: table constraints closes [#2106](https://github.com/tobymao/sqlglot/pull/2106) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1217,3 +1225,4 @@ Changelog
 [v17.14.2]: https://github.com/tobymao/sqlglot/compare/v17.14.1...v17.14.2
 [v17.15.0]: https://github.com/tobymao/sqlglot/compare/v17.14.2...v17.15.0
 [v17.15.1]: https://github.com/tobymao/sqlglot/compare/v17.15.0...v17.15.1
+[v17.16.0]: https://github.com/tobymao/sqlglot/compare/v17.15.1...v17.16.0

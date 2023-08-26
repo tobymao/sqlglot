@@ -1465,27 +1465,27 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "CREATE INDEX my_idx ON tbl (a, b)",
+            "CREATE INDEX my_idx ON tbl(a, b)",
             read={
-                "hive": "CREATE INDEX my_idx ON TABLE tbl (a, b)",
-                "sqlite": "CREATE INDEX my_idx ON tbl (a, b)",
+                "hive": "CREATE INDEX my_idx ON TABLE tbl(a, b)",
+                "sqlite": "CREATE INDEX my_idx ON tbl(a, b)",
             },
             write={
-                "hive": "CREATE INDEX my_idx ON TABLE tbl (a, b)",
-                "postgres": "CREATE INDEX my_idx ON tbl (a NULLS FIRST, b NULLS FIRST)",
-                "sqlite": "CREATE INDEX my_idx ON tbl (a, b)",
+                "hive": "CREATE INDEX my_idx ON TABLE tbl(a, b)",
+                "postgres": "CREATE INDEX my_idx ON tbl(a NULLS FIRST, b NULLS FIRST)",
+                "sqlite": "CREATE INDEX my_idx ON tbl(a, b)",
             },
         )
         self.validate_all(
-            "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+            "CREATE UNIQUE INDEX my_idx ON tbl(a, b)",
             read={
-                "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl (a, b)",
-                "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+                "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl(a, b)",
+                "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl(a, b)",
             },
             write={
-                "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl (a, b)",
-                "postgres": "CREATE UNIQUE INDEX my_idx ON tbl (a NULLS FIRST, b NULLS FIRST)",
-                "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl (a, b)",
+                "hive": "CREATE UNIQUE INDEX my_idx ON TABLE tbl(a, b)",
+                "postgres": "CREATE UNIQUE INDEX my_idx ON tbl(a NULLS FIRST, b NULLS FIRST)",
+                "sqlite": "CREATE UNIQUE INDEX my_idx ON tbl(a, b)",
             },
         )
         self.validate_all(

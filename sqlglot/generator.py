@@ -965,9 +965,9 @@ class Generator:
         name = self.sql(expression, "this")
         name = f"{name} " if name else ""
         table = self.sql(expression, "table")
-        table = f"{self.INDEX_ON} {table} " if table else ""
+        table = f"{self.INDEX_ON} {table}" if table else ""
         using = self.sql(expression, "using")
-        using = f"USING {using} " if using else ""
+        using = f" USING {using} " if using else ""
         index = "INDEX " if not table else ""
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""

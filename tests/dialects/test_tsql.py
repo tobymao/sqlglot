@@ -436,6 +436,13 @@ class TestTSQL(Validator):
 
     def test_ddl(self):
         self.validate_all(
+            "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id('db.tbl') AND name = 'idx') EXEC('CREATE INDEX idx ON db.tbl')",
+            read={
+                "": "CREATE INDEX IF NOT EXISTS idx ON db.tbl",
+            },
+        )
+
+        self.validate_all(
             "IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = 'foo') EXEC('CREATE SCHEMA foo')",
             read={
                 "": "CREATE SCHEMA IF NOT EXISTS foo",

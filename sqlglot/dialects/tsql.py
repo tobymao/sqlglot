@@ -686,8 +686,11 @@ class TSQL(Dialect):
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
                 if kind == "SCHEMA":
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC('{sql}')"""
-                if kind == "TABLE":
+                elif kind == "TABLE":
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = {identifier}) EXEC('{sql}')"""
+                elif kind == "INDEX":
+                    index = self.sql(exp.Literal.string(expression.this.text("this")))
+                    sql = f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC('{sql}')"""
             elif expression.args.get("replace"):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 

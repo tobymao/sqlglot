@@ -79,6 +79,7 @@ class Generator:
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.MaterializedProperty: lambda self, e: "MATERIALIZED",
         exp.NoPrimaryIndexProperty: lambda self, e: "NO PRIMARY INDEX",
+        exp.NonClusteredColumnConstraint: lambda self, e: f"NONCLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.NotForReplicationColumnConstraint: lambda self, e: "NOT FOR REPLICATION",
         exp.OnCommitProperty: lambda self, e: f"ON COMMIT {'DELETE' if e.args.get('delete') else 'PRESERVE'} ROWS",
         exp.OnProperty: lambda self, e: f"ON {self.sql(e, 'this')}",

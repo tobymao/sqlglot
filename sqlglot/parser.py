@@ -692,6 +692,9 @@ class Parser(metaclass=_Parser):
         "CLUSTERED": lambda self: self.expression(
             exp.ClusteredColumnConstraint, this=self._parse_wrapped_csv(self._parse_ordered)
         ),
+        "NONCLUSTERED": lambda self: self.expression(
+            exp.NonClusteredColumnConstraint, this=self._parse_wrapped_csv(self._parse_ordered)
+        ),
         "DEFAULT": lambda self: self.expression(
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),

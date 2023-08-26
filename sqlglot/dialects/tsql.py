@@ -603,6 +603,14 @@ class TSQL(Dialect):
 
             return super()._parse_if()
 
+        def _parse_unique(self) -> exp.UniqueColumnConstraint:
+            return self.expression(
+                exp.UniqueColumnConstraint,
+                this=None
+                if self._curr and self._curr.text.upper() in {"CLUSTERED", "NONCLUSTERED"}
+                else self._parse_schema(self._parse_id_var(any_token=False)),
+            )
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         LIMIT_IS_TOP = True
@@ -741,3 +749,8 @@ class TSQL(Dialect):
                 identifier = f"#{identifier}"
 
             return identifier
+
+        def constraint_sql(self, expression: exp.Constraint) -> str:
+            this = self.sql(expression, "this")
+            expressions = self.expressions(expression, flat=True, sep=" ")
+            return f"CONSTRAINT {this} {expressions}"

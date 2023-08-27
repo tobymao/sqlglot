@@ -200,6 +200,17 @@ def _parse_date_delta(
     return inner_func
 
 
+def setitem_sql(self, expression: exp.SetItem) -> str:
+    """tsql does not use '=' in SET command but does use '=' with Variables"""
+
+    left = self.sql(expression.this.left)
+    right = self.sql(expression.this.right)
+    if isinstance(expression.this.left, exp.Identifier):
+        return f"{left} {right}"
+    else:
+        return f"{left} = {right}"
+
+
 class TSQL(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
     NULL_ORDERING = "nulls_are_small"
@@ -397,6 +408,22 @@ class TSQL(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
         CONCAT_NULL_OUTPUTS_STRING = True
+
+        def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
+            """
+            tsql uses
+                SET @myvar = <expression>
+            and
+                SET KEY VALUE
+            """
+            left = self._parse_primary() or self._parse_id_var()
+            self._match_texts(("="))
+            right = self._parse_statement() or self._parse_id_var()
+            this = self.expression(exp.EQ, this=left, expression=right)
+
+            return self.expression(
+                exp.Set, expressions=[self.expression(exp.SetItem, this=this)], unset=unset, tag=tag
+            )
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
@@ -643,6 +670,8 @@ class TSQL(Dialect):
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
+            # exp.Set: set_sql,
+            exp.SetItem: setitem_sql,
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
                 "HASHBYTES",

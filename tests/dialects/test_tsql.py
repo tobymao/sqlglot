@@ -595,6 +595,16 @@ WHERE
             pretty=True,
         )
 
+    def test_set(self):
+        self.validate_all(
+            "SET KEY VALUE",
+            write={
+                "tsql": "SET KEY VALUE",
+                "duckdb": "SET KEY = VALUE",
+                "spark": "SET KEY = VALUE",
+            },
+        )
+
     def test_procedure_keywords(self):
         self.validate_identity("BEGIN")
         self.validate_identity("END")

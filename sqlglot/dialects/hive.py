@@ -109,6 +109,10 @@ def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str
     return f"SORT_ARRAY({self.sql(expression, 'this')})"
 
 
+def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
+    return f"{'' if expression.args.get('allow_null') else 'NOT NULL'}"
+
+
 def _property_sql(self: generator.Generator, expression: exp.Property) -> str:
     return f"'{expression.name}'={self.sql(expression, 'value')}"
 
@@ -422,6 +426,7 @@ class Hive(Dialect):
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
             exp.MonthsBetween: lambda self, e: self.func("MONTHS_BETWEEN", e.this, e.expression),
+            exp.NotNullColumnConstraint: notnullcolumnconstraint_sql,
             exp.VarMap: var_map_sql,
             exp.Create: create_with_partitions_sql,
             exp.Quantile: rename_func("PERCENTILE"),

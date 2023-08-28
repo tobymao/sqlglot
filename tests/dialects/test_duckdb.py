@@ -52,6 +52,7 @@ class TestDuckDB(Validator):
             "SELECT * FROM (PIVOT Cities ON Year USING SUM(Population) GROUP BY Country) AS pivot_alias"
         )
 
+        self.validate_identity("FROM  x SELECT x UNION SELECT 1", "SELECT x FROM x UNION SELECT 1")
         self.validate_all("FROM (FROM tbl)", write={"duckdb": "SELECT * FROM (SELECT * FROM tbl)"})
         self.validate_all("FROM tbl", write={"duckdb": "SELECT * FROM tbl"})
         self.validate_all("0b1010", write={"": "0 AS b1010"})

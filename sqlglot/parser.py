@@ -528,9 +528,6 @@ class Parser(metaclass=_Parser):
         TokenType.DESC: lambda self: self._parse_describe(),
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
-        TokenType.FROM: lambda self: exp.select("*").from_(
-            t.cast(exp.From, self._parse_from(skip_from_token=True))
-        ),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.LOAD: lambda self: self._parse_load(),
         TokenType.MERGE: lambda self: self._parse_merge(),
@@ -1991,6 +1988,7 @@ class Parser(metaclass=_Parser):
         self, nested: bool = False, table: bool = False, parse_subquery_alias: bool = True
     ) -> t.Optional[exp.Expression]:
         cte = self._parse_with()
+
         if cte:
             this = self._parse_statement()
 
@@ -2003,7 +2001,13 @@ class Parser(metaclass=_Parser):
             else:
                 self.raise_error(f"{this.key} does not support CTE")
                 this = cte
-        elif self._match(TokenType.SELECT):
+
+            return this
+
+        # duckdb supports leading with FROM x
+        from_ = self._parse_from() if self._match(TokenType.FROM, advance=False) else None
+
+        if self._match(TokenType.SELECT):
             comments = self._prev_comments
 
             hint = self._parse_hint()
@@ -2042,7 +2046,9 @@ class Parser(metaclass=_Parser):
             if into:
                 this.set("into", into)
 
-            from_ = self._parse_from()
+            if not from_:
+                from_ = self._parse_from()
+
             if from_:
                 this.set("from", from_)
 
@@ -2069,6 +2075,8 @@ class Parser(metaclass=_Parser):
                 expressions=self._parse_csv(self._parse_value),
                 alias=self._parse_table_alias(),
             )
+        elif from_:
+            this = exp.select("*").from_(from_.this, copy=False)
         else:
             this = None
 

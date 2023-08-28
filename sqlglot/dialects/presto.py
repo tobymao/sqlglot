@@ -297,7 +297,7 @@ class Presto(Dialect):
             exp.DateSub: lambda self, e: self.func(
                 "DATE_ADD",
                 exp.Literal.string(e.text("unit") or "day"),
-                exp.Mul(this=e.expression, expression=exp.Literal.number(-1)),
+                e.expression * -1,
                 e.this,
             ),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),

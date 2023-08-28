@@ -294,6 +294,12 @@ class Presto(Dialect):
             ),
             exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.DATE_FORMAT}) AS DATE)",
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
+            exp.DateSub: lambda self, e: self.func(
+                "DATE_ADD",
+                exp.Literal.string(e.text("unit") or "day"),
+                e.expression * -1,
+                e.this,
+            ),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
             exp.DiToDate: lambda self, e: f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {Presto.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),

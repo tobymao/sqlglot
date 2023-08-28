@@ -200,17 +200,6 @@ def _parse_date_delta(
     return inner_func
 
 
-def setitem_sql(self, expression: exp.SetItem) -> str:
-    """tsql does not use '=' in SET command but does use '=' with Variables"""
-
-    left = self.sql(expression.this.left)
-    right = self.sql(expression.this.right)
-    if isinstance(expression.this.left, exp.Identifier):
-        return f"{left} {right}"
-    else:
-        return f"{left} = {right}"
-
-
 class TSQL(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
     NULL_ORDERING = "nulls_are_small"
@@ -670,7 +659,7 @@ class TSQL(Dialect):
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
-            exp.SetItem: setitem_sql,
+            exp.SetItem: lambda self, e: f"{self.sql(e.this.left)}{' ' if isinstance(e.this.left, exp.Identifier) else ' = '}{self.sql(e.this.right)}",
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
                 "HASHBYTES",

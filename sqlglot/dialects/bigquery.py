@@ -301,6 +301,8 @@ class BigQuery(Dialect):
                 if re.compile(str(seq_get(args, 1))).groups == 1
                 else None,
             ),
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
             "SPLIT": lambda args: exp.Split(
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split
                 this=seq_get(args, 0),
@@ -430,6 +432,9 @@ class BigQuery(Dialect):
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,
                 ]
+            ),
+            exp.SHA2: lambda self, e: self.func(
+                f"SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),
             exp.StabilityProperty: lambda self, e: f"DETERMINISTIC"
             if e.name == "IMMUTABLE"

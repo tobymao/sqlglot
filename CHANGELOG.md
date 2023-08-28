@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v17.16.2] - 2023-08-28
+### :sparkles: New Features
+- [`5b14f52`](https://github.com/tobymao/sqlglot/commit/5b14f521ad37eb33fbfad7fdd1537b47390c3e65) - **duckdb**: by_name modifiers [#2118](https://github.com/tobymao/sqlglot/pull/2118) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`cf2789f`](https://github.com/tobymao/sqlglot/commit/cf2789f35301339060feb426e8d630e2c398d083) - **duckdb**: allow selects in from leading syntax [#2118](https://github.com/tobymao/sqlglot/pull/2118) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`167d298`](https://github.com/tobymao/sqlglot/commit/167d2985d33448f04af9a4a4153deccecef2f610) - **presto**: transpile DATE_SUB *(PR [#2120](https://github.com/tobymao/sqlglot/pull/2120) by [@barakalon](https://github.com/barakalon))*
+
+
 ## [v17.16.1] - 2023-08-26
 ### :sparkles: New Features
 - [`6e0cfbe`](https://github.com/tobymao/sqlglot/commit/6e0cfbee31507ed6ef8321bdb21dfd7191d976ed) - **tsql**: partition schema closes [#2115](https://github.com/tobymao/sqlglot/pull/2115) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1235,3 +1244,4 @@ Changelog
 [v17.15.1]: https://github.com/tobymao/sqlglot/compare/v17.15.0...v17.15.1
 [v17.16.0]: https://github.com/tobymao/sqlglot/compare/v17.15.1...v17.16.0
 [v17.16.1]: https://github.com/tobymao/sqlglot/compare/v17.16.0...v17.16.1
+[v17.16.2]: https://github.com/tobymao/sqlglot/compare/v17.16.1...v17.16.2

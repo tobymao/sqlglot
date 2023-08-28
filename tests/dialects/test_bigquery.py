@@ -148,6 +148,13 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SHA512(x)",
+            write={
+                "bigquery": "SHA512(x)",
+                "spark2": "SHA2(x, 512)",
+            },
+        )
+        self.validate_all(
             "SELECT CAST('20201225' AS TIMESTAMP FORMAT 'YYYYMMDD' AT TIME ZONE 'America/New_York')",
             write={"bigquery": "SELECT PARSE_TIMESTAMP('%Y%m%d', '20201225', 'America/New_York')"},
         )

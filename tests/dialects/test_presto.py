@@ -296,6 +296,13 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "DATE_ADD('DAY', 1 * -1, x)",
+            write={
+                "presto": "DATE_ADD('DAY', 1 * -1, x)",
+            },
+            read={"mysql": "DATE_SUB(x, INTERVAL 1 DAY)"},
+        )
+        self.validate_all(
             "NOW()",
             write={
                 "presto": "CURRENT_TIMESTAMP",

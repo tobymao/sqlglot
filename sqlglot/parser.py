@@ -1776,6 +1776,7 @@ class Parser(metaclass=_Parser):
             exp.Insert,
             comments=comments,
             this=this,
+            by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),
             partition=self._parse_partition(),
             where=self._match_pair(TokenType.REPLACE, TokenType.WHERE)
@@ -2980,6 +2981,7 @@ class Parser(metaclass=_Parser):
             expression,
             this=this,
             distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
+            by_name=self._match_text_seq("BY", "NAME"),
             expression=self._parse_set_operations(self._parse_select(nested=True)),
         )
 

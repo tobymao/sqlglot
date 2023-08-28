@@ -1193,6 +1193,7 @@ class Generator:
         where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         conflict = self.sql(expression, "conflict")
+        by_name = " BY NAME" if expression.args.get("by_name") else ""
         returning = self.sql(expression, "returning")
 
         if self.RETURNING_END:
@@ -1200,7 +1201,7 @@ class Generator:
         else:
             expression_sql = f"{returning}{expression_sql}{conflict}"
 
-        sql = f"INSERT{alternative}{ignore}{this}{exists}{partition_sql}{where}{expression_sql}"
+        sql = f"INSERT{alternative}{ignore}{this}{by_name}{exists}{partition_sql}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1834,7 +1835,8 @@ class Generator:
     def union_op(self, expression: exp.Union) -> str:
         kind = " DISTINCT" if self.EXPLICIT_UNION else ""
         kind = kind if expression.args.get("distinct") else " ALL"
-        return f"UNION{kind}"
+        by_name = " BY NAME" if expression.args.get("by_name") else ""
+        return f"UNION{kind}{by_name}"
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
         args = self.expressions(expression, flat=True)

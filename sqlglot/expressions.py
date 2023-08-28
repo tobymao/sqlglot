@@ -1605,6 +1605,7 @@ class Insert(DDL):
         "alternative": False,
         "where": False,
         "ignore": False,
+        "by_name": False,
     }
 
     def with_(
@@ -2460,6 +2461,7 @@ class Union(Subqueryable):
         "this": True,
         "expression": True,
         "distinct": False,
+        "by_name": False,
         **QUERY_MODIFIERS,
     }
 

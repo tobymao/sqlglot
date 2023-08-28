@@ -6,6 +6,8 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
+        self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
         self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
 
         # https://github.com/duckdb/duckdb/releases/tag/v0.8.0

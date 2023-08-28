@@ -301,6 +301,7 @@ class BigQuery(Dialect):
                 if re.compile(str(seq_get(args, 1))).groups == 1
                 else None,
             ),
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length="256"),
             "SPLIT": lambda args: exp.Split(
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split
                 this=seq_get(args, 0),

@@ -595,6 +595,7 @@ class Parser(metaclass=_Parser):
         TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
         TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
         TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),
+        TokenType.FOR: lambda self, this: self._parse_comprehension(this),
     }
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
@@ -4895,6 +4896,19 @@ class Parser(metaclass=_Parser):
             min = exp.Literal.number(0)
         self._match_r_paren()
         return self.expression(exp.DictRange, this=this, min=min, max=max)
+
+    def _parse_comprehension(self, this: exp.Expression) -> exp.Comprehension:
+        expression = self._parse_column()
+        self._match(TokenType.IN)
+        iterator = self._parse_column()
+        condition = self._parse_conjunction() if self._match_text_seq("IF") else None
+        return self.expression(
+            exp.Comprehension,
+            this=this,
+            expression=expression,
+            iterator=iterator,
+            condition=condition,
+        )
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

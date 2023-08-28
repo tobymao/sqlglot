@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     encode_decode_sql,
     format_time_lambda,
+    inline_array_sql,
     no_comment_column_constraint_sql,
     no_properties_sql,
     no_safe_divide_sql,
@@ -224,7 +225,7 @@ class DuckDB(Dialect):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: lambda self, e: self.func("ARRAY", e.expressions[0])
             if e.expressions and e.expressions[0].find(exp.Select)
-            else rename_func("LIST_VALUE")(self, e),
+            else inline_array_sql(self, e),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),

@@ -616,7 +616,7 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "[0, 1, 2]",
                 "bigquery": "[0, 1, 2]",
-                "duckdb": "LIST_VALUE(0, 1, 2)",
+                "duckdb": "[0, 1, 2]",
                 "presto": "ARRAY[0, 1, 2]",
                 "spark": "ARRAY(0, 1, 2)",
             },

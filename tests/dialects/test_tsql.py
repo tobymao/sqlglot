@@ -6,6 +6,14 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_all(
+            "CREATE TABLE x ( A INTEGER NOT NULL, B INTEGER NULL )",
+            write={
+                "tsql": "CREATE TABLE x (A INTEGER NOT NULL, B INTEGER NULL)",
+                "hive": "CREATE TABLE x (A INT NOT NULL, B INT)",
+            },
+        )
+
         self.validate_identity(
             'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)'
         )

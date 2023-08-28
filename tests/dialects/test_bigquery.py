@@ -329,14 +329,14 @@ class TestBigQuery(Validator):
         self.validate_all(
             "[1, 2, 3]",
             read={
-                "duckdb": "LIST_VALUE(1, 2, 3)",
+                "duckdb": "[1, 2, 3]",
                 "presto": "ARRAY[1, 2, 3]",
                 "hive": "ARRAY(1, 2, 3)",
                 "spark": "ARRAY(1, 2, 3)",
             },
             write={
                 "bigquery": "[1, 2, 3]",
-                "duckdb": "LIST_VALUE(1, 2, 3)",
+                "duckdb": "[1, 2, 3]",
                 "presto": "ARRAY[1, 2, 3]",
                 "hive": "ARRAY(1, 2, 3)",
                 "spark": "ARRAY(1, 2, 3)",

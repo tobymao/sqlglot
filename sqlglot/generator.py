@@ -2692,6 +2692,14 @@ class Generator:
 
         return self.sql(case)
 
+    def comprehension_sql(self, expression: exp.Comprehension) -> str:
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        iterator = self.sql(expression, "iterator")
+        condition = self.sql(expression, "condition")
+        condition = f" IF {condition}" if condition else ""
+        return f"{this} FOR {expr} IN {iterator}{condition}"
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

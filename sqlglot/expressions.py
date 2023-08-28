@@ -1207,6 +1207,10 @@ class Comment(Expression):
     arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
 
 
+class Comprehension(Expression):
+    arg_types = {"this": True, "expression": True, "iterator": True, "condition": False}
+
+
 # https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
 class MergeTreeTTLAction(Expression):
     arg_types = {

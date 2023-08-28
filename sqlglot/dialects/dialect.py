@@ -344,7 +344,7 @@ def arrow_json_extract_scalar_sql(
 
 
 def inline_array_sql(self: Generator, expression: exp.Array) -> str:
-    return f"[{self.expressions(expression)}]"
+    return f"[{self.expressions(expression, flat=True)}]"
 
 
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:

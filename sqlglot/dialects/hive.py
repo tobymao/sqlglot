@@ -50,6 +50,17 @@ TIME_DIFF_FACTOR = {
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 
+def constraint_sql(self, expression: exp.Constraint) -> str:
+    this = self.sql(expression, "this")
+
+    # remove unsupported properties
+    expression.expressions.remove(expression.find(exp.Properties))
+    expression.expressions.remove(expression.find(exp.OnProperty))
+
+    expressions = self.expressions(expression, sep=" ", flat=True)
+    return f"CONSTRAINT {this} {expressions}"
+
+
 def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
@@ -465,6 +476,12 @@ class Hive(Dialect):
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
+            exp.Constraint: constraint_sql,
+            exp.ClusteredColumnConstraint: lambda self, e: f"({self.expressions(e, 'this', indent=False)})",
+            exp.NonClusteredColumnConstraint: lambda self, e: f"({self.expressions(e, 'this', indent=False)})",
+            exp.NotForReplicationColumnConstraint: lambda self, e: "",
+            exp.OnProperty: lambda self, e: "",
+            exp.PrimaryKeyColumnConstraint: lambda self, e: "PRIMARY KEY",
         }
 
         PROPERTIES_LOCATION = {

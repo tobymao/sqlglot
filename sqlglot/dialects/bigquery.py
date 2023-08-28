@@ -434,7 +434,7 @@ class BigQuery(Dialect):
                 ]
             ),
             exp.SHA2: lambda self, e: self.func(
-                f"SHA256" if e.args.get("length") == "256" else "SHA512", f"{self.sql(e, 'this')}"
+                f"SHA256" if e.args.get("length") == "256" else "SHA512", e.this
             ),
             exp.StabilityProperty: lambda self, e: f"DETERMINISTIC"
             if e.name == "IMMUTABLE"

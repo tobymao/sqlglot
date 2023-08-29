@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v18.0.0] - 2023-08-29
+### :bug: Bug Fixes
+- [`c9d679b`](https://github.com/tobymao/sqlglot/commit/c9d679b6a3e665004f5df824bf3d4828cc2d4ab9) - parse INTERVAL ... YEAR *(PR [#2122](https://github.com/tobymao/sqlglot/pull/2122) by [@barakalon](https://github.com/barakalon))*
+- [`d5bae81`](https://github.com/tobymao/sqlglot/commit/d5bae81e53220f382d7e3bc15fb0afe63b1a502e) - table with empty identifiers *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v17.16.2] - 2023-08-28
 ### :sparkles: New Features
 - [`5b14f52`](https://github.com/tobymao/sqlglot/commit/5b14f521ad37eb33fbfad7fdd1537b47390c3e65) - **duckdb**: by_name modifiers [#2118](https://github.com/tobymao/sqlglot/pull/2118) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1245,3 +1251,4 @@ Changelog
 [v17.16.0]: https://github.com/tobymao/sqlglot/compare/v17.15.1...v17.16.0
 [v17.16.1]: https://github.com/tobymao/sqlglot/compare/v17.16.0...v17.16.1
 [v17.16.2]: https://github.com/tobymao/sqlglot/compare/v17.16.1...v17.16.2
+[v18.0.0]: https://github.com/tobymao/sqlglot/compare/v17.16.2...v18.0.0

@@ -171,6 +171,8 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SET @@GLOBAL.sort_buffer_size = 1000000, @@LOCAL.sort_buffer_size = 1000000"
         )
+        self.validate_identity("INTERVAL '1' YEAR")
+        self.validate_identity("DATE_ADD(x, INTERVAL 1 YEAR)")
 
     def test_types(self):
         self.validate_identity("CAST(x AS MEDIUMINT) + CAST(y AS YEAR(4))")

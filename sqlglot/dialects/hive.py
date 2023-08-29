@@ -49,6 +49,12 @@ TIME_DIFF_FACTOR = {
 
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
+def setitem_sql(self, expression: exp.SetItem) -> str:
+    left = self.sql(expression.this.left)   # IDENTIFIER, PARAMETER
+    right = self.sql(expression.this.right) # COLUMN, SUBQUERY
+    var = expression.args["var"]
+    eq = ' = '
+    return f"{left}{eq}{right}"
 
 def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     unit = expression.text("unit").upper()
@@ -460,6 +466,7 @@ class Hive(Dialect):
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
+            exp.SetItem: setitem_sql,
         }
 
         PROPERTIES_LOCATION = {

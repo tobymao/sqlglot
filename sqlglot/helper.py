@@ -45,7 +45,7 @@ class classproperty(property):
 def seq_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
     """Returns the value in `seq` at position `index`, or `None` if `index` is out of bounds."""
     try:
-        return seq[index]
+        return seq[index] if index < len(seq) else None
     except IndexError:
         return None
 

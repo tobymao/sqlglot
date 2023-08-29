@@ -1058,6 +1058,7 @@ class SetItem(Expression):
         "kind": False,
         "collate": False,  # MySQL SET NAMES statement
         "global": False,
+        "var": False,
     }
 
 

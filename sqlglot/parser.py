@@ -4797,15 +4797,11 @@ class Parser(metaclass=_Parser):
             return self._parse_set_transaction(global_=kind == "GLOBAL")
 
         left = self._parse_primary() or self._parse_id_var()
-
-        if not self._match_texts(("=", "TO")):
-            self._retreat(index)
-            return None
-
+        eq = self._match_texts(("=", "TO"))
         right = self._parse_statement() or self._parse_id_var()
         this = self.expression(exp.EQ, this=left, expression=right)
 
-        return self.expression(exp.SetItem, this=this, kind=kind)
+        return self.expression(exp.SetItem, this=this, kind=kind, var=eq)
 
     def _parse_set_transaction(self, global_: bool = False) -> exp.Expression:
         self._match_text_seq("TRANSACTION")

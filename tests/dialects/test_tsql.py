@@ -604,6 +604,23 @@ WHERE
                 "spark": "SET KEY = VALUE",
             },
         )
+        self.validate_all(
+            "SET @count = (select count(1) FROM x)",
+            write={
+                "tsql": "SET @count = (SELECT COUNT(1) FROM x)",
+                "duckdb": "SET count = (SELECT COUNT(1) FROM x)",
+                "spark": "SET count = (SELECT COUNT(1) FROM x)",
+            },
+        )
+        self.validate_all(
+            "SET @user OFF",
+            write={
+                "tsql": "SET @user OFF",
+                "duckdb": "SET user = OFF",
+                "spark": "SET user = OFF",
+            },
+        )
+
 
     def test_procedure_keywords(self):
         self.validate_identity("BEGIN")

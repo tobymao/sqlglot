@@ -58,6 +58,13 @@ TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 DEFAULT_START_DATE = datetime.date(1900, 1, 1)
 
 
+def setitem_sql(self, expression: exp.SetItem) -> str:
+    left = self.sql(expression.this.left)   # IDENTIFIER, PARAMETER
+    right = self.sql(expression.this.right) # COLUMN, SUBQUERY
+    var = expression.args["var"]
+    eq = ' = ' if var else ' '
+    return f"{left}{eq}{right}"
+
 def _format_time_lambda(
     exp_class: t.Type[E], full_format_mapping: t.Optional[bool] = None
 ) -> t.Callable[[t.List], E]:
@@ -398,21 +405,22 @@ class TSQL(Dialect):
 
         CONCAT_NULL_OUTPUTS_STRING = True
 
-        def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
-            """
-            tsql uses
-                SET @myvar = <expression>
-            and
-                SET KEY VALUE
-            """
-            left = self._parse_primary() or self._parse_id_var()
-            self._match_texts(("="))
-            right = self._parse_statement() or self._parse_id_var()
-            this = self.expression(exp.EQ, this=left, expression=right)
-
-            return self.expression(
-                exp.Set, expressions=[self.expression(exp.SetItem, this=this)], unset=unset, tag=tag
-            )
+        #       def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
+        #           """
+        #           tsql uses
+        #               SET @myvar = <statement>
+        #           and
+        ##               SET KEY VALUE
+        #           """
+        #           left = self._parse_primary() or self._parse_id_var()
+        #           eq = self._match(TokenType.EQ)
+        #           right = self._parse_statement() or self._parse_id_var()
+        #
+        #            this = self.expression(exp.EQ, this=left, expression=right)
+        #
+        #            return self.expression(
+        #                exp.Set, expressions=[self.expression(exp.SetItem, this=this)], unset=unset, tag=tag
+        #            )
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
@@ -659,7 +667,7 @@ class TSQL(Dialect):
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
-            exp.SetItem: lambda self, e: f"{self.sql(e.this.left)}{' ' if isinstance(e.this.left, exp.Identifier) else ' = '}{self.sql(e.this.right)}",
+            exp.SetItem: setitem_sql,
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
                 "HASHBYTES",

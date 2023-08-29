@@ -188,6 +188,7 @@ class TestExpressions(unittest.TestCase):
 
     def test_table(self):
         self.assertEqual(exp.table_("a", alias="b"), parse_one("select * from a b").find(exp.Table))
+        self.assertEqual(exp.table_("a", "").sql(), "a")
 
     def test_replace_tables(self):
         self.assertEqual(

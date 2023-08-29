@@ -5873,9 +5873,9 @@ def table_(
         The new Table instance.
     """
     return Table(
-        this=to_identifier(table, quoted=quoted),
-        db=to_identifier(db, quoted=quoted),
-        catalog=to_identifier(catalog, quoted=quoted),
+        this=to_identifier(table, quoted=quoted) if table else None,
+        db=to_identifier(db, quoted=quoted) if db else None,
+        catalog=to_identifier(catalog, quoted=quoted) if catalog else None,
         alias=TableAlias(this=to_identifier(alias)) if alias else None,
     )
 

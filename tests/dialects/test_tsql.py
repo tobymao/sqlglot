@@ -451,6 +451,13 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "CREATE TABLE tbl (id INTEGER NOT NULL IDENTITY(10, 1) PRIMARY KEY)",
+            read={
+                "postgres": "CREATE TABLE tbl (id INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 10) PRIMARY KEY)",
+                "tsql": "CREATE TABLE tbl (id INTEGER NOT NULL IDENTITY(10, 1) PRIMARY KEY)",
+            },
+        )
+        self.validate_all(
             "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id('db.tbl') AND name = 'idx') EXEC('CREATE INDEX idx ON db.tbl')",
             read={
                 "": "CREATE INDEX IF NOT EXISTS idx ON db.tbl",

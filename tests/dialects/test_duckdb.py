@@ -182,18 +182,18 @@ class TestDuckDB(Validator):
             "STRUCT_EXTRACT(x, 'abc')",
             write={
                 "duckdb": "STRUCT_EXTRACT(x, 'abc')",
-                "presto": 'x."abc"',
-                "hive": "x.`abc`",
-                "spark": "x.`abc`",
+                "presto": "x.abc",
+                "hive": "x.abc",
+                "spark": "x.abc",
             },
         )
         self.validate_all(
             "STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')",
             write={
                 "duckdb": "STRUCT_EXTRACT(STRUCT_EXTRACT(x, 'y'), 'abc')",
-                "presto": 'x."y"."abc"',
-                "hive": "x.`y`.`abc`",
-                "spark": "x.`y`.`abc`",
+                "presto": "x.y.abc",
+                "hive": "x.y.abc",
+                "spark": "x.y.abc",
             },
         )
         self.validate_all(

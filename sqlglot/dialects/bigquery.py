@@ -94,14 +94,20 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
 
     These are added by the optimizer's qualify_column step.
     """
-    from sqlglot.optimizer.scope import Scope
+    from sqlglot.optimizer.scope import find_all_in_scope
 
     if isinstance(expression, exp.Select):
-        for unnest in expression.find_all(exp.Unnest):
-            if isinstance(unnest.parent, (exp.From, exp.Join)) and unnest.alias:
-                for column in Scope(expression).find_all(exp.Column):
-                    if column.table == unnest.alias:
-                        column.set("table", None)
+        unnest_aliases = {
+            unnest.alias
+            for unnest in find_all_in_scope(expression, exp.Unnest)
+            if isinstance(unnest.parent, (exp.From, exp.Join))
+        }
+        if unnest_aliases:
+            for column in expression.find_all(exp.Column):
+                if column.table in unnest_aliases:
+                    column.set("table", None)
+                elif column.db in unnest_aliases:
+                    column.set("db", None)
 
     return expression
 

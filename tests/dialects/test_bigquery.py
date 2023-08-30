@@ -6,8 +6,33 @@ from tests.dialects.test_dialect import Validator
 
 class TestBigQuery(Validator):
     dialect = "bigquery"
+    maxDiff = None
 
     def test_bigquery(self):
+        self.validate_all(
+            """SELECT
+  `u`.`harness_user_email` AS `harness_user_email`,
+  `d`.`harness_user_id` AS `harness_user_id`,
+  `harness_account_id` AS `harness_account_id`
+FROM `analytics_staging`.`stg_mongodb__users` AS `u`, UNNEST(`u`.`harness_cluster_details`) AS `d`, UNNEST(`d`.`harness_account_ids`) AS `harness_account_id`
+WHERE
+  NOT `harness_account_id` IS NULL""",
+            read={
+                "": """
+                SELECT
+                  "u"."harness_user_email" AS "harness_user_email",
+                  "_q_0"."d"."harness_user_id" AS "harness_user_id",
+                  "_q_1"."harness_account_id" AS "harness_account_id"
+                FROM
+                  "analytics_staging"."stg_mongodb__users" AS "u",
+                  UNNEST("u"."harness_cluster_details") AS "_q_0"("d"),
+                  UNNEST("_q_0"."d"."harness_account_ids") AS "_q_1"("harness_account_id")
+                WHERE
+                  NOT "_q_1"."harness_account_id" IS NULL
+                """
+            },
+            pretty=True,
+        )
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")
 

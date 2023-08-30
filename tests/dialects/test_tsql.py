@@ -444,6 +444,13 @@ class TestTSQL(Validator):
 
     def test_ddl(self):
         self.validate_all(
+            "CREATE TABLE tbl (id INTEGER IDENTITY(1, 1) PRIMARY KEY)",
+            read={
+                "mysql": "CREATE TABLE tbl (id INT AUTO_INCREMENT PRIMARY KEY)",
+                "tsql": "CREATE TABLE tbl (id INTEGER IDENTITY(1, 1) PRIMARY KEY)",
+            },
+        )
+        self.validate_all(
             "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id('db.tbl') AND name = 'idx') EXEC('CREATE INDEX idx ON db.tbl')",
             read={
                 "": "CREATE INDEX IF NOT EXISTS idx ON db.tbl",

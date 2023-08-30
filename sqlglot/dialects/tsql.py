@@ -631,6 +631,7 @@ class TSQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
+            exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY(1, 1)",
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),
@@ -763,3 +764,11 @@ class TSQL(Dialect):
             this = self.sql(expression, "this")
             expressions = self.expressions(expression, flat=True, sep=" ")
             return f"CONSTRAINT {this} {expressions}"
+
+        # https://learn.microsoft.com/en-us/answers/questions/448821/create-table-in-sql-server
+        def generatedasidentitycolumnconstraint_sql(
+            self, expression: exp.GeneratedAsIdentityColumnConstraint
+        ) -> str:
+            start = self.sql(expression, "start") or "1"
+            increment = self.sql(expression, "increment") or "1"
+            return f"IDENTITY({start}, {increment})"

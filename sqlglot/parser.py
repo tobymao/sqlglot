@@ -1303,6 +1303,8 @@ class Parser(metaclass=_Parser):
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
 
+            shallow = self._match_text_seq("SHALLOW")
+
             if self._match_text_seq("CLONE"):
                 clone = self._parse_table(schema=True)
                 when = self._match_texts({"AT", "BEFORE"}) and self._prev.text.upper()
@@ -1314,7 +1316,12 @@ class Parser(metaclass=_Parser):
                 clone_expression = self._match(TokenType.FARROW) and self._parse_bitwise()
                 self._match(TokenType.R_PAREN)
                 clone = self.expression(
-                    exp.Clone, this=clone, when=when, kind=clone_kind, expression=clone_expression
+                    exp.Clone,
+                    this=clone,
+                    when=when,
+                    kind=clone_kind,
+                    shallow=shallow,
+                    expression=clone_expression,
                 )
 
         return self.expression(

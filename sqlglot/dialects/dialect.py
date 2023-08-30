@@ -414,9 +414,9 @@ def str_position_sql(self: Generator, expression: exp.StrPosition) -> str:
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
-    this = self.sql(expression, "this")
-    struct_key = self.sql(exp.Identifier(this=expression.expression.copy(), quoted=True))
-    return f"{this}.{struct_key}"
+    return (
+        f"{self.sql(expression, 'this')}.{self.sql(exp.to_identifier(expression.expression.name))}"
+    )
 
 
 def var_map_sql(

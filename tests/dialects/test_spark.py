@@ -245,6 +245,12 @@ TBLPROPERTIES (
         )
 
         self.validate_all(
+            "foo.bar",
+            read={
+                "": "STRUCT_EXTRACT(foo, bar)",
+            },
+        )
+        self.validate_all(
             "MAP(1, 2, 3, 4)",
             write={
                 "spark": "MAP(1, 2, 3, 4)",

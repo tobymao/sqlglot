@@ -1035,6 +1035,7 @@ class Clone(Expression):
         "this": True,
         "when": False,
         "kind": False,
+        "shallow": False,
         "expression": False,
     }
 

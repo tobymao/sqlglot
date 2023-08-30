@@ -793,14 +793,16 @@ class Generator:
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
+        shallow = "SHALLOW " if expression.args.get("shallow") else ""
+        this = f"{shallow}CLONE {this}"
         when = self.sql(expression, "when")
 
         if when:
             kind = self.sql(expression, "kind")
             expr = self.sql(expression, "expression")
-            return f"CLONE {this} {when} ({kind} => {expr})"
+            return f"{this} {when} ({kind} => {expr})"
 
-        return f"CLONE {this}"
+        return this
 
     def describe_sql(self, expression: exp.Describe) -> str:
         return f"DESCRIBE {self.sql(expression, 'this')}"

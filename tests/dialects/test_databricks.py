@@ -5,6 +5,7 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        self.validate_identity("CREATE TABLE target SHALLOW CLONE source")
         self.validate_identity("INSERT INTO a REPLACE WHERE cond VALUES (1), (2)")
         self.validate_identity("SELECT c1 : price")
         self.validate_identity("CREATE FUNCTION a.b(x INT) RETURNS INT RETURN x + 1")

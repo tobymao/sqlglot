@@ -631,7 +631,7 @@ class TSQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
-            exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY(1, 1)",
+            exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.CurrentDate: rename_func("GETDATE"),

@@ -444,10 +444,10 @@ class TestTSQL(Validator):
 
     def test_ddl(self):
         self.validate_all(
-            "CREATE TABLE tbl (id INTEGER IDENTITY(1, 1) PRIMARY KEY)",
+            "CREATE TABLE tbl (id INTEGER IDENTITY PRIMARY KEY)",
             read={
                 "mysql": "CREATE TABLE tbl (id INT AUTO_INCREMENT PRIMARY KEY)",
-                "tsql": "CREATE TABLE tbl (id INTEGER IDENTITY(1, 1) PRIMARY KEY)",
+                "tsql": "CREATE TABLE tbl (id INTEGER IDENTITY PRIMARY KEY)",
             },
         )
         self.validate_all(

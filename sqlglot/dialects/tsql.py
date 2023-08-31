@@ -399,6 +399,8 @@ class TSQL(Dialect):
 
         CONCAT_NULL_OUTPUTS_STRING = True
 
+        ALTER_TABLE_ADD_COLUMN_KEYWORD = False
+
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
             T-SQL supports the syntax alias = expression in the SELECT's projection list,

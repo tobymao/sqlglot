@@ -385,6 +385,25 @@ class BigQuery(Dialect):
 
             return table
 
+        def _parse_json_object(self) -> exp.JSONObject:
+            expressions: t.List[exp.Expression] = []
+            while True:
+                key = self._parse_field()
+                if key is None:
+                    if not expressions:
+                        break
+                    self.raise_error("Expecting key argument")
+                if not self._match(TokenType.COMMA):
+                    self.raise_error("Expecting a matching value argument")
+                value = self._parse_expression()
+                if value is None:
+                    self.raise_error("Expecting value argument")
+                expressions.append(self.expression(exp.JSONKeyValue, this=key, expression=value))
+                if not self._match(TokenType.COMMA):
+                    break
+
+            return self.expression(exp.JSONObject, expressions=expressions)
+
     class Generator(generator.Generator):
         EXPLICIT_UNION = True
         INTERVAL_ALLOWS_PLURAL_FORM = False
@@ -651,3 +670,6 @@ class BigQuery(Dialect):
                 expression = expression.copy()
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
+
+        def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
+            return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"

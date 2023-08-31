@@ -593,6 +593,9 @@ class MySQL(Dialect):
         def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
             return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
 
+        def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
+            return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"
+
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             to = self.CAST_MAPPING.get(expression.to.this)
 

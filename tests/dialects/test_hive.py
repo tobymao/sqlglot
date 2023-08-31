@@ -390,6 +390,9 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")
+        self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
+
         self.validate_identity(
             "SELECT ROW() OVER (DISTRIBUTE BY x SORT BY y)",
             "SELECT ROW() OVER (PARTITION BY x ORDER BY y)",

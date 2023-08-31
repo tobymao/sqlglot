@@ -267,6 +267,7 @@ class BigQuery(Dialect):
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "UNKNOWN": TokenType.NULL,
+            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
         }
         KEYWORDS.pop("DIV")
 
@@ -644,3 +645,9 @@ class BigQuery(Dialect):
 
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, prefix=self.seg("OPTIONS"))
+
+        def version_sql(self, expression: exp.Version) -> str:
+            if expression.name == "TIMESTAMP":
+                expression = expression.copy()
+                expression.set("this", "SYSTEM_TIME")
+            return super().version_sql(expression)

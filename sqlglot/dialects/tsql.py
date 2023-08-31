@@ -339,6 +339,7 @@ class TSQL(Dialect):
             "XML": TokenType.XML,
             "OUTPUT": TokenType.RETURNING,
             "SYSTEM_USER": TokenType.CURRENT_USER,
+            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
         }
 
     class Parser(parser.Parser):
@@ -460,43 +461,6 @@ class TSQL(Dialect):
                 return transaction
 
             return self._parse_as_command(self._prev)
-
-        def _parse_system_time(self) -> t.Optional[exp.Expression]:
-            if not self._match_text_seq("FOR", "SYSTEM_TIME"):
-                return None
-
-            if self._match_text_seq("AS", "OF"):
-                system_time = self.expression(
-                    exp.SystemTime, this=self._parse_bitwise(), kind="AS OF"
-                )
-            elif self._match_set((TokenType.FROM, TokenType.BETWEEN)):
-                kind = self._prev.text
-                this = self._parse_bitwise()
-                self._match_texts(("TO", "AND"))
-                expression = self._parse_bitwise()
-                system_time = self.expression(
-                    exp.SystemTime, this=this, expression=expression, kind=kind
-                )
-            elif self._match_text_seq("CONTAINED", "IN"):
-                args = self._parse_wrapped_csv(self._parse_bitwise)
-                system_time = self.expression(
-                    exp.SystemTime,
-                    this=seq_get(args, 0),
-                    expression=seq_get(args, 1),
-                    kind="CONTAINED IN",
-                )
-            elif self._match(TokenType.ALL):
-                system_time = self.expression(exp.SystemTime, kind="ALL")
-            else:
-                system_time = None
-                self.raise_error("Unable to parse FOR SYSTEM_TIME clause")
-
-            return system_time
-
-        def _parse_table_parts(self, schema: bool = False) -> exp.Table:
-            table = super()._parse_table_parts(schema=schema)
-            table.set("system_time", self._parse_system_time())
-            return table
 
         def _parse_returns(self) -> exp.ReturnsProperty:
             table = self._parse_id_var(any_token=False, tokens=self.RETURNS_TABLE_TOKENS)
@@ -700,22 +664,20 @@ class TSQL(Dialect):
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
-        def systemtime_sql(self, expression: exp.SystemTime) -> str:
-            kind = expression.args["kind"]
-            if kind == "ALL":
-                return "FOR SYSTEM_TIME ALL"
+        def version_sql(self, expression: exp.Version) -> str:
+            name = "SYSTEM_TIME" if expression.name == "TIMESTAMP" else expression.name
+            this = f"FOR {name}"
+            expr = expression.expression
+            kind = expression.text("kind")
+            if kind in ("FROM", "BETWEEN"):
+                args = expr.expressions
+                sep = "TO" if kind == "FROM" else "AND"
+                expr_sql = f"{self.sql(seq_get(args, 0))} {sep} {self.sql(seq_get(args, 1))}"
+            else:
+                expr_sql = self.sql(expr)
 
-            start = self.sql(expression, "this")
-            if kind == "AS OF":
-                return f"FOR SYSTEM_TIME AS OF {start}"
-
-            end = self.sql(expression, "expression")
-            if kind == "FROM":
-                return f"FOR SYSTEM_TIME FROM {start} TO {end}"
-            if kind == "BETWEEN":
-                return f"FOR SYSTEM_TIME BETWEEN {start} AND {end}"
-
-            return f"FOR SYSTEM_TIME CONTAINED IN ({start}, {end})"
+            expr_sql = f" {expr_sql}" if expr_sql else ""
+            return f"{this} {kind}{expr_sql}"
 
         def returnsproperty_sql(self, expression: exp.ReturnsProperty) -> str:
             table = expression.args.get("table")

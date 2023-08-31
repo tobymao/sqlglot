@@ -9,6 +9,8 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
+
         self.validate_all(
             """SELECT
   `u`.`harness_user_email` AS `harness_user_email`,

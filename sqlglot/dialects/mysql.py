@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_scalar_sql,
     datestrtodate_sql,
     format_time_lambda,
+    json_keyvalue_comma_sql,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -531,6 +532,7 @@ class MySQL(Dialect):
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
@@ -592,9 +594,6 @@ class MySQL(Dialect):
 
         def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
             return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
-
-        def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
-            return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             to = self.CAST_MAPPING.get(expression.to.this)

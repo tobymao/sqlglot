@@ -725,3 +725,8 @@ def parse_timestamp_trunc(args: t.List) -> exp.TimestampTrunc:
 
 def any_value_to_max_sql(self: Generator, expression: exp.AnyValue) -> str:
     return self.func("MAX", expression.this)
+
+
+# Used to generate JSON_OBJECT with a comma in BigQuery and MySQL instead of colon
+def json_keyvalue_comma_sql(self, expression: exp.JSONKeyValue) -> str:
+    return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"

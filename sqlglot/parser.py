@@ -852,6 +852,9 @@ class Parser(metaclass=_Parser):
 
     SUPPORTS_USER_DEFINED_TYPES = True
 
+    # Whether or not ADD is present for each column added by ALTER TABLE
+    ALTER_TABLE_ADD_COLUMN_KEYWORD = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -4708,6 +4711,9 @@ class Parser(metaclass=_Parser):
             return self._parse_csv(self._parse_add_constraint)
 
         self._retreat(index)
+        if not self.ALTER_TABLE_ADD_COLUMN_KEYWORD and self._match_text_seq("ADD"):
+            return self._parse_csv(self._parse_field_def)
+
         return self._parse_csv(self._parse_add_column)
 
     def _parse_alter_table_alter(self) -> exp.AlterColumn:

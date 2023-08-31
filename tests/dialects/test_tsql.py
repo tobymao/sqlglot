@@ -491,9 +491,11 @@ class TestTSQL(Validator):
             "ALTER TABLE a ADD b INTEGER, c INTEGER",
             read={
                 "": "ALTER TABLE a ADD COLUMN b INT, ADD COLUMN c INT",
+            },
+            write={
+                "": "ALTER TABLE a ADD COLUMN b INT, ADD COLUMN c INT",
                 "tsql": "ALTER TABLE a ADD b INTEGER, c INTEGER",
             },
-            write={"tsql": "ALTER TABLE a ADD b INTEGER, c INTEGER"},
         )
 
         self.validate_all(

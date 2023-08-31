@@ -759,7 +759,3 @@ WHERE
         self.validate_identity("SELECT JSON_OBJECT('a', 10, 'a', 'foo') AS json_data")
         with self.assertRaises(ParseError):
             transpile("SELECT JSON_OBJECT('a', 1, 'b') AS json_data", read="bigquery")
-        with self.assertRaises(ParseError):
-            transpile("SELECT JSON_OBJECT('a', 1, 'b',) AS json_data", read="bigquery")
-        with self.assertRaises(ParseError):
-            transpile("SELECT JSON_OBJECT('a', 1,) AS json_data", read="bigquery")

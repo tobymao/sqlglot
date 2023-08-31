@@ -4139,9 +4139,9 @@ class Parser(metaclass=_Parser):
     def _parse_json_key_value(self) -> t.Optional[exp.JSONKeyValue]:
         self._match_text_seq("KEY")
         key = self._parse_field()
-        self._match(TokenType.COLON)
+        self._match_set((TokenType.COLON, TokenType.COMMA))
         self._match_text_seq("VALUE")
-        value = self._parse_field()
+        value = self._parse_column()
 
         if not key and not value:
             return None

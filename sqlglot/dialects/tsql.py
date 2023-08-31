@@ -581,6 +581,7 @@ class TSQL(Dialect):
         QUERY_HINTS = False
         RETURNING_END = False
         NVL2_SUPPORTED = False
+        ALTER_TABLE_ADD_COLUMN_KEYWORD = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

@@ -488,6 +488,12 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "ALTER TABLE a ADD b INTEGER",
+            read={"": "ALTER TABLE a ADD COLUMN b INT"},
+            write={"tsql": "ALTER TABLE a ADD b INTEGER"},
+        )
+
+        self.validate_all(
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={
                 "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT)",

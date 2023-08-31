@@ -186,6 +186,9 @@ class Generator:
     # SELECT * VALUES into SELECT UNION
     VALUES_AS_TABLE = True
 
+    # Whether or not the word COLUMN is included when adding a column with ALTER TABLE
+    ALTER_TABLE_ADD_COLUMN_KEYWORD = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2267,7 +2270,11 @@ class Generator:
         actions = expression.args["actions"]
 
         if isinstance(actions[0], exp.ColumnDef):
-            actions = self.expressions(expression, key="actions", prefix="ADD COLUMN ")
+            actions = self.expressions(
+                expression,
+                key="actions",
+                prefix="ADD COLUMN " if self.ALTER_TABLE_ADD_COLUMN_KEYWORD else "ADD ",
+            )
         elif isinstance(actions[0], exp.Schema):
             actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):

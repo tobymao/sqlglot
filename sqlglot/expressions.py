@@ -2411,6 +2411,7 @@ class Table(Expression):
         "pivots": False,
         "hints": False,
         "system_time": False,
+        "version": False,
     }
 
     @property
@@ -2449,15 +2450,6 @@ class Table(Expression):
                 parts.extend(part.flatten())
 
         return parts
-
-
-# See the TSQL "Querying data in a system-versioned temporal table" page
-class SystemTime(Expression):
-    arg_types = {
-        "this": False,
-        "expression": False,
-        "kind": True,
-    }
 
 
 class Union(Subqueryable):
@@ -2592,6 +2584,20 @@ class Values(UDTF):
 
 class Var(Expression):
     pass
+
+
+class Version(Expression):
+    """
+    Time travel, iceberg, bigquery etc
+    https://trino.io/docs/current/connector/iceberg.html?highlight=snapshot#using-snapshots
+    https://www.databricks.com/blog/2019/02/04/introducing-delta-time-travel-for-large-scale-data-lakes.html
+    https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#for_system_time_as_of
+    https://learn.microsoft.com/en-us/sql/relational-databases/tables/querying-data-in-a-system-versioned-temporal-table?view=sql-server-ver16
+    this is either TIMESTAMP or VERSION
+    kind is ("AS OF", "BETWEEN")
+    """
+
+    arg_types = {"this": True, "kind": True, "expression": False}
 
 
 class Schema(Expression):

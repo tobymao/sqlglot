@@ -206,6 +206,8 @@ class Hive(Dialect):
             "MSCK REPAIR": TokenType.COMMAND,
             "REFRESH": TokenType.COMMAND,
             "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
+            "TIMESTAMP AS OF": TokenType.TIMESTAMP_SNAPSHOT,
+            "VERSION AS OF": TokenType.VERSION_SNAPSHOT,
         }
 
         NUMERIC_LITERALS = {
@@ -503,3 +505,7 @@ class Hive(Dialect):
                     )
 
             return super().datatype_sql(expression)
+
+        def version_sql(self, expression: exp.Version) -> str:
+            sql = super().version_sql(expression)
+            return sql.replace("FOR ", "", 1)

@@ -1273,6 +1273,8 @@ class Generator:
             if part
         )
 
+        version = self.sql(expression, "version")
+        version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
         hints = self.expressions(expression, key="hints", sep=" ")
@@ -1281,10 +1283,8 @@ class Generator:
         pivots = f" {pivots}" if pivots else ""
         joins = self.expressions(expression, key="joins", sep="", skip_first=True)
         laterals = self.expressions(expression, key="laterals", sep="")
-        system_time = expression.args.get("system_time")
-        system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
 
-        return f"{table}{system_time}{alias}{hints}{pivots}{joins}{laterals}"
+        return f"{table}{version}{alias}{hints}{pivots}{joins}{laterals}"
 
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
@@ -1338,6 +1338,12 @@ class Generator:
         else:
             nulls = ""
         return f"{direction}{nulls}({expressions} FOR {field}){alias}"
+
+    def version_sql(self, expression: exp.Version) -> str:
+        this = f"FOR {expression.name}"
+        kind = expression.text("kind")
+        expr = self.sql(expression, "expression")
+        return f"{this} {kind} {expr}"
 
     def tuple_sql(self, expression: exp.Tuple) -> str:
         return f"({self.expressions(expression, flat=True)})"

@@ -325,6 +325,8 @@ class TokenType(AutoName):
     WINDOW = auto()
     WITH = auto()
     UNIQUE = auto()
+    VERSION_SNAPSHOT = auto()
+    TIMESTAMP_SNAPSHOT = auto()
 
 
 class Token:
@@ -748,6 +750,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "TRUNCATE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
         "USER-DEFINED": TokenType.USERDEFINED,
+        "FOR VERSION": TokenType.VERSION_SNAPSHOT,
+        "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {

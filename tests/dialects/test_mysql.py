@@ -8,6 +8,7 @@ class TestMySQL(Validator):
     def test_ddl(self):
         self.validate_identity("CREATE TABLE foo (id BIGINT)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
+        self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 ORDER BY items.id LIMIT 10")
         self.validate_identity("DELETE FROM t WHERE a <= 10 LIMIT 10")
         self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")

@@ -2570,6 +2570,7 @@ class Update(Expression):
         "from": False,
         "where": False,
         "returning": False,
+        "order": False,
         "limit": False,
     }
 

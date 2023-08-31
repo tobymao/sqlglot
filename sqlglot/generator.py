@@ -1354,11 +1354,12 @@ class Generator:
         from_sql = self.sql(expression, "from")
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
+        order = self.sql(expression, "order")
         limit = self.sql(expression, "limit")
         if self.RETURNING_END:
-            expression_sql = f"{from_sql}{where_sql}{returning}{limit}"
+            expression_sql = f"{from_sql}{where_sql}{returning}{order}{limit}"
         else:
-            expression_sql = f"{returning}{from_sql}{where_sql}{limit}"
+            expression_sql = f"{returning}{from_sql}{where_sql}{order}{limit}"
         sql = f"UPDATE {this} SET {set_sql}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 

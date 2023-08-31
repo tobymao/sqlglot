@@ -1937,6 +1937,7 @@ class Parser(metaclass=_Parser):
                 "where": self._parse_where(),
                 "returning": returning or self._parse_returning(),
                 "limit": self._parse_limit(),
+                "order": self._parse_order(),
             },
         )
 

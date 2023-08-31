@@ -2571,6 +2571,7 @@ class Update(Expression):
         "where": False,
         "returning": False,
         "limit": False,
+        "order": False,
     }
 
 

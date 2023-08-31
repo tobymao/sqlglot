@@ -431,9 +431,9 @@ def simplify_parens(expression):
 
     if not isinstance(this, exp.Select) and (
         not isinstance(parent, (exp.Condition, exp.Binary))
-        or isinstance(this, exp.Predicate)
         or isinstance(parent, exp.Paren)
         or not isinstance(this, exp.Binary)
+        or (isinstance(this, exp.Predicate) and not isinstance(parent, exp.Predicate))
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
         or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))

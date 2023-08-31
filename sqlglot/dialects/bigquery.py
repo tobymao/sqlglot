@@ -651,3 +651,6 @@ class BigQuery(Dialect):
                 expression = expression.copy()
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
+
+        def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
+            return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"

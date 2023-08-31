@@ -751,3 +751,11 @@ WHERE
             "WITH cte AS (SELECT 1 AS foo UNION ALL SELECT 2) SELECT foo FROM cte",
             read={"postgres": "WITH cte(foo) AS (SELECT 1 UNION ALL SELECT 2) SELECT foo FROM cte"},
         )
+
+    def test_json_object(self):
+        self.validate_identity("SELECT JSON_OBJECT() AS json_data")
+        self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', TRUE) AS json_data")
+        self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', ['a', 'b']) AS json_data")
+        self.validate_identity("SELECT JSON_OBJECT('a', 10, 'a', 'foo') AS json_data")
+        with self.assertRaises(ParseError):
+            transpile("SELECT JSON_OBJECT('a', 1, 'b') AS json_data", read="bigquery")

@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
+    json_keyvalue_comma_sql,
     max_or_greatest,
     min_or_least,
     no_ilike_sql,
@@ -417,6 +418,7 @@ class BigQuery(Dialect):
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
+            exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.MD5Digest: rename_func("MD5"),
@@ -651,6 +653,3 @@ class BigQuery(Dialect):
                 expression = expression.copy()
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
-
-        def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
-            return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"

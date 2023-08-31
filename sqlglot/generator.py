@@ -2278,7 +2278,7 @@ class Generator:
                     prefix="ADD COLUMN ",
                 )
             else:
-                actions = f"ADD {self.expressions(expression,key='actions')}"
+                actions = f"ADD {self.expressions(expression, key='actions')}"
         elif isinstance(actions[0], exp.Schema):
             actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):

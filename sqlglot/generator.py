@@ -2271,11 +2271,14 @@ class Generator:
         actions = expression.args["actions"]
 
         if isinstance(actions[0], exp.ColumnDef):
-            actions = self.expressions(
-                expression,
-                key="actions",
-                prefix="ADD COLUMN " if self.ALTER_TABLE_ADD_COLUMN_KEYWORD else "ADD ",
-            )
+            if self.ALTER_TABLE_ADD_COLUMN_KEYWORD:
+                actions = self.expressions(
+                    expression,
+                    key="actions",
+                    prefix="ADD COLUMN ",
+                )
+            else:
+                actions = f"ADD {self.expressions(expression,key='actions')}"
         elif isinstance(actions[0], exp.Schema):
             actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):

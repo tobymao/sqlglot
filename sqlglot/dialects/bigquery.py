@@ -357,17 +357,29 @@ class BigQuery(Dialect):
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
 
-        def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
-            this = super()._parse_table_part(schema=schema)
+        def _parse_table_part(
+            self, index: int = 0, schema: bool = False
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_table_part(index=index, schema=schema)
 
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
-            if isinstance(this, exp.Identifier):
+            # table name that is an unquoted identifier can additionally include single dashes
+            # only the first identifier in the table path can have dashes
+            if index == 0 and isinstance(this, exp.Identifier) and not this.quoted:
                 table_name = this.name
                 while self._match(TokenType.DASH, advance=False) and self._next:
                     self._advance(2)
                     table_name += f"-{self._prev.text}"
 
-                this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
+                this = exp.Identifier(this=table_name, quoted=False)
+
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#path_expressions
+            # table identifiers work similar as path expressions where subsequent parts can include non-identifiers
+            if index > 0 and not this and self._advance_any():
+                table_name = self._prev.text
+                if self._match(TokenType.VAR):
+                    table_name += self._prev.text
+                this = exp.Identifier(this=table_name, quoted=False)
 
             return this
 

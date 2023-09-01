@@ -2484,7 +2484,7 @@ class Parser(metaclass=_Parser):
 
         return hints or None
 
-    def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
+    def _parse_table_part(self, index: int = 0, schema: bool = False) -> t.Optional[exp.Expression]:
         return (
             (not schema and self._parse_function(optional_parens=False))
             or self._parse_id_var(any_token=False)
@@ -2495,18 +2495,22 @@ class Parser(metaclass=_Parser):
     def _parse_table_parts(self, schema: bool = False) -> exp.Table:
         catalog = None
         db = None
-        table = self._parse_table_part(schema=schema)
+        index = 0
+        table = self._parse_table_part(index=index, schema=schema)
 
         while self._match(TokenType.DOT):
+            index += 1
             if catalog:
                 # This allows nesting the table in arbitrarily many dot expressions if needed
                 table = self.expression(
-                    exp.Dot, this=table, expression=self._parse_table_part(schema=schema)
+                    exp.Dot,
+                    this=table,
+                    expression=self._parse_table_part(index=index, schema=schema),
                 )
             else:
                 catalog = db
                 db = table
-                table = self._parse_table_part(schema=schema)
+                table = self._parse_table_part(index=index, schema=schema)
 
         if not table:
             self.raise_error(f"Expected table name but got {self._curr}")

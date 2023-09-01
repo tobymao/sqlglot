@@ -34,7 +34,7 @@ class Databricks(Spark):
             exp.DatetimeSub: lambda self, e: self.func(
                 "TIMESTAMPADD",
                 e.text("unit"),
-                exp.Mul(this=e.text("expression"), expression=exp.Literal.number(-1)),
+                exp.Mul(this=e.expression.copy(), expression=exp.Literal.number(-1)),
                 e.this,
             ),
             exp.DatetimeDiff: lambda self, e: self.func(

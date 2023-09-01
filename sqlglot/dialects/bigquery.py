@@ -377,7 +377,7 @@ class BigQuery(Dialect):
             # table identifiers work similar as path expressions where subsequent parts can include non-identifiers
             if index > 0 and not this and self._advance_any():
                 table_name = self._prev.text
-                if self._match(TokenType.VAR):
+                if self._match_set(self.ID_VAR_TOKENS):
                     table_name += self._prev.text
                 this = exp.Identifier(this=table_name, quoted=False)
 

@@ -57,7 +57,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a) a, b FROM x",
-            'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a) AS _row_number FROM x) WHERE "_row_number" = 1',
+            'SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a) AS _row_number FROM x) WHERE "_row_number" = 1',
         )
         self.validate(
             eliminate_distinct_on,

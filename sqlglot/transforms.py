@@ -68,6 +68,8 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
 
         if order:
             window.set("order", order.pop().copy())
+        else:
+            window.set("order", exp.Order(expressions=[c.copy() for c in distinct_cols]))
 
         window = exp.alias_(window, row_number)
         expression.select(window, copy=False)

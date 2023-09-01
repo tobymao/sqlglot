@@ -38,7 +38,7 @@ class Databricks(Spark):
                 e.this,
             ),
             exp.DatetimeDiff: lambda self, e: self.func(
-                "TIMESTAMPDIFF", e.text("unit"), exp.Literal.string(e.text("expression")), e.this
+                "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
             ),
             exp.DatetimeTrunc: timestamptrunc_sql,
             exp.JSONExtract: lambda self, e: self.binary(e, ":"),

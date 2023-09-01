@@ -29,7 +29,7 @@ class Databricks(Spark):
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
             exp.DatetimeAdd: lambda self, e: self.func(
-                "TIMESTAMPADD", e.text("unit"), e.text("expression"), e.this
+                "TIMESTAMPADD", e.text("unit"), e.expression, e.this
             ),
             exp.DatetimeSub: lambda self, e: self.func(
                 "TIMESTAMPADD",

@@ -1066,8 +1066,8 @@ class Tokenizer(metaclass=_Tokenizer):
                 elif self.IDENTIFIERS_CAN_START_WITH_DIGIT:
                     return self._add(TokenType.VAR)
 
-                self._add(TokenType.NUMBER, number_text)
-                return self._advance(-len(literal))
+                self._advance(-len(literal))
+                return self._add(TokenType.NUMBER, number_text)
             else:
                 return self._add(TokenType.NUMBER)
 

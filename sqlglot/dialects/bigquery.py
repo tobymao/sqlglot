@@ -358,7 +358,7 @@ class BigQuery(Dialect):
         }
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
-            this = super()._parse_table_part(schema=schema)
+            this = super()._parse_table_part(schema=schema) or self._parse_number()
 
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#table_names
             if isinstance(this, exp.Identifier):
@@ -368,6 +368,17 @@ class BigQuery(Dialect):
                     table_name += f"-{self._prev.text}"
 
                 this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
+            elif isinstance(this, exp.Literal):
+                table_name = this.name
+
+                if (
+                    self._curr
+                    and self._prev.end == self._curr.start - 1
+                    and self._parse_var(any_token=True)
+                ):
+                    table_name += self._prev.text
+
+                this = exp.Identifier(this=table_name, quoted=True)
 
             return this
 

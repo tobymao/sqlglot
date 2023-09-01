@@ -442,6 +442,11 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_all(
+            "CAST(x AS BOOLEAN)",
+            write={"tsql": "CAST(x AS BIT)"},
+        )
+
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE tbl (id INTEGER IDENTITY PRIMARY KEY)",

@@ -587,6 +587,7 @@ class TSQL(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
+            exp.DataType.Type.BOOLEAN: "BIT",
             exp.DataType.Type.DECIMAL: "NUMERIC",
             exp.DataType.Type.DATETIME: "DATETIME2",
             exp.DataType.Type.INT: "INTEGER",

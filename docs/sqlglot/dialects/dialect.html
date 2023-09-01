@@ -390,6 +390,9 @@
             <li>
                     <a class="function" href="#any_value_to_max_sql">any_value_to_max_sql</a>
             </li>
+            <li>
+                    <a class="function" href="#json_keyvalue_comma_sql">json_keyvalue_comma_sql</a>
+            </li>
     </ul>
 
 
@@ -1140,6 +1143,11 @@
 </span><span id="L-725"><a href="#L-725"><span class="linenos">725</span></a>
 </span><span id="L-726"><a href="#L-726"><span class="linenos">726</span></a><span class="k">def</span> <span class="nf">any_value_to_max_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">AnyValue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="L-727"><a href="#L-727"><span class="linenos">727</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;MAX&quot;</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">)</span>
+</span><span id="L-728"><a href="#L-728"><span class="linenos">728</span></a>
+</span><span id="L-729"><a href="#L-729"><span class="linenos">729</span></a>
+</span><span id="L-730"><a href="#L-730"><span class="linenos">730</span></a><span class="c1"># Used to generate JSON_OBJECT with a comma in BigQuery and MySQL instead of colon</span>
+</span><span id="L-731"><a href="#L-731"><span class="linenos">731</span></a><span class="k">def</span> <span class="nf">json_keyvalue_comma_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">JSONKeyValue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-732"><a href="#L-732"><span class="linenos">732</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;expression&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 </span></pre></div>
 
 
@@ -3595,6 +3603,25 @@ columns are removed from the create statement.</p>
     <a class="headerlink" href="#any_value_to_max_sql"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="any_value_to_max_sql-727"><a href="#any_value_to_max_sql-727"><span class="linenos">727</span></a><span class="k">def</span> <span class="nf">any_value_to_max_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">AnyValue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="any_value_to_max_sql-728"><a href="#any_value_to_max_sql-728"><span class="linenos">728</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;MAX&quot;</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="json_keyvalue_comma_sql">
+                            <input id="json_keyvalue_comma_sql-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">json_keyvalue_comma_sql</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#JSONKeyValue">sqlglot.expressions.JSONKeyValue</a></span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+                <label class="view-source-button" for="json_keyvalue_comma_sql-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#json_keyvalue_comma_sql"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="json_keyvalue_comma_sql-732"><a href="#json_keyvalue_comma_sql-732"><span class="linenos">732</span></a><span class="k">def</span> <span class="nf">json_keyvalue_comma_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">JSONKeyValue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="json_keyvalue_comma_sql-733"><a href="#json_keyvalue_comma_sql-733"><span class="linenos">733</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;this&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;expression&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 </span></pre></div>
 
 

@@ -94,6 +94,9 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
 
 
 class MySQL(Dialect):
+    # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
+    IDENTIFIERS_CAN_START_WITH_DIGIT = True
+
     TIME_FORMAT = "'%Y-%m-%d %T'"
     DPIPE_IS_STRING_CONCAT = False
 

@@ -1752,8 +1752,10 @@ class Parser(metaclass=_Parser):
 
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
-        this = self._parse_table()
-        return self.expression(exp.Describe, this=this, kind=kind)
+        this = self._parse_table(schema=True)
+        properties = self._parse_properties()
+        expressions = properties.expressions if properties else None
+        return self.expression(exp.Describe, this=this, kind=kind, expressions=expressions)
 
     def _parse_insert(self) -> exp.Insert:
         comments = ensure_list(self._prev_comments)

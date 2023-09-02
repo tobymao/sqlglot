@@ -444,7 +444,9 @@ class Snowflake(Dialect):
             kind_value = expression.args.get("kind") or "TABLE"
             kind = f" {kind_value}" if kind_value else ""
             this = f" {self.sql(expression, 'this')}"
-            return f"DESCRIBE{kind}{this}"
+            expressions = self.expressions(expression, flat=True)
+            expressions = f" {expressions}" if expressions else ""
+            return f"DESCRIBE{kind}{this}{expressions}"
 
         def generatedasidentitycolumnconstraint_sql(
             self, expression: exp.GeneratedAsIdentityColumnConstraint

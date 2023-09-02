@@ -8,6 +8,10 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity(
+            'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
+        )
+
         self.validate_all(
             "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
             read={

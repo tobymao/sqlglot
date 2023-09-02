@@ -1041,7 +1041,7 @@ class Clone(Expression):
 
 
 class Describe(Expression):
-    arg_types = {"this": True, "kind": False}
+    arg_types = {"this": True, "kind": False, "expressions": False}
 
 
 class Pragma(Expression):

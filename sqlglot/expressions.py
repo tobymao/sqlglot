@@ -4449,7 +4449,7 @@ class Greatest(Func):
     is_var_len_args = True
 
 
-class GroupConcat(Func):
+class GroupConcat(AggFunc):
     arg_types = {"this": True, "separator": False}
 
 

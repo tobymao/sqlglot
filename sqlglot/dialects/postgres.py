@@ -275,6 +275,18 @@ class Postgres(Dialect):
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "TEMP": TokenType.TEMPORARY,
             "CSTRING": TokenType.PSEUDO_TYPE,
+            "OID": TokenType.OBJECT_IDENTIFIER,
+            "REGCLASS": TokenType.OBJECT_IDENTIFIER,
+            "REGCOLLATION": TokenType.OBJECT_IDENTIFIER,
+            "REGCONFIG": TokenType.OBJECT_IDENTIFIER,
+            "REGDICTIONARY": TokenType.OBJECT_IDENTIFIER,
+            "REGNAMESPACE": TokenType.OBJECT_IDENTIFIER,
+            "REGOPER": TokenType.OBJECT_IDENTIFIER,
+            "REGOPERATOR": TokenType.OBJECT_IDENTIFIER,
+            "REGPROC": TokenType.OBJECT_IDENTIFIER,
+            "REGPROCEDURE": TokenType.OBJECT_IDENTIFIER,
+            "REGROLE": TokenType.OBJECT_IDENTIFIER,
+            "REGTYPE": TokenType.OBJECT_IDENTIFIER,
         }
 
         SINGLE_TOKENS = {

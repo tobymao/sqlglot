@@ -3665,6 +3665,11 @@ class PseudoType(Expression):
     pass
 
 
+# https://www.postgresql.org/docs/15/datatype-oid.html
+class ObjectIdentifier(Expression):
+    pass
+
+
 # WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
 class SubqueryPredicate(Predicate):
     pass

@@ -30,8 +30,8 @@ logger = logging.getLogger("sqlglot")
 
 def _date_add_sql(
     data_type: str, kind: str
-) -> t.Callable[[generator.Generator, exp.Expression], str]:
-    def func(self, expression):
+) -> t.Callable[[BigQuery.Generator, exp.Expression], str]:
+    def func(self: BigQuery.Generator, expression: exp.Expression) -> str:
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
         unit = exp.var(unit.name.upper() if unit else "DAY")
@@ -41,7 +41,7 @@ def _date_add_sql(
     return func
 
 
-def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.Values) -> str:
+def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
     if not expression.find_ancestor(exp.From, exp.Join):
         return self.values_sql(expression)
 
@@ -65,7 +65,7 @@ def _derived_table_values_to_unnest(self: generator.Generator, expression: exp.V
     return self.unnest_sql(exp.Unnest(expressions=[exp.Array(expressions=structs)]))
 
 
-def _returnsproperty_sql(self: generator.Generator, expression: exp.ReturnsProperty) -> str:
+def _returnsproperty_sql(self: BigQuery.Generator, expression: exp.ReturnsProperty) -> str:
     this = expression.this
     if isinstance(this, exp.Schema):
         this = f"{this.this} <{self.expressions(this)}>"
@@ -74,7 +74,7 @@ def _returnsproperty_sql(self: generator.Generator, expression: exp.ReturnsPrope
     return f"RETURNS {this}"
 
 
-def _create_sql(self: generator.Generator, expression: exp.Create) -> str:
+def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
     kind = expression.args["kind"]
     returns = expression.find(exp.ReturnsProperty)
 

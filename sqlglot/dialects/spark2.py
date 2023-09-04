@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, transforms
+from sqlglot import exp, parser, transforms
 from sqlglot.dialects.dialect import (
     binary_from_function,
     create_with_partitions_sql,
@@ -164,6 +164,9 @@ class Spark2(Hive):
             "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
             "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
         }
+
+        # We dont' want to inherit Hive's TokenType.NUMBER override
+        PRIMARY_PARSERS = parser.Parser.PRIMARY_PARSERS.copy()
 
         def _parse_add_column(self) -> t.Optional[exp.Expression]:
             return self._match_text_seq("ADD", "COLUMNS") and self._parse_schema()

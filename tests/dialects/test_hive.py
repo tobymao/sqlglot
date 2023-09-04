@@ -394,14 +394,6 @@ class TestHive(Validator):
         self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
 
         self.validate_identity(
-            "SELECT CAST('1998-01-01' AS DATE) + 30 years",
-            "SELECT CAST('1998-01-01' AS DATE) + INTERVAL 30 years",
-        )
-        self.validate_identity(
-            "SELECT 30 + 50 bla",
-            "SELECT 30 + 50 AS bla",
-        )
-        self.validate_identity(
             "SELECT ROW() OVER (DISTRIBUTE BY x SORT BY y)",
             "SELECT ROW() OVER (PARTITION BY x ORDER BY y)",
         )

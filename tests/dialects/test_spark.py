@@ -243,10 +243,6 @@ TBLPROPERTIES (
             "SELECT STR_TO_MAP('a:1,b:2,c:3')",
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
-        self.validate_identity(
-            "SELECT CAST('1998-01-01' AS DATE) + 30 years",
-            "SELECT CAST('1998-01-01' AS DATE) + 30 AS years",
-        )
 
         self.validate_all(
             "foo.bar",

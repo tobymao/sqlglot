@@ -47,29 +47,7 @@ TIME_DIFF_FACTOR = {
     "HOUR": " / 3600",
 }
 
-INTERVAL_VARS = {
-    "SECOND",
-    "SECONDS",
-    "MINUTE",
-    "MINUTES",
-    "DAY",
-    "DAYS",
-    "MONTH",
-    "MONTHS",
-    "YEAR",
-    "YEARS",
-}
-
-
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
-
-
-def _parse_number(self: Hive.Parser, token: TokenType) -> t.Optional[exp.Expression]:
-    number = super(type(self), self).PRIMARY_PARSERS[TokenType.NUMBER](self, token)
-    if self._match(TokenType.VAR, advance=False) and self._curr.text.upper() in INTERVAL_VARS:
-        return exp.Interval(this=number, unit=self._parse_var())
-
-    return number
 
 
 def _add_date_sql(self: Hive.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
@@ -304,11 +282,6 @@ class Hive(Dialect):
             "WITH SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
-        }
-
-        PRIMARY_PARSERS = {
-            **parser.Parser.PRIMARY_PARSERS,
-            TokenType.NUMBER: _parse_number,
         }
 
         def _parse_transform(self) -> t.Optional[exp.Transform | exp.QueryTransform]:

@@ -537,6 +537,54 @@ class TestPostgres(Validator):
             write={"postgres": "CAST(x AS CSTRING)"},
         )
         self.validate_all(
+            "x::oid",
+            write={"postgres": "CAST(x AS OID)"},
+        )
+        self.validate_all(
+            "x::regclass",
+            write={"postgres": "CAST(x AS REGCLASS)"},
+        )
+        self.validate_all(
+            "x::regcollation",
+            write={"postgres": "CAST(x AS REGCOLLATION)"},
+        )
+        self.validate_all(
+            "x::regconfig",
+            write={"postgres": "CAST(x AS REGCONFIG)"},
+        )
+        self.validate_all(
+            "x::regdictionary",
+            write={"postgres": "CAST(x AS REGDICTIONARY)"},
+        )
+        self.validate_all(
+            "x::regnamespace",
+            write={"postgres": "CAST(x AS REGNAMESPACE)"},
+        )
+        self.validate_all(
+            "x::regoper",
+            write={"postgres": "CAST(x AS REGOPER)"},
+        )
+        self.validate_all(
+            "x::regoperator",
+            write={"postgres": "CAST(x AS REGOPERATOR)"},
+        )
+        self.validate_all(
+            "x::regproc",
+            write={"postgres": "CAST(x AS REGPROC)"},
+        )
+        self.validate_all(
+            "x::regprocedure",
+            write={"postgres": "CAST(x AS REGPROCEDURE)"},
+        )
+        self.validate_all(
+            "x::regrole",
+            write={"postgres": "CAST(x AS REGROLE)"},
+        )
+        self.validate_all(
+            "x::regtype",
+            write={"postgres": "CAST(x AS REGTYPE)"},
+        )
+        self.validate_all(
             "TRIM(BOTH 'as' FROM 'as string as')",
             write={
                 "postgres": "TRIM(BOTH 'as' FROM 'as string as')",

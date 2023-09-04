@@ -261,6 +261,7 @@ class TokenType(AutoName):
     NEXT = auto()
     NOTNULL = auto()
     NULL = auto()
+    OBJECT_IDENTIFIER = auto()
     OFFSET = auto()
     ON = auto()
     ORDER_BY = auto()

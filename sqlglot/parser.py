@@ -196,6 +196,7 @@ class Parser(metaclass=_Parser):
         TokenType.IMAGE,
         TokenType.VARIANT,
         TokenType.OBJECT,
+        TokenType.OBJECT_IDENTIFIER,
         TokenType.INET,
         TokenType.IPADDRESS,
         TokenType.IPPREFIX,
@@ -3260,6 +3261,9 @@ class Parser(metaclass=_Parser):
 
         if type_token == TokenType.PSEUDO_TYPE:
             return self.expression(exp.PseudoType, this=self._prev.text)
+
+        if type_token == TokenType.OBJECT_IDENTIFIER:
+            return self.expression(exp.ObjectIdentifier, this=self._prev.text)
 
         nested = type_token in self.NESTED_TYPE_TOKENS
         is_struct = type_token in self.STRUCT_TYPE_TOKENS

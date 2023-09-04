@@ -1224,6 +1224,9 @@ class Generator:
     def pseudotype_sql(self, expression: exp.PseudoType) -> str:
         return expression.name.upper()
 
+    def objectidentifier_sql(self, expression: exp.ObjectIdentifier) -> str:
+        return expression.name.upper()
+
     def onconflict_sql(self, expression: exp.OnConflict) -> str:
         conflict = "ON DUPLICATE KEY" if expression.args.get("duplicate") else "ON CONFLICT"
         constraint = self.sql(expression, "constraint")

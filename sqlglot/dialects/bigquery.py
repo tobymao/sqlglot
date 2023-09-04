@@ -397,6 +397,27 @@ class BigQuery(Dialect):
 
             return table
 
+        def _parse_json_object(self) -> exp.JSONObject:
+            json_object = super()._parse_json_object()
+            array_kv_pair = seq_get(json_object.expressions, 0)
+
+            # Converts BQ's "signature 2" of JSON_OBJECT into SQLGlot's canonical representation
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_object_signature2
+            if (
+                array_kv_pair
+                and isinstance(array_kv_pair.this, exp.Array)
+                and isinstance(array_kv_pair.expression, exp.Array)
+            ):
+                keys = array_kv_pair.this.expressions
+                values = array_kv_pair.expression.expressions
+
+                json_object.set(
+                    "expressions",
+                    [exp.JSONKeyValue(this=k, expression=v) for k, v in zip(keys, values)],
+                )
+
+            return json_object
+
     class Generator(generator.Generator):
         EXPLICIT_UNION = True
         INTERVAL_ALLOWS_PLURAL_FORM = False
@@ -618,6 +639,13 @@ class BigQuery(Dialect):
                 )
 
             return super().attimezone_sql(expression)
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#json_literals
+            if expression.is_type("json"):
+                return f"JSON {self.sql(expression, 'this')}"
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             return self.cast_sql(expression, safe_prefix="SAFE_")

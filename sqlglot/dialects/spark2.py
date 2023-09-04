@@ -15,7 +15,7 @@ from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 
 
-def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
+def _create_sql(self: Spark2.Generator, e: exp.Create) -> str:
     kind = e.args["kind"]
     properties = e.args.get("properties")
 
@@ -31,7 +31,7 @@ def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
     return create_with_partitions_sql(self, e)
 
 
-def _map_sql(self: Hive.Generator, expression: exp.Map) -> str:
+def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:
     keys = expression.args.get("keys")
     values = expression.args.get("values")
 
@@ -45,7 +45,7 @@ def _parse_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expression]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
 
 
-def _str_to_date(self: Hive.Generator, expression: exp.StrToDate) -> str:
+def _str_to_date(self: Spark2.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Hive.DATE_FORMAT:
@@ -53,7 +53,7 @@ def _str_to_date(self: Hive.Generator, expression: exp.StrToDate) -> str:
     return f"TO_DATE({this}, {time_format})"
 
 
-def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
+def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
     if scale is None:
@@ -114,7 +114,7 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _insert_sql(self: Hive.Generator, expression: exp.Insert) -> str:
+def _insert_sql(self: Spark2.Generator, expression: exp.Insert) -> str:
     if expression.expression.args.get("with"):
         expression = expression.copy()
         expression.set("with", expression.expression.args.pop("with"))

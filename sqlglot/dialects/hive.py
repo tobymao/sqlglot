@@ -72,7 +72,7 @@ def _parse_number(self: Hive.Parser, token: TokenType) -> t.Optional[exp.Express
     return number
 
 
-def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _add_date_sql(self: Hive.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
 
@@ -91,7 +91,7 @@ def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateS
     return self.func(func, expression.this, modified_increment)
 
 
-def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
+def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff) -> str:
     unit = expression.text("unit").upper()
 
     factor = TIME_DIFF_FACTOR.get(unit)
@@ -109,7 +109,7 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     return f"{diff_sql}{multiplier_sql}"
 
 
-def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
+def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:
     this = expression.this
     if isinstance(this, exp.Cast) and this.is_type("json") and this.this.is_string:
         # Since FROM_JSON requires a nested type, we always wrap the json string with
@@ -125,21 +125,21 @@ def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> s
     return self.func("TO_JSON", this, expression.args.get("options"))
 
 
-def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
+def _array_sort_sql(self: Hive.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("Hive SORT_ARRAY does not support a comparator")
     return f"SORT_ARRAY({self.sql(expression, 'this')})"
 
 
-def _property_sql(self: generator.Generator, expression: exp.Property) -> str:
+def _property_sql(self: Hive.Generator, expression: exp.Property) -> str:
     return f"'{expression.name}'={self.sql(expression, 'value')}"
 
 
-def _str_to_unix_sql(self: generator.Generator, expression: exp.StrToUnix) -> str:
+def _str_to_unix_sql(self: Hive.Generator, expression: exp.StrToUnix) -> str:
     return self.func("UNIX_TIMESTAMP", expression.this, time_format("hive")(self, expression))
 
 
-def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> str:
+def _str_to_date_sql(self: Hive.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
@@ -147,7 +147,7 @@ def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> st
     return f"CAST({this} AS DATE)"
 
 
-def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> str:
+def _str_to_time_sql(self: Hive.Generator, expression: exp.StrToTime) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
@@ -155,13 +155,13 @@ def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> st
     return f"CAST({this} AS TIMESTAMP)"
 
 
-def _time_to_str(self: generator.Generator, expression: exp.TimeToStr) -> str:
+def _time_to_str(self: Hive.Generator, expression: exp.TimeToStr) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     return f"DATE_FORMAT({this}, {time_format})"
 
 
-def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
+def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format and time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):

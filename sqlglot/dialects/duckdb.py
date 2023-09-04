@@ -31,13 +31,13 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
+def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))}"
 
 
-def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_delta_sql(self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     op = "+" if isinstance(expression, exp.DateAdd) else "-"
@@ -45,7 +45,7 @@ def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.Dat
 
 
 # BigQuery -> DuckDB conversion for the DATE function
-def _date_sql(self: generator.Generator, expression: exp.Date) -> str:
+def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
     result = f"CAST({self.sql(expression, 'this')} AS DATE)"
     zone = self.sql(expression, "zone")
 
@@ -59,13 +59,13 @@ def _date_sql(self: generator.Generator, expression: exp.Date) -> str:
     return result
 
 
-def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
+def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("DUCKDB ARRAY_SORT does not support a comparator")
     return f"ARRAY_SORT({self.sql(expression, 'this')})"
 
 
-def _sort_array_sql(self: generator.Generator, expression: exp.SortArray) -> str:
+def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
     this = self.sql(expression, "this")
     if expression.args.get("asc") == exp.false():
         return f"ARRAY_REVERSE_SORT({this})"
@@ -80,14 +80,14 @@ def _parse_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
-def _struct_sql(self: generator.Generator, expression: exp.Struct) -> str:
+def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args = [
         f"'{e.name or e.this.name}': {self.sql(e, 'expression')}" for e in expression.expressions
     ]
     return f"{{{', '.join(args)}}}"
 
 
-def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
+def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[]"
 
@@ -98,7 +98,7 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
-def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
+def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
     sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
     return f"CAST({sql} AS TEXT)"
 

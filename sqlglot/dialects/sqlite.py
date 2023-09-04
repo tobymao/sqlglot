@@ -19,7 +19,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
-def _date_add_sql(self: generator.Generator, expression: exp.DateAdd) -> str:
+def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:
     modifier = expression.expression
     modifier = modifier.name if modifier.is_string else self.sql(modifier)
     unit = expression.args.get("unit")

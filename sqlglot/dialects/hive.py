@@ -65,7 +65,7 @@ DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 
 def _parse_number(self: Hive.Parser, token: TokenType) -> t.Optional[exp.Expression]:
-    number = parser.Parser.PRIMARY_PARSERS[TokenType.NUMBER](self, token)
+    number = super(type(self), self).PRIMARY_PARSERS[TokenType.NUMBER](self, token)
     if self._match(TokenType.VAR, advance=False) and self._curr.text.upper() in INTERVAL_VARS:
         return exp.Interval(this=number, unit=self._parse_var())
 

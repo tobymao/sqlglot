@@ -9,6 +9,7 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity("""SELECT JSON '"foo"' AS json_data""")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
 
         self.validate_all(
@@ -789,5 +790,22 @@ WHERE
         self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', TRUE) AS json_data")
         self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', ['a', 'b']) AS json_data")
         self.validate_identity("SELECT JSON_OBJECT('a', 10, 'a', 'foo') AS json_data")
+        self.validate_identity(
+            "SELECT JSON_OBJECT(['a', 'b'], [10, NULL]) AS json_data",
+            "SELECT JSON_OBJECT('a', 10, 'b', NULL) AS json_data",
+        )
+        self.validate_identity(
+            """SELECT JSON_OBJECT(['a', 'b'], [JSON '10', JSON '"foo"']) AS json_data""",
+            """SELECT JSON_OBJECT('a', JSON '10', 'b', JSON '"foo"') AS json_data""",
+        )
+        self.validate_identity(
+            "SELECT JSON_OBJECT(['a', 'b'], [STRUCT(10 AS id, 'Red' AS color), STRUCT(20 AS id, 'Blue' AS color)]) AS json_data",
+            "SELECT JSON_OBJECT('a', STRUCT(10 AS id, 'Red' AS color), 'b', STRUCT(20 AS id, 'Blue' AS color)) AS json_data",
+        )
+        self.validate_identity(
+            "SELECT JSON_OBJECT(['a', 'b'], [TO_JSON(10), TO_JSON(['foo', 'bar'])]) AS json_data",
+            "SELECT JSON_OBJECT('a', TO_JSON(10), 'b', TO_JSON(['foo', 'bar'])) AS json_data",
+        )
+
         with self.assertRaises(ParseError):
             transpile("SELECT JSON_OBJECT('a', 1, 'b') AS json_data", read="bigquery")

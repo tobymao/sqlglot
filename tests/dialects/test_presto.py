@@ -824,7 +824,7 @@ class TestPresto(Validator):
         self.validate_all(
             """JSON_FORMAT(JSON '"x"')""",
             write={
-                "bigquery": """TO_JSON_STRING(CAST('"x"' AS JSON))""",
+                "bigquery": """TO_JSON_STRING(JSON '"x"')""",
                 "duckdb": """CAST(TO_JSON(CAST('"x"' AS JSON)) AS TEXT)""",
                 "presto": """JSON_FORMAT(CAST('"x"' AS JSON))""",
                 "spark": """REGEXP_EXTRACT(TO_JSON(FROM_JSON('["x"]', SCHEMA_OF_JSON('["x"]'))), '^.(.*).$', 1)""",

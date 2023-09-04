@@ -40,8 +40,8 @@ DATE_DIFF_FACTOR = {
 }
 
 
-def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
-    def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, exp.DateAdd | exp.DateSub], str]:
+    def func(self: Postgres.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         expression = expression.copy()
 
         this = self.sql(expression, "this")
@@ -57,7 +57,7 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
     return func
 
 
-def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
+def _date_diff_sql(self: Postgres.Generator, expression: exp.DateDiff) -> str:
     unit = expression.text("unit").upper()
     factor = DATE_DIFF_FACTOR.get(unit)
 
@@ -83,7 +83,7 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     return f"CAST({unit} AS BIGINT)"
 
 
-def _substring_sql(self: generator.Generator, expression: exp.Substring) -> str:
+def _substring_sql(self: Postgres.Generator, expression: exp.Substring) -> str:
     this = self.sql(expression, "this")
     start = self.sql(expression, "start")
     length = self.sql(expression, "length")
@@ -94,7 +94,7 @@ def _substring_sql(self: generator.Generator, expression: exp.Substring) -> str:
     return f"SUBSTRING({this}{from_part}{for_part})"
 
 
-def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> str:
+def _string_agg_sql(self: Postgres.Generator, expression: exp.GroupConcat) -> str:
     expression = expression.copy()
     separator = expression.args.get("separator") or exp.Literal.string(",")
 
@@ -108,7 +108,7 @@ def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> s
     return f"STRING_AGG({self.format_args(this, separator)}{order})"
 
 
-def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
+def _datatype_sql(self: Postgres.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[]"
     return self.datatype_sql(expression)

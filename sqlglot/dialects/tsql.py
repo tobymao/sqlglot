@@ -132,13 +132,13 @@ def _parse_hashbytes(args: t.List) -> exp.Expression:
 
 
 def generate_date_delta_with_unit_sql(
-    self: generator.Generator, expression: exp.DateAdd | exp.DateDiff
+    self: TSQL.Generator, expression: exp.DateAdd | exp.DateDiff
 ) -> str:
     func = "DATEADD" if isinstance(expression, exp.DateAdd) else "DATEDIFF"
     return self.func(func, expression.text("unit"), expression.expression, expression.this)
 
 
-def _format_sql(self: generator.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
+def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
     fmt = (
         expression.args["format"]
         if isinstance(expression, exp.NumberToStr)
@@ -152,7 +152,7 @@ def _format_sql(self: generator.Generator, expression: exp.NumberToStr | exp.Tim
     return self.func("FORMAT", expression.this, fmt, expression.args.get("culture"))
 
 
-def _string_agg_sql(self: generator.Generator, expression: exp.GroupConcat) -> str:
+def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
     expression = expression.copy()
 
     this = expression.this

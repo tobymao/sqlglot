@@ -26,13 +26,13 @@ from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
 
 
-def _approx_distinct_sql(self: generator.Generator, expression: exp.ApproxDistinct) -> str:
+def _approx_distinct_sql(self: Presto.Generator, expression: exp.ApproxDistinct) -> str:
     accuracy = expression.args.get("accuracy")
     accuracy = ", " + self.sql(accuracy) if accuracy else ""
     return f"APPROX_DISTINCT({self.sql(expression, 'this')}{accuracy})"
 
 
-def _explode_to_unnest_sql(self: generator.Generator, expression: exp.Lateral) -> str:
+def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
     if isinstance(expression.this, (exp.Explode, exp.Posexplode)):
         expression = expression.copy()
         return self.sql(
@@ -48,12 +48,12 @@ def _explode_to_unnest_sql(self: generator.Generator, expression: exp.Lateral) -
     return self.lateral_sql(expression)
 
 
-def _initcap_sql(self: generator.Generator, expression: exp.Initcap) -> str:
+def _initcap_sql(self: Presto.Generator, expression: exp.Initcap) -> str:
     regex = r"(\w)(\w*)"
     return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
 
-def _no_sort_array(self: generator.Generator, expression: exp.SortArray) -> str:
+def _no_sort_array(self: Presto.Generator, expression: exp.SortArray) -> str:
     if expression.args.get("asc") == exp.false():
         comparator = "(a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END"
     else:
@@ -61,7 +61,7 @@ def _no_sort_array(self: generator.Generator, expression: exp.SortArray) -> str:
     return self.func("ARRAY_SORT", expression.this, comparator)
 
 
-def _schema_sql(self: generator.Generator, expression: exp.Schema) -> str:
+def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
     if isinstance(expression.parent, exp.Property):
         columns = ", ".join(f"'{c.name}'" for c in expression.expressions)
         return f"ARRAY[{columns}]"
@@ -75,25 +75,25 @@ def _schema_sql(self: generator.Generator, expression: exp.Schema) -> str:
     return self.schema_sql(expression)
 
 
-def _quantile_sql(self: generator.Generator, expression: exp.Quantile) -> str:
+def _quantile_sql(self: Presto.Generator, expression: exp.Quantile) -> str:
     self.unsupported("Presto does not support exact quantiles")
     return f"APPROX_PERCENTILE({self.sql(expression, 'this')}, {self.sql(expression, 'quantile')})"
 
 
 def _str_to_time_sql(
-    self: generator.Generator, expression: exp.StrToDate | exp.StrToTime | exp.TsOrDsToDate
+    self: Presto.Generator, expression: exp.StrToDate | exp.StrToTime | exp.TsOrDsToDate
 ) -> str:
     return f"DATE_PARSE({self.sql(expression, 'this')}, {self.format_time(expression)})"
 
 
-def _ts_or_ds_to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
+def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
         return exp.cast(_str_to_time_sql(self, expression), "DATE").sql(dialect="presto")
     return exp.cast(exp.cast(expression.this, "TIMESTAMP", copy=True), "DATE").sql(dialect="presto")
 
 
-def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
+def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
     this = expression.this
 
     if not isinstance(this, exp.CurrentDate):
@@ -153,7 +153,7 @@ def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _first_last_sql(self: generator.Generator, expression: exp.First | exp.Last) -> str:
+def _first_last_sql(self: Presto.Generator, expression: exp.First | exp.Last) -> str:
     """
     Trino doesn't support FIRST / LAST as functions, but they're valid in the context
     of MATCH_RECOGNIZE, so we need to preserve them in that case. In all other cases

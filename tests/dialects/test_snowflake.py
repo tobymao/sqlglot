@@ -1043,6 +1043,7 @@ MATCH_RECOGNIZE (
         ast = parse_one("SHOW TABLES HISTORY IN tpch.public")
         self.assertIsInstance(ast, exp.Command)
 
+        # Parsed as Show
         self.validate_identity("SHOW PRIMARY KEYS")
         self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")
         self.validate_identity("SHOW PRIMARY KEYS IN DATABASE")

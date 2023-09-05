@@ -338,12 +338,6 @@ class Snowflake(Dialect):
 
             return self.expression(exp.Show, this=this, scope=scope, scope_kind=scope_kind)
 
-        def _parse_show(self) -> t.Optional[exp.Expression]:
-            parser = self._find_parser(self.SHOW_PARSERS, self.SHOW_TRIE)
-            if parser:
-                return parser(self)
-            return self._parse_as_command(self._prev)
-
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]

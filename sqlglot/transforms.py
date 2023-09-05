@@ -74,7 +74,11 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         window = exp.alias_(window, row_number)
         expression.select(window, copy=False)
 
-        return exp.select(*outer_selects).from_(expression.subquery()).where(f'"{row_number}" = 1')
+        return (
+            exp.select(*outer_selects)
+            .from_(expression.subquery())
+            .where(exp.column(row_number).eq(1))
+        )
 
     return expression
 

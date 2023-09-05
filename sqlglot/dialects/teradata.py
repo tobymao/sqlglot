@@ -95,6 +95,9 @@ class Teradata(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
+            TokenType.DATABASE: lambda self: self.expression(
+                exp.Use, this=self._parse_table(schema=False)
+            ),
             TokenType.REPLACE: lambda self: self._parse_create(),
         }
 
@@ -165,6 +168,7 @@ class Teradata(Dialect):
             exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
             exp.StrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
         }
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:

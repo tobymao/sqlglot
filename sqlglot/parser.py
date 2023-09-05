@@ -4151,7 +4151,7 @@ class Parser(metaclass=_Parser):
         key = self._parse_column()
         self._match_set((TokenType.COLON, TokenType.COMMA))
         self._match_text_seq("VALUE")
-        value = self._parse_column()
+        value = self._parse_bitwise()
 
         if not key and not value:
             return None

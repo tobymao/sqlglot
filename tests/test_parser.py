@@ -711,3 +711,11 @@ class TestParser(unittest.TestCase):
             parse_one("SELECT a, b ?? c ?? 'No Data' FROM z").sql(),
             "SELECT a, COALESCE(COALESCE(b, c), 'No Data') FROM z",
         )
+
+    def test_parse_intervals(self):
+        ast = parse_one(
+            "SELECT a FROM tbl WHERE a <= DATE '1998-12-01' - INTERVAL '71 days' GROUP BY b"
+        )
+
+        self.assertEqual(ast.find(exp.Interval).this.sql(), "'71'")
+        self.assertEqual(ast.find(exp.Interval).unit.assert_is(exp.Var).sql(), "days")

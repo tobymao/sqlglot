@@ -3154,12 +3154,12 @@ class Parser(metaclass=_Parser):
 
             if len(parts) == 2:
                 if unit:
-                    # this is not actually a unit, it's something else
+                    # This is not actually a unit, it's something else (e.g. a "window side")
                     unit = None
                     self._retreat(self._index - 1)
-                else:
-                    this = exp.Literal.string(parts[0])
-                    unit = self.expression(exp.Var, this=parts[1])
+
+                this = exp.Literal.string(parts[0])
+                unit = self.expression(exp.Var, this=parts[1])
 
         return self.expression(exp.Interval, this=this, unit=unit)
 

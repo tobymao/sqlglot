@@ -4,6 +4,18 @@ from tests.dialects.test_dialect import Validator
 class TestTeradata(Validator):
     dialect = "teradata"
 
+    def test_teradata(self):
+        self.validate_all(
+            "DATABASE tduser",
+            read={
+                "databricks": "USE tduser",
+            },
+            write={
+                "databricks": "USE tduser",
+                "teradata": "DATABASE tduser",
+            },
+        )
+
     def test_translate(self):
         self.validate_all(
             "TRANSLATE(x USING LATIN_TO_UNICODE)",

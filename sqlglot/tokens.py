@@ -955,8 +955,8 @@ class Tokenizer(metaclass=_Tokenizer):
             if result == TrieResult.EXISTS:
                 word = chars
 
+            end = self._current + size
             size += 1
-            end = self._current - 1 + size
 
             if end < self.size:
                 char = self.sql[end]
@@ -975,21 +975,20 @@ class Tokenizer(metaclass=_Tokenizer):
                 char = ""
                 chars = " "
 
-        if not word:
-            if self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char], text=self._char)
+        if word:
+            if self._scan_string(word):
                 return
-            self._scan_var()
+            if self._scan_comment(word):
+                return
+            if prev_space or single_token or not char:
+                self._advance(size - 1)
+                word = word.upper()
+                self._add(self.KEYWORDS[word], text=word)
+                return
+        if self._char in self.SINGLE_TOKENS:
+            self._add(self.SINGLE_TOKENS[self._char], text=self._char)
             return
-
-        if self._scan_string(word):
-            return
-        if self._scan_comment(word):
-            return
-
-        self._advance(size - 1)
-        word = word.upper()
-        self._add(self.KEYWORDS[word], text=word)
+        self._scan_var()
 
     def _scan_comment(self, comment_start: str) -> bool:
         if comment_start not in self._COMMENTS:

@@ -6,6 +6,18 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 
 class TestTokens(unittest.TestCase):
+    def test_space_keywords(self):
+        for string, length in (
+            ("group bys", 2),
+            (" group bys", 2),
+            (" group bys ", 2),
+            ("group by)", 2),
+            ("group bys)", 3),
+        ):
+            tokens = Tokenizer().tokenize(string)
+            self.assertTrue("GROUP" in tokens[0].text.upper())
+            self.assertEqual(len(tokens), length)
+
     def test_comment_attachment(self):
         tokenizer = Tokenizer()
         sql_comment = [

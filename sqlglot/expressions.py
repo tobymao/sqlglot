@@ -1071,6 +1071,8 @@ class Show(Expression):
         "like": False,
         "where": False,
         "db": False,
+        "scope": False,
+        "scope_kind": False,
         "full": False,
         "mutex": False,
         "query": False,

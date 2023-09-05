@@ -4852,8 +4852,7 @@ class Parser(metaclass=_Parser):
         parser = self._find_parser(self.SHOW_PARSERS, self.SHOW_TRIE)
         if parser:
             return parser(self)
-        self._advance()
-        return self.expression(exp.Show, this=self._prev.text.upper())
+        return self._parse_as_command(self._prev)
 
     def _parse_set_item_assignment(
         self, kind: t.Optional[str] = None

@@ -190,6 +190,13 @@ def _parse_regexp_replace(args: t.List) -> exp.RegexpReplace:
     return regexp_replace
 
 
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser], exp.Show]:
+    def _parse(self: Snowflake.Parser) -> exp.Show:
+        return self._parse_show_snowflake(*args, **kwargs)
+
+    return _parse
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
@@ -289,6 +296,16 @@ class Snowflake(Dialect):
             ),
         }
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.SHOW: lambda self: self._parse_show(),
+        }
+
+        SHOW_PARSERS = {
+            "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+            "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+        }
+
         def _parse_id_var(
             self,
             any_token: bool = True,
@@ -303,6 +320,23 @@ class Snowflake(Dialect):
                 return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
 
             return super()._parse_id_var(any_token=any_token, tokens=tokens)
+
+        def _parse_show_snowflake(self, this: str) -> exp.Show:
+            scope = None
+            scope_kind = None
+
+            if self._match(TokenType.IN):
+                if self._match_text_seq("ACCOUNT"):
+                    scope_kind = "ACCOUNT"
+                elif self._match_set(self.DB_CREATABLES):
+                    scope_kind = self._prev.text
+                    if self._curr:
+                        scope = self._parse_table()
+                elif self._curr:
+                    scope_kind = "TABLE"
+                    scope = self._parse_table()
+
+            return self.expression(exp.Show, this=this, scope=scope, scope_kind=scope_kind)
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
@@ -337,6 +371,8 @@ class Snowflake(Dialect):
         }
 
         VAR_SINGLE_TOKENS = {"$"}
+
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
@@ -412,6 +448,16 @@ class Snowflake(Dialect):
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def show_sql(self, expression: exp.Show) -> str:
+            scope = self.sql(expression, "scope")
+            scope = f" {scope}" if scope else ""
+
+            scope_kind = self.sql(expression, "scope_kind")
+            if scope_kind:
+                scope_kind = f" IN {scope_kind}"
+
+            return f"SHOW {expression.name}{scope_kind}{scope}"
 
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             # Other dialects don't support all of the following parameters, so we need to

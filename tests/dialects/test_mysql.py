@@ -6,6 +6,19 @@ class TestMySQL(Validator):
     dialect = "mysql"
 
     def test_ddl(self):
+        int_types = {"BIGINT", "INT", "MEDIUMINT", "SMALLINT", "TINYINT"}
+
+        for t in int_types:
+            self.validate_identity(f"CREATE TABLE t (id {t} UNSIGNED)")
+            self.validate_identity(f"CREATE TABLE t (id {t}(10) UNSIGNED)")
+
+        self.validate_all(
+            "CREATE TABLE t (id INT UNSIGNED)",
+            write={
+                "duckdb": "CREATE TABLE t (id UINTEGER)",
+            },
+        )
+
         self.validate_identity("CREATE TABLE foo (id BIGINT)")
         self.validate_identity("CREATE TABLE 00f (1d BIGINT)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")

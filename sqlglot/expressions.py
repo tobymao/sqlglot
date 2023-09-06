@@ -3543,6 +3543,7 @@ class DataType(Expression):
         UINT = auto()
         UINT128 = auto()
         UINT256 = auto()
+        UMEDIUMINT = auto()
         UNIQUEIDENTIFIER = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
         USERDEFINED = "USER-DEFINED"

@@ -3373,7 +3373,7 @@ class Parser(metaclass=_Parser):
                 if not unsigned_type_token:
                     self.raise_error(f"Cannot convert {type_token.value} to unsigned.")
 
-                type_token = unsigned_type_token
+                type_token = unsigned_type_token or type_token
 
             this = exp.DataType(
                 this=exp.DataType.Type[type_token.value],

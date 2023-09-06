@@ -52,17 +52,17 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
-            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) WHERE _row_number = 1",
+            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
         )
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a) a, b FROM x",
-            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a) AS _row_number FROM x) WHERE _row_number = 1",
+            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a) AS _row_number FROM x) AS _t WHERE _row_number = 1",
         )
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a, b) a, b FROM x ORDER BY c DESC",
-            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a, b ORDER BY c DESC) AS _row_number FROM x) WHERE _row_number = 1",
+            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a, b ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
         )
         self.validate(
             eliminate_distinct_on,
@@ -72,7 +72,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (_row_number) _row_number FROM x ORDER BY c DESC",
-            "SELECT _row_number FROM (SELECT _row_number, ROW_NUMBER() OVER (PARTITION BY _row_number ORDER BY c DESC) AS _row_number_2 FROM x) WHERE _row_number_2 = 1",
+            "SELECT _row_number FROM (SELECT _row_number, ROW_NUMBER() OVER (PARTITION BY _row_number ORDER BY c DESC) AS _row_number_2 FROM x) AS _t WHERE _row_number_2 = 1",
         )
 
     def test_eliminate_qualify(self):

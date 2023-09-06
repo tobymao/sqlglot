@@ -599,6 +599,11 @@ class MySQL(Dialect):
             exp.DataType.Type.VARCHAR: "CHAR",
         }
 
+        TIMESTAMP_FUNC_TYPES = {
+            exp.DataType.Type.TIMESTAMPTZ,
+            exp.DataType.Type.TIMESTAMPLTZ,
+        }
+
         def datatype_sql(self, expression: exp.DataType) -> str:
             # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
             result = super().datatype_sql(expression)
@@ -625,11 +630,7 @@ class MySQL(Dialect):
             return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if expression.to.this in {
-                exp.DataType.Type.TIMESTAMP,
-                exp.DataType.Type.TIMESTAMPTZ,
-                exp.DataType.Type.TIMESTAMPLTZ,
-            }:
+            if expression.to.this in self.TIMESTAMP_FUNC_TYPES:
                 return super().func("TIMESTAMP", expression.this)
 
             to = self.CAST_MAPPING.get(expression.to.this)

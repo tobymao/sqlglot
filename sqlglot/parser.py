@@ -856,6 +856,9 @@ class Parser(metaclass=_Parser):
     # Whether or not ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_COLUMN_KEYWORD = True
 
+    # Whether or not the table sample clause expects CSV syntax
+    TABLESAMPLE_CSV = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2672,7 +2675,12 @@ class Parser(metaclass=_Parser):
 
         self._match(TokenType.L_PAREN)
 
-        num = self._parse_number()
+        if self.TABLESAMPLE_CSV:
+            num = None
+            expressions = self._parse_csv(self._parse_primary)
+        else:
+            expressions = None
+            num = self._parse_number()
 
         if self._match_text_seq("BUCKET"):
             bucket_numerator = self._parse_number()
@@ -2684,7 +2692,7 @@ class Parser(metaclass=_Parser):
             percent = num
         elif self._match(TokenType.ROWS):
             rows = num
-        else:
+        elif num:
             size = num
 
         self._match(TokenType.R_PAREN)
@@ -2698,6 +2706,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.TableSample,
+            expressions=expressions,
             method=method,
             bucket_numerator=bucket_numerator,
             bucket_denominator=bucket_denominator,
@@ -3325,15 +3334,14 @@ class Parser(metaclass=_Parser):
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
-            if self._match_text_seq("YEAR", "TO", "MONTH"):
-                span: t.Optional[t.List[exp.Expression]] = [exp.IntervalYearToMonthSpan()]
-            elif self._match_text_seq("DAY", "TO", "SECOND"):
-                span = [exp.IntervalDayToSecondSpan()]
+            unit = self._parse_var()
+
+            if self._match_text_seq("TO"):
+                span = [exp.IntervalSpan(this=unit, expression=self._parse_var())]
             else:
                 span = None
 
-            unit = not span and self._parse_var()
-            if not unit:
+            if span or not unit:
                 this = self.expression(
                     exp.DataType, this=exp.DataType.Type.INTERVAL, expressions=span
                 )

@@ -282,14 +282,16 @@ class TestDialect(Validator):
                 "starrocks": "CAST(a AS DATETIME)",
                 "redshift": "CAST(a AS TIMESTAMP)",
                 "doris": "CAST(a AS DATETIME)",
+                "mysql": "CAST(a AS DATETIME)",
             },
         )
         self.validate_all(
             "CAST(a AS TIMESTAMPTZ)",
             write={
-                "starrocks": "CAST(a AS DATETIME)",
+                "starrocks": "TIMESTAMP(a)",
                 "redshift": "CAST(a AS TIMESTAMP WITH TIME ZONE)",
                 "doris": "CAST(a AS DATETIME)",
+                "mysql": "TIMESTAMP(a)",
             },
         )
         self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS NUMBER)"})
@@ -870,7 +872,7 @@ class TestDialect(Validator):
             "TIMESTAMP '2022-01-01'",
             write={
                 "drill": "CAST('2022-01-01' AS TIMESTAMP)",
-                "mysql": "CAST('2022-01-01' AS TIMESTAMP)",
+                "mysql": "CAST('2022-01-01' AS DATETIME)",
                 "starrocks": "CAST('2022-01-01' AS DATETIME)",
                 "hive": "CAST('2022-01-01' AS TIMESTAMP)",
                 "doris": "CAST('2022-01-01' AS DATETIME)",

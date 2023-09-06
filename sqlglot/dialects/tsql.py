@@ -57,6 +57,8 @@ TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 
 DEFAULT_START_DATE = datetime.date(1900, 1, 1)
 
+BIT_TYPES = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
+
 
 def _format_time_lambda(
     exp_class: t.Type[E], full_format_mapping: t.Optional[bool] = None
@@ -632,9 +634,7 @@ class TSQL(Dialect):
         }
 
         def boolean_sql(self, expression: exp.Boolean) -> str:
-            bit_types = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
-
-            if type(expression.parent) in bit_types:
+            if type(expression.parent) in BIT_TYPES:
                 return "1" if expression.this else "0"
 
             return "(1 = 1)" if expression.this else "(1 = 0)"

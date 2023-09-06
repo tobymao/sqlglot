@@ -45,6 +45,7 @@ class Teradata(Dialect):
             "MOD": TokenType.MOD,
             "NE": TokenType.NEQ,
             "NOT=": TokenType.NEQ,
+            "SAMPLE": TokenType.TABLE_SAMPLE,
             "SEL": TokenType.SELECT,
             "ST_GEOMETRY": TokenType.GEOMETRY,
             "TOP": TokenType.TOP,
@@ -55,6 +56,8 @@ class Teradata(Dialect):
         SINGLE_TOKENS.pop("%")
 
     class Parser(parser.Parser):
+        TABLESAMPLE_CSV = True
+
         CHARSET_TRANSLATORS = {
             "GRAPHIC_TO_KANJISJIS",
             "GRAPHIC_TO_LATIN",
@@ -170,6 +173,11 @@ class Teradata(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
         }
+
+        def tablesample_sql(
+            self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
+        ) -> str:
+            return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
             return f"PARTITION BY {self.sql(expression, 'this')}"

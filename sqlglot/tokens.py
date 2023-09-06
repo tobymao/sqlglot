@@ -86,6 +86,7 @@ class TokenType(AutoName):
     SMALLINT = auto()
     USMALLINT = auto()
     MEDIUMINT = auto()
+    UMEDIUMINT = auto()
     INT = auto()
     UINT = auto()
     BIGINT = auto()

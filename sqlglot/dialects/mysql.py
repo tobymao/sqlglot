@@ -631,7 +631,7 @@ class MySQL(Dialect):
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if expression.to.this in self.TIMESTAMP_FUNC_TYPES:
-                return super().func("TIMESTAMP", expression.this)
+                return self.func("TIMESTAMP", expression.this)
 
             to = self.CAST_MAPPING.get(expression.to.this)
 

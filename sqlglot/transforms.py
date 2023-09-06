@@ -76,7 +76,7 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
 
         return (
             exp.select(*outer_selects)
-            .from_(expression.subquery())
+            .from_(expression.subquery("_t"))
             .where(exp.column(row_number).eq(1))
         )
 

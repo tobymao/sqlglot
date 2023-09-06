@@ -190,7 +190,11 @@ def _remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Merge):
         alias = expression.this.args.get("alias")
 
-        normalize = lambda identifier: Postgres.normalize_identifier(identifier).name
+        normalize = (
+            lambda identifier: Postgres.normalize_identifier(identifier).name
+            if identifier
+            else None
+        )
 
         targets = {normalize(expression.this.this)}
 

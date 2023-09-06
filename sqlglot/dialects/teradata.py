@@ -177,7 +177,7 @@ class Teradata(Dialect):
         def tablesample_sql(
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
         ) -> str:
-            return F"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
+            return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
 
         def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
             return f"PARTITION BY {self.sql(expression, 'this')}"

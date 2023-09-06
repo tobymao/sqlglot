@@ -137,6 +137,7 @@ class Parser(metaclass=_Parser):
         TokenType.INT256,
         TokenType.UINT256,
         TokenType.MEDIUMINT,
+        TokenType.UMEDIUMINT,
         TokenType.FIXEDSTRING,
         TokenType.FLOAT,
         TokenType.DOUBLE,
@@ -204,6 +205,14 @@ class Parser(metaclass=_Parser):
         TokenType.NULL,
         *ENUM_TYPE_TOKENS,
         *NESTED_TYPE_TOKENS,
+    }
+
+    SIGNED_TO_UNSIGNED_TYPE_TOKEN = {
+        TokenType.BIGINT: TokenType.UBIGINT,
+        TokenType.INT: TokenType.UINT,
+        TokenType.MEDIUMINT: TokenType.UMEDIUMINT,
+        TokenType.SMALLINT: TokenType.USMALLINT,
+        TokenType.TINYINT: TokenType.UTINYINT,
     }
 
     SUBQUERY_PREDICATES = {
@@ -3359,6 +3368,13 @@ class Parser(metaclass=_Parser):
             self._retreat(index2)
 
         if not this:
+            if self._match_text_seq("UNSIGNED"):
+                unsigned_type_token = self.SIGNED_TO_UNSIGNED_TYPE_TOKEN.get(type_token)
+                if not unsigned_type_token:
+                    self.raise_error(f"Cannot convert {type_token.value} to unsigned.")
+
+                type_token = unsigned_type_token or type_token
+
             this = exp.DataType(
                 this=exp.DataType.Type[type_token.value],
                 expressions=expressions,

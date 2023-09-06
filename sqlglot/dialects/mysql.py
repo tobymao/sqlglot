@@ -555,7 +555,19 @@ class MySQL(Dialect):
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         }
 
-        TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
+        UNSIGNED_TYPE_MAPPING = {
+            exp.DataType.Type.UBIGINT: "BIGINT",
+            exp.DataType.Type.UINT: "INT",
+            exp.DataType.Type.UMEDIUMINT: "MEDIUMINT",
+            exp.DataType.Type.USMALLINT: "SMALLINT",
+            exp.DataType.Type.UTINYINT: "TINYINT",
+        }
+
+        TYPE_MAPPING = {
+            **generator.Generator.TYPE_MAPPING,
+            **UNSIGNED_TYPE_MAPPING,
+        }
+
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
@@ -579,6 +591,13 @@ class MySQL(Dialect):
             exp.DataType.Type.UBIGINT: "UNSIGNED",
             exp.DataType.Type.VARCHAR: "CHAR",
         }
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+            result = super().datatype_sql(expression)
+            if expression.this in self.UNSIGNED_TYPE_MAPPING:
+                result = f"{result} UNSIGNED"
+            return result
 
         def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
             # MySQL requires simple literal values for its LIMIT clause.

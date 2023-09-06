@@ -90,7 +90,6 @@ class TokenType(AutoName):
     UINT = auto()
     BIGINT = auto()
     UBIGINT = auto()
-    UNSIGNEDINT = auto()
     INT128 = auto()
     UINT128 = auto()
     INT256 = auto()
@@ -729,7 +728,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "INT4MULTIRANGE": TokenType.INT4MULTIRANGE,
         "INT8RANGE": TokenType.INT8RANGE,
         "INT8MULTIRANGE": TokenType.INT8MULTIRANGE,
-        "INT UNSIGNED": TokenType.UNSIGNEDINT,
+        "INT UNSIGNED": TokenType.UINT,
         "NUMRANGE": TokenType.NUMRANGE,
         "NUMMULTIRANGE": TokenType.NUMMULTIRANGE,
         "TSRANGE": TokenType.TSRANGE,

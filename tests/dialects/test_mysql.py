@@ -86,7 +86,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "CREATE TABLE t (id INT UNSIGNED)",
             write={
-                "mysql": "CREATE TABLE t (id UNSIGNEDINT)",
+                "mysql": "CREATE TABLE t (id UINT)",
             },
         )
 

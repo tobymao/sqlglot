@@ -132,7 +132,6 @@ class Parser(metaclass=_Parser):
         TokenType.UINT,
         TokenType.BIGINT,
         TokenType.UBIGINT,
-        TokenType.UNSIGNEDINT,
         TokenType.INT128,
         TokenType.UINT128,
         TokenType.INT256,

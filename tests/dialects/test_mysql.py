@@ -83,6 +83,12 @@ class TestMySQL(Validator):
                 "mysql": "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
             },
         )
+        self.validate_all(
+            "CREATE TABLE t (id INT UNSIGNED)",
+            write={
+                "mysql": "CREATE TABLE t (id UNSIGNEDINT)",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity(

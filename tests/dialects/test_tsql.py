@@ -469,6 +469,15 @@ class TestTSQL(Validator):
 
         self.validate_all("SELECT TRUE AS a, FALSE AS b", write={"tsql": "SELECT 1 AS a, 0 AS b"})
 
+        self.validate_all(
+            "SELECT 1 FROM a WHERE TRUE", write={"tsql": "SELECT 1 FROM a WHERE (1 = 1)"}
+        )
+
+        self.validate_all(
+            "CASE WHEN TRUE THEN 'y' WHEN FALSE THEN 'n' ELSE NULL END",
+            write={"tsql": "CASE WHEN (1 = 1) THEN 'y' WHEN (1 = 0) THEN 'n' ELSE NULL END"},
+        )
+
     def test_ddl(self):
         self.validate_all(
             "CREATE TABLE tbl (id INTEGER IDENTITY PRIMARY KEY)",

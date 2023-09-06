@@ -57,6 +57,8 @@ TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}
 
 DEFAULT_START_DATE = datetime.date(1900, 1, 1)
 
+BIT_TYPES = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
+
 
 def _format_time_lambda(
     exp_class: t.Type[E], full_format_mapping: t.Optional[bool] = None
@@ -584,6 +586,7 @@ class TSQL(Dialect):
         RETURNING_END = False
         NVL2_SUPPORTED = False
         ALTER_TABLE_ADD_COLUMN_KEYWORD = False
+        LIMIT_FETCH = "FETCH"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -630,7 +633,16 @@ class TSQL(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        LIMIT_FETCH = "FETCH"
+        def boolean_sql(self, expression: exp.Boolean) -> str:
+            if type(expression.parent) in BIT_TYPES:
+                return "1" if expression.this else "0"
+
+            return "(1 = 1)" if expression.this else "(1 = 0)"
+
+        def is_sql(self, expression: exp.Is) -> str:
+            if isinstance(expression.expression, exp.Boolean):
+                return self.binary(expression, "=")
+            return self.binary(expression, "IS")
 
         def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
             sql = self.sql(expression, "this")

@@ -368,6 +368,14 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_all(
+            "CAST(x as UNIQUEIDENTIFIER)",
+            write={
+                "spark": "CAST(x AS STRING)",
+                "tsql": "CAST(x AS UNIQUEIDENTIFIER)",
+            },
+        )
+
     def test_types_date(self):
         self.validate_all(
             "CAST(x as DATE)",
@@ -427,14 +435,6 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
-            "CAST(x as UNIQUEIDENTIFIER)",
-            write={
-                "spark": "CAST(x AS STRING)",
-                "tsql": "CAST(x AS UNIQUEIDENTIFIER)",
-            },
-        )
-
-        self.validate_all(
             "CAST(x as VARBINARY)",
             write={
                 "spark": "CAST(x AS BINARY)",
@@ -445,6 +445,37 @@ class TestTSQL(Validator):
         self.validate_all(
             "CAST(x AS BOOLEAN)",
             write={"tsql": "CAST(x AS BIT)"},
+        )
+
+        self.validate_all("a = TRUE", write={"tsql": "a = 1"})
+
+        self.validate_all("a != FALSE", write={"tsql": "a <> 0"})
+
+        self.validate_all("a IS TRUE", write={"tsql": "a = 1"})
+
+        self.validate_all("a IS NOT FALSE", write={"tsql": "NOT a = 0"})
+
+        self.validate_all(
+            "CASE WHEN a IN (TRUE) THEN 'y' ELSE 'n' END",
+            write={"tsql": "CASE WHEN a IN (1) THEN 'y' ELSE 'n' END"},
+        )
+
+        self.validate_all(
+            "CASE WHEN a NOT IN (FALSE) THEN 'y' ELSE 'n' END",
+            write={"tsql": "CASE WHEN NOT a IN (0) THEN 'y' ELSE 'n' END"},
+        )
+
+        self.validate_all("SELECT TRUE, FALSE", write={"tsql": "SELECT 1, 0"})
+
+        self.validate_all("SELECT TRUE AS a, FALSE AS b", write={"tsql": "SELECT 1 AS a, 0 AS b"})
+
+        self.validate_all(
+            "SELECT 1 FROM a WHERE TRUE", write={"tsql": "SELECT 1 FROM a WHERE (1 = 1)"}
+        )
+
+        self.validate_all(
+            "CASE WHEN TRUE THEN 'y' WHEN FALSE THEN 'n' ELSE NULL END",
+            write={"tsql": "CASE WHEN (1 = 1) THEN 'y' WHEN (1 = 0) THEN 'n' ELSE NULL END"},
         )
 
     def test_ddl(self):

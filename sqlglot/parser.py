@@ -856,6 +856,9 @@ class Parser(metaclass=_Parser):
     # Whether or not ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_COLUMN_KEYWORD = True
 
+    # Whether or not the table sample clause expects CSV syntax
+    TABLESAMPLE_CSV = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2672,7 +2675,12 @@ class Parser(metaclass=_Parser):
 
         self._match(TokenType.L_PAREN)
 
-        num = self._parse_number()
+        if self.TABLESAMPLE_CSV:
+            num = None
+            expressions = self._parse_csv(self._parse_primary)
+        else:
+            expressions = None
+            num = self._parse_number()
 
         if self._match_text_seq("BUCKET"):
             bucket_numerator = self._parse_number()
@@ -2684,7 +2692,7 @@ class Parser(metaclass=_Parser):
             percent = num
         elif self._match(TokenType.ROWS):
             rows = num
-        else:
+        elif num:
             size = num
 
         self._match(TokenType.R_PAREN)
@@ -2698,6 +2706,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.TableSample,
+            expressions=expressions,
             method=method,
             bucket_numerator=bucket_numerator,
             bucket_denominator=bucket_denominator,

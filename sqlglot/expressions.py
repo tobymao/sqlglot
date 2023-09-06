@@ -3350,6 +3350,7 @@ class Subquery(DerivedTable, Unionable):
 class TableSample(Expression):
     arg_types = {
         "this": False,
+        "expressions": False,
         "method": False,
         "bucket_numerator": False,
         "bucket_denominator": False,

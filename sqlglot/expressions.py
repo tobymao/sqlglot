@@ -3993,15 +3993,10 @@ class TimeUnit(Expression):
 
 
 # https://www.oracletutorial.com/oracle-basics/oracle-interval/
-# https://trino.io/docs/current/language/types.html#interval-year-to-month
-class IntervalYearToMonthSpan(Expression):
-    arg_types = {}
-
-
-# https://www.oracletutorial.com/oracle-basics/oracle-interval/
 # https://trino.io/docs/current/language/types.html#interval-day-to-second
-class IntervalDayToSecondSpan(Expression):
-    arg_types = {}
+# https://docs.databricks.com/en/sql/language-manual/data-types/interval-type.html
+class IntervalSpan(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 class Interval(TimeUnit):

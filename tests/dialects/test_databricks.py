@@ -5,6 +5,12 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO HOUR)")
+        self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO MINUTE)")
+        self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO SECOND)")
+        self.validate_identity("SELECT CAST('23:00:00' AS INTERVAL HOUR TO MINUTE)")
+        self.validate_identity("SELECT CAST('23:00:00' AS INTERVAL HOUR TO SECOND)")
+        self.validate_identity("SELECT CAST('23:00:00' AS INTERVAL MINUTE TO SECOND)")
         self.validate_identity("CREATE TABLE target SHALLOW CLONE source")
         self.validate_identity("INSERT INTO a REPLACE WHERE cond VALUES (1), (2)")
         self.validate_identity("SELECT c1 : price")

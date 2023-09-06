@@ -35,6 +35,13 @@ def _parse_datediff(args: t.List) -> exp.Expression:
 
 
 class Spark(Spark2):
+    class Tokenizer(Spark2.Tokenizer):
+        RAW_STRINGS = [
+            (prefix + q, q)
+            for q in t.cast(t.List[str], Spark2.Tokenizer.QUOTES)
+            for prefix in ("r", "R")
+        ]
+
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,

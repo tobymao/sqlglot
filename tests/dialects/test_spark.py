@@ -240,6 +240,14 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
         self.validate_identity(
+            "SELECT REGEXP_REPLACE('100-200', r'([^0-9])', '')",
+            "SELECT REGEXP_REPLACE('100-200', '([^0-9])', '')",
+        )
+        self.validate_identity(
+            "SELECT REGEXP_REPLACE('100-200', R'([^0-9])', '')",
+            "SELECT REGEXP_REPLACE('100-200', '([^0-9])', '')",
+        )
+        self.validate_identity(
             "SELECT STR_TO_MAP('a:1,b:2,c:3')",
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )

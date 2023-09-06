@@ -5,6 +5,12 @@ class TestTeradata(Validator):
     dialect = "teradata"
 
     def test_teradata(self):
+        self.validate_identity("SELECT * FROM tbl SAMPLE 5")
+        self.validate_identity(
+            "SELECT * FROM tbl SAMPLE 0.33, .25, .1",
+            "SELECT * FROM tbl SAMPLE 0.33, 0.25, 0.1",
+        )
+
         self.validate_all(
             "DATABASE tduser",
             read={

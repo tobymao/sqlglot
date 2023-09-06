@@ -555,14 +555,19 @@ class MySQL(Dialect):
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         }
 
-        TYPE_MAPPING = {
-            **generator.Generator.TYPE_MAPPING,
+        UNSIGNED_TYPE_MAPPING = {
             exp.DataType.Type.UBIGINT: "BIGINT",
             exp.DataType.Type.UINT: "INT",
             exp.DataType.Type.UMEDIUMINT: "MEDIUMINT",
             exp.DataType.Type.USMALLINT: "SMALLINT",
             exp.DataType.Type.UTINYINT: "TINYINT",
         }
+
+        TYPE_MAPPING = {
+            **generator.Generator.TYPE_MAPPING,
+            **UNSIGNED_TYPE_MAPPING,
+        }
+
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
@@ -587,18 +592,10 @@ class MySQL(Dialect):
             exp.DataType.Type.VARCHAR: "CHAR",
         }
 
-        UNSIGNED_TYPES = {
-            exp.DataType.Type.UBIGINT,
-            exp.DataType.Type.UINT,
-            exp.DataType.Type.UMEDIUMINT,
-            exp.DataType.Type.USMALLINT,
-            exp.DataType.Type.UTINYINT,
-        }
-
         def datatype_sql(self, expression: exp.DataType) -> str:
             # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
             result = super().datatype_sql(expression)
-            if expression.this in self.UNSIGNED_TYPES:
+            if expression.this in self.UNSIGNED_TYPE_MAPPING:
                 result = f"{result} UNSIGNED"
             return result
 

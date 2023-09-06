@@ -870,7 +870,7 @@ class TestDialect(Validator):
             "TIMESTAMP '2022-01-01'",
             write={
                 "drill": "CAST('2022-01-01' AS TIMESTAMP)",
-                "mysql": "CAST('2022-01-01' AS TIMESTAMP)",
+                "mysql": "CAST('2022-01-01' AS DATETIME)",
                 "starrocks": "CAST('2022-01-01' AS DATETIME)",
                 "hive": "CAST('2022-01-01' AS TIMESTAMP)",
                 "doris": "CAST('2022-01-01' AS DATETIME)",

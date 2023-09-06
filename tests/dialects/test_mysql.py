@@ -215,6 +215,9 @@ class TestMySQL(Validator):
                 "spark": "CAST(x AS BLOB) + CAST(y AS BLOB)",
             },
         )
+        self.validate_all("CAST(x AS TIMESTAMP)", write={"mysql": "TIMESTAMP(x)"})
+        self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"mysql": "TIMESTAMP(x)"})
+        self.validate_all("CAST(x AS TIMESTAMPLTZ)", write={"mysql": "TIMESTAMP(x)"})
 
     def test_canonical_functions(self):
         self.validate_identity("SELECT LEFT('str', 2)", "SELECT LEFT('str', 2)")

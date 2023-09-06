@@ -563,9 +563,16 @@ class MySQL(Dialect):
             exp.DataType.Type.UTINYINT: "TINYINT",
         }
 
+        TIMESTAMP_TYPE_MAPPING = {
+            exp.DataType.Type.TIMESTAMP: "DATETIME",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
+        }
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             **UNSIGNED_TYPE_MAPPING,
+            **TIMESTAMP_TYPE_MAPPING,
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
@@ -618,6 +625,13 @@ class MySQL(Dialect):
             return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            if expression.to.this in {
+                exp.DataType.Type.TIMESTAMP,
+                exp.DataType.Type.TIMESTAMPTZ,
+                exp.DataType.Type.TIMESTAMPLTZ,
+            }:
+                return super().func("TIMESTAMP", expression.this)
+
             to = self.CAST_MAPPING.get(expression.to.this)
 
             if to:

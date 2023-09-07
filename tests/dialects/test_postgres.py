@@ -126,12 +126,17 @@ class TestPostgres(Validator):
         )
 
     def test_postgres(self):
-        self.validate_identity("x @@ y")
-
         expr = parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
 
+        alter_table_only = """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE NO ACTION ON UPDATE NO ACTION"""
+        expr = parse_one(alter_table_only)
+
+        self.assertIsInstance(expr, exp.AlterTable)
+        self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
+
+        self.validate_identity("x @@ y")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")

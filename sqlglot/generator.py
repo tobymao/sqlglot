@@ -2289,7 +2289,8 @@ class Generator:
             actions = self.expressions(expression, key="actions")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
-        return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {actions}"
+        only = " ONLY" if expression.args.get("only") else ""
+        return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')} {actions}"
 
     def droppartition_sql(self, expression: exp.DropPartition) -> str:
         expressions = self.expressions(expression)

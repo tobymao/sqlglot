@@ -4785,6 +4785,7 @@ class Parser(metaclass=_Parser):
             return self._parse_as_command(start)
 
         exists = self._parse_exists()
+        only = self._match_text_seq("ONLY")
         this = self._parse_table(schema=True)
 
         if self._next:
@@ -4800,7 +4801,9 @@ class Parser(metaclass=_Parser):
                     this=this,
                     exists=exists,
                     actions=actions,
+                    only=only,
                 )
+
         return self._parse_as_command(start)
 
     def _parse_merge(self) -> exp.Merge:

@@ -3710,7 +3710,7 @@ class Rollback(Expression):
 
 
 class AlterTable(Expression):
-    arg_types = {"this": True, "actions": True, "exists": False}
+    arg_types = {"this": True, "actions": True, "exists": False, "only": False}
 
 
 class AddConstraint(Expression):

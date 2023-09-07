@@ -952,7 +952,7 @@ class Generator:
 
     def filter_sql(self, expression: exp.Filter) -> str:
         this = self.sql(expression, "this")
-        where = self.sql(expression, "expression")[1:]  # where has a leading space
+        where = self.sql(expression, "expression").strip()
         return f"{this} FILTER({where})"
 
     def hint_sql(self, expression: exp.Hint) -> str:

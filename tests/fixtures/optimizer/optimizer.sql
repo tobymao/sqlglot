@@ -987,3 +987,39 @@ SELECT
 FROM "SALES" AS "SALES"
 WHERE
   "SALES"."INSERT_TS" > '2023-08-07 21:03:35.590 -0700';
+
+# title: using join without select *
+# execute: false
+with
+    alias1 as (select * from table1),
+    alias2 as (select * from table2),
+    alias3 as (
+        select
+            cid,
+            min(od) as m_od,
+            count(odi) as c_od,
+        from alias2
+        group by 1
+    )
+select
+    alias1.cid,
+    alias3.m_od,
+    coalesce(alias3.c_od, 0) as c_od,
+from alias1
+left join alias3 using (cid);
+WITH "alias3" AS (
+  SELECT
+    "table2"."cid" AS "cid",
+    MIN("table2"."od") AS "m_od",
+    COUNT("table2"."odi") AS "c_od"
+  FROM "table2" AS "table2"
+  GROUP BY
+    "table2"."cid"
+)
+SELECT
+  "table1"."cid" AS "cid",
+  "alias3"."m_od" AS "m_od",
+  COALESCE("alias3"."c_od", 0) AS "c_od"
+FROM "table1" AS "table1"
+LEFT JOIN "alias3"
+  ON "table1"."cid" = "alias3"."cid";

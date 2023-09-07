@@ -129,7 +129,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
             table = columns.get(identifier)
 
             if not table or identifier not in join_columns:
-                if columns and join_columns:
+                if (columns and "*" not in columns) and join_columns:
                     raise OptimizeError(f"Cannot automatically join: {identifier}")
 
             table = table or source_table

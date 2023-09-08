@@ -3961,6 +3961,10 @@ class Between(Predicate):
 class Bracket(Condition):
     arg_types = {"this": True, "expressions": True}
 
+    @property
+    def output_name(self):
+        return self.expressions[0].this
+
 
 class SafeBracket(Bracket):
     """Represents array lookup where OOB index yields NULL instead of causing a failure."""

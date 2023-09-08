@@ -128,7 +128,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
     def _is_a_window_expression_in_unmergable_operation():
         window_expressions = inner_select.find_all(exp.Window)
         window_alias_names = {window.parent.alias_or_name for window in window_expressions}
-        inner_select_name = inner_select.parent.alias_or_name
+        inner_select_name = from_or_join.alias_or_name
         unmergable_window_columns = [
             column
             for column in outer_scope.columns

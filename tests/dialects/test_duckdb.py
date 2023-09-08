@@ -352,6 +352,7 @@ class TestDuckDB(Validator):
     def test_time(self):
         self.validate_identity("SELECT CURRENT_DATE")
         self.validate_identity("SELECT CURRENT_TIMESTAMP")
+        self.validate_identity("VAR_POP(a)")
 
         self.validate_all(
             "SELECT MAKE_DATE(2016, 12, 25)", read={"bigquery": "SELECT DATE(2016, 12, 25)"}

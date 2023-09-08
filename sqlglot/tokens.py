@@ -108,6 +108,8 @@ class TokenType(AutoName):
     LONGTEXT = auto()
     MEDIUMBLOB = auto()
     LONGBLOB = auto()
+    TINYBLOB = auto()
+    TINYTEXT = auto()
     BINARY = auto()
     VARBINARY = auto()
     JSON = auto()
@@ -712,10 +714,12 @@ class Tokenizer(metaclass=_Tokenizer):
         "STR": TokenType.TEXT,
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,
+        "TINYTEXT": TokenType.TEXT,
         "CLOB": TokenType.TEXT,
         "LONGVARCHAR": TokenType.TEXT,
         "BINARY": TokenType.BINARY,
         "BLOB": TokenType.VARBINARY,
+        "TINYBLOB": TokenType.VARBINARY,
         "BYTEA": TokenType.VARBINARY,
         "VARBINARY": TokenType.VARBINARY,
         "TIME": TokenType.TIME,

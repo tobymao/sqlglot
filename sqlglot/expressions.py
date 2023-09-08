@@ -3529,6 +3529,8 @@ class DataType(Expression):
         STRUCT = auto()
         SUPER = auto()
         TEXT = auto()
+        TINYBLOB = auto()
+        TINYTEXT = auto()
         TIME = auto()
         TIMETZ = auto()
         TIMESTAMP = auto()

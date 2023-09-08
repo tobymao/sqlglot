@@ -155,6 +155,8 @@ class Parser(metaclass=_Parser):
         TokenType.JSON,
         TokenType.JSONB,
         TokenType.INTERVAL,
+        TokenType.TINYBLOB,
+        TokenType.TINYTEXT,
         TokenType.TIME,
         TokenType.TIMETZ,
         TokenType.TIMESTAMP,

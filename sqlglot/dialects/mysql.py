@@ -132,6 +132,8 @@ class MySQL(Dialect):
             "LONGBLOB": TokenType.LONGBLOB,
             "LONGTEXT": TokenType.LONGTEXT,
             "MEDIUMBLOB": TokenType.MEDIUMBLOB,
+            "TINYBLOB": TokenType.TINYBLOB,
+            "TINYTEXT": TokenType.TINYTEXT,
             "MEDIUMTEXT": TokenType.MEDIUMTEXT,
             "MEDIUMINT": TokenType.MEDIUMINT,
             "MEMBER OF": TokenType.MEMBER_OF,
@@ -577,8 +579,10 @@ class MySQL(Dialect):
 
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
+        TYPE_MAPPING.pop(exp.DataType.Type.TINYTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
+        TYPE_MAPPING.pop(exp.DataType.Type.TINYBLOB)
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

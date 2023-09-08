@@ -204,21 +204,21 @@ class TestMySQL(Validator):
         self.validate_identity("CAST(x AS MEDIUMINT) + CAST(y AS YEAR(4))")
 
         self.validate_all(
-            "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT)",
+            "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT) + CAST(z AS TINYTEXT)",
             read={
-                "mysql": "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT)",
+                "mysql": "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT) + CAST(z AS TINYTEXT)",
             },
             write={
-                "spark": "CAST(x AS TEXT) + CAST(y AS TEXT)",
+                "spark": "CAST(x AS TEXT) + CAST(y AS TEXT) + CAST(z AS TEXT)",
             },
         )
         self.validate_all(
-            "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB)",
+            "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB) + CAST(z AS TINYBLOB)",
             read={
-                "mysql": "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB)",
+                "mysql": "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB) + CAST(z AS TINYBLOB)",
             },
             write={
-                "spark": "CAST(x AS BLOB) + CAST(y AS BLOB)",
+                "spark": "CAST(x AS BLOB) + CAST(y AS BLOB) + CAST(z AS BLOB)",
             },
         )
         self.validate_all("CAST(x AS TIMESTAMP)", write={"mysql": "CAST(x AS DATETIME)"})

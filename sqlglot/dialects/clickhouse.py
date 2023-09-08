@@ -313,6 +313,8 @@ class ClickHouse(Dialect):
             exp.DataType.Type.LONGTEXT: "String",
             exp.DataType.Type.MEDIUMBLOB: "String",
             exp.DataType.Type.MEDIUMTEXT: "String",
+            exp.DataType.Type.TINYBLOB: "String",
+            exp.DataType.Type.TINYTEXT: "String",
             exp.DataType.Type.TEXT: "String",
             exp.DataType.Type.VARBINARY: "String",
             exp.DataType.Type.VARCHAR: "String",

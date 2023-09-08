@@ -333,6 +333,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.FIXEDSTRING: "FixedString",
             exp.DataType.Type.FLOAT: "Float32",
             exp.DataType.Type.INT: "Int32",
+            exp.DataType.Type.MEDIUMINT: "Int32",
             exp.DataType.Type.INT128: "Int128",
             exp.DataType.Type.INT256: "Int256",
             exp.DataType.Type.LOWCARDINALITY: "LowCardinality",

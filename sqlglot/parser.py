@@ -769,11 +769,6 @@ class Parser(metaclass=_Parser):
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
-        "JSON_ARRAYAGG": lambda self: self._parse_json_array(
-            exp.JSONArrayAgg,
-            this=self._parse_format_json(self._parse_bitwise()),
-            order=self._parse_order(),
-        ),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "LOG": lambda self: self._parse_logarithm(),
         "MATCH": lambda self: self._parse_match_against(),
@@ -4233,15 +4228,6 @@ class Parser(metaclass=_Parser):
             unique_keys=unique_keys,
             return_type=return_type,
             encoding=encoding,
-        )
-
-    def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
-        return self.expression(
-            expr_type,
-            null_handling=self._parse_null_handling(),
-            return_type=self._match_text_seq("RETURNING") and self._parse_type(),
-            strict=self._match_text_seq("STRICT"),
-            **kwargs,
         )
 
     def _parse_logarithm(self) -> exp.Func:

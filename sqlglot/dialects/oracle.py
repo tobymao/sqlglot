@@ -7,6 +7,9 @@ from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sq
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
 
 def _parse_xml_table(self: Oracle.Parser) -> exp.XMLTable:
     this = self._parse_string()
@@ -73,6 +76,11 @@ class Oracle(Dialect):
                 exp.JSONArray,
                 expressions=self._parse_csv(lambda: self._parse_format_json(self._parse_bitwise())),
             ),
+            "JSON_ARRAYAGG": lambda self: self._parse_json_array(
+                exp.JSONArrayAgg,
+                this=self._parse_format_json(self._parse_bitwise()),
+                order=self._parse_order(),
+            ),
             "XMLTABLE": _parse_xml_table,
         }
 
@@ -85,6 +93,15 @@ class Oracle(Dialect):
         # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..
         # Reference: https://stackoverflow.com/a/336455
         DISTINCT_TOKENS = {TokenType.DISTINCT, TokenType.UNIQUE}
+
+        def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
+            return self.expression(
+                expr_type,
+                null_handling=self._parse_null_handling(),
+                return_type=self._match_text_seq("RETURNING") and self._parse_type(),
+                strict=self._match_text_seq("STRICT"),
+                **kwargs,
+            )
 
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()

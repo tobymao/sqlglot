@@ -769,10 +769,6 @@ class Parser(metaclass=_Parser):
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
-        "JSON_ARRAY": lambda self: self._parse_json_array(
-            exp.JSONArray,
-            expressions=self._parse_csv(lambda: self._parse_format_json(self._parse_bitwise())),
-        ),
         "JSON_ARRAYAGG": lambda self: self._parse_json_array(
             exp.JSONArrayAgg,
             this=self._parse_format_json(self._parse_bitwise()),

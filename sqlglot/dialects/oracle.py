@@ -69,6 +69,10 @@ class Oracle(Dialect):
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
             **parser.Parser.FUNCTION_PARSERS,
+            "JSON_ARRAY": lambda self: self._parse_json_array(
+                exp.JSONArray,
+                expressions=self._parse_csv(lambda: self._parse_format_json(self._parse_bitwise())),
+            ),
             "XMLTABLE": _parse_xml_table,
         }
 

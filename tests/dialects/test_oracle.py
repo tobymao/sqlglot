@@ -6,6 +6,7 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("SELECT JSON_OBJECT(k1: v1 FORMAT JSON, k2: v2 FORMAT JSON)")
         self.validate_identity("SELECT JSON_OBJECT('name': first_name || ' ' || last_name) FROM t")
         self.validate_identity("COALESCE(c1, c2, c3)")
         self.validate_identity("SELECT * FROM TABLE(foo)")
@@ -25,6 +26,9 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM table_name@dblink_name.database_link_domain")
         self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
         self.validate_identity("SELECT * FROM V$SESSION")
+        self.validate_identity(
+            "SELECT JSON_ARRAY(FOO() FORMAT JSON, BAR() NULL ON NULL RETURNING CLOB STRICT)"
+        )
         self.validate_identity(
             "SELECT JSON_ARRAYAGG(FOO() FORMAT JSON ORDER BY bar NULL ON NULL RETURNING CLOB STRICT)"
         )

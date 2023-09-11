@@ -2023,6 +2023,9 @@ class Generator:
     def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
         return f"{self.sql(expression, 'this')}: {self.sql(expression, 'expression')}"
 
+    def formatjson_sql(self, expression: exp.FormatJson) -> str:
+        return f"{self.sql(expression, 'this')} FORMAT JSON"
+
     def jsonobject_sql(self, expression: exp.JSONObject) -> str:
         null_handling = expression.args.get("null_handling")
         null_handling = f" {null_handling}" if null_handling else ""
@@ -2033,18 +2036,26 @@ class Generator:
             unique_keys = ""
         return_type = self.sql(expression, "return_type")
         return_type = f" RETURNING {return_type}" if return_type else ""
-        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
         encoding = self.sql(expression, "encoding")
         encoding = f" ENCODING {encoding}" if encoding else ""
         return self.func(
             "JSON_OBJECT",
             *expression.expressions,
-            suffix=f"{null_handling}{unique_keys}{return_type}{format_json}{encoding})",
+            suffix=f"{null_handling}{unique_keys}{return_type}{encoding})",
+        )
+
+    def jsonarray_sql(self, expression: exp.JSONArray) -> str:
+        null_handling = expression.args.get("null_handling")
+        null_handling = f" {null_handling}" if null_handling else ""
+        return_type = self.sql(expression, "return_type")
+        return_type = f" RETURNING {return_type}" if return_type else ""
+        strict = " STRICT" if expression.args.get("strict") else ""
+        return self.func(
+            "JSON_ARRAY", *expression.expressions, suffix=f"{null_handling}{return_type}{strict})"
         )
 
     def jsonarrayagg_sql(self, expression: exp.JSONArrayAgg) -> str:
         this = self.sql(expression, "this")
-        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
         order = self.sql(expression, "order")
         null_handling = expression.args.get("null_handling")
         null_handling = f" {null_handling}" if null_handling else ""
@@ -2054,7 +2065,7 @@ class Generator:
         return self.func(
             "JSON_ARRAYAGG",
             this,
-            suffix=f"{format_json}{order}{null_handling}{return_type}{strict})",
+            suffix=f"{order}{null_handling}{return_type}{strict})",
         )
 
     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:

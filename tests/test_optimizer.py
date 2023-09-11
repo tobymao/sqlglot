@@ -858,3 +858,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             ),
             parse_one('SELECT "a"."a" AS "a", "a"."b" AS "b" FROM "a" AS "a"'),
         )
+
+    def test_semistructured(self):
+        query = parse_one("select a.b:c from d", read="snowflake")
+        qualified = optimizer.qualify.qualify(query)
+        self.assertEqual(qualified.expressions[0].alias, "c")

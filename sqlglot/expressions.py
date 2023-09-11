@@ -4494,6 +4494,18 @@ class JSONObject(Func):
     }
 
 
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAYAGG.html
+class JSONArrayAgg(Func):
+    arg_types = {
+        "this": True,
+        "format_json": False,
+        "order": False,
+        "null_handling": False,
+        "return_type": False,
+        "strict": False,
+    }
+
+
 class OpenJSONColumnDef(Expression):
     arg_types = {"this": True, "kind": True, "path": False, "as_json": False}
 

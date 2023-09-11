@@ -2042,6 +2042,21 @@ class Generator:
             suffix=f"{null_handling}{unique_keys}{return_type}{format_json}{encoding})",
         )
 
+    def jsonarrayagg_sql(self, expression: exp.JSONArrayAgg) -> str:
+        this = self.sql(expression, "this")
+        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
+        order = self.sql(expression, "order")
+        null_handling = expression.args.get("null_handling")
+        null_handling = f" {null_handling}" if null_handling else ""
+        return_type = self.sql(expression, "return_type")
+        return_type = f" RETURNING {return_type}" if return_type else ""
+        strict = " STRICT" if expression.args.get("strict") else ""
+        return self.func(
+            "JSON_ARRAYAGG",
+            this,
+            suffix=f"{format_json}{order}{null_handling}{return_type}{strict})",
+        )
+
     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")

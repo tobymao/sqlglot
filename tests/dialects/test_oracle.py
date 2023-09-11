@@ -26,6 +26,9 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity(
+            "SELECT JSON_ARRAYAGG(FOO() FORMAT JSON ORDER BY bar NULL ON NULL RETURNING CLOB STRICT)"
+        )
+        self.validate_identity(
             "SELECT COUNT(1) INTO V_Temp FROM TABLE(CAST(somelist AS data_list)) WHERE col LIKE '%contact'"
         )
         self.validate_identity(

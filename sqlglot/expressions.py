@@ -3962,8 +3962,11 @@ class Bracket(Condition):
     arg_types = {"this": True, "expressions": True}
 
     @property
-    def output_name(self):
-        return self.expressions[0].this
+    def output_name(self) -> str:
+        if len(self.expressions) == 1:
+            return self.expressions[0].output_name
+
+        return super().output_name
 
 
 class SafeBracket(Bracket):

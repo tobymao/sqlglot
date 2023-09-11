@@ -769,6 +769,7 @@ class Parser(metaclass=_Parser):
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
+        "JSON_ARRAYAGG": lambda self: self._parse_json_arrayagg(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "LOG": lambda self: self._parse_logarithm(),
         "MATCH": lambda self: self._parse_match_against(),
@@ -4183,15 +4184,20 @@ class Parser(metaclass=_Parser):
             return None
         return self.expression(exp.JSONKeyValue, this=key, expression=value)
 
-    def _parse_json_object(self) -> exp.JSONObject:
-        star = self._parse_star()
-        expressions = [star] if star else self._parse_csv(self._parse_json_key_value)
-
+    def _parse_null_handling(self) -> t.Optional[str]:
+        # Parses Oracle's {NULL|ABSENT} ON NULL syntax
         null_handling = None
         if self._match_text_seq("NULL", "ON", "NULL"):
             null_handling = "NULL ON NULL"
         elif self._match_text_seq("ABSENT", "ON", "NULL"):
             null_handling = "ABSENT ON NULL"
+
+        return null_handling
+
+    def _parse_json_object(self) -> exp.JSONObject:
+        star = self._parse_star()
+        expressions = [star] if star else self._parse_csv(self._parse_json_key_value)
+        null_handling = self._parse_null_handling()
 
         unique_keys = None
         if self._match_text_seq("WITH", "UNIQUE"):
@@ -4213,6 +4219,17 @@ class Parser(metaclass=_Parser):
             return_type=return_type,
             format_json=format_json,
             encoding=encoding,
+        )
+
+    def _parse_json_arrayagg(self) -> exp.JSONArrayAgg:
+        return self.expression(
+            exp.JSONArrayAgg,
+            this=self._parse_bitwise(),
+            format_json=self._match_text_seq("FORMAT", "JSON"),
+            order=self._parse_order(),
+            null_handling=self._parse_null_handling(),
+            return_type=self._match_text_seq("RETURNING") and self._parse_type(),
+            strict=self._match_text_seq("STRICT"),
         )
 
     def _parse_logarithm(self) -> exp.Func:

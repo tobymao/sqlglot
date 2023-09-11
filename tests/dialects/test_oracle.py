@@ -27,6 +27,9 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity(
+            "SELECT JSON_ARRAYAGG(JSON_OBJECT('RNK': RNK, 'RATING_CODE': RATING_CODE, 'DATE_VALUE': DATE_VALUE, 'AGENT_ID': AGENT_ID RETURNING CLOB) RETURNING CLOB) AS JSON_DATA FROM tablename"
+        )
+        self.validate_identity(
             "SELECT JSON_ARRAY(FOO() FORMAT JSON, BAR() NULL ON NULL RETURNING CLOB STRICT)"
         )
         self.validate_identity(
@@ -195,5 +198,19 @@ MATCH_RECOGNIZE (
     FLAT AS FLAT.units_sold = PREV(FLAT.units_sold),
     DOWN AS DOWN.units_sold < PREV(DOWN.units_sold)
 ) MR""",
+            pretty=True,
+        )
+
+    def test_json_table(self):
+        self.validate_identity(
+            "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS (foo PATH 'bar'))"
+        )
+        self.validate_identity(
+            """SELECT
+  CASE WHEN DBMS_LOB.GETLENGTH(info) < 32000 THEN DBMS_LOB.SUBSTR(info) END AS info_txt,
+  info AS info_clob
+FROM schemaname.tablename ar
+INNER JOIN JSON_TABLE(:emps, '$[*]' COLUMNS (empno NUMBER PATH '$')) jt
+  ON ar.empno = jt.empno""",
             pretty=True,
         )

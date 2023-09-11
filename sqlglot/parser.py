@@ -4189,15 +4189,13 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.FormatJson, this=this)
 
-    def _parse_null_handling(self) -> t.Optional[str]:
-        # Parses the {NULL|ABSENT} ON NULL syntax
-        null_handling = None
-        if self._match_text_seq("NULL", "ON", "NULL"):
-            null_handling = "NULL ON NULL"
-        elif self._match_text_seq("ABSENT", "ON", "NULL"):
-            null_handling = "ABSENT ON NULL"
+    def _parse_on_handling(self, on: str, *values: str) -> t.Optional[str]:
+        # Parses the "X ON Y" syntax, i.e. NULL ON NULL (Oracle, T-SQL)
+        for value in values:
+            if self._match_text_seq(value, "ON", on):
+                return f"{value} ON {on}"
 
-        return null_handling
+        return None
 
     def _parse_json_object(self) -> exp.JSONObject:
         star = self._parse_star()
@@ -4206,7 +4204,7 @@ class Parser(metaclass=_Parser):
             if star
             else self._parse_csv(lambda: self._parse_format_json(self._parse_json_key_value()))
         )
-        null_handling = self._parse_null_handling()
+        null_handling = self._parse_on_handling("NULL", "NULL", "ABSENT")
 
         unique_keys = None
         if self._match_text_seq("WITH", "UNIQUE"):

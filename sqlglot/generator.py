@@ -2068,6 +2068,27 @@ class Generator:
             suffix=f"{order}{null_handling}{return_type}{strict})",
         )
 
+    def jsoncolumndef_sql(self, expression: exp.JSONColumnDef) -> str:
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        path = self.sql(expression, "path")
+        path = f" PATH {path}" if path else ""
+        return f"{this}{kind}{path}"
+
+    def jsontable_sql(self, expression: exp.JSONTable) -> str:
+        this = self.sql(expression, "this")
+        path = self.sql(expression, "path")
+        path = f", {path}" if path else ""
+        error_handling = expression.args.get("error_handling")
+        error_handling = f" {error_handling}" if error_handling else ""
+        empty_handling = expression.args.get("empty_handling")
+        empty_handling = f" {empty_handling}" if empty_handling else ""
+        columns = f" COLUMNS ({self.expressions(expression, skip_first=True)})"
+        return self.func(
+            "JSON_TABLE", this, suffix=f"{path}{error_handling}{empty_handling}{columns})"
+        )
+
     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")

@@ -4525,6 +4525,23 @@ class JSONArrayAgg(Func):
     }
 
 
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
+# Note: parsing of JSON column definitions is currently incomplete.
+class JSONColumnDef(Expression):
+    arg_types = {"this": True, "kind": False, "path": False}
+
+
+# # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
+class JSONTable(Func):
+    arg_types = {
+        "this": True,
+        "expressions": True,
+        "path": False,
+        "error_handling": False,
+        "empty_handling": False,
+    }
+
+
 class OpenJSONColumnDef(Expression):
     arg_types = {"this": True, "kind": True, "path": False, "as_json": False}
 

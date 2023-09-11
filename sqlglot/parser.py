@@ -769,7 +769,15 @@ class Parser(metaclass=_Parser):
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
-        "JSON_ARRAYAGG": lambda self: self._parse_json_arrayagg(),
+        "JSON_ARRAY": lambda self: self._parse_json_array(
+            exp.JSONArray,
+            expressions=self._parse_csv(lambda: self._parse_format_json(self._parse_bitwise())),
+        ),
+        "JSON_ARRAYAGG": lambda self: self._parse_json_array(
+            exp.JSONArrayAgg,
+            this=self._parse_format_json(self._parse_bitwise()),
+            order=self._parse_order(),
+        ),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "LOG": lambda self: self._parse_logarithm(),
         "MATCH": lambda self: self._parse_match_against(),
@@ -4184,8 +4192,14 @@ class Parser(metaclass=_Parser):
             return None
         return self.expression(exp.JSONKeyValue, this=key, expression=value)
 
+    def _parse_format_json(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        if not this or not self._match_text_seq("FORMAT", "JSON"):
+            return this
+
+        return self.expression(exp.FormatJson, this=this)
+
     def _parse_null_handling(self) -> t.Optional[str]:
-        # Parses Oracle's {NULL|ABSENT} ON NULL syntax
+        # Parses the {NULL|ABSENT} ON NULL syntax
         null_handling = None
         if self._match_text_seq("NULL", "ON", "NULL"):
             null_handling = "NULL ON NULL"
@@ -4196,7 +4210,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_json_object(self) -> exp.JSONObject:
         star = self._parse_star()
-        expressions = [star] if star else self._parse_csv(self._parse_json_key_value)
+        expressions = (
+            [star]
+            if star
+            else self._parse_csv(lambda: self._parse_format_json(self._parse_json_key_value()))
+        )
         null_handling = self._parse_null_handling()
 
         unique_keys = None
@@ -4207,8 +4225,9 @@ class Parser(metaclass=_Parser):
 
         self._match_text_seq("KEYS")
 
-        return_type = self._match_text_seq("RETURNING") and self._parse_type()
-        format_json = self._match_text_seq("FORMAT", "JSON")
+        return_type = self._match_text_seq("RETURNING") and self._parse_format_json(
+            self._parse_type()
+        )
         encoding = self._match_text_seq("ENCODING") and self._parse_var()
 
         return self.expression(
@@ -4217,19 +4236,16 @@ class Parser(metaclass=_Parser):
             null_handling=null_handling,
             unique_keys=unique_keys,
             return_type=return_type,
-            format_json=format_json,
             encoding=encoding,
         )
 
-    def _parse_json_arrayagg(self) -> exp.JSONArrayAgg:
+    def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
         return self.expression(
-            exp.JSONArrayAgg,
-            this=self._parse_bitwise(),
-            format_json=self._match_text_seq("FORMAT", "JSON"),
-            order=self._parse_order(),
+            expr_type,
             null_handling=self._parse_null_handling(),
             return_type=self._match_text_seq("RETURNING") and self._parse_type(),
             strict=self._match_text_seq("STRICT"),
+            **kwargs,
         )
 
     def _parse_logarithm(self) -> exp.Func:

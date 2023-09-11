@@ -4479,6 +4479,10 @@ class IsNan(Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 
 
+class FormatJson(Expression):
+    pass
+
+
 class JSONKeyValue(Expression):
     arg_types = {"this": True, "expression": True}
 
@@ -4489,8 +4493,17 @@ class JSONObject(Func):
         "null_handling": False,
         "unique_keys": False,
         "return_type": False,
-        "format_json": False,
         "encoding": False,
+    }
+
+
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAY.html
+class JSONArray(Func):
+    arg_types = {
+        "expressions": True,
+        "null_handling": False,
+        "return_type": False,
+        "strict": False,
     }
 
 
@@ -4498,7 +4511,6 @@ class JSONObject(Func):
 class JSONArrayAgg(Func):
     arg_types = {
         "this": True,
-        "format_json": False,
         "order": False,
         "null_handling": False,
         "return_type": False,

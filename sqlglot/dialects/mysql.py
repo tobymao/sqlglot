@@ -99,6 +99,7 @@ class MySQL(Dialect):
 
     TIME_FORMAT = "'%Y-%m-%d %T'"
     DPIPE_IS_STRING_CONCAT = False
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
@@ -193,7 +194,6 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,

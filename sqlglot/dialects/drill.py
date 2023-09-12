@@ -39,6 +39,7 @@ class Drill(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     TIME_MAPPING = {
         "y": "%Y",
@@ -80,7 +81,6 @@ class Drill(Dialect):
     class Parser(parser.Parser):
         STRICT_CAST = False
         CONCAT_NULL_OUTPUTS_STRING = True
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

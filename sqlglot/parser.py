@@ -1944,7 +1944,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_update(self) -> exp.Update:
         comments = self._prev_comments
-        this = self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS)
+        this = self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS)
         expressions = self._match(TokenType.SET) and self._parse_csv(self._parse_equality)
         returning = self._parse_returning()
         return self.expression(

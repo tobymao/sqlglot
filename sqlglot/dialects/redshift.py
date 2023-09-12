@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     concat_to_dpipe_sql,
+    concat_ws_to_dpipe_sql,
     rename_func,
     ts_or_ds_to_date_sql,
 )
@@ -123,6 +124,7 @@ class Redshift(Postgres):
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
             exp.Concat: concat_to_dpipe_sql,
+            exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.CurrentTimestamp: lambda self, e: "SYSDATE",
             exp.DateAdd: lambda self, e: self.func(
                 "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this

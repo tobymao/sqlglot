@@ -360,3 +360,17 @@ class TestRedshift(Validator):
                 "redshift": "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
             },
         )
+
+    def test_concat(self):
+        self.validate_all(
+            "SELECT CONCAT('abc', 'def')",
+            write={
+                "redshift": "SELECT COALESCE(CAST('abc' AS VARCHAR(MAX)), '') || COALESCE(CAST('def' AS VARCHAR(MAX)), '')",
+            },
+        )
+        self.validate_all(
+            "SELECT CONCAT_WS('DELIM', 'abc', 'def', 'ghi')",
+            write={
+                "redshift": "SELECT COALESCE(CAST('abc' AS VARCHAR(MAX)), '') || 'DELIM' || COALESCE(CAST('def' AS VARCHAR(MAX)), '') || 'DELIM' || COALESCE(CAST('ghi' AS VARCHAR(MAX)), '')",
+            },
+        )

@@ -580,7 +580,6 @@ class TSQL(Dialect):
             )
 
     class Generator(generator.Generator):
-        LOCKING_READS_SUPPORTED = True
         LIMIT_IS_TOP = True
         QUERY_HINTS = False
         RETURNING_END = False

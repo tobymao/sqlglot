@@ -766,6 +766,7 @@ class Parser(metaclass=_Parser):
         "ANY_VALUE": lambda self: self._parse_any_value(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONCAT": lambda self: self._parse_concat(),
+        "CONCAT_WS": lambda self: self._parse_concat_ws(),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
@@ -4073,11 +4074,7 @@ class Parser(metaclass=_Parser):
     def _parse_concat(self) -> t.Optional[exp.Expression]:
         args = self._parse_csv(self._parse_conjunction)
         if self.CONCAT_NULL_OUTPUTS_STRING:
-            args = [
-                exp.func("COALESCE", exp.cast(arg, "text"), exp.Literal.string(""))
-                for arg in args
-                if arg
-            ]
+            args = self._ensure_string_if_null(args)
 
         # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call, so when
         # we find such a call we replace it with its argument.
@@ -4087,6 +4084,16 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Concat if self.STRICT_STRING_CONCAT else exp.SafeConcat, expressions=args
         )
+
+    def _parse_concat_ws(self) -> t.Optional[exp.Expression]:
+        args = self._parse_csv(self._parse_conjunction)
+        if len(args) < 2:
+            return self.expression(exp.ConcatWs, expressions=args)
+        delim, *values = args
+        if self.CONCAT_NULL_OUTPUTS_STRING:
+            values = self._ensure_string_if_null(values)
+
+        return self.expression(exp.ConcatWs, expressions=[delim] + values)
 
     def _parse_string_agg(self) -> exp.Expression:
         if self._match(TokenType.DISTINCT):
@@ -5145,3 +5152,10 @@ class Parser(metaclass=_Parser):
                     else:
                         column.replace(dot_or_id)
         return node
+
+    def _ensure_string_if_null(self, values: t.List[exp.Expression]) -> t.List[exp.Expression]:
+        return [
+            exp.func("COALESCE", exp.cast(value, "text"), exp.Literal.string(""))
+            for value in values
+            if value
+        ]

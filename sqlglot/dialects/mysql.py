@@ -194,7 +194,6 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
-
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
             TokenType.DATABASE,

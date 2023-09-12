@@ -20,6 +20,7 @@ import typing as t
 from collections import deque
 from copy import deepcopy
 from enum import auto
+from functools import reduce
 
 from sqlglot._typing import E
 from sqlglot.errors import ParseError
@@ -1535,6 +1536,10 @@ class ForeignKey(Expression):
         "delete": False,
         "update": False,
     }
+
+
+class ColumnPrefix(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 class PrimaryKey(Expression):

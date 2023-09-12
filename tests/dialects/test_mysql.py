@@ -246,7 +246,7 @@ class TestMySQL(Validator):
         self.validate_identity("""'"abc"'""")
         self.validate_identity(
             r"'\'a'",
-            r"'''a'",
+            "'''a'",
         )
         self.validate_identity(
             '''"'abc'"''',

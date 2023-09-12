@@ -25,6 +25,7 @@ class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
     STRICT_STRING_CONCAT = True
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
@@ -64,8 +65,6 @@ class ClickHouse(Dialect):
         }
 
     class Parser(parser.Parser):
-        SUPPORTS_USER_DEFINED_TYPES = False
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,

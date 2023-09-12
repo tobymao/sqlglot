@@ -150,6 +150,7 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -222,7 +223,6 @@ class Hive(Dialect):
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

@@ -153,6 +153,9 @@ class Dialect(metaclass=_Dialect):
     # Determines whether or not CONCAT's arguments must be strings
     STRICT_STRING_CONCAT = False
 
+    # Determines whether or not user-defined data types are supported
+    SUPPORTS_USER_DEFINED_TYPES = True
+
     # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
 

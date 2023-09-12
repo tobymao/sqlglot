@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## [v18.4.1] - 2023-09-12
+### :boom: BREAKING CHANGES
+- due to [`f85b535`](https://github.com/tobymao/sqlglot/commit/f85b535f2b74279d63cc60c456ecdc73096389f5) - parse schema UDTs into DataTypes instead of identifiers *(PR [#2201](https://github.com/tobymao/sqlglot/pull/2201) by [@GeorgeSittas](https://github.com/GeorgeSittas))*:
+
+  parse schema UDTs into DataTypes instead of identifiers (#2201)
+
+
+### :bug: Bug Fixes
+- [`a228656`](https://github.com/tobymao/sqlglot/commit/a2286563303d98570cb73104795821970382ed3a) - **tokenizer**: treat quote as escape only if its followed by itself *(PR [#2199](https://github.com/tobymao/sqlglot/pull/2199) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2198](undefined) opened by [@czrobert](https://github.com/czrobert)*
+- [`fa09688`](https://github.com/tobymao/sqlglot/commit/fa09688a422d322a60bd539f537bd9e6bf49017a) - **mysql**: for update regression due to list comprehensions closes [#2200](https://github.com/tobymao/sqlglot/pull/2200) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f85b535`](https://github.com/tobymao/sqlglot/commit/f85b535f2b74279d63cc60c456ecdc73096389f5) - parse schema UDTs into DataTypes instead of identifiers *(PR [#2201](https://github.com/tobymao/sqlglot/pull/2201) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v18.4.0] - 2023-09-12
 ### :sparkles: New Features
 - [`5e2042a`](https://github.com/tobymao/sqlglot/commit/5e2042aaa0e4be08d02c369a660d3b37ce78b567) - add TINYTEXT and TINYBLOB types *(PR [#2182](https://github.com/tobymao/sqlglot/pull/2182) by [@Nitrino](https://github.com/Nitrino))*
@@ -1371,3 +1385,4 @@ Changelog
 [v18.2.0]: https://github.com/tobymao/sqlglot/compare/v18.1.0...v18.2.0
 [v18.3.0]: https://github.com/tobymao/sqlglot/compare/v18.2.0...v18.3.0
 [v18.4.0]: https://github.com/tobymao/sqlglot/compare/v18.3.0...v18.4.0
+[v18.4.1]: https://github.com/tobymao/sqlglot/compare/v18.4.0...v18.4.1

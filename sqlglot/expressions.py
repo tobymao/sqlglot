@@ -20,6 +20,7 @@ import typing as t
 from collections import deque
 from copy import deepcopy
 from enum import auto
+from functools import reduce
 
 from sqlglot._typing import E
 from sqlglot.errors import ParseError
@@ -1170,7 +1171,7 @@ class Column(Condition):
                 parts.append(parent.expression)
             parent = parent.parent
 
-        return Dot.build(parts)
+        return Dot.build(deepcopy(parts))
 
 
 class ColumnPosition(Expression):
@@ -3795,13 +3796,7 @@ class Dot(Binary):
         if len(expressions) < 2:
             raise ValueError(f"Dot requires >= 2 expressions.")
 
-        a, b, *expressions = expressions
-        dot = Dot(this=a, expression=b)
-
-        for expression in expressions:
-            dot = Dot(this=dot, expression=expression)
-
-        return dot
+        return t.cast(Dot, reduce(lambda x, y: Dot(this=x, expression=y), expressions))
 
 
 class DPipe(Binary):

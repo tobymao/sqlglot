@@ -3272,7 +3272,7 @@ class Parser(metaclass=_Parser):
                 if tokens[0].token_type in self.TYPE_TOKENS:
                     self._prev = tokens[0]
                 elif self.SUPPORTS_USER_DEFINED_TYPES:
-                    return identifier
+                    return exp.DataType.build(identifier.name, udt=True)
                 else:
                     return None
             else:

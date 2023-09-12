@@ -27,6 +27,9 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
         self.validate_identity(
+            "CREATE TABLE `x` (`username` VARCHAR(200), PRIMARY KEY (`username`(16)))"
+        )
+        self.validate_identity(
             "UPDATE items SET items.price = 0 WHERE items.id >= 5 ORDER BY items.id LIMIT 10"
         )
         self.validate_identity(

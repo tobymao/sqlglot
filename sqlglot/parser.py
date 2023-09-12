@@ -3890,6 +3890,9 @@ class Parser(metaclass=_Parser):
             exp.ForeignKey, expressions=expressions, reference=reference, **options  # type: ignore
         )
 
+    def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
+        return self._parse_field()
+
     def _parse_primary_key(
         self, wrapped_optional: bool = False, in_props: bool = False
     ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
@@ -3901,7 +3904,9 @@ class Parser(metaclass=_Parser):
         if not in_props and not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(exp.PrimaryKeyColumnConstraint, desc=desc)
 
-        expressions = self._parse_wrapped_csv(self._parse_field, optional=wrapped_optional)
+        expressions = self._parse_wrapped_csv(
+            self._parse_primary_key_part, optional=wrapped_optional
+        )
         options = self._parse_key_constraint_options()
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 

@@ -358,6 +358,15 @@ class MySQL(Dialect):
 
         LOG_DEFAULTS_TO_LN = True
 
+        def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
+            this = self._parse_id_var()
+            if not self._match(TokenType.L_PAREN):
+                return this
+
+            expression = self._parse_number()
+            self._match_r_paren()
+            return self.expression(exp.ColumnPrefix, this=this, expression=expression)
+
         def _parse_index_constraint(
             self, kind: t.Optional[str] = None
         ) -> exp.IndexColumnConstraint:

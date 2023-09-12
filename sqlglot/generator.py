@@ -2771,6 +2771,9 @@ class Generator:
         condition = f" IF {condition}" if condition else ""
         return f"{this} FOR {expr} IN {iterator}{condition}"
 
+    def columnprefix_sql(self, expression: exp.ColumnPrefix) -> str:
+        return f"{self.sql(expression, 'this')}({self.sql(expression, 'expression')})"
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

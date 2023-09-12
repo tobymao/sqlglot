@@ -1538,6 +1538,10 @@ class ForeignKey(Expression):
     }
 
 
+class ColumnPrefix(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class PrimaryKey(Expression):
     arg_types = {"expressions": True, "options": False}
 

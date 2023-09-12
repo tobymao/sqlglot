@@ -717,6 +717,7 @@ UPDATE tbl_name SET foo = 123, bar = 345
 UPDATE db.tbl_name SET foo = 123 WHERE tbl_name.bar = 234
 UPDATE db.tbl_name SET foo = 123, foo_1 = 234 WHERE tbl_name.bar = 234
 UPDATE products SET price = price * 1.10 WHERE price <= 99.99 RETURNING name, price AS new_price
+UPDATE t1 AS a, t2 AS b, t3 AS c LEFT JOIN t4 AS d ON c.id = d.id SET a.id = 1
 TRUNCATE TABLE x
 OPTIMIZE TABLE y
 VACUUM FREEZE my_table

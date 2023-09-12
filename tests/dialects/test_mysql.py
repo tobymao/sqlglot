@@ -546,6 +546,7 @@ class TestMySQL(Validator):
                 "oracle": "SELECT a FROM tbl FOR UPDATE",
                 "postgres": "SELECT a FROM tbl FOR UPDATE",
                 "redshift": "SELECT a FROM tbl",
+                "tsql": "SELECT a FROM tbl",
             },
         )
         self.validate_all(
@@ -555,6 +556,7 @@ class TestMySQL(Validator):
                 "mysql": "SELECT a FROM tbl FOR SHARE",
                 "oracle": "SELECT a FROM tbl FOR SHARE",
                 "postgres": "SELECT a FROM tbl FOR SHARE",
+                "tsql": "SELECT a FROM tbl",
             },
         )
         self.validate_all(

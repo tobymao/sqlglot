@@ -107,8 +107,12 @@ class Oracle(Dialect):
             path = self._match(TokenType.COMMA) and self._parse_string()
             error_handling = self._parse_on_handling("ERROR", "ERROR", "NULL")
             empty_handling = self._parse_on_handling("EMPTY", "ERROR", "NULL")
+
             self._match(TokenType.COLUMN)
-            expressions = self._parse_wrapped_csv(self._parse_json_column_def)
+            l_paren = self._match(TokenType.L_PAREN)
+            expressions = self._parse_csv(self._parse_json_column_def)
+            if l_paren:
+                self._match_r_paren()
 
             return exp.JSONTable(
                 this=this,

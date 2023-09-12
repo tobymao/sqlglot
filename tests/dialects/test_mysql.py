@@ -249,8 +249,8 @@ class TestMySQL(Validator):
             r"'''a'",
         )
         self.validate_identity(
-            r'''"'abc'"''',
-            r"'''abc'''",
+            '''"'abc'"''',
+            "'''abc'''",
         )
         self.validate_all(
             r"'a \' b '' '",

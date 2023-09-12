@@ -202,6 +202,7 @@ class Snowflake(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     TIME_MAPPING = {
         "YYYY": "%Y",
@@ -234,7 +235,6 @@ class Snowflake(Dialect):
 
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

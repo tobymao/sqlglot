@@ -105,6 +105,7 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
 
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -135,7 +136,6 @@ class DuckDB(Dialect):
 
     class Parser(parser.Parser):
         CONCAT_NULL_OUTPUTS_STRING = True
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         BITWISE = {
             **parser.Parser.BITWISE,

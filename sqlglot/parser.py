@@ -5006,9 +5006,12 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
         return self.expression(exp.DictRange, this=this, min=min, max=max)
 
-    def _parse_comprehension(self, this: exp.Expression) -> exp.Comprehension:
+    def _parse_comprehension(self, this: exp.Expression) -> t.Optional[exp.Comprehension]:
+        index = self._index
         expression = self._parse_column()
-        self._match(TokenType.IN)
+        if not self._match(TokenType.IN):
+            self._retreat(index - 1)
+            return None
         iterator = self._parse_column()
         condition = self._parse_conjunction() if self._match_text_seq("IF") else None
         return self.expression(

@@ -243,6 +243,15 @@ class TestMySQL(Validator):
         )
 
     def test_escape(self):
+        self.validate_identity("""'"abc"'""")
+        self.validate_identity(
+            r"'\'a'",
+            "'''a'",
+        )
+        self.validate_identity(
+            '''"'abc'"''',
+            "'''abc'''",
+        )
         self.validate_all(
             r"'a \' b '' '",
             write={

@@ -1168,7 +1168,11 @@ class Tokenizer(metaclass=_Tokenizer):
         escapes = self._STRING_ESCAPES if escapes is None else escapes
 
         while True:
-            if self._char in escapes and (self._peek == delimiter or self._peek in escapes):
+            if (
+                self._char in escapes
+                and (self._peek == delimiter or self._peek in escapes)
+                and (self._char not in self._QUOTES or self._char == self._peek)
+            ):
                 if self._peek == delimiter:
                     text += self._peek
                 else:

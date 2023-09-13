@@ -50,6 +50,10 @@ class TestOracle(Validator):
             "SELECT UNIQUE col1, col2 FROM table",
             "SELECT DISTINCT col1, col2 FROM table",
         )
+        self.validate_identity(
+            "SELECT * FROM T ORDER BY I OFFSET nvl(:variable1, 10) ROWS FETCH NEXT nvl(:variable2, 10) ROWS ONLY",
+            "SELECT * FROM T ORDER BY I OFFSET COALESCE(:variable1, 10) ROWS FETCH NEXT COALESCE(:variable2, 10) ROWS ONLY",
+        )
 
         self.validate_all(
             "NVL(NULL, 1)",

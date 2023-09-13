@@ -218,3 +218,34 @@ INNER JOIN JSON_TABLE(:emps, '$[*]' COLUMNS (empno NUMBER PATH '$')) jt
   ON ar.empno = jt.empno""",
             pretty=True,
         )
+
+    def test_connect_by(self):
+        start = "START WITH last_name = 'King'"
+        connect = "CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"
+        body = """
+            SELECT last_name "Employee",
+            LEVEL, SYS_CONNECT_BY_PATH(last_name, '/') "Path"
+            FROM employees
+            WHERE level <= 3 AND department_id = 80
+        """
+        pretty = """SELECT
+  last_name AS "Employee",
+  LEVEL,
+  SYS_CONNECT_BY_PATH(last_name, '/') AS "Path"
+FROM employees
+START WITH last_name = 'King'
+CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4
+WHERE
+  level <= 3 AND department_id = 80"""
+
+        self.validate_identity(
+            f"{body}{start}{connect}",
+            pretty,
+            pretty=True,
+        )
+
+        self.validate_identity(
+            f"{body}{connect}{start}",
+            pretty,
+            pretty=True,
+        )

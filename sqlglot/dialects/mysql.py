@@ -373,7 +373,7 @@ class MySQL(Dialect):
                 self._match_texts({"INDEX", "KEY"})
 
             this = self._parse_id_var(any_token=False)
-            type_ = self._match(TokenType.USING) and self._advance_any() and self._prev.text
+            index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
             schema = self._parse_schema()
 
             options = []
@@ -413,7 +413,7 @@ class MySQL(Dialect):
                 this=this,
                 schema=schema,
                 kind=kind,
-                type=type_,
+                index_type=index_type,
                 options=options,
             )
 

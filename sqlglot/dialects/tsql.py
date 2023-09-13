@@ -669,14 +669,15 @@ class TSQL(Dialect):
                 elif kind == "TABLE":
                     where = f"table_name = {identifier}"
                     if table:
-                        table_name = self.sql(exp.Literal.string(table.this))
-                        table_db = self.sql(exp.Literal.string(table.db))
-                        table_catalog = self.sql(exp.Literal.string(table.catalog))
-                        where = f"table_name = {table_name}"
-                        where = f"table_schema = {table_db} AND {where}" if table_db else where
+                        where = f"table_name = {self.sql(exp.Literal.string(table.this))}"
                         where = (
-                            f"table_catalog = {table_catalog} AND {where}"
-                            if table_catalog
+                            f"table_schema = {self.sql(exp.Literal.string(table.db))} AND {where}"
+                            if table.db
+                            else where
+                        )
+                        where = (
+                            f"table_catalog = {self.sql(exp.Literal.string(table.catalog))} AND {where}"
+                            if table.catalog
                             else where
                         )
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC('{sql}')"""

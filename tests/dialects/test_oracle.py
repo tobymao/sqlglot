@@ -238,14 +238,5 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4
 WHERE
   level <= 3 AND department_id = 80"""
 
-        self.validate_identity(
-            f"{body}{start}{connect}",
-            pretty,
-            pretty=True,
-        )
-
-        self.validate_identity(
-            f"{body}{connect}{start}",
-            pretty,
-            pretty=True,
-        )
+        for query in (f"{body}{start}{connect}", f"{body}{connect}{start}"):
+            self.validate_identity(query, pretty, pretty=True)

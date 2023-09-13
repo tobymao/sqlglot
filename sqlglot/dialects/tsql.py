@@ -669,7 +669,7 @@ class TSQL(Dialect):
                 elif kind == "TABLE":
                     where = f"table_name = {identifier}"
                     if table:
-                        where = f"table_name = {self.sql(exp.Literal.string(table.this))}"
+                        where = f"table_name = {self.sql(exp.Literal.string(table.name))}"
                         where = (
                             f"table_schema = {self.sql(exp.Literal.string(table.db))} AND {where}"
                             if table.db

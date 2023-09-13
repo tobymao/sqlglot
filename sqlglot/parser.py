@@ -848,6 +848,8 @@ class Parser(metaclass=_Parser):
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
 
+    FETCH_TOKENS = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
+
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
@@ -2984,7 +2986,7 @@ class Parser(metaclass=_Parser):
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
             direction = self._prev.text if direction else "FIRST"
 
-            count = self._parse_number()
+            count = self._parse_field(tokens=self.FETCH_TOKENS)
             percent = self._match(TokenType.PERCENT)
 
             self._match_set((TokenType.ROW, TokenType.ROWS))

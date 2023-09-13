@@ -2914,7 +2914,7 @@ class Parser(metaclass=_Parser):
         connect = self._parse_conjunction()
         self.NO_PAREN_FUNCTION_PARSERS.pop("PRIOR")
 
-        if self._match(TokenType.START_WITH):
+        if not start and self._match(TokenType.START_WITH):
             start = self._parse_conjunction()
 
         return self.expression(exp.Connect, start=start, connect=connect)

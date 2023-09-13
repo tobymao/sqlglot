@@ -3815,7 +3815,9 @@ class Parser(metaclass=_Parser):
     def _parse_unique(self) -> exp.UniqueColumnConstraint:
         self._match_text_seq("KEY")
         return self.expression(
-            exp.UniqueColumnConstraint, this=self._parse_schema(self._parse_id_var(any_token=False))
+            exp.UniqueColumnConstraint,
+            this=self._parse_schema(self._parse_id_var(any_token=False)),
+            index_type=self._match(TokenType.USING) and self._advance_any() and self._prev.text,
         )
 
     def _parse_key_constraint_options(self) -> t.List[str]:

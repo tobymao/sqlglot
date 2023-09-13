@@ -705,7 +705,9 @@ class Generator:
     def uniquecolumnconstraint_sql(self, expression: exp.UniqueColumnConstraint) -> str:
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
-        return f"UNIQUE{this}"
+        index_type = expression.args.get("index_type")
+        index_type = f" USING {index_type}" if index_type else ""
+        return f"UNIQUE{this}{index_type}"
 
     def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
         return self.sql(expression, "this")
@@ -2740,13 +2742,13 @@ class Generator:
         kind = f"{kind} INDEX" if kind else "INDEX"
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
-        type_ = self.sql(expression, "type")
-        type_ = f" USING {type_}" if type_ else ""
+        index_type = self.sql(expression, "index_type")
+        index_type = f" USING {index_type}" if index_type else ""
         schema = self.sql(expression, "schema")
         schema = f" {schema}" if schema else ""
         options = self.expressions(expression, key="options", sep=" ")
         options = f" {options}" if options else ""
-        return f"{kind}{this}{type_}{schema}{options}"
+        return f"{kind}{this}{index_type}{schema}{options}"
 
     def nvl2_sql(self, expression: exp.Nvl2) -> str:
         if self.NVL2_SUPPORTED:

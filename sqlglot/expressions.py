@@ -1321,7 +1321,13 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 class IndexColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": False, "schema": True, "kind": False, "type": False, "options": False}
+    arg_types = {
+        "this": False,
+        "schema": True,
+        "kind": False,
+        "index_type": False,
+        "options": False,
+    }
 
 
 class InlineLengthColumnConstraint(ColumnConstraintKind):
@@ -1354,7 +1360,7 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": False}
+    arg_types = {"this": False, "index_type": False}
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):

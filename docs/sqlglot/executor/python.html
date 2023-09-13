@@ -1884,6 +1884,7 @@
                 <dd id="Python.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../dialects/dialect.html#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
                 <dd id="Python.DPIPE_IS_STRING_CONCAT" class="variable"><a href="../dialects/dialect.html#Dialect.DPIPE_IS_STRING_CONCAT">DPIPE_IS_STRING_CONCAT</a></dd>
                 <dd id="Python.STRICT_STRING_CONCAT" class="variable"><a href="../dialects/dialect.html#Dialect.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
+                <dd id="Python.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="../dialects/dialect.html#Dialect.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
                 <dd id="Python.NORMALIZE_FUNCTIONS" class="variable"><a href="../dialects/dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
                 <dd id="Python.NULL_ORDERING" class="variable"><a href="../dialects/dialect.html#Dialect.NULL_ORDERING">NULL_ORDERING</a></dd>
                 <dd id="Python.DATE_FORMAT" class="variable"><a href="../dialects/dialect.html#Dialect.DATE_FORMAT">DATE_FORMAT</a></dd>
@@ -2113,26 +2114,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Python.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Python.Generator.can_identify-257"><a href="#Python.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Python.Generator.can_identify-258"><a href="#Python.Generator.can_identify-258"><span class="linenos">258</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Python.Generator.can_identify-259"><a href="#Python.Generator.can_identify-259"><span class="linenos">259</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Python.Generator.can_identify-260"><a href="#Python.Generator.can_identify-260"><span class="linenos">260</span></a>
-</span><span id="Python.Generator.can_identify-261"><a href="#Python.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">        Args:</span>
-</span><span id="Python.Generator.can_identify-262"><a href="#Python.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Python.Generator.can_identify-263"><a href="#Python.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">            identify:</span>
-</span><span id="Python.Generator.can_identify-264"><a href="#Python.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Python.Generator.can_identify-265"><a href="#Python.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Python.Generator.can_identify-266"><a href="#Python.Generator.can_identify-266"><span class="linenos">266</span></a>
-</span><span id="Python.Generator.can_identify-267"><a href="#Python.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">        Returns:</span>
-</span><span id="Python.Generator.can_identify-268"><a href="#Python.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Python.Generator.can_identify-269"><a href="#Python.Generator.can_identify-269"><span class="linenos">269</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Python.Generator.can_identify-270"><a href="#Python.Generator.can_identify-270"><span class="linenos">270</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Python.Generator.can_identify-271"><a href="#Python.Generator.can_identify-271"><span class="linenos">271</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Python.Generator.can_identify-272"><a href="#Python.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="Python.Generator.can_identify-273"><a href="#Python.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Python.Generator.can_identify-274"><a href="#Python.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Python.Generator.can_identify-260"><a href="#Python.Generator.can_identify-260"><span class="linenos">260</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Python.Generator.can_identify-261"><a href="#Python.Generator.can_identify-261"><span class="linenos">261</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Python.Generator.can_identify-262"><a href="#Python.Generator.can_identify-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Python.Generator.can_identify-263"><a href="#Python.Generator.can_identify-263"><span class="linenos">263</span></a>
+</span><span id="Python.Generator.can_identify-264"><a href="#Python.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">        Args:</span>
+</span><span id="Python.Generator.can_identify-265"><a href="#Python.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Python.Generator.can_identify-266"><a href="#Python.Generator.can_identify-266"><span class="linenos">266</span></a><span class="sd">            identify:</span>
+</span><span id="Python.Generator.can_identify-267"><a href="#Python.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Python.Generator.can_identify-268"><a href="#Python.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Python.Generator.can_identify-269"><a href="#Python.Generator.can_identify-269"><span class="linenos">269</span></a>
+</span><span id="Python.Generator.can_identify-270"><a href="#Python.Generator.can_identify-270"><span class="linenos">270</span></a><span class="sd">        Returns:</span>
+</span><span id="Python.Generator.can_identify-271"><a href="#Python.Generator.can_identify-271"><span class="linenos">271</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Python.Generator.can_identify-272"><a href="#Python.Generator.can_identify-272"><span class="linenos">272</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Python.Generator.can_identify-273"><a href="#Python.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Python.Generator.can_identify-274"><a href="#Python.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="kc">True</span>
 </span><span id="Python.Generator.can_identify-275"><a href="#Python.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="Python.Generator.can_identify-276"><a href="#Python.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="Python.Generator.can_identify-276"><a href="#Python.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Python.Generator.can_identify-277"><a href="#Python.Generator.can_identify-277"><span class="linenos">277</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Python.Generator.can_identify-278"><a href="#Python.Generator.can_identify-278"><span class="linenos">278</span></a>
+</span><span id="Python.Generator.can_identify-279"><a href="#Python.Generator.can_identify-279"><span class="linenos">279</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 

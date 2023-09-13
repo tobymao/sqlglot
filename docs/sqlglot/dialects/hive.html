@@ -49,6 +49,9 @@
                                 <a class="variable" href="#Hive.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Hive.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Hive.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a>
                         </li>
                         <li>
@@ -100,9 +103,6 @@
                                             <a class="variable" href="#Hive.Parser.STRICT_CAST">STRICT_CAST</a>
                                     </li>
                                     <li>
-                                            <a class="variable" href="#Hive.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
-                                    </li>
-                                    <li>
                                             <a class="variable" href="#Hive.Parser.FUNCTIONS">FUNCTIONS</a>
                                     </li>
                                     <li>
@@ -116,6 +116,9 @@
                                     </li>
                                     <li>
                                             <a class="variable" href="#Hive.Parser.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Hive.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#Hive.Parser.SHOW_TRIE">SHOW_TRIE</a>
@@ -472,79 +475,79 @@
 </span><span id="L-150"><a href="#L-150"><span class="linenos">150</span></a><span class="k">class</span> <span class="nc">Hive</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
 </span><span id="L-151"><a href="#L-151"><span class="linenos">151</span></a>    <span class="n">ALIAS_POST_TABLESAMPLE</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-152"><a href="#L-152"><span class="linenos">152</span></a>    <span class="n">IDENTIFIERS_CAN_START_WITH_DIGIT</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>
-</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>    <span class="c1"># https://spark.apache.org/docs/latest/sql-ref-identifier.html#description</span>
-</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>
-</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
-</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
-</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
-</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
-</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
-</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
-</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
-</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
-</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
-</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>    <span class="p">}</span>
-</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>
-</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>    <span class="n">DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd&#39;&quot;</span>
-</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>    <span class="n">DATEINT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyyMMdd&#39;&quot;</span>
-</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd HH:mm:ss&#39;&quot;</span>
-</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>
-</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
-</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
-</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
-</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>
-</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
-</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>            <span class="s2">&quot;ADD ARCHIVE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>            <span class="s2">&quot;ADD ARCHIVES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>            <span class="s2">&quot;ADD FILE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>            <span class="s2">&quot;ADD FILES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>            <span class="s2">&quot;ADD JAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>            <span class="s2">&quot;ADD JARS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>            <span class="s2">&quot;MSCK REPAIR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>            <span class="s2">&quot;REFRESH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>            <span class="s2">&quot;WITH SERDEPROPERTIES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SERDE_PROPERTIES</span><span class="p">,</span>
-</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>            <span class="s2">&quot;TIMESTAMP AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TIMESTAMP_SNAPSHOT</span><span class="p">,</span>
-</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>            <span class="s2">&quot;VERSION AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VERSION_SNAPSHOT</span><span class="p">,</span>
-</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>        <span class="p">}</span>
-</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>
-</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>        <span class="n">NUMERIC_LITERALS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>            <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
-</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>            <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="s2">&quot;SMALLINT&quot;</span><span class="p">,</span>
-</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>            <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;TINYINT&quot;</span><span class="p">,</span>
-</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>            <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;DOUBLE&quot;</span><span class="p">,</span>
-</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>            <span class="s2">&quot;F&quot;</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
-</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>            <span class="s2">&quot;BD&quot;</span><span class="p">:</span> <span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
-</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>        <span class="p">}</span>
-</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>
-</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-153"><a href="#L-153"><span class="linenos">153</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-154"><a href="#L-154"><span class="linenos">154</span></a>
+</span><span id="L-155"><a href="#L-155"><span class="linenos">155</span></a>    <span class="c1"># https://spark.apache.org/docs/latest/sql-ref-identifier.html#description</span>
+</span><span id="L-156"><a href="#L-156"><span class="linenos">156</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>
+</span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
+</span><span id="L-169"><a href="#L-169"><span class="linenos">169</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-170"><a href="#L-170"><span class="linenos">170</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-171"><a href="#L-171"><span class="linenos">171</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="L-172"><a href="#L-172"><span class="linenos">172</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
+</span><span id="L-173"><a href="#L-173"><span class="linenos">173</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="L-174"><a href="#L-174"><span class="linenos">174</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
+</span><span id="L-175"><a href="#L-175"><span class="linenos">175</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="L-176"><a href="#L-176"><span class="linenos">176</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
+</span><span id="L-177"><a href="#L-177"><span class="linenos">177</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="L-178"><a href="#L-178"><span class="linenos">178</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
+</span><span id="L-179"><a href="#L-179"><span class="linenos">179</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-180"><a href="#L-180"><span class="linenos">180</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
+</span><span id="L-181"><a href="#L-181"><span class="linenos">181</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
+</span><span id="L-182"><a href="#L-182"><span class="linenos">182</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
+</span><span id="L-183"><a href="#L-183"><span class="linenos">183</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-184"><a href="#L-184"><span class="linenos">184</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-185"><a href="#L-185"><span class="linenos">185</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-186"><a href="#L-186"><span class="linenos">186</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
+</span><span id="L-187"><a href="#L-187"><span class="linenos">187</span></a>    <span class="p">}</span>
+</span><span id="L-188"><a href="#L-188"><span class="linenos">188</span></a>
+</span><span id="L-189"><a href="#L-189"><span class="linenos">189</span></a>    <span class="n">DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd&#39;&quot;</span>
+</span><span id="L-190"><a href="#L-190"><span class="linenos">190</span></a>    <span class="n">DATEINT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyyMMdd&#39;&quot;</span>
+</span><span id="L-191"><a href="#L-191"><span class="linenos">191</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd HH:mm:ss&#39;&quot;</span>
+</span><span id="L-192"><a href="#L-192"><span class="linenos">192</span></a>
+</span><span id="L-193"><a href="#L-193"><span class="linenos">193</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="L-194"><a href="#L-194"><span class="linenos">194</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="L-195"><a href="#L-195"><span class="linenos">195</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
+</span><span id="L-196"><a href="#L-196"><span class="linenos">196</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="L-197"><a href="#L-197"><span class="linenos">197</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
+</span><span id="L-198"><a href="#L-198"><span class="linenos">198</span></a>
+</span><span id="L-199"><a href="#L-199"><span class="linenos">199</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-200"><a href="#L-200"><span class="linenos">200</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="L-201"><a href="#L-201"><span class="linenos">201</span></a>            <span class="s2">&quot;ADD ARCHIVE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>            <span class="s2">&quot;ADD ARCHIVES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>            <span class="s2">&quot;ADD FILE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>            <span class="s2">&quot;ADD FILES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>            <span class="s2">&quot;ADD JAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>            <span class="s2">&quot;ADD JARS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>            <span class="s2">&quot;MSCK REPAIR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>            <span class="s2">&quot;REFRESH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>            <span class="s2">&quot;WITH SERDEPROPERTIES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SERDE_PROPERTIES</span><span class="p">,</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>            <span class="s2">&quot;TIMESTAMP AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TIMESTAMP_SNAPSHOT</span><span class="p">,</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>            <span class="s2">&quot;VERSION AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VERSION_SNAPSHOT</span><span class="p">,</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="p">}</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>        <span class="n">NUMERIC_LITERALS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>            <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
+</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>            <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="s2">&quot;SMALLINT&quot;</span><span class="p">,</span>
+</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>            <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;TINYINT&quot;</span><span class="p">,</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>            <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;DOUBLE&quot;</span><span class="p">,</span>
+</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>            <span class="s2">&quot;F&quot;</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>            <span class="s2">&quot;BD&quot;</span><span class="p">:</span> <span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>        <span class="p">}</span>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>
+</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
 </span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a>
 </span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -886,79 +889,79 @@
             <div class="pdoc-code codehilite"><pre><span></span><span id="Hive-151"><a href="#Hive-151"><span class="linenos">151</span></a><span class="k">class</span> <span class="nc">Hive</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
 </span><span id="Hive-152"><a href="#Hive-152"><span class="linenos">152</span></a>    <span class="n">ALIAS_POST_TABLESAMPLE</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="Hive-153"><a href="#Hive-153"><span class="linenos">153</span></a>    <span class="n">IDENTIFIERS_CAN_START_WITH_DIGIT</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="Hive-154"><a href="#Hive-154"><span class="linenos">154</span></a>
-</span><span id="Hive-155"><a href="#Hive-155"><span class="linenos">155</span></a>    <span class="c1"># https://spark.apache.org/docs/latest/sql-ref-identifier.html#description</span>
-</span><span id="Hive-156"><a href="#Hive-156"><span class="linenos">156</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="Hive-157"><a href="#Hive-157"><span class="linenos">157</span></a>
-</span><span id="Hive-158"><a href="#Hive-158"><span class="linenos">158</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Hive-159"><a href="#Hive-159"><span class="linenos">159</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Hive-160"><a href="#Hive-160"><span class="linenos">160</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Hive-161"><a href="#Hive-161"><span class="linenos">161</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Hive-162"><a href="#Hive-162"><span class="linenos">162</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Hive-163"><a href="#Hive-163"><span class="linenos">163</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="Hive-164"><a href="#Hive-164"><span class="linenos">164</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="Hive-165"><a href="#Hive-165"><span class="linenos">165</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="Hive-166"><a href="#Hive-166"><span class="linenos">166</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="Hive-167"><a href="#Hive-167"><span class="linenos">167</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="Hive-168"><a href="#Hive-168"><span class="linenos">168</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
-</span><span id="Hive-169"><a href="#Hive-169"><span class="linenos">169</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Hive-170"><a href="#Hive-170"><span class="linenos">170</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Hive-171"><a href="#Hive-171"><span class="linenos">171</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="Hive-172"><a href="#Hive-172"><span class="linenos">172</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
-</span><span id="Hive-173"><a href="#Hive-173"><span class="linenos">173</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="Hive-174"><a href="#Hive-174"><span class="linenos">174</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
-</span><span id="Hive-175"><a href="#Hive-175"><span class="linenos">175</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="Hive-176"><a href="#Hive-176"><span class="linenos">176</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
-</span><span id="Hive-177"><a href="#Hive-177"><span class="linenos">177</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="Hive-178"><a href="#Hive-178"><span class="linenos">178</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
-</span><span id="Hive-179"><a href="#Hive-179"><span class="linenos">179</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Hive-180"><a href="#Hive-180"><span class="linenos">180</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
-</span><span id="Hive-181"><a href="#Hive-181"><span class="linenos">181</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
-</span><span id="Hive-182"><a href="#Hive-182"><span class="linenos">182</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
-</span><span id="Hive-183"><a href="#Hive-183"><span class="linenos">183</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Hive-184"><a href="#Hive-184"><span class="linenos">184</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Hive-185"><a href="#Hive-185"><span class="linenos">185</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Hive-186"><a href="#Hive-186"><span class="linenos">186</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
-</span><span id="Hive-187"><a href="#Hive-187"><span class="linenos">187</span></a>    <span class="p">}</span>
-</span><span id="Hive-188"><a href="#Hive-188"><span class="linenos">188</span></a>
-</span><span id="Hive-189"><a href="#Hive-189"><span class="linenos">189</span></a>    <span class="n">DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd&#39;&quot;</span>
-</span><span id="Hive-190"><a href="#Hive-190"><span class="linenos">190</span></a>    <span class="n">DATEINT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyyMMdd&#39;&quot;</span>
-</span><span id="Hive-191"><a href="#Hive-191"><span class="linenos">191</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd HH:mm:ss&#39;&quot;</span>
-</span><span id="Hive-192"><a href="#Hive-192"><span class="linenos">192</span></a>
-</span><span id="Hive-193"><a href="#Hive-193"><span class="linenos">193</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Hive-194"><a href="#Hive-194"><span class="linenos">194</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
-</span><span id="Hive-195"><a href="#Hive-195"><span class="linenos">195</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Hive-196"><a href="#Hive-196"><span class="linenos">196</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
-</span><span id="Hive-197"><a href="#Hive-197"><span class="linenos">197</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
-</span><span id="Hive-198"><a href="#Hive-198"><span class="linenos">198</span></a>
-</span><span id="Hive-199"><a href="#Hive-199"><span class="linenos">199</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Hive-200"><a href="#Hive-200"><span class="linenos">200</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
-</span><span id="Hive-201"><a href="#Hive-201"><span class="linenos">201</span></a>            <span class="s2">&quot;ADD ARCHIVE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-202"><a href="#Hive-202"><span class="linenos">202</span></a>            <span class="s2">&quot;ADD ARCHIVES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-203"><a href="#Hive-203"><span class="linenos">203</span></a>            <span class="s2">&quot;ADD FILE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-204"><a href="#Hive-204"><span class="linenos">204</span></a>            <span class="s2">&quot;ADD FILES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-205"><a href="#Hive-205"><span class="linenos">205</span></a>            <span class="s2">&quot;ADD JAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-206"><a href="#Hive-206"><span class="linenos">206</span></a>            <span class="s2">&quot;ADD JARS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-207"><a href="#Hive-207"><span class="linenos">207</span></a>            <span class="s2">&quot;MSCK REPAIR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-208"><a href="#Hive-208"><span class="linenos">208</span></a>            <span class="s2">&quot;REFRESH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive-209"><a href="#Hive-209"><span class="linenos">209</span></a>            <span class="s2">&quot;WITH SERDEPROPERTIES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SERDE_PROPERTIES</span><span class="p">,</span>
-</span><span id="Hive-210"><a href="#Hive-210"><span class="linenos">210</span></a>            <span class="s2">&quot;TIMESTAMP AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TIMESTAMP_SNAPSHOT</span><span class="p">,</span>
-</span><span id="Hive-211"><a href="#Hive-211"><span class="linenos">211</span></a>            <span class="s2">&quot;VERSION AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VERSION_SNAPSHOT</span><span class="p">,</span>
-</span><span id="Hive-212"><a href="#Hive-212"><span class="linenos">212</span></a>        <span class="p">}</span>
-</span><span id="Hive-213"><a href="#Hive-213"><span class="linenos">213</span></a>
-</span><span id="Hive-214"><a href="#Hive-214"><span class="linenos">214</span></a>        <span class="n">NUMERIC_LITERALS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Hive-215"><a href="#Hive-215"><span class="linenos">215</span></a>            <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
-</span><span id="Hive-216"><a href="#Hive-216"><span class="linenos">216</span></a>            <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="s2">&quot;SMALLINT&quot;</span><span class="p">,</span>
-</span><span id="Hive-217"><a href="#Hive-217"><span class="linenos">217</span></a>            <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;TINYINT&quot;</span><span class="p">,</span>
-</span><span id="Hive-218"><a href="#Hive-218"><span class="linenos">218</span></a>            <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;DOUBLE&quot;</span><span class="p">,</span>
-</span><span id="Hive-219"><a href="#Hive-219"><span class="linenos">219</span></a>            <span class="s2">&quot;F&quot;</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
-</span><span id="Hive-220"><a href="#Hive-220"><span class="linenos">220</span></a>            <span class="s2">&quot;BD&quot;</span><span class="p">:</span> <span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
-</span><span id="Hive-221"><a href="#Hive-221"><span class="linenos">221</span></a>        <span class="p">}</span>
-</span><span id="Hive-222"><a href="#Hive-222"><span class="linenos">222</span></a>
-</span><span id="Hive-223"><a href="#Hive-223"><span class="linenos">223</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="Hive-224"><a href="#Hive-224"><span class="linenos">224</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="Hive-225"><a href="#Hive-225"><span class="linenos">225</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="Hive-226"><a href="#Hive-226"><span class="linenos">226</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Hive-154"><a href="#Hive-154"><span class="linenos">154</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Hive-155"><a href="#Hive-155"><span class="linenos">155</span></a>
+</span><span id="Hive-156"><a href="#Hive-156"><span class="linenos">156</span></a>    <span class="c1"># https://spark.apache.org/docs/latest/sql-ref-identifier.html#description</span>
+</span><span id="Hive-157"><a href="#Hive-157"><span class="linenos">157</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="Hive-158"><a href="#Hive-158"><span class="linenos">158</span></a>
+</span><span id="Hive-159"><a href="#Hive-159"><span class="linenos">159</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Hive-160"><a href="#Hive-160"><span class="linenos">160</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Hive-161"><a href="#Hive-161"><span class="linenos">161</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Hive-162"><a href="#Hive-162"><span class="linenos">162</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Hive-163"><a href="#Hive-163"><span class="linenos">163</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Hive-164"><a href="#Hive-164"><span class="linenos">164</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="Hive-165"><a href="#Hive-165"><span class="linenos">165</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="Hive-166"><a href="#Hive-166"><span class="linenos">166</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="Hive-167"><a href="#Hive-167"><span class="linenos">167</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="Hive-168"><a href="#Hive-168"><span class="linenos">168</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="Hive-169"><a href="#Hive-169"><span class="linenos">169</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
+</span><span id="Hive-170"><a href="#Hive-170"><span class="linenos">170</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Hive-171"><a href="#Hive-171"><span class="linenos">171</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Hive-172"><a href="#Hive-172"><span class="linenos">172</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="Hive-173"><a href="#Hive-173"><span class="linenos">173</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
+</span><span id="Hive-174"><a href="#Hive-174"><span class="linenos">174</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="Hive-175"><a href="#Hive-175"><span class="linenos">175</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
+</span><span id="Hive-176"><a href="#Hive-176"><span class="linenos">176</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="Hive-177"><a href="#Hive-177"><span class="linenos">177</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
+</span><span id="Hive-178"><a href="#Hive-178"><span class="linenos">178</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="Hive-179"><a href="#Hive-179"><span class="linenos">179</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
+</span><span id="Hive-180"><a href="#Hive-180"><span class="linenos">180</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Hive-181"><a href="#Hive-181"><span class="linenos">181</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
+</span><span id="Hive-182"><a href="#Hive-182"><span class="linenos">182</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
+</span><span id="Hive-183"><a href="#Hive-183"><span class="linenos">183</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
+</span><span id="Hive-184"><a href="#Hive-184"><span class="linenos">184</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Hive-185"><a href="#Hive-185"><span class="linenos">185</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Hive-186"><a href="#Hive-186"><span class="linenos">186</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Hive-187"><a href="#Hive-187"><span class="linenos">187</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
+</span><span id="Hive-188"><a href="#Hive-188"><span class="linenos">188</span></a>    <span class="p">}</span>
+</span><span id="Hive-189"><a href="#Hive-189"><span class="linenos">189</span></a>
+</span><span id="Hive-190"><a href="#Hive-190"><span class="linenos">190</span></a>    <span class="n">DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd&#39;&quot;</span>
+</span><span id="Hive-191"><a href="#Hive-191"><span class="linenos">191</span></a>    <span class="n">DATEINT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyyMMdd&#39;&quot;</span>
+</span><span id="Hive-192"><a href="#Hive-192"><span class="linenos">192</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd HH:mm:ss&#39;&quot;</span>
+</span><span id="Hive-193"><a href="#Hive-193"><span class="linenos">193</span></a>
+</span><span id="Hive-194"><a href="#Hive-194"><span class="linenos">194</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Hive-195"><a href="#Hive-195"><span class="linenos">195</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="Hive-196"><a href="#Hive-196"><span class="linenos">196</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
+</span><span id="Hive-197"><a href="#Hive-197"><span class="linenos">197</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Hive-198"><a href="#Hive-198"><span class="linenos">198</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
+</span><span id="Hive-199"><a href="#Hive-199"><span class="linenos">199</span></a>
+</span><span id="Hive-200"><a href="#Hive-200"><span class="linenos">200</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Hive-201"><a href="#Hive-201"><span class="linenos">201</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="Hive-202"><a href="#Hive-202"><span class="linenos">202</span></a>            <span class="s2">&quot;ADD ARCHIVE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-203"><a href="#Hive-203"><span class="linenos">203</span></a>            <span class="s2">&quot;ADD ARCHIVES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-204"><a href="#Hive-204"><span class="linenos">204</span></a>            <span class="s2">&quot;ADD FILE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-205"><a href="#Hive-205"><span class="linenos">205</span></a>            <span class="s2">&quot;ADD FILES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-206"><a href="#Hive-206"><span class="linenos">206</span></a>            <span class="s2">&quot;ADD JAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-207"><a href="#Hive-207"><span class="linenos">207</span></a>            <span class="s2">&quot;ADD JARS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-208"><a href="#Hive-208"><span class="linenos">208</span></a>            <span class="s2">&quot;MSCK REPAIR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-209"><a href="#Hive-209"><span class="linenos">209</span></a>            <span class="s2">&quot;REFRESH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive-210"><a href="#Hive-210"><span class="linenos">210</span></a>            <span class="s2">&quot;WITH SERDEPROPERTIES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SERDE_PROPERTIES</span><span class="p">,</span>
+</span><span id="Hive-211"><a href="#Hive-211"><span class="linenos">211</span></a>            <span class="s2">&quot;TIMESTAMP AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TIMESTAMP_SNAPSHOT</span><span class="p">,</span>
+</span><span id="Hive-212"><a href="#Hive-212"><span class="linenos">212</span></a>            <span class="s2">&quot;VERSION AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VERSION_SNAPSHOT</span><span class="p">,</span>
+</span><span id="Hive-213"><a href="#Hive-213"><span class="linenos">213</span></a>        <span class="p">}</span>
+</span><span id="Hive-214"><a href="#Hive-214"><span class="linenos">214</span></a>
+</span><span id="Hive-215"><a href="#Hive-215"><span class="linenos">215</span></a>        <span class="n">NUMERIC_LITERALS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Hive-216"><a href="#Hive-216"><span class="linenos">216</span></a>            <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
+</span><span id="Hive-217"><a href="#Hive-217"><span class="linenos">217</span></a>            <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="s2">&quot;SMALLINT&quot;</span><span class="p">,</span>
+</span><span id="Hive-218"><a href="#Hive-218"><span class="linenos">218</span></a>            <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;TINYINT&quot;</span><span class="p">,</span>
+</span><span id="Hive-219"><a href="#Hive-219"><span class="linenos">219</span></a>            <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;DOUBLE&quot;</span><span class="p">,</span>
+</span><span id="Hive-220"><a href="#Hive-220"><span class="linenos">220</span></a>            <span class="s2">&quot;F&quot;</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
+</span><span id="Hive-221"><a href="#Hive-221"><span class="linenos">221</span></a>            <span class="s2">&quot;BD&quot;</span><span class="p">:</span> <span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
+</span><span id="Hive-222"><a href="#Hive-222"><span class="linenos">222</span></a>        <span class="p">}</span>
+</span><span id="Hive-223"><a href="#Hive-223"><span class="linenos">223</span></a>
+</span><span id="Hive-224"><a href="#Hive-224"><span class="linenos">224</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Hive-225"><a href="#Hive-225"><span class="linenos">225</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="Hive-226"><a href="#Hive-226"><span class="linenos">226</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
 </span><span id="Hive-227"><a href="#Hive-227"><span class="linenos">227</span></a>
 </span><span id="Hive-228"><a href="#Hive-228"><span class="linenos">228</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Hive-229"><a href="#Hive-229"><span class="linenos">229</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -1274,6 +1277,18 @@
     
 
                             </div>
+                            <div id="Hive.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Hive.SUPPORTS_USER_DEFINED_TYPES"></a>
+    
+    
+
+                            </div>
                             <div id="Hive.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="classattr">
                                 <div class="attr variable">
             <span class="name">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span><span class="annotation">: Optional[bool]</span>        =
@@ -1585,35 +1600,35 @@
 
     </div>
     <a class="headerlink" href="#Hive.Tokenizer"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Tokenizer-193"><a href="#Hive.Tokenizer-193"><span class="linenos">193</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Hive.Tokenizer-194"><a href="#Hive.Tokenizer-194"><span class="linenos">194</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
-</span><span id="Hive.Tokenizer-195"><a href="#Hive.Tokenizer-195"><span class="linenos">195</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Hive.Tokenizer-196"><a href="#Hive.Tokenizer-196"><span class="linenos">196</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
-</span><span id="Hive.Tokenizer-197"><a href="#Hive.Tokenizer-197"><span class="linenos">197</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
-</span><span id="Hive.Tokenizer-198"><a href="#Hive.Tokenizer-198"><span class="linenos">198</span></a>
-</span><span id="Hive.Tokenizer-199"><a href="#Hive.Tokenizer-199"><span class="linenos">199</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Hive.Tokenizer-200"><a href="#Hive.Tokenizer-200"><span class="linenos">200</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-201"><a href="#Hive.Tokenizer-201"><span class="linenos">201</span></a>            <span class="s2">&quot;ADD ARCHIVE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-202"><a href="#Hive.Tokenizer-202"><span class="linenos">202</span></a>            <span class="s2">&quot;ADD ARCHIVES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-203"><a href="#Hive.Tokenizer-203"><span class="linenos">203</span></a>            <span class="s2">&quot;ADD FILE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-204"><a href="#Hive.Tokenizer-204"><span class="linenos">204</span></a>            <span class="s2">&quot;ADD FILES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-205"><a href="#Hive.Tokenizer-205"><span class="linenos">205</span></a>            <span class="s2">&quot;ADD JAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-206"><a href="#Hive.Tokenizer-206"><span class="linenos">206</span></a>            <span class="s2">&quot;ADD JARS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-207"><a href="#Hive.Tokenizer-207"><span class="linenos">207</span></a>            <span class="s2">&quot;MSCK REPAIR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-208"><a href="#Hive.Tokenizer-208"><span class="linenos">208</span></a>            <span class="s2">&quot;REFRESH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-209"><a href="#Hive.Tokenizer-209"><span class="linenos">209</span></a>            <span class="s2">&quot;WITH SERDEPROPERTIES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SERDE_PROPERTIES</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-210"><a href="#Hive.Tokenizer-210"><span class="linenos">210</span></a>            <span class="s2">&quot;TIMESTAMP AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TIMESTAMP_SNAPSHOT</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-211"><a href="#Hive.Tokenizer-211"><span class="linenos">211</span></a>            <span class="s2">&quot;VERSION AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VERSION_SNAPSHOT</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-212"><a href="#Hive.Tokenizer-212"><span class="linenos">212</span></a>        <span class="p">}</span>
-</span><span id="Hive.Tokenizer-213"><a href="#Hive.Tokenizer-213"><span class="linenos">213</span></a>
-</span><span id="Hive.Tokenizer-214"><a href="#Hive.Tokenizer-214"><span class="linenos">214</span></a>        <span class="n">NUMERIC_LITERALS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Hive.Tokenizer-215"><a href="#Hive.Tokenizer-215"><span class="linenos">215</span></a>            <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-216"><a href="#Hive.Tokenizer-216"><span class="linenos">216</span></a>            <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="s2">&quot;SMALLINT&quot;</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-217"><a href="#Hive.Tokenizer-217"><span class="linenos">217</span></a>            <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;TINYINT&quot;</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-218"><a href="#Hive.Tokenizer-218"><span class="linenos">218</span></a>            <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;DOUBLE&quot;</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-219"><a href="#Hive.Tokenizer-219"><span class="linenos">219</span></a>            <span class="s2">&quot;F&quot;</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-220"><a href="#Hive.Tokenizer-220"><span class="linenos">220</span></a>            <span class="s2">&quot;BD&quot;</span><span class="p">:</span> <span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
-</span><span id="Hive.Tokenizer-221"><a href="#Hive.Tokenizer-221"><span class="linenos">221</span></a>        <span class="p">}</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Tokenizer-194"><a href="#Hive.Tokenizer-194"><span class="linenos">194</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Hive.Tokenizer-195"><a href="#Hive.Tokenizer-195"><span class="linenos">195</span></a>        <span class="n">QUOTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">]</span>
+</span><span id="Hive.Tokenizer-196"><a href="#Hive.Tokenizer-196"><span class="linenos">196</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
+</span><span id="Hive.Tokenizer-197"><a href="#Hive.Tokenizer-197"><span class="linenos">197</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Hive.Tokenizer-198"><a href="#Hive.Tokenizer-198"><span class="linenos">198</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
+</span><span id="Hive.Tokenizer-199"><a href="#Hive.Tokenizer-199"><span class="linenos">199</span></a>
+</span><span id="Hive.Tokenizer-200"><a href="#Hive.Tokenizer-200"><span class="linenos">200</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Hive.Tokenizer-201"><a href="#Hive.Tokenizer-201"><span class="linenos">201</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-202"><a href="#Hive.Tokenizer-202"><span class="linenos">202</span></a>            <span class="s2">&quot;ADD ARCHIVE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-203"><a href="#Hive.Tokenizer-203"><span class="linenos">203</span></a>            <span class="s2">&quot;ADD ARCHIVES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-204"><a href="#Hive.Tokenizer-204"><span class="linenos">204</span></a>            <span class="s2">&quot;ADD FILE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-205"><a href="#Hive.Tokenizer-205"><span class="linenos">205</span></a>            <span class="s2">&quot;ADD FILES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-206"><a href="#Hive.Tokenizer-206"><span class="linenos">206</span></a>            <span class="s2">&quot;ADD JAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-207"><a href="#Hive.Tokenizer-207"><span class="linenos">207</span></a>            <span class="s2">&quot;ADD JARS&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-208"><a href="#Hive.Tokenizer-208"><span class="linenos">208</span></a>            <span class="s2">&quot;MSCK REPAIR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-209"><a href="#Hive.Tokenizer-209"><span class="linenos">209</span></a>            <span class="s2">&quot;REFRESH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-210"><a href="#Hive.Tokenizer-210"><span class="linenos">210</span></a>            <span class="s2">&quot;WITH SERDEPROPERTIES&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">SERDE_PROPERTIES</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-211"><a href="#Hive.Tokenizer-211"><span class="linenos">211</span></a>            <span class="s2">&quot;TIMESTAMP AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TIMESTAMP_SNAPSHOT</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-212"><a href="#Hive.Tokenizer-212"><span class="linenos">212</span></a>            <span class="s2">&quot;VERSION AS OF&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VERSION_SNAPSHOT</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-213"><a href="#Hive.Tokenizer-213"><span class="linenos">213</span></a>        <span class="p">}</span>
+</span><span id="Hive.Tokenizer-214"><a href="#Hive.Tokenizer-214"><span class="linenos">214</span></a>
+</span><span id="Hive.Tokenizer-215"><a href="#Hive.Tokenizer-215"><span class="linenos">215</span></a>        <span class="n">NUMERIC_LITERALS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Hive.Tokenizer-216"><a href="#Hive.Tokenizer-216"><span class="linenos">216</span></a>            <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-217"><a href="#Hive.Tokenizer-217"><span class="linenos">217</span></a>            <span class="s2">&quot;S&quot;</span><span class="p">:</span> <span class="s2">&quot;SMALLINT&quot;</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-218"><a href="#Hive.Tokenizer-218"><span class="linenos">218</span></a>            <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;TINYINT&quot;</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-219"><a href="#Hive.Tokenizer-219"><span class="linenos">219</span></a>            <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;DOUBLE&quot;</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-220"><a href="#Hive.Tokenizer-220"><span class="linenos">220</span></a>            <span class="s2">&quot;F&quot;</span><span class="p">:</span> <span class="s2">&quot;FLOAT&quot;</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-221"><a href="#Hive.Tokenizer-221"><span class="linenos">221</span></a>            <span class="s2">&quot;BD&quot;</span><span class="p">:</span> <span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
+</span><span id="Hive.Tokenizer-222"><a href="#Hive.Tokenizer-222"><span class="linenos">222</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -1741,10 +1756,9 @@
 
     </div>
     <a class="headerlink" href="#Hive.Parser"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Parser-223"><a href="#Hive.Parser-223"><span class="linenos">223</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="Hive.Parser-224"><a href="#Hive.Parser-224"><span class="linenos">224</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="Hive.Parser-225"><a href="#Hive.Parser-225"><span class="linenos">225</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="Hive.Parser-226"><a href="#Hive.Parser-226"><span class="linenos">226</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Parser-224"><a href="#Hive.Parser-224"><span class="linenos">224</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Hive.Parser-225"><a href="#Hive.Parser-225"><span class="linenos">225</span></a>        <span class="n">LOG_DEFAULTS_TO_LN</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="Hive.Parser-226"><a href="#Hive.Parser-226"><span class="linenos">226</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
 </span><span id="Hive.Parser-227"><a href="#Hive.Parser-227"><span class="linenos">227</span></a>
 </span><span id="Hive.Parser-228"><a href="#Hive.Parser-228"><span class="linenos">228</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Hive.Parser-229"><a href="#Hive.Parser-229"><span class="linenos">229</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -1930,18 +1944,6 @@ Default: 3</li>
     
 
                             </div>
-                            <div id="Hive.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
-                                <div class="attr variable">
-            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
-<span class="default_value">False</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Hive.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
-    
-    
-
-                            </div>
                             <div id="Hive.Parser.FUNCTIONS" class="classattr">
                                 <div class="attr variable">
             <span class="name">FUNCTIONS</span>        =
@@ -2001,6 +2003,18 @@ Default: 3</li>
         
     </div>
     <a class="headerlink" href="#Hive.Parser.ALIAS_POST_TABLESAMPLE"></a>
+    
+    
+
+                            </div>
+                            <div id="Hive.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Hive.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
     
     
 
@@ -2132,6 +2146,7 @@ Default: 3</li>
                 <dd id="Hive.Parser.WINDOW_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_ALIAS_TOKENS">WINDOW_ALIAS_TOKENS</a></dd>
                 <dd id="Hive.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_BEFORE_PAREN_TOKENS">WINDOW_BEFORE_PAREN_TOKENS</a></dd>
                 <dd id="Hive.Parser.WINDOW_SIDES" class="variable"><a href="../parser.html#Parser.WINDOW_SIDES">WINDOW_SIDES</a></dd>
+                <dd id="Hive.Parser.FETCH_TOKENS" class="variable"><a href="../parser.html#Parser.FETCH_TOKENS">FETCH_TOKENS</a></dd>
                 <dd id="Hive.Parser.ADD_CONSTRAINT_TOKENS" class="variable"><a href="../parser.html#Parser.ADD_CONSTRAINT_TOKENS">ADD_CONSTRAINT_TOKENS</a></dd>
                 <dd id="Hive.Parser.DISTINCT_TOKENS" class="variable"><a href="../parser.html#Parser.DISTINCT_TOKENS">DISTINCT_TOKENS</a></dd>
                 <dd id="Hive.Parser.CONCAT_NULL_OUTPUTS_STRING" class="variable"><a href="../parser.html#Parser.CONCAT_NULL_OUTPUTS_STRING">CONCAT_NULL_OUTPUTS_STRING</a></dd>
@@ -2697,26 +2712,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Hive.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Generator.can_identify-257"><a href="#Hive.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Hive.Generator.can_identify-258"><a href="#Hive.Generator.can_identify-258"><span class="linenos">258</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Hive.Generator.can_identify-259"><a href="#Hive.Generator.can_identify-259"><span class="linenos">259</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Hive.Generator.can_identify-260"><a href="#Hive.Generator.can_identify-260"><span class="linenos">260</span></a>
-</span><span id="Hive.Generator.can_identify-261"><a href="#Hive.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">        Args:</span>
-</span><span id="Hive.Generator.can_identify-262"><a href="#Hive.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Hive.Generator.can_identify-263"><a href="#Hive.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">            identify:</span>
-</span><span id="Hive.Generator.can_identify-264"><a href="#Hive.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Hive.Generator.can_identify-265"><a href="#Hive.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Hive.Generator.can_identify-266"><a href="#Hive.Generator.can_identify-266"><span class="linenos">266</span></a>
-</span><span id="Hive.Generator.can_identify-267"><a href="#Hive.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">        Returns:</span>
-</span><span id="Hive.Generator.can_identify-268"><a href="#Hive.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Hive.Generator.can_identify-269"><a href="#Hive.Generator.can_identify-269"><span class="linenos">269</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Hive.Generator.can_identify-270"><a href="#Hive.Generator.can_identify-270"><span class="linenos">270</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Hive.Generator.can_identify-271"><a href="#Hive.Generator.can_identify-271"><span class="linenos">271</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Hive.Generator.can_identify-272"><a href="#Hive.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="Hive.Generator.can_identify-273"><a href="#Hive.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Hive.Generator.can_identify-274"><a href="#Hive.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Generator.can_identify-260"><a href="#Hive.Generator.can_identify-260"><span class="linenos">260</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Hive.Generator.can_identify-261"><a href="#Hive.Generator.can_identify-261"><span class="linenos">261</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Hive.Generator.can_identify-262"><a href="#Hive.Generator.can_identify-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Hive.Generator.can_identify-263"><a href="#Hive.Generator.can_identify-263"><span class="linenos">263</span></a>
+</span><span id="Hive.Generator.can_identify-264"><a href="#Hive.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">        Args:</span>
+</span><span id="Hive.Generator.can_identify-265"><a href="#Hive.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Hive.Generator.can_identify-266"><a href="#Hive.Generator.can_identify-266"><span class="linenos">266</span></a><span class="sd">            identify:</span>
+</span><span id="Hive.Generator.can_identify-267"><a href="#Hive.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Hive.Generator.can_identify-268"><a href="#Hive.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Hive.Generator.can_identify-269"><a href="#Hive.Generator.can_identify-269"><span class="linenos">269</span></a>
+</span><span id="Hive.Generator.can_identify-270"><a href="#Hive.Generator.can_identify-270"><span class="linenos">270</span></a><span class="sd">        Returns:</span>
+</span><span id="Hive.Generator.can_identify-271"><a href="#Hive.Generator.can_identify-271"><span class="linenos">271</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Hive.Generator.can_identify-272"><a href="#Hive.Generator.can_identify-272"><span class="linenos">272</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Hive.Generator.can_identify-273"><a href="#Hive.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Hive.Generator.can_identify-274"><a href="#Hive.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="kc">True</span>
 </span><span id="Hive.Generator.can_identify-275"><a href="#Hive.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="Hive.Generator.can_identify-276"><a href="#Hive.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="Hive.Generator.can_identify-276"><a href="#Hive.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Hive.Generator.can_identify-277"><a href="#Hive.Generator.can_identify-277"><span class="linenos">277</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Hive.Generator.can_identify-278"><a href="#Hive.Generator.can_identify-278"><span class="linenos">278</span></a>
+</span><span id="Hive.Generator.can_identify-279"><a href="#Hive.Generator.can_identify-279"><span class="linenos">279</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 

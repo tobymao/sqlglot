@@ -558,6 +558,7 @@
                                     <div><dt><a href="hive.html#Hive">sqlglot.dialects.hive.Hive</a></dt>
                                 <dd id="Databricks.ALIAS_POST_TABLESAMPLE" class="variable"><a href="hive.html#Hive.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
                 <dd id="Databricks.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="hive.html#Hive.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
+                <dd id="Databricks.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="hive.html#Hive.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
                 <dd id="Databricks.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="variable"><a href="hive.html#Hive.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a></dd>
                 <dd id="Databricks.TIME_MAPPING" class="variable"><a href="hive.html#Hive.TIME_MAPPING">TIME_MAPPING</a></dd>
                 <dd id="Databricks.DATE_FORMAT" class="variable"><a href="hive.html#Hive.DATE_FORMAT">DATE_FORMAT</a></dd>
@@ -800,6 +801,7 @@ Default: 3</li>
                 <dd id="Databricks.Parser.WINDOW_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_ALIAS_TOKENS">WINDOW_ALIAS_TOKENS</a></dd>
                 <dd id="Databricks.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_BEFORE_PAREN_TOKENS">WINDOW_BEFORE_PAREN_TOKENS</a></dd>
                 <dd id="Databricks.Parser.WINDOW_SIDES" class="variable"><a href="../parser.html#Parser.WINDOW_SIDES">WINDOW_SIDES</a></dd>
+                <dd id="Databricks.Parser.FETCH_TOKENS" class="variable"><a href="../parser.html#Parser.FETCH_TOKENS">FETCH_TOKENS</a></dd>
                 <dd id="Databricks.Parser.ADD_CONSTRAINT_TOKENS" class="variable"><a href="../parser.html#Parser.ADD_CONSTRAINT_TOKENS">ADD_CONSTRAINT_TOKENS</a></dd>
                 <dd id="Databricks.Parser.DISTINCT_TOKENS" class="variable"><a href="../parser.html#Parser.DISTINCT_TOKENS">DISTINCT_TOKENS</a></dd>
                 <dd id="Databricks.Parser.CONCAT_NULL_OUTPUTS_STRING" class="variable"><a href="../parser.html#Parser.CONCAT_NULL_OUTPUTS_STRING">CONCAT_NULL_OUTPUTS_STRING</a></dd>
@@ -834,10 +836,10 @@ Default: 3</li>
             </div>
             <div><dt><a href="hive.html#Hive.Parser">sqlglot.dialects.hive.Hive.Parser</a></dt>
                                 <dd id="Databricks.Parser.STRICT_CAST" class="variable"><a href="hive.html#Hive.Parser.STRICT_CAST">STRICT_CAST</a></dd>
-                <dd id="Databricks.Parser.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="hive.html#Hive.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
                 <dd id="Databricks.Parser.NO_PAREN_FUNCTION_PARSERS" class="variable"><a href="hive.html#Hive.Parser.NO_PAREN_FUNCTION_PARSERS">NO_PAREN_FUNCTION_PARSERS</a></dd>
                 <dd id="Databricks.Parser.PROPERTY_PARSERS" class="variable"><a href="hive.html#Hive.Parser.PROPERTY_PARSERS">PROPERTY_PARSERS</a></dd>
                 <dd id="Databricks.Parser.ALIAS_POST_TABLESAMPLE" class="variable"><a href="hive.html#Hive.Parser.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
+                <dd id="Databricks.Parser.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="hive.html#Hive.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
                 <dd id="Databricks.Parser.TIME_MAPPING" class="variable"><a href="hive.html#Hive.Parser.TIME_MAPPING">TIME_MAPPING</a></dd>
 
             </div>
@@ -1001,26 +1003,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Databricks.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Generator.can_identify-257"><a href="#Databricks.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Databricks.Generator.can_identify-258"><a href="#Databricks.Generator.can_identify-258"><span class="linenos">258</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Databricks.Generator.can_identify-259"><a href="#Databricks.Generator.can_identify-259"><span class="linenos">259</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Databricks.Generator.can_identify-260"><a href="#Databricks.Generator.can_identify-260"><span class="linenos">260</span></a>
-</span><span id="Databricks.Generator.can_identify-261"><a href="#Databricks.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">        Args:</span>
-</span><span id="Databricks.Generator.can_identify-262"><a href="#Databricks.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Databricks.Generator.can_identify-263"><a href="#Databricks.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">            identify:</span>
-</span><span id="Databricks.Generator.can_identify-264"><a href="#Databricks.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Databricks.Generator.can_identify-265"><a href="#Databricks.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Databricks.Generator.can_identify-266"><a href="#Databricks.Generator.can_identify-266"><span class="linenos">266</span></a>
-</span><span id="Databricks.Generator.can_identify-267"><a href="#Databricks.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">        Returns:</span>
-</span><span id="Databricks.Generator.can_identify-268"><a href="#Databricks.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Databricks.Generator.can_identify-269"><a href="#Databricks.Generator.can_identify-269"><span class="linenos">269</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Databricks.Generator.can_identify-270"><a href="#Databricks.Generator.can_identify-270"><span class="linenos">270</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Databricks.Generator.can_identify-271"><a href="#Databricks.Generator.can_identify-271"><span class="linenos">271</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Databricks.Generator.can_identify-272"><a href="#Databricks.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="Databricks.Generator.can_identify-273"><a href="#Databricks.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Databricks.Generator.can_identify-274"><a href="#Databricks.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Generator.can_identify-260"><a href="#Databricks.Generator.can_identify-260"><span class="linenos">260</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Databricks.Generator.can_identify-261"><a href="#Databricks.Generator.can_identify-261"><span class="linenos">261</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Databricks.Generator.can_identify-262"><a href="#Databricks.Generator.can_identify-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Databricks.Generator.can_identify-263"><a href="#Databricks.Generator.can_identify-263"><span class="linenos">263</span></a>
+</span><span id="Databricks.Generator.can_identify-264"><a href="#Databricks.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">        Args:</span>
+</span><span id="Databricks.Generator.can_identify-265"><a href="#Databricks.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Databricks.Generator.can_identify-266"><a href="#Databricks.Generator.can_identify-266"><span class="linenos">266</span></a><span class="sd">            identify:</span>
+</span><span id="Databricks.Generator.can_identify-267"><a href="#Databricks.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Databricks.Generator.can_identify-268"><a href="#Databricks.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Databricks.Generator.can_identify-269"><a href="#Databricks.Generator.can_identify-269"><span class="linenos">269</span></a>
+</span><span id="Databricks.Generator.can_identify-270"><a href="#Databricks.Generator.can_identify-270"><span class="linenos">270</span></a><span class="sd">        Returns:</span>
+</span><span id="Databricks.Generator.can_identify-271"><a href="#Databricks.Generator.can_identify-271"><span class="linenos">271</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Databricks.Generator.can_identify-272"><a href="#Databricks.Generator.can_identify-272"><span class="linenos">272</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Databricks.Generator.can_identify-273"><a href="#Databricks.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Databricks.Generator.can_identify-274"><a href="#Databricks.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="kc">True</span>
 </span><span id="Databricks.Generator.can_identify-275"><a href="#Databricks.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="Databricks.Generator.can_identify-276"><a href="#Databricks.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="Databricks.Generator.can_identify-276"><a href="#Databricks.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Databricks.Generator.can_identify-277"><a href="#Databricks.Generator.can_identify-277"><span class="linenos">277</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Databricks.Generator.can_identify-278"><a href="#Databricks.Generator.can_identify-278"><span class="linenos">278</span></a>
+</span><span id="Databricks.Generator.can_identify-279"><a href="#Databricks.Generator.can_identify-279"><span class="linenos">279</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 

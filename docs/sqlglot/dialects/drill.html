@@ -49,6 +49,9 @@
                                 <a class="variable" href="#Drill.TIME_FORMAT">TIME_FORMAT</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Drill.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Drill.TIME_MAPPING">TIME_MAPPING</a>
                         </li>
                         <li>
@@ -76,9 +79,6 @@
                                             <a class="variable" href="#Drill.Parser.CONCAT_NULL_OUTPUTS_STRING">CONCAT_NULL_OUTPUTS_STRING</a>
                                     </li>
                                     <li>
-                                            <a class="variable" href="#Drill.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
-                                    </li>
-                                    <li>
                                             <a class="variable" href="#Drill.Parser.FUNCTIONS">FUNCTIONS</a>
                                     </li>
                                     <li>
@@ -86,6 +86,9 @@
                                     </li>
                                     <li>
                                             <a class="variable" href="#Drill.Parser.TOKENIZER_CLASS">TOKENIZER_CLASS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Drill.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#Drill.Parser.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a>
@@ -310,48 +313,48 @@
 </span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a>    <span class="n">DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd&#39;&quot;</span>
 </span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>    <span class="n">DATEINT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyyMMdd&#39;&quot;</span>
 </span><span id="L-41"><a href="#L-41"><span class="linenos"> 41</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd HH:mm:ss&#39;&quot;</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>
-</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
-</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
-</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
-</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
-</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
-</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
-</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
-</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="s2">&quot;&#39;&#39;T&#39;&#39;&quot;</span><span class="p">:</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>    <span class="p">}</span>
-</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>
-</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
-</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>
-</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos"> 42</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos"> 43</span></a>
+</span><span id="L-44"><a href="#L-44"><span class="linenos"> 44</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos"> 45</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos"> 46</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos"> 47</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-48"><a href="#L-48"><span class="linenos"> 48</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos"> 56</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos"> 57</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos"> 58</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos"> 59</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
+</span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
+</span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
+</span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
+</span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a>        <span class="s2">&quot;&#39;&#39;T&#39;&#39;&quot;</span><span class="p">:</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span>
+</span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>    <span class="p">}</span>
+</span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a>
+</span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
+</span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
+</span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a>
 </span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -443,48 +446,48 @@
 </span><span id="Drill-40"><a href="#Drill-40"><span class="linenos"> 40</span></a>    <span class="n">DATE_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd&#39;&quot;</span>
 </span><span id="Drill-41"><a href="#Drill-41"><span class="linenos"> 41</span></a>    <span class="n">DATEINT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyyMMdd&#39;&quot;</span>
 </span><span id="Drill-42"><a href="#Drill-42"><span class="linenos"> 42</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;yyyy-MM-dd HH:mm:ss&#39;&quot;</span>
-</span><span id="Drill-43"><a href="#Drill-43"><span class="linenos"> 43</span></a>
-</span><span id="Drill-44"><a href="#Drill-44"><span class="linenos"> 44</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Drill-45"><a href="#Drill-45"><span class="linenos"> 45</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Drill-46"><a href="#Drill-46"><span class="linenos"> 46</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Drill-47"><a href="#Drill-47"><span class="linenos"> 47</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Drill-48"><a href="#Drill-48"><span class="linenos"> 48</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Drill-49"><a href="#Drill-49"><span class="linenos"> 49</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="Drill-50"><a href="#Drill-50"><span class="linenos"> 50</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="Drill-51"><a href="#Drill-51"><span class="linenos"> 51</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="Drill-52"><a href="#Drill-52"><span class="linenos"> 52</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="Drill-53"><a href="#Drill-53"><span class="linenos"> 53</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="Drill-54"><a href="#Drill-54"><span class="linenos"> 54</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
-</span><span id="Drill-55"><a href="#Drill-55"><span class="linenos"> 55</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Drill-56"><a href="#Drill-56"><span class="linenos"> 56</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Drill-57"><a href="#Drill-57"><span class="linenos"> 57</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="Drill-58"><a href="#Drill-58"><span class="linenos"> 58</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
-</span><span id="Drill-59"><a href="#Drill-59"><span class="linenos"> 59</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="Drill-60"><a href="#Drill-60"><span class="linenos"> 60</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
-</span><span id="Drill-61"><a href="#Drill-61"><span class="linenos"> 61</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="Drill-62"><a href="#Drill-62"><span class="linenos"> 62</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
-</span><span id="Drill-63"><a href="#Drill-63"><span class="linenos"> 63</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="Drill-64"><a href="#Drill-64"><span class="linenos"> 64</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
-</span><span id="Drill-65"><a href="#Drill-65"><span class="linenos"> 65</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Drill-66"><a href="#Drill-66"><span class="linenos"> 66</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
-</span><span id="Drill-67"><a href="#Drill-67"><span class="linenos"> 67</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
-</span><span id="Drill-68"><a href="#Drill-68"><span class="linenos"> 68</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
-</span><span id="Drill-69"><a href="#Drill-69"><span class="linenos"> 69</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Drill-70"><a href="#Drill-70"><span class="linenos"> 70</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Drill-71"><a href="#Drill-71"><span class="linenos"> 71</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Drill-72"><a href="#Drill-72"><span class="linenos"> 72</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
-</span><span id="Drill-73"><a href="#Drill-73"><span class="linenos"> 73</span></a>        <span class="s2">&quot;&#39;&#39;T&#39;&#39;&quot;</span><span class="p">:</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span>
-</span><span id="Drill-74"><a href="#Drill-74"><span class="linenos"> 74</span></a>    <span class="p">}</span>
-</span><span id="Drill-75"><a href="#Drill-75"><span class="linenos"> 75</span></a>
-</span><span id="Drill-76"><a href="#Drill-76"><span class="linenos"> 76</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Drill-77"><a href="#Drill-77"><span class="linenos"> 77</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Drill-78"><a href="#Drill-78"><span class="linenos"> 78</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
-</span><span id="Drill-79"><a href="#Drill-79"><span class="linenos"> 79</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
-</span><span id="Drill-80"><a href="#Drill-80"><span class="linenos"> 80</span></a>
-</span><span id="Drill-81"><a href="#Drill-81"><span class="linenos"> 81</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="Drill-82"><a href="#Drill-82"><span class="linenos"> 82</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="Drill-83"><a href="#Drill-83"><span class="linenos"> 83</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="Drill-84"><a href="#Drill-84"><span class="linenos"> 84</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Drill-43"><a href="#Drill-43"><span class="linenos"> 43</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Drill-44"><a href="#Drill-44"><span class="linenos"> 44</span></a>
+</span><span id="Drill-45"><a href="#Drill-45"><span class="linenos"> 45</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Drill-46"><a href="#Drill-46"><span class="linenos"> 46</span></a>        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Drill-47"><a href="#Drill-47"><span class="linenos"> 47</span></a>        <span class="s2">&quot;Y&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Drill-48"><a href="#Drill-48"><span class="linenos"> 48</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Drill-49"><a href="#Drill-49"><span class="linenos"> 49</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Drill-50"><a href="#Drill-50"><span class="linenos"> 50</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="Drill-51"><a href="#Drill-51"><span class="linenos"> 51</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="Drill-52"><a href="#Drill-52"><span class="linenos"> 52</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="Drill-53"><a href="#Drill-53"><span class="linenos"> 53</span></a>        <span class="s2">&quot;MMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="Drill-54"><a href="#Drill-54"><span class="linenos"> 54</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="Drill-55"><a href="#Drill-55"><span class="linenos"> 55</span></a>        <span class="s2">&quot;M&quot;</span><span class="p">:</span> <span class="s2">&quot;%-m&quot;</span><span class="p">,</span>
+</span><span id="Drill-56"><a href="#Drill-56"><span class="linenos"> 56</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Drill-57"><a href="#Drill-57"><span class="linenos"> 57</span></a>        <span class="s2">&quot;d&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Drill-58"><a href="#Drill-58"><span class="linenos"> 58</span></a>        <span class="s2">&quot;HH&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="Drill-59"><a href="#Drill-59"><span class="linenos"> 59</span></a>        <span class="s2">&quot;H&quot;</span><span class="p">:</span> <span class="s2">&quot;%-H&quot;</span><span class="p">,</span>
+</span><span id="Drill-60"><a href="#Drill-60"><span class="linenos"> 60</span></a>        <span class="s2">&quot;hh&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="Drill-61"><a href="#Drill-61"><span class="linenos"> 61</span></a>        <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;%-I&quot;</span><span class="p">,</span>
+</span><span id="Drill-62"><a href="#Drill-62"><span class="linenos"> 62</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="Drill-63"><a href="#Drill-63"><span class="linenos"> 63</span></a>        <span class="s2">&quot;m&quot;</span><span class="p">:</span> <span class="s2">&quot;%-M&quot;</span><span class="p">,</span>
+</span><span id="Drill-64"><a href="#Drill-64"><span class="linenos"> 64</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="Drill-65"><a href="#Drill-65"><span class="linenos"> 65</span></a>        <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;%-S&quot;</span><span class="p">,</span>
+</span><span id="Drill-66"><a href="#Drill-66"><span class="linenos"> 66</span></a>        <span class="s2">&quot;SSSSSS&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Drill-67"><a href="#Drill-67"><span class="linenos"> 67</span></a>        <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="s2">&quot;%p&quot;</span><span class="p">,</span>
+</span><span id="Drill-68"><a href="#Drill-68"><span class="linenos"> 68</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;%j&quot;</span><span class="p">,</span>
+</span><span id="Drill-69"><a href="#Drill-69"><span class="linenos"> 69</span></a>        <span class="s2">&quot;D&quot;</span><span class="p">:</span> <span class="s2">&quot;%-j&quot;</span><span class="p">,</span>
+</span><span id="Drill-70"><a href="#Drill-70"><span class="linenos"> 70</span></a>        <span class="s2">&quot;E&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Drill-71"><a href="#Drill-71"><span class="linenos"> 71</span></a>        <span class="s2">&quot;EE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Drill-72"><a href="#Drill-72"><span class="linenos"> 72</span></a>        <span class="s2">&quot;EEE&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Drill-73"><a href="#Drill-73"><span class="linenos"> 73</span></a>        <span class="s2">&quot;EEEE&quot;</span><span class="p">:</span> <span class="s2">&quot;%A&quot;</span><span class="p">,</span>
+</span><span id="Drill-74"><a href="#Drill-74"><span class="linenos"> 74</span></a>        <span class="s2">&quot;&#39;&#39;T&#39;&#39;&quot;</span><span class="p">:</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span>
+</span><span id="Drill-75"><a href="#Drill-75"><span class="linenos"> 75</span></a>    <span class="p">}</span>
+</span><span id="Drill-76"><a href="#Drill-76"><span class="linenos"> 76</span></a>
+</span><span id="Drill-77"><a href="#Drill-77"><span class="linenos"> 77</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Drill-78"><a href="#Drill-78"><span class="linenos"> 78</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
+</span><span id="Drill-79"><a href="#Drill-79"><span class="linenos"> 79</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Drill-80"><a href="#Drill-80"><span class="linenos"> 80</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
+</span><span id="Drill-81"><a href="#Drill-81"><span class="linenos"> 81</span></a>
+</span><span id="Drill-82"><a href="#Drill-82"><span class="linenos"> 82</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Drill-83"><a href="#Drill-83"><span class="linenos"> 83</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Drill-84"><a href="#Drill-84"><span class="linenos"> 84</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="Drill-85"><a href="#Drill-85"><span class="linenos"> 85</span></a>
 </span><span id="Drill-86"><a href="#Drill-86"><span class="linenos"> 86</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Drill-87"><a href="#Drill-87"><span class="linenos"> 87</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -616,6 +619,18 @@
         
     </div>
     <a class="headerlink" href="#Drill.TIME_FORMAT"></a>
+    
+    
+
+                            </div>
+                            <div id="Drill.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Drill.SUPPORTS_USER_DEFINED_TYPES"></a>
     
     
 
@@ -884,10 +899,10 @@
 
     </div>
     <a class="headerlink" href="#Drill.Tokenizer"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Drill.Tokenizer-76"><a href="#Drill.Tokenizer-76"><span class="linenos">76</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="Drill.Tokenizer-77"><a href="#Drill.Tokenizer-77"><span class="linenos">77</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
-</span><span id="Drill.Tokenizer-78"><a href="#Drill.Tokenizer-78"><span class="linenos">78</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
-</span><span id="Drill.Tokenizer-79"><a href="#Drill.Tokenizer-79"><span class="linenos">79</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Drill.Tokenizer-77"><a href="#Drill.Tokenizer-77"><span class="linenos">77</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="Drill.Tokenizer-78"><a href="#Drill.Tokenizer-78"><span class="linenos">78</span></a>        <span class="n">IDENTIFIERS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;`&quot;</span><span class="p">]</span>
+</span><span id="Drill.Tokenizer-79"><a href="#Drill.Tokenizer-79"><span class="linenos">79</span></a>        <span class="n">STRING_ESCAPES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="Drill.Tokenizer-80"><a href="#Drill.Tokenizer-80"><span class="linenos">80</span></a>        <span class="n">ENCODE</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span>
 </span></pre></div>
 
 
@@ -970,10 +985,9 @@
 
     </div>
     <a class="headerlink" href="#Drill.Parser"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Drill.Parser-81"><a href="#Drill.Parser-81"><span class="linenos">81</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="Drill.Parser-82"><a href="#Drill.Parser-82"><span class="linenos">82</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="Drill.Parser-83"><a href="#Drill.Parser-83"><span class="linenos">83</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="Drill.Parser-84"><a href="#Drill.Parser-84"><span class="linenos">84</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Drill.Parser-82"><a href="#Drill.Parser-82"><span class="linenos">82</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Drill.Parser-83"><a href="#Drill.Parser-83"><span class="linenos">83</span></a>        <span class="n">STRICT_CAST</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Drill.Parser-84"><a href="#Drill.Parser-84"><span class="linenos">84</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="Drill.Parser-85"><a href="#Drill.Parser-85"><span class="linenos">85</span></a>
 </span><span id="Drill.Parser-86"><a href="#Drill.Parser-86"><span class="linenos">86</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Drill.Parser-87"><a href="#Drill.Parser-87"><span class="linenos">87</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -1027,18 +1041,6 @@ Default: 3</li>
     
 
                             </div>
-                            <div id="Drill.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
-                                <div class="attr variable">
-            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
-<span class="default_value">False</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Drill.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
-    
-    
-
-                            </div>
                             <div id="Drill.Parser.FUNCTIONS" class="classattr">
                                 <div class="attr variable">
             <span class="name">FUNCTIONS</span>        =
@@ -1072,6 +1074,18 @@ Default: 3</li>
         
     </div>
     <a class="headerlink" href="#Drill.Parser.TOKENIZER_CLASS"></a>
+    
+    
+
+                            </div>
+                            <div id="Drill.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Drill.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
     
     
 
@@ -1229,6 +1243,7 @@ Default: 3</li>
                 <dd id="Drill.Parser.WINDOW_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_ALIAS_TOKENS">WINDOW_ALIAS_TOKENS</a></dd>
                 <dd id="Drill.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_BEFORE_PAREN_TOKENS">WINDOW_BEFORE_PAREN_TOKENS</a></dd>
                 <dd id="Drill.Parser.WINDOW_SIDES" class="variable"><a href="../parser.html#Parser.WINDOW_SIDES">WINDOW_SIDES</a></dd>
+                <dd id="Drill.Parser.FETCH_TOKENS" class="variable"><a href="../parser.html#Parser.FETCH_TOKENS">FETCH_TOKENS</a></dd>
                 <dd id="Drill.Parser.ADD_CONSTRAINT_TOKENS" class="variable"><a href="../parser.html#Parser.ADD_CONSTRAINT_TOKENS">ADD_CONSTRAINT_TOKENS</a></dd>
                 <dd id="Drill.Parser.DISTINCT_TOKENS" class="variable"><a href="../parser.html#Parser.DISTINCT_TOKENS">DISTINCT_TOKENS</a></dd>
                 <dd id="Drill.Parser.PREFIXED_PIVOT_COLUMNS" class="variable"><a href="../parser.html#Parser.PREFIXED_PIVOT_COLUMNS">PREFIXED_PIVOT_COLUMNS</a></dd>
@@ -1551,26 +1566,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Drill.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Drill.Generator.can_identify-257"><a href="#Drill.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Drill.Generator.can_identify-258"><a href="#Drill.Generator.can_identify-258"><span class="linenos">258</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Drill.Generator.can_identify-259"><a href="#Drill.Generator.can_identify-259"><span class="linenos">259</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Drill.Generator.can_identify-260"><a href="#Drill.Generator.can_identify-260"><span class="linenos">260</span></a>
-</span><span id="Drill.Generator.can_identify-261"><a href="#Drill.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">        Args:</span>
-</span><span id="Drill.Generator.can_identify-262"><a href="#Drill.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Drill.Generator.can_identify-263"><a href="#Drill.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">            identify:</span>
-</span><span id="Drill.Generator.can_identify-264"><a href="#Drill.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Drill.Generator.can_identify-265"><a href="#Drill.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Drill.Generator.can_identify-266"><a href="#Drill.Generator.can_identify-266"><span class="linenos">266</span></a>
-</span><span id="Drill.Generator.can_identify-267"><a href="#Drill.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">        Returns:</span>
-</span><span id="Drill.Generator.can_identify-268"><a href="#Drill.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Drill.Generator.can_identify-269"><a href="#Drill.Generator.can_identify-269"><span class="linenos">269</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Drill.Generator.can_identify-270"><a href="#Drill.Generator.can_identify-270"><span class="linenos">270</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Drill.Generator.can_identify-271"><a href="#Drill.Generator.can_identify-271"><span class="linenos">271</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Drill.Generator.can_identify-272"><a href="#Drill.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="Drill.Generator.can_identify-273"><a href="#Drill.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Drill.Generator.can_identify-274"><a href="#Drill.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Drill.Generator.can_identify-260"><a href="#Drill.Generator.can_identify-260"><span class="linenos">260</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Drill.Generator.can_identify-261"><a href="#Drill.Generator.can_identify-261"><span class="linenos">261</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Drill.Generator.can_identify-262"><a href="#Drill.Generator.can_identify-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Drill.Generator.can_identify-263"><a href="#Drill.Generator.can_identify-263"><span class="linenos">263</span></a>
+</span><span id="Drill.Generator.can_identify-264"><a href="#Drill.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">        Args:</span>
+</span><span id="Drill.Generator.can_identify-265"><a href="#Drill.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Drill.Generator.can_identify-266"><a href="#Drill.Generator.can_identify-266"><span class="linenos">266</span></a><span class="sd">            identify:</span>
+</span><span id="Drill.Generator.can_identify-267"><a href="#Drill.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Drill.Generator.can_identify-268"><a href="#Drill.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Drill.Generator.can_identify-269"><a href="#Drill.Generator.can_identify-269"><span class="linenos">269</span></a>
+</span><span id="Drill.Generator.can_identify-270"><a href="#Drill.Generator.can_identify-270"><span class="linenos">270</span></a><span class="sd">        Returns:</span>
+</span><span id="Drill.Generator.can_identify-271"><a href="#Drill.Generator.can_identify-271"><span class="linenos">271</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Drill.Generator.can_identify-272"><a href="#Drill.Generator.can_identify-272"><span class="linenos">272</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Drill.Generator.can_identify-273"><a href="#Drill.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Drill.Generator.can_identify-274"><a href="#Drill.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="kc">True</span>
 </span><span id="Drill.Generator.can_identify-275"><a href="#Drill.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="Drill.Generator.can_identify-276"><a href="#Drill.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="Drill.Generator.can_identify-276"><a href="#Drill.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Drill.Generator.can_identify-277"><a href="#Drill.Generator.can_identify-277"><span class="linenos">277</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Drill.Generator.can_identify-278"><a href="#Drill.Generator.can_identify-278"><span class="linenos">278</span></a>
+</span><span id="Drill.Generator.can_identify-279"><a href="#Drill.Generator.can_identify-279"><span class="linenos">279</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 

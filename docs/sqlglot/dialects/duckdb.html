@@ -37,6 +37,9 @@
                                 <a class="variable" href="#DuckDB.NULL_ORDERING">NULL_ORDERING</a>
                         </li>
                         <li>
+                                <a class="variable" href="#DuckDB.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#DuckDB.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a>
                         </li>
                         <li>
@@ -55,9 +58,6 @@
                                             <a class="variable" href="#DuckDB.Parser.CONCAT_NULL_OUTPUTS_STRING">CONCAT_NULL_OUTPUTS_STRING</a>
                                     </li>
                                     <li>
-                                            <a class="variable" href="#DuckDB.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
-                                    </li>
-                                    <li>
                                             <a class="variable" href="#DuckDB.Parser.BITWISE">BITWISE</a>
                                     </li>
                                     <li>
@@ -68,6 +68,9 @@
                                     </li>
                                     <li>
                                             <a class="variable" href="#DuckDB.Parser.TOKENIZER_CLASS">TOKENIZER_CLASS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#DuckDB.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#DuckDB.Parser.NULL_ORDERING">NULL_ORDERING</a>
@@ -367,37 +370,37 @@
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
 </span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="k">class</span> <span class="nc">DuckDB</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
 </span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>    <span class="n">NULL_ORDERING</span> <span class="o">=</span> <span class="s2">&quot;nulls_are_last&quot;</span>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>    <span class="c1"># https://duckdb.org/docs/sql/introduction.html#creating-a-new-table</span>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
-</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
-</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>            <span class="s2">&quot;:=&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span>
-</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>            <span class="s2">&quot;//&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">DIV</span><span class="p">,</span>
-</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>            <span class="s2">&quot;ATTACH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>            <span class="s2">&quot;BINARY&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
-</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>            <span class="s2">&quot;BITSTRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BIT</span><span class="p">,</span>
-</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>            <span class="s2">&quot;BPCHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>            <span class="s2">&quot;CHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>            <span class="s2">&quot;CHARACTER VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>            <span class="s2">&quot;EXCLUDE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
-</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>            <span class="s2">&quot;HUGEINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT128</span><span class="p">,</span>
-</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>            <span class="s2">&quot;INT1&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TINYINT</span><span class="p">,</span>
-</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>            <span class="s2">&quot;LOGICAL&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BOOLEAN</span><span class="p">,</span>
-</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>            <span class="s2">&quot;PIVOT_WIDER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PIVOT</span><span class="p">,</span>
-</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>            <span class="s2">&quot;SIGNED&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
-</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>            <span class="s2">&quot;STRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARCHAR</span><span class="p">,</span>
-</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>            <span class="s2">&quot;UBIGINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UBIGINT</span><span class="p">,</span>
-</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>            <span class="s2">&quot;UINTEGER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UINT</span><span class="p">,</span>
-</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>            <span class="s2">&quot;USMALLINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">USMALLINT</span><span class="p">,</span>
-</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>            <span class="s2">&quot;UTINYINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UTINYINT</span><span class="p">,</span>
-</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>        <span class="p">}</span>
-</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>
-</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>    <span class="c1"># https://duckdb.org/docs/sql/introduction.html#creating-a-new-table</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>            <span class="s2">&quot;:=&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>            <span class="s2">&quot;//&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">DIV</span><span class="p">,</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a>            <span class="s2">&quot;ATTACH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>            <span class="s2">&quot;BINARY&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>            <span class="s2">&quot;BITSTRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BIT</span><span class="p">,</span>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>            <span class="s2">&quot;BPCHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a>            <span class="s2">&quot;CHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a>            <span class="s2">&quot;CHARACTER VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>            <span class="s2">&quot;EXCLUDE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>            <span class="s2">&quot;HUGEINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT128</span><span class="p">,</span>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a>            <span class="s2">&quot;INT1&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TINYINT</span><span class="p">,</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a>            <span class="s2">&quot;LOGICAL&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BOOLEAN</span><span class="p">,</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>            <span class="s2">&quot;PIVOT_WIDER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PIVOT</span><span class="p">,</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>            <span class="s2">&quot;SIGNED&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>            <span class="s2">&quot;STRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARCHAR</span><span class="p">,</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>            <span class="s2">&quot;UBIGINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UBIGINT</span><span class="p">,</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>            <span class="s2">&quot;UINTEGER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UINT</span><span class="p">,</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>            <span class="s2">&quot;USMALLINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">USMALLINT</span><span class="p">,</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>            <span class="s2">&quot;UTINYINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UTINYINT</span><span class="p">,</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>        <span class="p">}</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>
+</span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>
 </span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>        <span class="n">BITWISE</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">BITWISE</span><span class="p">,</span>
@@ -613,37 +616,37 @@
     <a class="headerlink" href="#DuckDB"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="DuckDB-107"><a href="#DuckDB-107"><span class="linenos">107</span></a><span class="k">class</span> <span class="nc">DuckDB</span><span class="p">(</span><span class="n">Dialect</span><span class="p">):</span>
 </span><span id="DuckDB-108"><a href="#DuckDB-108"><span class="linenos">108</span></a>    <span class="n">NULL_ORDERING</span> <span class="o">=</span> <span class="s2">&quot;nulls_are_last&quot;</span>
-</span><span id="DuckDB-109"><a href="#DuckDB-109"><span class="linenos">109</span></a>
-</span><span id="DuckDB-110"><a href="#DuckDB-110"><span class="linenos">110</span></a>    <span class="c1"># https://duckdb.org/docs/sql/introduction.html#creating-a-new-table</span>
-</span><span id="DuckDB-111"><a href="#DuckDB-111"><span class="linenos">111</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="DuckDB-112"><a href="#DuckDB-112"><span class="linenos">112</span></a>
-</span><span id="DuckDB-113"><a href="#DuckDB-113"><span class="linenos">113</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="DuckDB-114"><a href="#DuckDB-114"><span class="linenos">114</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="DuckDB-115"><a href="#DuckDB-115"><span class="linenos">115</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
-</span><span id="DuckDB-116"><a href="#DuckDB-116"><span class="linenos">116</span></a>            <span class="s2">&quot;:=&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span>
-</span><span id="DuckDB-117"><a href="#DuckDB-117"><span class="linenos">117</span></a>            <span class="s2">&quot;//&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">DIV</span><span class="p">,</span>
-</span><span id="DuckDB-118"><a href="#DuckDB-118"><span class="linenos">118</span></a>            <span class="s2">&quot;ATTACH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="DuckDB-119"><a href="#DuckDB-119"><span class="linenos">119</span></a>            <span class="s2">&quot;BINARY&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
-</span><span id="DuckDB-120"><a href="#DuckDB-120"><span class="linenos">120</span></a>            <span class="s2">&quot;BITSTRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BIT</span><span class="p">,</span>
-</span><span id="DuckDB-121"><a href="#DuckDB-121"><span class="linenos">121</span></a>            <span class="s2">&quot;BPCHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="DuckDB-122"><a href="#DuckDB-122"><span class="linenos">122</span></a>            <span class="s2">&quot;CHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="DuckDB-123"><a href="#DuckDB-123"><span class="linenos">123</span></a>            <span class="s2">&quot;CHARACTER VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="DuckDB-124"><a href="#DuckDB-124"><span class="linenos">124</span></a>            <span class="s2">&quot;EXCLUDE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
-</span><span id="DuckDB-125"><a href="#DuckDB-125"><span class="linenos">125</span></a>            <span class="s2">&quot;HUGEINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT128</span><span class="p">,</span>
-</span><span id="DuckDB-126"><a href="#DuckDB-126"><span class="linenos">126</span></a>            <span class="s2">&quot;INT1&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TINYINT</span><span class="p">,</span>
-</span><span id="DuckDB-127"><a href="#DuckDB-127"><span class="linenos">127</span></a>            <span class="s2">&quot;LOGICAL&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BOOLEAN</span><span class="p">,</span>
-</span><span id="DuckDB-128"><a href="#DuckDB-128"><span class="linenos">128</span></a>            <span class="s2">&quot;PIVOT_WIDER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PIVOT</span><span class="p">,</span>
-</span><span id="DuckDB-129"><a href="#DuckDB-129"><span class="linenos">129</span></a>            <span class="s2">&quot;SIGNED&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
-</span><span id="DuckDB-130"><a href="#DuckDB-130"><span class="linenos">130</span></a>            <span class="s2">&quot;STRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARCHAR</span><span class="p">,</span>
-</span><span id="DuckDB-131"><a href="#DuckDB-131"><span class="linenos">131</span></a>            <span class="s2">&quot;UBIGINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UBIGINT</span><span class="p">,</span>
-</span><span id="DuckDB-132"><a href="#DuckDB-132"><span class="linenos">132</span></a>            <span class="s2">&quot;UINTEGER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UINT</span><span class="p">,</span>
-</span><span id="DuckDB-133"><a href="#DuckDB-133"><span class="linenos">133</span></a>            <span class="s2">&quot;USMALLINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">USMALLINT</span><span class="p">,</span>
-</span><span id="DuckDB-134"><a href="#DuckDB-134"><span class="linenos">134</span></a>            <span class="s2">&quot;UTINYINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UTINYINT</span><span class="p">,</span>
-</span><span id="DuckDB-135"><a href="#DuckDB-135"><span class="linenos">135</span></a>        <span class="p">}</span>
-</span><span id="DuckDB-136"><a href="#DuckDB-136"><span class="linenos">136</span></a>
-</span><span id="DuckDB-137"><a href="#DuckDB-137"><span class="linenos">137</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="DuckDB-138"><a href="#DuckDB-138"><span class="linenos">138</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="DuckDB-139"><a href="#DuckDB-139"><span class="linenos">139</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="DuckDB-109"><a href="#DuckDB-109"><span class="linenos">109</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="DuckDB-110"><a href="#DuckDB-110"><span class="linenos">110</span></a>
+</span><span id="DuckDB-111"><a href="#DuckDB-111"><span class="linenos">111</span></a>    <span class="c1"># https://duckdb.org/docs/sql/introduction.html#creating-a-new-table</span>
+</span><span id="DuckDB-112"><a href="#DuckDB-112"><span class="linenos">112</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="DuckDB-113"><a href="#DuckDB-113"><span class="linenos">113</span></a>
+</span><span id="DuckDB-114"><a href="#DuckDB-114"><span class="linenos">114</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="DuckDB-115"><a href="#DuckDB-115"><span class="linenos">115</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="DuckDB-116"><a href="#DuckDB-116"><span class="linenos">116</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="DuckDB-117"><a href="#DuckDB-117"><span class="linenos">117</span></a>            <span class="s2">&quot;:=&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span>
+</span><span id="DuckDB-118"><a href="#DuckDB-118"><span class="linenos">118</span></a>            <span class="s2">&quot;//&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">DIV</span><span class="p">,</span>
+</span><span id="DuckDB-119"><a href="#DuckDB-119"><span class="linenos">119</span></a>            <span class="s2">&quot;ATTACH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="DuckDB-120"><a href="#DuckDB-120"><span class="linenos">120</span></a>            <span class="s2">&quot;BINARY&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="DuckDB-121"><a href="#DuckDB-121"><span class="linenos">121</span></a>            <span class="s2">&quot;BITSTRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BIT</span><span class="p">,</span>
+</span><span id="DuckDB-122"><a href="#DuckDB-122"><span class="linenos">122</span></a>            <span class="s2">&quot;BPCHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="DuckDB-123"><a href="#DuckDB-123"><span class="linenos">123</span></a>            <span class="s2">&quot;CHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="DuckDB-124"><a href="#DuckDB-124"><span class="linenos">124</span></a>            <span class="s2">&quot;CHARACTER VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="DuckDB-125"><a href="#DuckDB-125"><span class="linenos">125</span></a>            <span class="s2">&quot;EXCLUDE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
+</span><span id="DuckDB-126"><a href="#DuckDB-126"><span class="linenos">126</span></a>            <span class="s2">&quot;HUGEINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT128</span><span class="p">,</span>
+</span><span id="DuckDB-127"><a href="#DuckDB-127"><span class="linenos">127</span></a>            <span class="s2">&quot;INT1&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TINYINT</span><span class="p">,</span>
+</span><span id="DuckDB-128"><a href="#DuckDB-128"><span class="linenos">128</span></a>            <span class="s2">&quot;LOGICAL&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BOOLEAN</span><span class="p">,</span>
+</span><span id="DuckDB-129"><a href="#DuckDB-129"><span class="linenos">129</span></a>            <span class="s2">&quot;PIVOT_WIDER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PIVOT</span><span class="p">,</span>
+</span><span id="DuckDB-130"><a href="#DuckDB-130"><span class="linenos">130</span></a>            <span class="s2">&quot;SIGNED&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
+</span><span id="DuckDB-131"><a href="#DuckDB-131"><span class="linenos">131</span></a>            <span class="s2">&quot;STRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARCHAR</span><span class="p">,</span>
+</span><span id="DuckDB-132"><a href="#DuckDB-132"><span class="linenos">132</span></a>            <span class="s2">&quot;UBIGINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UBIGINT</span><span class="p">,</span>
+</span><span id="DuckDB-133"><a href="#DuckDB-133"><span class="linenos">133</span></a>            <span class="s2">&quot;UINTEGER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UINT</span><span class="p">,</span>
+</span><span id="DuckDB-134"><a href="#DuckDB-134"><span class="linenos">134</span></a>            <span class="s2">&quot;USMALLINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">USMALLINT</span><span class="p">,</span>
+</span><span id="DuckDB-135"><a href="#DuckDB-135"><span class="linenos">135</span></a>            <span class="s2">&quot;UTINYINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UTINYINT</span><span class="p">,</span>
+</span><span id="DuckDB-136"><a href="#DuckDB-136"><span class="linenos">136</span></a>        <span class="p">}</span>
+</span><span id="DuckDB-137"><a href="#DuckDB-137"><span class="linenos">137</span></a>
+</span><span id="DuckDB-138"><a href="#DuckDB-138"><span class="linenos">138</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="DuckDB-139"><a href="#DuckDB-139"><span class="linenos">139</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="DuckDB-140"><a href="#DuckDB-140"><span class="linenos">140</span></a>
 </span><span id="DuckDB-141"><a href="#DuckDB-141"><span class="linenos">141</span></a>        <span class="n">BITWISE</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="DuckDB-142"><a href="#DuckDB-142"><span class="linenos">142</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">BITWISE</span><span class="p">,</span>
@@ -855,6 +858,18 @@
         
     </div>
     <a class="headerlink" href="#DuckDB.NULL_ORDERING"></a>
+    
+    
+
+                            </div>
+                            <div id="DuckDB.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DuckDB.SUPPORTS_USER_DEFINED_TYPES"></a>
     
     
 
@@ -1122,29 +1137,29 @@
 
     </div>
     <a class="headerlink" href="#DuckDB.Tokenizer"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="DuckDB.Tokenizer-113"><a href="#DuckDB.Tokenizer-113"><span class="linenos">113</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
-</span><span id="DuckDB.Tokenizer-114"><a href="#DuckDB.Tokenizer-114"><span class="linenos">114</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="DuckDB.Tokenizer-115"><a href="#DuckDB.Tokenizer-115"><span class="linenos">115</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-116"><a href="#DuckDB.Tokenizer-116"><span class="linenos">116</span></a>            <span class="s2">&quot;:=&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-117"><a href="#DuckDB.Tokenizer-117"><span class="linenos">117</span></a>            <span class="s2">&quot;//&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">DIV</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-118"><a href="#DuckDB.Tokenizer-118"><span class="linenos">118</span></a>            <span class="s2">&quot;ATTACH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-119"><a href="#DuckDB.Tokenizer-119"><span class="linenos">119</span></a>            <span class="s2">&quot;BINARY&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-120"><a href="#DuckDB.Tokenizer-120"><span class="linenos">120</span></a>            <span class="s2">&quot;BITSTRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BIT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-121"><a href="#DuckDB.Tokenizer-121"><span class="linenos">121</span></a>            <span class="s2">&quot;BPCHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-122"><a href="#DuckDB.Tokenizer-122"><span class="linenos">122</span></a>            <span class="s2">&quot;CHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-123"><a href="#DuckDB.Tokenizer-123"><span class="linenos">123</span></a>            <span class="s2">&quot;CHARACTER VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-124"><a href="#DuckDB.Tokenizer-124"><span class="linenos">124</span></a>            <span class="s2">&quot;EXCLUDE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-125"><a href="#DuckDB.Tokenizer-125"><span class="linenos">125</span></a>            <span class="s2">&quot;HUGEINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT128</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-126"><a href="#DuckDB.Tokenizer-126"><span class="linenos">126</span></a>            <span class="s2">&quot;INT1&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TINYINT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-127"><a href="#DuckDB.Tokenizer-127"><span class="linenos">127</span></a>            <span class="s2">&quot;LOGICAL&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BOOLEAN</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-128"><a href="#DuckDB.Tokenizer-128"><span class="linenos">128</span></a>            <span class="s2">&quot;PIVOT_WIDER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PIVOT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-129"><a href="#DuckDB.Tokenizer-129"><span class="linenos">129</span></a>            <span class="s2">&quot;SIGNED&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-130"><a href="#DuckDB.Tokenizer-130"><span class="linenos">130</span></a>            <span class="s2">&quot;STRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARCHAR</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-131"><a href="#DuckDB.Tokenizer-131"><span class="linenos">131</span></a>            <span class="s2">&quot;UBIGINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UBIGINT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-132"><a href="#DuckDB.Tokenizer-132"><span class="linenos">132</span></a>            <span class="s2">&quot;UINTEGER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UINT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-133"><a href="#DuckDB.Tokenizer-133"><span class="linenos">133</span></a>            <span class="s2">&quot;USMALLINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">USMALLINT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-134"><a href="#DuckDB.Tokenizer-134"><span class="linenos">134</span></a>            <span class="s2">&quot;UTINYINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UTINYINT</span><span class="p">,</span>
-</span><span id="DuckDB.Tokenizer-135"><a href="#DuckDB.Tokenizer-135"><span class="linenos">135</span></a>        <span class="p">}</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DuckDB.Tokenizer-114"><a href="#DuckDB.Tokenizer-114"><span class="linenos">114</span></a>    <span class="k">class</span> <span class="nc">Tokenizer</span><span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="p">):</span>
+</span><span id="DuckDB.Tokenizer-115"><a href="#DuckDB.Tokenizer-115"><span class="linenos">115</span></a>        <span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="DuckDB.Tokenizer-116"><a href="#DuckDB.Tokenizer-116"><span class="linenos">116</span></a>            <span class="o">**</span><span class="n">tokens</span><span class="o">.</span><span class="n">Tokenizer</span><span class="o">.</span><span class="n">KEYWORDS</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-117"><a href="#DuckDB.Tokenizer-117"><span class="linenos">117</span></a>            <span class="s2">&quot;:=&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-118"><a href="#DuckDB.Tokenizer-118"><span class="linenos">118</span></a>            <span class="s2">&quot;//&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">DIV</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-119"><a href="#DuckDB.Tokenizer-119"><span class="linenos">119</span></a>            <span class="s2">&quot;ATTACH&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">COMMAND</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-120"><a href="#DuckDB.Tokenizer-120"><span class="linenos">120</span></a>            <span class="s2">&quot;BINARY&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARBINARY</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-121"><a href="#DuckDB.Tokenizer-121"><span class="linenos">121</span></a>            <span class="s2">&quot;BITSTRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BIT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-122"><a href="#DuckDB.Tokenizer-122"><span class="linenos">122</span></a>            <span class="s2">&quot;BPCHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-123"><a href="#DuckDB.Tokenizer-123"><span class="linenos">123</span></a>            <span class="s2">&quot;CHAR&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-124"><a href="#DuckDB.Tokenizer-124"><span class="linenos">124</span></a>            <span class="s2">&quot;CHARACTER VARYING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-125"><a href="#DuckDB.Tokenizer-125"><span class="linenos">125</span></a>            <span class="s2">&quot;EXCLUDE&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">EXCEPT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-126"><a href="#DuckDB.Tokenizer-126"><span class="linenos">126</span></a>            <span class="s2">&quot;HUGEINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT128</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-127"><a href="#DuckDB.Tokenizer-127"><span class="linenos">127</span></a>            <span class="s2">&quot;INT1&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">TINYINT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-128"><a href="#DuckDB.Tokenizer-128"><span class="linenos">128</span></a>            <span class="s2">&quot;LOGICAL&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">BOOLEAN</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-129"><a href="#DuckDB.Tokenizer-129"><span class="linenos">129</span></a>            <span class="s2">&quot;PIVOT_WIDER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">PIVOT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-130"><a href="#DuckDB.Tokenizer-130"><span class="linenos">130</span></a>            <span class="s2">&quot;SIGNED&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">INT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-131"><a href="#DuckDB.Tokenizer-131"><span class="linenos">131</span></a>            <span class="s2">&quot;STRING&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">VARCHAR</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-132"><a href="#DuckDB.Tokenizer-132"><span class="linenos">132</span></a>            <span class="s2">&quot;UBIGINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UBIGINT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-133"><a href="#DuckDB.Tokenizer-133"><span class="linenos">133</span></a>            <span class="s2">&quot;UINTEGER&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UINT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-134"><a href="#DuckDB.Tokenizer-134"><span class="linenos">134</span></a>            <span class="s2">&quot;USMALLINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">USMALLINT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-135"><a href="#DuckDB.Tokenizer-135"><span class="linenos">135</span></a>            <span class="s2">&quot;UTINYINT&quot;</span><span class="p">:</span> <span class="n">TokenType</span><span class="o">.</span><span class="n">UTINYINT</span><span class="p">,</span>
+</span><span id="DuckDB.Tokenizer-136"><a href="#DuckDB.Tokenizer-136"><span class="linenos">136</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -1206,9 +1221,8 @@
 
     </div>
     <a class="headerlink" href="#DuckDB.Parser"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="DuckDB.Parser-137"><a href="#DuckDB.Parser-137"><span class="linenos">137</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="DuckDB.Parser-138"><a href="#DuckDB.Parser-138"><span class="linenos">138</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="DuckDB.Parser-139"><a href="#DuckDB.Parser-139"><span class="linenos">139</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DuckDB.Parser-138"><a href="#DuckDB.Parser-138"><span class="linenos">138</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="DuckDB.Parser-139"><a href="#DuckDB.Parser-139"><span class="linenos">139</span></a>        <span class="n">CONCAT_NULL_OUTPUTS_STRING</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="DuckDB.Parser-140"><a href="#DuckDB.Parser-140"><span class="linenos">140</span></a>
 </span><span id="DuckDB.Parser-141"><a href="#DuckDB.Parser-141"><span class="linenos">141</span></a>        <span class="n">BITWISE</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="DuckDB.Parser-142"><a href="#DuckDB.Parser-142"><span class="linenos">142</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">BITWISE</span><span class="p">,</span>
@@ -1315,18 +1329,6 @@ Default: 3</li>
     
 
                             </div>
-                            <div id="DuckDB.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
-                                <div class="attr variable">
-            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
-<span class="default_value">False</span>
-
-        
-    </div>
-    <a class="headerlink" href="#DuckDB.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
-    
-    
-
-                            </div>
                             <div id="DuckDB.Parser.BITWISE" class="classattr">
                                 <div class="attr variable">
             <span class="name">BITWISE</span>        =
@@ -1374,6 +1376,18 @@ Default: 3</li>
         
     </div>
     <a class="headerlink" href="#DuckDB.Parser.TOKENIZER_CLASS"></a>
+    
+    
+
+                            </div>
+                            <div id="DuckDB.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#DuckDB.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
     
     
 
@@ -1502,6 +1516,7 @@ Default: 3</li>
                 <dd id="DuckDB.Parser.WINDOW_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_ALIAS_TOKENS">WINDOW_ALIAS_TOKENS</a></dd>
                 <dd id="DuckDB.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_BEFORE_PAREN_TOKENS">WINDOW_BEFORE_PAREN_TOKENS</a></dd>
                 <dd id="DuckDB.Parser.WINDOW_SIDES" class="variable"><a href="../parser.html#Parser.WINDOW_SIDES">WINDOW_SIDES</a></dd>
+                <dd id="DuckDB.Parser.FETCH_TOKENS" class="variable"><a href="../parser.html#Parser.FETCH_TOKENS">FETCH_TOKENS</a></dd>
                 <dd id="DuckDB.Parser.ADD_CONSTRAINT_TOKENS" class="variable"><a href="../parser.html#Parser.ADD_CONSTRAINT_TOKENS">ADD_CONSTRAINT_TOKENS</a></dd>
                 <dd id="DuckDB.Parser.DISTINCT_TOKENS" class="variable"><a href="../parser.html#Parser.DISTINCT_TOKENS">DISTINCT_TOKENS</a></dd>
                 <dd id="DuckDB.Parser.STRICT_CAST" class="variable"><a href="../parser.html#Parser.STRICT_CAST">STRICT_CAST</a></dd>
@@ -1970,26 +1985,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#DuckDB.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="DuckDB.Generator.can_identify-257"><a href="#DuckDB.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="nd">@classmethod</span>
-</span><span id="DuckDB.Generator.can_identify-258"><a href="#DuckDB.Generator.can_identify-258"><span class="linenos">258</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="DuckDB.Generator.can_identify-259"><a href="#DuckDB.Generator.can_identify-259"><span class="linenos">259</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="DuckDB.Generator.can_identify-260"><a href="#DuckDB.Generator.can_identify-260"><span class="linenos">260</span></a>
-</span><span id="DuckDB.Generator.can_identify-261"><a href="#DuckDB.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">        Args:</span>
-</span><span id="DuckDB.Generator.can_identify-262"><a href="#DuckDB.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="DuckDB.Generator.can_identify-263"><a href="#DuckDB.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">            identify:</span>
-</span><span id="DuckDB.Generator.can_identify-264"><a href="#DuckDB.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="DuckDB.Generator.can_identify-265"><a href="#DuckDB.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="DuckDB.Generator.can_identify-266"><a href="#DuckDB.Generator.can_identify-266"><span class="linenos">266</span></a>
-</span><span id="DuckDB.Generator.can_identify-267"><a href="#DuckDB.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">        Returns:</span>
-</span><span id="DuckDB.Generator.can_identify-268"><a href="#DuckDB.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="DuckDB.Generator.can_identify-269"><a href="#DuckDB.Generator.can_identify-269"><span class="linenos">269</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="DuckDB.Generator.can_identify-270"><a href="#DuckDB.Generator.can_identify-270"><span class="linenos">270</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="DuckDB.Generator.can_identify-271"><a href="#DuckDB.Generator.can_identify-271"><span class="linenos">271</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="DuckDB.Generator.can_identify-272"><a href="#DuckDB.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="DuckDB.Generator.can_identify-273"><a href="#DuckDB.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="DuckDB.Generator.can_identify-274"><a href="#DuckDB.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="DuckDB.Generator.can_identify-260"><a href="#DuckDB.Generator.can_identify-260"><span class="linenos">260</span></a>    <span class="nd">@classmethod</span>
+</span><span id="DuckDB.Generator.can_identify-261"><a href="#DuckDB.Generator.can_identify-261"><span class="linenos">261</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="DuckDB.Generator.can_identify-262"><a href="#DuckDB.Generator.can_identify-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="DuckDB.Generator.can_identify-263"><a href="#DuckDB.Generator.can_identify-263"><span class="linenos">263</span></a>
+</span><span id="DuckDB.Generator.can_identify-264"><a href="#DuckDB.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">        Args:</span>
+</span><span id="DuckDB.Generator.can_identify-265"><a href="#DuckDB.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="DuckDB.Generator.can_identify-266"><a href="#DuckDB.Generator.can_identify-266"><span class="linenos">266</span></a><span class="sd">            identify:</span>
+</span><span id="DuckDB.Generator.can_identify-267"><a href="#DuckDB.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="DuckDB.Generator.can_identify-268"><a href="#DuckDB.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="DuckDB.Generator.can_identify-269"><a href="#DuckDB.Generator.can_identify-269"><span class="linenos">269</span></a>
+</span><span id="DuckDB.Generator.can_identify-270"><a href="#DuckDB.Generator.can_identify-270"><span class="linenos">270</span></a><span class="sd">        Returns:</span>
+</span><span id="DuckDB.Generator.can_identify-271"><a href="#DuckDB.Generator.can_identify-271"><span class="linenos">271</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="DuckDB.Generator.can_identify-272"><a href="#DuckDB.Generator.can_identify-272"><span class="linenos">272</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="DuckDB.Generator.can_identify-273"><a href="#DuckDB.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="DuckDB.Generator.can_identify-274"><a href="#DuckDB.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="kc">True</span>
 </span><span id="DuckDB.Generator.can_identify-275"><a href="#DuckDB.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="DuckDB.Generator.can_identify-276"><a href="#DuckDB.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="DuckDB.Generator.can_identify-276"><a href="#DuckDB.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="DuckDB.Generator.can_identify-277"><a href="#DuckDB.Generator.can_identify-277"><span class="linenos">277</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="DuckDB.Generator.can_identify-278"><a href="#DuckDB.Generator.can_identify-278"><span class="linenos">278</span></a>
+</span><span id="DuckDB.Generator.can_identify-279"><a href="#DuckDB.Generator.can_identify-279"><span class="linenos">279</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 

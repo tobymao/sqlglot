@@ -43,6 +43,9 @@
                                 <a class="variable" href="#Snowflake.TIME_FORMAT">TIME_FORMAT</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Snowflake.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Snowflake.TIME_MAPPING">TIME_MAPPING</a>
                         </li>
                         <li>
@@ -50,9 +53,6 @@
                                         <ul class="memberlist">
                                     <li>
                                             <a class="variable" href="#Snowflake.Parser.IDENTIFY_PIVOT_STRINGS">IDENTIFY_PIVOT_STRINGS</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Snowflake.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#Snowflake.Parser.FUNCTIONS">FUNCTIONS</a>
@@ -80,6 +80,9 @@
                                     </li>
                                     <li>
                                             <a class="variable" href="#Snowflake.Parser.TOKENIZER_CLASS">TOKENIZER_CLASS</a>
+                                    </li>
+                                    <li>
+                                            <a class="variable" href="#Snowflake.Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#Snowflake.Parser.NULL_ORDERING">NULL_ORDERING</a>
@@ -515,39 +518,39 @@
 </span><span id="L-202"><a href="#L-202"><span class="linenos">202</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-203"><a href="#L-203"><span class="linenos">203</span></a>    <span class="n">NULL_ORDERING</span> <span class="o">=</span> <span class="s2">&quot;nulls_are_large&quot;</span>
 </span><span id="L-204"><a href="#L-204"><span class="linenos">204</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;YYYY-MM-DD HH24:MI:SS&#39;&quot;</span>
-</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>
-</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="s2">&quot;mmmm&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>        <span class="s2">&quot;MON&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>        <span class="s2">&quot;mon&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>        <span class="s2">&quot;DY&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>        <span class="s2">&quot;dy&quot;</span><span class="p">:</span> <span class="s2">&quot;%w&quot;</span><span class="p">,</span>
-</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>        <span class="s2">&quot;HH24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>        <span class="s2">&quot;hh24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>        <span class="s2">&quot;HH12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a>        <span class="s2">&quot;hh12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>        <span class="s2">&quot;MI&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a>        <span class="s2">&quot;mi&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a>        <span class="s2">&quot;SS&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>        <span class="s2">&quot;FF&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>        <span class="s2">&quot;ff&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>        <span class="s2">&quot;FF6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>        <span class="s2">&quot;ff6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>    <span class="p">}</span>
-</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a>
-</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a>        <span class="n">IDENTIFY_PIVOT_STRINGS</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-205"><a href="#L-205"><span class="linenos">205</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-206"><a href="#L-206"><span class="linenos">206</span></a>
+</span><span id="L-207"><a href="#L-207"><span class="linenos">207</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="L-208"><a href="#L-208"><span class="linenos">208</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-209"><a href="#L-209"><span class="linenos">209</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="L-210"><a href="#L-210"><span class="linenos">210</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="L-211"><a href="#L-211"><span class="linenos">211</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="L-212"><a href="#L-212"><span class="linenos">212</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="L-213"><a href="#L-213"><span class="linenos">213</span></a>        <span class="s2">&quot;mmmm&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="L-214"><a href="#L-214"><span class="linenos">214</span></a>        <span class="s2">&quot;MON&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="L-215"><a href="#L-215"><span class="linenos">215</span></a>        <span class="s2">&quot;mon&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="L-216"><a href="#L-216"><span class="linenos">216</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="L-217"><a href="#L-217"><span class="linenos">217</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="L-218"><a href="#L-218"><span class="linenos">218</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-219"><a href="#L-219"><span class="linenos">219</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-220"><a href="#L-220"><span class="linenos">220</span></a>        <span class="s2">&quot;DY&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-221"><a href="#L-221"><span class="linenos">221</span></a>        <span class="s2">&quot;dy&quot;</span><span class="p">:</span> <span class="s2">&quot;%w&quot;</span><span class="p">,</span>
+</span><span id="L-222"><a href="#L-222"><span class="linenos">222</span></a>        <span class="s2">&quot;HH24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="L-223"><a href="#L-223"><span class="linenos">223</span></a>        <span class="s2">&quot;hh24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="L-224"><a href="#L-224"><span class="linenos">224</span></a>        <span class="s2">&quot;HH12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a>        <span class="s2">&quot;hh12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a>        <span class="s2">&quot;MI&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a>        <span class="s2">&quot;mi&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a>        <span class="s2">&quot;SS&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>        <span class="s2">&quot;FF&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>        <span class="s2">&quot;ff&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-232"><a href="#L-232"><span class="linenos">232</span></a>        <span class="s2">&quot;FF6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-233"><a href="#L-233"><span class="linenos">233</span></a>        <span class="s2">&quot;ff6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="L-234"><a href="#L-234"><span class="linenos">234</span></a>    <span class="p">}</span>
+</span><span id="L-235"><a href="#L-235"><span class="linenos">235</span></a>
+</span><span id="L-236"><a href="#L-236"><span class="linenos">236</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="L-237"><a href="#L-237"><span class="linenos">237</span></a>        <span class="n">IDENTIFY_PIVOT_STRINGS</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-238"><a href="#L-238"><span class="linenos">238</span></a>
 </span><span id="L-239"><a href="#L-239"><span class="linenos">239</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="L-240"><a href="#L-240"><span class="linenos">240</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -837,39 +840,39 @@
 </span><span id="Snowflake-203"><a href="#Snowflake-203"><span class="linenos">203</span></a>    <span class="n">RESOLVES_IDENTIFIERS_AS_UPPERCASE</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="Snowflake-204"><a href="#Snowflake-204"><span class="linenos">204</span></a>    <span class="n">NULL_ORDERING</span> <span class="o">=</span> <span class="s2">&quot;nulls_are_large&quot;</span>
 </span><span id="Snowflake-205"><a href="#Snowflake-205"><span class="linenos">205</span></a>    <span class="n">TIME_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;&#39;YYYY-MM-DD HH24:MI:SS&#39;&quot;</span>
-</span><span id="Snowflake-206"><a href="#Snowflake-206"><span class="linenos">206</span></a>
-</span><span id="Snowflake-207"><a href="#Snowflake-207"><span class="linenos">207</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="Snowflake-208"><a href="#Snowflake-208"><span class="linenos">208</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-209"><a href="#Snowflake-209"><span class="linenos">209</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-210"><a href="#Snowflake-210"><span class="linenos">210</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-211"><a href="#Snowflake-211"><span class="linenos">211</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-212"><a href="#Snowflake-212"><span class="linenos">212</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-213"><a href="#Snowflake-213"><span class="linenos">213</span></a>        <span class="s2">&quot;mmmm&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-214"><a href="#Snowflake-214"><span class="linenos">214</span></a>        <span class="s2">&quot;MON&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-215"><a href="#Snowflake-215"><span class="linenos">215</span></a>        <span class="s2">&quot;mon&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-216"><a href="#Snowflake-216"><span class="linenos">216</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-217"><a href="#Snowflake-217"><span class="linenos">217</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-218"><a href="#Snowflake-218"><span class="linenos">218</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-219"><a href="#Snowflake-219"><span class="linenos">219</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-220"><a href="#Snowflake-220"><span class="linenos">220</span></a>        <span class="s2">&quot;DY&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-221"><a href="#Snowflake-221"><span class="linenos">221</span></a>        <span class="s2">&quot;dy&quot;</span><span class="p">:</span> <span class="s2">&quot;%w&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-222"><a href="#Snowflake-222"><span class="linenos">222</span></a>        <span class="s2">&quot;HH24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-223"><a href="#Snowflake-223"><span class="linenos">223</span></a>        <span class="s2">&quot;hh24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-224"><a href="#Snowflake-224"><span class="linenos">224</span></a>        <span class="s2">&quot;HH12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-225"><a href="#Snowflake-225"><span class="linenos">225</span></a>        <span class="s2">&quot;hh12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-226"><a href="#Snowflake-226"><span class="linenos">226</span></a>        <span class="s2">&quot;MI&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-227"><a href="#Snowflake-227"><span class="linenos">227</span></a>        <span class="s2">&quot;mi&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-228"><a href="#Snowflake-228"><span class="linenos">228</span></a>        <span class="s2">&quot;SS&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-229"><a href="#Snowflake-229"><span class="linenos">229</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-230"><a href="#Snowflake-230"><span class="linenos">230</span></a>        <span class="s2">&quot;FF&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-231"><a href="#Snowflake-231"><span class="linenos">231</span></a>        <span class="s2">&quot;ff&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-232"><a href="#Snowflake-232"><span class="linenos">232</span></a>        <span class="s2">&quot;FF6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-233"><a href="#Snowflake-233"><span class="linenos">233</span></a>        <span class="s2">&quot;ff6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="Snowflake-234"><a href="#Snowflake-234"><span class="linenos">234</span></a>    <span class="p">}</span>
-</span><span id="Snowflake-235"><a href="#Snowflake-235"><span class="linenos">235</span></a>
-</span><span id="Snowflake-236"><a href="#Snowflake-236"><span class="linenos">236</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="Snowflake-237"><a href="#Snowflake-237"><span class="linenos">237</span></a>        <span class="n">IDENTIFY_PIVOT_STRINGS</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="Snowflake-238"><a href="#Snowflake-238"><span class="linenos">238</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Snowflake-206"><a href="#Snowflake-206"><span class="linenos">206</span></a>    <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="Snowflake-207"><a href="#Snowflake-207"><span class="linenos">207</span></a>
+</span><span id="Snowflake-208"><a href="#Snowflake-208"><span class="linenos">208</span></a>    <span class="n">TIME_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="Snowflake-209"><a href="#Snowflake-209"><span class="linenos">209</span></a>        <span class="s2">&quot;YYYY&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-210"><a href="#Snowflake-210"><span class="linenos">210</span></a>        <span class="s2">&quot;yyyy&quot;</span><span class="p">:</span> <span class="s2">&quot;%Y&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-211"><a href="#Snowflake-211"><span class="linenos">211</span></a>        <span class="s2">&quot;YY&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-212"><a href="#Snowflake-212"><span class="linenos">212</span></a>        <span class="s2">&quot;yy&quot;</span><span class="p">:</span> <span class="s2">&quot;%y&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-213"><a href="#Snowflake-213"><span class="linenos">213</span></a>        <span class="s2">&quot;MMMM&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-214"><a href="#Snowflake-214"><span class="linenos">214</span></a>        <span class="s2">&quot;mmmm&quot;</span><span class="p">:</span> <span class="s2">&quot;%B&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-215"><a href="#Snowflake-215"><span class="linenos">215</span></a>        <span class="s2">&quot;MON&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-216"><a href="#Snowflake-216"><span class="linenos">216</span></a>        <span class="s2">&quot;mon&quot;</span><span class="p">:</span> <span class="s2">&quot;%b&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-217"><a href="#Snowflake-217"><span class="linenos">217</span></a>        <span class="s2">&quot;MM&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-218"><a href="#Snowflake-218"><span class="linenos">218</span></a>        <span class="s2">&quot;mm&quot;</span><span class="p">:</span> <span class="s2">&quot;%m&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-219"><a href="#Snowflake-219"><span class="linenos">219</span></a>        <span class="s2">&quot;DD&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-220"><a href="#Snowflake-220"><span class="linenos">220</span></a>        <span class="s2">&quot;dd&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-221"><a href="#Snowflake-221"><span class="linenos">221</span></a>        <span class="s2">&quot;DY&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%a</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-222"><a href="#Snowflake-222"><span class="linenos">222</span></a>        <span class="s2">&quot;dy&quot;</span><span class="p">:</span> <span class="s2">&quot;%w&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-223"><a href="#Snowflake-223"><span class="linenos">223</span></a>        <span class="s2">&quot;HH24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-224"><a href="#Snowflake-224"><span class="linenos">224</span></a>        <span class="s2">&quot;hh24&quot;</span><span class="p">:</span> <span class="s2">&quot;%H&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-225"><a href="#Snowflake-225"><span class="linenos">225</span></a>        <span class="s2">&quot;HH12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-226"><a href="#Snowflake-226"><span class="linenos">226</span></a>        <span class="s2">&quot;hh12&quot;</span><span class="p">:</span> <span class="s2">&quot;%I&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-227"><a href="#Snowflake-227"><span class="linenos">227</span></a>        <span class="s2">&quot;MI&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-228"><a href="#Snowflake-228"><span class="linenos">228</span></a>        <span class="s2">&quot;mi&quot;</span><span class="p">:</span> <span class="s2">&quot;%M&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-229"><a href="#Snowflake-229"><span class="linenos">229</span></a>        <span class="s2">&quot;SS&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-230"><a href="#Snowflake-230"><span class="linenos">230</span></a>        <span class="s2">&quot;ss&quot;</span><span class="p">:</span> <span class="s2">&quot;%S&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-231"><a href="#Snowflake-231"><span class="linenos">231</span></a>        <span class="s2">&quot;FF&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-232"><a href="#Snowflake-232"><span class="linenos">232</span></a>        <span class="s2">&quot;ff&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-233"><a href="#Snowflake-233"><span class="linenos">233</span></a>        <span class="s2">&quot;FF6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-234"><a href="#Snowflake-234"><span class="linenos">234</span></a>        <span class="s2">&quot;ff6&quot;</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">%f</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="Snowflake-235"><a href="#Snowflake-235"><span class="linenos">235</span></a>    <span class="p">}</span>
+</span><span id="Snowflake-236"><a href="#Snowflake-236"><span class="linenos">236</span></a>
+</span><span id="Snowflake-237"><a href="#Snowflake-237"><span class="linenos">237</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Snowflake-238"><a href="#Snowflake-238"><span class="linenos">238</span></a>        <span class="n">IDENTIFY_PIVOT_STRINGS</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="Snowflake-239"><a href="#Snowflake-239"><span class="linenos">239</span></a>
 </span><span id="Snowflake-240"><a href="#Snowflake-240"><span class="linenos">240</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Snowflake-241"><a href="#Snowflake-241"><span class="linenos">241</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -1180,6 +1183,18 @@
     
 
                             </div>
+                            <div id="Snowflake.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Snowflake.SUPPORTS_USER_DEFINED_TYPES"></a>
+    
+    
+
+                            </div>
                             <div id="Snowflake.TIME_MAPPING" class="classattr">
                                 <div class="attr variable">
             <span class="name">TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
@@ -1446,9 +1461,8 @@
 
     </div>
     <a class="headerlink" href="#Snowflake.Parser"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Snowflake.Parser-236"><a href="#Snowflake.Parser-236"><span class="linenos">236</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
-</span><span id="Snowflake.Parser-237"><a href="#Snowflake.Parser-237"><span class="linenos">237</span></a>        <span class="n">IDENTIFY_PIVOT_STRINGS</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="Snowflake.Parser-238"><a href="#Snowflake.Parser-238"><span class="linenos">238</span></a>        <span class="n">SUPPORTS_USER_DEFINED_TYPES</span> <span class="o">=</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Snowflake.Parser-237"><a href="#Snowflake.Parser-237"><span class="linenos">237</span></a>    <span class="k">class</span> <span class="nc">Parser</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="p">):</span>
+</span><span id="Snowflake.Parser-238"><a href="#Snowflake.Parser-238"><span class="linenos">238</span></a>        <span class="n">IDENTIFY_PIVOT_STRINGS</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="Snowflake.Parser-239"><a href="#Snowflake.Parser-239"><span class="linenos">239</span></a>
 </span><span id="Snowflake.Parser-240"><a href="#Snowflake.Parser-240"><span class="linenos">240</span></a>        <span class="n">FUNCTIONS</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="Snowflake.Parser-241"><a href="#Snowflake.Parser-241"><span class="linenos">241</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
@@ -1583,18 +1597,6 @@ Default: 3</li>
     
 
                             </div>
-                            <div id="Snowflake.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
-                                <div class="attr variable">
-            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
-<span class="default_value">False</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Snowflake.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
-    
-    
-
-                            </div>
                             <div id="Snowflake.Parser.FUNCTIONS" class="classattr">
                                 <div class="attr variable">
             <span class="name">FUNCTIONS</span>        =
@@ -1638,7 +1640,7 @@ Default: 3</li>
                                 <div class="attr variable">
             <span class="name">TIMESTAMPS</span>        =
 <input id="Snowflake.Parser.TIMESTAMPS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Snowflake.Parser.TIMESTAMPS-view-value"></label><span class="default_value">{&lt;TokenType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;, &lt;TokenType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;, &lt;TokenType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;, &lt;TokenType.TIMETZ: &#39;TIMETZ&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Snowflake.Parser.TIMESTAMPS-view-value"></label><span class="default_value">{&lt;TokenType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;, &lt;TokenType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;, &lt;TokenType.TIMETZ: &#39;TIMETZ&#39;&gt;, &lt;TokenType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;}</span>
 
         
     </div>
@@ -1707,6 +1709,18 @@ Default: 3</li>
         
     </div>
     <a class="headerlink" href="#Snowflake.Parser.TOKENIZER_CLASS"></a>
+    
+    
+
+                            </div>
+                            <div id="Snowflake.Parser.SUPPORTS_USER_DEFINED_TYPES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">SUPPORTS_USER_DEFINED_TYPES</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Snowflake.Parser.SUPPORTS_USER_DEFINED_TYPES"></a>
     
     
 
@@ -1845,6 +1859,7 @@ Default: 3</li>
                 <dd id="Snowflake.Parser.WINDOW_ALIAS_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_ALIAS_TOKENS">WINDOW_ALIAS_TOKENS</a></dd>
                 <dd id="Snowflake.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="variable"><a href="../parser.html#Parser.WINDOW_BEFORE_PAREN_TOKENS">WINDOW_BEFORE_PAREN_TOKENS</a></dd>
                 <dd id="Snowflake.Parser.WINDOW_SIDES" class="variable"><a href="../parser.html#Parser.WINDOW_SIDES">WINDOW_SIDES</a></dd>
+                <dd id="Snowflake.Parser.FETCH_TOKENS" class="variable"><a href="../parser.html#Parser.FETCH_TOKENS">FETCH_TOKENS</a></dd>
                 <dd id="Snowflake.Parser.ADD_CONSTRAINT_TOKENS" class="variable"><a href="../parser.html#Parser.ADD_CONSTRAINT_TOKENS">ADD_CONSTRAINT_TOKENS</a></dd>
                 <dd id="Snowflake.Parser.DISTINCT_TOKENS" class="variable"><a href="../parser.html#Parser.DISTINCT_TOKENS">DISTINCT_TOKENS</a></dd>
                 <dd id="Snowflake.Parser.STRICT_CAST" class="variable"><a href="../parser.html#Parser.STRICT_CAST">STRICT_CAST</a></dd>
@@ -2017,7 +2032,7 @@ Default: 3</li>
                             <div id="Snowflake.Tokenizer.COMMANDS" class="classattr">
                                 <div class="attr variable">
             <span class="name">COMMANDS</span>        =
-<span class="default_value">{&lt;TokenType.FETCH: &#39;FETCH&#39;&gt;, &lt;TokenType.EXECUTE: &#39;EXECUTE&#39;&gt;, &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;}</span>
+<span class="default_value">{&lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &lt;TokenType.FETCH: &#39;FETCH&#39;&gt;, &lt;TokenType.EXECUTE: &#39;EXECUTE&#39;&gt;}</span>
 
         
     </div>
@@ -2571,26 +2586,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Snowflake.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Snowflake.Generator.can_identify-257"><a href="#Snowflake.Generator.can_identify-257"><span class="linenos">257</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Snowflake.Generator.can_identify-258"><a href="#Snowflake.Generator.can_identify-258"><span class="linenos">258</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Snowflake.Generator.can_identify-259"><a href="#Snowflake.Generator.can_identify-259"><span class="linenos">259</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Snowflake.Generator.can_identify-260"><a href="#Snowflake.Generator.can_identify-260"><span class="linenos">260</span></a>
-</span><span id="Snowflake.Generator.can_identify-261"><a href="#Snowflake.Generator.can_identify-261"><span class="linenos">261</span></a><span class="sd">        Args:</span>
-</span><span id="Snowflake.Generator.can_identify-262"><a href="#Snowflake.Generator.can_identify-262"><span class="linenos">262</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Snowflake.Generator.can_identify-263"><a href="#Snowflake.Generator.can_identify-263"><span class="linenos">263</span></a><span class="sd">            identify:</span>
-</span><span id="Snowflake.Generator.can_identify-264"><a href="#Snowflake.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Snowflake.Generator.can_identify-265"><a href="#Snowflake.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Snowflake.Generator.can_identify-266"><a href="#Snowflake.Generator.can_identify-266"><span class="linenos">266</span></a>
-</span><span id="Snowflake.Generator.can_identify-267"><a href="#Snowflake.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">        Returns:</span>
-</span><span id="Snowflake.Generator.can_identify-268"><a href="#Snowflake.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Snowflake.Generator.can_identify-269"><a href="#Snowflake.Generator.can_identify-269"><span class="linenos">269</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Snowflake.Generator.can_identify-270"><a href="#Snowflake.Generator.can_identify-270"><span class="linenos">270</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Snowflake.Generator.can_identify-271"><a href="#Snowflake.Generator.can_identify-271"><span class="linenos">271</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Snowflake.Generator.can_identify-272"><a href="#Snowflake.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="Snowflake.Generator.can_identify-273"><a href="#Snowflake.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Snowflake.Generator.can_identify-274"><a href="#Snowflake.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Snowflake.Generator.can_identify-260"><a href="#Snowflake.Generator.can_identify-260"><span class="linenos">260</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Snowflake.Generator.can_identify-261"><a href="#Snowflake.Generator.can_identify-261"><span class="linenos">261</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Snowflake.Generator.can_identify-262"><a href="#Snowflake.Generator.can_identify-262"><span class="linenos">262</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Snowflake.Generator.can_identify-263"><a href="#Snowflake.Generator.can_identify-263"><span class="linenos">263</span></a>
+</span><span id="Snowflake.Generator.can_identify-264"><a href="#Snowflake.Generator.can_identify-264"><span class="linenos">264</span></a><span class="sd">        Args:</span>
+</span><span id="Snowflake.Generator.can_identify-265"><a href="#Snowflake.Generator.can_identify-265"><span class="linenos">265</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Snowflake.Generator.can_identify-266"><a href="#Snowflake.Generator.can_identify-266"><span class="linenos">266</span></a><span class="sd">            identify:</span>
+</span><span id="Snowflake.Generator.can_identify-267"><a href="#Snowflake.Generator.can_identify-267"><span class="linenos">267</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Snowflake.Generator.can_identify-268"><a href="#Snowflake.Generator.can_identify-268"><span class="linenos">268</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Snowflake.Generator.can_identify-269"><a href="#Snowflake.Generator.can_identify-269"><span class="linenos">269</span></a>
+</span><span id="Snowflake.Generator.can_identify-270"><a href="#Snowflake.Generator.can_identify-270"><span class="linenos">270</span></a><span class="sd">        Returns:</span>
+</span><span id="Snowflake.Generator.can_identify-271"><a href="#Snowflake.Generator.can_identify-271"><span class="linenos">271</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Snowflake.Generator.can_identify-272"><a href="#Snowflake.Generator.can_identify-272"><span class="linenos">272</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Snowflake.Generator.can_identify-273"><a href="#Snowflake.Generator.can_identify-273"><span class="linenos">273</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Snowflake.Generator.can_identify-274"><a href="#Snowflake.Generator.can_identify-274"><span class="linenos">274</span></a>            <span class="k">return</span> <span class="kc">True</span>
 </span><span id="Snowflake.Generator.can_identify-275"><a href="#Snowflake.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="Snowflake.Generator.can_identify-276"><a href="#Snowflake.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="Snowflake.Generator.can_identify-276"><a href="#Snowflake.Generator.can_identify-276"><span class="linenos">276</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Snowflake.Generator.can_identify-277"><a href="#Snowflake.Generator.can_identify-277"><span class="linenos">277</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Snowflake.Generator.can_identify-278"><a href="#Snowflake.Generator.can_identify-278"><span class="linenos">278</span></a>
+</span><span id="Snowflake.Generator.can_identify-279"><a href="#Snowflake.Generator.can_identify-279"><span class="linenos">279</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 

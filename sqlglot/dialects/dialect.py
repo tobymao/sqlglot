@@ -760,3 +760,7 @@ def is_parse_json(expression: exp.Expression) -> bool:
     return isinstance(expression, exp.ParseJSON) or (
         isinstance(expression, exp.Cast) and expression.is_type("json")
     )
+
+
+def isnull_to_is_null(args: t.List) -> exp.Expression:
+    return exp.Paren(this=exp.Paren(this=args[0]).is_(exp.null()))

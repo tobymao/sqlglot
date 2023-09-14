@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     datestrtodate_sql,
     format_time_lambda,
+    isnull_to_is_null,
     json_keyvalue_comma_sql,
     locate_to_strposition,
     max_or_greatest,
@@ -237,6 +238,7 @@ class MySQL(Dialect):
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "LOCATE": locate_to_strposition,
             "STR_TO_DATE": _str_to_date,
+            "ISNULL": isnull_to_is_null,
         }
 
         FUNCTION_PARSERS = {

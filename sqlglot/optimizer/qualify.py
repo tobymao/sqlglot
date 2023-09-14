@@ -60,8 +60,8 @@ def qualify(
         The qualified expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
-    expression = qualify_tables(expression, db=db, catalog=catalog, schema=schema)
     expression = normalize_identifiers(expression, dialect=dialect)
+    expression = qualify_tables(expression, db=db, catalog=catalog, schema=schema)
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)

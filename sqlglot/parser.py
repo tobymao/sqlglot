@@ -820,7 +820,9 @@ class Parser(metaclass=_Parser):
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
 
-    TYPE_LITERAL_PARSERS: t.Dict[exp.DataType.Type, t.Callable] = {}
+    TYPE_LITERAL_PARSERS = {
+        exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
+    }
 
     MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 

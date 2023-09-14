@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     create_with_partitions_sql,
     format_time_lambda,
     if_sql,
+    is_parse_json,
     left_to_substring_sql,
     locate_to_strposition,
     max_or_greatest,
@@ -89,7 +90,7 @@ def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff) -> str:
 
 def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:
     this = expression.this
-    if isinstance(this, exp.Cast) and this.is_type("json") and this.this.is_string:
+    if is_parse_json(this) and this.this.is_string:
         # Since FROM_JSON requires a nested type, we always wrap the json string with
         # an array to ensure that "naked" strings like "'a'" will be handled correctly
         wrapped_json = exp.Literal.string(f"[{this.this.name}]")

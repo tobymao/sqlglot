@@ -874,5 +874,5 @@ COMMENT='客户账户表'"""
 
     def test_is_null(self):
         self.validate_all(
-            "SELECT ISNULL(x)", read={"": "SELECT (x IS NULL)", "mysql": "SELECT (x IS NULL)"}
+            "SELECT ISNULL(x)", write={"": "SELECT (x IS NULL)", "mysql": "SELECT (x IS NULL)"}
         )

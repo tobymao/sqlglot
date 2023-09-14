@@ -873,4 +873,6 @@ COMMENT='客户账户表'"""
         self.validate_identity("SELECT JSON_OBJECT('id', 87, 'name', 'carrot')")
 
     def test_is_null(self):
-        self.validate_all("SELECT ((x) IS NULL)", read={"mysql": "SELECT ISNULL(x)"})
+        self.validate_all(
+            "SELECT ISNULL(x)", read={"": "SELECT (x IS NULL)", "mysql": "SELECT (x IS NULL)"}
+        )

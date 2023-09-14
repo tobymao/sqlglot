@@ -763,4 +763,4 @@ def is_parse_json(expression: exp.Expression) -> bool:
 
 
 def isnull_to_is_null(args: t.List) -> exp.Expression:
-    return exp.Paren(this=exp.Paren(this=args[0]).is_(exp.null()))
+    return exp.Paren(this=exp.Is(this=seq_get(args, 0), expression=exp.null()))

@@ -158,6 +158,11 @@ class DuckDB(Dialect):
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_VALUE": exp.Array.from_arg_list,
+            "MEDIAN": lambda args: exp.PercentileCont(
+                this=seq_get(args, 0), expression=exp.Literal.number(0.5)
+            ),
+            "QUANTILE_CONT": exp.PercentileCont.from_arg_list,
+            "QUANTILE_DISC": exp.PercentileDisc.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
             ),
@@ -266,6 +271,8 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, "timestamp", copy=True),
                 exp.cast(e.this, "timestamp", copy=True),
             ),
+            exp.PercentileCont: rename_func("QUANTILE_CONT"),
+            exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpReplace: regexp_replace_sql,

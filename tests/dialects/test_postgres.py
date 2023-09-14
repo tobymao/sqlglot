@@ -207,6 +207,7 @@ class TestPostgres(Validator):
             "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
             write={
                 "databricks": "SELECT PERCENTILE_APPROX(amount, 0.5)",
+                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
                 "presto": "SELECT APPROX_PERCENTILE(amount, 0.5)",
                 "spark": "SELECT PERCENTILE_APPROX(amount, 0.5)",
                 "trino": "SELECT APPROX_PERCENTILE(amount, 0.5)",

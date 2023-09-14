@@ -348,6 +348,25 @@ class TestDuckDB(Validator):
             "SELECT CAST('2020-05-06' AS DATE) + INTERVAL 5 DAY",
             read={"bigquery": "SELECT DATE_ADD(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
         )
+        self.validate_all(
+            "MEDIAN(amount)",
+            write={
+                "postgres": "PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
+                "duckdb": "QUANTILE_CONT(amount, 0.5)",
+            },
+        )
+        self.validate_all(
+            "QUANTILE_CONT(amount, 0.3)",
+            write={
+                "postgres": "PERCENTILE_CONT(0.3) WITHIN GROUP (ORDER BY amount)",
+            },
+        )
+        self.validate_all(
+            "QUANTILE_DISC(amount, 0.3)",
+            write={
+                "postgres": "PERCENTILE_DISC(0.3) WITHIN GROUP (ORDER BY amount)",
+            },
+        )
 
         with self.assertRaises(UnsupportedError):
             transpile(

@@ -4717,6 +4717,14 @@ class Quantile(AggFunc):
     arg_types = {"this": True, "quantile": True}
 
 
+class QuantileCont(Quantile):
+    _sql_names = ["QUANTILE_CONT"]
+
+
+class QuantileDisc(Quantile):
+    _sql_names = ["QUANTILE_DISC"]
+
+
 class ApproxQuantile(Quantile):
     arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 

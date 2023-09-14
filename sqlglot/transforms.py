@@ -237,6 +237,30 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
     return expression
 
 
+def add_within_group_for_percentiles(expression: exp.Expression) -> exp.Expression:
+    if not isinstance(expression, exp.WithinGroup) and isinstance(
+        expression, (exp.QuantileCont, exp.QuantileDisc)
+    ):
+        input_value = expression.this
+        quantile = expression.args["quantile"]
+        within_group_expression = exp.Order(expressions=[exp.Ordered(this=input_value)])
+
+        if isinstance(expression, exp.QuantileDisc):
+            return exp.WithinGroup(
+                this=exp.PercentileDisc(this=quantile),
+                expression=within_group_expression,
+            )
+
+        return expression.replace(
+            exp.WithinGroup(
+                this=exp.PercentileCont(this=quantile),
+                expression=within_group_expression,
+            )
+        )
+
+    return expression
+
+
 def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.With) and expression.recursive:
         next_name = name_sequence("_c_")

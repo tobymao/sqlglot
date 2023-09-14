@@ -422,6 +422,8 @@ class Postgres(Dialect):
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.DataType: _datatype_sql,
             exp.GroupConcat: _string_agg_sql,
+            exp.QuantileCont: transforms.preprocess([transforms.add_within_group_for_percentiles]),
+            exp.QuantileDisc: transforms.preprocess([transforms.add_within_group_for_percentiles]),
             exp.Array: lambda self, e: f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
             if isinstance(seq_get(e.expressions, 0), exp.Select)
             else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]",

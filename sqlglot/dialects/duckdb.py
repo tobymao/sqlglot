@@ -173,6 +173,9 @@ class DuckDB(Dialect):
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),
+            "MEDIAN": lambda args: exp.QuantileCont(
+                this=seq_get(args, 0), quantile=exp.Literal.number(0.5)
+            ),
         }
 
         FUNCTION_PARSERS = {

@@ -559,6 +559,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("STANDARD_HASH('hello', 'sha256')"), exp.StandardHash)
         self.assertIsInstance(parse_one("DATE(foo)"), exp.Date)
         self.assertIsInstance(parse_one("HEX(foo)"), exp.Hex)
+        self.assertIsInstance(parse_one("QUANTILE_CONT(a, 0.9)"), exp.QuantileCont)
+        self.assertIsInstance(parse_one("QUANTILE_DISC(a, 0.9)"), exp.QuantileDisc)
         self.assertIsInstance(parse_one("TO_HEX(foo)", read="bigquery"), exp.Hex)
         self.assertIsInstance(parse_one("TO_HEX(MD5(foo))", read="bigquery"), exp.MD5)
         self.assertIsInstance(parse_one("TRANSFORM(a, b)", read="spark"), exp.Transform)

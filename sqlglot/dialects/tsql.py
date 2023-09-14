@@ -667,19 +667,18 @@ class TSQL(Dialect):
                 if kind == "SCHEMA":
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC('{sql}')"""
                 elif kind == "TABLE":
-                    where = f"table_name = {identifier}"
-                    if table:
-                        where = f"table_name = {self.sql(exp.Literal.string(table.name))}"
-                        where = (
-                            f"table_schema = {self.sql(exp.Literal.string(table.db))} AND {where}"
-                            if table.db
-                            else where
-                        )
-                        where = (
-                            f"table_catalog = {self.sql(exp.Literal.string(table.catalog))} AND {where}"
-                            if table.catalog
-                            else where
-                        )
+                    assert table
+                    where = f"table_name = {self.sql(exp.Literal.string(table.name))}"
+                    where = (
+                        f"table_schema = {self.sql(exp.Literal.string(table.db))} AND {where}"
+                        if table.db
+                        else where
+                    )
+                    where = (
+                        f"table_catalog = {self.sql(exp.Literal.string(table.catalog))} AND {where}"
+                        if table.catalog
+                        else where
+                    )
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC('{sql}')"""
                 elif kind == "INDEX":
                     index = self.sql(exp.Literal.string(expression.this.text("this")))

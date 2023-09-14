@@ -241,10 +241,6 @@ class Presto(Dialect):
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("TRIM")
 
-        TYPE_LITERAL_PARSERS = {
-            exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
-        }
-
     class Generator(generator.Generator):
         INTERVAL_ALLOWS_PLURAL_FORM = False
         JOIN_HINTS = False

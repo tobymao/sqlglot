@@ -321,10 +321,6 @@ class BigQuery(Dialect):
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
         }
 
-        TYPE_LITERAL_PARSERS = {
-            exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
-        }
-
         NESTED_TYPE_TOKENS = {
             *parser.Parser.NESTED_TYPE_TOKENS,
             TokenType.TABLE,

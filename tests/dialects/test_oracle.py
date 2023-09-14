@@ -54,6 +54,10 @@ class TestOracle(Validator):
             "SELECT * FROM T ORDER BY I OFFSET nvl(:variable1, 10) ROWS FETCH NEXT nvl(:variable2, 10) ROWS ONLY",
             "SELECT * FROM T ORDER BY I OFFSET COALESCE(:variable1, 10) ROWS FETCH NEXT COALESCE(:variable2, 10) ROWS ONLY",
         )
+        self.validate_identity(
+            "SELECT * FROM t SAMPLE (.25)",
+            "SELECT * FROM t SAMPLE (0.25)",
+        )
 
         self.validate_all(
             "NVL(NULL, 1)",

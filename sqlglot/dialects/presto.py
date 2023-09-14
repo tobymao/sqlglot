@@ -237,6 +237,7 @@ class Presto(Dialect):
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
         }
+
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -310,6 +311,7 @@ class Presto(Dialect):
             exp.If: if_sql,
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
+            exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Last: _first_last_sql,
             exp.Lateral: _explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,

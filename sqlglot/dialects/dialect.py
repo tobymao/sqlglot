@@ -752,5 +752,11 @@ def any_value_to_max_sql(self: Generator, expression: exp.AnyValue) -> str:
 
 
 # Used to generate JSON_OBJECT with a comma in BigQuery and MySQL instead of colon
-def json_keyvalue_comma_sql(self, expression: exp.JSONKeyValue) -> str:
+def json_keyvalue_comma_sql(self: Generator, expression: exp.JSONKeyValue) -> str:
     return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"
+
+
+def is_parse_json(expression: exp.Expression) -> bool:
+    return isinstance(expression, exp.ParseJSON) or (
+        isinstance(expression, exp.Cast) and expression.is_type("json")
+    )

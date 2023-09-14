@@ -271,6 +271,7 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, "timestamp", copy=True),
                 exp.cast(e.this, "timestamp", copy=True),
             ),
+            exp.ParseJSON: rename_func("JSON"),
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
             exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             exp.Properties: no_properties_sql,

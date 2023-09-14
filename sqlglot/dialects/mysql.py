@@ -236,9 +236,13 @@ class MySQL(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
             "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
-            "LOCATE": locate_to_strposition,
-            "STR_TO_DATE": _str_to_date,
             "ISNULL": isnull_to_is_null,
+            "LOCATE": locate_to_strposition,
+            "MONTHNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=exp.Literal.string("%B"),
+            ),
+            "STR_TO_DATE": _str_to_date,
         }
 
         FUNCTION_PARSERS = {

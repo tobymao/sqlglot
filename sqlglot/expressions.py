@@ -4372,6 +4372,10 @@ class Extract(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Timestamp(Func):
+    arg_types = {"this": False, "expression": False}
+
+
 class TimestampAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 

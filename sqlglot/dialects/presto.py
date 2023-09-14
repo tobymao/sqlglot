@@ -362,6 +362,7 @@ class Presto(Dialect):
             exp.WithinGroup: transforms.preprocess(
                 [transforms.remove_within_group_for_percentiles]
             ),
+            exp.Timestamp: transforms.preprocess([transforms.timestamp_to_cast]),
         }
 
         def interval_sql(self, expression: exp.Interval) -> str:

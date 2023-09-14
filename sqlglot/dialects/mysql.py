@@ -95,16 +95,6 @@ def _date_add_sql(kind: str) -> t.Callable[[MySQL.Generator, exp.DateAdd | exp.D
     return func
 
 
-def _timestamp_to_cast(args: t.List) -> exp.Expression:
-    if len(args) == 1:
-        return exp.cast(
-            args[0],
-            to=exp.DataType.Type.DATETIME,
-        )
-    # This adds a time expression to a datetime. There's probably a more standard way to transpile this.
-    return exp.func("TIMESTAMP", *args)
-
-
 class MySQL(Dialect):
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -253,7 +243,6 @@ class MySQL(Dialect):
                 format=exp.Literal.string("%B"),
             ),
             "STR_TO_DATE": _str_to_date,
-            "TIMESTAMP": _timestamp_to_cast,
         }
 
         FUNCTION_PARSERS = {

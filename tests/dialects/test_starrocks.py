@@ -9,9 +9,7 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
 
     def test_time(self):
-        self.validate_all(
-            "TIMESTAMP('2022-01-01')", write={"starrocks": "CAST('2022-01-01' AS DATETIME)"}
-        )
+        self.validate_identity("TIMESTAMP('2022-01-01')")
         self.validate_identity(
             "SELECT DATE_DIFF('second', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
         )

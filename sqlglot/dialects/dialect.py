@@ -549,6 +549,19 @@ def date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     return exp.TimestampTrunc(this=this, unit=unit)
 
 
+def date_add_interval_sql(
+    data_type: str, kind: str
+) -> t.Callable[[Generator, exp.Expression], str]:
+    def func(self: Generator, expression: exp.Expression) -> str:
+        this = self.sql(expression, "this")
+        unit = expression.args.get("unit")
+        unit = exp.var(unit.name.upper() if unit else "DAY")
+        interval = exp.Interval(this=expression.expression.copy(), unit=unit)
+        return f"{data_type}_{kind}({this}, {self.sql(interval)})"
+
+    return func
+
+
 def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
     return self.func(
         "DATE_TRUNC", exp.Literal.string(expression.text("unit") or "day"), expression.this

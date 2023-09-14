@@ -32,6 +32,7 @@ def _parse_xml_table(self: Oracle.Parser) -> exp.XMLTable:
 
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
+    LOCKING_READS_SUPPORTED = True
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = True

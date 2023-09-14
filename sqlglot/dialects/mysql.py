@@ -243,6 +243,10 @@ class MySQL(Dialect):
                 format=exp.Literal.string("%B"),
             ),
             "STR_TO_DATE": _str_to_date,
+            "TIMESTAMP": lambda args: exp.cast(
+                args[0],
+                to=exp.DataType.Type.TIMESTAMP,
+            ),
         }
 
         FUNCTION_PARSERS = {

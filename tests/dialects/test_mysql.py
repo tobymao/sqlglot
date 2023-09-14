@@ -885,3 +885,13 @@ COMMENT='客户账户表'"""
                 "mysql": "DATE_FORMAT(x, '%M')",
             },
         )
+
+    def test_timestamp(self):
+        self.validate_all(
+            "TIMESTAMP(x)",
+            write={
+                "": "CAST(x AS TIMESTAMP)",
+                "mysql": "CAST(x AS DATETIME)",
+                "presto": "CAST(x AS TIMESTAMP)",
+            },
+        )

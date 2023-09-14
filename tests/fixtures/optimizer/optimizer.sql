@@ -577,10 +577,10 @@ FROM `u_cte` AS `u_cte` PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x',
 # dialect: snowflake
 SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
-  "_Q_0"."G" AS "G",
-  "_Q_0"."'x'" AS "'x'",
-  "_Q_0"."'y'" AS "'y'"
-FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_Q_0"
+  "_q_0"."G" AS "G",
+  "_q_0"."'x'" AS "'x'",
+  "_q_0"."'y'" AS "'y'"
+FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0"
 ;
 
 # title: selecting all columns from a pivoted source and generating spark
@@ -668,13 +668,13 @@ WHERE
 GROUP BY `dAy`, `top_term`, rank
 ORDER BY `DaY` DESC;
 SELECT
-  `top_terms`.`refresh_date` AS `day`,
-  `top_terms`.`term` AS `top_term`,
-  `top_terms`.`rank` AS `rank`
-FROM `bigquery-public-data`.`GooGle_tReNDs`.`TOp_TeRmS` AS `top_terms`
+  `TOp_TeRmS`.`refresh_date` AS `day`,
+  `TOp_TeRmS`.`term` AS `top_term`,
+  `TOp_TeRmS`.`rank` AS `rank`
+FROM `bigquery-public-data`.`GooGle_tReNDs`.`TOp_TeRmS` AS `TOp_TeRmS`
 WHERE
-  `top_terms`.`rank` = 1
-  AND CAST(`top_terms`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
+  `TOp_TeRmS`.`rank` = 1
+  AND CAST(`TOp_TeRmS`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
 GROUP BY
   `day`,
   `top_term`,

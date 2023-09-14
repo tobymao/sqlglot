@@ -876,3 +876,12 @@ COMMENT='客户账户表'"""
         self.validate_all(
             "SELECT ISNULL(x)", write={"": "SELECT (x IS NULL)", "mysql": "SELECT (x IS NULL)"}
         )
+
+    def test_monthname(self):
+        self.validate_all(
+            "MONTHNAME(x)",
+            write={
+                "": "TIME_TO_STR(x, '%B')",
+                "mysql": "DATE_FORMAT(x, '%M')",
+            },
+        )

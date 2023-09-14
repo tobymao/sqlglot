@@ -6,6 +6,7 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("SELECT x FROM t WHERE cond FOR UPDATE")
         self.validate_identity("SELECT JSON_OBJECT(k1: v1 FORMAT JSON, k2: v2 FORMAT JSON)")
         self.validate_identity("SELECT JSON_OBJECT('name': first_name || ' ' || last_name) FROM t")
         self.validate_identity("COALESCE(c1, c2, c3)")
@@ -53,6 +54,10 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT * FROM T ORDER BY I OFFSET nvl(:variable1, 10) ROWS FETCH NEXT nvl(:variable2, 10) ROWS ONLY",
             "SELECT * FROM T ORDER BY I OFFSET COALESCE(:variable1, 10) ROWS FETCH NEXT COALESCE(:variable2, 10) ROWS ONLY",
+        )
+        self.validate_identity(
+            "SELECT * FROM t SAMPLE (.25)",
+            "SELECT * FROM t SAMPLE (0.25)",
         )
 
         self.validate_all(

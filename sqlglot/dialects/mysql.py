@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
+    date_add_interval_sql,
     datestrtodate_sql,
     format_time_lambda,
     json_keyvalue_comma_sql,
@@ -559,6 +560,8 @@ class MySQL(Dialect):
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),
             exp.TableSample: no_tablesample_sql,
+            exp.TimestampAdd: date_add_interval_sql("DATE", "ADD"),
+            exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime", copy=True)),
             exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),

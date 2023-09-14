@@ -381,6 +381,9 @@ class Postgres(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
+            exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
+            exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
             exp.Explode: rename_func("UNNEST"),
@@ -401,10 +404,13 @@ class Postgres(Dialect):
             exp.Max: max_or_greatest,
             exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
-            exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
-            exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
-            exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
             exp.Merge: transforms.preprocess([_remove_target_from_merge]),
+            exp.PercentileCont: transforms.preprocess(
+                [transforms.add_within_group_for_percentiles]
+            ),
+            exp.PercentileDisc: transforms.preprocess(
+                [transforms.add_within_group_for_percentiles]
+            ),
             exp.Pivot: no_pivot_sql,
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),

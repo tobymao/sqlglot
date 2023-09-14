@@ -9,6 +9,7 @@ from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
+    date_add_interval_sql,
     datestrtodate_sql,
     format_time_lambda,
     inline_array_sql,
@@ -26,19 +27,6 @@ from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
 
 logger = logging.getLogger("sqlglot")
-
-
-def _date_add_sql(
-    data_type: str, kind: str
-) -> t.Callable[[BigQuery.Generator, exp.Expression], str]:
-    def func(self: BigQuery.Generator, expression: exp.Expression) -> str:
-        this = self.sql(expression, "this")
-        unit = expression.args.get("unit")
-        unit = exp.var(unit.name.upper() if unit else "DAY")
-        interval = exp.Interval(this=expression.expression.copy(), unit=unit)
-        return f"{data_type}_{kind}({this}, {self.sql(interval)})"
-
-    return func
 
 
 def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Values) -> str:
@@ -435,13 +423,13 @@ class BigQuery(Dialect):
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.Create: _create_sql,
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
-            exp.DateAdd: _date_add_sql("DATE", "ADD"),
+            exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
             exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateSub: _date_add_sql("DATE", "SUB"),
-            exp.DatetimeAdd: _date_add_sql("DATETIME", "ADD"),
-            exp.DatetimeSub: _date_add_sql("DATETIME", "SUB"),
+            exp.DateSub: date_add_interval_sql("DATE", "SUB"),
+            exp.DatetimeAdd: date_add_interval_sql("DATETIME", "ADD"),
+            exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
@@ -483,13 +471,13 @@ class BigQuery(Dialect):
             exp.StrToTime: lambda self, e: self.func(
                 "PARSE_TIMESTAMP", self.format_time(e), e.this, e.args.get("zone")
             ),
-            exp.TimeAdd: _date_add_sql("TIME", "ADD"),
-            exp.TimeSub: _date_add_sql("TIME", "SUB"),
-            exp.TimestampAdd: _date_add_sql("TIMESTAMP", "ADD"),
-            exp.TimestampSub: _date_add_sql("TIMESTAMP", "SUB"),
+            exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
+            exp.TimeSub: date_add_interval_sql("TIME", "SUB"),
+            exp.TimestampAdd: date_add_interval_sql("TIMESTAMP", "ADD"),
+            exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
-            exp.TsOrDsAdd: _date_add_sql("DATE", "ADD"),
+            exp.TsOrDsAdd: date_add_interval_sql("DATE", "ADD"),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.Unhex: rename_func("FROM_HEX"),
             exp.Values: _derived_table_values_to_unnest,

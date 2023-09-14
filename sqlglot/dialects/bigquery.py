@@ -321,6 +321,10 @@ class BigQuery(Dialect):
             TokenType.CURRENT_DATETIME: exp.CurrentDatetime,
         }
 
+        TYPE_LITERAL_PARSERS = {
+            exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
+        }
+
         NESTED_TYPE_TOKENS = {
             *parser.Parser.NESTED_TYPE_TOKENS,
             TokenType.TABLE,
@@ -626,13 +630,6 @@ class BigQuery(Dialect):
                 )
 
             return super().attimezone_sql(expression)
-
-        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#json_literals
-            if expression.is_type("json"):
-                return f"JSON {self.sql(expression, 'this')}"
-
-            return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             return self.cast_sql(expression, safe_prefix="SAFE_")

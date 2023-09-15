@@ -9,36 +9,6 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
-        self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
-        self.validate_identity(
-            """SELECT JSON '"foo"' AS json_data""",
-            """SELECT PARSE_JSON('"foo"') AS json_data""",
-        )
-
-        self.validate_all(
-            """SELECT
-  `u`.`harness_user_email` AS `harness_user_email`,
-  `d`.`harness_user_id` AS `harness_user_id`,
-  `harness_account_id` AS `harness_account_id`
-FROM `analytics_staging`.`stg_mongodb__users` AS `u`, UNNEST(`u`.`harness_cluster_details`) AS `d`, UNNEST(`d`.`harness_account_ids`) AS `harness_account_id`
-WHERE
-  NOT `harness_account_id` IS NULL""",
-            read={
-                "": """
-                SELECT
-                  "u"."harness_user_email" AS "harness_user_email",
-                  "_q_0"."d"."harness_user_id" AS "harness_user_id",
-                  "_q_1"."harness_account_id" AS "harness_account_id"
-                FROM
-                  "analytics_staging"."stg_mongodb__users" AS "u",
-                  UNNEST("u"."harness_cluster_details") AS "_q_0"("d"),
-                  UNNEST("_q_0"."d"."harness_account_ids") AS "_q_1"("harness_account_id")
-                WHERE
-                  NOT "_q_1"."harness_account_id" IS NULL
-                """
-            },
-            pretty=True,
-        )
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")
 
@@ -63,6 +33,8 @@ WHERE
         with self.assertRaises(ParseError):
             transpile("DATE_ADD(x, day)", read="bigquery")
 
+        self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
+        self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
         self.validate_identity("STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)")
         self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
         self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
@@ -111,6 +83,7 @@ WHERE
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")
         self.validate_identity("CAST(x AS BIGNUMERIC)")
+        self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
         self.validate_identity(
             "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
         )
@@ -131,6 +104,18 @@ WHERE
         )
         self.validate_identity(
             "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
+        )
+        self.validate_identity(
+            "SELECT y + 1 z FROM x GROUP BY y + 1 ORDER BY z",
+            "SELECT y + 1 AS z FROM x GROUP BY z ORDER BY z",
+        )
+        self.validate_identity(
+            "SELECT y + 1 z FROM x GROUP BY y + 1",
+            "SELECT y + 1 AS z FROM x GROUP BY y + 1",
+        )
+        self.validate_identity(
+            """SELECT JSON '"foo"' AS json_data""",
+            """SELECT PARSE_JSON('"foo"') AS json_data""",
         )
 
         self.validate_all("SELECT SPLIT(foo)", write={"bigquery": "SELECT SPLIT(foo, ',')"})
@@ -453,7 +438,6 @@ WHERE
             "SELECT ARRAY(SELECT * FROM foo JOIN bla ON x = y)",
             write={"bigquery": "SELECT ARRAY(SELECT * FROM foo JOIN bla ON x = y)"},
         )
-
         self.validate_all(
             "x IS unknown",
             write={
@@ -682,16 +666,30 @@ WHERE
                 "spark": "TO_JSON(x)",
             },
         )
-
-        self.validate_identity(
-            "SELECT y + 1 z FROM x GROUP BY y + 1 ORDER BY z",
-            "SELECT y + 1 AS z FROM x GROUP BY z ORDER BY z",
+        self.validate_all(
+            """SELECT
+  `u`.`harness_user_email` AS `harness_user_email`,
+  `d`.`harness_user_id` AS `harness_user_id`,
+  `harness_account_id` AS `harness_account_id`
+FROM `analytics_staging`.`stg_mongodb__users` AS `u`, UNNEST(`u`.`harness_cluster_details`) AS `d`, UNNEST(`d`.`harness_account_ids`) AS `harness_account_id`
+WHERE
+  NOT `harness_account_id` IS NULL""",
+            read={
+                "": """
+                SELECT
+                  "u"."harness_user_email" AS "harness_user_email",
+                  "_q_0"."d"."harness_user_id" AS "harness_user_id",
+                  "_q_1"."harness_account_id" AS "harness_account_id"
+                FROM
+                  "analytics_staging"."stg_mongodb__users" AS "u",
+                  UNNEST("u"."harness_cluster_details") AS "_q_0"("d"),
+                  UNNEST("_q_0"."d"."harness_account_ids") AS "_q_1"("harness_account_id")
+                WHERE
+                  NOT "_q_1"."harness_account_id" IS NULL
+                """
+            },
+            pretty=True,
         )
-        self.validate_identity(
-            "SELECT y + 1 z FROM x GROUP BY y + 1",
-            "SELECT y + 1 AS z FROM x GROUP BY y + 1",
-        )
-        self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
 
     def test_user_defined_functions(self):
         self.validate_identity(

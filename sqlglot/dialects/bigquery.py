@@ -413,7 +413,7 @@ class BigQuery(Dialect):
         TABLE_HINTS = False
         LIMIT_FETCH = "LIMIT"
         RENAME_TABLE_WITH_DB = False
-        ESCAPE_LINE_BREAK = True
+        UNESCAPE_SEQUENCES = True
         NVL2_SUPPORTED = False
 
         TRANSFORMS = {

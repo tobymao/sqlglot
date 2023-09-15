@@ -12,6 +12,16 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 logger = logging.getLogger("sqlglot")
 
+UNESCAPE_ESCAPE_SEQUENCE = {
+    "\a": "\\a",
+    "\b": "\\b",
+    "\f": "\\f",
+    "\n": "\\n",
+    "\r": "\\r",
+    "\t": "\\t",
+    "\v": "\\v",
+}
+
 
 class Generator:
     """
@@ -320,7 +330,7 @@ class Generator:
     STRICT_STRING_CONCAT = False
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
-    ESCAPE_LINE_BREAK = False
+    UNESCAPE_SEQUENCES = False
 
     can_identify: t.Callable[[str, str | bool], bool]
 
@@ -1594,8 +1604,8 @@ class Generator:
 
     def escape_str(self, text: str) -> str:
         text = text.replace(self.QUOTE_END, self._escaped_quote_end)
-        if self.ESCAPE_LINE_BREAK:
-            text = text.replace("\n", "\\n")
+        if self.UNESCAPE_SEQUENCES:
+            text = "".join(UNESCAPE_ESCAPE_SEQUENCE.get(x, x) for x in text)
         elif self.pretty:
             text = text.replace("\n", self.SENTINEL_LINE_BREAK)
         return text

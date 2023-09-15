@@ -358,6 +358,10 @@ class TestPresto(Validator):
             write={"presto": "CAST(x AS TIMESTAMP)"},
             read={"mysql": "CAST(x AS DATETIME)", "clickhouse": "CAST(x AS DATETIME64)"},
         )
+        self.validate_all(
+            "CAST(x AS TIMESTAMP)",
+            read={"mysql": "TIMESTAMP(x)"},
+        )
 
     def test_ddl(self):
         self.validate_all(

@@ -407,7 +407,9 @@ class Snowflake(Dialect):
             exp.Min: min_or_least,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpILike: _regexpilike_sql,
-            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
+            exp.Select: transforms.preprocess(
+                [transforms.eliminate_distinct_on, transforms.explode_to_unnest]
+            ),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.StrPosition: lambda self, e: self.func(
@@ -448,6 +450,16 @@ class Snowflake(Dialect):
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            subquery = exp.Subquery(
+                this=exp.select("value").from_(
+                    f"TABLE(FLATTEN(INPUT => {self.sql(expression.expressions[0])}))"
+                ),
+            )
+            alias = self.sql(expression, "alias")
+            alias = f" AS {alias}" if alias else ""
+            return f"{self.sql(subquery)}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
             scope = self.sql(expression, "scope")

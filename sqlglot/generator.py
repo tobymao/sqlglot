@@ -12,7 +12,7 @@ from sqlglot.tokens import Tokenizer, TokenType
 
 logger = logging.getLogger("sqlglot")
 
-UNESCAPED_SEQUENCES_TABLE = str.maketrans(
+UNESCAPED_SEQUENCE_TABLE = str.maketrans(
     {
         "\a": "\\a",
         "\b": "\\b",
@@ -1607,7 +1607,7 @@ class Generator:
     def escape_str(self, text: str) -> str:
         text = text.replace(self.QUOTE_END, self._escaped_quote_end)
         if self.UNESCAPE_SEQUENCES:
-            text = text.translate(UNESCAPED_SEQUENCES_TABLE)
+            text = text.translate(UNESCAPED_SEQUENCE_TABLE)
         elif self.pretty:
             text = text.replace("\n", self.SENTINEL_LINE_BREAK)
         return text

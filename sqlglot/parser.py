@@ -3279,7 +3279,12 @@ class Parser(metaclass=_Parser):
                 if tokens[0].token_type in self.TYPE_TOKENS:
                     self._prev = tokens[0]
                 elif self.SUPPORTS_USER_DEFINED_TYPES:
-                    return exp.DataType.build(identifier.name, udt=True)
+                    type_name = identifier.name
+
+                    while self._match(TokenType.DOT):
+                        type_name = f"{type_name}.{self._advance_any() and self._prev.text}"
+
+                    return exp.DataType.build(type_name, udt=True)
                 else:
                     return None
             else:

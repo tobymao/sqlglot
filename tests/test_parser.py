@@ -433,7 +433,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(parse_one("TIMESTAMP(1) WITH TIME ZONE").sql(), "TIMESTAMPTZ(1)")
         self.assertEqual(parse_one("TIMESTAMP(1) WITH LOCAL TIME ZONE").sql(), "TIMESTAMPLTZ(1)")
         self.assertEqual(parse_one("TIMESTAMP(1) WITHOUT TIME ZONE").sql(), "TIMESTAMP(1)")
-        self.assertEqual(parse_one("""JSON '{"x":"y"}'""").sql(), """CAST('{"x":"y"}' AS JSON)""")
+        self.assertEqual(parse_one("""JSON '{"x":"y"}'""").sql(), """PARSE_JSON('{"x":"y"}')""")
         self.assertIsInstance(parse_one("TIMESTAMP(1)"), exp.Func)
         self.assertIsInstance(parse_one("TIMESTAMP('2022-01-01')"), exp.Func)
         self.assertIsInstance(parse_one("TIMESTAMP()"), exp.Func)

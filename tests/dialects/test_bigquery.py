@@ -9,8 +9,11 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
-        self.validate_identity("""SELECT JSON '"foo"' AS json_data""")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
+        self.validate_identity(
+            """SELECT JSON '"foo"' AS json_data""",
+            """SELECT PARSE_JSON('"foo"') AS json_data""",
+        )
 
         self.validate_all(
             """SELECT
@@ -804,7 +807,7 @@ WHERE
         )
         self.validate_identity(
             """SELECT JSON_OBJECT(['a', 'b'], [JSON '10', JSON '"foo"']) AS json_data""",
-            """SELECT JSON_OBJECT('a', JSON '10', 'b', JSON '"foo"') AS json_data""",
+            """SELECT JSON_OBJECT('a', PARSE_JSON('10'), 'b', PARSE_JSON('"foo"')) AS json_data""",
         )
         self.validate_identity(
             "SELECT JSON_OBJECT(['a', 'b'], [STRUCT(10 AS id, 'Red' AS color), STRUCT(20 AS id, 'Blue' AS color)]) AS json_data",

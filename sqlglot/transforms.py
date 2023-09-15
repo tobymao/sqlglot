@@ -327,3 +327,12 @@ def preprocess(
         raise ValueError(f"Unsupported expression type {expression.__class__.__name__}.")
 
     return _to_sql
+
+
+def timestamp_to_cast(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Timestamp) and not expression.expression:
+        return exp.cast(
+            expression.this,
+            to=exp.DataType.Type.TIMESTAMP,
+        )
+    return expression

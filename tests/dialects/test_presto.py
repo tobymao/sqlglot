@@ -358,6 +358,10 @@ class TestPresto(Validator):
             write={"presto": "CAST(x AS TIMESTAMP)"},
             read={"mysql": "CAST(x AS DATETIME)", "clickhouse": "CAST(x AS DATETIME64)"},
         )
+        self.validate_all(
+            "CAST(x AS TIMESTAMP)",
+            read={"mysql": "TIMESTAMP(x)"},
+        )
 
     def test_ddl(self):
         self.validate_all(
@@ -517,6 +521,14 @@ class TestPresto(Validator):
             "SELECT SPLIT_TO_MAP('a:1;b:2;a:3', ';', ':', (k, v1, v2) -> CONCAT(v1, v2))"
         )
 
+        self.validate_all(
+            """JSON '"foo"'""",
+            write={
+                "bigquery": """PARSE_JSON('"foo"')""",
+                "presto": """JSON_PARSE('"foo"')""",
+                "snowflake": """PARSE_JSON('"foo"')""",
+            },
+        )
         self.validate_all(
             "SELECT ROW(1, 2)",
             read={
@@ -824,9 +836,9 @@ class TestPresto(Validator):
         self.validate_all(
             """JSON_FORMAT(JSON '"x"')""",
             write={
-                "bigquery": """TO_JSON_STRING(JSON '"x"')""",
-                "duckdb": """CAST(TO_JSON(CAST('"x"' AS JSON)) AS TEXT)""",
-                "presto": """JSON_FORMAT(CAST('"x"' AS JSON))""",
+                "bigquery": """TO_JSON_STRING(PARSE_JSON('"x"'))""",
+                "duckdb": """CAST(TO_JSON(JSON('"x"')) AS TEXT)""",
+                "presto": """JSON_FORMAT(JSON_PARSE('"x"'))""",
                 "spark": """REGEXP_EXTRACT(TO_JSON(FROM_JSON('["x"]', SCHEMA_OF_JSON('["x"]'))), '^.(.*).$', 1)""",
             },
         )
@@ -916,14 +928,14 @@ class TestPresto(Validator):
             "SELECT CAST(JSON '[1,23,456]' AS ARRAY(INTEGER))",
             write={
                 "spark": "SELECT FROM_JSON('[1,23,456]', 'ARRAY<INT>')",
-                "presto": "SELECT CAST(CAST('[1,23,456]' AS JSON) AS ARRAY(INTEGER))",
+                "presto": "SELECT CAST(JSON_PARSE('[1,23,456]') AS ARRAY(INTEGER))",
             },
         )
         self.validate_all(
             """SELECT CAST(JSON '{"k1":1,"k2":23,"k3":456}' AS MAP(VARCHAR, INTEGER))""",
             write={
                 "spark": 'SELECT FROM_JSON(\'{"k1":1,"k2":23,"k3":456}\', \'MAP<STRING, INT>\')',
-                "presto": 'SELECT CAST(CAST(\'{"k1":1,"k2":23,"k3":456}\' AS JSON) AS MAP(VARCHAR, INTEGER))',
+                "presto": 'SELECT CAST(JSON_PARSE(\'{"k1":1,"k2":23,"k3":456}\') AS MAP(VARCHAR, INTEGER))',
             },
         )
 

@@ -4372,6 +4372,10 @@ class Extract(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Timestamp(Func):
+    arg_types = {"this": False, "expression": False}
+
+
 class TimestampAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
@@ -4583,6 +4587,11 @@ class JSONFormat(Func):
 # https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html#operator_member-of
 class JSONArrayContains(Binary, Predicate, Func):
     _sql_names = ["JSON_ARRAY_CONTAINS"]
+
+
+class ParseJSON(Func):
+    # BigQuery, Snowflake have PARSE_JSON, Presto has JSON_PARSE
+    _sql_names = ["PARSE_JSON", "JSON_PARSE"]
 
 
 class Least(Func):

@@ -121,7 +121,6 @@ def _array_sort_sql(self: Hive.Generator, expression: exp.ArraySort) -> str:
     return f"SORT_ARRAY({self.sql(expression, 'this')})"
 
 
-
 def _property_sql(self: Hive.Generator, expression: exp.Property) -> str:
     return f"'{expression.name}'={self.sql(expression, 'value')}"
 

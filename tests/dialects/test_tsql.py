@@ -507,9 +507,9 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
-            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'foo') EXEC('CREATE TABLE foo (a INTEGER)')",
+            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('CREATE TABLE foo.bar.baz (a INTEGER)')",
             read={
-                "": "CREATE TABLE IF NOT EXISTS foo (a INTEGER)",
+                "": "CREATE TABLE IF NOT EXISTS foo.bar.baz (a INTEGER)",
             },
         )
 

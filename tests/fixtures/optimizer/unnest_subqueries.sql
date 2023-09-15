@@ -209,3 +209,15 @@ WHERE
   )
   AND ARRAY_ALL(_u_19."", _x -> _x = x.a)
   AND x.a > COALESCE(_u_21.d, 0);
+SELECT
+  CAST((
+    SELECT
+      x.a AS a
+    FROM x
+  ) AS TEXT) AS a;
+SELECT
+  CAST((
+    SELECT
+      x.a AS a
+    FROM x
+  ) AS TEXT) AS a;

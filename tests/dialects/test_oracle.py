@@ -91,6 +91,16 @@ class TestOracle(Validator):
                 "": "CAST(x AS FLOAT)",
             },
         )
+        self.validate_all(
+            "CAST(x AS sch.udt)",
+            read={
+                "postgres": "CAST(x AS sch.udt)",
+            },
+            write={
+                "oracle": "CAST(x AS sch.udt)",
+                "postgres": "CAST(x AS sch.udt)",
+            },
+        )
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")

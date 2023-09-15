@@ -62,6 +62,13 @@ class TestDuckDB(Validator):
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
+            "SELECT UNNEST([1, 2, 3])",
+            write={
+                "duckdb": "SELECT UNNEST([1, 2, 3])",
+                "snowflake": "SELECT col FROM (SELECT value FROM TABLE(FLATTEN(INPUT => [1, 2, 3]))) AS _u(col)",
+            },
+        )
+        self.validate_all(
             "VAR_POP(x)",
             read={
                 "": "VARIANCE_POP(x)",

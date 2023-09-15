@@ -3281,7 +3281,7 @@ class Parser(metaclass=_Parser):
                 elif self.SUPPORTS_USER_DEFINED_TYPES:
                     type_name = identifier.name
 
-                    if self._match(TokenType.DOT):
+                    while self._match(TokenType.DOT):
                         type_name = f"{type_name}.{self._advance_any() and self._prev.text}"
 
                     return exp.DataType.build(type_name, udt=True)

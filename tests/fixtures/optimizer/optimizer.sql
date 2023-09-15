@@ -577,10 +577,10 @@ FROM `u_cte` AS `u_cte` PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x',
 # dialect: snowflake
 SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
-  "_Q_0"."G" AS "G",
-  "_Q_0"."'x'" AS "'x'",
-  "_Q_0"."'y'" AS "'y'"
-FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_Q_0"
+  "_q_0"."G" AS "G",
+  "_q_0"."'x'" AS "'x'",
+  "_q_0"."'y'" AS "'y'"
+FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0"
 ;
 
 # title: selecting all columns from a pivoted source and generating spark
@@ -668,13 +668,13 @@ WHERE
 GROUP BY `dAy`, `top_term`, rank
 ORDER BY `DaY` DESC;
 SELECT
-  `top_terms`.`refresh_date` AS `day`,
-  `top_terms`.`term` AS `top_term`,
-  `top_terms`.`rank` AS `rank`
-FROM `bigquery-public-data`.`GooGle_tReNDs`.`TOp_TeRmS` AS `top_terms`
+  `TOp_TeRmS`.`refresh_date` AS `day`,
+  `TOp_TeRmS`.`term` AS `top_term`,
+  `TOp_TeRmS`.`rank` AS `rank`
+FROM `bigquery-public-data`.`GooGle_tReNDs`.`TOp_TeRmS` AS `TOp_TeRmS`
 WHERE
-  `top_terms`.`rank` = 1
-  AND CAST(`top_terms`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
+  `TOp_TeRmS`.`rank` = 1
+  AND CAST(`TOp_TeRmS`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
 GROUP BY
   `day`,
   `top_term`,
@@ -987,3 +987,39 @@ SELECT
 FROM "SALES" AS "SALES"
 WHERE
   "SALES"."INSERT_TS" > '2023-08-07 21:03:35.590 -0700';
+
+# title: using join without select *
+# execute: false
+with
+    alias1 as (select * from table1),
+    alias2 as (select * from table2),
+    alias3 as (
+        select
+            cid,
+            min(od) as m_od,
+            count(odi) as c_od,
+        from alias2
+        group by 1
+    )
+select
+    alias1.cid,
+    alias3.m_od,
+    coalesce(alias3.c_od, 0) as c_od,
+from alias1
+left join alias3 using (cid);
+WITH "alias3" AS (
+  SELECT
+    "table2"."cid" AS "cid",
+    MIN("table2"."od") AS "m_od",
+    COUNT("table2"."odi") AS "c_od"
+  FROM "table2" AS "table2"
+  GROUP BY
+    "table2"."cid"
+)
+SELECT
+  "table1"."cid" AS "cid",
+  "alias3"."m_od" AS "m_od",
+  COALESCE("alias3"."c_od", 0) AS "c_od"
+FROM "table1" AS "table1"
+LEFT JOIN "alias3"
+  ON "table1"."cid" = "alias3"."cid";

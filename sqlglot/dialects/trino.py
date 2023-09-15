@@ -5,6 +5,8 @@ from sqlglot.dialects.presto import Presto
 
 
 class Trino(Presto):
+    SUPPORTS_USER_DEFINED_TYPES = False
+
     class Generator(Presto.Generator):
         TRANSFORMS = {
             **Presto.Generator.TRANSFORMS,
@@ -13,6 +15,3 @@ class Trino(Presto):
 
     class Tokenizer(Presto.Tokenizer):
         HEX_STRINGS = [("X'", "'")]
-
-    class Parser(Presto.Parser):
-        SUPPORTS_USER_DEFINED_TYPES = False

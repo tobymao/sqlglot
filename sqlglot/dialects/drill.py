@@ -16,8 +16,8 @@ from sqlglot.dialects.dialect import (
 )
 
 
-def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
-    def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_add_sql(kind: str) -> t.Callable[[Drill.Generator, exp.DateAdd | exp.DateSub], str]:
+    def func(self: Drill.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
         unit = exp.var(expression.text("unit").upper() or "DAY")
         return f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))})"
@@ -25,7 +25,7 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
     return func
 
 
-def _str_to_date(self: generator.Generator, expression: exp.StrToDate) -> str:
+def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.DATE_FORMAT:
@@ -39,6 +39,7 @@ class Drill(Dialect):
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     TIME_MAPPING = {
         "y": "%Y",
@@ -80,7 +81,6 @@ class Drill(Dialect):
     class Parser(parser.Parser):
         STRICT_CAST = False
         CONCAT_NULL_OUTPUTS_STRING = True
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

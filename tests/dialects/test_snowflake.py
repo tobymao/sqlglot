@@ -8,6 +8,10 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity(
+            'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
+        )
+
         self.validate_all(
             "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
             read={
@@ -32,6 +36,7 @@ class TestSnowflake(Validator):
             },
         )
 
+        self.validate_identity("LISTAGG(data['some_field'], ',')")
         self.validate_identity("WEEKOFYEAR(tstamp)")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
@@ -616,7 +621,7 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "[0, 1, 2]",
                 "bigquery": "[0, 1, 2]",
-                "duckdb": "LIST_VALUE(0, 1, 2)",
+                "duckdb": "[0, 1, 2]",
                 "presto": "ARRAY[0, 1, 2]",
                 "spark": "ARRAY(0, 1, 2)",
             },
@@ -1029,3 +1034,33 @@ MATCH_RECOGNIZE (
 )""",
                     pretty=True,
                 )
+
+    def test_show(self):
+        # Parsed as Command
+        self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
+        self.validate_identity("SHOW TABLES LIKE 'line%' IN tpch.public")
+
+        ast = parse_one("SHOW TABLES HISTORY IN tpch.public")
+        self.assertIsInstance(ast, exp.Command)
+
+        # Parsed as Show
+        self.validate_identity("SHOW PRIMARY KEYS")
+        self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")
+        self.validate_identity("SHOW PRIMARY KEYS IN DATABASE")
+        self.validate_identity("SHOW PRIMARY KEYS IN DATABASE foo")
+        self.validate_identity("SHOW PRIMARY KEYS IN TABLE")
+        self.validate_identity("SHOW PRIMARY KEYS IN TABLE foo")
+        self.validate_identity(
+            'SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"',
+            'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+        )
+        self.validate_identity(
+            'SHOW TERSE PRIMARY KEYS IN "TEST"."PUBLIC"."customers"',
+            'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+        )
+
+        ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
+        table = ast.find(exp.Table)
+
+        self.assertIsNotNone(table)
+        self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')

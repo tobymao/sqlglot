@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     create_with_partitions_sql,
     format_time_lambda,
     if_sql,
+    is_parse_json,
     left_to_substring_sql,
     locate_to_strposition,
     max_or_greatest,
@@ -61,7 +62,7 @@ def constraint_sql(self, expression: exp.Constraint) -> str:
     return f"CONSTRAINT {this} {expressions}"
 
 
-def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _add_date_sql(self: Hive.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
 
@@ -80,7 +81,7 @@ def _add_date_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateS
     return self.func(func, expression.this, modified_increment)
 
 
-def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
+def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff) -> str:
     unit = expression.text("unit").upper()
 
     factor = TIME_DIFF_FACTOR.get(unit)
@@ -98,9 +99,9 @@ def _date_diff_sql(self: generator.Generator, expression: exp.DateDiff) -> str:
     return f"{diff_sql}{multiplier_sql}"
 
 
-def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
+def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:
     this = expression.this
-    if isinstance(this, exp.Cast) and this.is_type("json") and this.this.is_string:
+    if is_parse_json(this) and this.this.is_string:
         # Since FROM_JSON requires a nested type, we always wrap the json string with
         # an array to ensure that "naked" strings like "'a'" will be handled correctly
         wrapped_json = exp.Literal.string(f"[{this.this.name}]")
@@ -114,25 +115,22 @@ def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> s
     return self.func("TO_JSON", this, expression.args.get("options"))
 
 
-def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
+def _array_sort_sql(self: Hive.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("Hive SORT_ARRAY does not support a comparator")
     return f"SORT_ARRAY({self.sql(expression, 'this')})"
 
 
-def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
-    return f"{'' if expression.args.get('allow_null') else 'NOT NULL'}"
 
-
-def _property_sql(self: generator.Generator, expression: exp.Property) -> str:
+def _property_sql(self: Hive.Generator, expression: exp.Property) -> str:
     return f"'{expression.name}'={self.sql(expression, 'value')}"
 
 
-def _str_to_unix_sql(self: generator.Generator, expression: exp.StrToUnix) -> str:
+def _str_to_unix_sql(self: Hive.Generator, expression: exp.StrToUnix) -> str:
     return self.func("UNIX_TIMESTAMP", expression.this, time_format("hive")(self, expression))
 
 
-def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> str:
+def _str_to_date_sql(self: Hive.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
@@ -140,7 +138,7 @@ def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate) -> st
     return f"CAST({this} AS DATE)"
 
 
-def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> str:
+def _str_to_time_sql(self: Hive.Generator, expression: exp.StrToTime) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
@@ -148,13 +146,13 @@ def _str_to_time_sql(self: generator.Generator, expression: exp.StrToTime) -> st
     return f"CAST({this} AS TIMESTAMP)"
 
 
-def _time_to_str(self: generator.Generator, expression: exp.TimeToStr) -> str:
+def _time_to_str(self: Hive.Generator, expression: exp.TimeToStr) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     return f"DATE_FORMAT({this}, {time_format})"
 
 
-def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str:
+def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format and time_format not in (Hive.TIME_FORMAT, Hive.DATE_FORMAT):
@@ -165,6 +163,7 @@ def _to_date_sql(self: generator.Generator, expression: exp.TsOrDsToDate) -> str
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -221,6 +220,8 @@ class Hive(Dialect):
             "MSCK REPAIR": TokenType.COMMAND,
             "REFRESH": TokenType.COMMAND,
             "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
+            "TIMESTAMP AS OF": TokenType.TIMESTAMP_SNAPSHOT,
+            "VERSION AS OF": TokenType.VERSION_SNAPSHOT,
         }
 
         NUMERIC_LITERALS = {
@@ -235,7 +236,6 @@ class Hive(Dialect):
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -437,7 +437,9 @@ class Hive(Dialect):
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
             exp.MonthsBetween: lambda self, e: self.func("MONTHS_BETWEEN", e.this, e.expression),
-            exp.NotNullColumnConstraint: notnullcolumnconstraint_sql,
+            exp.NotNullColumnConstraint: lambda self, e: ""
+            if e.args.get("allow_null")
+            else "NOT NULL",
             exp.VarMap: var_map_sql,
             exp.Create: create_with_partitions_sql,
             exp.Quantile: rename_func("PERCENTILE"),
@@ -522,3 +524,7 @@ class Hive(Dialect):
                     )
 
             return super().datatype_sql(expression)
+
+        def version_sql(self, expression: exp.Version) -> str:
+            sql = super().version_sql(expression)
+            return sql.replace("FOR ", "", 1)

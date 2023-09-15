@@ -86,6 +86,7 @@ class TokenType(AutoName):
     SMALLINT = auto()
     USMALLINT = auto()
     MEDIUMINT = auto()
+    UMEDIUMINT = auto()
     INT = auto()
     UINT = auto()
     BIGINT = auto()
@@ -107,6 +108,8 @@ class TokenType(AutoName):
     LONGTEXT = auto()
     MEDIUMBLOB = auto()
     LONGBLOB = auto()
+    TINYBLOB = auto()
+    TINYTEXT = auto()
     BINARY = auto()
     VARBINARY = auto()
     JSON = auto()
@@ -261,6 +264,7 @@ class TokenType(AutoName):
     NEXT = auto()
     NOTNULL = auto()
     NULL = auto()
+    OBJECT_IDENTIFIER = auto()
     OFFSET = auto()
     ON = auto()
     ORDER_BY = auto()
@@ -325,6 +329,8 @@ class TokenType(AutoName):
     WINDOW = auto()
     WITH = auto()
     UNIQUE = auto()
+    VERSION_SNAPSHOT = auto()
+    TIMESTAMP_SNAPSHOT = auto()
 
 
 class Token:
@@ -671,6 +677,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "BOOL": TokenType.BOOLEAN,
         "BOOLEAN": TokenType.BOOLEAN,
         "BYTE": TokenType.TINYINT,
+        "MEDIUMINT": TokenType.MEDIUMINT,
         "TINYINT": TokenType.TINYINT,
         "SHORT": TokenType.SMALLINT,
         "SMALLINT": TokenType.SMALLINT,
@@ -708,10 +715,16 @@ class Tokenizer(metaclass=_Tokenizer):
         "STR": TokenType.TEXT,
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,
+        "LONGTEXT": TokenType.LONGTEXT,
+        "MEDIUMTEXT": TokenType.MEDIUMTEXT,
+        "TINYTEXT": TokenType.TINYTEXT,
         "CLOB": TokenType.TEXT,
         "LONGVARCHAR": TokenType.TEXT,
         "BINARY": TokenType.BINARY,
         "BLOB": TokenType.VARBINARY,
+        "LONGBLOB": TokenType.LONGBLOB,
+        "MEDIUMBLOB": TokenType.MEDIUMBLOB,
+        "TINYBLOB": TokenType.TINYBLOB,
         "BYTEA": TokenType.VARBINARY,
         "VARBINARY": TokenType.VARBINARY,
         "TIME": TokenType.TIME,
@@ -748,6 +761,8 @@ class Tokenizer(metaclass=_Tokenizer):
         "TRUNCATE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
         "USER-DEFINED": TokenType.USERDEFINED,
+        "FOR VERSION": TokenType.VERSION_SNAPSHOT,
+        "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
     }
 
     WHITE_SPACE: t.Dict[t.Optional[str], TokenType] = {
@@ -950,8 +965,8 @@ class Tokenizer(metaclass=_Tokenizer):
             if result == TrieResult.EXISTS:
                 word = chars
 
+            end = self._current + size
             size += 1
-            end = self._current - 1 + size
 
             if end < self.size:
                 char = self.sql[end]
@@ -970,21 +985,20 @@ class Tokenizer(metaclass=_Tokenizer):
                 char = ""
                 chars = " "
 
-        if not word:
-            if self._char in self.SINGLE_TOKENS:
-                self._add(self.SINGLE_TOKENS[self._char], text=self._char)
+        if word:
+            if self._scan_string(word):
                 return
-            self._scan_var()
+            if self._scan_comment(word):
+                return
+            if prev_space or single_token or not char:
+                self._advance(size - 1)
+                word = word.upper()
+                self._add(self.KEYWORDS[word], text=word)
+                return
+        if self._char in self.SINGLE_TOKENS:
+            self._add(self.SINGLE_TOKENS[self._char], text=self._char)
             return
-
-        if self._scan_string(word):
-            return
-        if self._scan_comment(word):
-            return
-
-        self._advance(size - 1)
-        word = word.upper()
-        self._add(self.KEYWORDS[word], text=word)
+        self._scan_var()
 
     def _scan_comment(self, comment_start: str) -> bool:
         if comment_start not in self._COMMENTS:
@@ -1062,8 +1076,8 @@ class Tokenizer(metaclass=_Tokenizer):
                 elif self.IDENTIFIERS_CAN_START_WITH_DIGIT:
                     return self._add(TokenType.VAR)
 
-                self._add(TokenType.NUMBER, number_text)
-                return self._advance(-len(literal))
+                self._advance(-len(literal))
+                return self._add(TokenType.NUMBER, number_text)
             else:
                 return self._add(TokenType.NUMBER)
 
@@ -1154,7 +1168,11 @@ class Tokenizer(metaclass=_Tokenizer):
         escapes = self._STRING_ESCAPES if escapes is None else escapes
 
         while True:
-            if self._char in escapes and (self._peek == delimiter or self._peek in escapes):
+            if (
+                self._char in escapes
+                and (self._peek == delimiter or self._peek in escapes)
+                and (self._char not in self._QUOTES or self._char == self._peek)
+            ):
                 if self._peek == delimiter:
                     text += self._peek
                 else:

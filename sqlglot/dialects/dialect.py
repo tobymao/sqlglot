@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 from enum import Enum
+from functools import reduce
 
 from sqlglot import exp
 from sqlglot._typing import E
@@ -151,6 +152,9 @@ class Dialect(metaclass=_Dialect):
 
     # Determines whether or not CONCAT's arguments must be strings
     STRICT_STRING_CONCAT = False
+
+    # Determines whether or not user-defined data types are supported
+    SUPPORTS_USER_DEFINED_TYPES = True
 
     # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
@@ -344,7 +348,7 @@ def arrow_json_extract_scalar_sql(
 
 
 def inline_array_sql(self: Generator, expression: exp.Array) -> str:
-    return f"[{self.expressions(expression)}]"
+    return f"[{self.expressions(expression, flat=True)}]"
 
 
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
@@ -414,9 +418,9 @@ def str_position_sql(self: Generator, expression: exp.StrPosition) -> str:
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:
-    this = self.sql(expression, "this")
-    struct_key = self.sql(exp.Identifier(this=expression.expression.copy(), quoted=True))
-    return f"{this}.{struct_key}"
+    return (
+        f"{self.sql(expression, 'this')}.{self.sql(exp.to_identifier(expression.expression.name))}"
+    )
 
 
 def var_map_sql(
@@ -545,6 +549,19 @@ def date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     return exp.TimestampTrunc(this=this, unit=unit)
 
 
+def date_add_interval_sql(
+    data_type: str, kind: str
+) -> t.Callable[[Generator, exp.Expression], str]:
+    def func(self: Generator, expression: exp.Expression) -> str:
+        this = self.sql(expression, "this")
+        unit = expression.args.get("unit")
+        unit = exp.var(unit.name.upper() if unit else "DAY")
+        interval = exp.Interval(this=expression.expression.copy(), unit=unit)
+        return f"{data_type}_{kind}({this}, {self.sql(interval)})"
+
+    return func
+
+
 def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
     return self.func(
         "DATE_TRUNC", exp.Literal.string(expression.text("unit") or "day"), expression.this
@@ -656,11 +673,18 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
 
 def concat_to_dpipe_sql(self: Generator, expression: exp.Concat | exp.SafeConcat) -> str:
     expression = expression.copy()
-    this, *rest_args = expression.expressions
-    for arg in rest_args:
-        this = exp.DPipe(this=this, expression=arg)
+    return self.sql(reduce(lambda x, y: exp.DPipe(this=x, expression=y), expression.expressions))
 
-    return self.sql(this)
+
+def concat_ws_to_dpipe_sql(self: Generator, expression: exp.ConcatWs) -> str:
+    expression = expression.copy()
+    delim, *rest_args = expression.expressions
+    return self.sql(
+        reduce(
+            lambda x, y: exp.DPipe(this=x, expression=exp.DPipe(this=delim, expression=y)),
+            rest_args,
+        )
+    )
 
 
 def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
@@ -725,3 +749,18 @@ def parse_timestamp_trunc(args: t.List) -> exp.TimestampTrunc:
 
 def any_value_to_max_sql(self: Generator, expression: exp.AnyValue) -> str:
     return self.func("MAX", expression.this)
+
+
+# Used to generate JSON_OBJECT with a comma in BigQuery and MySQL instead of colon
+def json_keyvalue_comma_sql(self: Generator, expression: exp.JSONKeyValue) -> str:
+    return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"
+
+
+def is_parse_json(expression: exp.Expression) -> bool:
+    return isinstance(expression, exp.ParseJSON) or (
+        isinstance(expression, exp.Cast) and expression.is_type("json")
+    )
+
+
+def isnull_to_is_null(args: t.List) -> exp.Expression:
+    return exp.Paren(this=exp.Is(this=seq_get(args, 0), expression=exp.null()))

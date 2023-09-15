@@ -390,6 +390,9 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")
+        self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
+
         self.validate_identity(
             "SELECT ROW() OVER (DISTRIBUTE BY x SORT BY y)",
             "SELECT ROW() OVER (PARTITION BY x ORDER BY y)",
@@ -595,7 +598,7 @@ class TestHive(Validator):
             read={
                 "": "VAR_MAP(a, b, c, d)",
                 "clickhouse": "map(a, b, c, d)",
-                "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
+                "duckdb": "MAP([a, c], [b, d])",
                 "hive": "MAP(a, b, c, d)",
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
                 "spark": "MAP(a, b, c, d)",
@@ -603,7 +606,7 @@ class TestHive(Validator):
             write={
                 "": "MAP(ARRAY(a, c), ARRAY(b, d))",
                 "clickhouse": "map(a, b, c, d)",
-                "duckdb": "MAP(LIST_VALUE(a, c), LIST_VALUE(b, d))",
+                "duckdb": "MAP([a, c], [b, d])",
                 "presto": "MAP(ARRAY[a, c], ARRAY[b, d])",
                 "hive": "MAP(a, b, c, d)",
                 "spark": "MAP(a, b, c, d)",
@@ -613,7 +616,7 @@ class TestHive(Validator):
         self.validate_all(
             "MAP(a, b)",
             write={
-                "duckdb": "MAP(LIST_VALUE(a), LIST_VALUE(b))",
+                "duckdb": "MAP([a], [b])",
                 "presto": "MAP(ARRAY[a], ARRAY[b])",
                 "hive": "MAP(a, b)",
                 "spark": "MAP(a, b)",

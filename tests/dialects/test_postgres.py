@@ -126,12 +126,20 @@ class TestPostgres(Validator):
         )
 
     def test_postgres(self):
-        self.validate_identity("x @@ y")
-
         expr = parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
 
+        alter_table_only = """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE NO ACTION ON UPDATE NO ACTION"""
+        expr = parse_one(alter_table_only)
+
+        # Checks that user-defined types are parsed into DataType instead of Identifier
+        parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(exp.DataType)
+
+        self.assertIsInstance(expr, exp.AlterTable)
+        self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
+
+        self.validate_identity("x @@ y")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")
@@ -199,6 +207,7 @@ class TestPostgres(Validator):
             "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
             write={
                 "databricks": "SELECT PERCENTILE_APPROX(amount, 0.5)",
+                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
                 "presto": "SELECT APPROX_PERCENTILE(amount, 0.5)",
                 "spark": "SELECT PERCENTILE_APPROX(amount, 0.5)",
                 "trino": "SELECT APPROX_PERCENTILE(amount, 0.5)",
@@ -537,6 +546,54 @@ class TestPostgres(Validator):
             write={"postgres": "CAST(x AS CSTRING)"},
         )
         self.validate_all(
+            "x::oid",
+            write={"postgres": "CAST(x AS OID)"},
+        )
+        self.validate_all(
+            "x::regclass",
+            write={"postgres": "CAST(x AS REGCLASS)"},
+        )
+        self.validate_all(
+            "x::regcollation",
+            write={"postgres": "CAST(x AS REGCOLLATION)"},
+        )
+        self.validate_all(
+            "x::regconfig",
+            write={"postgres": "CAST(x AS REGCONFIG)"},
+        )
+        self.validate_all(
+            "x::regdictionary",
+            write={"postgres": "CAST(x AS REGDICTIONARY)"},
+        )
+        self.validate_all(
+            "x::regnamespace",
+            write={"postgres": "CAST(x AS REGNAMESPACE)"},
+        )
+        self.validate_all(
+            "x::regoper",
+            write={"postgres": "CAST(x AS REGOPER)"},
+        )
+        self.validate_all(
+            "x::regoperator",
+            write={"postgres": "CAST(x AS REGOPERATOR)"},
+        )
+        self.validate_all(
+            "x::regproc",
+            write={"postgres": "CAST(x AS REGPROC)"},
+        )
+        self.validate_all(
+            "x::regprocedure",
+            write={"postgres": "CAST(x AS REGPROCEDURE)"},
+        )
+        self.validate_all(
+            "x::regrole",
+            write={"postgres": "CAST(x AS REGROLE)"},
+        )
+        self.validate_all(
+            "x::regtype",
+            write={"postgres": "CAST(x AS REGTYPE)"},
+        )
+        self.validate_all(
             "TRIM(BOTH 'as' FROM 'as string as')",
             write={
                 "postgres": "TRIM(BOTH 'as' FROM 'as string as')",
@@ -569,6 +626,12 @@ class TestPostgres(Validator):
             write={
                 "postgres": "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
                 "snowflake": "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b",
+            },
+        )
+        self.validate_all(
+            "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
+            write={
+                "postgres": "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
             },
         )
 

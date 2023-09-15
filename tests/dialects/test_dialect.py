@@ -282,14 +282,16 @@ class TestDialect(Validator):
                 "starrocks": "CAST(a AS DATETIME)",
                 "redshift": "CAST(a AS TIMESTAMP)",
                 "doris": "CAST(a AS DATETIME)",
+                "mysql": "CAST(a AS DATETIME)",
             },
         )
         self.validate_all(
             "CAST(a AS TIMESTAMPTZ)",
             write={
-                "starrocks": "CAST(a AS DATETIME)",
+                "starrocks": "TIMESTAMP(a)",
                 "redshift": "CAST(a AS TIMESTAMP WITH TIME ZONE)",
                 "doris": "CAST(a AS DATETIME)",
+                "mysql": "TIMESTAMP(a)",
             },
         )
         self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS NUMBER)"})
@@ -870,7 +872,7 @@ class TestDialect(Validator):
             "TIMESTAMP '2022-01-01'",
             write={
                 "drill": "CAST('2022-01-01' AS TIMESTAMP)",
-                "mysql": "CAST('2022-01-01' AS TIMESTAMP)",
+                "mysql": "CAST('2022-01-01' AS DATETIME)",
                 "starrocks": "CAST('2022-01-01' AS DATETIME)",
                 "hive": "CAST('2022-01-01' AS TIMESTAMP)",
                 "doris": "CAST('2022-01-01' AS DATETIME)",
@@ -922,7 +924,7 @@ class TestDialect(Validator):
             "ARRAY(0, 1, 2)",
             write={
                 "bigquery": "[0, 1, 2]",
-                "duckdb": "LIST_VALUE(0, 1, 2)",
+                "duckdb": "[0, 1, 2]",
                 "presto": "ARRAY[0, 1, 2]",
                 "spark": "ARRAY(0, 1, 2)",
             },
@@ -941,7 +943,7 @@ class TestDialect(Validator):
             "ARRAY_SUM(ARRAY(1, 2))",
             write={
                 "trino": "REDUCE(ARRAY[1, 2], 0, (acc, x) -> acc + x, acc -> acc)",
-                "duckdb": "LIST_SUM(LIST_VALUE(1, 2))",
+                "duckdb": "LIST_SUM([1, 2])",
                 "hive": "ARRAY_SUM(ARRAY(1, 2))",
                 "presto": "ARRAY_SUM(ARRAY[1, 2])",
                 "spark": "AGGREGATE(ARRAY(1, 2), 0, (acc, x) -> acc + x, acc -> acc)",

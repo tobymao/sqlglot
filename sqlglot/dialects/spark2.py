@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     create_with_partitions_sql,
     format_time_lambda,
+    is_parse_json,
     pivot_column_names,
     rename_func,
     trim_sql,
@@ -15,7 +16,7 @@ from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 
 
-def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
+def _create_sql(self: Spark2.Generator, e: exp.Create) -> str:
     kind = e.args["kind"]
     properties = e.args.get("properties")
 
@@ -31,7 +32,7 @@ def _create_sql(self: Hive.Generator, e: exp.Create) -> str:
     return create_with_partitions_sql(self, e)
 
 
-def _map_sql(self: Hive.Generator, expression: exp.Map) -> str:
+def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:
     keys = expression.args.get("keys")
     values = expression.args.get("values")
 
@@ -45,7 +46,7 @@ def _parse_as_cast(to_type: str) -> t.Callable[[t.List], exp.Expression]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
 
 
-def _str_to_date(self: Hive.Generator, expression: exp.StrToDate) -> str:
+def _str_to_date(self: Spark2.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Hive.DATE_FORMAT:
@@ -53,7 +54,7 @@ def _str_to_date(self: Hive.Generator, expression: exp.StrToDate) -> str:
     return f"TO_DATE({this}, {time_format})"
 
 
-def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
+def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
     if scale is None:
@@ -114,7 +115,7 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _insert_sql(self: Hive.Generator, expression: exp.Insert) -> str:
+def _insert_sql(self: Spark2.Generator, expression: exp.Insert) -> str:
     if expression.expression.args.get("with"):
         expression = expression.copy()
         expression.set("with", expression.expression.args.pop("with"))
@@ -242,10 +243,11 @@ class Spark2(Hive):
         CREATE_FUNCTION_RETURN_AS = False
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
-            if isinstance(expression.this, exp.Cast) and expression.this.is_type("json"):
+            if is_parse_json(expression.this):
                 schema = f"'{self.sql(expression, 'to')}'"
                 return self.func("FROM_JSON", expression.this.this, schema)
-            if expression.is_type("json"):
+
+            if is_parse_json(expression):
                 return self.func("TO_JSON", expression.this)
 
             return super(Hive.Generator, self).cast_sql(expression, safe_prefix=safe_prefix)

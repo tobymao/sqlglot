@@ -33,6 +33,8 @@ class Doris(MySQL):
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
         }
 
+        TIMESTAMP_FUNC_TYPES = set()
+
         TRANSFORMS = {
             **MySQL.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp, transforms
-from sqlglot.dialects.dialect import parse_date_delta
+from sqlglot.dialects.dialect import parse_date_delta, timestamptrunc_sql
 from sqlglot.dialects.spark import Spark
 from sqlglot.dialects.tsql import generate_date_delta_with_unit_sql
 from sqlglot.tokens import TokenType
@@ -28,6 +28,19 @@ class Databricks(Spark):
             **Spark.Generator.TRANSFORMS,
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
+            exp.DatetimeAdd: lambda self, e: self.func(
+                "TIMESTAMPADD", e.text("unit"), e.expression, e.this
+            ),
+            exp.DatetimeSub: lambda self, e: self.func(
+                "TIMESTAMPADD",
+                e.text("unit"),
+                exp.Mul(this=e.expression.copy(), expression=exp.Literal.number(-1)),
+                e.this,
+            ),
+            exp.DatetimeDiff: lambda self, e: self.func(
+                "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
+            ),
+            exp.DatetimeTrunc: timestamptrunc_sql,
             exp.JSONExtract: lambda self, e: self.binary(e, ":"),
             exp.Select: transforms.preprocess(
                 [

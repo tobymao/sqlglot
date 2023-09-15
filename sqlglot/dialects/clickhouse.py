@@ -25,6 +25,7 @@ class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
     STRICT_STRING_CONCAT = True
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
@@ -64,8 +65,6 @@ class ClickHouse(Dialect):
         }
 
     class Parser(parser.Parser):
-        SUPPORTS_USER_DEFINED_TYPES = False
-
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
@@ -313,6 +312,8 @@ class ClickHouse(Dialect):
             exp.DataType.Type.LONGTEXT: "String",
             exp.DataType.Type.MEDIUMBLOB: "String",
             exp.DataType.Type.MEDIUMTEXT: "String",
+            exp.DataType.Type.TINYBLOB: "String",
+            exp.DataType.Type.TINYTEXT: "String",
             exp.DataType.Type.TEXT: "String",
             exp.DataType.Type.VARBINARY: "String",
             exp.DataType.Type.VARCHAR: "String",
@@ -331,6 +332,7 @@ class ClickHouse(Dialect):
             exp.DataType.Type.FIXEDSTRING: "FixedString",
             exp.DataType.Type.FLOAT: "Float32",
             exp.DataType.Type.INT: "Int32",
+            exp.DataType.Type.MEDIUMINT: "Int32",
             exp.DataType.Type.INT128: "Int128",
             exp.DataType.Type.INT256: "Int256",
             exp.DataType.Type.LOWCARDINALITY: "LowCardinality",

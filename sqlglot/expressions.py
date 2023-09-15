@@ -20,6 +20,7 @@ import typing as t
 from collections import deque
 from copy import deepcopy
 from enum import auto
+from functools import reduce
 
 from sqlglot._typing import E
 from sqlglot.errors import ParseError
@@ -1035,12 +1036,13 @@ class Clone(Expression):
         "this": True,
         "when": False,
         "kind": False,
+        "shallow": False,
         "expression": False,
     }
 
 
 class Describe(Expression):
-    arg_types = {"this": True, "kind": False}
+    arg_types = {"this": True, "kind": False, "expressions": False}
 
 
 class Pragma(Expression):
@@ -1070,6 +1072,8 @@ class Show(Expression):
         "like": False,
         "where": False,
         "db": False,
+        "scope": False,
+        "scope_kind": False,
         "full": False,
         "mutex": False,
         "query": False,
@@ -1167,7 +1171,7 @@ class Column(Condition):
                 parts.append(parent.expression)
             parent = parent.parent
 
-        return Dot.build(parts)
+        return Dot.build(deepcopy(parts))
 
 
 class ColumnPosition(Expression):
@@ -1205,6 +1209,10 @@ class RenameTable(Expression):
 
 class Comment(Expression):
     arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
+
+
+class Comprehension(Expression):
+    arg_types = {"this": True, "expression": True, "iterator": True, "condition": False}
 
 
 # https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree#mergetree-table-ttl
@@ -1313,7 +1321,13 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 class IndexColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": False, "schema": True, "kind": False, "type": False, "options": False}
+    arg_types = {
+        "this": False,
+        "schema": True,
+        "kind": False,
+        "index_type": False,
+        "options": False,
+    }
 
 
 class InlineLengthColumnConstraint(ColumnConstraintKind):
@@ -1346,7 +1360,7 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": False}
+    arg_types = {"this": False, "index_type": False}
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
@@ -1530,6 +1544,10 @@ class ForeignKey(Expression):
     }
 
 
+class ColumnPrefix(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class PrimaryKey(Expression):
     arg_types = {"expressions": True, "options": False}
 
@@ -1605,6 +1623,7 @@ class Insert(DDL):
         "alternative": False,
         "where": False,
         "ignore": False,
+        "by_name": False,
     }
 
     def with_(
@@ -2405,6 +2424,7 @@ class Table(Expression):
         "pivots": False,
         "hints": False,
         "system_time": False,
+        "version": False,
     }
 
     @property
@@ -2445,21 +2465,13 @@ class Table(Expression):
         return parts
 
 
-# See the TSQL "Querying data in a system-versioned temporal table" page
-class SystemTime(Expression):
-    arg_types = {
-        "this": False,
-        "expression": False,
-        "kind": True,
-    }
-
-
 class Union(Subqueryable):
     arg_types = {
         "with": False,
         "this": True,
         "expression": True,
         "distinct": False,
+        "by_name": False,
         **QUERY_MODIFIERS,
     }
 
@@ -2571,6 +2583,7 @@ class Update(Expression):
         "from": False,
         "where": False,
         "returning": False,
+        "order": False,
         "limit": False,
     }
 
@@ -2585,6 +2598,20 @@ class Values(UDTF):
 
 class Var(Expression):
     pass
+
+
+class Version(Expression):
+    """
+    Time travel, iceberg, bigquery etc
+    https://trino.io/docs/current/connector/iceberg.html?highlight=snapshot#using-snapshots
+    https://www.databricks.com/blog/2019/02/04/introducing-delta-time-travel-for-large-scale-data-lakes.html
+    https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#for_system_time_as_of
+    https://learn.microsoft.com/en-us/sql/relational-databases/tables/querying-data-in-a-system-versioned-temporal-table?view=sql-server-ver16
+    this is either TIMESTAMP or VERSION
+    kind is ("AS OF", "BETWEEN")
+    """
+
+    arg_types = {"this": True, "kind": True, "expression": False}
 
 
 class Schema(Expression):
@@ -3334,6 +3361,7 @@ class Subquery(DerivedTable, Unionable):
 class TableSample(Expression):
     arg_types = {
         "this": False,
+        "expressions": False,
         "method": False,
         "bucket_numerator": False,
         "bucket_denominator": False,
@@ -3512,6 +3540,8 @@ class DataType(Expression):
         STRUCT = auto()
         SUPER = auto()
         TEXT = auto()
+        TINYBLOB = auto()
+        TINYTEXT = auto()
         TIME = auto()
         TIMETZ = auto()
         TIMESTAMP = auto()
@@ -3526,6 +3556,7 @@ class DataType(Expression):
         UINT = auto()
         UINT128 = auto()
         UINT256 = auto()
+        UMEDIUMINT = auto()
         UNIQUEIDENTIFIER = auto()
         UNKNOWN = auto()  # Sentinel value, useful for type annotation
         USERDEFINED = "USER-DEFINED"
@@ -3651,6 +3682,11 @@ class PseudoType(Expression):
     pass
 
 
+# https://www.postgresql.org/docs/15/datatype-oid.html
+class ObjectIdentifier(Expression):
+    pass
+
+
 # WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
 class SubqueryPredicate(Predicate):
     pass
@@ -3687,7 +3723,7 @@ class Rollback(Expression):
 
 
 class AlterTable(Expression):
-    arg_types = {"this": True, "actions": True, "exists": False}
+    arg_types = {"this": True, "actions": True, "exists": False, "only": False}
 
 
 class AddConstraint(Expression):
@@ -3770,13 +3806,7 @@ class Dot(Binary):
         if len(expressions) < 2:
             raise ValueError(f"Dot requires >= 2 expressions.")
 
-        a, b, *expressions = expressions
-        dot = Dot(this=a, expression=b)
-
-        for expression in expressions:
-            dot = Dot(this=dot, expression=expression)
-
-        return dot
+        return t.cast(Dot, reduce(lambda x, y: Dot(this=x, expression=y), expressions))
 
 
 class DPipe(Binary):
@@ -3936,6 +3966,13 @@ class Between(Predicate):
 class Bracket(Condition):
     arg_types = {"this": True, "expressions": True}
 
+    @property
+    def output_name(self) -> str:
+        if len(self.expressions) == 1:
+            return self.expressions[0].output_name
+
+        return super().output_name
+
 
 class SafeBracket(Bracket):
     """Represents array lookup where OOB index yields NULL instead of causing a failure."""
@@ -3972,15 +4009,10 @@ class TimeUnit(Expression):
 
 
 # https://www.oracletutorial.com/oracle-basics/oracle-interval/
-# https://trino.io/docs/current/language/types.html#interval-year-to-month
-class IntervalYearToMonthSpan(Expression):
-    arg_types = {}
-
-
-# https://www.oracletutorial.com/oracle-basics/oracle-interval/
 # https://trino.io/docs/current/language/types.html#interval-day-to-second
-class IntervalDayToSecondSpan(Expression):
-    arg_types = {}
+# https://docs.databricks.com/en/sql/language-manual/data-types/interval-type.html
+class IntervalSpan(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 class Interval(TimeUnit):
@@ -4340,6 +4372,10 @@ class Extract(Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Timestamp(Func):
+    arg_types = {"this": False, "expression": False}
+
+
 class TimestampAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
@@ -4435,7 +4471,7 @@ class Greatest(Func):
     is_var_len_args = True
 
 
-class GroupConcat(Func):
+class GroupConcat(AggFunc):
     arg_types = {"this": True, "separator": False}
 
 
@@ -4459,6 +4495,10 @@ class IsNan(Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 
 
+class FormatJson(Expression):
+    pass
+
+
 class JSONKeyValue(Expression):
     arg_types = {"this": True, "expression": True}
 
@@ -4469,8 +4509,45 @@ class JSONObject(Func):
         "null_handling": False,
         "unique_keys": False,
         "return_type": False,
-        "format_json": False,
         "encoding": False,
+    }
+
+
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAY.html
+class JSONArray(Func):
+    arg_types = {
+        "expressions": True,
+        "null_handling": False,
+        "return_type": False,
+        "strict": False,
+    }
+
+
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAYAGG.html
+class JSONArrayAgg(Func):
+    arg_types = {
+        "this": True,
+        "order": False,
+        "null_handling": False,
+        "return_type": False,
+        "strict": False,
+    }
+
+
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
+# Note: parsing of JSON column definitions is currently incomplete.
+class JSONColumnDef(Expression):
+    arg_types = {"this": True, "kind": False, "path": False}
+
+
+# # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_TABLE.html
+class JSONTable(Func):
+    arg_types = {
+        "this": True,
+        "expressions": True,
+        "path": False,
+        "error_handling": False,
+        "empty_handling": False,
     }
 
 
@@ -4510,6 +4587,11 @@ class JSONFormat(Func):
 # https://dev.mysql.com/doc/refman/8.0/en/json-search-functions.html#operator_member-of
 class JSONArrayContains(Binary, Predicate, Func):
     _sql_names = ["JSON_ARRAY_CONTAINS"]
+
+
+class ParseJSON(Func):
+    # BigQuery, Snowflake have PARSE_JSON, Presto has JSON_PARSE
+    _sql_names = ["PARSE_JSON", "JSON_PARSE"]
 
 
 class Least(Func):
@@ -5867,9 +5949,9 @@ def table_(
         The new Table instance.
     """
     return Table(
-        this=to_identifier(table, quoted=quoted),
-        db=to_identifier(db, quoted=quoted),
-        catalog=to_identifier(catalog, quoted=quoted),
+        this=to_identifier(table, quoted=quoted) if table else None,
+        db=to_identifier(db, quoted=quoted) if db else None,
+        catalog=to_identifier(catalog, quoted=quoted) if catalog else None,
         alias=TableAlias(this=to_identifier(alias)) if alias else None,
     )
 

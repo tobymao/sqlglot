@@ -240,10 +240,24 @@ TBLPROPERTIES (
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
         self.validate_identity(
+            "SELECT REGEXP_REPLACE('100-200', r'([^0-9])', '')",
+            "SELECT REGEXP_REPLACE('100-200', '([^0-9])', '')",
+        )
+        self.validate_identity(
+            "SELECT REGEXP_REPLACE('100-200', R'([^0-9])', '')",
+            "SELECT REGEXP_REPLACE('100-200', '([^0-9])', '')",
+        )
+        self.validate_identity(
             "SELECT STR_TO_MAP('a:1,b:2,c:3')",
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
 
+        self.validate_all(
+            "foo.bar",
+            read={
+                "": "STRUCT_EXTRACT(foo, bar)",
+            },
+        )
         self.validate_all(
             "MAP(1, 2, 3, 4)",
             write={
@@ -436,7 +450,7 @@ TBLPROPERTIES (
             "ARRAY(0, 1, 2)",
             write={
                 "bigquery": "[0, 1, 2]",
-                "duckdb": "LIST_VALUE(0, 1, 2)",
+                "duckdb": "[0, 1, 2]",
                 "presto": "ARRAY[0, 1, 2]",
                 "hive": "ARRAY(0, 1, 2)",
                 "spark": "ARRAY(0, 1, 2)",
@@ -503,7 +517,7 @@ TBLPROPERTIES (
         self.validate_all(
             "MAP_FROM_ARRAYS(ARRAY(1), c)",
             write={
-                "duckdb": "MAP(LIST_VALUE(1), c)",
+                "duckdb": "MAP([1], c)",
                 "presto": "MAP(ARRAY[1], c)",
                 "hive": "MAP(ARRAY(1), c)",
                 "spark": "MAP_FROM_ARRAYS(ARRAY(1), c)",

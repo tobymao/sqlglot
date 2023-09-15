@@ -6,30 +6,19 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
-        self.validate_all(
-            "DATE_ADD('day', 1, x)",
-            read={
-                "clickhouse": "dateAdd(day, 1, x)",
-                "presto": "DATE_ADD('day', 1, x)",
-            },
-            write={
-                "clickhouse": "DATE_ADD('day', 1, x)",
-                "presto": "DATE_ADD('day', 1, x)",
-                "": "DATE_ADD(x, 1, 'day')",
-            },
-        )
-        self.validate_all(
-            "DATE_DIFF('day', a, b)",
-            read={
-                "clickhouse": "dateDiff('day', a, b)",
-                "presto": "DATE_DIFF('day', a, b)",
-            },
-            write={
-                "clickhouse": "DATE_DIFF('day', a, b)",
-                "presto": "DATE_DIFF('day', a, b)",
-                "": "DATEDIFF(b, a, day)",
-            },
-        )
+        string_types = [
+            "BLOB",
+            "LONGBLOB",
+            "LONGTEXT",
+            "MEDIUMBLOB",
+            "MEDIUMTEXT",
+            "TINYBLOB",
+            "TINYTEXT",
+            "VARCHAR(255)",
+        ]
+
+        for string_type in string_types:
+            self.validate_identity(f"CAST(x AS {string_type})", "CAST(x AS String)")
 
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
@@ -72,8 +61,8 @@ class TestClickhouse(Validator):
         self.validate_identity("position(haystack, needle)")
         self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)")
-        self.validate_identity("CAST(x AS VARCHAR(255))", "CAST(x AS String)")
-        self.validate_identity("CAST(x AS BLOB)", "CAST(x AS String)")
+        self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
+
         self.validate_identity(
             'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(String))'
         )
@@ -93,6 +82,30 @@ class TestClickhouse(Validator):
             "CREATE MATERIALIZED VIEW test_view (id UInt8) TO db.table1 AS SELECT * FROM test_data"
         )
 
+        self.validate_all(
+            "DATE_ADD('day', 1, x)",
+            read={
+                "clickhouse": "dateAdd(day, 1, x)",
+                "presto": "DATE_ADD('day', 1, x)",
+            },
+            write={
+                "clickhouse": "DATE_ADD('day', 1, x)",
+                "presto": "DATE_ADD('day', 1, x)",
+                "": "DATE_ADD(x, 1, 'day')",
+            },
+        )
+        self.validate_all(
+            "DATE_DIFF('day', a, b)",
+            read={
+                "clickhouse": "dateDiff('day', a, b)",
+                "presto": "DATE_DIFF('day', a, b)",
+            },
+            write={
+                "clickhouse": "DATE_DIFF('day', a, b)",
+                "presto": "DATE_DIFF('day', a, b)",
+                "": "DATEDIFF(b, a, day)",
+            },
+        )
         self.validate_all(
             "SELECT xor(1, 0)",
             read={

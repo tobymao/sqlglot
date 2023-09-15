@@ -6,8 +6,11 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arrow_json_extract_scalar_sql,
+    date_add_interval_sql,
     datestrtodate_sql,
     format_time_lambda,
+    isnull_to_is_null,
+    json_keyvalue_comma_sql,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -32,7 +35,7 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQL.Parser], ex
     return _parse
 
 
-def _date_trunc_sql(self: generator.Generator, expression: exp.DateTrunc) -> str:
+def _date_trunc_sql(self: MySQL.Generator, expression: exp.DateTrunc) -> str:
     expr = self.sql(expression, "this")
     unit = expression.text("unit")
 
@@ -63,12 +66,12 @@ def _str_to_date(args: t.List) -> exp.StrToDate:
     return exp.StrToDate(this=seq_get(args, 0), format=date_format)
 
 
-def _str_to_date_sql(self: generator.Generator, expression: exp.StrToDate | exp.StrToTime) -> str:
+def _str_to_date_sql(self: MySQL.Generator, expression: exp.StrToDate | exp.StrToTime) -> str:
     date_format = self.format_time(expression)
     return f"STR_TO_DATE({self.sql(expression.this)}, {date_format})"
 
 
-def _trim_sql(self: generator.Generator, expression: exp.Trim) -> str:
+def _trim_sql(self: MySQL.Generator, expression: exp.Trim) -> str:
     target = self.sql(expression, "this")
     trim_type = self.sql(expression, "position")
     remove_chars = self.sql(expression, "expression")
@@ -83,8 +86,8 @@ def _trim_sql(self: generator.Generator, expression: exp.Trim) -> str:
     return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
 
 
-def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | exp.DateSub], str]:
-    def func(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_add_sql(kind: str) -> t.Callable[[MySQL.Generator, exp.DateAdd | exp.DateSub], str]:
+    def func(self: MySQL.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
         return f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))})"
@@ -93,8 +96,12 @@ def _date_add_sql(kind: str) -> t.Callable[[generator.Generator, exp.DateAdd | e
 
 
 class MySQL(Dialect):
+    # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
+    IDENTIFIERS_CAN_START_WITH_DIGIT = True
+
     TIME_FORMAT = "'%Y-%m-%d %T'"
     DPIPE_IS_STRING_CONCAT = False
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     # https://prestodb.io/docs/current/functions/datetime.html#mysql-date-functions
     TIME_MAPPING = {
@@ -115,7 +122,7 @@ class MySQL(Dialect):
         QUOTES = ["'", '"']
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
-        STRING_ESCAPES = ["'", "\\"]
+        STRING_ESCAPES = ["'", '"', "\\"]
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
 
@@ -125,9 +132,12 @@ class MySQL(Dialect):
             "ENUM": TokenType.ENUM,
             "FORCE": TokenType.FORCE,
             "IGNORE": TokenType.IGNORE,
+            "LOCK TABLES": TokenType.COMMAND,
             "LONGBLOB": TokenType.LONGBLOB,
             "LONGTEXT": TokenType.LONGTEXT,
             "MEDIUMBLOB": TokenType.MEDIUMBLOB,
+            "TINYBLOB": TokenType.TINYBLOB,
+            "TINYTEXT": TokenType.TINYTEXT,
             "MEDIUMTEXT": TokenType.MEDIUMTEXT,
             "MEDIUMINT": TokenType.MEDIUMINT,
             "MEMBER OF": TokenType.MEMBER_OF,
@@ -135,6 +145,7 @@ class MySQL(Dialect):
             "START": TokenType.BEGIN,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
+            "UNLOCK TABLES": TokenType.COMMAND,
             "UNSIGNED": TokenType.UBIGINT,
             "UNSIGNED INTEGER": TokenType.UBIGINT,
             "YEAR": TokenType.YEAR,
@@ -187,8 +198,6 @@ class MySQL(Dialect):
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 
     class Parser(parser.Parser):
-        SUPPORTS_USER_DEFINED_TYPES = False
-
         FUNC_TOKENS = {
             *parser.Parser.FUNC_TOKENS,
             TokenType.DATABASE,
@@ -227,7 +236,12 @@ class MySQL(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
             "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
+            "ISNULL": isnull_to_is_null,
             "LOCATE": locate_to_strposition,
+            "MONTHNAME": lambda args: exp.TimeToStr(
+                this=seq_get(args, 0),
+                format=exp.Literal.string("%B"),
+            ),
             "STR_TO_DATE": _str_to_date,
         }
 
@@ -352,6 +366,15 @@ class MySQL(Dialect):
 
         LOG_DEFAULTS_TO_LN = True
 
+        def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
+            this = self._parse_id_var()
+            if not self._match(TokenType.L_PAREN):
+                return this
+
+            expression = self._parse_number()
+            self._match_r_paren()
+            return self.expression(exp.ColumnPrefix, this=this, expression=expression)
+
         def _parse_index_constraint(
             self, kind: t.Optional[str] = None
         ) -> exp.IndexColumnConstraint:
@@ -359,7 +382,7 @@ class MySQL(Dialect):
                 self._match_texts({"INDEX", "KEY"})
 
             this = self._parse_id_var(any_token=False)
-            type_ = self._match(TokenType.USING) and self._advance_any() and self._prev.text
+            index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
             schema = self._parse_schema()
 
             options = []
@@ -399,7 +422,7 @@ class MySQL(Dialect):
                 this=this,
                 schema=schema,
                 kind=kind,
-                type=type_,
+                index_type=index_type,
                 options=options,
             )
 
@@ -496,6 +519,17 @@ class MySQL(Dialect):
 
             return self.expression(exp.SetItem, this=charset, collate=collate, kind="NAMES")
 
+        def _parse_type(self) -> t.Optional[exp.Expression]:
+            # mysql binary is special and can work anywhere, even in order by operations
+            # it operates like a no paren func
+            if self._match(TokenType.BINARY, advance=False):
+                data_type = self._parse_types(check_func=True, allow_identifiers=False)
+
+                if isinstance(data_type, exp.DataType):
+                    return self.expression(exp.Cast, this=self._parse_column(), to=data_type)
+
+            return super()._parse_type()
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
@@ -520,6 +554,7 @@ class MySQL(Dialect):
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
@@ -531,6 +566,8 @@ class MySQL(Dialect):
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),
             exp.TableSample: no_tablesample_sql,
+            exp.TimestampAdd: date_add_interval_sql("DATE", "ADD"),
+            exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime", copy=True)),
             exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
@@ -539,11 +576,32 @@ class MySQL(Dialect):
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         }
 
-        TYPE_MAPPING = generator.Generator.TYPE_MAPPING.copy()
+        UNSIGNED_TYPE_MAPPING = {
+            exp.DataType.Type.UBIGINT: "BIGINT",
+            exp.DataType.Type.UINT: "INT",
+            exp.DataType.Type.UMEDIUMINT: "MEDIUMINT",
+            exp.DataType.Type.USMALLINT: "SMALLINT",
+            exp.DataType.Type.UTINYINT: "TINYINT",
+        }
+
+        TIMESTAMP_TYPE_MAPPING = {
+            exp.DataType.Type.TIMESTAMP: "DATETIME",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
+        }
+
+        TYPE_MAPPING = {
+            **generator.Generator.TYPE_MAPPING,
+            **UNSIGNED_TYPE_MAPPING,
+            **TIMESTAMP_TYPE_MAPPING,
+        }
+
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGTEXT)
+        TYPE_MAPPING.pop(exp.DataType.Type.TINYTEXT)
         TYPE_MAPPING.pop(exp.DataType.Type.MEDIUMBLOB)
         TYPE_MAPPING.pop(exp.DataType.Type.LONGBLOB)
+        TYPE_MAPPING.pop(exp.DataType.Type.TINYBLOB)
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -564,6 +622,18 @@ class MySQL(Dialect):
             exp.DataType.Type.VARCHAR: "CHAR",
         }
 
+        TIMESTAMP_FUNC_TYPES = {
+            exp.DataType.Type.TIMESTAMPTZ,
+            exp.DataType.Type.TIMESTAMPLTZ,
+        }
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
+            result = super().datatype_sql(expression)
+            if expression.this in self.UNSIGNED_TYPE_MAPPING:
+                result = f"{result} UNSIGNED"
+            return result
+
         def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
             # MySQL requires simple literal values for its LIMIT clause.
             expression = simplify_literal(expression.copy())
@@ -583,6 +653,9 @@ class MySQL(Dialect):
             return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            if expression.to.this in self.TIMESTAMP_FUNC_TYPES:
+                return self.func("TIMESTAMP", expression.this)
+
             to = self.CAST_MAPPING.get(expression.to.this)
 
             if to:

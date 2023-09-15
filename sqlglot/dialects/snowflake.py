@@ -90,7 +90,7 @@ def _parse_datediff(args: t.List) -> exp.DateDiff:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
-def _unix_to_time_sql(self: generator.Generator, expression: exp.UnixToTime) -> str:
+def _unix_to_time_sql(self: Snowflake.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
     if scale in [None, exp.UnixToTime.SECONDS]:
@@ -105,7 +105,7 @@ def _unix_to_time_sql(self: generator.Generator, expression: exp.UnixToTime) -> 
 
 # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
 # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts
-def _parse_date_part(self: parser.Parser) -> t.Optional[exp.Expression]:
+def _parse_date_part(self: Snowflake.Parser) -> t.Optional[exp.Expression]:
     this = self._parse_var() or self._parse_type()
 
     if not this:
@@ -156,7 +156,7 @@ def _nullifzero_to_if(args: t.List) -> exp.If:
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
 
-def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
+def _datatype_sql(self: Snowflake.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return "ARRAY"
     elif expression.is_type("map"):
@@ -164,7 +164,7 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
-def _regexpilike_sql(self: generator.Generator, expression: exp.RegexpILike) -> str:
+def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> str:
     flag = expression.text("flag")
 
     if "i" not in flag:
@@ -190,11 +190,19 @@ def _parse_regexp_replace(args: t.List) -> exp.RegexpReplace:
     return regexp_replace
 
 
+def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser], exp.Show]:
+    def _parse(self: Snowflake.Parser) -> exp.Show:
+        return self._parse_show_snowflake(*args, **kwargs)
+
+    return _parse
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     TIME_MAPPING = {
         "YYYY": "%Y",
@@ -227,7 +235,6 @@ class Snowflake(Dialect):
 
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -242,6 +249,7 @@ class Snowflake(Dialect):
             "DATEDIFF": _parse_datediff,
             "DIV0": _div0_to_if,
             "IFF": exp.If.from_arg_list,
+            "LISTAGG": exp.GroupConcat.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
             "OBJECT_CONSTRUCT": _parse_object_construct,
             "REGEXP_REPLACE": _parse_regexp_replace,
@@ -288,6 +296,16 @@ class Snowflake(Dialect):
             ),
         }
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.SHOW: lambda self: self._parse_show(),
+        }
+
+        SHOW_PARSERS = {
+            "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+            "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+        }
+
         def _parse_id_var(
             self,
             any_token: bool = True,
@@ -302,6 +320,23 @@ class Snowflake(Dialect):
                 return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
 
             return super()._parse_id_var(any_token=any_token, tokens=tokens)
+
+        def _parse_show_snowflake(self, this: str) -> exp.Show:
+            scope = None
+            scope_kind = None
+
+            if self._match(TokenType.IN):
+                if self._match_text_seq("ACCOUNT"):
+                    scope_kind = "ACCOUNT"
+                elif self._match_set(self.DB_CREATABLES):
+                    scope_kind = self._prev.text
+                    if self._curr:
+                        scope = self._parse_table()
+                elif self._curr:
+                    scope_kind = "TABLE"
+                    scope = self._parse_table()
+
+            return self.expression(exp.Show, this=this, scope=scope, scope_kind=scope_kind)
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
@@ -337,6 +372,8 @@ class Snowflake(Dialect):
 
         VAR_SINGLE_TOKENS = {"$"}
 
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
+
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
         MATCHED_BY_SOURCE = False
@@ -361,6 +398,7 @@ class Snowflake(Dialect):
             exp.DataType: _datatype_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.Extract: rename_func("DATE_PART"),
+            exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: rename_func("IFF"),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
@@ -411,6 +449,16 @@ class Snowflake(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def show_sql(self, expression: exp.Show) -> str:
+            scope = self.sql(expression, "scope")
+            scope = f" {scope}" if scope else ""
+
+            scope_kind = self.sql(expression, "scope_kind")
+            if scope_kind:
+                scope_kind = f" IN {scope_kind}"
+
+            return f"SHOW {expression.name}{scope_kind}{scope}"
+
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             # Other dialects don't support all of the following parameters, so we need to
             # generate default values as necessary to ensure the transpilation is correct
@@ -444,7 +492,9 @@ class Snowflake(Dialect):
             kind_value = expression.args.get("kind") or "TABLE"
             kind = f" {kind_value}" if kind_value else ""
             this = f" {self.sql(expression, 'this')}"
-            return f"DESCRIBE{kind}{this}"
+            expressions = self.expressions(expression, flat=True)
+            expressions = f" {expressions}" if expressions else ""
+            return f"DESCRIBE{kind}{this}{expressions}"
 
         def generatedasidentitycolumnconstraint_sql(
             self, expression: exp.GeneratedAsIdentityColumnConstraint

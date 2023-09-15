@@ -88,7 +88,7 @@ class TestPresto(Validator):
             "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
             write={
                 "bigquery": "CAST([1, 2] AS ARRAY<INT64>)",
-                "duckdb": "CAST(LIST_VALUE(1, 2) AS BIGINT[])",
+                "duckdb": "CAST([1, 2] AS BIGINT[])",
                 "presto": "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
                 "spark": "CAST(ARRAY(1, 2) AS ARRAY<BIGINT>)",
                 "snowflake": "CAST([1, 2] AS ARRAY)",
@@ -98,7 +98,7 @@ class TestPresto(Validator):
             "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INT,INT))",
             write={
                 "bigquery": "CAST(MAP([1], [1]) AS MAP<INT64, INT64>)",
-                "duckdb": "CAST(MAP(LIST_VALUE(1), LIST_VALUE(1)) AS MAP(INT, INT))",
+                "duckdb": "CAST(MAP([1], [1]) AS MAP(INT, INT))",
                 "presto": "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INTEGER, INTEGER))",
                 "hive": "CAST(MAP(1, 1) AS MAP<INT, INT>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY(1), ARRAY(1)) AS MAP<INT, INT>)",
@@ -109,7 +109,7 @@ class TestPresto(Validator):
             "CAST(MAP(ARRAY['a','b','c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INT)))",
             write={
                 "bigquery": "CAST(MAP(['a', 'b', 'c'], [[1], [2], [3]]) AS MAP<STRING, ARRAY<INT64>>)",
-                "duckdb": "CAST(MAP(LIST_VALUE('a', 'b', 'c'), LIST_VALUE(LIST_VALUE(1), LIST_VALUE(2), LIST_VALUE(3))) AS MAP(TEXT, INT[]))",
+                "duckdb": "CAST(MAP(['a', 'b', 'c'], [[1], [2], [3]]) AS MAP(TEXT, INT[]))",
                 "presto": "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
                 "hive": "CAST(MAP('a', ARRAY(1), 'b', ARRAY(2), 'c', ARRAY(3)) AS MAP<STRING, ARRAY<INT>>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY('a', 'b', 'c'), ARRAY(ARRAY(1), ARRAY(2), ARRAY(3))) AS MAP<STRING, ARRAY<INT>>)",
@@ -296,6 +296,13 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "DATE_ADD('DAY', 1 * -1, x)",
+            write={
+                "presto": "DATE_ADD('DAY', 1 * -1, x)",
+            },
+            read={"mysql": "DATE_SUB(x, INTERVAL 1 DAY)"},
+        )
+        self.validate_all(
             "NOW()",
             write={
                 "presto": "CURRENT_TIMESTAMP",
@@ -350,6 +357,10 @@ class TestPresto(Validator):
             "CAST(x AS TIMESTAMP)",
             write={"presto": "CAST(x AS TIMESTAMP)"},
             read={"mysql": "CAST(x AS DATETIME)", "clickhouse": "CAST(x AS DATETIME64)"},
+        )
+        self.validate_all(
+            "CAST(x AS TIMESTAMP)",
+            read={"mysql": "TIMESTAMP(x)"},
         )
 
     def test_ddl(self):
@@ -492,6 +503,13 @@ class TestPresto(Validator):
 
     @mock.patch("sqlglot.helper.logger")
     def test_presto(self, logger):
+        self.validate_identity(
+            "SELECT * FROM example.testdb.customer_orders FOR VERSION AS OF 8954597067493422955"
+        )
+        self.validate_identity(
+            "SELECT * FROM example.testdb.customer_orders FOR TIMESTAMP AS OF CAST('2022-03-23 09:59:29.803 Europe/Vienna' AS TIMESTAMP)"
+        )
+
         self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
         self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
@@ -503,6 +521,14 @@ class TestPresto(Validator):
             "SELECT SPLIT_TO_MAP('a:1;b:2;a:3', ';', ':', (k, v1, v2) -> CONCAT(v1, v2))"
         )
 
+        self.validate_all(
+            """JSON '"foo"'""",
+            write={
+                "bigquery": """PARSE_JSON('"foo"')""",
+                "presto": """JSON_PARSE('"foo"')""",
+                "snowflake": """PARSE_JSON('"foo"')""",
+            },
+        )
         self.validate_all(
             "SELECT ROW(1, 2)",
             read={
@@ -658,7 +684,7 @@ class TestPresto(Validator):
             "SELECT ARRAY[1, 2]",
             write={
                 "bigquery": "SELECT [1, 2]",
-                "duckdb": "SELECT LIST_VALUE(1, 2)",
+                "duckdb": "SELECT [1, 2]",
                 "presto": "SELECT ARRAY[1, 2]",
                 "spark": "SELECT ARRAY(1, 2)",
             },
@@ -810,9 +836,9 @@ class TestPresto(Validator):
         self.validate_all(
             """JSON_FORMAT(JSON '"x"')""",
             write={
-                "bigquery": """TO_JSON_STRING(CAST('"x"' AS JSON))""",
-                "duckdb": """CAST(TO_JSON(CAST('"x"' AS JSON)) AS TEXT)""",
-                "presto": """JSON_FORMAT(CAST('"x"' AS JSON))""",
+                "bigquery": """TO_JSON_STRING(PARSE_JSON('"x"'))""",
+                "duckdb": """CAST(TO_JSON(JSON('"x"')) AS TEXT)""",
+                "presto": """JSON_FORMAT(JSON_PARSE('"x"'))""",
                 "spark": """REGEXP_EXTRACT(TO_JSON(FROM_JSON('["x"]', SCHEMA_OF_JSON('["x"]'))), '^.(.*).$', 1)""",
             },
         )
@@ -902,14 +928,14 @@ class TestPresto(Validator):
             "SELECT CAST(JSON '[1,23,456]' AS ARRAY(INTEGER))",
             write={
                 "spark": "SELECT FROM_JSON('[1,23,456]', 'ARRAY<INT>')",
-                "presto": "SELECT CAST(CAST('[1,23,456]' AS JSON) AS ARRAY(INTEGER))",
+                "presto": "SELECT CAST(JSON_PARSE('[1,23,456]') AS ARRAY(INTEGER))",
             },
         )
         self.validate_all(
             """SELECT CAST(JSON '{"k1":1,"k2":23,"k3":456}' AS MAP(VARCHAR, INTEGER))""",
             write={
                 "spark": 'SELECT FROM_JSON(\'{"k1":1,"k2":23,"k3":456}\', \'MAP<STRING, INT>\')',
-                "presto": 'SELECT CAST(CAST(\'{"k1":1,"k2":23,"k3":456}\' AS JSON) AS MAP(VARCHAR, INTEGER))',
+                "presto": 'SELECT CAST(JSON_PARSE(\'{"k1":1,"k2":23,"k3":456}\') AS MAP(VARCHAR, INTEGER))',
             },
         )
 

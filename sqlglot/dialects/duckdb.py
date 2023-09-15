@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     encode_decode_sql,
     format_time_lambda,
+    inline_array_sql,
     no_comment_column_constraint_sql,
     no_properties_sql,
     no_safe_divide_sql,
@@ -30,13 +31,13 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _ts_or_ds_add_sql(self: generator.Generator, expression: exp.TsOrDsAdd) -> str:
+def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))}"
 
 
-def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_delta_sql(self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     op = "+" if isinstance(expression, exp.DateAdd) else "-"
@@ -44,7 +45,7 @@ def _date_delta_sql(self: generator.Generator, expression: exp.DateAdd | exp.Dat
 
 
 # BigQuery -> DuckDB conversion for the DATE function
-def _date_sql(self: generator.Generator, expression: exp.Date) -> str:
+def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
     result = f"CAST({self.sql(expression, 'this')} AS DATE)"
     zone = self.sql(expression, "zone")
 
@@ -58,13 +59,13 @@ def _date_sql(self: generator.Generator, expression: exp.Date) -> str:
     return result
 
 
-def _array_sort_sql(self: generator.Generator, expression: exp.ArraySort) -> str:
+def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
         self.unsupported("DUCKDB ARRAY_SORT does not support a comparator")
     return f"ARRAY_SORT({self.sql(expression, 'this')})"
 
 
-def _sort_array_sql(self: generator.Generator, expression: exp.SortArray) -> str:
+def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
     this = self.sql(expression, "this")
     if expression.args.get("asc") == exp.false():
         return f"ARRAY_REVERSE_SORT({this})"
@@ -79,14 +80,14 @@ def _parse_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
-def _struct_sql(self: generator.Generator, expression: exp.Struct) -> str:
+def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args = [
         f"'{e.name or e.this.name}': {self.sql(e, 'expression')}" for e in expression.expressions
     ]
     return f"{{{', '.join(args)}}}"
 
 
-def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
+def _datatype_sql(self: DuckDB.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
         return f"{self.expressions(expression, flat=True)}[]"
 
@@ -97,13 +98,14 @@ def _datatype_sql(self: generator.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
-def _json_format_sql(self: generator.Generator, expression: exp.JSONFormat) -> str:
+def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
     sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
     return f"CAST({sql} AS TEXT)"
 
 
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
+    SUPPORTS_USER_DEFINED_TYPES = False
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -134,7 +136,6 @@ class DuckDB(Dialect):
 
     class Parser(parser.Parser):
         CONCAT_NULL_OUTPUTS_STRING = True
-        SUPPORTS_USER_DEFINED_TYPES = False
 
         BITWISE = {
             **parser.Parser.BITWISE,
@@ -157,6 +158,11 @@ class DuckDB(Dialect):
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_VALUE": exp.Array.from_arg_list,
+            "MEDIAN": lambda args: exp.PercentileCont(
+                this=seq_get(args, 0), expression=exp.Literal.number(0.5)
+            ),
+            "QUANTILE_CONT": exp.PercentileCont.from_arg_list,
+            "QUANTILE_DISC": exp.PercentileDisc.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0), expression=seq_get(args, 1), group=seq_get(args, 2)
             ),
@@ -224,7 +230,7 @@ class DuckDB(Dialect):
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.Array: lambda self, e: self.func("ARRAY", e.expressions[0])
             if e.expressions and e.expressions[0].find(exp.Select)
-            else rename_func("LIST_VALUE")(self, e),
+            else inline_array_sql(self, e),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
@@ -265,6 +271,9 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, "timestamp", copy=True),
                 exp.cast(e.this, "timestamp", copy=True),
             ),
+            exp.ParseJSON: rename_func("JSON"),
+            exp.PercentileCont: rename_func("QUANTILE_CONT"),
+            exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpReplace: regexp_replace_sql,
@@ -290,6 +299,7 @@ class DuckDB(Dialect):
             exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
+            exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         }
 

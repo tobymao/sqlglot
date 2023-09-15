@@ -223,12 +223,12 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(
-                    "WITH X AS (SELECT Y.A FROM DB.Y CROSS JOIN a.b.INFORMATION_SCHEMA.COLUMNS) SELECT `A` FROM X",
+                    "WITH X AS (SELECT Y.A FROM DB.y CROSS JOIN a.b.INFORMATION_SCHEMA.COLUMNS) SELECT `A` FROM X",
                     read="bigquery",
                 ),
                 dialect="bigquery",
             ).sql(),
-            'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."Y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA"."COLUMNS" AS "columns") SELECT "x"."a" AS "a" FROM "x"',
+            'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA"."COLUMNS" AS "COLUMNS") SELECT "x"."a" AS "a" FROM "x"',
         )
 
         self.assertEqual(
@@ -776,6 +776,13 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(exp.DataType.Type.ARRAY, expression.selects[0].type.this)
         self.assertEqual(expression.selects[0].type.sql(), "ARRAY<INT>")
 
+    def test_user_defined_type_annotation(self):
+        schema = MappingSchema({"t": {"x": "int"}}, dialect="postgres")
+        expression = annotate_types(parse_one("SELECT CAST(x AS IPADDRESS) FROM t"), schema=schema)
+
+        self.assertEqual(exp.DataType.Type.USERDEFINED, expression.selects[0].type.this)
+        self.assertEqual(expression.selects[0].type.sql(dialect="postgres"), "IPADDRESS")
+
     def test_recursive_cte(self):
         query = parse_one(
             """
@@ -858,3 +865,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             ),
             parse_one('SELECT "a"."a" AS "a", "a"."b" AS "b" FROM "a" AS "a"'),
         )
+
+    def test_semistructured(self):
+        query = parse_one("select a.b:c from d", read="snowflake")
+        qualified = optimizer.qualify.qualify(query)
+        self.assertEqual(qualified.expressions[0].alias, "c")

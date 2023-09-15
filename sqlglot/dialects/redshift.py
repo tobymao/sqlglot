@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     concat_to_dpipe_sql,
+    concat_ws_to_dpipe_sql,
     rename_func,
     ts_or_ds_to_date_sql,
 )
@@ -13,7 +14,7 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
-def _json_sql(self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar) -> str:
+def _json_sql(self: Redshift.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar) -> str:
     return f'{self.sql(expression, "this")}."{expression.expression.name}"'
 
 
@@ -29,6 +30,8 @@ class Redshift(Postgres):
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
 
+    SUPPORTS_USER_DEFINED_TYPES = False
+
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
         **Postgres.TIME_MAPPING,
@@ -37,8 +40,6 @@ class Redshift(Postgres):
     }
 
     class Parser(Postgres.Parser):
-        SUPPORTS_USER_DEFINED_TYPES = False
-
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.DateAdd(
@@ -123,6 +124,7 @@ class Redshift(Postgres):
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
             exp.Concat: concat_to_dpipe_sql,
+            exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.CurrentTimestamp: lambda self, e: "SYSDATE",
             exp.DateAdd: lambda self, e: self.func(
                 "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this

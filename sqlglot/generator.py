@@ -72,8 +72,7 @@ class Generator:
         exp.ExternalProperty: lambda self, e: "EXTERNAL",
         exp.HeapProperty: lambda self, e: "HEAP",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
-        exp.IntervalDayToSecondSpan: "DAY TO SECOND",
-        exp.IntervalYearToMonthSpan: "YEAR TO MONTH",
+        exp.IntervalSpan: lambda self, e: f"{self.sql(e, 'this')} TO {self.sql(e, 'expression')}",
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
@@ -186,13 +185,18 @@ class Generator:
     # SELECT * VALUES into SELECT UNION
     VALUES_AS_TABLE = True
 
+    # Whether or not the word COLUMN is included when adding a column with ALTER TABLE
+    ALTER_TABLE_ADD_COLUMN_KEYWORD = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
         exp.DataType.Type.MEDIUMTEXT: "TEXT",
         exp.DataType.Type.LONGTEXT: "TEXT",
+        exp.DataType.Type.TINYTEXT: "TEXT",
         exp.DataType.Type.MEDIUMBLOB: "BLOB",
         exp.DataType.Type.LONGBLOB: "BLOB",
+        exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
     }
 
@@ -701,7 +705,9 @@ class Generator:
     def uniquecolumnconstraint_sql(self, expression: exp.UniqueColumnConstraint) -> str:
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
-        return f"UNIQUE{this}"
+        index_type = expression.args.get("index_type")
+        index_type = f" USING {index_type}" if index_type else ""
+        return f"UNIQUE{this}{index_type}"
 
     def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
         return self.sql(expression, "this")
@@ -793,14 +799,16 @@ class Generator:
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
+        shallow = "SHALLOW " if expression.args.get("shallow") else ""
+        this = f"{shallow}CLONE {this}"
         when = self.sql(expression, "when")
 
         if when:
             kind = self.sql(expression, "kind")
             expr = self.sql(expression, "expression")
-            return f"CLONE {this} {when} ({kind} => {expr})"
+            return f"{this} {when} ({kind} => {expr})"
 
-        return f"CLONE {this}"
+        return this
 
     def describe_sql(self, expression: exp.Describe) -> str:
         return f"DESCRIBE {self.sql(expression, 'this')}"
@@ -948,7 +956,7 @@ class Generator:
 
     def filter_sql(self, expression: exp.Filter) -> str:
         this = self.sql(expression, "this")
-        where = self.sql(expression, "expression")[1:]  # where has a leading space
+        where = self.sql(expression, "expression").strip()
         return f"{this} FILTER({where})"
 
     def hint_sql(self, expression: exp.Hint) -> str:
@@ -1193,6 +1201,7 @@ class Generator:
         where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         conflict = self.sql(expression, "conflict")
+        by_name = " BY NAME" if expression.args.get("by_name") else ""
         returning = self.sql(expression, "returning")
 
         if self.RETURNING_END:
@@ -1200,7 +1209,7 @@ class Generator:
         else:
             expression_sql = f"{returning}{expression_sql}{conflict}"
 
-        sql = f"INSERT{alternative}{ignore}{this}{exists}{partition_sql}{where}{expression_sql}"
+        sql = f"INSERT{alternative}{ignore}{this}{by_name}{exists}{partition_sql}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1216,6 +1225,9 @@ class Generator:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
     def pseudotype_sql(self, expression: exp.PseudoType) -> str:
+        return expression.name.upper()
+
+    def objectidentifier_sql(self, expression: exp.ObjectIdentifier) -> str:
         return expression.name.upper()
 
     def onconflict_sql(self, expression: exp.OnConflict) -> str:
@@ -1270,6 +1282,8 @@ class Generator:
             if part
         )
 
+        version = self.sql(expression, "version")
+        version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")
         alias = f"{sep}{alias}" if alias else ""
         hints = self.expressions(expression, key="hints", sep=" ")
@@ -1278,10 +1292,8 @@ class Generator:
         pivots = f" {pivots}" if pivots else ""
         joins = self.expressions(expression, key="joins", sep="", skip_first=True)
         laterals = self.expressions(expression, key="laterals", sep="")
-        system_time = expression.args.get("system_time")
-        system_time = f" {self.sql(expression, 'system_time')}" if system_time else ""
 
-        return f"{table}{system_time}{alias}{hints}{pivots}{joins}{laterals}"
+        return f"{table}{version}{alias}{hints}{pivots}{joins}{laterals}"
 
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
@@ -1336,6 +1348,12 @@ class Generator:
             nulls = ""
         return f"{direction}{nulls}({expressions} FOR {field}){alias}"
 
+    def version_sql(self, expression: exp.Version) -> str:
+        this = f"FOR {expression.name}"
+        kind = expression.text("kind")
+        expr = self.sql(expression, "expression")
+        return f"{this} {kind} {expr}"
+
     def tuple_sql(self, expression: exp.Tuple) -> str:
         return f"({self.expressions(expression, flat=True)})"
 
@@ -1345,12 +1363,13 @@ class Generator:
         from_sql = self.sql(expression, "from")
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")
+        order = self.sql(expression, "order")
         limit = self.sql(expression, "limit")
         if self.RETURNING_END:
-            expression_sql = f"{from_sql}{where_sql}{returning}{limit}"
+            expression_sql = f"{from_sql}{where_sql}{returning}"
         else:
-            expression_sql = f"{returning}{from_sql}{where_sql}{limit}"
-        sql = f"UPDATE {this} SET {set_sql}{expression_sql}"
+            expression_sql = f"{returning}{from_sql}{where_sql}"
+        sql = f"UPDATE {this} SET {set_sql}{expression_sql}{order}{limit}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values) -> str:
@@ -1834,7 +1853,8 @@ class Generator:
     def union_op(self, expression: exp.Union) -> str:
         kind = " DISTINCT" if self.EXPLICIT_UNION else ""
         kind = kind if expression.args.get("distinct") else " ALL"
-        return f"UNION{kind}"
+        by_name = " BY NAME" if expression.args.get("by_name") else ""
+        return f"UNION{kind}{by_name}"
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
         args = self.expressions(expression, flat=True)
@@ -2005,6 +2025,9 @@ class Generator:
     def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
         return f"{self.sql(expression, 'this')}: {self.sql(expression, 'expression')}"
 
+    def formatjson_sql(self, expression: exp.FormatJson) -> str:
+        return f"{self.sql(expression, 'this')} FORMAT JSON"
+
     def jsonobject_sql(self, expression: exp.JSONObject) -> str:
         null_handling = expression.args.get("null_handling")
         null_handling = f" {null_handling}" if null_handling else ""
@@ -2015,13 +2038,57 @@ class Generator:
             unique_keys = ""
         return_type = self.sql(expression, "return_type")
         return_type = f" RETURNING {return_type}" if return_type else ""
-        format_json = " FORMAT JSON" if expression.args.get("format_json") else ""
         encoding = self.sql(expression, "encoding")
         encoding = f" ENCODING {encoding}" if encoding else ""
         return self.func(
             "JSON_OBJECT",
             *expression.expressions,
-            suffix=f"{null_handling}{unique_keys}{return_type}{format_json}{encoding})",
+            suffix=f"{null_handling}{unique_keys}{return_type}{encoding})",
+        )
+
+    def jsonarray_sql(self, expression: exp.JSONArray) -> str:
+        null_handling = expression.args.get("null_handling")
+        null_handling = f" {null_handling}" if null_handling else ""
+        return_type = self.sql(expression, "return_type")
+        return_type = f" RETURNING {return_type}" if return_type else ""
+        strict = " STRICT" if expression.args.get("strict") else ""
+        return self.func(
+            "JSON_ARRAY", *expression.expressions, suffix=f"{null_handling}{return_type}{strict})"
+        )
+
+    def jsonarrayagg_sql(self, expression: exp.JSONArrayAgg) -> str:
+        this = self.sql(expression, "this")
+        order = self.sql(expression, "order")
+        null_handling = expression.args.get("null_handling")
+        null_handling = f" {null_handling}" if null_handling else ""
+        return_type = self.sql(expression, "return_type")
+        return_type = f" RETURNING {return_type}" if return_type else ""
+        strict = " STRICT" if expression.args.get("strict") else ""
+        return self.func(
+            "JSON_ARRAYAGG",
+            this,
+            suffix=f"{order}{null_handling}{return_type}{strict})",
+        )
+
+    def jsoncolumndef_sql(self, expression: exp.JSONColumnDef) -> str:
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        path = self.sql(expression, "path")
+        path = f" PATH {path}" if path else ""
+        return f"{this}{kind}{path}"
+
+    def jsontable_sql(self, expression: exp.JSONTable) -> str:
+        this = self.sql(expression, "this")
+        path = self.sql(expression, "path")
+        path = f", {path}" if path else ""
+        error_handling = expression.args.get("error_handling")
+        error_handling = f" {error_handling}" if error_handling else ""
+        empty_handling = expression.args.get("empty_handling")
+        empty_handling = f" {empty_handling}" if empty_handling else ""
+        columns = f" COLUMNS ({self.expressions(expression, skip_first=True)})"
+        return self.func(
+            "JSON_TABLE", this, suffix=f"{path}{error_handling}{empty_handling}{columns})"
         )
 
     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:
@@ -2257,7 +2324,14 @@ class Generator:
         actions = expression.args["actions"]
 
         if isinstance(actions[0], exp.ColumnDef):
-            actions = self.expressions(expression, key="actions", prefix="ADD COLUMN ")
+            if self.ALTER_TABLE_ADD_COLUMN_KEYWORD:
+                actions = self.expressions(
+                    expression,
+                    key="actions",
+                    prefix="ADD COLUMN ",
+                )
+            else:
+                actions = f"ADD {self.expressions(expression, key='actions')}"
         elif isinstance(actions[0], exp.Schema):
             actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):
@@ -2266,7 +2340,8 @@ class Generator:
             actions = self.expressions(expression, key="actions")
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
-        return f"ALTER TABLE{exists} {self.sql(expression, 'this')} {actions}"
+        only = " ONLY" if expression.args.get("only") else ""
+        return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')} {actions}"
 
     def droppartition_sql(self, expression: exp.DropPartition) -> str:
         expressions = self.expressions(expression)
@@ -2667,13 +2742,13 @@ class Generator:
         kind = f"{kind} INDEX" if kind else "INDEX"
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
-        type_ = self.sql(expression, "type")
-        type_ = f" USING {type_}" if type_ else ""
+        index_type = self.sql(expression, "index_type")
+        index_type = f" USING {index_type}" if index_type else ""
         schema = self.sql(expression, "schema")
         schema = f" {schema}" if schema else ""
         options = self.expressions(expression, key="options", sep=" ")
         options = f" {options}" if options else ""
-        return f"{kind}{this}{type_}{schema}{options}"
+        return f"{kind}{this}{index_type}{schema}{options}"
 
     def nvl2_sql(self, expression: exp.Nvl2) -> str:
         if self.NVL2_SUPPORTED:
@@ -2689,6 +2764,17 @@ class Generator:
             case.else_(else_cond.copy(), copy=False)
 
         return self.sql(case)
+
+    def comprehension_sql(self, expression: exp.Comprehension) -> str:
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        iterator = self.sql(expression, "iterator")
+        condition = self.sql(expression, "condition")
+        condition = f" IF {condition}" if condition else ""
+        return f"{this} FOR {expr} IN {iterator}{condition}"
+
+    def columnprefix_sql(self, expression: exp.ColumnPrefix) -> str:
+        return f"{self.sql(expression, 'this')}({self.sql(expression, 'expression')})"
 
 
 def cached_generator(

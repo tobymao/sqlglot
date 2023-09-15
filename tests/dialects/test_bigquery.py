@@ -6,8 +6,39 @@ from tests.dialects.test_dialect import Validator
 
 class TestBigQuery(Validator):
     dialect = "bigquery"
+    maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
+        self.validate_identity(
+            """SELECT JSON '"foo"' AS json_data""",
+            """SELECT PARSE_JSON('"foo"') AS json_data""",
+        )
+
+        self.validate_all(
+            """SELECT
+  `u`.`harness_user_email` AS `harness_user_email`,
+  `d`.`harness_user_id` AS `harness_user_id`,
+  `harness_account_id` AS `harness_account_id`
+FROM `analytics_staging`.`stg_mongodb__users` AS `u`, UNNEST(`u`.`harness_cluster_details`) AS `d`, UNNEST(`d`.`harness_account_ids`) AS `harness_account_id`
+WHERE
+  NOT `harness_account_id` IS NULL""",
+            read={
+                "": """
+                SELECT
+                  "u"."harness_user_email" AS "harness_user_email",
+                  "_q_0"."d"."harness_user_id" AS "harness_user_id",
+                  "_q_1"."harness_account_id" AS "harness_account_id"
+                FROM
+                  "analytics_staging"."stg_mongodb__users" AS "u",
+                  UNNEST("u"."harness_cluster_details") AS "_q_0"("d"),
+                  UNNEST("_q_0"."d"."harness_account_ids") AS "_q_1"("harness_account_id")
+                WHERE
+                  NOT "_q_1"."harness_account_id" IS NULL
+                """
+            },
+            pretty=True,
+        )
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")
 
@@ -57,6 +88,10 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT * FROM my-table")
         self.validate_identity("SELECT * FROM my-project.mydataset.mytable")
         self.validate_identity("SELECT * FROM pro-ject_id.c.d CROSS JOIN foo-bar")
+        self.validate_identity("SELECT * FROM foo.bar.25", "SELECT * FROM foo.bar.`25`")
+        self.validate_identity("SELECT * FROM foo.bar.25_", "SELECT * FROM foo.bar.`25_`")
+        self.validate_identity("SELECT * FROM foo.bar.25x a", "SELECT * FROM foo.bar.`25x` AS a")
+        self.validate_identity("SELECT * FROM foo.bar.25ab c", "SELECT * FROM foo.bar.`25ab` AS c")
         self.validate_identity("x <> ''")
         self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
         self.validate_identity("SELECT b'abc'")
@@ -105,6 +140,34 @@ class TestBigQuery(Validator):
         self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
+        self.validate_all(
+            "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
+            write={
+                "bigquery": "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
+                "databricks": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
+            },
+        ),
+        self.validate_all(
+            "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+            write={
+                "bigquery": "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+                "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1, '2023-01-01T00:00:00')",
+            },
+        ),
+        self.validate_all(
+            "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+            write={
+                "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+                "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1 * -1, '2023-01-01T00:00:00')",
+            },
+        ),
+        self.validate_all(
+            "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
+            write={
+                "bigquery": "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
+                "databricks": "SELECT DATE_TRUNC('HOUR', '2023-01-01T01:01:01')",
+            },
+        ),
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
         self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})
@@ -116,7 +179,15 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "SELECT TIMESTAMP_ADD(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL 10 MINUTE)",
                 "databricks": "SELECT DATEADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+                "mysql": "SELECT DATE_ADD(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL 10 MINUTE)",
                 "spark": "SELECT DATEADD(MINUTE, 10, CAST('2008-12-25 15:30:00+00' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            'SELECT TIMESTAMP_SUB(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
+            write={
+                "bigquery": "SELECT TIMESTAMP_SUB(CAST('2008-12-25 15:30:00+00' AS TIMESTAMP), INTERVAL 10 MINUTE)",
+                "mysql": "SELECT DATE_SUB(TIMESTAMP('2008-12-25 15:30:00+00'), INTERVAL 10 MINUTE)",
             },
         )
         self.validate_all(
@@ -138,6 +209,20 @@ class TestBigQuery(Validator):
                 "": "SELECT MD5(some_string)",
                 "bigquery": "SELECT TO_HEX(MD5(some_string))",
                 "duckdb": "SELECT MD5(some_string)",
+            },
+        )
+        self.validate_all(
+            "SHA256(x)",
+            write={
+                "bigquery": "SHA256(x)",
+                "spark2": "SHA2(x, 256)",
+            },
+        )
+        self.validate_all(
+            "SHA512(x)",
+            write={
+                "bigquery": "SHA512(x)",
+                "spark2": "SHA2(x, 512)",
             },
         )
         self.validate_all(
@@ -329,14 +414,14 @@ class TestBigQuery(Validator):
         self.validate_all(
             "[1, 2, 3]",
             read={
-                "duckdb": "LIST_VALUE(1, 2, 3)",
+                "duckdb": "[1, 2, 3]",
                 "presto": "ARRAY[1, 2, 3]",
                 "hive": "ARRAY(1, 2, 3)",
                 "spark": "ARRAY(1, 2, 3)",
             },
             write={
                 "bigquery": "[1, 2, 3]",
-                "duckdb": "LIST_VALUE(1, 2, 3)",
+                "duckdb": "[1, 2, 3]",
                 "presto": "ARRAY[1, 2, 3]",
                 "hive": "ARRAY(1, 2, 3)",
                 "spark": "ARRAY(1, 2, 3)",
@@ -710,3 +795,28 @@ class TestBigQuery(Validator):
             "WITH cte AS (SELECT 1 AS foo UNION ALL SELECT 2) SELECT foo FROM cte",
             read={"postgres": "WITH cte(foo) AS (SELECT 1 UNION ALL SELECT 2) SELECT foo FROM cte"},
         )
+
+    def test_json_object(self):
+        self.validate_identity("SELECT JSON_OBJECT() AS json_data")
+        self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', TRUE) AS json_data")
+        self.validate_identity("SELECT JSON_OBJECT('foo', 10, 'bar', ['a', 'b']) AS json_data")
+        self.validate_identity("SELECT JSON_OBJECT('a', 10, 'a', 'foo') AS json_data")
+        self.validate_identity(
+            "SELECT JSON_OBJECT(['a', 'b'], [10, NULL]) AS json_data",
+            "SELECT JSON_OBJECT('a', 10, 'b', NULL) AS json_data",
+        )
+        self.validate_identity(
+            """SELECT JSON_OBJECT(['a', 'b'], [JSON '10', JSON '"foo"']) AS json_data""",
+            """SELECT JSON_OBJECT('a', PARSE_JSON('10'), 'b', PARSE_JSON('"foo"')) AS json_data""",
+        )
+        self.validate_identity(
+            "SELECT JSON_OBJECT(['a', 'b'], [STRUCT(10 AS id, 'Red' AS color), STRUCT(20 AS id, 'Blue' AS color)]) AS json_data",
+            "SELECT JSON_OBJECT('a', STRUCT(10 AS id, 'Red' AS color), 'b', STRUCT(20 AS id, 'Blue' AS color)) AS json_data",
+        )
+        self.validate_identity(
+            "SELECT JSON_OBJECT(['a', 'b'], [TO_JSON(10), TO_JSON(['foo', 'bar'])]) AS json_data",
+            "SELECT JSON_OBJECT('a', TO_JSON(10), 'b', TO_JSON(['foo', 'bar'])) AS json_data",
+        )
+
+        with self.assertRaises(ParseError):
+            transpile("SELECT JSON_OBJECT('a', 1, 'b') AS json_data", read="bigquery")

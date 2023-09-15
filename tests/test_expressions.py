@@ -934,5 +934,8 @@ FROM foo""",
         assert dtype.is_type("foo")
         assert not dtype.is_type("bar")
 
+        dtype = exp.DataType.build("sch.udt", udt=True)
+        assert dtype.is_type("sch.udt")
+
         with self.assertRaises(ParseError):
             exp.DataType.build("foo")

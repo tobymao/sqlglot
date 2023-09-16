@@ -40,7 +40,7 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
                 this=exp.Unnest(
                     expressions=[expression.this.this],
                     alias=expression.args.get("alias"),
-                    ordinality=isinstance(expression.this, exp.Posexplode),
+                    offset=isinstance(expression.this, exp.Posexplode),
                 ),
                 kind="cross",
             )
@@ -331,7 +331,7 @@ class Presto(Dialect):
                 [
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
-                    transforms.explode_to_unnest,
+                    transforms.explode_to_unnest(1),
                 ]
             ),
             exp.SortArray: _no_sort_array,

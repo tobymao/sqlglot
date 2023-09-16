@@ -414,6 +414,7 @@ class BigQuery(Dialect):
         LIMIT_FETCH = "LIMIT"
         RENAME_TABLE_WITH_DB = False
         NVL2_SUPPORTED = False
+        UNNEST_WITH_ORDINALITY = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -433,6 +434,9 @@ class BigQuery(Dialect):
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.Hex: rename_func("TO_HEX"),
+            exp.If: lambda self, e: self.func(
+                "IF", e.this, e.args.get("true"), e.args.get("false") or "NULL"
+            ),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
@@ -454,7 +458,7 @@ class BigQuery(Dialect):
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Select: transforms.preprocess(
                 [
-                    transforms.explode_to_unnest,
+                    transforms.explode_to_unnest(),
                     _unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,

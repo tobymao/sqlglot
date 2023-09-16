@@ -408,7 +408,7 @@ class Snowflake(Dialect):
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpILike: _regexpilike_sql,
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.explode_to_unnest]
+                [transforms.eliminate_distinct_on, transforms.explode_to_unnest(0)]
             ),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),

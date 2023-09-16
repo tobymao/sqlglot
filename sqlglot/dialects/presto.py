@@ -333,6 +333,7 @@ class Presto(Dialect):
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
                     transforms.explode_to_unnest(1),
+                    transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
             exp.SortArray: _no_sort_array,

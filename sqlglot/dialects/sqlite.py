@@ -125,7 +125,11 @@ class SQLite(Dialect):
             exp.Pivot: no_pivot_sql,
             exp.SafeConcat: concat_to_dpipe_sql,
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.eliminate_qualify]
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_semi_and_anti_joins,
+                ]
             ),
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),

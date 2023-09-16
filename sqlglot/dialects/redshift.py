@@ -138,7 +138,9 @@ class Redshift(Postgres):
             exp.JSONExtract: _json_sql,
             exp.JSONExtractScalar: _json_sql,
             exp.SafeConcat: concat_to_dpipe_sql,
-            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
+            exp.Select: transforms.preprocess(
+                [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+            ),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("redshift"),
         }

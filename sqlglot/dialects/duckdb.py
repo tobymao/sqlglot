@@ -191,6 +191,11 @@ class DuckDB(Dialect):
             ),
         }
 
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS.copy() - {
+            TokenType.SEMI,
+            TokenType.ANTI,
+        }
+
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:

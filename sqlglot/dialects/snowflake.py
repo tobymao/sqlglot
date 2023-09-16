@@ -385,6 +385,7 @@ class Snowflake(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False
+        AGGREGATE_FILTER_SUPPORTED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

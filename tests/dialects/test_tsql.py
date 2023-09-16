@@ -18,6 +18,7 @@ class TestTSQL(Validator):
             'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)'
         )
 
+        self.maxDiff = None
         self.validate_all(
             """
             CREATE TABLE x(
@@ -28,7 +29,7 @@ class TestTSQL(Validator):
             ) ON [SECONDARY]
             """,
             write={
-                #'tsql':'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL NOT FOR REPLICATION CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey") WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON "PRIMARY") ON "PRIMARY"',
+                'tsql':'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL NOT FOR REPLICATION, "zip_cd_mkey" VARCHAR(5) NOT NULL, CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey")  WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON "INDEX") ON "SECONDARY"',
                 "spark2": "CREATE TABLE x (`zip_cd` VARCHAR(5), `zip_cd_mkey` VARCHAR(5) NOT NULL, CONSTRAINT `pk_mytable` PRIMARY KEY (`zip_cd_mkey`))",
             },
         )

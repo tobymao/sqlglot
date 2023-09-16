@@ -661,8 +661,13 @@ class TSQL(Dialect):
             exists = expression.args.pop("exists", None)
             sql = super().create_sql(expression)
 
+            table = expression.find(exp.Table)
+
+            if kind == "TABLE" and expression.expression:
+                assert table
+                sql = f"SELECT * INTO {exp.table_name(table)} FROM ({self.sql(expression.expression)}) AS temp"
+
             if exists:
-                table = expression.find(exp.Table)
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
                 if kind == "SCHEMA":
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC('{sql}')"""

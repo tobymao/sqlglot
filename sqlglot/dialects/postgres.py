@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     any_value_to_max_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    bool_xor_sql,
     datestrtodate_sql,
     format_time_lambda,
     max_or_greatest,
@@ -431,6 +432,7 @@ class Postgres(Dialect):
             exp.Array: lambda self, e: f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
             if isinstance(seq_get(e.expressions, 0), exp.Select)
             else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]",
+            exp.Xor: bool_xor_sql,
         }
 
         PROPERTIES_LOCATION = {

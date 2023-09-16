@@ -499,6 +499,21 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "a XOR b",
+            read={
+                "mysql": "a XOR b",
+                "snowflake": "BOOLXOR(a, b)",
+            },
+            write={
+                "duckdb": "(a AND (NOT b)) OR ((NOT a) AND b)",
+                "mysql": "a XOR b",
+                "postgres": "(a AND (NOT b)) OR ((NOT a) AND b)",
+                "snowflake": "BOOLXOR(a, b)",
+                "trino": "(a AND (NOT b)) OR ((NOT a) AND b)",
+            },
+        )
+
+        self.validate_all(
             "SELECT * FROM test LIMIT 0 + 1, 0 + 1",
             write={
                 "mysql": "SELECT * FROM test LIMIT 1 OFFSET 1",

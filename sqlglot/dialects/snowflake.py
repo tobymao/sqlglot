@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    binary_from_function,
     date_trunc_to_time,
     datestrtodate_sql,
     format_time_lambda,
@@ -241,6 +242,9 @@ class Snowflake(Dialect):
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
+            "BITXOR": binary_from_function(exp.BitwiseXor),
+            "BIT_XOR": binary_from_function(exp.BitwiseXor),
+            "BOOLXOR": binary_from_function(exp.Xor),
             "CONVERT_TIMEZONE": _parse_convert_timezone,
             "DATE_TRUNC": date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
@@ -390,6 +394,7 @@ class Snowflake(Dialect):
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
+            exp.BitwiseXor: rename_func("BITXOR"),
             exp.DateAdd: lambda self, e: self.func("DATEADD", e.text("unit"), e.expression, e.this),
             exp.DateDiff: lambda self, e: self.func(
                 "DATEDIFF", e.text("unit"), e.expression, e.this
@@ -433,6 +438,7 @@ class Snowflake(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.Xor: rename_func("BOOLXOR"),
         }
 
         TYPE_MAPPING = {

@@ -2634,25 +2634,27 @@ class Parser(metaclass=_Parser):
             return None
 
         expressions = self._parse_wrapped_csv(self._parse_type)
-        ordinality = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
+        offset = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
 
         alias = self._parse_table_alias() if with_alias else None
 
-        if alias and self.UNNEST_COLUMN_ONLY:
-            if alias.args.get("columns"):
-                self.raise_error("Unexpected extra column alias in unnest.")
+        if alias:
+            if self.UNNEST_COLUMN_ONLY:
+                if alias.args.get("columns"):
+                    self.raise_error("Unexpected extra column alias in unnest.")
 
-            alias.set("columns", [alias.this])
-            alias.set("this", None)
+                alias.set("columns", [alias.this])
+                alias.set("this", None)
 
-        offset = None
-        if self._match_pair(TokenType.WITH, TokenType.OFFSET):
+            columns = alias.args.get("columns") or []
+            if offset and len(expressions) < len(columns):
+                offset = columns.pop()
+
+        if not offset and self._match_pair(TokenType.WITH, TokenType.OFFSET):
             self._match(TokenType.ALIAS)
             offset = self._parse_id_var() or exp.to_identifier("offset")
 
-        return self.expression(
-            exp.Unnest, expressions=expressions, ordinality=ordinality, alias=alias, offset=offset
-        )
+        return self.expression(exp.Unnest, expressions=expressions, alias=alias, offset=offset)
 
     def _parse_derived_table_values(self) -> t.Optional[exp.Values]:
         is_derived = self._match_pair(TokenType.L_PAREN, TokenType.VALUES)

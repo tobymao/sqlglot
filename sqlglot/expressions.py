@@ -2569,7 +2569,6 @@ class Intersect(Union):
 class Unnest(UDTF):
     arg_types = {
         "expressions": True,
-        "ordinality": False,
         "alias": False,
         "offset": False,
     }

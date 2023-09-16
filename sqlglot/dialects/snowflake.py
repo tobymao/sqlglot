@@ -281,7 +281,7 @@ class Snowflake(Dialect):
             ),
         }
 
-        TIMESTAMPS = parser.Parser.TIMESTAMPS.copy() - {TokenType.TIME}
+        TIMESTAMPS = parser.Parser.TIMESTAMPS - {TokenType.TIME}
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,

@@ -191,7 +191,7 @@ class DuckDB(Dialect):
             ),
         }
 
-        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS.copy() - {
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,
             TokenType.ANTI,
         }

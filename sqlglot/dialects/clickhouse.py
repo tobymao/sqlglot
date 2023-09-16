@@ -118,7 +118,7 @@ class ClickHouse(Dialect):
             TokenType.ARRAY,
         }
 
-        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS.copy() - {
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.ANY,
             TokenType.SEMI,
             TokenType.ANTI,

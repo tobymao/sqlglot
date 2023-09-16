@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
+    bool_xor_sql,
     date_trunc_to_time,
     encode_decode_sql,
     format_time_lambda,
@@ -363,6 +364,7 @@ class Presto(Dialect):
                 [transforms.remove_within_group_for_percentiles]
             ),
             exp.Timestamp: transforms.preprocess([transforms.timestamp_to_cast]),
+            exp.Xor: bool_xor_sql,
         }
 
         def interval_sql(self, expression: exp.Interval) -> str:

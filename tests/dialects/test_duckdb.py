@@ -10,14 +10,14 @@ class TestDuckDB(Validator):
             "WITH cte(x) AS (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) SELECT AVG(x) FILTER (WHERE x > 1) FROM cte",
             write={
                 "duckdb": "WITH cte(x) AS (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) SELECT AVG(x) FILTER(WHERE x > 1) FROM cte",
-                "snowflake": "WITH cte(x) AS (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) SELECT AVG(CASE WHEN x > 1 THEN x ELSE NULL END) FROM cte",
+                "snowflake": "WITH cte(x) AS (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) SELECT AVG(IFF(x > 1, x, NULL)) FROM cte",
             },
         )
         self.validate_all(
             "SELECT AVG(x) FILTER (WHERE TRUE) FROM t",
             write={
                 "duckdb": "SELECT AVG(x) FILTER(WHERE TRUE) FROM t",
-                "snowflake": "SELECT AVG(CASE WHEN TRUE THEN x ELSE NULL END) FROM t",
+                "snowflake": "SELECT AVG(IFF(TRUE, x, NULL)) FROM t",
             },
         )
         self.validate_all(

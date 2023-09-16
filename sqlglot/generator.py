@@ -970,7 +970,7 @@ class Generator:
         agg = expression.this.copy()
         agg_arg = agg.this
         cond = expression.expression.this
-        agg_arg.replace(exp.Case().when(cond, agg_arg).else_(exp.null()))
+        agg_arg.replace(exp.If(this=cond.copy(), true=agg_arg.copy(), false=exp.null()))
         return self.sql(agg)
 
     def hint_sql(self, expression: exp.Hint) -> str:

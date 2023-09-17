@@ -84,6 +84,23 @@ class TestSnowflake(Validator):
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all(
+            "ARRAY_GENERATE_RANGE(0, 3)",
+            write={
+                "bigquery": "GENERATE_ARRAY(0, 3 - 1)",
+                "postgres": "GENERATE_SERIES(0, 3 - 1)",
+                "presto": "SEQUENCE(0, 3 - 1)",
+                "snowflake": "ARRAY_GENERATE_RANGE(0, (3 - 1) + 1)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_GENERATE_RANGE(0, 3 + 1)",
+            read={
+                "bigquery": "GENERATE_ARRAY(0, 3)",
+                "postgres": "GENERATE_SERIES(0, 3)",
+                "presto": "SEQUENCE(0, 3)",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_PART('year', TIMESTAMP '2020-01-01')",
             write={
                 "hive": "SELECT EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMP))",

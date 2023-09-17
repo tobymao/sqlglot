@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     datestrtodate_sql,
     format_time_lambda,
+    if_sql,
     inline_array_sql,
     max_or_greatest,
     min_or_least,
@@ -242,6 +243,12 @@ class Snowflake(Dialect):
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
+            "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
+                # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
+                start=seq_get(args, 0),
+                end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
+                step=seq_get(args, 2),
+            ),
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
             "BITXOR": binary_from_function(exp.BitwiseXor),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
@@ -405,8 +412,11 @@ class Snowflake(Dialect):
             exp.DataType: _datatype_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.Extract: rename_func("DATE_PART"),
+            exp.GenerateSeries: lambda self, e: self.func(
+                "ARRAY_GENERATE_RANGE", e.args["start"], e.args["end"] + 1, e.args.get("step")
+            ),
             exp.GroupConcat: rename_func("LISTAGG"),
-            exp.If: rename_func("IFF"),
+            exp.If: if_sql(name="IFF", false_value="NULL"),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -464,12 +474,23 @@ class Snowflake(Dialect):
         }
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
+            selects = ["value"]
+            unnest_alias = expression.args.get("alias")
+
+            offset = expression.args.get("offset")
+            if offset:
+                if unnest_alias:
+                    expression = expression.copy()
+                    unnest_alias.append("columns", offset.pop())
+
+                selects.append("index")
+
             subquery = exp.Subquery(
-                this=exp.select("value").from_(
+                this=exp.select(*selects).from_(
                     f"TABLE(FLATTEN(INPUT => {self.sql(expression.expressions[0])}))"
                 ),
             )
-            alias = self.sql(expression, "alias")
+            alias = self.sql(unnest_alias)
             alias = f" AS {alias}" if alias else ""
             return f"{self.sql(subquery)}{alias}"
 

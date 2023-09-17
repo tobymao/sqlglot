@@ -310,7 +310,7 @@ class Presto(Dialect):
             exp.First: _first_last_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hex: rename_func("TO_HEX"),
-            exp.If: if_sql,
+            exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
             exp.ParseJSON: rename_func("JSON_PARSE"),

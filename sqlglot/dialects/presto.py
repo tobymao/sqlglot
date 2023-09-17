@@ -343,7 +343,6 @@ class Presto(Dialect):
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
-            exp.Struct: rename_func("ROW"),
             exp.StructExtract: struct_extract_sql,
             exp.Table: transforms.preprocess([_unnest_sequence]),
             exp.TimestampTrunc: timestamptrunc_sql,
@@ -368,6 +367,13 @@ class Presto(Dialect):
             exp.Timestamp: transforms.preprocess([transforms.timestamp_to_cast]),
             exp.Xor: bool_xor_sql,
         }
+
+        def struct_sql(self, expression: exp.Struct) -> str:
+            if any(isinstance(arg, (exp.EQ, exp.Slice)) for arg in expression.expressions):
+                self.unsupported("Struct with key-value definitions is unsupported.")
+                return self.function_fallback_sql(expression)
+
+            return rename_func("ROW")(self, expression)
 
         def interval_sql(self, expression: exp.Interval) -> str:
             unit = self.sql(expression, "unit")

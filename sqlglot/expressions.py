@@ -2861,6 +2861,7 @@ class Select(Subqueryable):
             prefix="LIMIT",
             dialect=dialect,
             copy=copy,
+            wrap_arg="expression",
             **opts,
         )
 
@@ -5130,10 +5131,11 @@ def _apply_builder(
     prefix=None,
     into=None,
     dialect=None,
+    wrap_arg="this",
     **opts,
 ):
     if _is_wrong_expression(expression, into):
-        expression = into(this=expression)
+        expression = into(**{wrap_arg: expression})
     instance = maybe_copy(instance, copy)
     expression = maybe_parse(
         sql_or_expression=expression,

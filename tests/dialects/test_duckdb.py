@@ -6,6 +6,11 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.assertEqual(
+            parse_one("select * from t limit (select 5)").sql(dialect="duckdb"),
+            exp.select("*").from_("t").limit(exp.select("5").subquery()).sql(dialect="duckdb"),
+        )
+
         for join_type in ("SEMI", "ANTI"):
             exists = "EXISTS" if join_type == "SEMI" else "NOT EXISTS"
 

@@ -191,6 +191,9 @@ class Generator:
     # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
     UNNEST_WITH_ORDINALITY = True
 
+    # Whether or not FILTER (WHERE cond) can be used for conditional aggregation
+    AGGREGATE_FILTER_SUPPORTED = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -959,9 +962,16 @@ class Generator:
         return f"{self.seg('FETCH')}{direction}{count} ROWS {with_ties_or_only}"
 
     def filter_sql(self, expression: exp.Filter) -> str:
-        this = self.sql(expression, "this")
-        where = self.sql(expression, "expression").strip()
-        return f"{this} FILTER({where})"
+        if self.AGGREGATE_FILTER_SUPPORTED:
+            this = self.sql(expression, "this")
+            where = self.sql(expression, "expression").strip()
+            return f"{this} FILTER({where})"
+
+        agg = expression.this.copy()
+        agg_arg = agg.this
+        cond = expression.expression.this
+        agg_arg.replace(exp.If(this=cond.copy(), true=agg_arg.copy(), false=exp.null()))
+        return self.sql(agg)
 
     def hint_sql(self, expression: exp.Hint) -> str:
         if not self.QUERY_HINTS:

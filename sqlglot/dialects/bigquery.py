@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     datestrtodate_sql,
     format_time_lambda,
+    if_sql,
     inline_array_sql,
     json_keyvalue_comma_sql,
     max_or_greatest,
@@ -433,9 +434,7 @@ class BigQuery(Dialect):
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.Hex: rename_func("TO_HEX"),
-            exp.If: lambda self, e: self.func(
-                "IF", e.this, e.args.get("true"), e.args.get("false") or "NULL"
-            ),
+            exp.If: if_sql(false_value="NULL"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),

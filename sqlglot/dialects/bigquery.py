@@ -176,6 +176,7 @@ def _parse_to_hex(args: t.List) -> exp.Hex | exp.MD5:
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None

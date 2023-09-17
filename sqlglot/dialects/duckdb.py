@@ -230,6 +230,7 @@ class DuckDB(Dialect):
         STRUCT_DELIMITER = ("(", ")")
         RENAME_TABLE_WITH_DB = False
         NVL2_SUPPORTED = False
+        SEMI_ANTI_JOIN_WITH_SIDE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

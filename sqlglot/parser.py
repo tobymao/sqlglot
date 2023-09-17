@@ -316,6 +316,7 @@ class Parser(metaclass=_Parser):
     INTERVAL_VARS = ID_VAR_TOKENS - {TokenType.END}
 
     TABLE_ALIAS_TOKENS = ID_VAR_TOKENS - {
+        TokenType.ANTI,
         TokenType.APPLY,
         TokenType.ASOF,
         TokenType.FULL,
@@ -324,6 +325,7 @@ class Parser(metaclass=_Parser):
         TokenType.NATURAL,
         TokenType.OFFSET,
         TokenType.RIGHT,
+        TokenType.SEMI,
         TokenType.WINDOW,
     }
 

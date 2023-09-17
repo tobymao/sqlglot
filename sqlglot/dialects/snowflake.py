@@ -281,7 +281,7 @@ class Snowflake(Dialect):
             ),
         }
 
-        TIMESTAMPS = parser.Parser.TIMESTAMPS.copy() - {TokenType.TIME}
+        TIMESTAMPS = parser.Parser.TIMESTAMPS - {TokenType.TIME}
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
@@ -414,7 +414,11 @@ class Snowflake(Dialect):
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpILike: _regexpilike_sql,
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.explode_to_unnest(0)]
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.explode_to_unnest(0),
+                    transforms.eliminate_semi_and_anti_joins,
+                ]
             ),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),

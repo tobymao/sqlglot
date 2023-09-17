@@ -174,6 +174,7 @@ class Presto(Dialect):
     TIME_FORMAT = MySQL.TIME_FORMAT
     TIME_MAPPING = MySQL.TIME_MAPPING
     STRICT_STRING_CONCAT = True
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289

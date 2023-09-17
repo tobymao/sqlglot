@@ -8,6 +8,7 @@ class TestDuckDB(Validator):
     def test_duckdb(self):
         for join_type in ("SEMI", "ANTI"):
             exists = "EXISTS" if join_type == "SEMI" else "NOT EXISTS"
+
             self.validate_all(
                 f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                 write={
@@ -30,6 +31,13 @@ class TestDuckDB(Validator):
                     "teradata": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "trino": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "tsql": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
+                },
+            )
+            self.validate_all(
+                f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
+                read={
+                    "duckdb": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
+                    "spark": f"SELECT * FROM t1 LEFT {join_type} JOIN t2 ON t1.x = t2.x",
                 },
             )
 

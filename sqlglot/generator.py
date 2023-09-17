@@ -194,6 +194,9 @@ class Generator:
     # Whether or not FILTER (WHERE cond) can be used for conditional aggregation
     AGGREGATE_FILTER_SUPPORTED = True
 
+    # Whether or not JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
+    SEMI_ANTI_JOIN_WITH_SIDE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1491,12 +1494,17 @@ class Generator:
         return f"PRIOR {self.sql(expression, 'this')}"
 
     def join_sql(self, expression: exp.Join) -> str:
+        if not self.SEMI_ANTI_JOIN_WITH_SIDE and expression.kind in ("SEMI", "ANTI"):
+            side = None
+        else:
+            side = expression.side
+
         op_sql = " ".join(
             op
             for op in (
                 expression.method,
                 "GLOBAL" if expression.args.get("global") else None,
-                expression.side,
+                side,
                 expression.kind,
                 expression.hint if self.JOIN_HINTS else None,
             )

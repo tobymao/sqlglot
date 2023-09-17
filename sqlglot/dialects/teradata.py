@@ -8,6 +8,8 @@ from sqlglot.tokens import TokenType
 
 
 class Teradata(Dialect):
+    SUPPORTS_SEMI_ANTI_JOIN = False
+
     TIME_MAPPING = {
         "Y": "%Y",
         "YYYY": "%Y",

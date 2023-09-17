@@ -229,6 +229,7 @@ TBLPROPERTIES (
         self.assertIsInstance(expr.args.get("ignore_nulls"), exp.Boolean)
         self.assertEqual(expr.sql(dialect="spark"), "ANY_VALUE(col, TRUE)")
 
+        self.validate_identity("SELECT * FROM t1 SEMI JOIN t2 ON t1.x = t2.x")
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), x -> x + 1)")
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), (x, i) -> x + i)")
         self.validate_identity("REFRESH table a.b.c")

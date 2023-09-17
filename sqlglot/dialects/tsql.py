@@ -206,6 +206,7 @@ class TSQL(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
     NULL_ORDERING = "nulls_are_small"
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     TIME_MAPPING = {
         "year": "%Y",

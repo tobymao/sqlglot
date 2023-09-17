@@ -125,6 +125,12 @@ class _Dialect(type):
         if not klass.STRICT_STRING_CONCAT and klass.DPIPE_IS_STRING_CONCAT:
             klass.parser_class.BITWISE[TokenType.DPIPE] = exp.SafeDPipe
 
+        if not klass.SUPPORTS_SEMI_ANTI_JOIN:
+            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
+                TokenType.ANTI,
+                TokenType.SEMI,
+            }
+
         klass.generator_class.can_identify = klass.can_identify
 
         return klass
@@ -155,6 +161,9 @@ class Dialect(metaclass=_Dialect):
 
     # Determines whether or not user-defined data types are supported
     SUPPORTS_USER_DEFINED_TYPES = True
+
+    # Determines whether or not SEMI/ANTI JOINs are supported
+    SUPPORTS_SEMI_ANTI_JOIN = True
 
     # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"

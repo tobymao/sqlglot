@@ -11,6 +11,9 @@ class TestDuckDB(Validator):
             exp.select("*").from_("t").limit(exp.select("5").subquery()).sql(dialect="duckdb"),
         )
 
+        for struct_value in ("{'a': 1}", "struct_pack(a := 1)"):
+            self.validate_all(struct_value, write={"presto": UnsupportedError})
+
         for join_type in ("SEMI", "ANTI"):
             exists = "EXISTS" if join_type == "SEMI" else "NOT EXISTS"
 

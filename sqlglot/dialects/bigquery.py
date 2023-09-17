@@ -462,6 +462,7 @@ class BigQuery(Dialect):
                     _unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,
+                    transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
             exp.SHA2: lambda self, e: self.func(

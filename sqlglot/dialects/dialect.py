@@ -331,10 +331,18 @@ def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -
     return self.func("APPROX_COUNT_DISTINCT", expression.this)
 
 
-def if_sql(self: Generator, expression: exp.If) -> str:
-    return self.func(
-        "IF", expression.this, expression.args.get("true"), expression.args.get("false")
-    )
+def if_sql(
+    name: str = "IF", false_value: t.Optional[exp.Expression | str] = None
+) -> t.Callable[[Generator, exp.If], str]:
+    def _if_sql(self: Generator, expression: exp.If) -> str:
+        return self.func(
+            name,
+            expression.this,
+            expression.args.get("true"),
+            expression.args.get("false") or false_value,
+        )
+
+    return _if_sql
 
 
 def arrow_json_extract_sql(self: Generator, expression: exp.JSONExtract | exp.JSONBExtract) -> str:

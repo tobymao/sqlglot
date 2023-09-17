@@ -122,7 +122,7 @@ class TestDuckDB(Validator):
             "SELECT UNNEST([1, 2, 3])",
             write={
                 "duckdb": "SELECT UNNEST([1, 2, 3])",
-                "snowflake": "SELECT IFF(pos = pos_2, col) AS col FROM (SELECT value FROM TABLE(FLATTEN(INPUT => GENERATE_SERIES(0, GREATEST(ARRAY_SIZE([1, 2, 3])) - 1)))) AS _u(pos) CROSS JOIN (SELECT value FROM TABLE(FLATTEN(INPUT => [1, 2, 3]))) AS _u_2(col) WHERE pos = pos_2 OR (pos > (ARRAY_SIZE([1, 2, 3]) - 1) AND pos_2 = (ARRAY_SIZE([1, 2, 3]) - 1))",
+                "snowflake": "SELECT IFF(pos = pos_2, col, NULL) AS col FROM (SELECT value FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, GREATEST(ARRAY_SIZE([1, 2, 3])) - 1)))) AS _u(pos) CROSS JOIN (SELECT value, index FROM TABLE(FLATTEN(INPUT => [1, 2, 3]))) AS _u_2(col, pos_2) WHERE pos = pos_2 OR (pos > (ARRAY_SIZE([1, 2, 3]) - 1) AND pos_2 = (ARRAY_SIZE([1, 2, 3]) - 1))",
             },
         )
         self.validate_all(

@@ -187,7 +187,8 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                 table=[series_alias],
             )
 
-            for select in expression.selects:
+            # we use list here because expression.selects is mutated inside the loop
+            for select in list(expression.selects):
                 to_replace = select
                 pos_alias = ""
                 explode_alias = ""

@@ -276,6 +276,10 @@ class TestBigQuery(Validator):
                 "bigquery": "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
             },
         )
+        self.validate_identity(
+            r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
+            r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
+        )
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",
             read={
@@ -287,7 +291,7 @@ class TestBigQuery(Validator):
                 "mysql": "REGEXP_LIKE('foo', '.*')",
                 "starrocks": "REGEXP('foo', '.*')",
             },
-        ),
+        )
         self.validate_all(
             '"""x"""',
             write={

@@ -292,9 +292,7 @@ class BigQuery(Dialect):
                 expression=seq_get(args, 1),
                 position=seq_get(args, 2),
                 occurrence=seq_get(args, 3),
-                group=exp.Literal.number(1)
-                if re.compile(str(seq_get(args, 1))).groups == 1
-                else None,
+                group=exp.Literal.number(1) if re.compile(args[1].name).groups == 1 else None,
             ),
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),

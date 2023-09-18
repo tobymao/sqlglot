@@ -482,12 +482,11 @@ class Hive(Dialect):
 
         def constraint_sql(self, expression: exp.Constraint) -> str:
             expression = expression.copy()
+
+            for prop in list(expression.find_all(exp.Properties)):
+                prop.pop()
+
             this = self.sql(expression, "this")
-
-            # remove unsupported properties
-            expression.expressions.remove(expression.find(exp.Properties))
-            expression.expressions.remove(expression.find(exp.OnProperty))
-
             expressions = self.expressions(expression, sep=" ", flat=True)
             return f"CONSTRAINT {this} {expressions}"
 

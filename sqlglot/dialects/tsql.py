@@ -664,7 +664,6 @@ class TSQL(Dialect):
             table = expression.find(exp.Table)
 
             if kind == "TABLE" and expression.expression:
-                assert table
                 sql = f"SELECT * INTO {self.sql(table)} FROM ({self.sql(expression.expression)}) AS temp"
 
             if exists:

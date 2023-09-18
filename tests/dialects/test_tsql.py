@@ -18,7 +18,6 @@ class TestTSQL(Validator):
             'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)'
         )
 
-        self.maxDiff = None
         self.validate_all(
             """
             CREATE TABLE x(

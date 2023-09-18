@@ -79,3 +79,9 @@ class TestSessionCaseSensitivity(DataFrameTestBase):
                         df.sql()
                 else:
                     self.compare_sql(df, expected)
+
+    def test_alias(self):
+        col = F.col('"Name"')
+        self.assertEqual(col.sql(dialect=self.spark.dialect), '"Name"')
+        self.assertEqual(col.alias("nAME").sql(dialect=self.spark.dialect), '"Name" AS NAME')
+        self.assertEqual(col.alias('"nAME"').sql(dialect=self.spark.dialect), '"Name" AS "nAME"')

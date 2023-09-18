@@ -1665,7 +1665,7 @@ class Generator:
         nulls_are_small = self.NULL_ORDERING == "nulls_are_small"
         nulls_are_last = self.NULL_ORDERING == "nulls_are_last"
 
-        sort_order = " DESC" if desc else ""
+        sort_order = " DESC" if desc else (" ASC" if desc is False else "")
         nulls_sort_change = ""
         if nulls_first and (
             (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last

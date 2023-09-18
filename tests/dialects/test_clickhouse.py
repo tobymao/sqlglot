@@ -157,8 +157,8 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
-                "clickhouse": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",
-                "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
+                "clickhouse": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC, lname",
+                "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname NULLS LAST",
             },
         )
         self.validate_all(
@@ -216,7 +216,7 @@ class TestClickhouse(Validator):
             """,
             write={
                 "clickhouse": "SELECT loyalty, count() FROM hits LEFT SEMI JOIN users USING (UserID)"
-                + " GROUP BY loyalty ORDER BY loyalty"
+                " GROUP BY loyalty ORDER BY loyalty ASC"
             },
         )
         self.validate_identity("SELECT s, arr FROM arrays_test ARRAY JOIN arr")

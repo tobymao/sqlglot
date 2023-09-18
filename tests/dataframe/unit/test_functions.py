@@ -335,18 +335,18 @@ class TestFunctions(unittest.TestCase):
     def test_asc_nulls_first(self):
         col_str = SF.asc_nulls_first("cola")
         self.assertIsInstance(col_str.expression, exp.Ordered)
-        self.assertEqual("cola", col_str.sql())
+        self.assertEqual("cola ASC", col_str.sql())
         col = SF.asc_nulls_first(SF.col("cola"))
         self.assertIsInstance(col.expression, exp.Ordered)
-        self.assertEqual("cola", col.sql())
+        self.assertEqual("cola ASC", col.sql())
 
     def test_asc_nulls_last(self):
         col_str = SF.asc_nulls_last("cola")
         self.assertIsInstance(col_str.expression, exp.Ordered)
-        self.assertEqual("cola NULLS LAST", col_str.sql())
+        self.assertEqual("cola ASC NULLS LAST", col_str.sql())
         col = SF.asc_nulls_last(SF.col("cola"))
         self.assertIsInstance(col.expression, exp.Ordered)
-        self.assertEqual("cola NULLS LAST", col.sql())
+        self.assertEqual("cola ASC NULLS LAST", col.sql())
 
     def test_desc_nulls_first(self):
         col_str = SF.desc_nulls_first("cola")

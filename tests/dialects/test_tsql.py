@@ -27,7 +27,7 @@ class TestTSQL(Validator):
                 WITH (PAD_INDEX = ON, STATISTICS_NORECOMPUTE = OFF) ON [PRIMARY]
             ) ON [PRIMARY]
             """,
-            'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL NOT FOR REPLICATION CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey") WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON "PRIMARY") ON "PRIMARY"',
+            'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL NOT FOR REPLICATION CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey" ASC) WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON "PRIMARY") ON "PRIMARY"',
         )
 
         self.validate_identity(
@@ -123,10 +123,10 @@ class TestTSQL(Validator):
         self.validate_all(
             "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z ASC)",
             write={
-                "tsql": "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z)",
-                "mysql": "GROUP_CONCAT(x ORDER BY z SEPARATOR '|')",
+                "tsql": "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z ASC)",
+                "mysql": "GROUP_CONCAT(x ORDER BY z ASC SEPARATOR '|')",
                 "sqlite": "GROUP_CONCAT(x, '|')",
-                "postgres": "STRING_AGG(x, '|' ORDER BY z NULLS FIRST)",
+                "postgres": "STRING_AGG(x, '|' ORDER BY z ASC NULLS FIRST)",
             },
         )
         self.validate_all(

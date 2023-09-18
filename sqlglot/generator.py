@@ -46,6 +46,8 @@ class Generator:
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
+        default_order: The default order to use in the ORDER BY clause if ASC / DESC are omitted.
+            Default: ""
         comments: Whether or not to preserve comments in the output SQL code.
             Default: True
     """
@@ -360,6 +362,7 @@ class Generator:
         "max_unsupported",
         "leading_comma",
         "max_text_width",
+        "default_order",
         "comments",
         "unsupported_messages",
         "_escaped_quote_end",
@@ -379,6 +382,7 @@ class Generator:
         max_unsupported: int = 3,
         leading_comma: bool = False,
         max_text_width: int = 80,
+        default_order: str = "",
         comments: bool = True,
     ):
         import sqlglot
@@ -392,6 +396,7 @@ class Generator:
         self.max_unsupported = max_unsupported
         self.leading_comma = leading_comma
         self.max_text_width = max_text_width
+        self.default_order = f" {default_order}" if default_order else ""
         self.comments = comments
 
         # This is both a Dialect property and a Generator argument, so we prioritize the latter
@@ -1665,7 +1670,7 @@ class Generator:
         nulls_are_small = self.NULL_ORDERING == "nulls_are_small"
         nulls_are_last = self.NULL_ORDERING == "nulls_are_last"
 
-        sort_order = " DESC" if desc else ""
+        sort_order = " DESC" if desc else f"{self.default_order}"
         nulls_sort_change = ""
         if nulls_first and (
             (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last

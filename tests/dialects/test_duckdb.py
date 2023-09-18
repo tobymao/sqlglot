@@ -6,6 +6,17 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity(
+            "SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC",
+            "SELECT i FROM RANGE(5) AS _(i) ORDER BY i",
+        )
+        self.assertEqual(
+            parse_one("SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC", read="duckdb").sql(
+                dialect="duckdb", default_order="ASC"
+            ),
+            "SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC",
+        )
+
         self.assertEqual(
             parse_one("select * from t limit (select 5)").sql(dialect="duckdb"),
             exp.select("*").from_("t").limit(exp.select("5").subquery()).sql(dialect="duckdb"),

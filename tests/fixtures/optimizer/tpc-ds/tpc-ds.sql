@@ -4529,7 +4529,7 @@ SELECT
   "item"."i_category" AS "i_category",
   "item"."i_class" AS "i_class",
   GROUPING("item"."i_category") + GROUPING("item"."i_class") AS "lochierarchy",
-  RANK() OVER (PARTITION BY GROUPING("item"."i_category") + GROUPING("item"."i_class"), CASE WHEN GROUPING("item"."i_class") = 0 THEN "item"."i_category" END ORDER BY SUM("store_sales"."ss_net_profit") / SUM("store_sales"."ss_ext_sales_price") ASC) AS "rank_within_parent"
+  RANK() OVER (PARTITION BY GROUPING("item"."i_category") + GROUPING("item"."i_class"), CASE WHEN GROUPING("item"."i_class") = 0 THEN "item"."i_category" END ORDER BY SUM("store_sales"."ss_net_profit") / SUM("store_sales"."ss_ext_sales_price")) AS "rank_within_parent"
 FROM "store_sales" AS "store_sales"
 JOIN "date_dim" AS "d1"
   ON "d1"."d_date_sk" = "store_sales"."ss_sold_date_sk" AND "d1"."d_year" = 2000
@@ -5340,7 +5340,7 @@ WITH "_u_0" AS (
 ), "v11" AS (
   SELECT
     "v1"."item_sk" AS "item_sk",
-    RANK() OVER (ORDER BY "v1"."rank_col" ASC) AS "rnk"
+    RANK() OVER (ORDER BY "v1"."rank_col") AS "rnk"
   FROM "v1" AS "v1"
 ), "v2" AS (
   SELECT
@@ -9872,7 +9872,7 @@ WHERE
   "dj"."cnt" <= 5 AND "dj"."cnt" >= 1
 ORDER BY
   "cnt" DESC,
-  "c_last_name" ASC;
+  "c_last_name";
 
 --------------------------------------
 -- TPC-DS 74

@@ -20,6 +20,7 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
     expression = coerce_type(expression)
     expression = remove_redundant_casts(expression)
     expression = ensure_bool_predicates(expression)
+    expression = remove_ascending_order(expression)
 
     return expression
 
@@ -59,6 +60,14 @@ def ensure_bool_predicates(expression: exp.Expression) -> exp.Expression:
 
     elif isinstance(expression, (exp.Where, exp.Having)):
         _replace_int_predicate(expression.this)
+
+    return expression
+
+
+def remove_ascending_order(expression: exp.Expression) -> exp.Expression:
+    if isinstance(expression, exp.Ordered) and expression.args.get("desc") is False:
+        # Convert ORDER BY a ASC to ORDER BY a
+        expression.set("desc", None)
 
     return expression
 

@@ -2944,20 +2944,20 @@ class Parser(metaclass=_Parser):
 
     def _parse_ordered(self) -> exp.Ordered:
         this = self._parse_conjunction()
-        self._match(TokenType.ASC)
 
-        is_desc = self._match(TokenType.DESC)
+        asc = self._match(TokenType.ASC)
+        desc = self._match(TokenType.DESC) or (asc and False)
+
         is_nulls_first = self._match_text_seq("NULLS", "FIRST")
         is_nulls_last = self._match_text_seq("NULLS", "LAST")
-        desc = is_desc or False
-        asc = not desc
+
         nulls_first = is_nulls_first or False
         explicitly_null_ordered = is_nulls_first or is_nulls_last
 
         if (
             not explicitly_null_ordered
             and (
-                (asc and self.NULL_ORDERING == "nulls_are_small")
+                (not desc and self.NULL_ORDERING == "nulls_are_small")
                 or (desc and self.NULL_ORDERING != "nulls_are_small")
             )
             and self.NULL_ORDERING != "nulls_are_last"

@@ -6,17 +6,6 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        self.validate_identity(
-            "SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC",
-            "SELECT i FROM RANGE(5) AS _(i) ORDER BY i",
-        )
-        self.assertEqual(
-            parse_one("SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC", read="duckdb").sql(
-                dialect="duckdb", default_order="ASC"
-            ),
-            "SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC",
-        )
-
         self.assertEqual(
             parse_one("select * from t limit (select 5)").sql(dialect="duckdb"),
             exp.select("*").from_("t").limit(exp.select("5").subquery()).sql(dialect="duckdb"),
@@ -90,6 +79,7 @@ class TestDuckDB(Validator):
             },
         )
 
+        self.validate_identity("SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC")
         self.validate_identity("[x.STRING_SPLIT(' ')[1] FOR x IN ['1', '2', 3] IF x.CONTAINS('1')]")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
@@ -395,8 +385,8 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
-                "": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname NULLS LAST",
-                "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname, lname",
+                "": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname NULLS LAST",
+                "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC, lname",
             },
         )
         self.validate_all(

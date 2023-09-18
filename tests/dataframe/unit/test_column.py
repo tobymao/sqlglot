@@ -95,16 +95,16 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("cola IN (1, 2, 3)", F.col("cola").isin(1, 2, 3).sql())
 
     def test_asc(self):
-        self.assertEqual("cola", F.col("cola").asc().sql())
+        self.assertEqual("cola ASC", F.col("cola").asc().sql())
 
     def test_desc(self):
         self.assertEqual("cola DESC", F.col("cola").desc().sql())
 
     def test_asc_nulls_first(self):
-        self.assertEqual("cola", F.col("cola").asc_nulls_first().sql())
+        self.assertEqual("cola ASC", F.col("cola").asc_nulls_first().sql())
 
     def test_asc_nulls_last(self):
-        self.assertEqual("cola NULLS LAST", F.col("cola").asc_nulls_last().sql())
+        self.assertEqual("cola ASC NULLS LAST", F.col("cola").asc_nulls_last().sql())
 
     def test_desc_nulls_first(self):
         self.assertEqual("cola DESC NULLS FIRST", F.col("cola").desc_nulls_first().sql())

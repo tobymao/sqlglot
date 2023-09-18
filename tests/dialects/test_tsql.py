@@ -18,16 +18,28 @@ class TestTSQL(Validator):
             'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)'
         )
 
-        self.validate_identity(
+        self.validate_all(
             """
             CREATE TABLE x(
-                [zip_cd] [varchar](5) NULL NOT FOR REPLICATION
-                CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED
-                ([zip_cd_mkey] ASC)
-                WITH (PAD_INDEX = ON, STATISTICS_NORECOMPUTE = OFF) ON [PRIMARY]
-            ) ON [PRIMARY]
+                [zip_cd] [varchar](5) NULL NOT FOR REPLICATION,
+                [zip_cd_mkey] [varchar](5) NOT NULL,
+                CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC)
+                WITH (PAD_INDEX = ON, STATISTICS_NORECOMPUTE = OFF) ON [INDEX]
+            ) ON [SECONDARY]
             """,
-            'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL NOT FOR REPLICATION CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey" ASC) WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON "PRIMARY") ON "PRIMARY"',
+            write={
+                "tsql": 'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL NOT FOR REPLICATION, "zip_cd_mkey" VARCHAR(5) NOT NULL, CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey")  WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON "INDEX") ON "SECONDARY"',
+                "spark2": "CREATE TABLE x (`zip_cd` VARCHAR(5), `zip_cd_mkey` VARCHAR(5) NOT NULL, CONSTRAINT `pk_mytable` PRIMARY KEY (`zip_cd_mkey`))",
+            },
+        )
+
+        self.validate_identity("CREATE TABLE x (A INTEGER NOT NULL, B INTEGER NULL)")
+
+        self.validate_all(
+            "CREATE TABLE x ( A INTEGER NOT NULL, B INTEGER NULL )",
+            write={
+                "hive": "CREATE TABLE x (A INT NOT NULL, B INT)",
+            },
         )
 
         self.validate_identity(

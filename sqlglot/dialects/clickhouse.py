@@ -113,15 +113,11 @@ class ClickHouse(Dialect):
             *parser.Parser.JOIN_KINDS,
             TokenType.ANY,
             TokenType.ASOF,
-            TokenType.ANTI,
-            TokenType.SEMI,
             TokenType.ARRAY,
         }
 
-        TABLE_ALIAS_TOKENS = {*parser.Parser.TABLE_ALIAS_TOKENS} - {
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.ANY,
-            TokenType.SEMI,
-            TokenType.ANTI,
             TokenType.SETTINGS,
             TokenType.FORMAT,
             TokenType.ARRAY,

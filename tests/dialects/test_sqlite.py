@@ -59,6 +59,20 @@ class TestSQLite(Validator):
         )
 
     def test_sqlite(self):
+        self.validate_identity("SELECT DATE()")
+        self.validate_identity("SELECT DATE('now', 'start of month', '+1 month', '-1 day')")
+        self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch')")
+        self.validate_identity("SELECT DATETIME(1092941466, 'auto')")
+        self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch', 'localtime')")
+        self.validate_identity("SELECT UNIXEPOCH()")
+        self.validate_identity("SELECT STRFTIME('%s')")
+        self.validate_identity("SELECT JULIANDAY('now') - JULIANDAY('1776-07-04')")
+        self.validate_identity("SELECT UNIXEPOCH() - UNIXEPOCH('2004-01-01 02:34:56')")
+        self.validate_identity("SELECT DATE('now', 'start of year', '+9 months', 'weekday 2')")
+        self.validate_identity("SELECT (JULIANDAY('now') - 2440587.5) * 86400.0")
+        self.validate_identity("SELECT UNIXEPOCH('now', 'subsec')")
+        self.validate_identity("SELECT TIMEDIFF('now', '1809-02-12')")
+
         self.validate_all("SELECT LIKE(y, x)", write={"sqlite": "SELECT x LIKE y"})
         self.validate_all("SELECT GLOB('*y*', 'xyz')", write={"sqlite": "SELECT 'xyz' GLOB '*y*'"})
         self.validate_all(
@@ -112,8 +126,8 @@ class TestSQLite(Validator):
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
-                "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
-                "sqlite": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname NULLS LAST, lname",
+                "spark": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
+                "sqlite": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             },
         )
         self.validate_all("x", read={"snowflake": "LEAST(x)"})

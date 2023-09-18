@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     datestrtodate_sql,
     format_time_lambda,
+    if_sql,
     inline_array_sql,
     json_keyvalue_comma_sql,
     max_or_greatest,
@@ -176,6 +177,7 @@ def _parse_to_hex(args: t.List) -> exp.Hex | exp.MD5:
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -292,9 +294,7 @@ class BigQuery(Dialect):
                 expression=seq_get(args, 1),
                 position=seq_get(args, 2),
                 occurrence=seq_get(args, 3),
-                group=exp.Literal.number(1)
-                if re.compile(str(seq_get(args, 1))).groups == 1
-                else None,
+                group=exp.Literal.number(1) if re.compile(args[1].name).groups == 1 else None,
             ),
             "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
             "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
@@ -413,8 +413,8 @@ class BigQuery(Dialect):
         TABLE_HINTS = False
         LIMIT_FETCH = "LIMIT"
         RENAME_TABLE_WITH_DB = False
-        ESCAPE_LINE_BREAK = True
         NVL2_SUPPORTED = False
+        UNNEST_WITH_ORDINALITY = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -434,6 +434,7 @@ class BigQuery(Dialect):
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.Hex: rename_func("TO_HEX"),
+            exp.If: if_sql(false_value="NULL"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
@@ -455,10 +456,11 @@ class BigQuery(Dialect):
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Select: transforms.preprocess(
                 [
-                    transforms.explode_to_unnest,
+                    transforms.explode_to_unnest(),
                     _unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,
+                    transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
             exp.SHA2: lambda self, e: self.func(
@@ -513,6 +515,18 @@ class BigQuery(Dialect):
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        UNESCAPED_SEQUENCE_TABLE = str.maketrans(  # type: ignore
+            {
+                "\a": "\\a",
+                "\b": "\\b",
+                "\f": "\\f",
+                "\n": "\\n",
+                "\r": "\\r",
+                "\t": "\\t",
+                "\v": "\\v",
+            }
+        )
 
         # from: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords
         RESERVED_KEYWORDS = {

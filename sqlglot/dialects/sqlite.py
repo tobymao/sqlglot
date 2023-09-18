@@ -64,6 +64,7 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -125,7 +126,11 @@ class SQLite(Dialect):
             exp.Pivot: no_pivot_sql,
             exp.SafeConcat: concat_to_dpipe_sql,
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.eliminate_qualify]
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.eliminate_qualify,
+                    transforms.eliminate_semi_and_anti_joins,
+                ]
             ),
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),

@@ -135,10 +135,10 @@ class TestTSQL(Validator):
         self.validate_all(
             "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z ASC)",
             write={
-                "tsql": "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z)",
-                "mysql": "GROUP_CONCAT(x ORDER BY z SEPARATOR '|')",
+                "tsql": "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z ASC)",
+                "mysql": "GROUP_CONCAT(x ORDER BY z ASC SEPARATOR '|')",
                 "sqlite": "GROUP_CONCAT(x, '|')",
-                "postgres": "STRING_AGG(x, '|' ORDER BY z NULLS FIRST)",
+                "postgres": "STRING_AGG(x, '|' ORDER BY z ASC NULLS FIRST)",
             },
         )
         self.validate_all(
@@ -506,6 +506,12 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "SELECT * INTO foo.bar.baz FROM (SELECT * FROM a.b.c) AS temp",
+            read={
+                "": "CREATE TABLE foo.bar.baz AS SELECT * FROM a.b.c",
+            },
+        )
+        self.validate_all(
             "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id('db.tbl') AND name = 'idx') EXEC('CREATE INDEX idx ON db.tbl')",
             read={
                 "": "CREATE INDEX IF NOT EXISTS idx ON db.tbl",
@@ -519,12 +525,11 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
-            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'foo') EXEC('CREATE TABLE foo (a INTEGER)')",
+            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('CREATE TABLE foo.bar.baz (a INTEGER)')",
             read={
-                "": "CREATE TABLE IF NOT EXISTS foo (a INTEGER)",
+                "": "CREATE TABLE IF NOT EXISTS foo.bar.baz (a INTEGER)",
             },
         )
-
         self.validate_all(
             "CREATE OR ALTER VIEW a.b AS SELECT 1",
             read={
@@ -563,16 +568,6 @@ class TestTSQL(Validator):
                 "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "oracle": "CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE #mytemptable AS SELECT a FROM Source_Table",
-            write={
-                "duckdb": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
-                "oracle": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
-                "snowflake": "CREATE TEMPORARY TABLE mytemptable AS SELECT a FROM Source_Table",
-                "spark": "CREATE TEMPORARY VIEW mytemptable AS SELECT a FROM Source_Table",
-                "tsql": "CREATE TABLE #mytemptable AS SELECT a FROM Source_Table",
             },
         )
 
@@ -721,18 +716,14 @@ WHERE
             SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120);
 
             CREATE TABLE [target_schema].[target_table]
-            WITH (DISTRIBUTION = REPLICATE, HEAP)
-            AS
-
-            SELECT
-                @CurrentDate AS DWCreatedDate
-            FROM source_schema.sourcetable;
+            (a INTEGER)
+            WITH (DISTRIBUTION = REPLICATE, HEAP);
         """
 
         expected_sqls = [
             'CREATE PROC "dbo"."transform_proc" AS DECLARE @CurrentDate VARCHAR(20)',
             "SET @CurrentDate = CAST(FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss') AS VARCHAR(20))",
-            'CREATE TABLE "target_schema"."target_table" WITH (DISTRIBUTION=REPLICATE, HEAP) AS SELECT @CurrentDate AS DWCreatedDate FROM source_schema.sourcetable',
+            'CREATE TABLE "target_schema"."target_table" (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)',
         ]
 
         for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):

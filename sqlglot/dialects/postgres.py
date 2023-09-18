@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     any_value_to_max_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
+    bool_xor_sql,
     datestrtodate_sql,
     format_time_lambda,
     max_or_greatest,
@@ -380,25 +381,29 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
+            exp.Array: lambda self, e: f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
+            if isinstance(seq_get(e.expressions, 0), exp.Select)
+            else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]",
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
+            exp.CurrentDate: no_paren_current_date_sql,
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.DateAdd: _date_add_sql("+"),
+            exp.DateDiff: _date_diff_sql,
+            exp.DateStrToDate: datestrtodate_sql,
+            exp.DataType: _datatype_sql,
+            exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
+            exp.GroupConcat: _string_agg_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
-            exp.Pow: lambda self, e: self.binary(e, "^"),
-            exp.CurrentDate: no_paren_current_date_sql,
-            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-            exp.DateAdd: _date_add_sql("+"),
-            exp.DateStrToDate: datestrtodate_sql,
-            exp.DateSub: _date_add_sql("-"),
-            exp.DateDiff: _date_diff_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.Max: max_or_greatest,
@@ -412,8 +417,10 @@ class Postgres(Dialect):
                 [transforms.add_within_group_for_percentiles]
             ),
             exp.Pivot: no_pivot_sql,
+            exp.Pow: lambda self, e: self.binary(e, "^"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
+            exp.Select: transforms.preprocess([transforms.eliminate_semi_and_anti_joins]),
             exp.StrPosition: str_position_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,
@@ -426,11 +433,7 @@ class Postgres(Dialect):
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("postgres"),
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
-            exp.DataType: _datatype_sql,
-            exp.GroupConcat: _string_agg_sql,
-            exp.Array: lambda self, e: f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
-            if isinstance(seq_get(e.expressions, 0), exp.Select)
-            else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]",
+            exp.Xor: bool_xor_sql,
         }
 
         PROPERTIES_LOCATION = {

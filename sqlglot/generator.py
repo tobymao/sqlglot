@@ -188,6 +188,15 @@ class Generator:
     # Whether or not the word COLUMN is included when adding a column with ALTER TABLE
     ALTER_TABLE_ADD_COLUMN_KEYWORD = True
 
+    # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
+    UNNEST_WITH_ORDINALITY = True
+
+    # Whether or not FILTER (WHERE cond) can be used for conditional aggregation
+    AGGREGATE_FILTER_SUPPORTED = True
+
+    # Whether or not JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
+    SEMI_ANTI_JOIN_WITH_SIDE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -308,6 +317,8 @@ class Generator:
         exp.Paren,
     )
 
+    UNESCAPED_SEQUENCE_TABLE = None  # type: ignore
+
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     # Autofilled
@@ -320,7 +331,6 @@ class Generator:
     STRICT_STRING_CONCAT = False
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
-    ESCAPE_LINE_BREAK = False
 
     can_identify: t.Callable[[str, str | bool], bool]
 
@@ -955,9 +965,16 @@ class Generator:
         return f"{self.seg('FETCH')}{direction}{count} ROWS {with_ties_or_only}"
 
     def filter_sql(self, expression: exp.Filter) -> str:
-        this = self.sql(expression, "this")
-        where = self.sql(expression, "expression").strip()
-        return f"{this} FILTER({where})"
+        if self.AGGREGATE_FILTER_SUPPORTED:
+            this = self.sql(expression, "this")
+            where = self.sql(expression, "expression").strip()
+            return f"{this} FILTER({where})"
+
+        agg = expression.this.copy()
+        agg_arg = agg.this
+        cond = expression.expression.this
+        agg_arg.replace(exp.If(this=cond.copy(), true=agg_arg.copy()))
+        return self.sql(agg)
 
     def hint_sql(self, expression: exp.Hint) -> str:
         if not self.QUERY_HINTS:
@@ -1477,12 +1494,17 @@ class Generator:
         return f"PRIOR {self.sql(expression, 'this')}"
 
     def join_sql(self, expression: exp.Join) -> str:
+        if not self.SEMI_ANTI_JOIN_WITH_SIDE and expression.kind in ("SEMI", "ANTI"):
+            side = None
+        else:
+            side = expression.side
+
         op_sql = " ".join(
             op
             for op in (
                 expression.method,
                 "GLOBAL" if expression.args.get("global") else None,
-                expression.side,
+                side,
                 expression.kind,
                 expression.hint if self.JOIN_HINTS else None,
             )
@@ -1594,8 +1616,8 @@ class Generator:
 
     def escape_str(self, text: str) -> str:
         text = text.replace(self.QUOTE_END, self._escaped_quote_end)
-        if self.ESCAPE_LINE_BREAK:
-            text = text.replace("\n", "\\n")
+        if self.UNESCAPED_SEQUENCE_TABLE:
+            text = text.translate(self.UNESCAPED_SEQUENCE_TABLE)
         elif self.pretty:
             text = text.replace("\n", self.SENTINEL_LINE_BREAK)
         return text
@@ -1643,7 +1665,7 @@ class Generator:
         nulls_are_small = self.NULL_ORDERING == "nulls_are_small"
         nulls_are_last = self.NULL_ORDERING == "nulls_are_last"
 
-        sort_order = " DESC" if desc else ""
+        sort_order = " DESC" if desc else (" ASC" if desc is False else "")
         nulls_sort_change = ""
         if nulls_first and (
             (asc and nulls_are_large) or (desc and nulls_are_small) or nulls_are_last
@@ -1858,17 +1880,33 @@ class Generator:
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
         args = self.expressions(expression, flat=True)
+
         alias = expression.args.get("alias")
+        offset = expression.args.get("offset")
+
+        if self.UNNEST_WITH_ORDINALITY:
+            if alias and isinstance(offset, exp.Expression):
+                alias = alias.copy()
+                alias.append("columns", offset.copy())
+
         if alias and self.UNNEST_COLUMN_ONLY:
             columns = alias.columns
             alias = self.sql(columns[0]) if columns else ""
         else:
-            alias = self.sql(expression, "alias")
+            alias = self.sql(alias)
+
         alias = f" AS {alias}" if alias else alias
-        ordinality = " WITH ORDINALITY" if expression.args.get("ordinality") else ""
-        offset = expression.args.get("offset")
-        offset = f" WITH OFFSET AS {self.sql(offset)}" if offset else ""
-        return f"UNNEST({args}){ordinality}{alias}{offset}"
+        if self.UNNEST_WITH_ORDINALITY:
+            suffix = f" WITH ORDINALITY{alias}" if offset else alias
+        else:
+            if isinstance(offset, exp.Expression):
+                suffix = f"{alias} WITH OFFSET AS {self.sql(offset)}"
+            elif offset:
+                suffix = f"{alias} WITH OFFSET"
+            else:
+                suffix = alias
+
+        return f"UNNEST({args}){suffix}"
 
     def where_sql(self, expression: exp.Where) -> str:
         this = self.indent(self.sql(expression, "this"))

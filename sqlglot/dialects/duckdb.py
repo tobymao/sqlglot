@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
     binary_from_function,
+    bool_xor_sql,
     date_trunc_to_time,
     datestrtodate_sql,
     encode_decode_sql,
@@ -190,6 +191,11 @@ class DuckDB(Dialect):
             ),
         }
 
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+            TokenType.SEMI,
+            TokenType.ANTI,
+        }
+
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
         ) -> t.Optional[exp.Expression]:
@@ -224,6 +230,7 @@ class DuckDB(Dialect):
         STRUCT_DELIMITER = ("(", ")")
         RENAME_TABLE_WITH_DB = False
         NVL2_SUPPORTED = False
+        SEMI_ANTI_JOIN_WITH_SIDE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -234,7 +241,7 @@ class DuckDB(Dialect):
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
-            exp.BitwiseXor: lambda self, e: self.func("XOR", e.this, e.expression),
+            exp.BitwiseXor: rename_func("XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
             exp.CurrentDate: lambda self, e: "CURRENT_DATE",
             exp.CurrentTime: lambda self, e: "CURRENT_TIME",
@@ -301,6 +308,7 @@ class DuckDB(Dialect):
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.Xor: bool_xor_sql,
         }
 
         TYPE_MAPPING = {

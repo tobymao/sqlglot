@@ -206,6 +206,7 @@ class TSQL(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
     NULL_ORDERING = "nulls_are_small"
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     TIME_MAPPING = {
         "year": "%Y",
@@ -613,7 +614,9 @@ class TSQL(Dialect):
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
-            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
+            exp.Select: transforms.preprocess(
+                [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+            ),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
                 "HASHBYTES",
@@ -661,13 +664,23 @@ class TSQL(Dialect):
             exists = expression.args.pop("exists", None)
             sql = super().create_sql(expression)
 
+            table = expression.find(exp.Table)
+
+            if kind == "TABLE" and expression.expression:
+                sql = f"SELECT * INTO {self.sql(table)} FROM ({self.sql(expression.expression)}) AS temp"
+
             if exists:
-                table = expression.find(exp.Table)
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
                 if kind == "SCHEMA":
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC('{sql}')"""
                 elif kind == "TABLE":
-                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = {identifier}) EXEC('{sql}')"""
+                    assert table
+                    where = exp.and_(
+                        exp.column("table_name").eq(table.name),
+                        exp.column("table_schema").eq(table.db) if table.db else None,
+                        exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
+                    )
+                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC('{sql}')"""
                 elif kind == "INDEX":
                     index = self.sql(exp.Literal.string(expression.this.text("this")))
                     sql = f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC('{sql}')"""

@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
+    bool_xor_sql,
     date_trunc_to_time,
     encode_decode_sql,
     format_time_lambda,
@@ -40,7 +41,7 @@ def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> s
                 this=exp.Unnest(
                     expressions=[expression.this.this],
                     alias=expression.args.get("alias"),
-                    ordinality=isinstance(expression.this, exp.Posexplode),
+                    offset=isinstance(expression.this, exp.Posexplode),
                 ),
                 kind="cross",
             )
@@ -173,6 +174,7 @@ class Presto(Dialect):
     TIME_FORMAT = MySQL.TIME_FORMAT
     TIME_MAPPING = MySQL.TIME_MAPPING
     STRICT_STRING_CONCAT = True
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289
@@ -308,7 +310,7 @@ class Presto(Dialect):
             exp.First: _first_last_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.Hex: rename_func("TO_HEX"),
-            exp.If: if_sql,
+            exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
             exp.ParseJSON: rename_func("JSON_PARSE"),
@@ -331,7 +333,8 @@ class Presto(Dialect):
                 [
                     transforms.eliminate_qualify,
                     transforms.eliminate_distinct_on,
-                    transforms.explode_to_unnest,
+                    transforms.explode_to_unnest(1),
+                    transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
             exp.SortArray: _no_sort_array,
@@ -340,7 +343,6 @@ class Presto(Dialect):
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
             exp.StrToTime: _str_to_time_sql,
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
-            exp.Struct: rename_func("ROW"),
             exp.StructExtract: struct_extract_sql,
             exp.Table: transforms.preprocess([_unnest_sequence]),
             exp.TimestampTrunc: timestamptrunc_sql,
@@ -363,7 +365,15 @@ class Presto(Dialect):
                 [transforms.remove_within_group_for_percentiles]
             ),
             exp.Timestamp: transforms.preprocess([transforms.timestamp_to_cast]),
+            exp.Xor: bool_xor_sql,
         }
+
+        def struct_sql(self, expression: exp.Struct) -> str:
+            if any(isinstance(arg, (exp.EQ, exp.Slice)) for arg in expression.expressions):
+                self.unsupported("Struct with key-value definitions is unsupported.")
+                return self.function_fallback_sql(expression)
+
+            return rename_func("ROW")(self, expression)
 
         def interval_sql(self, expression: exp.Interval) -> str:
             unit = self.sql(expression, "unit")

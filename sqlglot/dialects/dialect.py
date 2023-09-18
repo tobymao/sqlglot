@@ -125,6 +125,12 @@ class _Dialect(type):
         if not klass.STRICT_STRING_CONCAT and klass.DPIPE_IS_STRING_CONCAT:
             klass.parser_class.BITWISE[TokenType.DPIPE] = exp.SafeDPipe
 
+        if not klass.SUPPORTS_SEMI_ANTI_JOIN:
+            klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
+                TokenType.ANTI,
+                TokenType.SEMI,
+            }
+
         klass.generator_class.can_identify = klass.can_identify
 
         return klass
@@ -155,6 +161,9 @@ class Dialect(metaclass=_Dialect):
 
     # Determines whether or not user-defined data types are supported
     SUPPORTS_USER_DEFINED_TYPES = True
+
+    # Determines whether or not SEMI/ANTI JOINs are supported
+    SUPPORTS_SEMI_ANTI_JOIN = True
 
     # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
@@ -331,10 +340,18 @@ def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -
     return self.func("APPROX_COUNT_DISTINCT", expression.this)
 
 
-def if_sql(self: Generator, expression: exp.If) -> str:
-    return self.func(
-        "IF", expression.this, expression.args.get("true"), expression.args.get("false")
-    )
+def if_sql(
+    name: str = "IF", false_value: t.Optional[exp.Expression | str] = None
+) -> t.Callable[[Generator, exp.If], str]:
+    def _if_sql(self: Generator, expression: exp.If) -> str:
+        return self.func(
+            name,
+            expression.this,
+            expression.args.get("true"),
+            expression.args.get("false") or false_value,
+        )
+
+    return _if_sql
 
 
 def arrow_json_extract_sql(self: Generator, expression: exp.JSONExtract | exp.JSONBExtract) -> str:
@@ -749,6 +766,12 @@ def parse_timestamp_trunc(args: t.List) -> exp.TimestampTrunc:
 
 def any_value_to_max_sql(self: Generator, expression: exp.AnyValue) -> str:
     return self.func("MAX", expression.this)
+
+
+def bool_xor_sql(self: Generator, expression: exp.Xor) -> str:
+    a = self.sql(expression.left)
+    b = self.sql(expression.right)
+    return f"({a} AND (NOT {b})) OR ((NOT {a}) AND {b})"
 
 
 # Used to generate JSON_OBJECT with a comma in BigQuery and MySQL instead of colon

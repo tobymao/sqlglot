@@ -5,9 +5,11 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    binary_from_function,
     date_trunc_to_time,
     datestrtodate_sql,
     format_time_lambda,
+    if_sql,
     inline_array_sql,
     max_or_greatest,
     min_or_least,
@@ -203,6 +205,7 @@ class Snowflake(Dialect):
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
+    SUPPORTS_SEMI_ANTI_JOIN = False
 
     TIME_MAPPING = {
         "YYYY": "%Y",
@@ -240,7 +243,16 @@ class Snowflake(Dialect):
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
+            "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
+                # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
+                start=seq_get(args, 0),
+                end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
+                step=seq_get(args, 2),
+            ),
             "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
+            "BITXOR": binary_from_function(exp.BitwiseXor),
+            "BIT_XOR": binary_from_function(exp.BitwiseXor),
+            "BOOLXOR": binary_from_function(exp.Xor),
             "CONVERT_TIMEZONE": _parse_convert_timezone,
             "DATE_TRUNC": date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
@@ -277,7 +289,7 @@ class Snowflake(Dialect):
             ),
         }
 
-        TIMESTAMPS = parser.Parser.TIMESTAMPS.copy() - {TokenType.TIME}
+        TIMESTAMPS = parser.Parser.TIMESTAMPS - {TokenType.TIME}
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
@@ -381,6 +393,7 @@ class Snowflake(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False
+        AGGREGATE_FILTER_SUPPORTED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -390,6 +403,7 @@ class Snowflake(Dialect):
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
+            exp.BitwiseXor: rename_func("BITXOR"),
             exp.DateAdd: lambda self, e: self.func("DATEADD", e.text("unit"), e.expression, e.this),
             exp.DateDiff: lambda self, e: self.func(
                 "DATEDIFF", e.text("unit"), e.expression, e.this
@@ -398,8 +412,11 @@ class Snowflake(Dialect):
             exp.DataType: _datatype_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.Extract: rename_func("DATE_PART"),
+            exp.GenerateSeries: lambda self, e: self.func(
+                "ARRAY_GENERATE_RANGE", e.args["start"], e.args["end"] + 1, e.args.get("step")
+            ),
             exp.GroupConcat: rename_func("LISTAGG"),
-            exp.If: rename_func("IFF"),
+            exp.If: if_sql(name="IFF", false_value="NULL"),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -407,7 +424,13 @@ class Snowflake(Dialect):
             exp.Min: min_or_least,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpILike: _regexpilike_sql,
-            exp.Select: transforms.preprocess([transforms.eliminate_distinct_on]),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.explode_to_unnest(0),
+                    transforms.eliminate_semi_and_anti_joins,
+                ]
+            ),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.StrPosition: lambda self, e: self.func(
@@ -431,6 +454,7 @@ class Snowflake(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.Xor: rename_func("BOOLXOR"),
         }
 
         TYPE_MAPPING = {
@@ -448,6 +472,27 @@ class Snowflake(Dialect):
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            selects = ["value"]
+            unnest_alias = expression.args.get("alias")
+
+            offset = expression.args.get("offset")
+            if offset:
+                if unnest_alias:
+                    expression = expression.copy()
+                    unnest_alias.append("columns", offset.pop())
+
+                selects.append("index")
+
+            subquery = exp.Subquery(
+                this=exp.select(*selects).from_(
+                    f"TABLE(FLATTEN(INPUT => {self.sql(expression.expressions[0])}))"
+                ),
+            )
+            alias = self.sql(unnest_alias)
+            alias = f" AS {alias}" if alias else ""
+            return f"{self.sql(subquery)}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
             scope = self.sql(expression, "scope")

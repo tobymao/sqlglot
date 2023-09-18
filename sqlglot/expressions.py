@@ -1917,7 +1917,7 @@ class Sort(Order):
 
 
 class Ordered(Expression):
-    arg_types = {"this": True, "desc": True, "nulls_first": True}
+    arg_types = {"this": True, "desc": False, "nulls_first": True}
 
 
 class Property(Expression):
@@ -2569,7 +2569,6 @@ class Intersect(Union):
 class Unnest(UDTF):
     arg_types = {
         "expressions": True,
-        "ordinality": False,
         "alias": False,
         "offset": False,
     }
@@ -2862,6 +2861,7 @@ class Select(Subqueryable):
             prefix="LIMIT",
             dialect=dialect,
             copy=copy,
+            into_arg="expression",
             **opts,
         )
 
@@ -4427,7 +4427,8 @@ class DateToDi(Func):
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#date
 class Date(Func):
-    arg_types = {"this": True, "zone": False}
+    arg_types = {"this": False, "zone": False, "expressions": False}
+    is_var_len_args = True
 
 
 class Day(Func):
@@ -5131,10 +5132,11 @@ def _apply_builder(
     prefix=None,
     into=None,
     dialect=None,
+    into_arg="this",
     **opts,
 ):
     if _is_wrong_expression(expression, into):
-        expression = into(this=expression)
+        expression = into(**{into_arg: expression})
     instance = maybe_copy(instance, copy)
     expression = maybe_parse(
         sql_or_expression=expression,

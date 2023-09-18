@@ -78,6 +78,10 @@ class TestSnowflake(Validator):
             r"SELECT $$a ' \ \t \x21 z $ $$",
             r"SELECT 'a \' \\ \\t \\x21 z $ '",
         )
+        self.validate_identity(
+            "SELECT {'test': 'best'}::VARIANT",
+            "SELECT CAST(OBJECT_CONSTRUCT('test', 'best') AS VARIANT)",
+        )
 
         self.validate_all("CAST(x AS BYTEINT)", write={"snowflake": "CAST(x AS INT)"})
         self.validate_all("CAST(x AS CHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})

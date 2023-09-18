@@ -3250,6 +3250,8 @@ class Parser(metaclass=_Parser):
                 self._retreat(index)
                 return self._parse_column()
             return self._parse_column_ops(data_type)
+        elif this and self._match_set(self.COLUMN_OPERATORS, advance=False):
+            return self._parse_column_ops(this)
 
         return this
 

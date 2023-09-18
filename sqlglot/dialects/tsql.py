@@ -665,7 +665,7 @@ class TSQL(Dialect):
 
             if kind == "TABLE" and expression.expression:
                 assert table
-                sql = f"SELECT * INTO {exp.table_name(table)} FROM ({self.sql(expression.expression)}) AS temp"
+                sql = f"SELECT * INTO {self.sql(table)} FROM ({self.sql(expression.expression)}) AS temp"
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))

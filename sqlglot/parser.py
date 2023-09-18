@@ -3251,7 +3251,7 @@ class Parser(metaclass=_Parser):
                 return self._parse_column()
             return self._parse_column_ops(data_type)
 
-        return this
+        return this and self._parse_column_ops(this)
 
     def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:
         this = self._parse_type()

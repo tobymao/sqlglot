@@ -212,7 +212,15 @@ class Column:
         return self.expression.sql(**{"dialect": SparkSession().dialect, **kwargs})
 
     def alias(self, name: str) -> Column:
-        new_expression = exp.alias_(self.column_expression, name)
+        from sqlglot.dataframe.sql.session import SparkSession
+
+        dialect = SparkSession().dialect
+        alias: exp.Expression = sqlglot.maybe_parse(name, dialect=dialect)
+        new_expression = exp.alias_(
+            self.column_expression,
+            alias.this if isinstance(alias, exp.Column) else name,
+            dialect=dialect,
+        )
         return Column(new_expression)
 
     def asc(self) -> Column:

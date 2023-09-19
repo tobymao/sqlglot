@@ -480,6 +480,15 @@ class Hive(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def schema_sql(self, expression: exp.Schema) -> str:
+            expression = expression.copy()
+
+            for ordered in expression.find_all(exp.Ordered):
+                if ordered.args.get("desc") is False:
+                    ordered.set("desc", None)
+
+            return super().schema_sql(expression)
+
         def constraint_sql(self, expression: exp.Constraint) -> str:
             expression = expression.copy()
 

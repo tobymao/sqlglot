@@ -531,6 +531,12 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('SELECT * INTO foo.bar.baz FROM (SELECT ''2020'' AS z FROM a.b.c) AS temp')",
+            read={
+                "": "CREATE TABLE IF NOT EXISTS foo.bar.baz AS SELECT '2020' AS z FROM a.b.c",
+            },
+        )
+        self.validate_all(
             "CREATE OR ALTER VIEW a.b AS SELECT 1",
             read={
                 "": "CREATE OR REPLACE VIEW a.b AS SELECT 1",

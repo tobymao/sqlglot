@@ -242,6 +242,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self.annotators = annotators or self.ANNOTATORS
         self.coerces_to = coerces_to or self.COERCES_TO
 
+        # Caches the ids of annotated sub-Expressions, to ensure we only visit them once
+        self._visited: t.Set[int] = set()
+
+    def _set_type(self, expression: exp.Expression, target_type: exp.DataType) -> None:
+        expression.type = target_type
+        self._visited.add(id(expression))
+
     def annotate(self, expression: E) -> E:
         for scope in traverse_scope(expression):
             selects = {}
@@ -279,9 +286,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
                 source = scope.sources.get(col.table)
                 if isinstance(source, exp.Table):
-                    col.type = self.schema.get_column_type(source, col)
+                    self._set_type(col, self.schema.get_column_type(source, col))
                 elif source and col.table in selects and col.name in selects[col.table]:
-                    col.type = selects[col.table][col.name].type
+                    self._set_type(col, selects[col.table][col.name].type)
 
             # Then (possibly) annotate the remaining expressions in the scope
             self._maybe_annotate(scope.expression)
@@ -289,7 +296,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return self._maybe_annotate(expression)  # This takes care of non-traversable expressions
 
     def _maybe_annotate(self, expression: E) -> E:
-        if expression.type:
+        if id(expression) in self._visited:
             return expression  # We've already inferred the expression's type
 
         annotator = self.annotators.get(expression.__class__)
@@ -338,17 +345,18 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if isinstance(expression, exp.Connector):
             if left_type == exp.DataType.Type.NULL and right_type == exp.DataType.Type.NULL:
-                expression.type = exp.DataType.Type.NULL
+                self._set_type(expression, exp.DataType.Type.NULL)
             elif exp.DataType.Type.NULL in (left_type, right_type):
-                expression.type = exp.DataType.build(
-                    "NULLABLE", expressions=exp.DataType.build("BOOLEAN")
+                self._set_type(
+                    expression,
+                    exp.DataType.build("NULLABLE", expressions=exp.DataType.build("BOOLEAN")),
                 )
             else:
-                expression.type = exp.DataType.Type.BOOLEAN
+                self._set_type(expression, exp.DataType.Type.BOOLEAN)
         elif isinstance(expression, exp.Predicate):
-            expression.type = exp.DataType.Type.BOOLEAN
+            self._set_type(expression, exp.DataType.Type.BOOLEAN)
         else:
-            expression.type = self._maybe_coerce(left_type, right_type)
+            self._set_type(expression, self._maybe_coerce(left_type, right_type))
 
         return expression
 
@@ -357,26 +365,26 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._annotate_args(expression)
 
         if isinstance(expression, exp.Condition) and not isinstance(expression, exp.Paren):
-            expression.type = exp.DataType.Type.BOOLEAN
+            self._set_type(expression, exp.DataType.Type.BOOLEAN)
         else:
-            expression.type = expression.this.type
+            self._set_type(expression, expression.this.type)
 
         return expression
 
     @t.no_type_check
     def _annotate_literal(self, expression: exp.Literal) -> exp.Literal:
         if expression.is_string:
-            expression.type = exp.DataType.Type.VARCHAR
+            self._set_type(expression, exp.DataType.Type.VARCHAR)
         elif expression.is_int:
-            expression.type = exp.DataType.Type.INT
+            self._set_type(expression, exp.DataType.Type.INT)
         else:
-            expression.type = exp.DataType.Type.DOUBLE
+            self._set_type(expression, exp.DataType.Type.DOUBLE)
 
         return expression
 
     @t.no_type_check
     def _annotate_with_type(self, expression: E, target_type: exp.DataType.Type) -> E:
-        expression.type = target_type
+        self._set_type(expression, target_type)
         return self._annotate_args(expression)
 
     @t.no_type_check
@@ -394,17 +402,20 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         for expr in expressions:
             last_datatype = self._maybe_coerce(last_datatype or expr.type, expr.type)
 
-        expression.type = last_datatype or exp.DataType.Type.UNKNOWN
+        self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
 
         if promote:
             if expression.type.this in exp.DataType.INTEGER_TYPES:
-                expression.type = exp.DataType.Type.BIGINT
+                self._set_type(expression, exp.DataType.Type.BIGINT)
             elif expression.type.this in exp.DataType.FLOAT_TYPES:
-                expression.type = exp.DataType.Type.DOUBLE
+                self._set_type(expression, exp.DataType.Type.DOUBLE)
 
         if array:
-            expression.type = exp.DataType(
-                this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
+                ),
             )
 
         return expression

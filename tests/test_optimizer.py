@@ -776,6 +776,17 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(exp.DataType.Type.ARRAY, expression.selects[0].type.this)
         self.assertEqual(expression.selects[0].type.sql(), "ARRAY<INT>")
 
+    def test_type_annotation_cache(self):
+        sql = "SELECT 1 + 1"
+        expression = annotate_types(parse_one(sql))
+
+        self.assertEqual(exp.DataType.Type.INT, expression.selects[0].type.this)
+
+        expression.selects[0].this.replace(parse_one("1.2"))
+        expression = annotate_types(expression)
+
+        self.assertEqual(exp.DataType.Type.DOUBLE, expression.selects[0].type.this)
+
     def test_user_defined_type_annotation(self):
         schema = MappingSchema({"t": {"x": "int"}}, dialect="postgres")
         expression = annotate_types(parse_one("SELECT CAST(x AS IPADDRESS) FROM t"), schema=schema)

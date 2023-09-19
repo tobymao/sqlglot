@@ -148,18 +148,6 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     return f"TO_DATE({this})"
 
 
-def clusteredcolumnconstraint_sql(
-    self: Hive.Generator,
-    expression: exp.ClusteredColumnConstraint | exp.NonClusteredColumnConstraint,
-) -> str:
-    expression = expression.copy()
-    for ordered in expression.find_all(exp.Ordered):
-        if ordered.args.get("desc") is False:
-            ordered.set("desc", None)
-
-    return f"({self.expressions(expression, 'this', indent=False)})"
-
-
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -478,8 +466,8 @@ class Hive(Dialect):
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.LastDateOfMonth: rename_func("LAST_DAY"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
-            exp.ClusteredColumnConstraint: clusteredcolumnconstraint_sql,
-            exp.NonClusteredColumnConstraint: clusteredcolumnconstraint_sql,
+            exp.ClusteredColumnConstraint: lambda self, e: f"({self.expressions(e, 'this', indent=False)})",
+            exp.NonClusteredColumnConstraint: lambda self, e: f"({self.expressions(e, 'this', indent=False)})",
             exp.NotForReplicationColumnConstraint: lambda self, e: "",
             exp.OnProperty: lambda self, e: "",
             exp.PrimaryKeyColumnConstraint: lambda self, e: "PRIMARY KEY",
@@ -491,6 +479,15 @@ class Hive(Dialect):
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def schema_sql(self, expression: exp.Schema) -> str:
+            expression = expression.copy()
+
+            for ordered in expression.find_all(exp.Ordered):
+                if ordered.args.get("desc") is False:
+                    ordered.set("desc", None)
+
+            return super().schema_sql(expression)
 
         def constraint_sql(self, expression: exp.Constraint) -> str:
             expression = expression.copy()

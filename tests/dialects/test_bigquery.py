@@ -33,6 +33,7 @@ class TestBigQuery(Validator):
         with self.assertRaises(ParseError):
             transpile("DATE_ADD(x, day)", read="bigquery")
 
+        self.validate_identity("SELECT test.Unknown FROM test")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
         self.validate_identity("STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)")
@@ -450,6 +451,16 @@ class TestBigQuery(Validator):
                 "presto": "x IS NULL",
                 "hive": "x IS NULL",
                 "spark": "x IS NULL",
+            },
+        )
+        self.validate_all(
+            "x IS NOT unknown",
+            write={
+                "bigquery": "NOT x IS NULL",
+                "duckdb": "NOT x IS NULL",
+                "presto": "NOT x IS NULL",
+                "hive": "NOT x IS NULL",
+                "spark": "NOT x IS NULL",
             },
         )
         self.validate_all(

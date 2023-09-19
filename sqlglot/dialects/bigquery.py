@@ -258,7 +258,6 @@ class BigQuery(Dialect):
             "RECORD": TokenType.STRUCT,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
-            "UNKNOWN": TokenType.NULL,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
         }
         KEYWORDS.pop("DIV")
@@ -343,6 +342,8 @@ class BigQuery(Dialect):
             **parser.Parser.CONSTRAINT_PARSERS,
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
+
+        NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
             this = super()._parse_table_part(schema=schema) or self._parse_number()

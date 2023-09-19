@@ -858,6 +858,8 @@ class Parser(metaclass=_Parser):
 
     DISTINCT_TOKENS = {TokenType.DISTINCT}
 
+    NULL_TOKENS = {TokenType.NULL}
+
     STRICT_CAST = True
 
     # A NULL arg in CONCAT yields NULL by default
@@ -4577,7 +4579,7 @@ class Parser(metaclass=_Parser):
         return self._parse_var() or self._parse_string()
 
     def _parse_null(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.NULL):
+        if self._match_set(self.NULL_TOKENS):
             return self.PRIMARY_PARSERS[TokenType.NULL](self, self._prev)
         return self._parse_placeholder()
 

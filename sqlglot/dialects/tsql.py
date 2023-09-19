@@ -671,7 +671,7 @@ class TSQL(Dialect):
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
-                sql = exp.Literal.string(sql).sql()
+                sql = self.sql(exp.Literal.string(sql))
                 if kind == "SCHEMA":
                     sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC({sql})"""
                 elif kind == "TABLE":

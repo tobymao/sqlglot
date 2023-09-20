@@ -4328,6 +4328,10 @@ class DateDiff(Func, TimeUnit):
 class DateTrunc(Func):
     arg_types = {"unit": True, "this": True, "zone": False}
 
+    @property
+    def unit(self) -> t.Optional[Expression]:
+        return self.args.get("unit")
+
 
 class DatetimeAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}

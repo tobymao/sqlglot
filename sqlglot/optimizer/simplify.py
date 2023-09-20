@@ -1,6 +1,7 @@
 import datetime
 import functools
 import itertools
+import typing as t
 from collections import deque
 from decimal import Decimal
 
@@ -73,6 +74,8 @@ def simplify(expression):
         node.parent = expression.parent
         node = simplify_literals(node, root)
         node = simplify_parens(node)
+        node = simplify_datetrunc(node)
+        node = simplify_datetrunc_predicate(node)
 
         if root:
             expression.replace(node)
@@ -196,7 +199,7 @@ COMPARISONS = (
     exp.Is,
 )
 
-INVERSE_COMPARISONS = {
+INVERSE_COMPARISONS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
     exp.LT: exp.GT,
     exp.GT: exp.LT,
     exp.LTE: exp.GTE,
@@ -530,6 +533,214 @@ def simplify_concat(expression):
     return new_args[0] if len(new_args) == 1 else concat_type(expressions=new_args)
 
 
+def simplify_datetrunc(expression):
+    """Remove redundant DATE_TRUNC functions"""
+    if isinstance(expression, exp.DateTrunc) and expression.unit.name.lower() == "day":
+        return expression.this
+    return expression
+
+
+class UnsupportedUnit(Exception):
+    pass
+
+
+def interval(unit: str, n: int = 1):
+    from dateutil.relativedelta import relativedelta
+
+    if unit == "year":
+        return relativedelta(years=1 * n)
+    elif unit == "quarter":
+        return relativedelta(months=3 * n)
+    elif unit == "month":
+        return relativedelta(months=1 * n)
+    elif unit == "week":
+        return relativedelta(weeks=1 * n)
+    elif unit == "day":
+        return relativedelta(days=1 * n)
+    else:
+        raise UnsupportedUnit(f"Unsupported unit: {unit}")
+
+
+def date_floor(d: datetime.date, unit: str) -> datetime.date:
+    if unit == "year":
+        return datetime.date(year=d.year, month=1, day=1)
+    elif unit == "quarter":
+        if d.month <= 3:
+            return datetime.date(year=d.year, month=1, day=1)
+        elif d.month <= 6:
+            return datetime.date(year=d.year, month=4, day=1)
+        elif d.month <= 9:
+            return datetime.date(year=d.year, month=7, day=1)
+        else:
+            return datetime.date(year=d.year, month=10, day=1)
+    elif unit == "month":
+        return datetime.date(year=d.year, month=d.month, day=1)
+    elif unit == "week":
+        # Assuming week starts on Monday (0) and ends on Sunday (6)
+        d = d - datetime.timedelta(days=d.weekday())
+        return datetime.date(year=d.year, month=d.month, day=d.day)
+    elif unit == "day":
+        return datetime.date(year=d.year, month=d.month, day=d.day)
+
+    raise UnsupportedUnit(f"Unsupported unit: {unit}")
+
+
+def date_ceil(d: datetime.date, unit: str) -> datetime.date:
+    floor = date_floor(d, unit)
+
+    if floor == d:
+        return d
+
+    return floor + interval(unit)
+
+
+def _is_datetrunc_predicate(left: exp.Expression, right: exp.Expression) -> bool:
+    return (
+        isinstance(left, exp.DateTrunc)
+        and isinstance(right, exp.Cast)
+        and right.is_type(exp.DataType.Type.DATE)
+    )
+
+
+DateRange = t.Tuple[datetime.date, datetime.date]
+DateRanges = t.List[DateRange]
+
+
+def _datetrunc_range(date: datetime.date, unit: str) -> t.Optional[DateRange]:
+    """
+    Get the date range for a DATE_TRUNC equality comparison:
+
+    Example:
+        _datetrunc_range(date(2021-01-01), 'year') == (date(2021-01-01), date(2022-01-01))
+    Returns:
+        tuple of [min, max) or None if a value can never be equal to `date` for `unit`
+    """
+    floor = date_floor(date, unit)
+
+    if date != floor:
+        # This will always be False, except for NULL values.
+        return None
+
+    return floor, floor + interval(unit)
+
+
+def _datetrunc_eq_expression(left: exp.Expression, drange: DateRange) -> exp.Expression:
+    """Get the logical expression for a date range"""
+    return exp.and_(
+        exp.GTE(this=left.copy(), expression=date_literal(drange[0])),
+        exp.LT(this=left.copy(), expression=date_literal(drange[1])),
+        copy=False,
+    )
+
+
+def _datetrunc_eq(
+    left: exp.Expression, date: datetime.date, unit: str
+) -> t.Optional[exp.Expression]:
+    drange = _datetrunc_range(date, unit)
+    if not drange:
+        return None
+
+    return _datetrunc_eq_expression(left, drange)
+
+
+def _datetrunc_neq(
+    left: exp.Expression, date: datetime.date, unit: str
+) -> t.Optional[exp.Expression]:
+    drange = _datetrunc_range(date, unit)
+    if not drange:
+        return None
+
+    return exp.and_(
+        exp.LT(this=left.copy(), expression=date_literal(drange[0])),
+        exp.GTE(this=left.copy(), expression=date_literal(drange[1])),
+        copy=False,
+    )
+
+
+DateTruncBinaryTransform = t.Callable[
+    [exp.Expression, datetime.date, str], t.Optional[exp.Expression]
+]
+
+DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTransform] = {
+    exp.LT: lambda l, d, u: exp.LT(this=l.copy(), expression=date_literal(date_floor(d, u))),
+    exp.GT: lambda l, d, u: exp.GTE(
+        this=l.copy(), expression=date_literal(date_floor(d, u) + interval(u))
+    ),
+    exp.LTE: lambda l, d, u: exp.LT(
+        this=l.copy(), expression=date_literal(date_floor(d, u) + interval(u))
+    ),
+    exp.GTE: lambda l, d, u: exp.GTE(this=l.copy(), expression=date_literal(date_ceil(d, u))),
+    exp.EQ: _datetrunc_eq,
+    exp.NEQ: _datetrunc_neq,
+}
+DATETRUNC_COMPARISONS = {exp.In, *DATETRUNC_BINARY_COMPARISONS}
+
+
+def merge_date_ranges(ranges: DateRanges) -> DateRanges:
+    if not ranges:
+        return []
+
+    # First, sort the ranges by the start date
+    sorted_ranges = sorted(ranges, key=lambda x: x[0])
+
+    merged_ranges = [sorted_ranges[0]]
+
+    for start, end in sorted_ranges[1:]:
+        last_start, last_end = merged_ranges[-1]
+
+        # If the current range overlaps with the last merged range, merge them
+        if start <= last_end:
+            new_end = max(last_end, end)
+            merged_ranges[-1] = (last_start, new_end)
+        else:
+            merged_ranges.append((start, end))
+
+    return merged_ranges
+
+
+def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
+    """Simplify expressions like `DATE_TRUNC('year', x) >= CAST('2021-01-01' AS DATE)`"""
+    comparison = expression.__class__
+
+    if comparison not in DATETRUNC_COMPARISONS:
+        return expression
+
+    if isinstance(expression, exp.Binary):
+        l, r = expression.left, expression.right
+
+        if _is_datetrunc_predicate(l, r):
+            pass
+        elif _is_datetrunc_predicate(r, l):
+            comparison = INVERSE_COMPARISONS.get(comparison, comparison)
+            l, r = r, l
+        else:
+            return expression
+
+        unit = l.unit.name.lower()
+        date = extract_date(r)
+
+        try:
+            return DATETRUNC_BINARY_COMPARISONS[comparison](l.this, date, unit) or expression
+        except (ModuleNotFoundError, UnsupportedUnit):
+            return expression
+    elif isinstance(expression, exp.In):
+        l = expression.this
+        rs = expression.expressions
+
+        if all(_is_datetrunc_predicate(l, r) for r in rs):
+            unit = l.unit.name.lower()
+
+            ranges = [r for r in [_datetrunc_range(extract_date(r), unit) for r in rs] if r]
+            if not ranges:
+                return expression
+
+            ranges = merge_date_ranges(ranges)
+
+            return exp.or_(*[_datetrunc_eq_expression(l, drange) for drange in ranges], copy=False)
+
+    return expression
+
+
 # CROSS joins result in an empty table if the right table is empty.
 # So we can only simplify certain types of joins to CROSS.
 # Or in other words, LEFT JOIN x ON TRUE != CROSS JOIN x
@@ -603,24 +814,14 @@ def extract_date(cast):
         return None
 
 
-def extract_interval(interval):
+def extract_interval(expression):
+    n = int(expression.name)
+    unit = expression.text("unit").lower()
+
     try:
-        from dateutil.relativedelta import relativedelta  # type: ignore
-    except ModuleNotFoundError:
+        return interval(unit, n)
+    except (UnsupportedUnit, ModuleNotFoundError):
         return None
-
-    n = int(interval.name)
-    unit = interval.text("unit").lower()
-
-    if unit == "year":
-        return relativedelta(years=n)
-    if unit == "month":
-        return relativedelta(months=n)
-    if unit == "week":
-        return relativedelta(weeks=n)
-    if unit == "day":
-        return relativedelta(days=n)
-    return None
 
 
 def date_literal(date):

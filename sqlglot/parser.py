@@ -3853,6 +3853,8 @@ class Parser(metaclass=_Parser):
                     action = "NO ACTION"
                 elif self._match_text_seq("CASCADE"):
                     action = "CASCADE"
+                elif self._match_text_seq("RESTRICT"):
+                    action = "RESTRICT"
                 elif self._match_pair(TokenType.SET, TokenType.NULL):
                     action = "SET NULL"
                 elif self._match_pair(TokenType.SET, TokenType.DEFAULT):

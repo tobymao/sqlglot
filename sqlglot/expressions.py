@@ -4329,8 +4329,8 @@ class DateTrunc(Func):
     arg_types = {"unit": True, "this": True, "zone": False}
 
     @property
-    def unit(self) -> t.Optional[Expression]:
-        return self.args.get("unit")
+    def unit(self) -> Expression:
+        return self.args["unit"]
 
 
 class DatetimeAdd(Func, TimeUnit):

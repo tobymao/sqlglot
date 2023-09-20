@@ -439,23 +439,19 @@ def first(it: t.Iterable[T]) -> T:
 
 
 def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:
-    # type: ignore
     if not ranges:
         return []
 
-    # First, sort the ranges by starts
-    sorted_ranges = sorted(ranges, key=lambda x: x[0])  # type: ignore
+    ranges = sorted(ranges)
 
-    merged_ranges = [sorted_ranges[0]]
+    merged = [ranges[0]]
 
-    for start, end in sorted_ranges[1:]:
-        last_start, last_end = merged_ranges[-1]
+    for start, end in ranges[1:]:
+        last_start, last_end = merged[-1]
 
-        # If the current range overlaps with the last merged range, merge them
-        if start <= last_end:  # type: ignore
-            new_end = max(last_end, end)
-            merged_ranges[-1] = (last_start, new_end)
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
         else:
-            merged_ranges.append((start, end))
+            merged.append((start, end))
 
-    return merged_ranges
+    return merged

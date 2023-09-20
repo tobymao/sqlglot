@@ -775,22 +775,22 @@ def interval(unit: str, n: int = 1):
 
     if unit == "year":
         return relativedelta(years=1 * n)
-    elif unit == "quarter":
+    if unit == "quarter":
         return relativedelta(months=3 * n)
-    elif unit == "month":
+    if unit == "month":
         return relativedelta(months=1 * n)
-    elif unit == "week":
+    if unit == "week":
         return relativedelta(weeks=1 * n)
-    elif unit == "day":
+    if unit == "day":
         return relativedelta(days=1 * n)
-    else:
-        raise UnsupportedUnit(f"Unsupported unit: {unit}")
+
+    raise UnsupportedUnit(f"Unsupported unit: {unit}")
 
 
 def date_floor(d: datetime.date, unit: str) -> datetime.date:
     if unit == "year":
         return datetime.date(year=d.year, month=1, day=1)
-    elif unit == "quarter":
+    if unit == "quarter":
         if d.month <= 3:
             return datetime.date(year=d.year, month=1, day=1)
         elif d.month <= 6:
@@ -799,13 +799,13 @@ def date_floor(d: datetime.date, unit: str) -> datetime.date:
             return datetime.date(year=d.year, month=7, day=1)
         else:
             return datetime.date(year=d.year, month=10, day=1)
-    elif unit == "month":
+    if unit == "month":
         return datetime.date(year=d.year, month=d.month, day=1)
-    elif unit == "week":
+    if unit == "week":
         # Assuming week starts on Monday (0) and ends on Sunday (6)
         d = d - datetime.timedelta(days=d.weekday())
         return datetime.date(year=d.year, month=d.month, day=d.day)
-    elif unit == "day":
+    if unit == "day":
         return datetime.date(year=d.year, month=d.month, day=d.day)
 
     raise UnsupportedUnit(f"Unsupported unit: {unit}")

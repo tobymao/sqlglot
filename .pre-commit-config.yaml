@@ -29,4 +29,5 @@ repos:
         language: system
         types: [ python ]
         files: ^(sqlglot/|tests/)
+        exclude: _version.py
         require_serial: true

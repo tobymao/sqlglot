@@ -13,7 +13,7 @@ from itertools import count
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
-    from sqlglot._typing import C, E, T
+    from sqlglot._typing import A, E, T
     from sqlglot.expressions import Expression
 
 
@@ -438,12 +438,13 @@ def first(it: t.Iterable[T]) -> T:
     return next(i for i in it)
 
 
-def merge_ranges(ranges: t.List[t.Tuple[C, C]]) -> t.List[t.Tuple[C, C]]:
+def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:
+    # type: ignore
     if not ranges:
         return []
 
     # First, sort the ranges by starts
-    sorted_ranges = sorted(ranges, key=lambda x: x[0])
+    sorted_ranges = sorted(ranges, key=lambda x: x[0])  # type: ignore
 
     merged_ranges = [sorted_ranges[0]]
 
@@ -451,7 +452,7 @@ def merge_ranges(ranges: t.List[t.Tuple[C, C]]) -> t.List[t.Tuple[C, C]]:
         last_start, last_end = merged_ranges[-1]
 
         # If the current range overlaps with the last merged range, merge them
-        if start <= last_end:
+        if start <= last_end:  # type: ignore
             new_end = max(last_end, end)
             merged_ranges[-1] = (last_start, new_end)
         else:

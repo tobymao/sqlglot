@@ -4616,14 +4616,18 @@ class Parser(metaclass=_Parser):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_column)
-        return self._parse_csv(self._parse_column)
+
+        except_column = self._parse_column()
+        return [except_column] if except_column else None
 
     def _parse_replace(self) -> t.Optional[t.List[exp.Expression]]:
         if not self._match(TokenType.REPLACE):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_expression)
-        return self._parse_expressions()
+
+        replace_expression = self._parse_expression()
+        return [replace_expression] if replace_expression else None
 
     def _parse_csv(
         self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA

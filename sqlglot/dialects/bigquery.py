@@ -343,6 +343,9 @@ class BigQuery(Dialect):
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
 
+        RANGE_PARSERS = parser.Parser.RANGE_PARSERS.copy()
+        RANGE_PARSERS.pop(TokenType.OVERLAPS, None)
+
         NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:

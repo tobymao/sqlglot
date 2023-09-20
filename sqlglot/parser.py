@@ -285,6 +285,7 @@ class Parser(metaclass=_Parser):
         TokenType.NEXT,
         TokenType.OFFSET,
         TokenType.ORDINALITY,
+        TokenType.OVERLAPS,
         TokenType.OVERWRITE,
         TokenType.PARTITION,
         TokenType.PERCENT,

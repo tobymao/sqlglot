@@ -2480,6 +2480,7 @@ class Parser(metaclass=_Parser):
             primary=primary,
             amp=amp,
             partition_by=self._parse_partition_by(),
+            where=self._parse_where(),
         )
 
     def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:

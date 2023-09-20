@@ -992,13 +992,14 @@ class Generator:
         table = self.sql(expression, "table")
         table = f"{self.INDEX_ON} {table}" if table else ""
         using = self.sql(expression, "using")
-        using = f" USING {using} " if using else ""
+        using = f" USING {using}" if using else ""
         index = "INDEX " if not table else ""
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
         partition_by = self.expressions(expression, key="partition_by", flat=True)
         partition_by = f" PARTITION BY {partition_by}" if partition_by else ""
-        return f"{unique}{primary}{amp}{index}{name}{table}{using}{columns}{partition_by}"
+        where = self.sql(expression, "where")
+        return f"{unique}{primary}{amp}{index}{name}{table}{using}{columns}{partition_by}{where}"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name

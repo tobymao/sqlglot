@@ -107,6 +107,10 @@ class TestBigQuery(Validator):
             "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
         )
         self.validate_identity(
+            "SELECT a overlaps",
+            "SELECT a AS overlaps",
+        )
+        self.validate_identity(
             "SELECT y + 1 z FROM x GROUP BY y + 1 ORDER BY z",
             "SELECT y + 1 AS z FROM x GROUP BY z ORDER BY z",
         )

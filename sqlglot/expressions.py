@@ -4396,6 +4396,10 @@ class TimestampDiff(Func, TimeUnit):
 class TimestampTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
 
+    @property
+    def unit(self) -> Expression:
+        return self.args["unit"]
+
 
 class TimeAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}

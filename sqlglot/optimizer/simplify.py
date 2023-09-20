@@ -78,7 +78,6 @@ def simplify(expression):
         node.parent = expression.parent
         node = simplify_literals(node, root)
         node = simplify_parens(node)
-        node = simplify_datetrunc(node)
         node = simplify_datetrunc_predicate(node)
 
         if root:
@@ -552,13 +551,6 @@ def simplify_concat(expression):
     return new_args[0] if len(new_args) == 1 else concat_type(expressions=new_args)
 
 
-def simplify_datetrunc(expression):
-    """Remove redundant DATE_TRUNC functions"""
-    if isinstance(expression, exp.DateTrunc) and expression.unit.name.lower() == "day":
-        return expression.this
-    return expression
-
-
 DateRange = t.Tuple[datetime.date, datetime.date]
 
 
@@ -633,9 +625,9 @@ DATETRUNC_COMPARISONS = {exp.In, *DATETRUNC_BINARY_COMPARISONS}
 
 def _is_datetrunc_predicate(left: exp.Expression, right: exp.Expression) -> bool:
     return (
-        isinstance(left, exp.DateTrunc)
+        isinstance(left, (exp.DateTrunc, exp.TimestampTrunc))
         and isinstance(right, exp.Cast)
-        and right.is_type(exp.DataType.Type.DATE)
+        and right.is_type(*exp.DataType.TEMPORAL_TYPES)
     )
 
 
@@ -789,24 +781,23 @@ def interval(unit: str, n: int = 1):
 
 def date_floor(d: datetime.date, unit: str) -> datetime.date:
     if unit == "year":
-        return datetime.date(year=d.year, month=1, day=1)
+        return d.replace(month=1, day=1)
     if unit == "quarter":
         if d.month <= 3:
-            return datetime.date(year=d.year, month=1, day=1)
+            return d.replace(month=1, day=1)
         elif d.month <= 6:
-            return datetime.date(year=d.year, month=4, day=1)
+            return d.replace(month=4, day=1)
         elif d.month <= 9:
-            return datetime.date(year=d.year, month=7, day=1)
+            return d.replace(month=7, day=1)
         else:
-            return datetime.date(year=d.year, month=10, day=1)
+            return d.replace(month=10, day=1)
     if unit == "month":
-        return datetime.date(year=d.year, month=d.month, day=1)
+        return d.replace(month=d.month, day=1)
     if unit == "week":
         # Assuming week starts on Monday (0) and ends on Sunday (6)
-        d = d - datetime.timedelta(days=d.weekday())
-        return datetime.date(year=d.year, month=d.month, day=d.day)
+        return d - datetime.timedelta(days=d.weekday())
     if unit == "day":
-        return datetime.date(year=d.year, month=d.month, day=d.day)
+        return d
 
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 

@@ -684,9 +684,6 @@ CONCAT('ab', x);
 --------------------------------------
 -- DATE_TRUNC
 --------------------------------------
-DATE_TRUNC('day', CAST(x AS DATE));
-CAST(x AS DATE);
-
 DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
@@ -698,6 +695,9 @@ x < CAST('2021-02-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
 DATE_TRUNC('week', x) = CAST('2021-01-04' AS DATE);
 x < CAST('2021-01-11' AS DATE) AND x >= CAST('2021-01-04' AS DATE);
+
+DATE_TRUNC('day', x) = CAST('2021-01-01' AS DATE);
+x < CAST('2021-01-02' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
 CAST('2021-01-01' AS DATE) = DATE_TRUNC('year', x);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
@@ -754,3 +754,6 @@ x < CAST('2023-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 -- one of the values will always be false
 DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2022-01-02' AS DATE));
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+TIMESTAMP_TRUNC(x, YEAR) = CAST('2021-01-01' AS DATETIME);
+x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);

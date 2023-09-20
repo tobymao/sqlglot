@@ -13,8 +13,9 @@ from itertools import count
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
-    from sqlglot._typing import E, T
+    from sqlglot._typing import C, E, T
     from sqlglot.expressions import Expression
+
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 PYTHON_VERSION = sys.version_info[:2]
@@ -435,3 +436,25 @@ def dict_depth(d: t.Dict) -> int:
 def first(it: t.Iterable[T]) -> T:
     """Returns the first element from an iterable (useful for sets)."""
     return next(i for i in it)
+
+
+def merge_ranges(ranges: t.List[t.Tuple[C, C]]) -> t.List[t.Tuple[C, C]]:
+    if not ranges:
+        return []
+
+    # First, sort the ranges by starts
+    sorted_ranges = sorted(ranges, key=lambda x: x[0])
+
+    merged_ranges = [sorted_ranges[0]]
+
+    for start, end in sorted_ranges[1:]:
+        last_start, last_end = merged_ranges[-1]
+
+        # If the current range overlaps with the last merged range, merge them
+        if start <= last_end:
+            new_end = max(last_end, end)
+            merged_ranges[-1] = (last_start, new_end)
+        else:
+            merged_ranges.append((start, end))
+
+    return merged_ranges

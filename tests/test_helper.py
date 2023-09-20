@@ -1,7 +1,7 @@
 import unittest
 
 from sqlglot.dialects import BigQuery, Dialect, Snowflake
-from sqlglot.helper import name_sequence, tsort
+from sqlglot.helper import merge_ranges, name_sequence, tsort
 
 
 class TestHelper(unittest.TestCase):
@@ -66,3 +66,10 @@ class TestHelper(unittest.TestCase):
         self.assertEqual(s1(), "a2")
         self.assertEqual(s2(), "b1")
         self.assertEqual(s2(), "b2")
+
+    def test_merge_ranges(self):
+        self.assertEqual([], merge_ranges([]))
+        self.assertEqual([(0, 1)], merge_ranges([(0, 1)]))
+        self.assertEqual([(0, 1), (2, 3)], merge_ranges([(0, 1), (2, 3)]))
+        self.assertEqual([(0, 3)], merge_ranges([(0, 1), (1, 3)]))
+        self.assertEqual([(0, 1), (2, 4)], merge_ranges([(2, 3), (0, 1), (3, 4)]))

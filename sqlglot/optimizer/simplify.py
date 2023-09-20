@@ -7,13 +7,10 @@ from decimal import Decimal
 
 from sqlglot import exp
 from sqlglot.generator import cached_generator
-from sqlglot.helper import first, while_changing
+from sqlglot.helper import first, merge_ranges, while_changing
 
 # Final means that an expression should not be simplified
 FINAL = "final"
-
-DateRange = t.Tuple[datetime.date, datetime.date]
-DateRanges = t.List[DateRange]
 
 
 class UnsupportedUnit(Exception):
@@ -562,6 +559,9 @@ def simplify_datetrunc(expression):
     return expression
 
 
+DateRange = t.Tuple[datetime.date, datetime.date]
+
+
 def _datetrunc_range(date: datetime.date, unit: str) -> t.Optional[DateRange]:
     """
     Get the date range for a DATE_TRUNC equality comparison:
@@ -616,7 +616,6 @@ def _datetrunc_neq(
 DateTruncBinaryTransform = t.Callable[
     [exp.Expression, datetime.date, str], t.Optional[exp.Expression]
 ]
-
 DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTransform] = {
     exp.LT: lambda l, d, u: exp.LT(this=l.copy(), expression=date_literal(date_floor(d, u))),
     exp.GT: lambda l, d, u: exp.GTE(
@@ -674,7 +673,7 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
             if not ranges:
                 return expression
 
-            ranges = merge_date_ranges(ranges)
+            ranges = merge_ranges(ranges)
 
             return exp.or_(*[_datetrunc_eq_expression(l, drange) for drange in ranges], copy=False)
 
@@ -819,28 +818,6 @@ def date_ceil(d: datetime.date, unit: str) -> datetime.date:
         return d
 
     return floor + interval(unit)
-
-
-def merge_date_ranges(ranges: DateRanges) -> DateRanges:
-    if not ranges:
-        return []
-
-    # First, sort the ranges by the start date
-    sorted_ranges = sorted(ranges, key=lambda x: x[0])
-
-    merged_ranges = [sorted_ranges[0]]
-
-    for start, end in sorted_ranges[1:]:
-        last_start, last_end = merged_ranges[-1]
-
-        # If the current range overlaps with the last merged range, merge them
-        if start <= last_end:
-            new_end = max(last_end, end)
-            merged_ranges[-1] = (last_start, new_end)
-        else:
-            merged_ranges.append((start, end))
-
-    return merged_ranges
 
 
 def boolean_literal(condition):

@@ -30,4 +30,4 @@ repos:
         types: [ python ]
         files: ^(sqlglot/|tests/)
         require_serial: true
-        exclude: '^sqlglot/_version\.py$'
+    exclude: '^sqlglot/_version\.py$'

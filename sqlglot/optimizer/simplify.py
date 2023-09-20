@@ -12,6 +12,13 @@ from sqlglot.helper import first, while_changing
 # Final means that an expression should not be simplified
 FINAL = "final"
 
+DateRange = t.Tuple[datetime.date, datetime.date]
+DateRanges = t.List[DateRange]
+
+
+class UnsupportedUnit(Exception):
+    pass
+
 
 def simplify(expression):
     """
@@ -85,6 +92,21 @@ def simplify(expression):
     expression = while_changing(expression, _simplify)
     remove_where_true(expression)
     return expression
+
+
+def catch(*exceptions):
+    """Decorator that ignores a simplification function if any of `exceptions` are raised"""
+
+    def decorator(func):
+        def wrapped(expression, *args, **kwargs):
+            try:
+                return func(expression, *args, **kwargs)
+            except exceptions:
+                return expression
+
+        return wrapped
+
+    return decorator
 
 
 def rewrite_between(expression: exp.Expression) -> exp.Expression:
@@ -540,72 +562,6 @@ def simplify_datetrunc(expression):
     return expression
 
 
-class UnsupportedUnit(Exception):
-    pass
-
-
-def interval(unit: str, n: int = 1):
-    from dateutil.relativedelta import relativedelta
-
-    if unit == "year":
-        return relativedelta(years=1 * n)
-    elif unit == "quarter":
-        return relativedelta(months=3 * n)
-    elif unit == "month":
-        return relativedelta(months=1 * n)
-    elif unit == "week":
-        return relativedelta(weeks=1 * n)
-    elif unit == "day":
-        return relativedelta(days=1 * n)
-    else:
-        raise UnsupportedUnit(f"Unsupported unit: {unit}")
-
-
-def date_floor(d: datetime.date, unit: str) -> datetime.date:
-    if unit == "year":
-        return datetime.date(year=d.year, month=1, day=1)
-    elif unit == "quarter":
-        if d.month <= 3:
-            return datetime.date(year=d.year, month=1, day=1)
-        elif d.month <= 6:
-            return datetime.date(year=d.year, month=4, day=1)
-        elif d.month <= 9:
-            return datetime.date(year=d.year, month=7, day=1)
-        else:
-            return datetime.date(year=d.year, month=10, day=1)
-    elif unit == "month":
-        return datetime.date(year=d.year, month=d.month, day=1)
-    elif unit == "week":
-        # Assuming week starts on Monday (0) and ends on Sunday (6)
-        d = d - datetime.timedelta(days=d.weekday())
-        return datetime.date(year=d.year, month=d.month, day=d.day)
-    elif unit == "day":
-        return datetime.date(year=d.year, month=d.month, day=d.day)
-
-    raise UnsupportedUnit(f"Unsupported unit: {unit}")
-
-
-def date_ceil(d: datetime.date, unit: str) -> datetime.date:
-    floor = date_floor(d, unit)
-
-    if floor == d:
-        return d
-
-    return floor + interval(unit)
-
-
-def _is_datetrunc_predicate(left: exp.Expression, right: exp.Expression) -> bool:
-    return (
-        isinstance(left, exp.DateTrunc)
-        and isinstance(right, exp.Cast)
-        and right.is_type(exp.DataType.Type.DATE)
-    )
-
-
-DateRange = t.Tuple[datetime.date, datetime.date]
-DateRanges = t.List[DateRange]
-
-
 def _datetrunc_range(date: datetime.date, unit: str) -> t.Optional[DateRange]:
     """
     Get the date range for a DATE_TRUNC equality comparison:
@@ -676,28 +632,15 @@ DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTran
 DATETRUNC_COMPARISONS = {exp.In, *DATETRUNC_BINARY_COMPARISONS}
 
 
-def merge_date_ranges(ranges: DateRanges) -> DateRanges:
-    if not ranges:
-        return []
-
-    # First, sort the ranges by the start date
-    sorted_ranges = sorted(ranges, key=lambda x: x[0])
-
-    merged_ranges = [sorted_ranges[0]]
-
-    for start, end in sorted_ranges[1:]:
-        last_start, last_end = merged_ranges[-1]
-
-        # If the current range overlaps with the last merged range, merge them
-        if start <= last_end:
-            new_end = max(last_end, end)
-            merged_ranges[-1] = (last_start, new_end)
-        else:
-            merged_ranges.append((start, end))
-
-    return merged_ranges
+def _is_datetrunc_predicate(left: exp.Expression, right: exp.Expression) -> bool:
+    return (
+        isinstance(left, exp.DateTrunc)
+        and isinstance(right, exp.Cast)
+        and right.is_type(exp.DataType.Type.DATE)
+    )
 
 
+@catch(ModuleNotFoundError, UnsupportedUnit)
 def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
     """Simplify expressions like `DATE_TRUNC('year', x) >= CAST('2021-01-01' AS DATE)`"""
     comparison = expression.__class__
@@ -719,10 +662,7 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
         unit = l.unit.name.lower()
         date = extract_date(r)
 
-        try:
-            return DATETRUNC_BINARY_COMPARISONS[comparison](l.this, date, unit) or expression
-        except (ModuleNotFoundError, UnsupportedUnit):
-            return expression
+        return DATETRUNC_BINARY_COMPARISONS[comparison](l.this, date, unit) or expression
     elif isinstance(expression, exp.In):
         l = expression.this
         rs = expression.expressions
@@ -829,6 +769,78 @@ def date_literal(date):
         exp.Literal.string(date),
         "DATETIME" if isinstance(date, datetime.datetime) else "DATE",
     )
+
+
+def interval(unit: str, n: int = 1):
+    from dateutil.relativedelta import relativedelta
+
+    if unit == "year":
+        return relativedelta(years=1 * n)
+    elif unit == "quarter":
+        return relativedelta(months=3 * n)
+    elif unit == "month":
+        return relativedelta(months=1 * n)
+    elif unit == "week":
+        return relativedelta(weeks=1 * n)
+    elif unit == "day":
+        return relativedelta(days=1 * n)
+    else:
+        raise UnsupportedUnit(f"Unsupported unit: {unit}")
+
+
+def date_floor(d: datetime.date, unit: str) -> datetime.date:
+    if unit == "year":
+        return datetime.date(year=d.year, month=1, day=1)
+    elif unit == "quarter":
+        if d.month <= 3:
+            return datetime.date(year=d.year, month=1, day=1)
+        elif d.month <= 6:
+            return datetime.date(year=d.year, month=4, day=1)
+        elif d.month <= 9:
+            return datetime.date(year=d.year, month=7, day=1)
+        else:
+            return datetime.date(year=d.year, month=10, day=1)
+    elif unit == "month":
+        return datetime.date(year=d.year, month=d.month, day=1)
+    elif unit == "week":
+        # Assuming week starts on Monday (0) and ends on Sunday (6)
+        d = d - datetime.timedelta(days=d.weekday())
+        return datetime.date(year=d.year, month=d.month, day=d.day)
+    elif unit == "day":
+        return datetime.date(year=d.year, month=d.month, day=d.day)
+
+    raise UnsupportedUnit(f"Unsupported unit: {unit}")
+
+
+def date_ceil(d: datetime.date, unit: str) -> datetime.date:
+    floor = date_floor(d, unit)
+
+    if floor == d:
+        return d
+
+    return floor + interval(unit)
+
+
+def merge_date_ranges(ranges: DateRanges) -> DateRanges:
+    if not ranges:
+        return []
+
+    # First, sort the ranges by the start date
+    sorted_ranges = sorted(ranges, key=lambda x: x[0])
+
+    merged_ranges = [sorted_ranges[0]]
+
+    for start, end in sorted_ranges[1:]:
+        last_start, last_end = merged_ranges[-1]
+
+        # If the current range overlaps with the last merged range, merge them
+        if start <= last_end:
+            new_end = max(last_end, end)
+            merged_ranges[-1] = (last_start, new_end)
+        else:
+            merged_ranges.append((start, end))
+
+    return merged_ranges
 
 
 def boolean_literal(condition):

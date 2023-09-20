@@ -30,6 +30,7 @@ setup(
             "python-dateutil",
             "pdoc",
             "pre-commit",
+            "setuptools_scm<8.0.1"
         ],
     },
     classifiers=[

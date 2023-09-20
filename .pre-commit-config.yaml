@@ -24,7 +24,6 @@ repos:
         require_serial: true
         files: ^(sqlglot/|tests/|setup.py)
       - id: mypy
-        args: [--exclude=sqlglot/_version.py]
         name: mypy
         entry: mypy
         language: system

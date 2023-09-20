@@ -25,9 +25,8 @@ repos:
         files: ^(sqlglot/|tests/|setup.py)
       - id: mypy
         name: mypy
-        entry: mypy
+        entry: mypy --exclude '/_version\.py$'
         language: system
         types: [ python ]
         files: ^(sqlglot/|tests/)
         require_serial: true
-    exclude: '^sqlglot/_version\.py$'

@@ -792,5 +792,5 @@ def isnull_to_is_null(args: t.List) -> exp.Expression:
 def move_insert_cte_sql(self: Generator, expression: exp.Insert) -> str:
     if expression.expression.args.get("with"):
         expression = expression.copy()
-        expression.set("with", expression.expression.args.pop("with"))
+        expression.set("with", expression.expression.args["with"].pop())
     return self.insert_sql(expression)

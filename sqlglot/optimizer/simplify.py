@@ -575,8 +575,8 @@ def _datetrunc_range(date: datetime.date, unit: str) -> t.Optional[DateRange]:
 def _datetrunc_eq_expression(left: exp.Expression, drange: DateRange) -> exp.Expression:
     """Get the logical expression for a date range"""
     return exp.and_(
-        exp.GTE(this=left.copy(), expression=date_literal(drange[0])),
-        exp.LT(this=left.copy(), expression=date_literal(drange[1])),
+        left >= date_literal(drange[0]),
+        left < date_literal(drange[1]),
         copy=False,
     )
 
@@ -599,8 +599,8 @@ def _datetrunc_neq(
         return None
 
     return exp.and_(
-        exp.LT(this=left.copy(), expression=date_literal(drange[0])),
-        exp.GTE(this=left.copy(), expression=date_literal(drange[1])),
+        left < date_literal(drange[0]),
+        left >= date_literal(drange[1]),
         copy=False,
     )
 
@@ -609,14 +609,10 @@ DateTruncBinaryTransform = t.Callable[
     [exp.Expression, datetime.date, str], t.Optional[exp.Expression]
 ]
 DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTransform] = {
-    exp.LT: lambda l, d, u: exp.LT(this=l.copy(), expression=date_literal(date_floor(d, u))),
-    exp.GT: lambda l, d, u: exp.GTE(
-        this=l.copy(), expression=date_literal(date_floor(d, u) + interval(u))
-    ),
-    exp.LTE: lambda l, d, u: exp.LT(
-        this=l.copy(), expression=date_literal(date_floor(d, u) + interval(u))
-    ),
-    exp.GTE: lambda l, d, u: exp.GTE(this=l.copy(), expression=date_literal(date_ceil(d, u))),
+    exp.LT: lambda l, d, u: l < date_literal(date_floor(d, u)),
+    exp.GT: lambda l, d, u: l >= date_literal(date_floor(d, u) + interval(u)),
+    exp.LTE: lambda l, d, u: l < date_literal(date_floor(d, u) + interval(u)),
+    exp.GTE: lambda l, d, u: l >= date_literal(date_ceil(d, u)),
     exp.EQ: _datetrunc_eq,
     exp.NEQ: _datetrunc_neq,
 }

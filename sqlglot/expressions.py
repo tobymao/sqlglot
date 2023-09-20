@@ -664,16 +664,6 @@ class Expression(metaclass=_Expression):
 
         return load(obj)
 
-
-IntoType = t.Union[
-    str,
-    t.Type[Expression],
-    t.Collection[t.Union[str, t.Type[Expression]]],
-]
-ExpOrStr = t.Union[str, Expression]
-
-
-class Condition(Expression):
     def and_(
         self,
         *expressions: t.Optional[ExpOrStr],
@@ -884,6 +874,18 @@ class Condition(Expression):
 
     def __invert__(self) -> Not:
         return not_(self.copy())
+
+
+IntoType = t.Union[
+    str,
+    t.Type[Expression],
+    t.Collection[t.Union[str, t.Type[Expression]]],
+]
+ExpOrStr = t.Union[str, Expression]
+
+
+class Condition(Expression):
+    """Logical conditions like x AND y, or simply x"""
 
 
 class Predicate(Condition):

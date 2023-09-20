@@ -577,6 +577,12 @@ class TestTSQL(Validator):
             },
         )
 
+    def test_insert_cte(self):
+        self.validate_all(
+            "INSERT INTO foo.bar WITH cte AS (SELECT 1 AS one) SELECT * FROM cte",
+            write={"tsql": "WITH cte AS (SELECT 1 AS one) INSERT INTO foo.bar SELECT * FROM cte"},
+        )
+
     def test_transaction(self):
         # BEGIN { TRAN | TRANSACTION }
         #    [ { transaction_name | @tran_name_variable }

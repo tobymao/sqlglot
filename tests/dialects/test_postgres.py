@@ -13,6 +13,7 @@ class TestPostgres(Validator):
             "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
             "CREATE TABLE test (x TIMESTAMP[][])",
         )
+        self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
         self.validate_identity("CREATE TABLE test (elems JSONB[])")
         self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
         self.validate_identity("CREATE TABLE test (foo HSTORE)")
@@ -82,6 +83,25 @@ class TestPostgres(Validator):
                 " CHECK (product_no > 1),"
                 " CONSTRAINT valid_discount CHECK (price > discounted_price))"
             },
+        )
+        self.validate_identity(
+            """
+            CREATE INDEX index_ci_builds_on_commit_id_and_artifacts_expireatandidpartial
+            ON public.ci_builds
+            USING btree (commit_id, artifacts_expire_at, id)
+            WHERE (
+                ((type)::text = 'Ci::Build'::text)
+                AND ((retried = false) OR (retried IS NULL))
+                AND ((name)::text = ANY (ARRAY[
+                    ('sast'::character varying)::text,
+                    ('dependency_scanning'::character varying)::text,
+                    ('sast:container'::character varying)::text,
+                    ('container_scanning'::character varying)::text,
+                    ('dast'::character varying)::text
+                ]))
+            )
+            """,
+            "CREATE INDEX index_ci_builds_on_commit_id_and_artifacts_expireatandidpartial ON public.ci_builds USING BTREE(commit_id, artifacts_expire_at, id) WHERE ((CAST((type) AS TEXT) = CAST('Ci::Build' AS TEXT)) AND ((retried = FALSE) OR (retried IS NULL)) AND (CAST((name) AS TEXT) = ANY (ARRAY[CAST((CAST('sast' AS VARCHAR)) AS TEXT), CAST((CAST('dependency_scanning' AS VARCHAR)) AS TEXT), CAST((CAST('sast:container' AS VARCHAR)) AS TEXT), CAST((CAST('container_scanning' AS VARCHAR)) AS TEXT), CAST((CAST('dast' AS VARCHAR)) AS TEXT)])))",
         )
 
         with self.assertRaises(ParseError):

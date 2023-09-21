@@ -51,7 +51,11 @@ class Databricks(Spark):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
-        PARAMETER_TOKEN = "$"
+        def parameter_sql(self, expression: exp.Parameter) -> str:
+            # This corresponds to "widget parameters" in Databricks, i.e. ${x}
+            # https://docs.databricks.com/en/notebooks/widgets.html#language-sql
+            this = self.sql(expression, "this")
+            return f"${{{this}}}" if expression.args.get("wrapped") else this
 
     class Tokenizer(Spark.Tokenizer):
         HEX_STRINGS = []

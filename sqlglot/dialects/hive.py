@@ -376,6 +376,7 @@ class Hive(Dialect):
         INDEX_ON = "ON TABLE"
         EXTRACT_ALLOWS_QUOTES = False
         NVL2_SUPPORTED = False
+        SUPPORTS_PARAMETERS = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

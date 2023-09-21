@@ -1334,3 +1334,21 @@ FROM OPENJSON(@json) WITH (
             },
             pretty=True,
         )
+
+    def test_set(self):
+        self.validate_all(
+            "SET KEY VALUE",
+            write={
+                "tsql": "SET KEY VALUE",
+                "duckdb": "SET KEY = VALUE",
+                "spark": "SET KEY = VALUE",
+            },
+        )
+        self.validate_all(
+            "SET @count = (SELECT COUNT(1) FROM x)",
+            write={
+                "databricks": "SET count = (SELECT COUNT(1) FROM x)",
+                "tsql": "SET @count = (SELECT COUNT(1) FROM x)",
+                "spark": "SET count = (SELECT COUNT(1) FROM x)",
+            },
+        )

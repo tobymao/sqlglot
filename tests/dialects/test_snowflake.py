@@ -888,7 +888,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
             """SELECT $1 AS "_1" FROM VALUES ('a'), ('b')""",
             write={
                 "snowflake": """SELECT $1 AS "_1" FROM (VALUES ('a'), ('b'))""",
-                "spark": """SELECT @1 AS `_1` FROM VALUES ('a'), ('b')""",
+                "spark": """SELECT 1 AS `_1` FROM VALUES ('a'), ('b')""",
             },
         )
 

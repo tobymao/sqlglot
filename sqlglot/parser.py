@@ -2464,7 +2464,7 @@ class Parser(metaclass=_Parser):
             index = self._parse_id_var()
             table = None
 
-        using = self._parse_field() if self._match(TokenType.USING) else None
+        using = self._parse_var(any_token=True) if self._match(TokenType.USING) else None
 
         if self._match(TokenType.L_PAREN, advance=False):
             columns = self._parse_wrapped_csv(self._parse_ordered)

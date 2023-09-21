@@ -757,6 +757,12 @@ class Expression(metaclass=_Expression):
             this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
         )
 
+    def __iter__(self):
+        # We define this because __getitem__ converts Expression into an iterable, which is
+        # problematic because one can hit infinite loops if they do "for x in some_expr: ..."
+        # See: https://peps.python.org/pep-0234/
+        raise TypeError(f"'{self.__class__.__name__}' object is not iterable")
+
     def isin(
         self,
         *expressions: t.Any,

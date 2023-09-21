@@ -1245,6 +1245,13 @@ class Generator:
     def introducer_sql(self, expression: exp.Introducer) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
+    def kill_sql(self, expression: exp.Kill) -> str:
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        return f"KILL{kind}{this}"
+
     def pseudotype_sql(self, expression: exp.PseudoType) -> str:
         return expression.name.upper()
 

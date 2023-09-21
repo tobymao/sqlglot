@@ -1053,6 +1053,10 @@ class Describe(Expression):
     arg_types = {"this": True, "kind": False, "expressions": False}
 
 
+class Kill(Expression):
+    arg_types = {"this": True, "kind": False}
+
+
 class Pragma(Expression):
     pass
 

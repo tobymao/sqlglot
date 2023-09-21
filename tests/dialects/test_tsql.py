@@ -1193,6 +1193,15 @@ WHERE
         self.assertIsInstance(table.this, exp.Parameter)
         self.assertIsInstance(table.this.this, exp.Var)
 
+        self.validate_all(
+            "SELECT @x",
+            write={
+                "databricks": "SELECT ${x}",
+                "spark": "SELECT ${x}",
+                "tsql": "SELECT @x",
+            },
+        )
+
     def test_temp_table(self):
         self.validate_all(
             "SELECT * FROM #mytemptable",

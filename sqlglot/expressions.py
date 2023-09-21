@@ -4016,6 +4016,10 @@ class TimeUnit(Expression):
 
         super().__init__(**args)
 
+    @property
+    def unit(self) -> t.Optional[Var]:
+        return self.args.get("unit")
+
 
 # https://www.oracletutorial.com/oracle-basics/oracle-interval/
 # https://trino.io/docs/current/language/types.html#interval-day-to-second
@@ -4026,10 +4030,6 @@ class IntervalSpan(Expression):
 
 class Interval(TimeUnit):
     arg_types = {"this": False, "unit": False}
-
-    @property
-    def unit(self) -> t.Optional[Var]:
-        return self.args.get("unit")
 
 
 class IgnoreNulls(Expression):
@@ -4403,10 +4403,6 @@ class TimestampDiff(Func, TimeUnit):
 
 class TimestampTrunc(Func, TimeUnit):
     arg_types = {"this": True, "unit": True, "zone": False}
-
-    @property
-    def unit(self) -> Expression:
-        return self.args["unit"]
 
 
 class TimeAdd(Func, TimeUnit):

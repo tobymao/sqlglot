@@ -680,3 +680,80 @@ CONCAT('a', x, y, 'bc');
 
 'a' || 'b' || x;
 CONCAT('ab', x);
+
+--------------------------------------
+-- DATE_TRUNC
+--------------------------------------
+DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
+x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+DATE_TRUNC('quarter', x) = CAST('2021-01-01' AS DATE);
+x < CAST('2021-04-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+DATE_TRUNC('month', x) = CAST('2021-01-01' AS DATE);
+x < CAST('2021-02-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+DATE_TRUNC('week', x) = CAST('2021-01-04' AS DATE);
+x < CAST('2021-01-11' AS DATE) AND x >= CAST('2021-01-04' AS DATE);
+
+DATE_TRUNC('day', x) = CAST('2021-01-01' AS DATE);
+x < CAST('2021-01-02' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+CAST('2021-01-01' AS DATE) = DATE_TRUNC('year', x);
+x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+-- Always false, except for nulls
+DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
+DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
+
+DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
+x < CAST('2021-01-01' AS DATE) AND x >= CAST('2022-01-01' AS DATE);
+
+-- Always true, except for nulls
+DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
+DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
+
+DATE_TRUNC('year', x) <= CAST('2021-01-01' AS DATE);
+x < CAST('2022-01-01' AS DATE);
+
+DATE_TRUNC('year', x) <= CAST('2021-01-02' AS DATE);
+x < CAST('2022-01-01' AS DATE);
+
+CAST('2021-01-01' AS DATE) >= DATE_TRUNC('year', x);
+x < CAST('2022-01-01' AS DATE);
+
+DATE_TRUNC('year', x) < CAST('2021-01-01' AS DATE);
+x < CAST('2021-01-01' AS DATE);
+
+DATE_TRUNC('year', x) < CAST('2021-01-02' AS DATE);
+x < CAST('2021-01-01' AS DATE);
+
+DATE_TRUNC('year', x) >= CAST('2021-01-01' AS DATE);
+x >= CAST('2021-01-01' AS DATE);
+
+DATE_TRUNC('year', x) >= CAST('2021-01-02' AS DATE);
+x >= CAST('2022-01-01' AS DATE);
+
+DATE_TRUNC('year', x) > CAST('2021-01-01' AS DATE);
+x >= CAST('2022-01-01' AS DATE);
+
+DATE_TRUNC('year', x) > CAST('2021-01-02' AS DATE);
+x >= CAST('2022-01-01' AS DATE);
+
+-- right is not a date
+DATE_TRUNC('year', x) <> '2021-01-02';
+DATE_TRUNC('year', x) <> '2021-01-02';
+
+DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2023-01-01' AS DATE));
+(x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE)) OR (x < CAST('2024-01-01' AS DATE) AND x >= CAST('2023-01-01' AS DATE));
+
+-- merge ranges
+DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2022-01-01' AS DATE));
+x < CAST('2023-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+-- one of the values will always be false
+DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2022-01-02' AS DATE));
+x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+TIMESTAMP_TRUNC(x, YEAR) = CAST('2021-01-01' AS DATETIME);
+x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);

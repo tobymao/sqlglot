@@ -757,3 +757,57 @@ x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
 TIMESTAMP_TRUNC(x, YEAR) = CAST('2021-01-01' AS DATETIME);
 x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);
+
+--------------------------------------
+-- EQUALITY
+--------------------------------------
+x + 1 = 3;
+x = 2;
+
+1 + x = 3;
+x = 2;
+
+3 = x + 1;
+x = 2;
+
+x - 1 = 3;
+x = 4;
+
+x + 1 > 3;
+x > 2;
+
+x + 1 >= 3;
+x >= 2;
+
+x + 1 <= 3;
+x <= 2;
+
+x + 1 <= 3;
+x <= 2;
+
+x + 1 <> 3;
+x <> 2;
+
+1 + x + 1 = 3 + 1;
+x = 2;
+
+x - INTERVAL 1 DAY = CAST('2021-01-01' AS DATE);
+x = CAST('2021-01-02' AS DATE);
+
+x - INTERVAL 1 HOUR > CAST('2021-01-01' AS DATETIME);
+x > CAST('2021-01-01 01:00:00' AS DATETIME);
+
+DATETIME_ADD(x, 1, HOUR) < CAST('2021-01-01' AS DATETIME);
+x < CAST('2020-12-31 23:00:00' AS DATETIME);
+
+DATETIME_SUB(x, 1, DAY) >= CAST('2021-01-01' AS DATETIME);
+x >= CAST('2021-01-02 00:00:00' AS DATETIME);
+
+DATE_ADD(x, 1, DAY) <= CAST('2021-01-01' AS DATE);
+x <= CAST('2020-12-31' AS DATE);
+
+DATE_SUB(x, 1, DAY) <> CAST('2021-01-01' AS DATE);
+x <> CAST('2021-01-02' AS DATE);
+
+DATE_ADD(DATE_ADD(DATE_TRUNC('week', DATE_SUB(x, 1, DAY)), 1, DAY), 1, YEAR) < CAST('2021-01-08' AS DATE);
+x < CAST('2020-01-07' AS DATE);

@@ -480,6 +480,16 @@ class Hive(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def parameter_sql(self, expression: exp.Parameter) -> str:
+            this = self.sql(expression, "this")
+            parent = expression.parent
+
+            if isinstance(parent, exp.EQ) and isinstance(parent.parent, exp.SetItem):
+                # We need to produce SET key = value instead of SET ${key} = value
+                return this
+
+            return f"${{{this}}}"
+
         def schema_sql(self, expression: exp.Schema) -> str:
             expression = expression.copy()
 

@@ -236,16 +236,6 @@ class Spark2(Hive):
         WRAP_DERIVED_VALUES = False
         CREATE_FUNCTION_RETURN_AS = False
 
-        def parameter_sql(self, expression: exp.Parameter) -> str:
-            this = self.sql(expression, "this")
-            parent = expression.parent
-
-            if isinstance(parent, exp.EQ) and isinstance(parent.parent, exp.SetItem):
-                # We need to produce SET key = value instead of SET ${key} = value
-                return this
-
-            return f"${{{this}}}"
-
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if is_parse_json(expression.this):
                 schema = f"'{self.sql(expression, 'to')}'"

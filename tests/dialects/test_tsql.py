@@ -1197,6 +1197,7 @@ WHERE
             "SELECT @x",
             write={
                 "databricks": "SELECT ${x}",
+                "hive": "SELECT ${x}",
                 "spark": "SELECT ${x}",
                 "tsql": "SELECT @x",
             },

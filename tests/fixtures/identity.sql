@@ -861,3 +861,6 @@ SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1)
 SELECT next, transform, if
 SELECT "any", "case", "if", "next"
 SELECT x FROM y ORDER BY x ASC
+KILL '123'
+KILL CONNECTION 123
+KILL QUERY '123'

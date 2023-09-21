@@ -278,6 +278,7 @@ class Parser(metaclass=_Parser):
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.KEEP,
+        TokenType.KILL,
         TokenType.LEFT,
         TokenType.LOAD,
         TokenType.MERGE,
@@ -544,6 +545,7 @@ class Parser(metaclass=_Parser):
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.INSERT: lambda self: self._parse_insert(),
+        TokenType.KILL: lambda self: self._parse_kill(),
         TokenType.LOAD: lambda self: self._parse_load(),
         TokenType.MERGE: lambda self: self._parse_merge(),
         TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
@@ -1824,6 +1826,15 @@ class Parser(metaclass=_Parser):
             overwrite=overwrite,
             alternative=alternative,
             ignore=ignore,
+        )
+
+    def _parse_kill(self) -> exp.Kill:
+        kind = exp.var(self._prev.text) if self._match_texts(("CONNECTION", "QUERY")) else None
+
+        return self.expression(
+            exp.Kill,
+            this=self._parse_primary(),
+            kind=kind,
         )
 
     def _parse_on_conflict(self) -> t.Optional[exp.OnConflict]:

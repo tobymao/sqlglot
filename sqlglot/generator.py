@@ -1414,9 +1414,6 @@ class Generator:
             return f"{values} AS {alias}" if alias else values
 
         # Converts `VALUES...` expression into a series of select unions.
-        # Note: If you have a lot of unions then this will result in a large number of recursive statements to
-        # evaluate the expression. You may need to increase `sys.setrecursionlimit` to run and it can also be
-        # very slow.
         expression = expression.copy()
         column_names = expression.alias and expression.args["alias"].columns
 
@@ -1432,14 +1429,22 @@ class Generator:
 
             selects.append(exp.Select(expressions=row))
 
-        subquery_expression: exp.Select | exp.Union = selects[0]
-        if len(selects) > 1:
-            for select in selects[1:]:
-                subquery_expression = exp.union(
-                    subquery_expression, select, distinct=False, copy=False
-                )
+        if self.pretty:
+            # This may result in poor performance for large-cardinality `VALUES` tables, due to
+            # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
+            # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
+            subquery_expression: exp.Select | exp.Union = selects[0]
+            if len(selects) > 1:
+                for select in selects[1:]:
+                    subquery_expression = exp.union(
+                        subquery_expression, select, distinct=False, copy=False
+                    )
 
-        return self.subquery_sql(subquery_expression.subquery(expression.alias, copy=False))
+            return self.subquery_sql(subquery_expression.subquery(expression.alias, copy=False))
+
+        alias = f" AS {expression.alias}" if expression.alias else ""
+        unions = " UNION ALL ".join(self.sql(select) for select in selects)
+        return f"({unions}){alias}"
 
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")

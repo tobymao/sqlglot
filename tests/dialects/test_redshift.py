@@ -1,3 +1,4 @@
+from sqlglot import transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -270,6 +271,26 @@ class TestRedshift(Validator):
         )
 
     def test_values(self):
+        # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
+        values = [str(v) for v in range(0, 10000)]
+        values_query = f"SELECT * FROM (VALUES {', '.join('(' + v + ')' for v in values)})"
+        union_query = f"SELECT * FROM ({' UNION ALL '.join('SELECT ' + v for v in values)})"
+        self.assertEqual(transpile(values_query, write="redshift")[0], union_query)
+
+        self.validate_identity(
+            "SELECT * FROM (VALUES (1), (2))",
+            """SELECT
+  *
+FROM (
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    2
+)""",
+            pretty=True,
+        )
+
         self.validate_all(
             "SELECT * FROM (VALUES (1, 2)) AS t",
             write={

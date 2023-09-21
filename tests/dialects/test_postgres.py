@@ -159,6 +159,11 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.AlterTable)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        oid_table = "CREATE TABLE public.propertydata (propertyvalue oid)"
+        expr = parse_one(oid_table)
+        oid_type = expr.find(exp.ColumnDef).find(exp.DataType).this
+        self.assertEqual(oid_type, exp.DataType.Type.OID)
+
         self.validate_identity(
             """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE CASCADE"""
         )

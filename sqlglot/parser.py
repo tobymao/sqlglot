@@ -200,6 +200,7 @@ class Parser(metaclass=_Parser):
         TokenType.VARIANT,
         TokenType.OBJECT,
         TokenType.OBJECT_IDENTIFIER,
+        TokenType.OID,
         TokenType.INET,
         TokenType.IPADDRESS,
         TokenType.IPPREFIX,

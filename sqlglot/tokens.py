@@ -154,6 +154,7 @@ class TokenType(AutoName):
     IMAGE = auto()
     VARIANT = auto()
     OBJECT = auto()
+    OID = auto()
     INET = auto()
     IPADDRESS = auto()
     IPPREFIX = auto()
@@ -608,6 +609,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "NOTNULL": TokenType.NOTNULL,
         "NULL": TokenType.NULL,
         "OBJECT": TokenType.OBJECT,
+        "OID": TokenType.OID,
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
         "OR": TokenType.OR,

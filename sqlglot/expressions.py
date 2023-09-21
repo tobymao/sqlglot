@@ -3534,6 +3534,7 @@ class DataType(Expression):
         NUMRANGE = auto()
         NVARCHAR = auto()
         OBJECT = auto()
+        OID = auto()
         ROWVERSION = auto()
         SERIAL = auto()
         SET = auto()

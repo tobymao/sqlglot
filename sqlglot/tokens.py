@@ -247,6 +247,7 @@ class TokenType(AutoName):
     JOIN = auto()
     JOIN_MARKER = auto()
     KEEP = auto()
+    KILL = auto()
     LANGUAGE = auto()
     LATERAL = auto()
     LEFT = auto()
@@ -595,6 +596,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "ISNULL": TokenType.ISNULL,
         "JOIN": TokenType.JOIN,
         "KEEP": TokenType.KEEP,
+        "KILL": TokenType.KILL,
         "LATERAL": TokenType.LATERAL,
         "LEFT": TokenType.LEFT,
         "LIKE": TokenType.LIKE,

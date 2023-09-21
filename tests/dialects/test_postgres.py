@@ -163,6 +163,10 @@ class TestPostgres(Validator):
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
         self.validate_identity(
+            "SELECT ARRAY[]::INT[] AS foo",
+            "SELECT CAST(ARRAY[] AS INT[]) AS foo",
+        )
+        self.validate_identity(
             """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE CASCADE"""
         )
         self.validate_identity(

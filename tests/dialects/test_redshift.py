@@ -277,6 +277,20 @@ class TestRedshift(Validator):
         union_query = f"SELECT * FROM ({' UNION ALL '.join('SELECT ' + v for v in values)})"
         self.assertEqual(transpile(values_query, write="redshift")[0], union_query)
 
+        self.validate_identity(
+            "SELECT * FROM (VALUES (1), (2))",
+            """SELECT
+  *
+FROM (
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    2
+)""",
+            pretty=True,
+        )
+
         self.validate_all(
             "SELECT * FROM (VALUES (1, 2)) AS t",
             write={

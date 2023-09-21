@@ -1422,6 +1422,19 @@ class Generator:
 
             selects.append(exp.Select(expressions=row))
 
+        if self.pretty:
+            # This may result in poor performance for large-cardinality `VALUES` tables, due to
+            # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
+            # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
+            subquery_expression: exp.Select | exp.Union = selects[0]
+            if len(selects) > 1:
+                for select in selects[1:]:
+                    subquery_expression = exp.union(
+                        subquery_expression, select, distinct=False, copy=False
+                    )
+
+            return self.subquery_sql(subquery_expression.subquery(expression.alias, copy=False))
+
         alias = f" AS {expression.alias}" if expression.alias else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
         return f"({unions}){alias}"

@@ -14,6 +14,11 @@ class TestExpressions(unittest.TestCase):
     def test_depth(self):
         self.assertEqual(parse_one("x(1)").find(exp.Literal).depth, 1)
 
+    def test_iter(self):
+        with self.assertRaises(TypeError):
+            for x in parse_one("SELECT 1"):
+                pass
+
     def test_eq(self):
         self.assertNotEqual(exp.to_identifier("a"), exp.to_identifier("A"))
 

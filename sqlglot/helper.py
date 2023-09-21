@@ -380,7 +380,9 @@ def is_iterable(value: t.Any) -> bool:
     Returns:
         A `bool` value indicating if it is an iterable.
     """
-    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes))
+    from sqlglot import Expression
+
+    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, Expression))
 
 
 def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:

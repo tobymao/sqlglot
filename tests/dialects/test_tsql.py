@@ -1193,6 +1193,16 @@ WHERE
         self.assertIsInstance(table.this, exp.Parameter)
         self.assertIsInstance(table.this.this, exp.Var)
 
+        self.validate_all(
+            "SELECT @x",
+            write={
+                "databricks": "SELECT ${x}",
+                "hive": "SELECT ${x}",
+                "spark": "SELECT ${x}",
+                "tsql": "SELECT @x",
+            },
+        )
+
     def test_temp_table(self):
         self.validate_all(
             "SELECT * FROM #mytemptable",
@@ -1333,4 +1343,22 @@ FROM OPENJSON(@json) WITH (
 )"""
             },
             pretty=True,
+        )
+
+    def test_set(self):
+        self.validate_all(
+            "SET KEY VALUE",
+            write={
+                "tsql": "SET KEY VALUE",
+                "duckdb": "SET KEY = VALUE",
+                "spark": "SET KEY = VALUE",
+            },
+        )
+        self.validate_all(
+            "SET @count = (SELECT COUNT(1) FROM x)",
+            write={
+                "databricks": "SET count = (SELECT COUNT(1) FROM x)",
+                "tsql": "SET @count = (SELECT COUNT(1) FROM x)",
+                "spark": "SET count = (SELECT COUNT(1) FROM x)",
+            },
         )

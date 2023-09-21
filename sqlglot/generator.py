@@ -197,6 +197,9 @@ class Generator:
     # Whether or not JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
     SEMI_ANTI_JOIN_WITH_SIDE = True
 
+    # Whether or not session variables / parameters are supported, e.g. @x in T-SQL
+    SUPPORTS_PARAMETERS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1840,8 +1843,7 @@ class Generator:
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
         this = self.sql(expression, "this")
-        this = f"{{{this}}}" if expression.args.get("wrapped") else f"{this}"
-        return f"{self.PARAMETER_TOKEN}{this}"
+        return f"{self.PARAMETER_TOKEN}{this}" if self.SUPPORTS_PARAMETERS else this
 
     def sessionparameter_sql(self, expression: exp.SessionParameter) -> str:
         this = self.sql(expression, "this")

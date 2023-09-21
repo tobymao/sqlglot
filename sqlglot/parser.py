@@ -878,6 +878,9 @@ class Parser(metaclass=_Parser):
     # Whether or not the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
 
+    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments.
+    SET_REQUIRES_ASSIGNMENT_DELIMITER = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -4945,8 +4948,9 @@ class Parser(metaclass=_Parser):
             return self._parse_set_transaction(global_=kind == "GLOBAL")
 
         left = self._parse_primary() or self._parse_id_var()
+        assignment_delimiter = self._match_texts(("=", "TO"))
 
-        if not self._match_texts(("=", "TO")):
+        if not left or (self.SET_REQUIRES_ASSIGNMENT_DELIMITER and not assignment_delimiter):
             self._retreat(index)
             return None
 

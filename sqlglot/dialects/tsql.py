@@ -347,6 +347,8 @@ class TSQL(Dialect):
         }
 
     class Parser(parser.Parser):
+        SET_REQUIRES_ASSIGNMENT_DELIMITER = False
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CHARINDEX": lambda args: exp.StrPosition(
@@ -636,6 +638,14 @@ class TSQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def setitem_sql(self, expression: exp.SetItem) -> str:
+            this = expression.this
+            if isinstance(this, exp.EQ) and not isinstance(this.left, exp.Parameter):
+                # T-SQL does not use '=' in SET command, except when the LHS is a variable.
+                return f"{self.sql(this.left)} {self.sql(this.right)}"
+
+            return super().setitem_sql(expression)
 
         def boolean_sql(self, expression: exp.Boolean) -> str:
             if type(expression.parent) in BIT_TYPES:

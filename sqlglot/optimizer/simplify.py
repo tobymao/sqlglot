@@ -445,7 +445,7 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
             return expression
 
         return expression.__class__(
-            this=a.copy(), expression=INVERSE_OPS[l.__class__](this=r.copy(), expression=b.copy())
+            this=a, expression=INVERSE_OPS[l.__class__](this=r, expression=b)
         )
     return expression
 

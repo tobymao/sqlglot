@@ -30,6 +30,7 @@ setup(
             "python-dateutil",
             "pdoc",
             "pre-commit",
+            "types-python-dateutil",
         ],
     },
     classifiers=[

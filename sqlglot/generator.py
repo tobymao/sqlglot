@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 from collections import defaultdict
+from functools import reduce
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
@@ -1437,11 +1438,7 @@ class Generator:
             # This may result in poor performance for large-cardinality `VALUES` tables, due to
             # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
             # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
-            subqueryable: exp.Subqueryable = selects[0]
-            if len(selects) > 1:
-                for select in selects[1:]:
-                    subqueryable = exp.union(subqueryable, select, distinct=False, copy=False)
-
+            subqueryable = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
             return self.subquery_sql(
                 subqueryable.subquery(alias_node and alias_node.this, copy=False)
             )

@@ -1410,32 +1410,18 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("SQL", "SECURITY"):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
-        assignment = self._match_pair(
-            TokenType.VAR, TokenType.EQ, advance=False
-        ) or self._match_pair(TokenType.STRING, TokenType.EQ, advance=False)
+        index = self._index
+        key = self._parse_column()
 
-        if assignment:
-            key = self._parse_var_or_string()
-            self._match(TokenType.EQ)
-            return self.expression(
-                exp.Property,
-                this=key,
-                value=self._parse_column() or self._parse_var(any_token=True),
-            )
-        else:
-            index = self._index
-            key = self._parse_column()
-            if not self._match(TokenType.EQ):
-                self._retreat(index)
-                return None
+        if not self._match(TokenType.EQ):
+            self._retreat(index)
+            return None
 
-            return self.expression(
-                exp.Property,
-                this=key.to_dot() if isinstance(key, exp.Column) else key,
-                value=self._parse_column() or self._parse_var(any_token=True),
-            )
-
-        return None
+        return self.expression(
+            exp.Property,
+            this=key.to_dot() if isinstance(key, exp.Column) else key,
+            value=self._parse_column() or self._parse_var(any_token=True),
+        )
 
     def _parse_stored(self) -> exp.FileFormatProperty:
         self._match(TokenType.ALIAS)

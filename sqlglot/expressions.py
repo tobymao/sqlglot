@@ -1175,7 +1175,7 @@ class Column(Condition):
             if self.args.get(part)
         ]
 
-    def to_dot(self) -> Dot:
+    def to_dot(self) -> Dot | Identifier:
         """Converts the column into a dot expression."""
         parts = self.parts
         parent = self.parent
@@ -1185,7 +1185,7 @@ class Column(Condition):
                 parts.append(parent.expression)
             parent = parent.parent
 
-        return Dot.build(deepcopy(parts))
+        return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 
 
 class ColumnPosition(Expression):

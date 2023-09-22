@@ -3249,8 +3249,8 @@ class Parser(metaclass=_Parser):
             return self.UNARY_PARSERS[self._prev.token_type](self)
         return self._parse_at_time_zone(self._parse_type())
 
-    def _parse_type(self) -> t.Optional[exp.Expression]:
-        interval = self._parse_interval()
+    def _parse_type(self, parse_interval: bool = True) -> t.Optional[exp.Expression]:
+        interval = parse_interval and self._parse_interval()
         if interval:
             return interval
 
@@ -3426,11 +3426,7 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_struct_types(self) -> t.Optional[exp.Expression]:
-        if self._next and self._next.token_type == TokenType.COLON:
-            this = self._parse_id_var()
-        else:
-            this = self._parse_type() or self._parse_id_var()
-
+        this = self._parse_type(parse_interval=False) or self._parse_id_var()
         self._match(TokenType.COLON)
         return self._parse_column_def(this)
 

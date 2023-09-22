@@ -1085,11 +1085,9 @@ class Generator:
         return properties_locs
 
     def property_name(self, expression: exp.Property, string_key: bool = False) -> str:
-        return (
-            self.sql(expression, "this")
-            if isinstance(expression.this, exp.Dot)
-            else (f"'{expression.name}'" if string_key else expression.name)
-        )
+        if isinstance(expression.this, exp.Dot):
+            return self.sql(expression, "this")
+        return f"'{expression.name}'" if string_key else expression.name
 
     def property_sql(self, expression: exp.Property) -> str:
         property_cls = expression.__class__

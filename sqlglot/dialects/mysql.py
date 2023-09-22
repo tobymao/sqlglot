@@ -520,7 +520,7 @@ class MySQL(Dialect):
 
             return self.expression(exp.SetItem, this=charset, collate=collate, kind="NAMES")
 
-        def _parse_type(self) -> t.Optional[exp.Expression]:
+        def _parse_type(self, parse_interval: bool = True) -> t.Optional[exp.Expression]:
             # mysql binary is special and can work anywhere, even in order by operations
             # it operates like a no paren func
             if self._match(TokenType.BINARY, advance=False):
@@ -529,7 +529,7 @@ class MySQL(Dialect):
                 if isinstance(data_type, exp.DataType):
                     return self.expression(exp.Cast, this=self._parse_column(), to=data_type)
 
-            return super()._parse_type()
+            return super()._parse_type(parse_interval=parse_interval)
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

@@ -5,6 +5,7 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        self.validate_identity("CREATE TABLE t (c STRUCT<interval: DOUBLE COMMENT 'aaa'>)")
         self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO HOUR)")
         self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO MINUTE)")
         self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO SECOND)")

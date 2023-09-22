@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import typing as t
 from collections import defaultdict
+from functools import reduce
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
@@ -98,6 +99,9 @@ class Generator:
         exp.VolatileProperty: lambda self, e: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
     }
+
+    # Whether the base comes first
+    LOG_BASE_FIRST = True
 
     # Whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
@@ -196,6 +200,9 @@ class Generator:
 
     # Whether or not JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
     SEMI_ANTI_JOIN_WITH_SIDE = True
+
+    # Whether or not session variables / parameters are supported, e.g. @x in T-SQL
+    SUPPORTS_PARAMETERS = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -992,13 +999,14 @@ class Generator:
         table = self.sql(expression, "table")
         table = f"{self.INDEX_ON} {table}" if table else ""
         using = self.sql(expression, "using")
-        using = f" USING {using} " if using else ""
+        using = f" USING {using}" if using else ""
         index = "INDEX " if not table else ""
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
         partition_by = self.expressions(expression, key="partition_by", flat=True)
         partition_by = f" PARTITION BY {partition_by}" if partition_by else ""
-        return f"{unique}{primary}{amp}{index}{name}{table}{using}{columns}{partition_by}"
+        where = self.sql(expression, "where")
+        return f"{unique}{primary}{amp}{index}{name}{table}{using}{columns}{partition_by}{where}"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name
@@ -1077,10 +1085,15 @@ class Generator:
 
         return properties_locs
 
+    def property_name(self, expression: exp.Property, string_key: bool = False) -> str:
+        if isinstance(expression.this, exp.Dot):
+            return self.sql(expression, "this")
+        return f"'{expression.name}'" if string_key else expression.name
+
     def property_sql(self, expression: exp.Property) -> str:
         property_cls = expression.__class__
         if property_cls == exp.Property:
-            return f"{expression.name}={self.sql(expression, 'value')}"
+            return f"{self.property_name(expression)}={self.sql(expression, 'value')}"
 
         property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
         if not property_name:
@@ -1240,6 +1253,13 @@ class Generator:
 
     def introducer_sql(self, expression: exp.Introducer) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
+
+    def kill_sql(self, expression: exp.Kill) -> str:
+        kind = self.sql(expression, "kind")
+        kind = f" {kind}" if kind else ""
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        return f"KILL{kind}{this}"
 
     def pseudotype_sql(self, expression: exp.PseudoType) -> str:
         return expression.name.upper()
@@ -1403,13 +1423,11 @@ class Generator:
             return f"{values} AS {alias}" if alias else values
 
         # Converts `VALUES...` expression into a series of select unions.
-        # Note: If you have a lot of unions then this will result in a large number of recursive statements to
-        # evaluate the expression. You may need to increase `sys.setrecursionlimit` to run and it can also be
-        # very slow.
         expression = expression.copy()
-        column_names = expression.alias and expression.args["alias"].columns
+        alias_node = expression.args.get("alias")
+        column_names = alias_node and alias_node.columns
 
-        selects = []
+        selects: t.List[exp.Subqueryable] = []
 
         for i, tup in enumerate(expression.expressions):
             row = tup.expressions
@@ -1421,14 +1439,18 @@ class Generator:
 
             selects.append(exp.Select(expressions=row))
 
-        subquery_expression: exp.Select | exp.Union = selects[0]
-        if len(selects) > 1:
-            for select in selects[1:]:
-                subquery_expression = exp.union(
-                    subquery_expression, select, distinct=False, copy=False
-                )
+        if self.pretty:
+            # This may result in poor performance for large-cardinality `VALUES` tables, due to
+            # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
+            # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
+            subqueryable = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
+            return self.subquery_sql(
+                subqueryable.subquery(alias_node and alias_node.this, copy=False)
+            )
 
-        return self.subquery_sql(subquery_expression.subquery(expression.alias, copy=False))
+        alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
+        unions = " UNION ALL ".join(self.sql(select) for select in selects)
+        return f"({unions}){alias}"
 
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")
@@ -1839,8 +1861,7 @@ class Generator:
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
         this = self.sql(expression, "this")
-        this = f"{{{this}}}" if expression.args.get("wrapped") else f"{this}"
-        return f"{self.PARAMETER_TOKEN}{this}"
+        return f"{self.PARAMETER_TOKEN}{this}" if self.SUPPORTS_PARAMETERS else this
 
     def sessionparameter_sql(self, expression: exp.SessionParameter) -> str:
         this = self.sql(expression, "this")
@@ -2508,6 +2529,12 @@ class Generator:
 
     def trycast_sql(self, expression: exp.TryCast) -> str:
         return self.cast_sql(expression, safe_prefix="TRY_")
+
+    def log_sql(self, expression: exp.Log) -> str:
+        args = list(expression.args.values())
+        if not self.LOG_BASE_FIRST:
+            args.reverse()
+        return self.func("LOG", *args)
 
     def use_sql(self, expression: exp.Use) -> str:
         kind = self.sql(expression, "kind")

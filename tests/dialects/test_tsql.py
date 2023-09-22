@@ -198,6 +198,7 @@ class TestTSQL(Validator):
             },
         )
         self.validate_identity("HASHBYTES('MD2', 'x')")
+        self.validate_identity("LOG(n, b)")
 
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")
@@ -534,6 +535,12 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE table_name = 'baz' AND table_schema = 'bar' AND table_catalog = 'foo') EXEC('SELECT * INTO foo.bar.baz FROM (SELECT ''2020'' AS z FROM a.b.c) AS temp')",
+            read={
+                "": "CREATE TABLE IF NOT EXISTS foo.bar.baz AS SELECT '2020' AS z FROM a.b.c",
+            },
+        )
+        self.validate_all(
             "CREATE OR ALTER VIEW a.b AS SELECT 1",
             read={
                 "": "CREATE OR REPLACE VIEW a.b AS SELECT 1",
@@ -572,6 +579,12 @@ class TestTSQL(Validator):
                 "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "oracle": "CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
             },
+        )
+
+    def test_insert_cte(self):
+        self.validate_all(
+            "INSERT INTO foo.bar WITH cte AS (SELECT 1 AS one) SELECT * FROM cte",
+            write={"tsql": "WITH cte AS (SELECT 1 AS one) INSERT INTO foo.bar SELECT * FROM cte"},
         )
 
     def test_transaction(self):
@@ -1184,6 +1197,16 @@ WHERE
         self.assertIsInstance(table.this, exp.Parameter)
         self.assertIsInstance(table.this.this, exp.Var)
 
+        self.validate_all(
+            "SELECT @x",
+            write={
+                "databricks": "SELECT ${x}",
+                "hive": "SELECT ${x}",
+                "spark": "SELECT ${x}",
+                "tsql": "SELECT @x",
+            },
+        )
+
     def test_temp_table(self):
         self.validate_all(
             "SELECT * FROM #mytemptable",
@@ -1324,4 +1347,22 @@ FROM OPENJSON(@json) WITH (
 )"""
             },
             pretty=True,
+        )
+
+    def test_set(self):
+        self.validate_all(
+            "SET KEY VALUE",
+            write={
+                "tsql": "SET KEY VALUE",
+                "duckdb": "SET KEY = VALUE",
+                "spark": "SET KEY = VALUE",
+            },
+        )
+        self.validate_all(
+            "SET @count = (SELECT COUNT(1) FROM x)",
+            write={
+                "databricks": "SET count = (SELECT COUNT(1) FROM x)",
+                "tsql": "SET @count = (SELECT COUNT(1) FROM x)",
+                "spark": "SET count = (SELECT COUNT(1) FROM x)",
+            },
         )

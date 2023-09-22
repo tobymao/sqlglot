@@ -178,6 +178,7 @@ class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
+    LOG_BASE_FIRST = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -265,7 +266,6 @@ class BigQuery(Dialect):
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True
 
-        LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
         FUNCTIONS = {
@@ -342,6 +342,9 @@ class BigQuery(Dialect):
             **parser.Parser.CONSTRAINT_PARSERS,
             "OPTIONS": lambda self: exp.Properties(expressions=self._parse_with_property()),
         }
+
+        RANGE_PARSERS = parser.Parser.RANGE_PARSERS.copy()
+        RANGE_PARSERS.pop(TokenType.OVERLAPS, None)
 
         NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
 

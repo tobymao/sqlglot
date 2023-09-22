@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     create_with_partitions_sql,
     format_time_lambda,
     is_parse_json,
+    move_insert_cte_sql,
     pivot_column_names,
     rename_func,
     trim_sql,
@@ -115,13 +116,6 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _insert_sql(self: Spark2.Generator, expression: exp.Insert) -> str:
-    if expression.expression.args.get("with"):
-        expression = expression.copy()
-        expression.set("with", expression.expression.args.pop("with"))
-    return self.insert_sql(expression)
-
-
 class Spark2(Hive):
     class Parser(Hive.Parser):
         FUNCTIONS = {
@@ -206,7 +200,7 @@ class Spark2(Hive):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.From: transforms.preprocess([_unalias_pivot]),
-            exp.Insert: _insert_sql,
+            exp.Insert: move_insert_cte_sql,
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,

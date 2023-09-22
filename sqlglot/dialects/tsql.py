@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     any_value_to_max_sql,
     max_or_greatest,
     min_or_least,
+    move_insert_cte_sql,
     parse_date_delta,
     rename_func,
     timestrtotime_sql,
@@ -207,6 +208,7 @@ class TSQL(Dialect):
     NULL_ORDERING = "nulls_are_small"
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
     SUPPORTS_SEMI_ANTI_JOIN = False
+    LOG_BASE_FIRST = False
 
     TIME_MAPPING = {
         "year": "%Y",
@@ -346,6 +348,8 @@ class TSQL(Dialect):
         }
 
     class Parser(parser.Parser):
+        SET_REQUIRES_ASSIGNMENT_DELIMITER = False
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CHARINDEX": lambda args: exp.StrPosition(
@@ -397,7 +401,6 @@ class TSQL(Dialect):
             TokenType.END: lambda self: self._parse_command(),
         }
 
-        LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
         CONCAT_NULL_OUTPUTS_STRING = True
@@ -610,6 +613,7 @@ class TSQL(Dialect):
             exp.Extract: rename_func("DATEPART"),
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
+            exp.Insert: move_insert_cte_sql,
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
@@ -634,6 +638,14 @@ class TSQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def setitem_sql(self, expression: exp.SetItem) -> str:
+            this = expression.this
+            if isinstance(this, exp.EQ) and not isinstance(this.left, exp.Parameter):
+                # T-SQL does not use '=' in SET command, except when the LHS is a variable.
+                return f"{self.sql(this.left)} {self.sql(this.right)}"
+
+            return super().setitem_sql(expression)
 
         def boolean_sql(self, expression: exp.Boolean) -> str:
             if type(expression.parent) in BIT_TYPES:
@@ -671,8 +683,9 @@ class TSQL(Dialect):
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))
+                sql = self.sql(exp.Literal.string(sql))
                 if kind == "SCHEMA":
-                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC('{sql}')"""
+                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = {identifier}) EXEC({sql})"""
                 elif kind == "TABLE":
                     assert table
                     where = exp.and_(
@@ -680,10 +693,10 @@ class TSQL(Dialect):
                         exp.column("table_schema").eq(table.db) if table.db else None,
                         exp.column("table_catalog").eq(table.catalog) if table.catalog else None,
                     )
-                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC('{sql}')"""
+                    sql = f"""IF NOT EXISTS (SELECT * FROM information_schema.tables WHERE {where}) EXEC({sql})"""
                 elif kind == "INDEX":
                     index = self.sql(exp.Literal.string(expression.this.text("this")))
-                    sql = f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC('{sql}')"""
+                    sql = f"""IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id({identifier}) AND name = {index}) EXEC({sql})"""
             elif expression.args.get("replace"):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 

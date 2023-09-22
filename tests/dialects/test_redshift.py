@@ -1,3 +1,4 @@
+from sqlglot import transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -270,6 +271,26 @@ class TestRedshift(Validator):
         )
 
     def test_values(self):
+        # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
+        values = [str(v) for v in range(0, 10000)]
+        values_query = f"SELECT * FROM (VALUES {', '.join('(' + v + ')' for v in values)})"
+        union_query = f"SELECT * FROM ({' UNION ALL '.join('SELECT ' + v for v in values)})"
+        self.assertEqual(transpile(values_query, write="redshift")[0], union_query)
+
+        self.validate_identity(
+            "SELECT * FROM (VALUES (1), (2))",
+            """SELECT
+  *
+FROM (
+  SELECT
+    1
+  UNION ALL
+  SELECT
+    2
+)""",
+            pretty=True,
+        )
+
         self.validate_all(
             "SELECT * FROM (VALUES (1, 2)) AS t",
             write={
@@ -291,9 +312,9 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
-            "SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
+            'SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS "t" (a, b)',
             write={
-                "redshift": "SELECT a, b FROM (SELECT 1 AS a, 2 AS b UNION ALL SELECT 3, 4) AS t",
+                "redshift": 'SELECT a, b FROM (SELECT 1 AS a, 2 AS b UNION ALL SELECT 3, 4) AS "t"',
             },
         )
         self.validate_all(
@@ -319,6 +340,16 @@ class TestRedshift(Validator):
             write={
                 "redshift": "INSERT INTO t (a, b) VALUES (1, 2), (3, 4)",
             },
+        )
+        self.validate_identity(
+            'SELECT * FROM (VALUES (1)) AS "t"(a)',
+            '''SELECT
+  *
+FROM (
+  SELECT
+    1 AS a
+) AS "t"''',
+            pretty=True,
         )
 
     def test_create_table_like(self):

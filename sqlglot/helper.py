@@ -13,8 +13,9 @@ from itertools import count
 
 if t.TYPE_CHECKING:
     from sqlglot import exp
-    from sqlglot._typing import E, T
+    from sqlglot._typing import A, E, T
     from sqlglot.expressions import Expression
+
 
 CAMEL_CASE_PATTERN = re.compile("(?<!^)(?=[A-Z])")
 PYTHON_VERSION = sys.version_info[:2]
@@ -379,7 +380,9 @@ def is_iterable(value: t.Any) -> bool:
     Returns:
         A `bool` value indicating if it is an iterable.
     """
-    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes))
+    from sqlglot import Expression
+
+    return hasattr(value, "__iter__") and not isinstance(value, (str, bytes, Expression))
 
 
 def flatten(values: t.Iterable[t.Iterable[t.Any] | t.Any]) -> t.Iterator[t.Any]:
@@ -435,3 +438,22 @@ def dict_depth(d: t.Dict) -> int:
 def first(it: t.Iterable[T]) -> T:
     """Returns the first element from an iterable (useful for sets)."""
     return next(i for i in it)
+
+
+def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:
+    if not ranges:
+        return []
+
+    ranges = sorted(ranges)
+
+    merged = [ranges[0]]
+
+    for start, end in ranges[1:]:
+        last_start, last_end = merged[-1]
+
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
+        else:
+            merged.append((start, end))
+
+    return merged

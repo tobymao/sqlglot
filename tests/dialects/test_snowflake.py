@@ -279,13 +279,13 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT * EXCLUDE a, b FROM xxx",
             write={
-                "snowflake": "SELECT * EXCLUDE (a, b) FROM xxx",
+                "snowflake": "SELECT * EXCLUDE (a), b FROM xxx",
             },
         )
         self.validate_all(
             "SELECT * RENAME a AS b, c AS d FROM xxx",
             write={
-                "snowflake": "SELECT * RENAME (a AS b, c AS d) FROM xxx",
+                "snowflake": "SELECT * RENAME (a AS b), c AS d FROM xxx",
             },
         )
         self.validate_all(
@@ -888,7 +888,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f, LATERA
             """SELECT $1 AS "_1" FROM VALUES ('a'), ('b')""",
             write={
                 "snowflake": """SELECT $1 AS "_1" FROM (VALUES ('a'), ('b'))""",
-                "spark": """SELECT @1 AS `_1` FROM VALUES ('a'), ('b')""",
+                "spark": """SELECT ${1} AS `_1` FROM VALUES ('a'), ('b')""",
             },
         )
 

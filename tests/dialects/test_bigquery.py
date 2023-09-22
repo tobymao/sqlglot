@@ -107,6 +107,10 @@ class TestBigQuery(Validator):
             "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
         )
         self.validate_identity(
+            "SELECT a overlaps",
+            "SELECT a AS overlaps",
+        )
+        self.validate_identity(
             "SELECT y + 1 z FROM x GROUP BY y + 1 ORDER BY z",
             "SELECT y + 1 AS z FROM x GROUP BY z ORDER BY z",
         )
@@ -706,6 +710,8 @@ WHERE
             pretty=True,
         )
 
+        self.validate_identity("LOG(n, b)")
+
     def test_user_defined_functions(self):
         self.validate_identity(
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"
@@ -714,6 +720,10 @@ WHERE
         self.validate_identity("CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) AS ((x + 4) / y)")
         self.validate_identity(
             "CREATE TABLE FUNCTION a(x INT64) RETURNS TABLE <q STRING, r INT64> AS SELECT s, t"
+        )
+        self.validate_identity(
+            '''CREATE TEMPORARY FUNCTION string_length_0(strings ARRAY<STRING>) RETURNS FLOAT64 LANGUAGE js AS """'use strict'; function string_length(strings) { return _.sum(_.map(strings, ((x) => x.length))); } return string_length(strings);""" OPTIONS (library=['gs://ibis-testing-libraries/lodash.min.js'])''',
+            "CREATE TEMPORARY FUNCTION string_length_0(strings ARRAY<STRING>) RETURNS FLOAT64 LANGUAGE js OPTIONS (library=['gs://ibis-testing-libraries/lodash.min.js']) AS '\\'use strict\\'; function string_length(strings) { return _.sum(_.map(strings, ((x) => x.length))); } return string_length(strings);'",
         )
 
     def test_group_concat(self):

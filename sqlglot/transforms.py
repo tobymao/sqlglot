@@ -188,22 +188,27 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
             )
 
             # we use list here because expression.selects is mutated inside the loop
-            for select in list(expression.selects):
-                to_replace = select
-                pos_alias = ""
-                explode_alias = ""
+            for select in expression.selects.copy():
+                explode = select.find(exp.Explode, exp.Posexplode)
 
-                if isinstance(select, exp.Alias):
-                    explode_alias = select.alias
-                    select = select.this
-                elif isinstance(select, exp.Aliases):
-                    pos_alias = select.aliases[0].name
-                    explode_alias = select.aliases[1].name
-                    select = select.this
+                if isinstance(explode, (exp.Explode, exp.Posexplode)):
+                    pos_alias = ""
+                    explode_alias = ""
 
-                if isinstance(select, (exp.Explode, exp.Posexplode)):
-                    is_posexplode = isinstance(select, exp.Posexplode)
-                    explode_arg = select.this
+                    if isinstance(select, exp.Alias):
+                        explode_alias = select.alias
+                        alias = select
+                    elif isinstance(select, exp.Aliases):
+                        pos_alias = select.aliases[0].name
+                        explode_alias = select.aliases[1].name
+                        alias = select.replace(exp.alias_(select.this, "", copy=False))
+                    else:
+                        alias = select.replace(exp.alias_(select, ""))
+                        explode = alias.find(exp.Explode, exp.Posexplode)
+                        assert explode
+
+                    is_posexplode = isinstance(explode, exp.Posexplode)
+                    explode_arg = explode.this
 
                     # This ensures that we won't use [POS]EXPLODE's argument as a new selection
                     if isinstance(explode_arg, exp.Column):
@@ -220,26 +225,25 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                     if not pos_alias:
                         pos_alias = new_name(taken_select_names, "pos")
 
+                    alias.set("alias", exp.to_identifier(explode_alias))
+
                     column = exp.If(
                         this=exp.column(series_alias).eq(exp.column(pos_alias)),
                         true=exp.column(explode_alias),
-                    ).as_(explode_alias)
+                    )
+
+                    explode.replace(column)
 
                     if is_posexplode:
                         expressions = expression.expressions
-                        index = expressions.index(to_replace)
-                        expressions.pop(index)
-                        expressions.insert(index, column)
                         expressions.insert(
-                            index + 1,
+                            expressions.index(alias) + 1,
                             exp.If(
                                 this=exp.column(series_alias).eq(exp.column(pos_alias)),
                                 true=exp.column(pos_alias),
                             ).as_(pos_alias),
                         )
                         expression.set("expressions", expressions)
-                    else:
-                        to_replace.replace(column)
 
                     if not arrays:
                         if expression.args.get("from"):

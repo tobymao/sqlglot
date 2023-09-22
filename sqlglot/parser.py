@@ -278,6 +278,7 @@ class Parser(metaclass=_Parser):
         TokenType.ISNULL,
         TokenType.INTERVAL,
         TokenType.KEEP,
+        TokenType.KILL,
         TokenType.LEFT,
         TokenType.LOAD,
         TokenType.MERGE,
@@ -285,6 +286,7 @@ class Parser(metaclass=_Parser):
         TokenType.NEXT,
         TokenType.OFFSET,
         TokenType.ORDINALITY,
+        TokenType.OVERLAPS,
         TokenType.OVERWRITE,
         TokenType.PARTITION,
         TokenType.PERCENT,
@@ -543,6 +545,7 @@ class Parser(metaclass=_Parser):
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.INSERT: lambda self: self._parse_insert(),
+        TokenType.KILL: lambda self: self._parse_kill(),
         TokenType.LOAD: lambda self: self._parse_load(),
         TokenType.MERGE: lambda self: self._parse_merge(),
         TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
@@ -876,6 +879,9 @@ class Parser(metaclass=_Parser):
 
     # Whether or not the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
+
+    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments.
+    SET_REQUIRES_ASSIGNMENT_DELIMITER = True
 
     __slots__ = (
         "error_level",
@@ -1284,7 +1290,14 @@ class Parser(metaclass=_Parser):
             else:
                 begin = self._match(TokenType.BEGIN)
                 return_ = self._match_text_seq("RETURN")
-                expression = self._parse_statement()
+
+                if self._match(TokenType.STRING, advance=False):
+                    # Takes care of BigQuery's JavaScript UDF definitions that end in an OPTIONS property
+                    # # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement
+                    expression = self._parse_string()
+                    extend_props(self._parse_properties())
+                else:
+                    expression = self._parse_statement()
 
                 if return_:
                     expression = self.expression(exp.Return, this=expression)
@@ -1404,20 +1417,18 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("SQL", "SECURITY"):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
 
-        assignment = self._match_pair(
-            TokenType.VAR, TokenType.EQ, advance=False
-        ) or self._match_pair(TokenType.STRING, TokenType.EQ, advance=False)
+        index = self._index
+        key = self._parse_column()
 
-        if assignment:
-            key = self._parse_var_or_string()
-            self._match(TokenType.EQ)
-            return self.expression(
-                exp.Property,
-                this=key,
-                value=self._parse_column() or self._parse_var(any_token=True),
-            )
+        if not self._match(TokenType.EQ):
+            self._retreat(index)
+            return None
 
-        return None
+        return self.expression(
+            exp.Property,
+            this=key.to_dot() if isinstance(key, exp.Column) else key,
+            value=self._parse_column() or self._parse_var(any_token=True),
+        )
 
     def _parse_stored(self) -> exp.FileFormatProperty:
         self._match(TokenType.ALIAS)
@@ -1820,6 +1831,15 @@ class Parser(metaclass=_Parser):
             overwrite=overwrite,
             alternative=alternative,
             ignore=ignore,
+        )
+
+    def _parse_kill(self) -> exp.Kill:
+        kind = exp.var(self._prev.text) if self._match_texts(("CONNECTION", "QUERY")) else None
+
+        return self.expression(
+            exp.Kill,
+            this=self._parse_primary(),
+            kind=kind,
         )
 
     def _parse_on_conflict(self) -> t.Optional[exp.OnConflict]:
@@ -2463,7 +2483,7 @@ class Parser(metaclass=_Parser):
             index = self._parse_id_var()
             table = None
 
-        using = self._parse_field() if self._match(TokenType.USING) else None
+        using = self._parse_var(any_token=True) if self._match(TokenType.USING) else None
 
         if self._match(TokenType.L_PAREN, advance=False):
             columns = self._parse_wrapped_csv(self._parse_ordered)
@@ -2480,6 +2500,7 @@ class Parser(metaclass=_Parser):
             primary=primary,
             amp=amp,
             partition_by=self._parse_partition_by(),
+            where=self._parse_where(),
         )
 
     def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
@@ -3233,8 +3254,8 @@ class Parser(metaclass=_Parser):
             return self.UNARY_PARSERS[self._prev.token_type](self)
         return self._parse_at_time_zone(self._parse_type())
 
-    def _parse_type(self) -> t.Optional[exp.Expression]:
-        interval = self._parse_interval()
+    def _parse_type(self, parse_interval: bool = True) -> t.Optional[exp.Expression]:
+        interval = parse_interval and self._parse_interval()
         if interval:
             return interval
 
@@ -3410,7 +3431,7 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_struct_types(self) -> t.Optional[exp.Expression]:
-        this = self._parse_type() or self._parse_id_var()
+        this = self._parse_type(parse_interval=False) or self._parse_id_var()
         self._match(TokenType.COLON)
         return self._parse_column_def(this)
 
@@ -3853,6 +3874,8 @@ class Parser(metaclass=_Parser):
                     action = "NO ACTION"
                 elif self._match_text_seq("CASCADE"):
                     action = "CASCADE"
+                elif self._match_text_seq("RESTRICT"):
+                    action = "RESTRICT"
                 elif self._match_pair(TokenType.SET, TokenType.NULL):
                     action = "SET NULL"
                 elif self._match_pair(TokenType.SET, TokenType.DEFAULT):
@@ -4614,14 +4637,18 @@ class Parser(metaclass=_Parser):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_column)
-        return self._parse_csv(self._parse_column)
+
+        except_column = self._parse_column()
+        return [except_column] if except_column else None
 
     def _parse_replace(self) -> t.Optional[t.List[exp.Expression]]:
         if not self._match(TokenType.REPLACE):
             return None
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_csv(self._parse_expression)
-        return self._parse_expressions()
+
+        replace_expression = self._parse_expression()
+        return [replace_expression] if replace_expression else None
 
     def _parse_csv(
         self, parse_method: t.Callable, sep: TokenType = TokenType.COMMA
@@ -4937,8 +4964,9 @@ class Parser(metaclass=_Parser):
             return self._parse_set_transaction(global_=kind == "GLOBAL")
 
         left = self._parse_primary() or self._parse_id_var()
+        assignment_delimiter = self._match_texts(("=", "TO"))
 
-        if not self._match_texts(("=", "TO")):
+        if not left or (self.SET_REQUIRES_ASSIGNMENT_DELIMITER and not assignment_delimiter):
             self._retreat(index)
             return None
 

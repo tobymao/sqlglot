@@ -168,6 +168,9 @@ class Dialect(metaclass=_Dialect):
     # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
 
+    # Determines whether the base comes first in the LOG function
+    LOG_BASE_FIRST = True
+
     # Indicates the default null ordering method to use if not explicitly set
     # Options are: "nulls_are_small", "nulls_are_large", "nulls_are_last"
     NULL_ORDERING = "nulls_are_small"
@@ -787,3 +790,10 @@ def is_parse_json(expression: exp.Expression) -> bool:
 
 def isnull_to_is_null(args: t.List) -> exp.Expression:
     return exp.Paren(this=exp.Is(this=seq_get(args, 0), expression=exp.null()))
+
+
+def move_insert_cte_sql(self: Generator, expression: exp.Insert) -> str:
+    if expression.expression.args.get("with"):
+        expression = expression.copy()
+        expression.set("with", expression.expression.args["with"].pop())
+    return self.insert_sql(expression)

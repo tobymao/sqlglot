@@ -664,16 +664,6 @@ class Expression(metaclass=_Expression):
 
         return load(obj)
 
-
-IntoType = t.Union[
-    str,
-    t.Type[Expression],
-    t.Collection[t.Union[str, t.Type[Expression]]],
-]
-ExpOrStr = t.Union[str, Expression]
-
-
-class Condition(Expression):
     def and_(
         self,
         *expressions: t.Optional[ExpOrStr],
@@ -762,10 +752,18 @@ class Condition(Expression):
             return klass(this=other, expression=this)
         return klass(this=this, expression=other)
 
-    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]):
+    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]) -> Bracket:
         return Bracket(
             this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
         )
+
+    def __iter__(self) -> t.Iterator:
+        if "expressions" in self.arg_types:
+            return iter(self.args.get("expressions") or [])
+        # We define this because __getitem__ converts Expression into an iterable, which is
+        # problematic because one can hit infinite loops if they do "for x in some_expr: ..."
+        # See: https://peps.python.org/pep-0234/
+        raise TypeError(f"'{self.__class__.__name__}' object is not iterable")
 
     def isin(
         self,
@@ -884,6 +882,18 @@ class Condition(Expression):
 
     def __invert__(self) -> Not:
         return not_(self.copy())
+
+
+IntoType = t.Union[
+    str,
+    t.Type[Expression],
+    t.Collection[t.Union[str, t.Type[Expression]]],
+]
+ExpOrStr = t.Union[str, Expression]
+
+
+class Condition(Expression):
+    """Logical conditions like x AND y, or simply x"""
 
 
 class Predicate(Condition):
@@ -1045,6 +1055,10 @@ class Describe(Expression):
     arg_types = {"this": True, "kind": False, "expressions": False}
 
 
+class Kill(Expression):
+    arg_types = {"this": True, "kind": False}
+
+
 class Pragma(Expression):
     pass
 
@@ -1161,7 +1175,7 @@ class Column(Condition):
             if self.args.get(part)
         ]
 
-    def to_dot(self) -> Dot:
+    def to_dot(self) -> Dot | Identifier:
         """Converts the column into a dot expression."""
         parts = self.parts
         parent = self.parent
@@ -1171,7 +1185,7 @@ class Column(Condition):
                 parts.append(parent.expression)
             parent = parent.parent
 
-        return Dot.build(deepcopy(parts))
+        return Dot.build(deepcopy(parts)) if len(parts) > 1 else parts[0]
 
 
 class ColumnPosition(Expression):
@@ -1607,6 +1621,7 @@ class Index(Expression):
         "primary": False,
         "amp": False,  # teradata
         "partition_by": False,  # teradata
+        "where": False,  # postgres partial indexes
     }
 
 
@@ -4007,6 +4022,10 @@ class TimeUnit(Expression):
 
         super().__init__(**args)
 
+    @property
+    def unit(self) -> t.Optional[Var]:
+        return self.args.get("unit")
+
 
 # https://www.oracletutorial.com/oracle-basics/oracle-interval/
 # https://trino.io/docs/current/language/types.html#interval-day-to-second
@@ -4017,10 +4036,6 @@ class IntervalSpan(Expression):
 
 class Interval(TimeUnit):
     arg_types = {"this": False, "unit": False}
-
-    @property
-    def unit(self) -> t.Optional[Var]:
-        return self.args.get("unit")
 
 
 class IgnoreNulls(Expression):
@@ -4326,6 +4341,10 @@ class DateDiff(Func, TimeUnit):
 
 class DateTrunc(Func):
     arg_types = {"unit": True, "this": True, "zone": False}
+
+    @property
+    def unit(self) -> Expression:
+        return self.args["unit"]
 
 
 class DatetimeAdd(Func, TimeUnit):

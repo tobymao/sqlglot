@@ -28,3 +28,15 @@ SELECT "x"."a" AS "a" FROM "x" AS "x" GROUP BY "x"."a" HAVING SUM("x"."b") <> 0 
 
 SELECT a FROM x WHERE 1;
 SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE 1 <> 0;
+
+--------------------------------------
+-- Replace date functions
+--------------------------------------
+DATE('2023-01-01');
+CAST('2023-01-01' AS DATE);
+
+TIMESTAMP('2023-01-01');
+CAST('2023-01-01' AS DATETIME);
+
+TIMESTAMP('2023-01-01', '12:00:00');
+TIMESTAMP('2023-01-01', '12:00:00');

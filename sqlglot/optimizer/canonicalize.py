@@ -17,6 +17,7 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
     exp.replace_children(expression, canonicalize)
 
     expression = add_text_to_concat(expression)
+    expression = replace_date_funcs(expression)
     expression = coerce_type(expression)
     expression = remove_redundant_casts(expression)
     expression = ensure_bool_predicates(expression)
@@ -28,6 +29,14 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:
     if isinstance(node, exp.Add) and node.type and node.type.this in exp.DataType.TEXT_TYPES:
         node = exp.Concat(expressions=[node.left, node.right])
+    return node
+
+
+def replace_date_funcs(node: exp.Expression) -> exp.Expression:
+    if isinstance(node, exp.Date) and not node.expressions and not node.args.get("zone"):
+        return exp.cast(node.this, to=exp.DataType.Type.DATE)
+    if isinstance(node, exp.Timestamp) and not node.expression:
+        return exp.cast(node.this, to=exp.DataType.Type.DATETIME)
     return node
 
 
@@ -84,10 +93,7 @@ def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
 
 
 def _replace_cast(node: exp.Expression, to: str) -> None:
-    data_type = exp.DataType.build(to)
-    cast = exp.Cast(this=node.copy(), to=data_type)
-    cast.type = data_type
-    node.replace(cast)
+    node.replace(exp.cast(node.copy(), to=to))
 
 
 def _replace_int_predicate(expression: exp.Expression) -> None:

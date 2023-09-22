@@ -1728,7 +1728,7 @@ SELECT
         self.validate_all(
             "LOG(b, n)",
             read={
-                "bigquery": "LOG(n, b)",
+                "bigquery": "LOG(b, n)",
                 "databricks": "LOG(b, n)",
                 "drill": "LOG(b, n)",
                 "hive": "LOG(b, n)",

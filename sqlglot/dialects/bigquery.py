@@ -265,7 +265,7 @@ class BigQuery(Dialect):
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True
 
-        LOG_BASE_FIRST = False
+        LOG_BASE_FIRST = True
         LOG_DEFAULTS_TO_LN = True
 
         FUNCTIONS = {

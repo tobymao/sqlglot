@@ -1422,7 +1422,7 @@ class Generator:
         alias_node = expression.args.get("alias")
         column_names = alias_node and alias_node.columns
 
-        selects = []
+        selects: t.List[exp.Subqueryable] = []
 
         for i, tup in enumerate(expression.expressions):
             row = tup.expressions

@@ -3426,7 +3426,11 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_struct_types(self) -> t.Optional[exp.Expression]:
-        this = self._parse_type() or self._parse_id_var()
+        if self._next and self._next.token_type == TokenType.COLON:
+            this = self._parse_id_var()
+        else:
+            this = self._parse_type() or self._parse_id_var()
+
         self._match(TokenType.COLON)
         return self._parse_column_def(this)
 

@@ -208,6 +208,7 @@ class TSQL(Dialect):
     NULL_ORDERING = "nulls_are_small"
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
     SUPPORTS_SEMI_ANTI_JOIN = False
+    LOG_BASE_FIRST = False
 
     TIME_MAPPING = {
         "year": "%Y",
@@ -400,7 +401,6 @@ class TSQL(Dialect):
             TokenType.END: lambda self: self._parse_command(),
         }
 
-        LOG_BASE_FIRST = False
         LOG_DEFAULTS_TO_LN = True
 
         CONCAT_NULL_OUTPUTS_STRING = True

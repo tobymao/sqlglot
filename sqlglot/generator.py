@@ -99,6 +99,9 @@ class Generator:
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
     }
 
+    # Whether the base comes first
+    LOG_BASE_FIRST = True
+
     # Whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
 
@@ -2523,6 +2526,12 @@ class Generator:
 
     def trycast_sql(self, expression: exp.TryCast) -> str:
         return self.cast_sql(expression, safe_prefix="TRY_")
+
+    def log_sql(self, expression: exp.Log) -> str:
+        args = list(expression.args.values())
+        if not self.LOG_BASE_FIRST:
+            args.reverse()
+        return self.func("LOG", *args)
 
     def use_sql(self, expression: exp.Use) -> str:
         kind = self.sql(expression, "kind")

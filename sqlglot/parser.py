@@ -1290,7 +1290,14 @@ class Parser(metaclass=_Parser):
             else:
                 begin = self._match(TokenType.BEGIN)
                 return_ = self._match_text_seq("RETURN")
-                expression = self._parse_statement()
+
+                if self._match(TokenType.STRING, advance=False):
+                    # Takes care of BigQuery's JavaScript UDF definitions that end in an OPTIONS property
+                    # # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement
+                    expression = self._parse_string()
+                    extend_props(self._parse_properties())
+                else:
+                    expression = self._parse_statement()
 
                 if return_:
                     expression = self.expression(exp.Return, this=expression)

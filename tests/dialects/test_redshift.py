@@ -341,6 +341,16 @@ FROM (
                 "redshift": "INSERT INTO t (a, b) VALUES (1, 2), (3, 4)",
             },
         )
+        self.validate_identity(
+            'SELECT * FROM (VALUES (1)) AS "t"(a)',
+            '''SELECT
+  *
+FROM (
+  SELECT
+    1 AS a
+) AS "t"''',
+            pretty=True,
+        )
 
     def test_create_table_like(self):
         self.validate_all(

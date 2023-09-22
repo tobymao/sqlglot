@@ -1418,7 +1418,8 @@ class Generator:
 
         # Converts `VALUES...` expression into a series of select unions.
         expression = expression.copy()
-        column_names = expression.alias and expression.args["alias"].columns
+        alias_node = expression.args.get("alias")
+        column_names = alias_node and alias_node.columns
 
         selects = []
 
@@ -1436,16 +1437,16 @@ class Generator:
             # This may result in poor performance for large-cardinality `VALUES` tables, due to
             # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
             # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
-            subquery_expression: exp.Select | exp.Union = selects[0]
+            subqueryable: exp.Subqueryable = selects[0]
             if len(selects) > 1:
                 for select in selects[1:]:
-                    subquery_expression = exp.union(
-                        subquery_expression, select, distinct=False, copy=False
-                    )
+                    subqueryable = exp.union(subqueryable, select, distinct=False, copy=False)
 
-            return self.subquery_sql(subquery_expression.subquery(expression.alias, copy=False))
+            return self.subquery_sql(
+                subqueryable.subquery(alias_node and alias_node.this, copy=False)
+            )
 
-        alias = f" AS {self.sql(expression.args['alias'].this)}" if expression.alias else ""
+        alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
         return f"({unions}){alias}"
 

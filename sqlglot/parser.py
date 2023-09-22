@@ -1422,6 +1422,18 @@ class Parser(metaclass=_Parser):
                 this=key,
                 value=self._parse_column() or self._parse_var(any_token=True),
             )
+        else:
+            index = self._index
+            key = self._parse_column()
+            if not self._match(TokenType.EQ):
+                self._retreat(index)
+                return None
+
+            return self.expression(
+                exp.Property,
+                this=key.to_dot() if isinstance(key, exp.Column) else key,
+                value=self._parse_column() or self._parse_var(any_token=True),
+            )
 
         return None
 

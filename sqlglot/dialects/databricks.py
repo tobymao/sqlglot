@@ -51,8 +51,6 @@ class Databricks(Spark):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
-        PARAMETER_TOKEN = "$"
-
         def generatedasidentitycolumnconstraint_sql(
             self, expression: exp.GeneratedAsIdentityColumnConstraint
         ) -> str:

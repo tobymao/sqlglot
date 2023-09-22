@@ -5947,7 +5947,10 @@ def cast(expression: ExpOrStr, to: str | DataType | DataType.Type, **opts) -> Ca
         The new Cast instance.
     """
     expression = maybe_parse(expression, **opts)
-    return Cast(this=expression, to=DataType.build(to, **opts))
+    data_type = DataType.build(to, **opts)
+    expression = Cast(this=expression, to=data_type)
+    expression.type = data_type
+    return expression
 
 
 def table_(

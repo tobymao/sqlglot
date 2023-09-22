@@ -198,6 +198,7 @@ class TestTSQL(Validator):
             },
         )
         self.validate_identity("HASHBYTES('MD2', 'x')")
+        self.validate_identity("LOG(n, b)")
 
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")

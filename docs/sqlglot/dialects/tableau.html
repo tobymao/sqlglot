@@ -518,6 +518,7 @@
                 <dd id="Tableau.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="dialect.html#Dialect.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
                 <dd id="Tableau.SUPPORTS_SEMI_ANTI_JOIN" class="variable"><a href="dialect.html#Dialect.SUPPORTS_SEMI_ANTI_JOIN">SUPPORTS_SEMI_ANTI_JOIN</a></dd>
                 <dd id="Tableau.NORMALIZE_FUNCTIONS" class="variable"><a href="dialect.html#Dialect.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
+                <dd id="Tableau.LOG_BASE_FIRST" class="variable"><a href="dialect.html#Dialect.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
                 <dd id="Tableau.NULL_ORDERING" class="variable"><a href="dialect.html#Dialect.NULL_ORDERING">NULL_ORDERING</a></dd>
                 <dd id="Tableau.DATE_FORMAT" class="variable"><a href="dialect.html#Dialect.DATE_FORMAT">DATE_FORMAT</a></dd>
                 <dd id="Tableau.DATEINT_FORMAT" class="variable"><a href="dialect.html#Dialect.DATEINT_FORMAT">DATEINT_FORMAT</a></dd>
@@ -778,26 +779,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Tableau.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Tableau.Generator.can_identify-269"><a href="#Tableau.Generator.can_identify-269"><span class="linenos">269</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Tableau.Generator.can_identify-270"><a href="#Tableau.Generator.can_identify-270"><span class="linenos">270</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Tableau.Generator.can_identify-271"><a href="#Tableau.Generator.can_identify-271"><span class="linenos">271</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Tableau.Generator.can_identify-272"><a href="#Tableau.Generator.can_identify-272"><span class="linenos">272</span></a>
-</span><span id="Tableau.Generator.can_identify-273"><a href="#Tableau.Generator.can_identify-273"><span class="linenos">273</span></a><span class="sd">        Args:</span>
-</span><span id="Tableau.Generator.can_identify-274"><a href="#Tableau.Generator.can_identify-274"><span class="linenos">274</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Tableau.Generator.can_identify-275"><a href="#Tableau.Generator.can_identify-275"><span class="linenos">275</span></a><span class="sd">            identify:</span>
-</span><span id="Tableau.Generator.can_identify-276"><a href="#Tableau.Generator.can_identify-276"><span class="linenos">276</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Tableau.Generator.can_identify-277"><a href="#Tableau.Generator.can_identify-277"><span class="linenos">277</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Tableau.Generator.can_identify-278"><a href="#Tableau.Generator.can_identify-278"><span class="linenos">278</span></a>
-</span><span id="Tableau.Generator.can_identify-279"><a href="#Tableau.Generator.can_identify-279"><span class="linenos">279</span></a><span class="sd">        Returns:</span>
-</span><span id="Tableau.Generator.can_identify-280"><a href="#Tableau.Generator.can_identify-280"><span class="linenos">280</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Tableau.Generator.can_identify-281"><a href="#Tableau.Generator.can_identify-281"><span class="linenos">281</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Tableau.Generator.can_identify-282"><a href="#Tableau.Generator.can_identify-282"><span class="linenos">282</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Tableau.Generator.can_identify-283"><a href="#Tableau.Generator.can_identify-283"><span class="linenos">283</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Tableau.Generator.can_identify-284"><a href="#Tableau.Generator.can_identify-284"><span class="linenos">284</span></a>
-</span><span id="Tableau.Generator.can_identify-285"><a href="#Tableau.Generator.can_identify-285"><span class="linenos">285</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Tableau.Generator.can_identify-286"><a href="#Tableau.Generator.can_identify-286"><span class="linenos">286</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Tableau.Generator.can_identify-272"><a href="#Tableau.Generator.can_identify-272"><span class="linenos">272</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Tableau.Generator.can_identify-273"><a href="#Tableau.Generator.can_identify-273"><span class="linenos">273</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Tableau.Generator.can_identify-274"><a href="#Tableau.Generator.can_identify-274"><span class="linenos">274</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Tableau.Generator.can_identify-275"><a href="#Tableau.Generator.can_identify-275"><span class="linenos">275</span></a>
+</span><span id="Tableau.Generator.can_identify-276"><a href="#Tableau.Generator.can_identify-276"><span class="linenos">276</span></a><span class="sd">        Args:</span>
+</span><span id="Tableau.Generator.can_identify-277"><a href="#Tableau.Generator.can_identify-277"><span class="linenos">277</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Tableau.Generator.can_identify-278"><a href="#Tableau.Generator.can_identify-278"><span class="linenos">278</span></a><span class="sd">            identify:</span>
+</span><span id="Tableau.Generator.can_identify-279"><a href="#Tableau.Generator.can_identify-279"><span class="linenos">279</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Tableau.Generator.can_identify-280"><a href="#Tableau.Generator.can_identify-280"><span class="linenos">280</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Tableau.Generator.can_identify-281"><a href="#Tableau.Generator.can_identify-281"><span class="linenos">281</span></a>
+</span><span id="Tableau.Generator.can_identify-282"><a href="#Tableau.Generator.can_identify-282"><span class="linenos">282</span></a><span class="sd">        Returns:</span>
+</span><span id="Tableau.Generator.can_identify-283"><a href="#Tableau.Generator.can_identify-283"><span class="linenos">283</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Tableau.Generator.can_identify-284"><a href="#Tableau.Generator.can_identify-284"><span class="linenos">284</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Tableau.Generator.can_identify-285"><a href="#Tableau.Generator.can_identify-285"><span class="linenos">285</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Tableau.Generator.can_identify-286"><a href="#Tableau.Generator.can_identify-286"><span class="linenos">286</span></a>            <span class="k">return</span> <span class="kc">True</span>
 </span><span id="Tableau.Generator.can_identify-287"><a href="#Tableau.Generator.can_identify-287"><span class="linenos">287</span></a>
-</span><span id="Tableau.Generator.can_identify-288"><a href="#Tableau.Generator.can_identify-288"><span class="linenos">288</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="Tableau.Generator.can_identify-288"><a href="#Tableau.Generator.can_identify-288"><span class="linenos">288</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Tableau.Generator.can_identify-289"><a href="#Tableau.Generator.can_identify-289"><span class="linenos">289</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Tableau.Generator.can_identify-290"><a href="#Tableau.Generator.can_identify-290"><span class="linenos">290</span></a>
+</span><span id="Tableau.Generator.can_identify-291"><a href="#Tableau.Generator.can_identify-291"><span class="linenos">291</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -957,6 +958,7 @@ Default: True</li>
                                 <dl>
                                     <div><dt><a href="../generator.html#Generator">sqlglot.generator.Generator</a></dt>
                                 <dd id="Tableau.Generator.__init__" class="function"><a href="../generator.html#Generator.__init__">Generator</a></dd>
+                <dd id="Tableau.Generator.LOG_BASE_FIRST" class="variable"><a href="../generator.html#Generator.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
                 <dd id="Tableau.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
                 <dd id="Tableau.Generator.LOCKING_READS_SUPPORTED" class="variable"><a href="../generator.html#Generator.LOCKING_READS_SUPPORTED">LOCKING_READS_SUPPORTED</a></dd>
                 <dd id="Tableau.Generator.EXPLICIT_UNION" class="variable"><a href="../generator.html#Generator.EXPLICIT_UNION">EXPLICIT_UNION</a></dd>
@@ -1072,6 +1074,7 @@ Default: True</li>
                 <dd id="Tableau.Generator.properties" class="function"><a href="../generator.html#Generator.properties">properties</a></dd>
                 <dd id="Tableau.Generator.with_properties" class="function"><a href="../generator.html#Generator.with_properties">with_properties</a></dd>
                 <dd id="Tableau.Generator.locate_properties" class="function"><a href="../generator.html#Generator.locate_properties">locate_properties</a></dd>
+                <dd id="Tableau.Generator.property_name" class="function"><a href="../generator.html#Generator.property_name">property_name</a></dd>
                 <dd id="Tableau.Generator.property_sql" class="function"><a href="../generator.html#Generator.property_sql">property_sql</a></dd>
                 <dd id="Tableau.Generator.likeproperty_sql" class="function"><a href="../generator.html#Generator.likeproperty_sql">likeproperty_sql</a></dd>
                 <dd id="Tableau.Generator.fallbackproperty_sql" class="function"><a href="../generator.html#Generator.fallbackproperty_sql">fallbackproperty_sql</a></dd>
@@ -1245,6 +1248,7 @@ Default: True</li>
                 <dd id="Tableau.Generator.slice_sql" class="function"><a href="../generator.html#Generator.slice_sql">slice_sql</a></dd>
                 <dd id="Tableau.Generator.sub_sql" class="function"><a href="../generator.html#Generator.sub_sql">sub_sql</a></dd>
                 <dd id="Tableau.Generator.trycast_sql" class="function"><a href="../generator.html#Generator.trycast_sql">trycast_sql</a></dd>
+                <dd id="Tableau.Generator.log_sql" class="function"><a href="../generator.html#Generator.log_sql">log_sql</a></dd>
                 <dd id="Tableau.Generator.use_sql" class="function"><a href="../generator.html#Generator.use_sql">use_sql</a></dd>
                 <dd id="Tableau.Generator.binary" class="function"><a href="../generator.html#Generator.binary">binary</a></dd>
                 <dd id="Tableau.Generator.function_fallback_sql" class="function"><a href="../generator.html#Generator.function_fallback_sql">function_fallback_sql</a></dd>

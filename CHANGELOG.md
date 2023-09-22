@@ -1,6 +1,25 @@
 Changelog
 =========
 
+## [v18.7.0] - 2023-09-22
+### :sparkles: New Features
+- [`f1b6546`](https://github.com/tobymao/sqlglot/commit/f1b6546b463b2a6aa075bf31f54d3aa8a59b748f) - add iter for expressions *(commit by [@tobymao](https://github.com/tobymao))*
+- [`13877fe`](https://github.com/tobymao/sqlglot/commit/13877fe117c2811c2cd4d277c585f0cd4715f18a) - **optimizer**: replace date funcs *(PR [#2299](https://github.com/tobymao/sqlglot/pull/2299) by [@barakalon](https://github.com/barakalon))*
+
+### :bug: Bug Fixes
+- [`fc793c4`](https://github.com/tobymao/sqlglot/commit/fc793c4ff321808fd359ba3886e236ac7476de0d) - **postgres**: generate ARRAY[] correctly *(PR [#2287](https://github.com/tobymao/sqlglot/pull/2287) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#1457](undefined) opened by [@cmvarmour](https://github.com/cmvarmour)*
+- [`06e0869`](https://github.com/tobymao/sqlglot/commit/06e0869e7aa5714d77e6ec763da38d6a422965fa) - unnest complex closes [#2284](https://github.com/tobymao/sqlglot/pull/2284) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5aa7e2a`](https://github.com/tobymao/sqlglot/commit/5aa7e2a8e07cb41ee34c92309d6828e52a4ff64b) - **bigquery**: preserve log argument order when parsing and generation dialects match *(PR [#2293](https://github.com/tobymao/sqlglot/pull/2293) by [@cpcloud](https://github.com/cpcloud))*
+  - :arrow_lower_right: *fixes issue [#2292](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`44f732d`](https://github.com/tobymao/sqlglot/commit/44f732d56eafb93880790955862bac454edf800f) - **parser**: make kwarg parsing more robust *(PR [#2295](https://github.com/tobymao/sqlglot/pull/2295) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2288](undefined) opened by [@crash-g](https://github.com/crash-g)*
+- [`8fe91e2`](https://github.com/tobymao/sqlglot/commit/8fe91e25ff3a8a1c7619b6e50b5d3dcbd6f6521b) - **redshift**: generate correct SQL VALUES clause alias *(PR [#2298](https://github.com/tobymao/sqlglot/pull/2298) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`6429042`](https://github.com/tobymao/sqlglot/commit/642904248523c04f17ee67d7d075237f48a72159) - **bigquery**: anticipate OPTION property after JS UDF definition *(PR [#2297](https://github.com/tobymao/sqlglot/pull/2297) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2290](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`29550c1`](https://github.com/tobymao/sqlglot/commit/29550c131ce2d0209a11cd045a23683b6218c40f) - safedpipe is always varchar *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.6.0] - 2023-09-21
 ### :boom: BREAKING CHANGES
 - due to [`8100311`](https://github.com/tobymao/sqlglot/commit/8100311e68d79914dbcd1da0fd56cd963eb8c189) - explode to unnest with multiple explosions *(PR [#2235](https://github.com/tobymao/sqlglot/pull/2235) by [@tobymao](https://github.com/tobymao))*:
@@ -1498,3 +1517,4 @@ Changelog
 [v18.5.0]: https://github.com/tobymao/sqlglot/compare/v18.4.1...v18.5.0
 [v18.5.1]: https://github.com/tobymao/sqlglot/compare/v18.5.0...v18.5.1
 [v18.6.0]: https://github.com/tobymao/sqlglot/compare/v18.5.1...v18.6.0
+[v18.7.0]: https://github.com/tobymao/sqlglot/compare/v18.6.0...v18.7.0

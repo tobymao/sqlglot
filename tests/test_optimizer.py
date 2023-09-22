@@ -679,7 +679,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_unknown_annotation(self):
         schema = {"x": {"cola": "VARCHAR"}}
-        sql = "SELECT x.cola || SOME_ANONYMOUS_FUNC(x.cola) AS col FROM x AS x"
+        sql = "SELECT x.cola + SOME_ANONYMOUS_FUNC(x.cola) AS col FROM x AS x"
 
         concat_expr_alias = annotate_types(parse_one(sql), schema=schema).expressions[0]
         self.assertEqual(concat_expr_alias.type.this, exp.DataType.Type.UNKNOWN)
@@ -702,7 +702,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.type.this, exp.DataType.Type.INT)
 
         # NULL <op> UNKNOWN should yield NULL
-        sql = "SELECT NULL || SOME_ANONYMOUS_FUNC() AS result"
+        sql = "SELECT NULL + SOME_ANONYMOUS_FUNC() AS result"
 
         concat_expr_alias = annotate_types(parse_one(sql)).expressions[0]
         self.assertEqual(concat_expr_alias.type.this, exp.DataType.Type.NULL)

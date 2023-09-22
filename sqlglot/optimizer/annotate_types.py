@@ -178,6 +178,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.Initcap,
             exp.Lower,
             exp.SafeConcat,
+            exp.SafeDPipe,
             exp.Substring,
             exp.TimeToStr,
             exp.TimeToTimeStr,

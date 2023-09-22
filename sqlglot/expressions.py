@@ -752,12 +752,14 @@ class Expression(metaclass=_Expression):
             return klass(this=other, expression=this)
         return klass(this=this, expression=other)
 
-    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]):
+    def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]) -> Bracket:
         return Bracket(
             this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
         )
 
-    def __iter__(self):
+    def __iter__(self) -> t.Iterator:
+        if "expressions" in self.arg_types:
+            return iter(self.args.get("expressions") or [])
         # We define this because __getitem__ converts Expression into an iterable, which is
         # problematic because one can hit infinite loops if they do "for x in some_expr: ..."
         # See: https://peps.python.org/pep-0234/

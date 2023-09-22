@@ -52,6 +52,11 @@ class Databricks(Spark):
         }
 
         PARAMETER_TOKEN = "$"
+        
+        def generatedasidentitycolumnconstraint_sql(
+            self, expression: exp.GeneratedAsIdentityColumnConstraint
+    ) -> str:
+            super()
 
     class Tokenizer(Spark.Tokenizer):
         HEX_STRINGS = []

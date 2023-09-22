@@ -312,9 +312,9 @@ FROM (
             },
         )
         self.validate_all(
-            "SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
+            'SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS "t" (a, b)',
             write={
-                "redshift": "SELECT a, b FROM (SELECT 1 AS a, 2 AS b UNION ALL SELECT 3, 4) AS t",
+                "redshift": 'SELECT a, b FROM (SELECT 1 AS a, 2 AS b UNION ALL SELECT 3, 4) AS "t"',
             },
         )
         self.validate_all(

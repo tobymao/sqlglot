@@ -1445,7 +1445,7 @@ class Generator:
 
             return self.subquery_sql(subquery_expression.subquery(expression.alias, copy=False))
 
-        alias = f" AS {expression.alias}" if expression.alias else ""
+        alias = f" AS {self.sql(expression.args['alias'].this)}" if expression.alias else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
         return f"({unions}){alias}"
 

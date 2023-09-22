@@ -158,6 +158,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.TimeAdd,
             exp.TimeStrToTime,
             exp.TimeSub,
+            exp.Timestamp,
             exp.TimestampAdd,
             exp.TimestampSub,
             exp.UnixToTime,

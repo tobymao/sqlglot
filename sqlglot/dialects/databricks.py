@@ -57,7 +57,7 @@ class Databricks(Spark):
             self, expression: exp.GeneratedAsIdentityColumnConstraint
         ) -> str:
             expression = expression.copy()
-            expression.set("this", " ")  # trigger ALWAYS in super class
+            expression.set("this", True)  # trigger ALWAYS in super class
             return super().generatedasidentitycolumnconstraint_sql(expression)
 
     class Tokenizer(Spark.Tokenizer):

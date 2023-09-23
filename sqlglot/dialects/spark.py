@@ -54,6 +54,14 @@ class Spark(Spark2):
         FUNCTION_PARSERS = Spark2.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("ANY_VALUE")
 
+        def _parse_generated_as_identity(
+            self,
+        ) -> exp.GeneratedAsIdentityColumnConstraint | exp.ComputedColumnConstraint:
+            this = super()._parse_generated_as_identity()
+            if this.expression:
+                return self.expression(exp.ComputedColumnConstraint, this=this.expression)
+            return this
+
     class Generator(Spark2.Generator):
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,
@@ -72,6 +80,9 @@ class Spark(Spark2):
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)
+
+        def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+            return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')})"
 
         def anyvalue_sql(self, expression: exp.AnyValue) -> str:
             return self.function_fallback_sql(expression)

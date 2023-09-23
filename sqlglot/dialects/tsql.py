@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     parse_date_delta,
     rename_func,
     timestrtotime_sql,
+    ts_or_ds_to_date_sql,
 )
 from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
@@ -590,6 +591,7 @@ class TSQL(Dialect):
         NVL2_SUPPORTED = False
         ALTER_TABLE_ADD_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
+        COMPUTED_COLUMN_WITH_TYPE = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -630,6 +632,7 @@ class TSQL(Dialect):
             exp.TemporaryProperty: lambda self, e: "",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: _format_sql,
+            exp.TsOrDsToDate: ts_or_ds_to_date_sql("tsql"),
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

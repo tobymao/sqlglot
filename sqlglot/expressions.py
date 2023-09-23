@@ -1048,6 +1048,7 @@ class Clone(Expression):
         "kind": False,
         "shallow": False,
         "expression": False,
+        "keyword": False,
     }
 
 

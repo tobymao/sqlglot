@@ -826,7 +826,7 @@ class Generator:
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
         shallow = "SHALLOW " if expression.args.get("shallow") else ""
-        this = f"{shallow}{self.CLONE_KEYWORD} {this}"
+        this = f"{shallow}{expression.args.get('keyword') or self.CLONE_KEYWORD} {this}"
         when = self.sql(expression, "when")
 
         if when:

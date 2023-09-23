@@ -123,8 +123,12 @@ class TestBigQuery(Validator):
             """SELECT PARSE_JSON('"foo"') AS json_data""",
         )
         self.validate_identity(
-            "CREATE OR REPLACE TABLE `a.b.c` copy `a.b.d`",
+            "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
             "CREATE OR REPLACE TABLE a.b.c COPY a.b.d",
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`",
+            "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
         )
 
         self.validate_all("SELECT SPLIT(foo)", write={"bigquery": "SELECT SPLIT(foo, ',')"})

@@ -207,7 +207,7 @@ class Generator:
     # The keyword used to clone a table in a DDL statement
     CLONE_KEYWORD = "CLONE"
 
-    # Whether or not to incldue the type of a computed column in the CREATE DDL
+    # Whether or not to include the type of a computed column in the CREATE DDL
     COMPUTED_COLUMN_WITH_TYPE = True
 
     TYPE_MAPPING = {

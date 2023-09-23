@@ -32,6 +32,7 @@ class TestDatabricks(Validator):
             "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
             write={
                 "databricks": "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(TO_DATE(y))))",
+                "tsql": "CREATE TABLE foo (x INTEGER AS (YEAR(TS_OR_DS_TO_DATE(y))))",
             },
         )
 

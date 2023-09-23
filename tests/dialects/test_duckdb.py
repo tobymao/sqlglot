@@ -446,6 +446,7 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT QUANTILE_CONT(x, q) FROM t",
                 "postgres": "SELECT PERCENTILE_CONT(q) WITHIN GROUP (ORDER BY x) FROM t",
+                "snowflake": "SELECT PERCENTILE_CONT(q) WITHIN GROUP (ORDER BY x) FROM t",
             },
         )
         self.validate_all(
@@ -453,6 +454,7 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT QUANTILE_DISC(x, q) FROM t",
                 "postgres": "SELECT PERCENTILE_DISC(q) WITHIN GROUP (ORDER BY x) FROM t",
+                "snowflake": "SELECT PERCENTILE_DISC(q) WITHIN GROUP (ORDER BY x) FROM t",
             },
         )
         self.validate_all(
@@ -460,6 +462,7 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT QUANTILE_CONT(x, 0.5) FROM t",
                 "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) FROM t",
+                "snowflake": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) FROM t",
             },
         )
 

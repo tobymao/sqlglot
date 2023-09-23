@@ -419,6 +419,7 @@ class BigQuery(Dialect):
         RENAME_TABLE_WITH_DB = False
         NVL2_SUPPORTED = False
         UNNEST_WITH_ORDINALITY = False
+        CLONE_KEYWORD = "COPY"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

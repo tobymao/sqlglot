@@ -123,10 +123,6 @@ class TestBigQuery(Validator):
             """SELECT PARSE_JSON('"foo"') AS json_data""",
         )
         self.validate_identity(
-            "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
-            "CREATE OR REPLACE TABLE a.b.c COPY a.b.d",
-        )
-        self.validate_identity(
             "CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`",
             "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
         )
@@ -138,6 +134,13 @@ class TestBigQuery(Validator):
         self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
+        self.validate_all(
+            "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
+            write={
+                "bigquery": "CREATE OR REPLACE TABLE a.b.c COPY a.b.d",
+                "snowflake": "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
+            },
+        )
         self.validate_all(
             "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
             write={

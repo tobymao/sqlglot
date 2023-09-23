@@ -660,7 +660,6 @@ class TestSnowflake(Validator):
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
         self.validate_identity("CREATE DATABASE mytestdb_clone CLONE mytestdb")
         self.validate_identity("CREATE SCHEMA mytestschema_clone CLONE testschema")
-        self.validate_identity("CREATE TABLE orders_clone CLONE orders")
         self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity(
@@ -679,6 +678,16 @@ class TestSnowflake(Validator):
             "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL, PRIMARY KEY (ID), FOREIGN KEY (CITY_CODE) REFERENCES EXAMPLE_DB.DEMO.CITIES (CITY_CODE))"
         )
 
+        self.validate_all(
+            "CREATE TABLE orders_clone CLONE orders",
+            read={
+                "bigquery": "CREATE TABLE orders_clone CLONE orders",
+            },
+            write={
+                "bigquery": "CREATE TABLE orders_clone CLONE orders",
+                "snowflake": "CREATE TABLE orders_clone CLONE orders",
+            },
+        )
         self.validate_all(
             "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
             read={

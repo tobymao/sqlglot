@@ -394,6 +394,7 @@ class Snowflake(Dialect):
         TABLE_HINTS = False
         QUERY_HINTS = False
         AGGREGATE_FILTER_SUPPORTED = False
+        SUPPORTS_TABLE_COPY = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

@@ -591,6 +591,7 @@ class TSQL(Dialect):
         NVL2_SUPPORTED = False
         ALTER_TABLE_ADD_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
+        COMPUTED_COLUMN_WITH_TYPE = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

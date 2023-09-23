@@ -207,6 +207,9 @@ class Generator:
     # The keyword used to clone a table in a DDL statement
     CLONE_KEYWORD = "CLONE"
 
+    # Whether or not to incldue the type of a computed column in the CREATE DDL
+    COMPUTED_COLUMN_WITH_TYPE = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -651,6 +654,9 @@ class Generator:
         constraints = f" {constraints}" if constraints else ""
         position = self.sql(expression, "position")
         position = f" {position}" if position else ""
+
+        if expression.find(exp.ComputedColumnConstraint) and not self.COMPUTED_COLUMN_WITH_TYPE:
+            kind = ""
 
         return f"{exists}{column}{kind}{constraints}{position}"
 

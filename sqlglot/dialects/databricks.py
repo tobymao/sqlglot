@@ -51,6 +51,13 @@ class Databricks(Spark):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
 
+        def generatedasidentitycolumnconstraint_sql(
+            self, expression: exp.GeneratedAsIdentityColumnConstraint
+        ) -> str:
+            expression = expression.copy()
+            expression.set("this", True)  # trigger ALWAYS in super class
+            return super().generatedasidentitycolumnconstraint_sql(expression)
+
     class Tokenizer(Spark.Tokenizer):
         HEX_STRINGS = []
 

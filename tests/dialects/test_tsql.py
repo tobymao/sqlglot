@@ -505,6 +505,9 @@ class TestTSQL(Validator):
                 "postgres": "CREATE TABLE tbl (id INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 10) PRIMARY KEY)",
                 "tsql": "CREATE TABLE tbl (id INTEGER NOT NULL IDENTITY(10, 1) PRIMARY KEY)",
             },
+            write={
+                "databricks": "CREATE TABLE tbl (id INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 10 INCREMENT BY 1) PRIMARY KEY)",
+            },
         )
         self.validate_all(
             "SELECT * INTO foo.bar.baz FROM (SELECT * FROM a.b.c) AS temp",

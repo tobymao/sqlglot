@@ -72,22 +72,6 @@ class Databricks(Spark):
             this = self.sql(expression, "this")
             return f"GENERATED ALWAYS AS {this}"
 
-        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
-            c = expression.find(exp.GeneratedAsIdentityColumnConstraint)
-            kind = self.sql(expression, "kind")
-            if c and isinstance(expression.this, exp.Identifier) and kind == "INT":
-                # only BIGINT GENERATED ALWAYS AS IDENTITY constraints are supported, upcast to BIGINT
-                expression = expression.copy()
-                expression.set("kind", "BIGINT")
-            return super().columndef_sql(expression, sep)
-
-        def generatedasidentitycolumnconstraint_sql(
-            self, expression: exp.GeneratedAsIdentityColumnConstraint
-        ) -> str:
-            expression = expression.copy()
-            expression.set("this", True)  # trigger ALWAYS in super class
-            return super().generatedasidentitycolumnconstraint_sql(expression)
-
     class Tokenizer(Spark.Tokenizer):
         HEX_STRINGS = []
 

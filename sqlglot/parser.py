@@ -3761,7 +3761,9 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.CompressColumnConstraint, this=self._parse_bitwise())
 
-    def _parse_generated_as_identity(self) -> exp.GeneratedAsIdentityColumnConstraint:
+    def _parse_generated_as_identity(
+        self,
+    ) -> exp.GeneratedAsIdentityColumnConstraint | exp.ComputedColumnConstraint:
         if self._match_text_seq("BY", "DEFAULT"):
             on_null = self._match_pair(TokenType.ON, TokenType.NULL)
             this = self.expression(

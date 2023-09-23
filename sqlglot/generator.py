@@ -204,11 +204,11 @@ class Generator:
     # Whether or not session variables / parameters are supported, e.g. @x in T-SQL
     SUPPORTS_PARAMETERS = True
 
-    # The keyword used to clone a table in a DDL statement
-    CLONE_KEYWORD = "CLONE"
-
     # Whether or not to include the type of a computed column in the CREATE DDL
     COMPUTED_COLUMN_WITH_TYPE = True
+
+    # Whether or not CREATE TABLE .. COPY .. is supported. False means we'll generate CLONE instead of COPY
+    SUPPORTS_TABLE_COPY = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -826,7 +826,8 @@ class Generator:
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
         shallow = "SHALLOW " if expression.args.get("shallow") else ""
-        this = f"{shallow}{self.CLONE_KEYWORD} {this}"
+        keyword = "COPY" if expression.args.get("copy") and self.SUPPORTS_TABLE_COPY else "CLONE"
+        this = f"{shallow}{keyword} {this}"
         when = self.sql(expression, "when")
 
         if when:

@@ -847,6 +847,7 @@ class Parser(metaclass=_Parser):
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
+    CLONE_KEYWORDS = {"CLONE", "COPY"}
     CLONE_KINDS = {"TIMESTAMP", "OFFSET", "STATEMENT"}
 
     TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
@@ -1344,7 +1345,7 @@ class Parser(metaclass=_Parser):
 
             shallow = self._match_text_seq("SHALLOW")
 
-            if self._match_text_seq("CLONE"):
+            if self._match_texts(self.CLONE_KEYWORDS):
                 clone = self._parse_table(schema=True)
                 when = self._match_texts({"AT", "BEFORE"}) and self._prev.text.upper()
                 clone_kind = (

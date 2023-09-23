@@ -204,6 +204,9 @@ class Generator:
     # Whether or not session variables / parameters are supported, e.g. @x in T-SQL
     SUPPORTS_PARAMETERS = True
 
+    # The keyword used to clone a table in a DDL statement
+    CLONE_KEYWORD = "CLONE"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -817,7 +820,7 @@ class Generator:
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
         shallow = "SHALLOW " if expression.args.get("shallow") else ""
-        this = f"{shallow}CLONE {this}"
+        this = f"{shallow}{self.CLONE_KEYWORD} {this}"
         when = self.sql(expression, "when")
 
         if when:

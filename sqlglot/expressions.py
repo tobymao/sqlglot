@@ -1041,6 +1041,8 @@ class Create(DDL):
 
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-clone
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_clone_statement
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_copy
 class Clone(Expression):
     arg_types = {
         "this": True,
@@ -1048,6 +1050,7 @@ class Clone(Expression):
         "kind": False,
         "shallow": False,
         "expression": False,
+        "copy": False,
     }
 
 

@@ -1346,6 +1346,7 @@ class Parser(metaclass=_Parser):
             shallow = self._match_text_seq("SHALLOW")
 
             if self._match_texts(self.CLONE_KEYWORDS):
+                copy = self._prev.text.lower() == "copy"
                 clone = self._parse_table(schema=True)
                 when = self._match_texts({"AT", "BEFORE"}) and self._prev.text.upper()
                 clone_kind = (
@@ -1362,6 +1363,7 @@ class Parser(metaclass=_Parser):
                     kind=clone_kind,
                     shallow=shallow,
                     expression=clone_expression,
+                    copy=copy,
                 )
 
         return self.expression(

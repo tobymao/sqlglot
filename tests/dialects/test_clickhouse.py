@@ -224,6 +224,21 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
         )
+        self.validate_all(
+            "SELECT quantile(0.5)(a)",
+            read={"duckdb": "SELECT quantile(a, 0.5)"},
+            write={"clickhouse": "SELECT quantile(0.5)(a)"},
+        )
+        self.validate_all(
+            "SELECT quantiles(0.5, 0.4)(a)",
+            read={"duckdb": "SELECT quantile(a, [0.5, 0.4])"},
+            write={"clickhouse": "SELECT quantiles(0.5, 0.4)(a)"},
+        )
+        self.validate_all(
+            "SELECT quantiles(0.5)(a)",
+            read={"duckdb": "SELECT quantile(a, [0.5])"},
+            write={"clickhouse": "SELECT quantiles(0.5)(a)"},
+        )
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

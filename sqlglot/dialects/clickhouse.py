@@ -22,7 +22,7 @@ def _lower_func(sql: str) -> str:
 
 
 def _quantile_sql(self, e):
-    quantile = e.args.get("quantile")
+    quantile = e.args["quantile"]
     args = f"({self.sql(e, 'this')})"
     if isinstance(quantile, exp.Array):
         func = self.func("quantiles", *quantile)

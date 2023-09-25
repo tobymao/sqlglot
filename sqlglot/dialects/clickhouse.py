@@ -359,12 +359,14 @@ class ClickHouse(Dialect):
                 "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
             ),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
+            exp.IsNan: rename_func("isNaN"),
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Pivot: no_pivot_sql,
             exp.Quantile: lambda self, e: self.func("quantile", e.args.get("quantile"))
             + f"({self.sql(e, 'this')})",
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
+            exp.StartsWith: rename_func("startsWith"),
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),

@@ -225,6 +225,18 @@ class TestClickhouse(Validator):
             "SELECT s, arr_external FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external"
         )
 
+        self.validate_identity("SELECT isNaN(x)")
+        self.validate_all(
+            "SELECT IS_NAN(x), ISNAN(x)",
+            write={"clickhouse": "SELECT isNaN(x), isNaN(x)"},
+        )
+
+        self.validate_identity("SELECT startsWith('a', 'b')")
+        self.validate_all(
+            "SELECT STARTS_WITH('a', 'b'), STARTSWITH('a', 'b')",
+            write={"clickhouse": "SELECT startsWith('a', 'b'), startsWith('a', 'b')"},
+        )
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH SUM(bytes) AS foo SELECT foo FROM system.parts")

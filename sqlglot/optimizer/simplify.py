@@ -731,6 +731,9 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
         unit = l.unit.name.lower()
         date = extract_date(r)
 
+        if not date:
+            return expression
+
         return DATETRUNC_BINARY_COMPARISONS[comparison](l.this, date, unit) or expression
     elif isinstance(expression, exp.In):
         l = expression.this
@@ -739,7 +742,15 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
         if all(_is_datetrunc_predicate(l, r) for r in rs):
             unit = l.unit.name.lower()
 
-            ranges = [r for r in [_datetrunc_range(extract_date(r), unit) for r in rs] if r]
+            ranges = []
+            for r in rs:
+                date = extract_date(r)
+                if not date:
+                    return expression
+                drange = _datetrunc_range(date, unit)
+                if drange:
+                    ranges.append(drange)
+
             if not ranges:
                 return expression
 
@@ -811,16 +822,47 @@ def eval_boolean(expression, a, b):
     return None
 
 
-def extract_date(cast):
-    # The "fromisoformat" conversion could fail if the cast is used on an identifier,
-    # so in that case we can't extract the date.
+def cast_as_date(value: t.Any) -> t.Optional[datetime.date]:
+    if isinstance(value, datetime.datetime):
+        return value.date()
+    if isinstance(value, datetime.date):
+        return value
     try:
-        if cast.args["to"].this == exp.DataType.Type.DATE:
-            return datetime.date.fromisoformat(cast.name)
-        if cast.args["to"].this == exp.DataType.Type.DATETIME:
-            return datetime.datetime.fromisoformat(cast.name)
+        return datetime.datetime.fromisoformat(value).date()
     except ValueError:
         return None
+
+
+def cast_as_datetime(value: t.Any) -> t.Optional[datetime.datetime]:
+    if isinstance(value, datetime.datetime):
+        return value
+    if isinstance(value, datetime.date):
+        return datetime.datetime(year=value.year, month=value.month, day=value.day)
+    try:
+        return datetime.datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def cast_value(value: t.Any, to: exp.DataType) -> t.Optional[t.Union[datetime.date, datetime.date]]:
+    if not value:
+        return None
+    if to.is_type(exp.DataType.Type.DATE):
+        return cast_as_date(value)
+    if to.is_type(*exp.DataType.TEMPORAL_TYPES):
+        return cast_as_datetime(value)
+    return None
+
+
+def extract_date(cast: exp.Cast) -> t.Optional[t.Union[datetime.date, datetime.date]]:
+    value: t.Any
+    if isinstance(cast.this, exp.Literal):
+        value = cast.this.name
+    elif isinstance(cast.this, exp.Cast):
+        value = extract_date(cast.this)
+    else:
+        return None
+    return cast_value(value, cast.to)
 
 
 def extract_interval(expression):

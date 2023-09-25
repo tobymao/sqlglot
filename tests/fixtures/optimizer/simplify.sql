@@ -758,6 +758,17 @@ x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 TIMESTAMP_TRUNC(x, YEAR) = CAST('2021-01-01' AS DATETIME);
 x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);
 
+-- right side is not a date literal
+DATE_TRUNC('day', x) = CAST(y AS DATE);
+DATE_TRUNC('day', x) = CAST(y AS DATE);
+
+-- nested cast
+DATE_TRUNC('day', x) = CAST(CAST('2021-01-01 01:02:03' AS DATETIME) AS DATE);
+x < CAST('2021-01-02' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+TIMESTAMP_TRUNC(x, YEAR) = CAST(CAST('2021-01-01 01:02:03' AS DATE) AS DATETIME);
+x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);
+
 --------------------------------------
 -- EQUALITY
 --------------------------------------

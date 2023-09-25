@@ -10,6 +10,9 @@ class TestPostgres(Validator):
 
     def test_ddl(self):
         self.validate_identity(
+            "CREATE INDEX foo ON bar.baz USING btree(col1 varchar_pattern_ops ASC, col2)"
+        )
+        self.validate_identity(
             "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
             "CREATE TABLE test (x TIMESTAMP[][])",
         )

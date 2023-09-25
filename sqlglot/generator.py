@@ -2851,6 +2851,9 @@ class Generator:
     def columnprefix_sql(self, expression: exp.ColumnPrefix) -> str:
         return f"{self.sql(expression, 'this')}({self.sql(expression, 'expression')})"
 
+    def opclass_sql(self, expression: exp.Opclass) -> str:
+        return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

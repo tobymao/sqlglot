@@ -850,6 +850,8 @@ class Parser(metaclass=_Parser):
     CLONE_KEYWORDS = {"CLONE", "COPY"}
     CLONE_KINDS = {"TIMESTAMP", "OFFSET", "STATEMENT"}
 
+    OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS"}
+
     TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
@@ -2463,6 +2465,17 @@ class Parser(metaclass=_Parser):
         comments = [c for token in (method, side, kind) if token for c in token.comments]
         return self.expression(exp.Join, comments=comments, **kwargs)
 
+    def _parse_opclass(self) -> t.Optional[exp.Expression]:
+        this = self._parse_conjunction()
+        if self._match_texts(self.OPCLASS_FOLLOW_KEYWORDS, advance=False):
+            return this
+
+        opclass = self._parse_var(any_token=True)
+        if opclass:
+            return self.expression(exp.Opclass, this=this, expression=opclass)
+
+        return this
+
     def _parse_index(
         self,
         index: t.Optional[exp.Expression] = None,
@@ -2489,7 +2502,7 @@ class Parser(metaclass=_Parser):
         using = self._parse_var(any_token=True) if self._match(TokenType.USING) else None
 
         if self._match(TokenType.L_PAREN, advance=False):
-            columns = self._parse_wrapped_csv(self._parse_ordered)
+            columns = self._parse_wrapped_csv(lambda: self._parse_ordered(self._parse_opclass))
         else:
             columns = None
 
@@ -2968,8 +2981,8 @@ class Parser(metaclass=_Parser):
             return None
         return self.expression(exp_class, expressions=self._parse_csv(self._parse_ordered))
 
-    def _parse_ordered(self) -> exp.Ordered:
-        this = self._parse_conjunction()
+    def _parse_ordered(self, parse_method: t.Optional[t.Callable] = None) -> exp.Ordered:
+        this = parse_method() if parse_method else self._parse_conjunction()
 
         asc = self._match(TokenType.ASC)
         desc = self._match(TokenType.DESC) or (asc and False)

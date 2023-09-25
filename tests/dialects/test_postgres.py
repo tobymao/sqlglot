@@ -149,15 +149,27 @@ class TestPostgres(Validator):
         )
 
     def test_postgres(self):
-        expr = parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
+        expr = parse_one(
+            "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)", read="postgres"
+        )
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
 
         alter_table_only = """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE NO ACTION ON UPDATE NO ACTION"""
-        expr = parse_one(alter_table_only)
+        expr = parse_one(alter_table_only, read="postgres")
 
         # Checks that user-defined types are parsed into DataType instead of Identifier
-        parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(exp.DataType)
+        parse_one("CREATE TABLE t (a udt)", read="postgres").this.expressions[0].args[
+            "kind"
+        ].assert_is(exp.DataType)
+
+        # Checks that OID is parsed into a DataType (ObjectIdentifier)
+        self.assertIsInstance(
+            parse_one("CREATE TABLE public.propertydata (propertyvalue oid)", read="postgres").find(
+                exp.DataType
+            ),
+            exp.ObjectIdentifier,
+        )
 
         self.assertIsInstance(expr, exp.AlterTable)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)

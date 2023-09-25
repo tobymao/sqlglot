@@ -380,6 +380,21 @@ FROM a
 LEFT OUTER JOIN b""",
             pretty=True,
         )
+        self.validate(
+            """
+            WITH cte AS (
+                SELECT
+                    a,
+                    b
+                FROM tbl
+            )
+            /* test comment */
+            SELECT /* test comment 2 */
+               *
+            FROM cte
+            """,
+            "WITH cte AS (SELECT a, b FROM tbl) /* test comment */ /* test comment 2 */ SELECT * FROM cte",
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

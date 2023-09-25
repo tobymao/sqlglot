@@ -592,10 +592,13 @@ class Generator:
         else:
             raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
-        sql = self.maybe_comment(sql, expression) if self.comments and comment else sql
+        # We've already generated the comments in prepend_ctes for expressions that have CTEs
+        if self.comments and comment and "with" not in expression.arg_types:
+            sql = self.maybe_comment(sql, expression)
 
         if self._cache is not None:
             self._cache[expression_id] = sql
+
         return sql
 
     def uncache_sql(self, expression: exp.Uncache) -> str:
@@ -841,6 +844,7 @@ class Generator:
         return f"DESCRIBE {self.sql(expression, 'this')}"
 
     def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
+        sql = self.maybe_comment(sql, expression)
         with_ = self.sql(expression, "with")
         if with_:
             sql = f"{with_}{self.sep()}{sql}"

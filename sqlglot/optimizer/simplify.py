@@ -825,7 +825,7 @@ def eval_boolean(expression, a, b):
 def cast_as_date(value: t.Any) -> t.Optional[datetime.date]:
     if isinstance(value, datetime.datetime):
         return value.date()
-    elif isinstance(value, datetime.date):
+    if isinstance(value, datetime.date):
         return value
     try:
         return datetime.datetime.fromisoformat(value).date()
@@ -836,7 +836,7 @@ def cast_as_date(value: t.Any) -> t.Optional[datetime.date]:
 def cast_as_datetime(value: t.Any) -> t.Optional[datetime.datetime]:
     if isinstance(value, datetime.datetime):
         return value
-    elif isinstance(value, datetime.date):
+    if isinstance(value, datetime.date):
         return datetime.datetime(year=value.year, month=value.month, day=value.day)
     try:
         return datetime.datetime.fromisoformat(value)

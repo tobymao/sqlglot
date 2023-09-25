@@ -1613,6 +1613,11 @@ class Identifier(Expression):
         return self.name
 
 
+# https://www.postgresql.org/docs/current/indexes-opclass.html
+class Opclass(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class Index(Expression):
     arg_types = {
         "this": False,

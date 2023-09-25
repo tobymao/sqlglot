@@ -53,8 +53,12 @@ class Databricks(Spark):
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             constraint = expression.find(exp.GeneratedAsIdentityColumnConstraint)
-            kind = self.sql(expression, "kind")
-            if constraint and isinstance(expression.this, exp.Identifier) and kind == "INT":
+            kind = expression.args.get("kind")
+            if (
+                constraint
+                and isinstance(kind, exp.DataType)
+                and kind.this in exp.DataType.INTEGER_TYPES
+            ):
                 # only BIGINT generated identity constraints are supported
                 expression = expression.copy()
                 expression.set("kind", exp.DataType.build("bigint"))

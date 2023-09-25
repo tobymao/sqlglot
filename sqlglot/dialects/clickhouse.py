@@ -21,6 +21,16 @@ def _lower_func(sql: str) -> str:
     return sql[:index].lower() + sql[index:]
 
 
+def _quantile_sql(self, e):
+    quantile = e.args["quantile"]
+    args = f"({self.sql(e, 'this')})"
+    if isinstance(quantile, exp.Array):
+        func = self.func("quantiles", *quantile)
+    else:
+        func = self.func("quantile", quantile)
+    return func + args
+
+
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
@@ -363,8 +373,7 @@ class ClickHouse(Dialect):
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Pivot: no_pivot_sql,
-            exp.Quantile: lambda self, e: self.func("quantile", e.args.get("quantile"))
-            + f"({self.sql(e, 'this')})",
+            exp.Quantile: _quantile_sql,
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StartsWith: rename_func("startsWith"),
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",

@@ -3697,13 +3697,13 @@ class DataType(Expression):
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
-class PseudoType(Expression):
-    pass
+class PseudoType(DataType):
+    arg_types = {"this": True}
 
 
 # https://www.postgresql.org/docs/15/datatype-oid.html
-class ObjectIdentifier(Expression):
-    pass
+class ObjectIdentifier(DataType):
+    arg_types = {"this": True}
 
 
 # WHERE x <OP> EXISTS|ALL|ANY|SOME(SELECT ...)
@@ -4034,7 +4034,7 @@ class TimeUnit(Expression):
 # https://www.oracletutorial.com/oracle-basics/oracle-interval/
 # https://trino.io/docs/current/language/types.html#interval-day-to-second
 # https://docs.databricks.com/en/sql/language-manual/data-types/interval-type.html
-class IntervalSpan(Expression):
+class IntervalSpan(DataType):
     arg_types = {"this": True, "expression": True}
 
 

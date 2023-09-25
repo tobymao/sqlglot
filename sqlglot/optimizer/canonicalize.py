@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import typing as t
 
 from sqlglot import exp
 
@@ -40,14 +41,30 @@ def replace_date_funcs(node: exp.Expression) -> exp.Expression:
     return node
 
 
+# Expression type to transform -> arg key -> (allowed types, type to cast to)
+ARG_TYPES: t.Dict[
+    t.Type[exp.Expression], t.Dict[str, t.Tuple[t.Iterable[exp.DataType.Type], exp.DataType.Type]]
+] = {
+    exp.DateAdd: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.DateSub: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.DatetimeAdd: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
+    exp.DatetimeSub: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
+    exp.Extract: {"expression": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
+}
+
+
 def coerce_type(node: exp.Expression) -> exp.Expression:
     if isinstance(node, exp.Binary):
         _coerce_date(node.left, node.right)
     elif isinstance(node, exp.Between):
         _coerce_date(node.this, node.args["low"])
-    elif isinstance(node, exp.Extract):
-        if node.expression.type.this not in exp.DataType.TEMPORAL_TYPES:
-            _replace_cast(node.expression, "datetime")
+    else:
+        arg_types = ARG_TYPES.get(node.__class__)
+        if arg_types:
+            for arg_key, (allowed, to) in arg_types.items():
+                arg = node.args.get(arg_key)
+                if arg and not arg.type.is_type(*allowed):
+                    _replace_cast(arg, to)
     return node
 
 
@@ -89,10 +106,10 @@ def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
             and b.type
             and b.type.this not in (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL)
         ):
-            _replace_cast(b, "date")
+            _replace_cast(b, exp.DataType.Type.DATE)
 
 
-def _replace_cast(node: exp.Expression, to: str) -> None:
+def _replace_cast(node: exp.Expression, to: exp.DataType.Type) -> None:
     node.replace(exp.cast(node.copy(), to=to))
 
 

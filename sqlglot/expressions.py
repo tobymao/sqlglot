@@ -2913,6 +2913,7 @@ class Select(Subqueryable):
             prefix="OFFSET",
             dialect=dialect,
             copy=copy,
+            into_arg="expression",
             **opts,
         )
 

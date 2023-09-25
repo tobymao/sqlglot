@@ -10,6 +10,10 @@ class TestDuckDB(Validator):
             parse_one("select * from t limit (select 5)").sql(dialect="duckdb"),
             exp.select("*").from_("t").limit(exp.select("5").subquery()).sql(dialect="duckdb"),
         )
+        self.assertEqual(
+            parse_one("select * from t offset (select 5)").sql(dialect="duckdb"),
+            exp.select("*").from_("t").offset(exp.select("5").subquery()).sql(dialect="duckdb"),
+        )
 
         for struct_value in ("{'a': 1}", "struct_pack(a := 1)"):
             self.validate_all(struct_value, write={"presto": UnsupportedError})

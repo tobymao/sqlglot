@@ -5,7 +5,6 @@ import typing as t
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     binary_from_function,
-    create_with_partitions_sql,
     format_time_lambda,
     is_parse_json,
     move_insert_cte_sql,
@@ -15,22 +14,6 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
-
-
-def _create_sql(self: Spark2.Generator, e: exp.Create) -> str:
-    kind = e.args["kind"]
-    properties = e.args.get("properties")
-
-    if (
-        kind.upper() == "TABLE"
-        and e.expression
-        and any(
-            isinstance(prop, exp.TemporaryProperty)
-            for prop in (properties.expressions if properties else [])
-        )
-    ):
-        return f"CREATE TEMPORARY VIEW {self.sql(e, 'this')} AS {self.sql(e, 'expression')}"
-    return create_with_partitions_sql(self, e)
 
 
 def _map_sql(self: Spark2.Generator, expression: exp.Map) -> str:
@@ -192,7 +175,6 @@ class Spark2(Hive):
             exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
-            exp.Create: _create_sql,
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.args.get("unit")),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
@@ -235,6 +217,13 @@ class Spark2(Hive):
 
         WRAP_DERIVED_VALUES = False
         CREATE_FUNCTION_RETURN_AS = False
+
+        def temporary_storage_provider(self, expression):
+            # spark2, spark, Databricks require a storage provider for temporary tables
+            expression = expression.copy()
+            provider = exp.FileFormatProperty(this=exp.Literal.string("parquet"))
+            expression.args["properties"].append("expressions", provider)
+            return expression
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if is_parse_json(expression.this):

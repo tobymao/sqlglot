@@ -96,17 +96,3 @@ class Spark(Spark2):
                 return self.func("DATEDIFF", unit, start, end)
 
             return self.func("DATEDIFF", end, start)
-
-        def create_sql(self, expression: exp.Create) -> str:
-            kind = self.sql(expression, "kind").upper()
-            properties = expression.args.get("properties")
-            temporary = any(
-                isinstance(prop, exp.TemporaryProperty)
-                for prop in (properties.expressions if properties else [])
-            )
-            if kind == "TABLE" and temporary:
-                provider = exp.FileFormatProperty(this=exp.Literal.string("parquet"))
-                expression = expression.copy()
-                expression.args["properties"].append("expressions", provider)
-
-            return super().create_sql(expression)

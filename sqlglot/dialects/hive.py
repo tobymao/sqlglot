@@ -52,10 +52,28 @@ DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 
 def _create_sql(self, expression: exp.Create) -> str:
-    # remove Unique Column Constraints
+    expression = expression.copy()
+
+    # remove UNIQUE column constraints
     for constraint in expression.find_all(exp.UniqueColumnConstraint):
         if constraint.parent:
             constraint.parent.pop()
+
+    properties = expression.args.get("properties")
+    temporary = any(
+        isinstance(prop, exp.TemporaryProperty)
+        for prop in (properties.expressions if properties else [])
+    )
+
+    # CTAS with temp tables map to CREATE TEMPORARY VIEW
+    kind = expression.args["kind"]
+    if kind.upper() == "TABLE" and temporary:
+        if expression.expression:
+            return f"CREATE TEMPORARY VIEW {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
+        else:
+            # CREATE TEMPORARY TABLE may require storage provider
+            expression = self.temporary_storage_provider(expression)
+
     return create_with_partitions_sql(self, expression)
 
 
@@ -487,6 +505,10 @@ class Hive(Dialect):
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def temporary_storage_provider(self, expression):
+            # Hive has no temporary storage provider (there are hive settings though)
+            return expression
 
         def parameter_sql(self, expression: exp.Parameter) -> str:
             this = self.sql(expression, "this")

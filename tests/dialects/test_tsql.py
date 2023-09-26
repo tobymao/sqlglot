@@ -21,7 +21,7 @@ class TestTSQL(Validator):
         self.validate_all(
             """CREATE TABLE [dbo].[mytable](
                 [email] [varchar](255) NOT NULL,
-                CONSTRAINT [UN_t_external_cmm_email] UNIQUE NONCLUSTERED 
+                CONSTRAINT [UN_t_mytable] UNIQUE NONCLUSTERED 
                 (
                     [email] ASC
                 )

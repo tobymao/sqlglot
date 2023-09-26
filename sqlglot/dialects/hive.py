@@ -58,6 +58,7 @@ def _create_sql(self, expression: exp.Create) -> str:
             constraint.parent.pop()
     return create_with_partitions_sql(self, expression)
 
+
 def _add_date_sql(self: Hive.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
@@ -436,7 +437,6 @@ class Hive(Dialect):
             if e.args.get("allow_null")
             else "NOT NULL",
             exp.VarMap: var_map_sql,
-            #exp.Create: create_with_partitions_sql,
             exp.Create: _create_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),

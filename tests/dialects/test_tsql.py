@@ -6,7 +6,6 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
-        
         self.validate_all(
             """CREATE TABLE [dbo].[mytable](
                 [email] [varchar](255) NOT NULL,
@@ -19,10 +18,10 @@ class TestTSQL(Validator):
                 "hive": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
                 "spark2": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
                 "spark": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
-                "databricks": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)"
-                },
+                "databricks": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+            },
         )
-        
+
         self.validate_all(
             "CREATE TABLE x ( A INTEGER NOT NULL, B INTEGER NULL )",
             write={

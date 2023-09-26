@@ -310,7 +310,7 @@ class TestDialect(Validator):
         )
 
     def test_heredoc_strings(self):
-        for dialect in ("clickhouse", "postgres"):
+        for dialect in ("clickhouse", "postgres", "redshift"):
             # Invalid matching tag
             with self.assertRaises(TokenError):
                 parse_one("SELECT $tag1$invalid heredoc string$tag2$", dialect=dialect)

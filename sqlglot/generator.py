@@ -2603,7 +2603,7 @@ class Generator:
         self,
         expression: t.Optional[exp.Expression] = None,
         key: t.Optional[str] = None,
-        sqls: t.Optional[t.List[str]] = None,
+        sqls: t.Optional[t.Collection[str | exp.Expression]] = None,
         flat: bool = False,
         indent: bool = True,
         skip_first: bool = False,

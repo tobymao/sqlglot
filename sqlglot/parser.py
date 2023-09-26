@@ -590,6 +590,9 @@ class Parser(metaclass=_Parser):
             exp.National, this=token.text
         ),
         TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, this=token.text),
+        TokenType.HEREDOC_STRING: lambda self, token: self.expression(
+            exp.RawString, this=token.text
+        ),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
     }
 

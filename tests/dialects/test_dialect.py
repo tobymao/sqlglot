@@ -5,6 +5,7 @@ from sqlglot import (
     Dialects,
     ErrorLevel,
     ParseError,
+    TokenError,
     UnsupportedError,
     parse_one,
 )
@@ -307,6 +308,44 @@ class TestDialect(Validator):
             "CAST('127.0.0.1/32' AS INET)",
             read={"postgres": "INET '127.0.0.1/32'"},
         )
+
+    def test_heredoc_strings(self):
+        for dialect in ("clickhouse", "postgres", "redshift"):
+            # Invalid matching tag
+            with self.assertRaises(TokenError):
+                parse_one("SELECT $tag1$invalid heredoc string$tag2$", dialect=dialect)
+
+            # Unmatched tag
+            with self.assertRaises(TokenError):
+                parse_one("SELECT $tag1$invalid heredoc string", dialect=dialect)
+
+            # Without tag
+            self.validate_all(
+                "SELECT 'this is a heredoc string'",
+                read={
+                    dialect: "SELECT $$this is a heredoc string$$",
+                },
+            )
+            self.validate_all(
+                "SELECT ''",
+                read={
+                    dialect: "SELECT $$$$",
+                },
+            )
+
+            # With tag
+            self.validate_all(
+                "SELECT 'this is also a heredoc string'",
+                read={
+                    dialect: "SELECT $foo$this is also a heredoc string$foo$",
+                },
+            )
+            self.validate_all(
+                "SELECT ''",
+                read={
+                    dialect: "SELECT $foo$$foo$",
+                },
+            )
 
     def test_decode(self):
         self.validate_identity("DECODE(bin, charset)")

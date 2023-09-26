@@ -43,6 +43,7 @@ class ClickHouse(Dialect):
         STRING_ESCAPES = ["'", "\\"]
         BIT_STRINGS = [("0b", "")]
         HEX_STRINGS = [("0x", ""), ("0X", "")]
+        HEREDOC_STRINGS = ["$"]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
@@ -73,6 +74,11 @@ class ClickHouse(Dialect):
             "UINT32": TokenType.UINT,
             "UINT64": TokenType.UBIGINT,
             "UINT8": TokenType.UTINYINT,
+        }
+
+        SINGLE_TOKENS = {
+            **tokens.Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.HEREDOC_STRING,
         }
 
     class Parser(parser.Parser):

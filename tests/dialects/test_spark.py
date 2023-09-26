@@ -8,6 +8,7 @@ class TestSpark(Validator):
     dialect = "spark"
 
     def test_ddl(self):
+        self.validate_identity("CREATE TEMPORARY VIEW test AS SELECT 1")
         self.validate_identity("CREATE TABLE foo (col VARCHAR(50))")
         self.validate_identity("CREATE TABLE foo (col STRUCT<struct_col_a: VARCHAR((50))>)")
         self.validate_identity("CREATE TABLE foo (col STRING) CLUSTERED BY (col) INTO 10 BUCKETS")

@@ -205,6 +205,9 @@ class TestMySQL(Validator):
         )
         self.validate_identity("INTERVAL '1' YEAR")
         self.validate_identity("DATE_ADD(x, INTERVAL 1 YEAR)")
+        self.validate_identity("CHAR(0)")
+        self.validate_identity("CHAR(77, 121, 83, 81, '76')")
+        self.validate_identity("CHAR(77, 77.3, '77.3' USING utf8mb4)")
 
     def test_types(self):
         self.validate_identity("CAST(x AS MEDIUMINT) + CAST(y AS YEAR(4))")
@@ -243,6 +246,13 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT DAY_OF_YEAR('2023-01-01')", "SELECT DAYOFYEAR('2023-01-01')")
         self.validate_identity(
             "SELECT WEEK_OF_YEAR('2023-01-01')", "SELECT WEEKOFYEAR('2023-01-01')"
+        )
+        self.validate_all(
+            "CHAR(10)",
+            write={
+                "mysql": "CHAR(10)",
+                "presto": "CHR(10)",
+            },
         )
 
     def test_escape(self):

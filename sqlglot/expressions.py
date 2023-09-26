@@ -4293,6 +4293,12 @@ class Coalesce(Func):
     _sql_names = ["COALESCE", "IFNULL", "NVL"]
 
 
+class Chr(Func):
+    arg_types = {"this": True, "charset": False, "expressions": False}
+    is_var_len_args = True
+    _sql_names = ["CHR", "CHAR"]
+
+
 class Concat(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True

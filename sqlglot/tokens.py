@@ -77,6 +77,7 @@ class TokenType(AutoName):
     BYTE_STRING = auto()
     NATIONAL_STRING = auto()
     RAW_STRING = auto()
+    HEREDOC_STRING = auto()
 
     # types
     BIT = auto()
@@ -418,6 +419,7 @@ class _Tokenizer(type):
             **_quotes_to_format(TokenType.BYTE_STRING, klass.BYTE_STRINGS),
             **_quotes_to_format(TokenType.HEX_STRING, klass.HEX_STRINGS),
             **_quotes_to_format(TokenType.RAW_STRING, klass.RAW_STRINGS),
+            **_quotes_to_format(TokenType.HEREDOC_STRING, klass.HEREDOC_STRINGS),
         }
 
         klass._STRING_ESCAPES = set(klass.STRING_ESCAPES)
@@ -484,6 +486,7 @@ class Tokenizer(metaclass=_Tokenizer):
     BYTE_STRINGS: t.List[str | t.Tuple[str, str]] = []
     HEX_STRINGS: t.List[str | t.Tuple[str, str]] = []
     RAW_STRINGS: t.List[str | t.Tuple[str, str]] = []
+    HEREDOC_STRINGS: t.List[str | t.Tuple[str, str]] = []
     IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
     IDENTIFIER_ESCAPES = ['"']
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
@@ -997,9 +1000,11 @@ class Tokenizer(metaclass=_Tokenizer):
                 word = word.upper()
                 self._add(self.KEYWORDS[word], text=word)
                 return
+
         if self._char in self.SINGLE_TOKENS:
             self._add(self.SINGLE_TOKENS[self._char], text=self._char)
             return
+
         self._scan_var()
 
     def _scan_comment(self, comment_start: str) -> bool:
@@ -1126,6 +1131,10 @@ class Tokenizer(metaclass=_Tokenizer):
                 base = 16
             elif token_type == TokenType.BIT_STRING:
                 base = 2
+            elif token_type == TokenType.HEREDOC_STRING:
+                self._advance()
+                tag = "" if self._char == end else self._extract_string(end)
+                end = f"{start}{tag}{end}"
         else:
             return False
 

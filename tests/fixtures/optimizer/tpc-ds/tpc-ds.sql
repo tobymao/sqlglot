@@ -4793,10 +4793,10 @@ WITH "foo" AS (
     "foo"."i_item_sk" AS "i_item_sk",
     "foo"."d_moy" AS "d_moy",
     "foo"."mean" AS "mean",
-    CASE "foo"."mean" WHEN 0 THEN NULL ELSE "foo"."stdev" / "foo"."mean" END AS "cov"
+    CASE "foo"."mean" WHEN FALSE THEN NULL ELSE "foo"."stdev" / "foo"."mean" END AS "cov"
   FROM "foo" AS "foo"
   WHERE
-    CASE "foo"."mean" WHEN 0 THEN 0 ELSE "foo"."stdev" / "foo"."mean" END > 1
+    CASE "foo"."mean" WHEN FALSE THEN 0 ELSE "foo"."stdev" / "foo"."mean" END > 1
 )
 SELECT
   "inv1"."w_warehouse_sk" AS "w_warehouse_sk",

@@ -326,12 +326,24 @@ class TestDialect(Validator):
                     dialect: "SELECT $$this is a heredoc string$$",
                 },
             )
+            self.validate_all(
+                "SELECT ''",
+                read={
+                    dialect: "SELECT $$$$",
+                },
+            )
 
             # With tag
             self.validate_all(
                 "SELECT 'this is also a heredoc string'",
                 read={
                     dialect: "SELECT $foo$this is also a heredoc string$foo$",
+                },
+            )
+            self.validate_all(
+                "SELECT ''",
+                read={
+                    dialect: "SELECT $foo$$foo$",
                 },
             )
 

@@ -2223,6 +2223,8 @@ class Parser(metaclass=_Parser):
                     key, expression = parser(self)
 
                     if expression:
+                        if this.args.get(key):
+                            raise ParseError(f"{key} is already set")
                         this.set(key, expression)
                         if key == "limit":
                             offset = expression.args.pop("offset", None)

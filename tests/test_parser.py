@@ -225,6 +225,12 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("SELECT foo( FROM bar")
 
+        with self.assertRaises(ParseError):
+            parse_one("SELECT * FROM foo WHERE true WHERE false")
+
+        with self.assertRaises(ParseError):
+            parse_one("SELECT * FROM foo LIMIT 10 LIMIT 100")
+
         self.assertEqual(
             parse_one(
                 "CREATE TABLE t (i UInt8) ENGINE = AggregatingMergeTree() ORDER BY tuple()",

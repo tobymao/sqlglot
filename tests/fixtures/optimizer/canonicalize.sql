@@ -29,6 +29,12 @@ SELECT "x"."a" AS "a" FROM "x" AS "x" GROUP BY "x"."a" HAVING SUM("x"."b") <> 0 
 SELECT a FROM x WHERE 1;
 SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE 1 <> 0;
 
+SELECT a FROM x WHERE COALESCE(0, 1);
+SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE COALESCE(0 <> 0, 1 <> 0);
+
+SELECT a FROM x WHERE CASE WHEN COALESCE(b, 1) THEN 1 ELSE 0 END;
+SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE CASE WHEN COALESCE("x"."b" <> 0, 1 <> 0) THEN 1 ELSE 0 END <> 0;
+
 --------------------------------------
 -- Replace date functions
 --------------------------------------

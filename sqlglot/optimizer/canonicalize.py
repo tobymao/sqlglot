@@ -84,7 +84,7 @@ def ensure_bool_predicates(expression: exp.Expression) -> exp.Expression:
         _replace_int_predicate(expression.left)
         _replace_int_predicate(expression.right)
 
-    elif isinstance(expression, (exp.Where, exp.Having)):
+    elif isinstance(expression, (exp.Where, exp.Having, exp.If)):
         _replace_int_predicate(expression.this)
 
     return expression
@@ -114,5 +114,8 @@ def _replace_cast(node: exp.Expression, to: exp.DataType.Type) -> None:
 
 
 def _replace_int_predicate(expression: exp.Expression) -> None:
-    if expression.type and expression.type.this in exp.DataType.INTEGER_TYPES:
+    if isinstance(expression, exp.Coalesce):
+        for _, child in expression.iter_expressions():
+            _replace_int_predicate(child)
+    elif expression.type and expression.type.this in exp.DataType.INTEGER_TYPES:
         expression.replace(exp.NEQ(this=expression.copy(), expression=exp.Literal.number(0)))

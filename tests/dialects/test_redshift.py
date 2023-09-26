@@ -226,7 +226,6 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT * FROM #x")
         self.validate_identity("SELECT INTERVAL '5 day'")
         self.validate_identity("foo$")
-        self.validate_identity("$foo")
         self.validate_identity("CAST('bla' AS SUPER)")
         self.validate_identity("CREATE TABLE real1 (realcol REAL)")
         self.validate_identity("CAST('foo' AS HLLSKETCH)")

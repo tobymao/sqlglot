@@ -6,6 +6,23 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        
+        self.validate_all(
+            """CREATE TABLE [dbo].[mytable](
+                [email] [varchar](255) NOT NULL,
+                CONSTRAINT [UN_t_mytable] UNIQUE NONCLUSTERED 
+                (
+                    [email] ASC
+                )
+                )""",
+            write={
+                "hive": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+                "spark2": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+                "spark": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+                "databricks": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)"
+                },
+        )
+        
         self.validate_all(
             "CREATE TABLE x ( A INTEGER NOT NULL, B INTEGER NULL )",
             write={
@@ -16,17 +33,6 @@ class TestTSQL(Validator):
 
         self.validate_identity(
             'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)'
-        )
-
-        self.validate_all(
-            """CREATE TABLE [dbo].[mytable](
-                [email] [varchar](255) NOT NULL,
-                CONSTRAINT [UN_t_mytable] UNIQUE NONCLUSTERED 
-                (
-                    [email] ASC
-                )
-                )""",
-            write={"spark": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)"},
         )
 
         self.validate_all(

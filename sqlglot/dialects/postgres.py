@@ -248,11 +248,10 @@ class Postgres(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
-        QUOTES = ["'", "$$"]
-
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
+        HEREDOC_STRINGS = ["$"]
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
@@ -296,7 +295,7 @@ class Postgres(Dialect):
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
-            "$": TokenType.PARAMETER,
+            "$": TokenType.HEREDOC_STRING,
         }
 
         VAR_SINGLE_TOKENS = {"$"}

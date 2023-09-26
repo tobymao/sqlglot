@@ -248,6 +248,7 @@ class MySQL(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
+            "CHAR": lambda self: self._parse_chr(),
             "GROUP_CONCAT": lambda self: self.expression(
                 exp.GroupConcat,
                 this=self._parse_lambda(),
@@ -531,6 +532,18 @@ class MySQL(Dialect):
 
             return super()._parse_type(parse_interval=parse_interval)
 
+        def _parse_chr(self) -> t.Optional[exp.Expression]:
+            expressions = self._parse_csv(self._parse_conjunction)
+            kwargs: t.Dict[str, t.Any] = {"this": seq_get(expressions, 0)}
+
+            if len(expressions) > 1:
+                kwargs["expressions"] = expressions[1:]
+
+            if self._match(TokenType.USING):
+                kwargs["charset"] = self._parse_var()
+
+            return self.expression(exp.Chr, **kwargs)
+
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
         NULL_ORDERING_SUPPORTED = False
@@ -717,3 +730,9 @@ class MySQL(Dialect):
                 limit_offset = f"{offset}, {limit}" if offset else limit
                 return f" LIMIT {limit_offset}"
             return ""
+
+        def chr_sql(self, expression: exp.Chr) -> str:
+            this = self.expressions(sqls=[expression.this] + expression.expressions)
+            charset = expression.args.get("charset")
+            using = f" USING {self.sql(charset)}" if charset else ""
+            return f"CHAR({this}{using})"

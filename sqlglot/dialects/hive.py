@@ -480,6 +480,13 @@ class Hive(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def create_sql(self, expression: exp.Create) -> str:
+            # remove Unique Column Constraints
+            for constraint in expression.find_all(exp.UniqueColumnConstraint):
+                if constraint.parent:
+                    constraint.parent.pop()
+            return super().create_sql(expression)
+
         def parameter_sql(self, expression: exp.Parameter) -> str:
             this = self.sql(expression, "this")
             parent = expression.parent

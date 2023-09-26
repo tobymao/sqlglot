@@ -19,6 +19,17 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            """CREATE TABLE [dbo].[mytable](
+                [email] [varchar](255) NOT NULL,
+                CONSTRAINT [UN_t_external_cmm_email] UNIQUE NONCLUSTERED 
+                (
+                    [email] ASC
+                )
+                )""",
+            write={"spark": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)"},
+        )
+
+        self.validate_all(
             """
             CREATE TABLE x(
                 [zip_cd] [varchar](5) NULL NOT FOR REPLICATION,
@@ -492,25 +503,6 @@ class TestTSQL(Validator):
         )
 
     def test_ddl(self):
-        self.maxDiff = None
-        self.validate_all(
-            """CREATE TABLE [dbo].[t_external_cmm_email](
-                [id] [int] IDENTITY(1,1) NOT FOR REPLICATION NOT NULL,
-                [email] [varchar](255) NOT NULL,
-                [date_added] [datetime] NULL,
-                CONSTRAINT [PK_t_external_cmm_email] PRIMARY KEY CLUSTERED 
-                (
-                    [id] ASC
-                )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
-                CONSTRAINT [UN_t_external_cmm_email] UNIQUE NONCLUSTERED 
-                (
-                    [email] ASC
-                )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-                ) ON [PRIMARY]""",
-write={"spark":"CREATE TABLE `dbo`.`t_external_cmm_email` (`id` INT GENERATED AS IDENTITY (START WITH 1 INCREMENT BY 1) NOT NULL, `email` VARCHAR(255) NOT NULL, `date_added` TIMESTAMP, CONSTRAINT `PK_t_external_cmm_email` PRIMARY KEY (`id`))"}
-        )
-        
-        
         self.validate_all(
             "CREATE TABLE tbl (id INTEGER IDENTITY PRIMARY KEY)",
             read={

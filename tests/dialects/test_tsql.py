@@ -594,6 +594,10 @@ class TestTSQL(Validator):
                 "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
                 "oracle": "CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
+                "hive": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "spark2": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "spark": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "databricks": "CREATE TEMPORARY TABLE mytemptable (a INT)",
             },
         )
 

@@ -1,6 +1,45 @@
 Changelog
 =========
 
+## [v18.8.0] - 2023-09-26
+### :boom: BREAKING CHANGES
+- due to [`66d7385`](https://github.com/tobymao/sqlglot/commit/66d738514feaddf3a92095dcdef62c0d43c291f5) - store expressions in Offset.expression when using builder fixes [#2312](https://github.com/tobymao/sqlglot/pull/2312) *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*:
+
+  store expressions in Offset.expression when using builder fixes #2312
+
+- due to [`cdcc564`](https://github.com/tobymao/sqlglot/commit/cdcc564130a01188295948d5562f71d78dbffa12) - make ObjectIdentifier, IntervalSpan and PseudoType DataTypes *(PR [#2315](https://github.com/tobymao/sqlglot/pull/2315) by [@GeorgeSittas](https://github.com/GeorgeSittas))*:
+
+  make ObjectIdentifier, IntervalSpan and PseudoType DataTypes (#2315)
+
+- due to [`ebdfc59`](https://github.com/tobymao/sqlglot/commit/ebdfc592026db133f4a9828ff88c096a7d6b0f54) - add support for heredoc strings (Postgres, ClickHouse) *(PR [#2328](https://github.com/tobymao/sqlglot/pull/2328) by [@GeorgeSittas](https://github.com/GeorgeSittas))*:
+
+  add support for heredoc strings (Postgres, ClickHouse) (#2328)
+
+
+### :sparkles: New Features
+- [`c50e74c`](https://github.com/tobymao/sqlglot/commit/c50e74cf78a64d7b461054d4dc35a2e40195277b) - support for percentiles in duckdb, snowflake *(PR [#2302](https://github.com/tobymao/sqlglot/pull/2302) by [@longxiaofei](https://github.com/longxiaofei))*
+- [`8ed0a81`](https://github.com/tobymao/sqlglot/commit/8ed0a810ef4ec36ca648ad55b7a873ce04b8da30) - **bigquery**: add support for CREATE TABLE .. COPY DDL syntax *(PR [#2305](https://github.com/tobymao/sqlglot/pull/2305) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#2304](undefined) opened by [@razvan-am](https://github.com/razvan-am)*
+- [`3cb3131`](https://github.com/tobymao/sqlglot/commit/3cb3131fc9210c46afba2ece8c43fad852106de5) - **clickhouse**: add isnan and startswith renamings *(PR [#2310](https://github.com/tobymao/sqlglot/pull/2310) by [@cpcloud](https://github.com/cpcloud))*
+- [`f473e88`](https://github.com/tobymao/sqlglot/commit/f473e88523d2c0a66719e3b8a3e8fcfb6cc5ed3c) - **postgres**: add support for operator classes in CREATE INDEX DDL *(PR [#2317](https://github.com/tobymao/sqlglot/pull/2317) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#2278](undefined) opened by [@Nitrino](https://github.com/Nitrino)*
+- [`64a7b93`](https://github.com/tobymao/sqlglot/commit/64a7b93a62595201294b0b30a1c791d9ffc6f856) - **optimizer**: canonicalize date arithmetic funcs *(PR [#2320](https://github.com/tobymao/sqlglot/pull/2320) by [@barakalon](https://github.com/barakalon))*
+- [`f3d928b`](https://github.com/tobymao/sqlglot/commit/f3d928bd48f7268a43f0803845c734d6e1fedd34) - **optimizer**: ensure boolean predicates on CASE statement *(PR [#2321](https://github.com/tobymao/sqlglot/pull/2321) by [@barakalon](https://github.com/barakalon))*
+- [`ebdfc59`](https://github.com/tobymao/sqlglot/commit/ebdfc592026db133f4a9828ff88c096a7d6b0f54) - add support for heredoc strings (Postgres, ClickHouse) *(PR [#2328](https://github.com/tobymao/sqlglot/pull/2328) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#2316](undefined) opened by [@pkit](https://github.com/pkit)*
+
+### :bug: Bug Fixes
+- [`c51ecb1`](https://github.com/tobymao/sqlglot/commit/c51ecb168a068079f331c0a4c67b5ca61f6674f1) - **clickhouse**: fix incorrect array param generation for clickhouse quantiles *(PR [#2311](https://github.com/tobymao/sqlglot/pull/2311) by [@cpcloud](https://github.com/cpcloud))*
+- [`66d7385`](https://github.com/tobymao/sqlglot/commit/66d738514feaddf3a92095dcdef62c0d43c291f5) - store expressions in Offset.expression when using builder fixes [#2312](https://github.com/tobymao/sqlglot/pull/2312) *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`cdcc564`](https://github.com/tobymao/sqlglot/commit/cdcc564130a01188295948d5562f71d78dbffa12) - make ObjectIdentifier, IntervalSpan and PseudoType DataTypes *(PR [#2315](https://github.com/tobymao/sqlglot/pull/2315) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`aa2c4c3`](https://github.com/tobymao/sqlglot/commit/aa2c4c3dbb07116e595690a56e7bc2d123557545) - **optimizer**: a couple simplify_date_trunc enhancements *(PR [#2319](https://github.com/tobymao/sqlglot/pull/2319) by [@barakalon](https://github.com/barakalon))*
+- [`180cd8e`](https://github.com/tobymao/sqlglot/commit/180cd8e21713f01080a6b32c55739f5220f56526) - **clickhouse**: support SAMPLE clause fixes [#2323](https://github.com/tobymao/sqlglot/pull/2323) *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`8242a2c`](https://github.com/tobymao/sqlglot/commit/8242a2c65466ab7245a4a9573403787a262d0bbc) - **mysql**: transpile CHAR *(PR [#2329](https://github.com/tobymao/sqlglot/pull/2329) by [@barakalon](https://github.com/barakalon))*
+
+### :wrench: Chores
+- [`363e102`](https://github.com/tobymao/sqlglot/commit/363e10244e8afadca18ffbb303cd6c1765fe1a46) - fix type *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.7.0] - 2023-09-22
 ### :sparkles: New Features
 - [`f1b6546`](https://github.com/tobymao/sqlglot/commit/f1b6546b463b2a6aa075bf31f54d3aa8a59b748f) - add iter for expressions *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1518,3 +1557,4 @@ Changelog
 [v18.5.1]: https://github.com/tobymao/sqlglot/compare/v18.5.0...v18.5.1
 [v18.6.0]: https://github.com/tobymao/sqlglot/compare/v18.5.1...v18.6.0
 [v18.7.0]: https://github.com/tobymao/sqlglot/compare/v18.6.0...v18.7.0
+[v18.8.0]: https://github.com/tobymao/sqlglot/compare/v18.7.0...v18.8.0

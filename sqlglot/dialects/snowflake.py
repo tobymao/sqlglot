@@ -318,6 +318,28 @@ class Snowflake(Dialect):
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
         }
 
+        STAGED_FILE_SINGLE_TOKENS = {
+            TokenType.DOT,
+            TokenType.MOD,
+            TokenType.SLASH,
+        }
+
+        def _parse_table_parts(self, schema: bool = False) -> exp.Table:
+            # https://docs.snowflake.com/en/user-guide/querying-stage
+            if self._match_text_seq("@"):
+                table_name = "@"
+                while True:
+                    self._advance()
+                    table_name += self._prev.text
+                    if not self._match_set(self.STAGED_FILE_SINGLE_TOKENS, advance=False):
+                        break
+                    while self._match_set(self.STAGED_FILE_SINGLE_TOKENS):
+                        table_name += self._prev.text
+
+                return self.expression(exp.Table, this=exp.Identifier(this=table_name))
+
+            return super()._parse_table_parts(schema=schema)
+
         def _parse_id_var(
             self,
             any_token: bool = True,

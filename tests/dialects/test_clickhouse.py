@@ -24,7 +24,9 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
-        self.validate_identity("SELECT sum(foo * bar) FROM bla SAMPLE (10000000)")
+        self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 0.01)")
+        self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 1 / 10 OFFSET 1 / 2)")
+        self.validate_identity("SELECT sum(foo * bar) FROM bla SAMPLE 10000000")
         self.validate_identity("CAST(x AS Nested(ID UInt32, Serial UInt32, EventTime DATETIME))")
         self.validate_identity("CAST(x AS Enum('hello' = 1, 'world' = 2))")
         self.validate_identity("CAST(x AS Enum('hello', 'world'))")

@@ -210,6 +210,9 @@ class Generator:
     # Whether or not CREATE TABLE .. COPY .. is supported. False means we'll generate CLONE instead of COPY
     SUPPORTS_TABLE_COPY = True
 
+    # Whether or not parentheses are required around the table sample's expression
+    TABLESAMPLE_REQUIRES_PARENS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1353,6 +1356,7 @@ class Generator:
         else:
             this = self.sql(expression, "this")
             alias = ""
+
         method = self.sql(expression, "method")
         method = f"{method.upper()} " if method and self.TABLESAMPLE_WITH_METHOD else ""
         numerator = self.sql(expression, "bucket_numerator")
@@ -1364,13 +1368,20 @@ class Generator:
         percent = f"{percent} PERCENT" if percent else ""
         rows = self.sql(expression, "rows")
         rows = f"{rows} ROWS" if rows else ""
+
         size = self.sql(expression, "size")
         if size and self.TABLESAMPLE_SIZE_IS_PERCENT:
             size = f"{size} PERCENT"
+
         seed = self.sql(expression, "seed")
         seed = f" {seed_prefix} ({seed})" if seed else ""
         kind = expression.args.get("kind", "TABLESAMPLE")
-        return f"{this} {kind} {method}({bucket}{percent}{rows}{size}){seed}{alias}"
+
+        expr = f"{bucket}{percent}{rows}{size}"
+        if self.TABLESAMPLE_REQUIRES_PARENS:
+            expr = f"({expr})"
+
+        return f"{this} {kind} {method}{expr}{seed}{alias}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)

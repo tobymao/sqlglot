@@ -7,6 +7,45 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_all(
+            "CREATE TABLE #mytemptable (a INTEGER)",
+            read={
+                "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+            },
+            write={
+                "tsql": "CREATE TABLE #mytemptable (a INTEGER)",
+                "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "oracle": "CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
+                "hive": "CREATE TEMPORARY TABLE mytemptable (a INT)",
+                "spark2": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
+                "spark": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
+                "databricks": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
+            write={
+                "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT) USING PARQUET",
+                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
+            },
+        )
+        self.validate_all(
+            """CREATE TABLE [dbo].[mytable](
+                [email] [varchar](255) NOT NULL,
+                CONSTRAINT [UN_t_mytable] UNIQUE NONCLUSTERED 
+                (
+                    [email] ASC
+                )
+                )""",
+            write={
+                "hive": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+                "spark2": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+                "spark": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+                "databricks": "CREATE TABLE `dbo`.`mytable` (`email` VARCHAR(255) NOT NULL)",
+            },
+        )
+
+        self.validate_all(
             "CREATE TABLE x ( A INTEGER NOT NULL, B INTEGER NULL )",
             write={
                 "tsql": "CREATE TABLE x (A INTEGER NOT NULL, B INTEGER NULL)",
@@ -566,18 +605,6 @@ class TestTSQL(Validator):
             write={
                 "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT) USING PARQUET",
                 "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE #mytemptable (a INTEGER)",
-            read={
-                "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
-            },
-            write={
-                "tsql": "CREATE TABLE #mytemptable (a INTEGER)",
-                "snowflake": "CREATE TEMPORARY TABLE mytemptable (a INT)",
-                "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",
-                "oracle": "CREATE TEMPORARY TABLE mytemptable (a NUMBER)",
             },
         )
 

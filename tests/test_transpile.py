@@ -604,7 +604,7 @@ LEFT OUTER JOIN b""",
         self.validate(
             "CREATE TEMPORARY TABLE test AS SELECT 1",
             "CREATE TEMPORARY VIEW test AS SELECT 1",
-            write="spark",
+            write="spark2",
         )
 
     @mock.patch("sqlglot.helper.logger")

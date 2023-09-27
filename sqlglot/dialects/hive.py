@@ -51,6 +51,32 @@ TIME_DIFF_FACTOR = {
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 
+def _create_sql(self, expression: exp.Create) -> str:
+    expression = expression.copy()
+
+    # remove UNIQUE column constraints
+    for constraint in expression.find_all(exp.UniqueColumnConstraint):
+        if constraint.parent:
+            constraint.parent.pop()
+
+    properties = expression.args.get("properties")
+    temporary = any(
+        isinstance(prop, exp.TemporaryProperty)
+        for prop in (properties.expressions if properties else [])
+    )
+
+    # CTAS with temp tables map to CREATE TEMPORARY VIEW
+    kind = expression.args["kind"]
+    if kind.upper() == "TABLE" and temporary:
+        if expression.expression:
+            return f"CREATE TEMPORARY VIEW {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
+        else:
+            # CREATE TEMPORARY TABLE may require storage provider
+            expression = self.temporary_storage_provider(expression)
+
+    return create_with_partitions_sql(self, expression)
+
+
 def _add_date_sql(self: Hive.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
@@ -429,7 +455,7 @@ class Hive(Dialect):
             if e.args.get("allow_null")
             else "NOT NULL",
             exp.VarMap: var_map_sql,
-            exp.Create: create_with_partitions_sql,
+            exp.Create: _create_sql,
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             exp.RegexpExtract: regexp_extract_sql,
@@ -479,6 +505,10 @@ class Hive(Dialect):
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def temporary_storage_provider(self, expression: exp.Create) -> exp.Create:
+            # Hive has no temporary storage provider (there are hive settings though)
+            return expression
 
         def parameter_sql(self, expression: exp.Parameter) -> str:
             this = self.sql(expression, "this")

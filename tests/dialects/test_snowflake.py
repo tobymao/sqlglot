@@ -8,34 +8,11 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        self.validate_identity(
-            'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
-        )
-
-        self.validate_all(
-            "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
-            read={
-                "oracle": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
-            },
-            write={
-                "oracle": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
-                "snowflake": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
-            },
-        )
-        self.validate_all(
-            "SELECT INSERT(a, 0, 0, 'b')",
-            read={
-                "mysql": "SELECT INSERT(a, 0, 0, 'b')",
-                "snowflake": "SELECT INSERT(a, 0, 0, 'b')",
-                "tsql": "SELECT STUFF(a, 0, 0, 'b')",
-            },
-            write={
-                "mysql": "SELECT INSERT(a, 0, 0, 'b')",
-                "snowflake": "SELECT INSERT(a, 0, 0, 'b')",
-                "tsql": "SELECT STUFF(a, 0, 0, 'b')",
-            },
-        )
-
+        self.validate_identity("SELECT * FROM @~")
+        self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
+        self.validate_identity("SELECT * FROM @mystage")
+        self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
+        self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("LISTAGG(data['some_field'], ',')")
         self.validate_identity("WEEKOFYEAR(tstamp)")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
@@ -65,6 +42,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("REGEXP_REPLACE('target', 'pattern', '\n')")
         self.validate_identity(
+            'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
+        )
+        self.validate_identity(
             'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)'
         )
         self.validate_identity(
@@ -82,11 +62,38 @@ class TestSnowflake(Validator):
             "SELECT {'test': 'best'}::VARIANT",
             "SELECT CAST(OBJECT_CONSTRUCT('test', 'best') AS VARIANT)",
         )
+        self.validate_identity(
+            "SELECT parse_json($1):a.b FROM @mystage2/data1.json.gz",
+            "SELECT PARSE_JSON($1)['a'].b FROM @mystage2/data1.json.gz",
+        )
 
         self.validate_all("CAST(x AS BYTEINT)", write={"snowflake": "CAST(x AS INT)"})
         self.validate_all("CAST(x AS CHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
+        self.validate_all(
+            "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+            read={
+                "oracle": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+            },
+            write={
+                "oracle": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+                "snowflake": "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
+            },
+        )
+        self.validate_all(
+            "SELECT INSERT(a, 0, 0, 'b')",
+            read={
+                "mysql": "SELECT INSERT(a, 0, 0, 'b')",
+                "snowflake": "SELECT INSERT(a, 0, 0, 'b')",
+                "tsql": "SELECT STUFF(a, 0, 0, 'b')",
+            },
+            write={
+                "mysql": "SELECT INSERT(a, 0, 0, 'b')",
+                "snowflake": "SELECT INSERT(a, 0, 0, 'b')",
+                "tsql": "SELECT STUFF(a, 0, 0, 'b')",
+            },
+        )
         self.validate_all(
             "ARRAY_GENERATE_RANGE(0, 3)",
             write={

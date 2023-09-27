@@ -220,7 +220,6 @@ class Spark2(Hive):
 
         def temporary_storage_provider(self, expression: exp.Create) -> exp.Create:
             # spark2, spark, Databricks require a storage provider for temporary tables
-            expression = expression.copy()
             provider = exp.FileFormatProperty(this=exp.Literal.string("parquet"))
             expression.args["properties"].append("expressions", provider)
             return expression

@@ -239,6 +239,8 @@ class Snowflake(Dialect):
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
 
+        TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,

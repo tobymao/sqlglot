@@ -51,6 +51,10 @@ class TestSnowflake(Validator):
             "SELECT state, city, SUM(retail_price * quantity) AS gross_revenue FROM sales GROUP BY ALL"
         )
         self.validate_identity(
+            "SELECT * FROM foo window",
+            "SELECT * FROM foo AS window",
+        )
+        self.validate_identity(
             r"SELECT RLIKE(a, $$regular expression with \ characters: \d{2}-\d{3}-\d{4}$$, 'i') FROM log_source",
             r"SELECT REGEXP_LIKE(a, 'regular expression with \\ characters: \\d{2}-\\d{3}-\\d{4}', 'i') FROM log_source",
         )

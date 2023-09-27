@@ -2734,14 +2734,18 @@ class Parser(metaclass=_Parser):
         )
         method = self._parse_var(tokens=(TokenType.ROW,))
 
-        self._match(TokenType.L_PAREN)
+        matched_l_paren = self._match(TokenType.L_PAREN)
 
         if self.TABLESAMPLE_CSV:
             num = None
             expressions = self._parse_csv(self._parse_primary)
         else:
             expressions = None
-            num = self._parse_primary()
+            num = (
+                self._parse_factor()
+                if self._match(TokenType.NUMBER, advance=False)
+                else self._parse_primary()
+            )
 
         if self._match_text_seq("BUCKET"):
             bucket_numerator = self._parse_number()
@@ -2756,7 +2760,8 @@ class Parser(metaclass=_Parser):
         elif num:
             size = num
 
-        self._match(TokenType.R_PAREN)
+        if matched_l_paren:
+            self._match_r_paren()
 
         if self._match(TokenType.L_PAREN):
             method = self._parse_var()

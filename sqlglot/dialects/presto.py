@@ -21,6 +21,7 @@ from sqlglot.dialects.dialect import (
     struct_extract_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
+    to_days_to_datediff_sql,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
@@ -354,6 +355,7 @@ class Presto(Dialect):
             exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",
             exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),
+            exp.ToDays: to_days_to_datediff_sql,
             exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,

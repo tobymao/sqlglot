@@ -46,10 +46,23 @@ ARG_TYPES: t.Dict[
     t.Type[exp.Expression], t.Dict[str, t.Tuple[t.Iterable[exp.DataType.Type], exp.DataType.Type]]
 ] = {
     exp.DateAdd: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.DateDiff: {
+        "this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE),
+        "expression": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE),
+    },
     exp.DateSub: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
     exp.DatetimeAdd: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
     exp.DatetimeSub: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
+    exp.Day: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.DayOfMonth: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.DayOfWeek: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.DayOfYear: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
     exp.Extract: {"expression": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
+    exp.Month: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.ToDays: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.Week: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.WeekOfYear: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
+    exp.Year: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
 }
 
 

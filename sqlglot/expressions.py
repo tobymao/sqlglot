@@ -4390,6 +4390,10 @@ class DayOfYear(Func):
     _sql_names = ["DAY_OF_YEAR", "DAYOFYEAR"]
 
 
+class ToDays(Func):
+    pass
+
+
 class WeekOfYear(Func):
     _sql_names = ["WEEK_OF_YEAR", "WEEKOFYEAR"]
 

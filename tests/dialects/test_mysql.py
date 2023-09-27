@@ -506,6 +506,17 @@ class TestMySQL(Validator):
         self.validate_identity("FROM_UNIXTIME(a, b)")
         self.validate_identity("FROM_UNIXTIME(a, b, c)")
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
+        self.validate_all(
+            "SELECT TO_DAYS('2007-10-07')",
+            write={
+                "mysql": "SELECT TO_DAYS('2007-10-07')",
+                "presto": "SELECT DATE_DIFF('DAY', CAST('0000-01-01' AS DATE), '2007-10-07')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(x, y)",
+            write={"mysql": "SELECT DATEDIFF(x, y)", "presto": "SELECT DATE_DIFF('day', y, x)"},
+        )
 
     def test_mysql(self):
         self.validate_all(

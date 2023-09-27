@@ -2741,7 +2741,11 @@ class Parser(metaclass=_Parser):
             expressions = self._parse_csv(self._parse_primary)
         else:
             expressions = None
-            num = self._parse_term()
+            num = (
+                self._parse_factor()
+                if self._match(TokenType.NUMBER, advance=False)
+                else self._parse_primary()
+            )
 
         if self._match_text_seq("BUCKET"):
             bucket_numerator = self._parse_number()

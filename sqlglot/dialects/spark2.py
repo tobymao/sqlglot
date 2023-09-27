@@ -218,7 +218,7 @@ class Spark2(Hive):
         WRAP_DERIVED_VALUES = False
         CREATE_FUNCTION_RETURN_AS = False
 
-        def temporary_storage_provider(self, expression):
+        def temporary_storage_provider(self, expression: exp.Create):
             # spark2, spark, Databricks require a storage provider for temporary tables
             expression = expression.copy()
             provider = exp.FileFormatProperty(this=exp.Literal.string("parquet"))

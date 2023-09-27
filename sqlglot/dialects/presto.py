@@ -309,6 +309,9 @@ class Presto(Dialect):
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.First: _first_last_sql,
             exp.Group: transforms.preprocess([transforms.unalias_group]),
+            exp.GroupConcat: lambda self, e: self.func(
+                "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
+            ),
             exp.Hex: rename_func("TO_HEX"),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,

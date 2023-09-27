@@ -507,10 +507,10 @@ class TestMySQL(Validator):
         self.validate_identity("FROM_UNIXTIME(a, b, c)")
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
         self.validate_all(
-            "SELECT TO_DAYS('2007-10-07')",
+            "SELECT TO_DAYS(x)",
             write={
-                "mysql": "SELECT TO_DAYS('2007-10-07')",
-                "presto": "SELECT DATE_DIFF('DAY', CAST('0000-01-01' AS DATE), '2007-10-07')",
+                "mysql": "SELECT TO_DAYS(x)",
+                "presto": "SELECT DATE_DIFF('DAY', CAST('0000-01-01' AS DATE), x)",
             },
         )
         self.validate_all(

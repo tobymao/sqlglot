@@ -506,7 +506,7 @@ class Hive(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        def temporary_storage_provider(self, expression: exp.Create):
+        def temporary_storage_provider(self, expression: exp.Create) -> exp.Create:
             # Hive has no temporary storage provider (there are hive settings though)
             return expression
 

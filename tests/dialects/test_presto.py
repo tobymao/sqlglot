@@ -503,6 +503,7 @@ class TestPresto(Validator):
 
     @mock.patch("sqlglot.helper.logger")
     def test_presto(self, logger):
+        self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
         self.validate_identity(
             "SELECT * FROM example.testdb.customer_orders FOR VERSION AS OF 8954597067493422955"
         )

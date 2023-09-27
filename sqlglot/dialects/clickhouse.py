@@ -318,6 +318,7 @@ class ClickHouse(Dialect):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
         NVL2_SUPPORTED = False
+        TABLESAMPLE_REQUIRES_PARENS = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",

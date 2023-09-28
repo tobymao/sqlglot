@@ -106,7 +106,7 @@ def _ts_or_ds_to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -
     return f"DATE({self.sql(expression, 'this')})"
 
 
-def _remove_ts_or_ds_to_date_sql(
+def _remove_ts_or_ds_to_date(
     to_sql: t.Optional[t.Callable[[MySQL.Generator, exp.Expression], str]] = None,
     args: t.Tuple[str] = ("this",),
 ) -> t.Callable[[MySQL.Generator, exp.Func], str]:
@@ -609,17 +609,17 @@ class MySQL(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
-            exp.Day: _remove_ts_or_ds_to_date_sql(),
-            exp.DayOfMonth: _remove_ts_or_ds_to_date_sql(rename_func("DAYOFMONTH")),
-            exp.DayOfWeek: _remove_ts_or_ds_to_date_sql(rename_func("DAYOFWEEK")),
-            exp.DayOfYear: _remove_ts_or_ds_to_date_sql(rename_func("DAYOFYEAR")),
+            exp.Day: _remove_ts_or_ds_to_date(),
+            exp.DayOfMonth: _remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),
+            exp.DayOfWeek: _remove_ts_or_ds_to_date(rename_func("DAYOFWEEK")),
+            exp.DayOfYear: _remove_ts_or_ds_to_date(rename_func("DAYOFYEAR")),
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
-            exp.Month: _remove_ts_or_ds_to_date_sql(),
+            exp.Month: _remove_ts_or_ds_to_date(),
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
             exp.Pivot: no_pivot_sql,
@@ -640,9 +640,9 @@ class MySQL(Dialect):
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: _date_add_sql("ADD"),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
-            exp.Week: _remove_ts_or_ds_to_date_sql(),
-            exp.WeekOfYear: _remove_ts_or_ds_to_date_sql(rename_func("WEEKOFYEAR")),
-            exp.Year: _remove_ts_or_ds_to_date_sql(),
+            exp.Week: _remove_ts_or_ds_to_date(),
+            exp.WeekOfYear: _remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),
+            exp.Year: _remove_ts_or_ds_to_date(),
         }
 
         UNSIGNED_TYPE_MAPPING = {

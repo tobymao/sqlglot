@@ -548,6 +548,10 @@ class TestMySQL(Validator):
             "YEAR(x)",
             write={"mysql": "YEAR(x)", "": "YEAR(TS_OR_DS_TO_DATE(x))"},
         )
+        self.validate_all(
+            "STR_TO_DATE(x, '%M')",
+            read={"": "TS_OR_DS_TO_DATE(x, '%B')"},
+        )
 
     def test_mysql(self):
         self.validate_all(

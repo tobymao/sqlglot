@@ -549,6 +549,10 @@ class TestMySQL(Validator):
             write={"mysql": "YEAR(x)", "": "YEAR(TS_OR_DS_TO_DATE(x))"},
         )
         self.validate_all(
+            "DATE(x)",
+            read={"": "TS_OR_DS_TO_DATE(x)"},
+        )
+        self.validate_all(
             "STR_TO_DATE(x, '%M')",
             read={"": "TS_OR_DS_TO_DATE(x, '%B')"},
         )
@@ -953,6 +957,6 @@ COMMENT='客户账户表'"""
             "MONTHNAME(x)",
             write={
                 "": "TIME_TO_STR(TS_OR_DS_TO_DATE(x), '%B')",
-                "mysql": "DATE_FORMAT(DATE(x), '%M')",
+                "mysql": "DATE_FORMAT(x, '%M')",
             },
         )

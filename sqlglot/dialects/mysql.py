@@ -637,7 +637,9 @@ class MySQL(Dialect):
             exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime", copy=True)),
-            exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
+            exp.TimeToStr: _remove_ts_or_ds_to_date(
+                lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))
+            ),
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: _date_add_sql("ADD"),

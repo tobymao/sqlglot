@@ -178,6 +178,7 @@ class Parser(metaclass=_Parser):
         TokenType.DATERANGE,
         TokenType.DATEMULTIRANGE,
         TokenType.DECIMAL,
+        TokenType.UDECIMAL,
         TokenType.BIGDECIMAL,
         TokenType.UUID,
         TokenType.GEOGRAPHY,
@@ -215,6 +216,7 @@ class Parser(metaclass=_Parser):
         TokenType.MEDIUMINT: TokenType.UMEDIUMINT,
         TokenType.SMALLINT: TokenType.USMALLINT,
         TokenType.TINYINT: TokenType.UTINYINT,
+        TokenType.DECIMAL: TokenType.UDECIMAL,
     }
 
     SUBQUERY_PREDICATES = {

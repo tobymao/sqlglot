@@ -508,6 +508,56 @@ class TestMySQL(Validator):
         self.validate_identity("FROM_UNIXTIME(a, b)")
         self.validate_identity("FROM_UNIXTIME(a, b, c)")
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
+        self.validate_all(
+            "SELECT TO_DAYS(x)",
+            write={
+                "mysql": "SELECT (DATEDIFF(x, '0000-01-01') + 1)",
+                "presto": "SELECT (DATE_DIFF('DAY', CAST(CAST('0000-01-01' AS TIMESTAMP) AS DATE), CAST(CAST(x AS TIMESTAMP) AS DATE)) + 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(x, y)",
+            write={"mysql": "SELECT DATEDIFF(x, y)", "presto": "SELECT DATE_DIFF('day', y, x)"},
+        )
+        self.validate_all(
+            "DAYOFYEAR(x)",
+            write={
+                "mysql": "DAYOFYEAR(x)",
+                "": "DAY_OF_YEAR(TS_OR_DS_TO_DATE(x))",
+            },
+        )
+        self.validate_all(
+            "DAYOFMONTH(x)",
+            write={"mysql": "DAYOFMONTH(x)", "": "DAY_OF_MONTH(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "DAYOFWEEK(x)",
+            write={"mysql": "DAYOFWEEK(x)", "": "DAY_OF_WEEK(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "WEEKOFYEAR(x)",
+            write={"mysql": "WEEKOFYEAR(x)", "": "WEEK_OF_YEAR(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "DAY(x)",
+            write={"mysql": "DAY(x)", "": "DAY(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "WEEK(x)",
+            write={"mysql": "WEEK(x)", "": "WEEK(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "YEAR(x)",
+            write={"mysql": "YEAR(x)", "": "YEAR(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "DATE(x)",
+            read={"": "TS_OR_DS_TO_DATE(x)"},
+        )
+        self.validate_all(
+            "STR_TO_DATE(x, '%M')",
+            read={"": "TS_OR_DS_TO_DATE(x, '%B')"},
+        )
 
     def test_mysql(self):
         self.validate_all(
@@ -564,7 +614,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT DATE(DATE_SUB(`dt`, INTERVAL DAYOFMONTH(`dt`) - 1 DAY)) AS __timestamp FROM tableT",
             write={
-                "mysql": "SELECT DATE(DATE_SUB(`dt`, INTERVAL (DAYOFMONTH(`dt`) - 1) DAY)) AS __timestamp FROM tableT",
+                "mysql": "SELECT DATE(DATE_ADD(`dt`, INTERVAL ((DAYOFMONTH(`dt`) - 1) * -1) DAY)) AS __timestamp FROM tableT",
             },
         )
         self.validate_identity("SELECT name FROM temp WHERE name = ? FOR UPDATE")
@@ -908,7 +958,7 @@ COMMENT='客户账户表'"""
         self.validate_all(
             "MONTHNAME(x)",
             write={
-                "": "TIME_TO_STR(x, '%B')",
+                "": "TIME_TO_STR(TS_OR_DS_TO_DATE(x), '%B')",
                 "mysql": "DATE_FORMAT(x, '%M')",
             },
         )

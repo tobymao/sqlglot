@@ -419,7 +419,12 @@ class Postgres(Dialect):
             exp.Pow: lambda self, e: self.binary(e, "^"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
-            exp.Select: transforms.preprocess([transforms.eliminate_semi_and_anti_joins]),
+            exp.Select: transforms.preprocess(
+                [
+                    transforms.eliminate_semi_and_anti_joins,
+                    transforms.eliminate_qualify,
+                ]
+            ),
             exp.StrPosition: str_position_sql,
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Substring: _substring_sql,

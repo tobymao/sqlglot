@@ -1829,3 +1829,17 @@ SELECT
 
         with self.assertRaises(ParseError):
             parse_one("CAST(x AS some_udt)", read="bigquery")
+
+    def test_qualify(self):
+        self.validate_all(
+            "SELECT * FROM t QUALIFY COUNT(*) OVER () > 1",
+            write={
+                "duckdb": "SELECT * FROM t QUALIFY COUNT(*) OVER () > 1",
+                "snowflake": "SELECT * FROM t QUALIFY COUNT(*) OVER () > 1",
+                "clickhouse": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
+                "mysql": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
+                "oracle": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) _t WHERE _w > 1",
+                "postgres": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
+                "tsql": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
+            },
+        )

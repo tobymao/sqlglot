@@ -847,7 +847,6 @@ def cast_value(value: t.Any, to: exp.DataType) -> t.Optional[t.Union[datetime.da
 
 
 def extract_date(cast: exp.Expression) -> t.Optional[t.Union[datetime.date, datetime.date]]:
-    to: exp.DataType
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate):
@@ -855,9 +854,8 @@ def extract_date(cast: exp.Expression) -> t.Optional[t.Union[datetime.date, date
     else:
         return None
 
-    value: t.Any
     if isinstance(cast.this, exp.Literal):
-        value = cast.this.name
+        value: t.Any = cast.this.name
     elif isinstance(cast.this, (exp.Cast, exp.TsOrDsToDate)):
         value = extract_date(cast.this)
     else:

@@ -420,6 +420,7 @@ class BigQuery(Dialect):
         ESCAPE_LINE_BREAK = True
         NVL2_SUPPORTED = False
         UNNEST_WITH_ORDINALITY = False
+        COLLATE_IS_FUNC = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

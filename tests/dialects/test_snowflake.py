@@ -8,7 +8,6 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        self.validate_identity("SELECT COLLATE(CAST(111 AS VARCHAR(100)), 'en-ci')")
         self.validate_identity("SELECT * FROM @~")
         self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
         self.validate_identity("SELECT * FROM @mystage")
@@ -76,6 +75,13 @@ class TestSnowflake(Validator):
         self.validate_all("CAST(x AS CHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
+        self.validate_all(
+            "SELECT COLLATE('B', 'und:ci')",
+            write={
+                "bigquery": "SELECT COLLATE('B', 'und:ci')",
+                "snowflake": "SELECT COLLATE('B', 'und:ci')",
+            },
+        )
         self.validate_all(
             "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
             read={

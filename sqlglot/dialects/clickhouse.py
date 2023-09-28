@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     inline_array_sql,
@@ -366,6 +366,7 @@ class ClickHouse(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.Select: transforms.preprocess([transforms.eliminate_qualify]),
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
             exp.Array: inline_array_sql,

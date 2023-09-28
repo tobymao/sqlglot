@@ -621,7 +621,11 @@ class TSQL(Dialect):
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.eliminate_semi_and_anti_joins,
+                    transforms.eliminate_qualify,
+                ]
             ),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(

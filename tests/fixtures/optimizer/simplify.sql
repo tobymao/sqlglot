@@ -444,6 +444,9 @@ CAST('1998-09-02 00:00:00' AS DATETIME);
 CAST(x AS DATETIME) + interval '1' week;
 CAST(x AS DATETIME) + INTERVAL '1' week;
 
+TS_OR_DS_TO_DATE('1998-12-01 00:00:01') - interval '90' day;
+CAST('1998-09-02' AS DATE);
+
 --------------------------------------
 -- Comparisons
 --------------------------------------
@@ -740,6 +743,9 @@ x >= CAST('2022-01-01' AS DATE);
 DATE_TRUNC('year', x) > CAST('2021-01-02' AS DATE);
 x >= CAST('2022-01-01' AS DATE);
 
+DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02'));
+x >= CAST('2022-01-01' AS DATE);
+
 -- right is not a date
 DATE_TRUNC('year', x) <> '2021-01-02';
 DATE_TRUNC('year', x) <> '2021-01-02';
@@ -803,6 +809,9 @@ x <> 2;
 x = 2;
 
 x - INTERVAL 1 DAY = CAST('2021-01-01' AS DATE);
+x = CAST('2021-01-02' AS DATE);
+
+x - INTERVAL 1 DAY = TS_OR_DS_TO_DATE('2021-01-01 00:00:01');
 x = CAST('2021-01-02' AS DATE);
 
 x - INTERVAL 1 HOUR > CAST('2021-01-01' AS DATETIME);

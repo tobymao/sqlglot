@@ -86,13 +86,22 @@ def _trim_sql(self: MySQL.Generator, expression: exp.Trim) -> str:
     return f"TRIM({trim_type}{remove_chars}{from_part}{target})"
 
 
-def _date_add_sql(kind: str) -> t.Callable[[MySQL.Generator, exp.DateAdd | exp.DateSub], str]:
-    def func(self: MySQL.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_add_sql(
+    kind: str,
+) -> t.Callable[[MySQL.Generator, exp.DateAdd | exp.DateSub | exp.TsOrDsAdd], str]:
+    def func(self: MySQL.Generator, expression: exp.DateAdd | exp.DateSub | exp.TsOrDsAdd) -> str:
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
         return f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))})"
 
     return func
+
+
+def _ts_or_ds_to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -> str:
+    time_format = expression.args.get("format")
+    if time_format:
+        return self.sql(exp.StrToDate(this=expression.this, format=time_format))
+    return f"DATE({self.sql(expression, 'this')})"
 
 
 class MySQL(Dialect):
@@ -233,17 +242,36 @@ class MySQL(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
+            "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
+            "DATE_ADD": parse_date_delta_with_interval(exp.TsOrDsAdd),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
-            "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
+            "DATE_SUB": parse_date_delta_with_interval(exp.TsOrDsAdd, invert=True),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "ISNULL": isnull_to_is_null,
             "LOCATE": locate_to_strposition,
             "MONTHNAME": lambda args: exp.TimeToStr(
-                this=seq_get(args, 0),
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
                 format=exp.Literal.string("%B"),
             ),
             "STR_TO_DATE": _str_to_date,
+            "TO_DAYS": lambda args: exp.paren(
+                exp.DateDiff(
+                    this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+                    expression=exp.TsOrDsToDate(this=exp.Literal.string("0000-01-01")),
+                    unit=exp.var("DAY"),
+                )
+                + 1
+            ),
+            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "WEEK": lambda args: exp.Week(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)
+            ),
+            "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         }
 
         FUNCTION_PARSERS = {
@@ -589,6 +617,8 @@ class MySQL(Dialect):
             exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.Trim: _trim_sql,
             exp.TryCast: no_trycast_sql,
+            exp.TsOrDsAdd: _date_add_sql("ADD"),
+            exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         }
 

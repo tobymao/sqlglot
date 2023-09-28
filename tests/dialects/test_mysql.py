@@ -509,13 +509,29 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT TO_DAYS(x)",
             write={
-                "mysql": "SELECT TO_DAYS(x)",
-                "presto": "SELECT DATE_DIFF('DAY', CAST('0000-01-01' AS DATE), x)",
+                "mysql": "SELECT (DATEDIFF(DATE(x), DATE('0000-01-01')) + 1)",
+                "presto": "SELECT (DATE_DIFF('DAY', CAST(CAST('0000-01-01' AS TIMESTAMP) AS DATE), CAST(CAST(x AS TIMESTAMP) AS DATE)) + 1)",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(x, y)",
             write={"mysql": "SELECT DATEDIFF(x, y)", "presto": "SELECT DATE_DIFF('day', y, x)"},
+        )
+        self.validate_all(
+            "DAYOFYEAR(x)",
+            write={"mysql": "DAYOFYEAR(DATE(x))"},
+        )
+        self.validate_all(
+            "DAYOFMONTH(x)",
+            write={"mysql": "DAYOFMONTH(DATE(x))"},
+        )
+        self.validate_all(
+            "DAYOFWEEK(x)",
+            write={"mysql": "DAYOFWEEK(DATE(x))"},
+        )
+        self.validate_all(
+            "WEEKOFYEAR(x)",
+            write={"mysql": "WEEKOFYEAR(DATE(x))"},
         )
 
     def test_mysql(self):
@@ -573,7 +589,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT DATE(DATE_SUB(`dt`, INTERVAL DAYOFMONTH(`dt`) - 1 DAY)) AS __timestamp FROM tableT",
             write={
-                "mysql": "SELECT DATE(DATE_SUB(`dt`, INTERVAL (DAYOFMONTH(`dt`) - 1) DAY)) AS __timestamp FROM tableT",
+                "mysql": "SELECT DATE(DATE_ADD(`dt`, INTERVAL ((DAYOFMONTH(DATE(`dt`)) - 1) * -1) DAY)) AS __timestamp FROM tableT",
             },
         )
         self.validate_identity("SELECT name FROM temp WHERE name = ? FOR UPDATE")
@@ -917,7 +933,7 @@ COMMENT='客户账户表'"""
         self.validate_all(
             "MONTHNAME(x)",
             write={
-                "": "TIME_TO_STR(x, '%B')",
-                "mysql": "DATE_FORMAT(x, '%M')",
+                "": "TIME_TO_STR(TS_OR_DS_TO_DATE(x), '%B')",
+                "mysql": "DATE_FORMAT(DATE(x), '%M')",
             },
         )

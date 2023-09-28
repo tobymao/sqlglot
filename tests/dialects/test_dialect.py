@@ -607,6 +607,7 @@ class TestDialect(Validator):
                 "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
                 "snowflake": "CAST(x AS DATE)",
                 "doris": "TO_DATE(x)",
+                "mysql": "DATE(x)",
             },
         )
         self.validate_all(
@@ -687,9 +688,7 @@ class TestDialect(Validator):
         self.validate_all(
             "DATE_ADD(x, 1, 'DAY')",
             read={
-                "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "snowflake": "DATEADD('DAY', 1, x)",
-                "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
             write={
                 "bigquery": "DATE_ADD(x, INTERVAL 1 DAY)",
@@ -881,6 +880,7 @@ class TestDialect(Validator):
                 "hive": "DATE_ADD('2021-02-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, CAST(CAST('2021-02-01' AS TIMESTAMP) AS DATE))",
                 "spark": "DATE_ADD('2021-02-01', 1)",
+                "mysql": "DATE_ADD('2021-02-01', INTERVAL 1 DAY)",
             },
         )
         self.validate_all(
@@ -936,10 +936,7 @@ class TestDialect(Validator):
                         "bigquery",
                         "drill",
                         "duckdb",
-                        "mysql",
                         "presto",
-                        "starrocks",
-                        "doris",
                     )
                 },
                 write={
@@ -948,11 +945,42 @@ class TestDialect(Validator):
                         "bigquery",
                         "drill",
                         "duckdb",
-                        "mysql",
                         "presto",
                         "hive",
                         "spark",
+                    )
+                },
+            )
+            self.validate_all(
+                f"{unit}(TS_OR_DS_TO_DATE(x))",
+                read={
+                    dialect: f"{unit}(x)"
+                    for dialect in (
+                        "mysql",
                         "starrocks",
+                    )
+                },
+                write={
+                    dialect: f"{unit}(DATE(x))"
+                    for dialect in (
+                        "mysql",
+                        "starrocks",
+                    )
+                },
+            )
+            self.validate_all(
+                f"{unit}(TS_OR_DS_TO_DATE(x))",
+                read={
+                    dialect: f"{unit}(x)"
+                    for dialect in (
+                        "hive",
+                        "doris",
+                    )
+                },
+                write={
+                    dialect: f"{unit}(TO_DATE(x))"
+                    for dialect in (
+                        "hive",
                         "doris",
                     )
                 },

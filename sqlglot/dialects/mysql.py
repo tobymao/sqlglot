@@ -66,7 +66,9 @@ def _str_to_date(args: t.List) -> exp.StrToDate:
     return exp.StrToDate(this=seq_get(args, 0), format=date_format)
 
 
-def _str_to_date_sql(self: MySQL.Generator, expression: exp.StrToDate | exp.StrToTime) -> str:
+def _str_to_date_sql(
+    self: MySQL.Generator, expression: exp.StrToDate | exp.StrToTime | exp.TsOrDsToDate
+) -> str:
     date_format = self.format_time(expression)
     return f"STR_TO_DATE({self.sql(expression.this)}, {date_format})"
 
@@ -100,8 +102,25 @@ def _date_add_sql(
 def _ts_or_ds_to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = expression.args.get("format")
     if time_format:
-        return self.sql(exp.StrToDate(this=expression.this, format=time_format))
+        return _str_to_date_sql(self, expression)
     return f"DATE({self.sql(expression, 'this')})"
+
+
+def _remove_ts_or_ds_to_date_sql(
+    to_sql: t.Optional[t.Callable[[MySQL.Generator, exp.Expression], str]] = None,
+    args: t.Tuple[str] = ("this",),
+) -> t.Callable[[MySQL.Generator, exp.Func], str]:
+    def func(self: MySQL.Generator, expression: exp.Func) -> str:
+        expression = expression.copy()
+
+        for arg_key in args:
+            arg = expression.args.get(arg_key)
+            if isinstance(arg, exp.TsOrDsToDate) and not arg.args.get("format"):
+                expression.set(arg_key, arg.this)
+
+        return to_sql(self, expression) if to_sql else self.function_fallback_sql(expression)
+
+    return func
 
 
 class MySQL(Dialect):
@@ -590,15 +609,17 @@ class MySQL(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("SUB"),
             exp.DateTrunc: _date_trunc_sql,
-            exp.DayOfMonth: rename_func("DAYOFMONTH"),
-            exp.DayOfWeek: rename_func("DAYOFWEEK"),
-            exp.DayOfYear: rename_func("DAYOFYEAR"),
+            exp.Day: _remove_ts_or_ds_to_date_sql(),
+            exp.DayOfMonth: _remove_ts_or_ds_to_date_sql(rename_func("DAYOFMONTH")),
+            exp.DayOfWeek: _remove_ts_or_ds_to_date_sql(rename_func("DAYOFWEEK")),
+            exp.DayOfYear: _remove_ts_or_ds_to_date_sql(rename_func("DAYOFYEAR")),
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
+            exp.Month: _remove_ts_or_ds_to_date_sql(),
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
             exp.Pivot: no_pivot_sql,
@@ -619,7 +640,9 @@ class MySQL(Dialect):
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: _date_add_sql("ADD"),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
-            exp.WeekOfYear: rename_func("WEEKOFYEAR"),
+            exp.Week: _remove_ts_or_ds_to_date_sql(),
+            exp.WeekOfYear: _remove_ts_or_ds_to_date_sql(rename_func("WEEKOFYEAR")),
+            exp.Year: _remove_ts_or_ds_to_date_sql(),
         }
 
         UNSIGNED_TYPE_MAPPING = {

@@ -519,19 +519,34 @@ class TestMySQL(Validator):
         )
         self.validate_all(
             "DAYOFYEAR(x)",
-            write={"mysql": "DAYOFYEAR(DATE(x))"},
+            write={
+                "mysql": "DAYOFYEAR(x)",
+                "": "DAY_OF_YEAR(TS_OR_DS_TO_DATE(x))",
+            },
         )
         self.validate_all(
             "DAYOFMONTH(x)",
-            write={"mysql": "DAYOFMONTH(DATE(x))"},
+            write={"mysql": "DAYOFMONTH(x)", "": "DAY_OF_MONTH(TS_OR_DS_TO_DATE(x))"},
         )
         self.validate_all(
             "DAYOFWEEK(x)",
-            write={"mysql": "DAYOFWEEK(DATE(x))"},
+            write={"mysql": "DAYOFWEEK(x)", "": "DAY_OF_WEEK(TS_OR_DS_TO_DATE(x))"},
         )
         self.validate_all(
             "WEEKOFYEAR(x)",
-            write={"mysql": "WEEKOFYEAR(DATE(x))"},
+            write={"mysql": "WEEKOFYEAR(x)", "": "WEEK_OF_YEAR(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "DAY(x)",
+            write={"mysql": "DAY(x)", "": "DAY(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "WEEK(x)",
+            write={"mysql": "WEEK(x)", "": "WEEK(TS_OR_DS_TO_DATE(x))"},
+        )
+        self.validate_all(
+            "YEAR(x)",
+            write={"mysql": "YEAR(x)", "": "YEAR(TS_OR_DS_TO_DATE(x))"},
         )
 
     def test_mysql(self):
@@ -589,7 +604,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT DATE(DATE_SUB(`dt`, INTERVAL DAYOFMONTH(`dt`) - 1 DAY)) AS __timestamp FROM tableT",
             write={
-                "mysql": "SELECT DATE(DATE_ADD(`dt`, INTERVAL ((DAYOFMONTH(DATE(`dt`)) - 1) * -1) DAY)) AS __timestamp FROM tableT",
+                "mysql": "SELECT DATE(DATE_ADD(`dt`, INTERVAL ((DAYOFMONTH(`dt`) - 1) * -1) DAY)) AS __timestamp FROM tableT",
             },
         )
         self.validate_identity("SELECT name FROM temp WHERE name = ? FOR UPDATE")

@@ -945,6 +945,7 @@ class TestDialect(Validator):
                         "bigquery",
                         "drill",
                         "duckdb",
+                        "mysql",
                         "presto",
                         "hive",
                         "spark",
@@ -957,31 +958,16 @@ class TestDialect(Validator):
                     dialect: f"{unit}(x)"
                     for dialect in (
                         "mysql",
+                        "doris",
                         "starrocks",
                     )
                 },
                 write={
-                    dialect: f"{unit}(DATE(x))"
-                    for dialect in (
-                        "mysql",
-                        "starrocks",
-                    )
-                },
-            )
-            self.validate_all(
-                f"{unit}(TS_OR_DS_TO_DATE(x))",
-                read={
                     dialect: f"{unit}(x)"
                     for dialect in (
-                        "hive",
+                        "mysql",
                         "doris",
-                    )
-                },
-                write={
-                    dialect: f"{unit}(TO_DATE(x))"
-                    for dialect in (
-                        "hive",
-                        "doris",
+                        "starrocks",
                     )
                 },
             )

@@ -538,7 +538,7 @@ def parse_date_delta(
 
 
 def parse_date_delta_with_interval(
-    expression_class: t.Type[E],
+    expression_class: t.Type[E], invert: bool = False
 ) -> t.Callable[[t.List], t.Optional[E]]:
     def func(args: t.List) -> t.Optional[E]:
         if len(args) < 2:
@@ -552,6 +552,9 @@ def parse_date_delta_with_interval(
         expression = interval.this
         if expression and expression.is_string:
             expression = exp.Literal.number(expression.this)
+
+        if expression and invert:
+            expression = expression * -1
 
         return expression_class(
             this=args[0], expression=expression, unit=exp.Literal.string(interval.text("unit"))

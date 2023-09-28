@@ -387,10 +387,6 @@ def _is_number(expression: exp.Expression) -> bool:
     return expression.is_number
 
 
-def _is_date(expression: exp.Expression) -> bool:
-    return isinstance(expression, exp.Cast) and extract_date(expression) is not None
-
-
 def _is_interval(expression: exp.Expression) -> bool:
     return isinstance(expression, exp.Interval) and extract_interval(expression) is not None
 
@@ -422,8 +418,8 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
         if r.is_number:
             a_predicate = _is_number
             b_predicate = _is_number
-        elif _is_date(r):
-            a_predicate = _is_date
+        elif _is_date_literal(r):
+            a_predicate = _is_date_literal
             b_predicate = _is_interval
         else:
             return expression
@@ -509,14 +505,14 @@ def _simplify_binary(expression, a, b):
 
         if boolean:
             return boolean
-    elif isinstance(a, exp.Cast) and isinstance(b, exp.Interval):
+    elif _is_date_literal(a) and isinstance(b, exp.Interval):
         a, b = extract_date(a), extract_interval(b)
         if a and b:
             if isinstance(expression, exp.Add):
                 return date_literal(a + b)
             if isinstance(expression, exp.Sub):
                 return date_literal(a - b)
-    elif isinstance(a, exp.Interval) and isinstance(b, exp.Cast):
+    elif isinstance(a, exp.Interval) and _is_date_literal(b):
         a, b = extract_interval(a), extract_date(b)
         # you cannot subtract a date from an interval
         if a and b and isinstance(expression, exp.Add):
@@ -702,11 +698,7 @@ DATETRUNC_COMPARISONS = {exp.In, *DATETRUNC_BINARY_COMPARISONS}
 
 
 def _is_datetrunc_predicate(left: exp.Expression, right: exp.Expression) -> bool:
-    return (
-        isinstance(left, (exp.DateTrunc, exp.TimestampTrunc))
-        and isinstance(right, exp.Cast)
-        and right.is_type(*exp.DataType.TEMPORAL_TYPES)
-    )
+    return isinstance(left, (exp.DateTrunc, exp.TimestampTrunc)) and _is_date_literal(right)
 
 
 @catch(ModuleNotFoundError, UnsupportedUnit)
@@ -854,15 +846,25 @@ def cast_value(value: t.Any, to: exp.DataType) -> t.Optional[t.Union[datetime.da
     return None
 
 
-def extract_date(cast: exp.Cast) -> t.Optional[t.Union[datetime.date, datetime.date]]:
-    value: t.Any
+def extract_date(cast: exp.Expression) -> t.Optional[t.Union[datetime.date, datetime.date]]:
+    if isinstance(cast, exp.Cast):
+        to = cast.to
+    elif isinstance(cast, exp.TsOrDsToDate):
+        to = exp.DataType.build(exp.DataType.Type.DATE)
+    else:
+        return None
+
     if isinstance(cast.this, exp.Literal):
-        value = cast.this.name
-    elif isinstance(cast.this, exp.Cast):
+        value: t.Any = cast.this.name
+    elif isinstance(cast.this, (exp.Cast, exp.TsOrDsToDate)):
         value = extract_date(cast.this)
     else:
         return None
-    return cast_value(value, cast.to)
+    return cast_value(value, to)
+
+
+def _is_date_literal(expression: exp.Expression) -> bool:
+    return extract_date(expression) is not None
 
 
 def extract_interval(expression):
@@ -878,7 +880,9 @@ def extract_interval(expression):
 def date_literal(date):
     return exp.cast(
         exp.Literal.string(date),
-        "DATETIME" if isinstance(date, datetime.datetime) else "DATE",
+        exp.DataType.Type.DATETIME
+        if isinstance(date, datetime.datetime)
+        else exp.DataType.Type.DATE,
     )
 
 

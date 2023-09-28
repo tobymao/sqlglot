@@ -99,6 +99,7 @@ class TokenType(AutoName):
     FLOAT = auto()
     DOUBLE = auto()
     DECIMAL = auto()
+    UDECIMAL = auto()
     BIGDECIMAL = auto()
     CHAR = auto()
     NCHAR = auto()

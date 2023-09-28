@@ -419,6 +419,7 @@ class Snowflake(Dialect):
         QUERY_HINTS = False
         AGGREGATE_FILTER_SUPPORTED = False
         SUPPORTS_TABLE_COPY = False
+        COLLATE_IS_FUNC = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

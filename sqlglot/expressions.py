@@ -4279,7 +4279,7 @@ class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 
 
-class Collate(Binary):
+class Collate(Binary, Func):
     pass
 
 

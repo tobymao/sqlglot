@@ -340,6 +340,7 @@ class Parser(metaclass=_Parser):
     TRIM_TYPES = {"LEADING", "TRAILING", "BOTH"}
 
     FUNC_TOKENS = {
+        TokenType.COLLATE,
         TokenType.COMMAND,
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_DATETIME,

@@ -213,6 +213,9 @@ class Generator:
     # Whether or not parentheses are required around the table sample's expression
     TABLESAMPLE_REQUIRES_PARENS = True
 
+    # Whether or not COLLATE is a function instead of a binary operator
+    COLLATE_IS_FUNC = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2321,6 +2324,8 @@ class Generator:
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
 
     def collate_sql(self, expression: exp.Collate) -> str:
+        if self.COLLATE_IS_FUNC:
+            return self.function_fallback_sql(expression)
         return self.binary(expression, "COLLATE")
 
     def command_sql(self, expression: exp.Command) -> str:

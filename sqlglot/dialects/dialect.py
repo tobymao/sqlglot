@@ -800,13 +800,3 @@ def move_insert_cte_sql(self: Generator, expression: exp.Insert) -> str:
         expression = expression.copy()
         expression.set("with", expression.expression.args["with"].pop())
     return self.insert_sql(expression)
-
-
-def to_days_to_datediff(self: Generator, expression: exp.ToDays) -> str:
-    return self.sql(
-        exp.DateDiff(
-            this=expression.this,
-            expression=exp.cast(exp.Literal.string("0000-01-01"), to=exp.DataType.Type.DATE),
-            unit=exp.var("DAY"),
-        )
-    )

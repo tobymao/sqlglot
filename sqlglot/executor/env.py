@@ -97,6 +97,11 @@ def substring(this, start=None, length=None):
     return this[start:end]
 
 
+@null_if_any("this")
+def trim(this, expression=None):
+    return this.strip(expression)
+
+
 @null_if_any
 def cast(this, to):
     if to == exp.DataType.Type.DATE:
@@ -202,4 +207,5 @@ ENV = {
     "CURRENTTIME": datetime.datetime.now,
     "CURRENTDATE": datetime.date.today,
     "STRFTIME": null_if_any(lambda fmt, arg: datetime.datetime.fromisoformat(arg).strftime(fmt)),
+    "TRIM": trim,
 }

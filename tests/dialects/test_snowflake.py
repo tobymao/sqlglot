@@ -8,6 +8,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT COLLATE(CAST(111 AS VARCHAR(100)), 'en-ci')")
         self.validate_identity("SELECT * FROM @~")
         self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
         self.validate_identity("SELECT * FROM @mystage")

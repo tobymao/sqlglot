@@ -135,6 +135,18 @@ class TestBigQuery(Validator):
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_all(
+            "TRIM(item, '*')",
+            read={
+                "snowflake": "TRIM(item, '*')",
+                "spark": "TRIM('*', item)",
+            },
+            write={
+                "bigquery": "TRIM(item, '*')",
+                "snowflake": "TRIM(item, '*')",
+                "spark": "TRIM('*' FROM item)",
+            },
+        )
+        self.validate_all(
             "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
             write={
                 "bigquery": "CREATE OR REPLACE TABLE a.b.c COPY a.b.d",

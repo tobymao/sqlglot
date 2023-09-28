@@ -509,7 +509,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT TO_DAYS(x)",
             write={
-                "mysql": "SELECT (DATEDIFF(DATE(x), DATE('0000-01-01')) + 1)",
+                "mysql": "SELECT (DATEDIFF(x, '0000-01-01') + 1)",
                 "presto": "SELECT (DATE_DIFF('DAY', CAST(CAST('0000-01-01' AS TIMESTAMP) AS DATE), CAST(CAST(x AS TIMESTAMP) AS DATE)) + 1)",
             },
         )

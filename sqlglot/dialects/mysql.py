@@ -90,8 +90,8 @@ def _trim_sql(self: MySQL.Generator, expression: exp.Trim) -> str:
 
 def _date_add_sql(
     kind: str,
-) -> t.Callable[[MySQL.Generator, exp.DateAdd | exp.DateSub | exp.TsOrDsAdd], str]:
-    def func(self: MySQL.Generator, expression: exp.DateAdd | exp.DateSub | exp.TsOrDsAdd) -> str:
+) -> t.Callable[[MySQL.Generator, exp.Expression], str]:
+    def func(self: MySQL.Generator, expression: exp.Expression) -> str:
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
         return f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))})"
@@ -108,7 +108,7 @@ def _ts_or_ds_to_date_sql(self: MySQL.Generator, expression: exp.TsOrDsToDate) -
 
 def _remove_ts_or_ds_to_date(
     to_sql: t.Optional[t.Callable[[MySQL.Generator, exp.Expression], str]] = None,
-    args: t.Tuple[str] = ("this",),
+    args: t.Tuple[str, ...] = ("this",),
 ) -> t.Callable[[MySQL.Generator, exp.Func], str]:
     def func(self: MySQL.Generator, expression: exp.Func) -> str:
         expression = expression.copy()
@@ -604,10 +604,12 @@ class MySQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.CurrentDate: no_paren_current_date_sql,
-            exp.DateDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
-            exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateDiff: _remove_ts_or_ds_to_date(
+                lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
+            ),
+            exp.DateAdd: _remove_ts_or_ds_to_date(_date_add_sql("ADD")),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateSub: _date_add_sql("SUB"),
+            exp.DateSub: _remove_ts_or_ds_to_date(_date_add_sql("SUB")),
             exp.DateTrunc: _date_trunc_sql,
             exp.Day: _remove_ts_or_ds_to_date(),
             exp.DayOfMonth: _remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),

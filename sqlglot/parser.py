@@ -888,10 +888,10 @@ class Parser(metaclass=_Parser):
     # Whether or not the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
 
-    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments.
+    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments
     SET_REQUIRES_ASSIGNMENT_DELIMITER = True
 
-    # Whether the TRIM function expects the trim characters to be the first argument
+    # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
     __slots__ = (

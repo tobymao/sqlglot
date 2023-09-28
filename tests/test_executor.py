@@ -624,6 +624,8 @@ class TestExecutor(unittest.TestCase):
             ("LEFT('12345', 3)", "123"),
             ("RIGHT('12345', 3)", "345"),
             ("DATEDIFF('2022-01-03'::date, '2022-01-01'::TIMESTAMP::DATE)", 2),
+            ("TRIM(' foo ')", "foo"),
+            ("TRIM('afoob', 'ab')", "foo"),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

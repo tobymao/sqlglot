@@ -101,6 +101,8 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
 
 class Spark2(Hive):
     class Parser(Hive.Parser):
+        TRIM_PATTERN_FIRST = True
+
         FUNCTIONS = {
             **Hive.Parser.FUNCTIONS,
             "AGGREGATE": exp.Reduce.from_arg_list,

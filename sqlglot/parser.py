@@ -889,8 +889,11 @@ class Parser(metaclass=_Parser):
     # Whether or not the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
 
-    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments.
+    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments
     SET_REQUIRES_ASSIGNMENT_DELIMITER = True
+
+    # Whether the TRIM function expects the characters to trim as its first argument
+    TRIM_PATTERN_FIRST = False
 
     __slots__ = (
         "error_level",
@@ -4411,16 +4414,18 @@ class Parser(metaclass=_Parser):
 
         position = None
         collation = None
+        expression = None
 
         if self._match_texts(self.TRIM_TYPES):
             position = self._prev.text.upper()
 
-        expression = self._parse_bitwise()
+        this = self._parse_bitwise()
         if self._match_set((TokenType.FROM, TokenType.COMMA)):
-            this = self._parse_bitwise()
-        else:
-            this = expression
-            expression = None
+            invert_order = self._prev.token_type == TokenType.FROM or self.TRIM_PATTERN_FIRST
+            expression = self._parse_bitwise()
+
+            if invert_order:
+                this, expression = expression, this
 
         if self._match(TokenType.COLLATE):
             collation = self._parse_bitwise()

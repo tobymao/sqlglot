@@ -1,6 +1,7 @@
 from unittest import mock
 
 from sqlglot import UnsupportedError, exp, parse_one
+from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from tests.dialects.test_dialect import Validator
 
 
@@ -8,9 +9,17 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        # Ensure we don't treat staged file paths as identifiers (i.e. they're not normalized)
+        staged_file = parse_one("SELECT * FROM @foo", read="snowflake")
+        self.assertEqual(
+            normalize_identifiers(staged_file, dialect="snowflake").sql(dialect="snowflake"),
+            staged_file.sql(dialect="snowflake"),
+        )
+
         self.validate_identity("SELECT * FROM @~")
         self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
         self.validate_identity("SELECT * FROM @mystage")
+        self.validate_identity("SELECT * FROM '@mystage'")
         self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("LISTAGG(data['some_field'], ',')")

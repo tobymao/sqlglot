@@ -291,6 +291,8 @@ class TestDuckDB(Validator):
                 "duckdb": "STRUCT_EXTRACT(x, 'abc')",
                 "presto": "x.abc",
                 "hive": "x.abc",
+                "postgres": "x.abc",
+                "redshift": "x.abc",
                 "spark": "x.abc",
             },
         )

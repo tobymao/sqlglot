@@ -2384,7 +2384,7 @@ class Generator:
             collate = f" COLLATE {collate}" if collate else ""
             using = self.sql(expression, "using")
             using = f" USING {using}" if using else ""
-            return f"ALTER COLUMN {this} TYPE {dtype}{collate}{using}"
+            return f"ALTER COLUMN {this} SET DATA TYPE {dtype}{collate}{using}"
 
         default = self.sql(expression, "default")
         if default:
@@ -2421,7 +2421,7 @@ class Generator:
         elif isinstance(actions[0], exp.Delete):
             actions = self.expressions(expression, key="actions", flat=True)
         else:
-            actions = self.expressions(expression, key="actions")
+            actions = self.expressions(expression, key="actions", flat=True)
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         only = " ONLY" if expression.args.get("only") else ""

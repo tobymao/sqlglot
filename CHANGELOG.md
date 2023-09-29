@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v18.10.1] - 2023-09-29
+### :sparkles: New Features
+- [`4665016`](https://github.com/tobymao/sqlglot/commit/466501635d131a91812684441fdfbbfede53a242) - **postgres**: struct_extract *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`17e39d0`](https://github.com/tobymao/sqlglot/commit/17e39d04916e3e406307ed8922cb2597b4a6998a) - **snowflake**: fix staged table path parsing *(PR [#2346](https://github.com/tobymao/sqlglot/pull/2346) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v18.10.0] - 2023-09-29
 ### :sparkles: New Features
 - [`090724d`](https://github.com/tobymao/sqlglot/commit/090724da9ed7a9c1c0b8024b68340a15b0b64ff0) - add `eliminate_qualify` to clickhouse, mysql, oracle, postgres, and tsql dialects *(PR [#2339](https://github.com/tobymao/sqlglot/pull/2339) by [@cpcloud](https://github.com/cpcloud))*
@@ -1591,3 +1599,4 @@ Changelog
 [v18.8.0]: https://github.com/tobymao/sqlglot/compare/v18.7.0...v18.8.0
 [v18.9.0]: https://github.com/tobymao/sqlglot/compare/v18.8.0...v18.9.0
 [v18.10.0]: https://github.com/tobymao/sqlglot/compare/v18.9.0...v18.10.0
+[v18.10.1]: https://github.com/tobymao/sqlglot/compare/v18.10.0...v18.10.1

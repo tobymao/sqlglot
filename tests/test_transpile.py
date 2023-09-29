@@ -468,12 +468,12 @@ LEFT OUTER JOIN b""",
             "ALTER TABLE integers ADD COLUMN k INT",
         )
         self.validate(
-            "ALTER TABLE integers ALTER i SET DATA TYPE VARCHAR",
-            "ALTER TABLE integers ALTER COLUMN i TYPE VARCHAR",
+            "ALTER TABLE integers ALTER i TYPE VARCHAR",
+            "ALTER TABLE integers ALTER COLUMN i SET DATA TYPE VARCHAR",
         )
         self.validate(
             "ALTER TABLE integers ALTER i TYPE VARCHAR COLLATE foo USING bar",
-            "ALTER TABLE integers ALTER COLUMN i TYPE VARCHAR COLLATE foo USING bar",
+            "ALTER TABLE integers ALTER COLUMN i SET DATA TYPE VARCHAR COLLATE foo USING bar",
         )
 
     def test_time(self):

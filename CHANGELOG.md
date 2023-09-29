@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v18.10.0] - 2023-09-29
+### :sparkles: New Features
+- [`090724d`](https://github.com/tobymao/sqlglot/commit/090724da9ed7a9c1c0b8024b68340a15b0b64ff0) - add `eliminate_qualify` to clickhouse, mysql, oracle, postgres, and tsql dialects *(PR [#2339](https://github.com/tobymao/sqlglot/pull/2339) by [@cpcloud](https://github.com/cpcloud))*
+- [`e2c8366`](https://github.com/tobymao/sqlglot/commit/e2c83665f81db2af934f1ae831748578bcef8216) - **executor**: add support for TRIM, fix TRIM CSV-style parsing order *(PR [#2342](https://github.com/tobymao/sqlglot/pull/2342) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#2341](undefined) opened by [@skyserenaa](https://github.com/skyserenaa)*
+
+### :bug: Bug Fixes
+- [`fcc2d8f`](https://github.com/tobymao/sqlglot/commit/fcc2d8f4d3077c9f8fd59fbd906cbdf8985bac8c) - **mysql,optimizer**: TO_DAYS transpilation and more date casting *(PR [#2334](https://github.com/tobymao/sqlglot/pull/2334) by [@barakalon](https://github.com/barakalon))*
+
+
 ## [v18.9.0] - 2023-09-28
 ### :boom: BREAKING CHANGES
 - due to [`f0e5eb6`](https://github.com/tobymao/sqlglot/commit/f0e5eb6a904d8ee4420c6a9acf489db9b7fa108f) - revert escape sequence changes introduced in [#2230](https://github.com/tobymao/sqlglot/pull/2230) *(PR [#2336](https://github.com/tobymao/sqlglot/pull/2336) by [@GeorgeSittas](https://github.com/GeorgeSittas))*:
@@ -1580,3 +1590,4 @@ Changelog
 [v18.7.0]: https://github.com/tobymao/sqlglot/compare/v18.6.0...v18.7.0
 [v18.8.0]: https://github.com/tobymao/sqlglot/compare/v18.7.0...v18.8.0
 [v18.9.0]: https://github.com/tobymao/sqlglot/compare/v18.8.0...v18.9.0
+[v18.10.0]: https://github.com/tobymao/sqlglot/compare/v18.9.0...v18.10.0

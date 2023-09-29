@@ -328,6 +328,7 @@ class Snowflake(Dialect):
 
         def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             # https://docs.snowflake.com/en/user-guide/querying-stage
+            table: t.Optional[exp.Expression] = None
             if self._match_text_seq("@"):
                 table_name = "@"
                 while True:
@@ -338,7 +339,12 @@ class Snowflake(Dialect):
                     while self._match_set(self.STAGED_FILE_SINGLE_TOKENS):
                         table_name += self._prev.text
 
-                return self.expression(exp.Table, this=exp.Identifier(this=table_name))
+                table = exp.var(table_name)
+            elif self._match(TokenType.STRING, advance=False):
+                table = self._parse_string()
+
+            if table:
+                return self.expression(exp.Table, this=table)
 
             return super()._parse_table_parts(schema=schema)
 

@@ -339,7 +339,7 @@ class Snowflake(Dialect):
                     while self._match_set(self.STAGED_FILE_SINGLE_TOKENS):
                         table_name += self._prev.text
 
-                table = exp.var(table_name)
+                table = exp.Literal.string(table_name)
             elif self._match(TokenType.STRING, advance=False):
                 table = self._parse_string()
 

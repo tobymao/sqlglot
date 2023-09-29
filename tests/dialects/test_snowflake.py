@@ -1,7 +1,6 @@
 from unittest import mock
 
 from sqlglot import UnsupportedError, exp, parse_one
-from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from tests.dialects.test_dialect import Validator
 
 
@@ -9,19 +8,6 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        # Ensure we don't treat staged file paths as identifiers (i.e. they're not normalized)
-        staged_file = parse_one("SELECT * FROM @foo", read="snowflake")
-        self.assertEqual(
-            normalize_identifiers(staged_file, dialect="snowflake").sql(dialect="snowflake"),
-            staged_file.sql(dialect="snowflake"),
-        )
-
-        self.validate_identity("SELECT * FROM @~")
-        self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
-        self.validate_identity("SELECT * FROM @mystage")
-        self.validate_identity("SELECT * FROM '@mystage'")
-        self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
-        self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("LISTAGG(data['some_field'], ',')")
         self.validate_identity("WEEKOFYEAR(tstamp)")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")
@@ -74,10 +60,6 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT {'test': 'best'}::VARIANT",
             "SELECT CAST(OBJECT_CONSTRUCT('test', 'best') AS VARIANT)",
-        )
-        self.validate_identity(
-            "SELECT parse_json($1):a.b FROM @mystage2/data1.json.gz",
-            "SELECT PARSE_JSON($1)['a'].b FROM @mystage2/data1.json.gz",
         )
 
         self.validate_all("CAST(x AS BYTEINT)", write={"snowflake": "CAST(x AS INT)"})
@@ -538,6 +520,33 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": r"SELECT FIRST_VALUE(TABLE1.COLUMN1) IGNORE NULLS OVER (PARTITION BY RANDOM_COLUMN1, RANDOM_COLUMN2 ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS MY_ALIAS FROM TABLE1"
             },
+        )
+
+    def test_stage_queries(self):
+        self.validate_identity("SELECT * FROM '@mystage'")
+        self.validate_identity(
+            "SELECT * FROM @~",
+            "SELECT * FROM '@~'",
+        )
+        self.validate_identity(
+            "SELECT * FROM @~/some/path/to/file.csv",
+            "SELECT * FROM '@~/some/path/to/file.csv'",
+        )
+        self.validate_identity(
+            "SELECT * FROM @mystage",
+            "SELECT * FROM '@mystage'",
+        )
+        self.validate_identity(
+            "SELECT * FROM @namespace.mystage/path/to/file.json.gz",
+            "SELECT * FROM '@namespace.mystage/path/to/file.json.gz'",
+        )
+        self.validate_identity(
+            "SELECT * FROM @namespace.%table_name/path/to/file.json.gz",
+            "SELECT * FROM '@namespace.%table_name/path/to/file.json.gz'",
+        )
+        self.validate_identity(
+            "SELECT parse_json($1):a.b FROM @mystage2/data1.json.gz",
+            "SELECT PARSE_JSON($1)['a'].b FROM '@mystage2/data1.json.gz'",
         )
 
     def test_sample(self):

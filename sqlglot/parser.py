@@ -872,6 +872,8 @@ class Parser(metaclass=_Parser):
 
     NULL_TOKENS = {TokenType.NULL}
 
+    UNNEST_OFFSET_ALIAS_TOKENS = ID_VAR_TOKENS - SET_OPERATIONS
+
     STRICT_CAST = True
 
     # A NULL arg in CONCAT yields NULL by default
@@ -2702,7 +2704,9 @@ class Parser(metaclass=_Parser):
 
         if not offset and self._match_pair(TokenType.WITH, TokenType.OFFSET):
             self._match(TokenType.ALIAS)
-            offset = self._parse_id_var() or exp.to_identifier("offset")
+            offset = self._parse_id_var(
+                any_token=False, tokens=self.UNNEST_OFFSET_ALIAS_TOKENS
+            ) or exp.to_identifier("offset")
 
         return self.expression(exp.Unnest, expressions=expressions, alias=alias, offset=offset)
 

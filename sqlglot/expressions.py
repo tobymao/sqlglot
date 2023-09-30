@@ -52,6 +52,9 @@ class _Expression(type):
         return klass
 
 
+SQLGLOT_META = "sqlglot.meta"
+
+
 class Expression(metaclass=_Expression):
     """
     The base class for all expressions in a syntax tree. Each Expression encapsulates any necessary
@@ -266,7 +269,14 @@ class Expression(metaclass=_Expression):
         if self.comments is None:
             self.comments = []
         if comments:
-            self.comments.extend(comments)
+            for comment in comments:
+                _, *meta = comment.split(SQLGLOT_META)
+                if meta:
+                    for kv in "".join(meta).split(","):
+                        k, *v = kv.split("=")
+                        value = v[0].strip() if v else True
+                        self.meta[k.strip()] = value
+                self.comments.append(comment)
 
     def append(self, arg_key: str, value: t.Any) -> None:
         """

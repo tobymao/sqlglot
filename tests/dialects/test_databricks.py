@@ -35,6 +35,12 @@ class TestDatabricks(Validator):
                 "tsql": "CREATE TABLE foo (x AS YEAR(CAST(y AS DATE)))",
             },
         )
+        self.validate_all(
+            "CREATE TABLE t1 AS (SELECT c FROM t2)",
+            read={
+                "teradata": "CREATE TABLE t1 AS (SELECT c FROM t2) WITH DATA",
+            },
+        )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

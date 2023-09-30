@@ -504,6 +504,7 @@ class Hive(Dialect):
             exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
             exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
         def temporary_storage_provider(self, expression: exp.Create) -> exp.Create:

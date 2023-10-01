@@ -2461,17 +2461,17 @@ class Parser(metaclass=_Parser):
             kwargs["using"] = self._parse_wrapped_id_vars()
         elif not (kind and kind.token_type == TokenType.CROSS):
             index = self._index
-            joins = self._parse_joins()
+            join = self._parse_join()
 
-            if joins and self._match(TokenType.ON):
+            if join and self._match(TokenType.ON):
                 kwargs["on"] = self._parse_conjunction()
-            elif joins and self._match(TokenType.USING):
+            elif join and self._match(TokenType.USING):
                 kwargs["using"] = self._parse_wrapped_id_vars()
             else:
-                joins = None
+                join = None
                 self._retreat(index)
 
-            kwargs["this"].set("joins", joins)
+            kwargs["this"].set("joins", [join] if join else None)
 
         comments = [c for token in (method, side, kind) if token for c in token.comments]
         return self.expression(exp.Join, comments=comments, **kwargs)

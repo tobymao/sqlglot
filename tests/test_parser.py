@@ -690,6 +690,31 @@ class TestParser(unittest.TestCase):
             LEFT JOIN b ON a.id = b.id
             """
         )
+
+        self.assertIsNotNone(query)
+
+        query = parse_one(
+            """
+            SELECT *
+            FROM a
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            LEFT JOIN UNNEST(ARRAY[])
+            """
+        )
+
         self.assertIsNotNone(query)
         self.assertLessEqual(time.time() - now, 0.2)
 

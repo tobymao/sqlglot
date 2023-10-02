@@ -185,6 +185,7 @@ class TestExpressions(unittest.TestCase):
         bq_dashed_table = exp.to_table("a-1.b.c", dialect="bigquery")
         self.assertEqual(exp.table_name(bq_dashed_table), '"a-1".b.c')
         self.assertEqual(exp.table_name(bq_dashed_table, dialect="bigquery"), "`a-1`.b.c")
+        self.assertEqual(exp.table_name("a-1.b.c", dialect="bigquery"), "`a-1`.b.c")
         self.assertEqual(exp.table_name(parse_one("a", into=exp.Table)), "a")
         self.assertEqual(exp.table_name(parse_one("a.b", into=exp.Table)), "a.b")
         self.assertEqual(exp.table_name(parse_one("a.b.c", into=exp.Table)), "a.b.c")

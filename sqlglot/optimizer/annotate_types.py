@@ -333,7 +333,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _set_type(
         self, expression: exp.Expression, target_type: exp.DataType | exp.DataType.Type
     ) -> None:
-        expression.set_type(target_type)
+        expression.type = target_type  # type: ignore
         self._visited.add(id(expression))
 
     def annotate(self, expression: E) -> E:

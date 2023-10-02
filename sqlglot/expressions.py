@@ -234,9 +234,6 @@ class Expression(metaclass=_Expression):
 
     @type.setter
     def type(self, dtype: t.Optional[DataType | DataType.Type | str]) -> None:
-        self.set_type(dtype)
-
-    def set_type(self, dtype: t.Optional[DataType | DataType.Type | str]) -> None:
         if dtype and not isinstance(dtype, DataType):
             dtype = DataType.build(dtype)
         self._type = dtype  # type: ignore

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import functools
 import typing as t
 
 from sqlglot import exp
@@ -12,9 +13,10 @@ from sqlglot.schema import Schema, ensure_schema
 if t.TYPE_CHECKING:
     B = t.TypeVar("B", bound=exp.Binary)
 
+    BinaryCoercionFunc = t.Callable[[exp.Expression, exp.Expression], exp.DataType.Type]
     BinaryCoercions = t.Dict[
         t.Tuple[exp.DataType.Type, exp.DataType.Type],
-        t.Callable[[exp.Expression, exp.Expression], exp.DataType.Type],
+        BinaryCoercionFunc,
     ]
 
 
@@ -90,6 +92,25 @@ def _coerce_literal_and_interval(l: exp.Expression, r: exp.Expression) -> exp.Da
         return exp.DataType.Type.DATETIME
 
     return exp.DataType.Type.UNKNOWN
+
+
+def _coerce_date_and_interval(l: exp.Expression, r: exp.Expression) -> exp.DataType.Type:
+    unit = r.text("unit").lower()
+    if unit not in DATE_UNITS:
+        return exp.DataType.Type.DATETIME
+    return l.type.this if l.type else exp.DataType.Type.UNKNOWN
+
+
+def swap_args(func: BinaryCoercionFunc) -> BinaryCoercionFunc:
+    @functools.wraps(func)
+    def _swapped(l: exp.Expression, r: exp.Expression) -> exp.DataType.Type:
+        return func(r, l)
+
+    return _swapped
+
+
+def swap_all(coercions: BinaryCoercions) -> BinaryCoercions:
+    return {**coercions, **{(b, a): swap_args(func) for (a, b), func in coercions.items()}}
 
 
 class _TypeAnnotator(type):
@@ -281,14 +302,17 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     # Coercion functions for binary operations.
     # Map of type pairs to a callable that takes both sides of the binary operation and returns the resulting type.
     BINARY_COERCIONS: BinaryCoercions = {
-        **{
-            (t, exp.DataType.Type.INTERVAL): _coerce_literal_and_interval
-            for t in exp.DataType.TEXT_TYPES
-        },
-        **{
-            (exp.DataType.Type.INTERVAL, t): lambda l, r: _coerce_literal_and_interval(r, l)
-            for t in exp.DataType.TEXT_TYPES
-        },
+        **swap_all(
+            {
+                (t, exp.DataType.Type.INTERVAL): _coerce_literal_and_interval
+                for t in exp.DataType.TEXT_TYPES
+            }
+        ),
+        **swap_all(
+            {
+                (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL): _coerce_date_and_interval,
+            }
+        ),
     }
 
     def __init__(
@@ -488,8 +512,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_dateadd(self, expression: exp.IntervalOp) -> exp.IntervalOp:
         self._annotate_args(expression)
 
-        if expression.this.type.is_type(*exp.DataType.TEXT_TYPES):
+        if expression.this.type.this in exp.DataType.TEXT_TYPES:
             datatype = _coerce_literal_and_interval(expression.this, expression.interval())
+        elif (
+            expression.this.type.is_type(exp.DataType.Type.DATE)
+            and expression.text("unit").lower() not in DATE_UNITS
+        ):
+            datatype = exp.DataType.Type.DATETIME
         else:
             datatype = expression.this.type
 

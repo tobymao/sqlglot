@@ -182,18 +182,20 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(parse_one("a.b.c").name, "c")
 
     def test_table_name(self):
+        bq_dashed_table = exp.to_table("a-1.b.c", dialect="bigquery")
+        self.assertEqual(exp.table_name(bq_dashed_table), '"a-1".b.c')
+        self.assertEqual(exp.table_name(bq_dashed_table, dialect="bigquery"), "`a-1`.b.c")
         self.assertEqual(exp.table_name(parse_one("a", into=exp.Table)), "a")
         self.assertEqual(exp.table_name(parse_one("a.b", into=exp.Table)), "a.b")
         self.assertEqual(exp.table_name(parse_one("a.b.c", into=exp.Table)), "a.b.c")
         self.assertEqual(exp.table_name("a.b.c"), "a.b.c")
+        self.assertEqual(exp.table_name(exp.to_table("a.b.c.d.e", dialect="bigquery")), "a.b.c.d.e")
+        self.assertEqual(exp.table_name(exp.to_table("'@foo'", dialect="snowflake")), "'@foo'")
+        self.assertEqual(exp.table_name(exp.to_table("@foo", dialect="snowflake")), "@foo")
         self.assertEqual(
             exp.table_name(parse_one("foo.`{bar,er}`", read="databricks"), dialect="databricks"),
             "foo.`{bar,er}`",
         )
-        self.assertEqual(exp.table_name(exp.to_table("a-1.b.c", dialect="bigquery")), '"a-1".b.c')
-        self.assertEqual(exp.table_name(exp.to_table("a.b.c.d.e", dialect="bigquery")), "a.b.c.d.e")
-        self.assertEqual(exp.table_name(exp.to_table("'@foo'", dialect="snowflake")), "'@foo'")
-        self.assertEqual(exp.table_name(exp.to_table("@foo", dialect="snowflake")), "@foo")
 
     def test_table(self):
         self.assertEqual(exp.table_("a", alias="b"), parse_one("select * from a b").find(exp.Table))

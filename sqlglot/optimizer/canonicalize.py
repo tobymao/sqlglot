@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-import typing as t
 
 from sqlglot import exp
 
@@ -41,30 +40,16 @@ def replace_date_funcs(node: exp.Expression) -> exp.Expression:
     return node
 
 
-# Expression type to transform -> arg key -> (allowed types, type to cast to)
-ARG_TYPES: t.Dict[
-    t.Type[exp.Expression], t.Dict[str, t.Tuple[t.Iterable[exp.DataType.Type], exp.DataType.Type]]
-] = {
-    exp.DateAdd: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
-    exp.DateSub: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATE)},
-    exp.DatetimeAdd: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
-    exp.DatetimeSub: {"this": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
-    exp.Extract: {"expression": (exp.DataType.TEMPORAL_TYPES, exp.DataType.Type.DATETIME)},
-}
-
-
 def coerce_type(node: exp.Expression) -> exp.Expression:
     if isinstance(node, exp.Binary):
         _coerce_date(node.left, node.right)
     elif isinstance(node, exp.Between):
         _coerce_date(node.this, node.args["low"])
-    else:
-        arg_types = ARG_TYPES.get(node.__class__)
-        if arg_types:
-            for arg_key, (allowed, to) in arg_types.items():
-                arg = node.args.get(arg_key)
-                if arg and not arg.type.is_type(*allowed):
-                    _replace_cast(arg, to)
+    elif isinstance(node, exp.Extract) and not node.expression.type.is_type(
+        *exp.DataType.TEMPORAL_TYPES
+    ):
+        _replace_cast(node.expression, exp.DataType.Type.DATETIME)
+
     return node
 
 

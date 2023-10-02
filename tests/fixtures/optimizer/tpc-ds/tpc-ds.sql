@@ -9775,7 +9775,7 @@ JOIN "date_dim" AS "d1"
   ON "catalog_sales"."cs_sold_date_sk" = "d1"."d_date_sk"
   AND "d1"."d_week_seq" = "d2"."d_week_seq"
   AND "d1"."d_year" = 2002
-  AND "d3"."d_date" > CONCAT("d1"."d_date", INTERVAL '5' day)
+  AND "d3"."d_date" > "d1"."d_date" + INTERVAL '5' day
 GROUP BY
   "item"."i_item_desc",
   "warehouse"."w_warehouse_name",

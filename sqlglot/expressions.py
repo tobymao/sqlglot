@@ -234,6 +234,9 @@ class Expression(metaclass=_Expression):
 
     @type.setter
     def type(self, dtype: t.Optional[DataType | DataType.Type | str]) -> None:
+        self.set_type(dtype)
+
+    def set_type(self, dtype: t.Optional[DataType | DataType.Type | str]) -> None:
         if dtype and not isinstance(dtype, DataType):
             dtype = DataType.build(dtype)
         self._type = dtype  # type: ignore
@@ -4053,6 +4056,16 @@ class TimeUnit(Expression):
         return self.args.get("unit")
 
 
+class IntervalOp(TimeUnit):
+    arg_types = {"unit": True, "expression": True}
+
+    def interval(self):
+        return Interval(
+            this=self.expression.copy(),
+            unit=self.unit.copy(),
+        )
+
+
 # https://www.oracletutorial.com/oracle-basics/oracle-interval/
 # https://trino.io/docs/current/language/types.html#interval-day-to-second
 # https://docs.databricks.com/en/sql/language-manual/data-types/interval-type.html
@@ -4358,11 +4371,11 @@ class CurrentUser(Func):
     arg_types = {"this": False}
 
 
-class DateAdd(Func, TimeUnit):
+class DateAdd(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DateSub(Func, TimeUnit):
+class DateSub(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
@@ -4379,11 +4392,11 @@ class DateTrunc(Func):
         return self.args["unit"]
 
 
-class DatetimeAdd(Func, TimeUnit):
+class DatetimeAdd(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
-class DatetimeSub(Func, TimeUnit):
+class DatetimeSub(Func, IntervalOp):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 

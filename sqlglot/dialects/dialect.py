@@ -241,7 +241,7 @@ class Dialect(metaclass=_Dialect):
         return expression
 
     @classmethod
-    def _normalize_identifier(cls, expression: exp.Identifier) -> exp.Identifier:
+    def normalize_identifier(cls, expression: E) -> E:
         """
         Specifies how identifiers are normalized for this Dialect. The default behavior is
         to normalize an unquoted identifier to either lower or upper case, depending on the
@@ -249,34 +249,23 @@ class Dialect(metaclass=_Dialect):
 
         If a dialect treats all identifiers as case-insensitive, they will be normalized to
         lowercase regardless of being quoted or not.
+
+        It's possible to make this a no-op by adding a special comment next to the identifier
+        of interest:
+
+            SELECT a /* sqlglot.meta case_sensitive */ FROM table
+
+        In this example, the identifier `a` will not be normalized.
         """
-        if not expression.quoted or cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None:
+        if isinstance(expression, exp.Identifier) and (
+            not expression.quoted or cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None
+        ):
             expression.set(
                 "this",
                 expression.this.upper()
                 if cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE
                 else expression.this.lower(),
             )
-
-        return expression
-
-    @classmethod
-    def normalize_identifier(cls, expression: E) -> E:
-        """
-        Transforms identifiers according to this dialect's resolution rules. It's possible
-        to make this a no-op by adding a special comment next to the identifier of interest:
-
-            SELECT a /* sqlglot.meta case_sensitive */ FROM table
-
-        In this example, the identifier `a` will not be normalized.
-        """
-        # We also check the parent because the comment may end up getting attached to it instead
-        parent = expression.parent
-        if isinstance(expression, exp.Identifier) and not (
-            expression.meta.get("case_sensitive")
-            or (isinstance(parent, exp.Expression) and parent.meta.get("case_sensitive"))
-        ):
-            expression = t.cast(E, cls._normalize_identifier(expression))
 
         return expression
 

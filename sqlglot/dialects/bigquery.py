@@ -5,6 +5,7 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
@@ -210,20 +211,21 @@ class BigQuery(Dialect):
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
 
     @classmethod
-    def _normalize_identifier(cls, expression: exp.Identifier) -> exp.Identifier:
-        parent = expression.parent
-        while isinstance(parent, exp.Dot):
-            parent = parent.parent
+    def normalize_identifier(cls, expression: E) -> E:
+        if isinstance(expression, exp.Identifier):
+            parent = expression.parent
+            while isinstance(parent, exp.Dot):
+                parent = parent.parent
 
-        # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
-        # The following check is essentially a heuristic to detect tables based on whether or
-        # not they're qualified. It also avoids qualifying UDFs, because they're case-sensitive.
-        if (
-            not isinstance(parent, exp.UserDefinedFunction)
-            and not (isinstance(parent, exp.Table) and parent.db)
-            and not expression.meta.get("is_table")
-        ):
-            expression.set("this", expression.this.lower())
+            # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
+            # The following check is essentially a heuristic to detect tables based on whether or
+            # not they're qualified. It also avoids normalizing UDFs, because they're case-sensitive.
+            if (
+                not isinstance(parent, exp.UserDefinedFunction)
+                and not (isinstance(parent, exp.Table) and parent.db)
+                and not expression.meta.get("is_table")
+            ):
+                expression.set("this", expression.this.lower())
 
         return expression
 

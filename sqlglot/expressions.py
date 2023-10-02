@@ -2462,6 +2462,8 @@ class Table(Expression):
         "hints": False,
         "system_time": False,
         "version": False,
+        "format": False,
+        "pattern": False,
     }
 
     @property

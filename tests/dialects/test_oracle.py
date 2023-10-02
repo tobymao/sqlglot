@@ -22,8 +22,6 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM t FOR UPDATE OF s.t.c, s.t.v SKIP LOCKED")
         self.validate_identity("SELECT STANDARD_HASH('hello')")
         self.validate_identity("SELECT STANDARD_HASH('hello', 'MD5')")
-        self.validate_identity("SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1")
-        self.validate_identity("SELECT CAST(NULL AS VARCHAR2(2328 BYTE)) AS COL1")
         self.validate_identity("SELECT * FROM table_name@dblink_name.database_link_domain")
         self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
         self.validate_identity("SELECT * FROM V$SESSION")
@@ -60,6 +58,20 @@ class TestOracle(Validator):
             "SELECT * FROM t SAMPLE (0.25)",
         )
 
+        self.validate_all(
+            "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",
+            write={
+                "oracle": "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",
+                "spark": "SELECT CAST(NULL AS VARCHAR(2328)) AS COL1",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(NULL AS VARCHAR2(2328 BYTE)) AS COL1",
+            write={
+                "oracle": "SELECT CAST(NULL AS VARCHAR2(2328 BYTE)) AS COL1",
+                "spark": "SELECT CAST(NULL AS VARCHAR(2328)) AS COL1",
+            },
+        )
         self.validate_all(
             "NVL(NULL, 1)",
             write={

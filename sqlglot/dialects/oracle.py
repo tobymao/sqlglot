@@ -153,6 +153,7 @@ class Oracle(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         COLUMN_JOIN_MARKS_SUPPORTED = True
+        DATA_TYPE_SPECIFIERS_ALLOWED = True
 
         LIMIT_FETCH = "FETCH"
 

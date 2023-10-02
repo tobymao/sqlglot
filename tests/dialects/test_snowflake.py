@@ -548,6 +548,10 @@ class TestSnowflake(Validator):
             "SELECT parse_json($1):a.b FROM @mystage2/data1.json.gz",
             "SELECT PARSE_JSON($1)['a'].b FROM @mystage2/data1.json.gz",
         )
+        self.validate_identity(
+            "SELECT * FROM @mystage t (c1)",
+            "SELECT * FROM @mystage AS t(c1)",
+        )
 
     def test_sample(self):
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")

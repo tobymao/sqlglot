@@ -243,12 +243,9 @@ class Dialect(metaclass=_Dialect):
     @classmethod
     def normalize_identifier(cls, expression: E) -> E:
         """
-        Specifies how identifiers are normalized for this Dialect. The default behavior is
-        to normalize an unquoted identifier to either lower or upper case, depending on the
-        dialect's identifier resolution rules, thus essentially making it case-insensitive.
-
-        If a dialect treats all identifiers as case-insensitive, they will be normalized to
-        lowercase regardless of being quoted or not.
+        Normalizes an unquoted identifier to either lower or upper case, thus essentially
+        making it case-insensitive. If a dialect treats all identifiers as case-insensitive,
+        they will be normalized to lowercase regardless of being quoted or not.
         """
         if isinstance(expression, exp.Identifier) and (
             not expression.quoted or cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None

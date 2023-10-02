@@ -2473,17 +2473,17 @@ class Table(Expression):
         return []
 
     @property
-    def parts(self) -> t.List[Identifier]:
+    def parts(self) -> t.List[Expression]:
         """Return the parts of a table in order catalog, db, table."""
-        parts: t.List[Identifier] = []
+        parts: t.List[Expression] = []
 
         for arg in ("catalog", "db", "this"):
             part = self.args.get(arg)
 
-            if isinstance(part, Identifier):
-                parts.append(part)
-            elif isinstance(part, Dot):
+            if isinstance(part, Dot):
                 parts.extend(part.flatten())
+            elif isinstance(part, Expression):
+                parts.append(part)
 
         return parts
 
@@ -6180,7 +6180,7 @@ def table_name(table: Table | str, dialect: DialectType = None) -> str:
         The table name.
     """
 
-    table = maybe_parse(table, into=Table)
+    table = maybe_parse(table, into=Table, dialect=dialect)
 
     if not table:
         raise ValueError(f"Cannot parse {table}")

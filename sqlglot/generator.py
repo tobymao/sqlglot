@@ -216,6 +216,9 @@ class Generator:
     # Whether or not COLLATE is a function instead of a binary operator
     COLLATE_IS_FUNC = False
 
+    # Whether or not data types support additional specifiers like e.g. CHAR or BYTE (oracle)
+    DATA_TYPE_SPECIFIERS_ALLOWED = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -892,7 +895,7 @@ class Generator:
     def datatypeparam_sql(self, expression: exp.DataTypeParam) -> str:
         this = self.sql(expression, "this")
         specifier = self.sql(expression, "expression")
-        specifier = f" {specifier}" if specifier else ""
+        specifier = f" {specifier}" if specifier and self.DATA_TYPE_SPECIFIERS_ALLOWED else ""
         return f"{this}{specifier}"
 
     def datatype_sql(self, expression: exp.DataType) -> str:

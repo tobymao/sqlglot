@@ -562,18 +562,13 @@ class Hive(Dialect):
                 expression = exp.DataType.build("text")
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
-
-            size_expression = expression.find(exp.DataTypeParam)
-            if size_expression:
-                if expression.is_type("float"):
+            elif expression.is_type("float"):
+                size_expression = expression.find(exp.DataTypeParam)
+                if size_expression:
                     size = int(size_expression.name)
                     expression = (
                         exp.DataType.build("float") if size <= 32 else exp.DataType.build("double")
                     )
-                elif size_expression.expression:
-                    # This removes keywords like `BYTE` (Oracle) in `CAST(x AS VARCHAR(5 BYTE))`
-                    expression = expression.copy()
-                    t.cast(exp.DataTypeParam, expression.find(exp.DataTypeParam)).expression.pop()
 
             return super().datatype_sql(expression)
 

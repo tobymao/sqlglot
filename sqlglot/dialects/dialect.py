@@ -249,13 +249,6 @@ class Dialect(metaclass=_Dialect):
 
         If a dialect treats all identifiers as case-insensitive, they will be normalized to
         lowercase regardless of being quoted or not.
-
-        It's possible to make this a no-op by adding a special comment next to the identifier
-        of interest:
-
-            SELECT a /* sqlglot.meta case_sensitive */ FROM table
-
-        In this example, the identifier `a` will not be normalized.
         """
         if isinstance(expression, exp.Identifier) and (
             not expression.quoted or cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None

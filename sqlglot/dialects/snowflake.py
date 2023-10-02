@@ -344,7 +344,16 @@ class Snowflake(Dialect):
                 table = self._parse_string()
 
             if table:
-                return self.expression(exp.Table, this=table)
+                file_format = None
+                pattern = None
+
+                if self._match_text_seq("(", "FILE_FORMAT", "=>"):
+                    file_format = self._parse_string() or super()._parse_table_parts()
+                    if self._match_text_seq(",", "PATTERN", "=>"):
+                        pattern = self._parse_string()
+                    self._match_r_paren()
+
+                return self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
 
             return super()._parse_table_parts(schema=schema)
 

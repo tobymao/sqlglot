@@ -245,7 +245,7 @@ class Dialect(metaclass=_Dialect):
         """
         Normalizes an unquoted identifier to either lower or upper case, thus essentially
         making it case-insensitive. If a dialect treats all identifiers as case-insensitive,
-        they will be normalized regardless of being quoted or not.
+        they will be normalized to lowercase regardless of being quoted or not.
         """
         if isinstance(expression, exp.Identifier) and (
             not expression.quoted or cls.RESOLVES_IDENTIFIERS_AS_UPPERCASE is None

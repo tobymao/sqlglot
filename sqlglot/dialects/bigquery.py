@@ -212,15 +212,14 @@ class BigQuery(Dialect):
 
     @classmethod
     def normalize_identifier(cls, expression: E) -> E:
-        # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
-        # The following check is essentially a heuristic to detect tables based on whether or
-        # not they're qualified.
         if isinstance(expression, exp.Identifier):
             parent = expression.parent
-
             while isinstance(parent, exp.Dot):
                 parent = parent.parent
 
+            # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
+            # The following check is essentially a heuristic to detect tables based on whether or
+            # not they're qualified. It also avoids normalizing UDFs, because they're case-sensitive.
             if (
                 not isinstance(parent, exp.UserDefinedFunction)
                 and not (isinstance(parent, exp.Table) and parent.db)

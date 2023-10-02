@@ -672,6 +672,9 @@ class Parser(metaclass=_Parser):
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
         "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
+        "SAMPLE": lambda self: self.expression(
+            exp.SampleProperty, this=self._match_text_seq("BY") and self._parse_bitwise()
+        ),
         "SET": lambda self: self.expression(exp.SetProperty, multi=False),
         "SETTINGS": lambda self: self.expression(
             exp.SettingsProperty, expressions=self._parse_csv(self._parse_set_item)

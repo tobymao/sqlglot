@@ -37,6 +37,10 @@ class ClickHouse(Dialect):
     STRICT_STRING_CONCAT = True
     SUPPORTS_USER_DEFINED_TYPES = False
 
+    ESCAPE_SEQUENCES = {
+        "\\0": "\0",
+    }
+
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         IDENTIFIERS = ['"', "`"]

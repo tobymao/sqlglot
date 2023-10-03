@@ -190,6 +190,16 @@ class BigQuery(Dialect):
         "%D": "%m/%d/%y",
     }
 
+    ESCAPE_SEQUENCES = {
+        "\\a": "\a",
+        "\\b": "\b",
+        "\\f": "\f",
+        "\\n": "\n",
+        "\\r": "\r",
+        "\\t": "\t",
+        "\\v": "\v",
+    }
+
     FORMAT_MAPPING = {
         "DD": "%d",
         "MM": "%m",
@@ -416,7 +426,6 @@ class BigQuery(Dialect):
         TABLE_HINTS = False
         LIMIT_FETCH = "LIMIT"
         RENAME_TABLE_WITH_DB = False
-        ESCAPE_LINE_BREAK = True
         NVL2_SUPPORTED = False
         UNNEST_WITH_ORDINALITY = False
         COLLATE_IS_FUNC = True

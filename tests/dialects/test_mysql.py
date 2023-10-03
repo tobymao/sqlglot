@@ -614,7 +614,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT DATE(DATE_SUB(`dt`, INTERVAL DAYOFMONTH(`dt`) - 1 DAY)) AS __timestamp FROM tableT",
             write={
-                "mysql": "SELECT DATE(DATE_ADD(`dt`, INTERVAL ((DAYOFMONTH(`dt`) - 1) * -1) DAY)) AS __timestamp FROM tableT",
+                "mysql": "SELECT DATE(DATE_SUB(`dt`, INTERVAL (DAYOFMONTH(`dt`) - 1) DAY)) AS __timestamp FROM tableT",
             },
         )
         self.validate_identity("SELECT name FROM temp WHERE name = ? FOR UPDATE")

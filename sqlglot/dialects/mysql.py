@@ -262,9 +262,9 @@ class MySQL(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
-            "DATE_ADD": parse_date_delta_with_interval(exp.TsOrDsAdd),
+            "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
-            "DATE_SUB": parse_date_delta_with_interval(exp.TsOrDsAdd, invert=True),
+            "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "ISNULL": isnull_to_is_null,
             "LOCATE": locate_to_strposition,

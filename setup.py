@@ -16,7 +16,6 @@ setup(
         "fallback_version": "0.0.0",
         "local_scheme": "no-local-version",
     },
-    setup_requires=["setuptools_scm<8.0.1"],
     python_requires=">=3.7",
     extras_require={
         "dev": [

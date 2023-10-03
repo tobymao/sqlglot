@@ -83,7 +83,7 @@ class Redshift(Postgres):
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []
         HEX_STRINGS = []
-        STRING_ESCAPES = ["\\"]
+        STRING_ESCAPES = ["\\", "'"]
 
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,

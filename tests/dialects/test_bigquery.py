@@ -645,6 +645,9 @@ class TestBigQuery(Validator):
                 "postgres": "CURRENT_DATE AT TIME ZONE 'UTC'",
             },
         )
+        self.validate_identity(
+            "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
+        )
         self.validate_all(
             "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
             write={

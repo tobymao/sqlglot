@@ -684,6 +684,9 @@ CONCAT('a', x, y, 'bc');
 'a' || 'b' || x;
 CONCAT('ab', x);
 
+CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
+CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
+
 --------------------------------------
 -- DATE_TRUNC
 --------------------------------------

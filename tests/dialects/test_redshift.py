@@ -6,6 +6,11 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity(
+            "SELECT 'a''b'",
+            "SELECT 'a\\'b'",
+        )
+
         self.validate_all(
             "x ~* 'pat'",
             write={

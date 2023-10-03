@@ -728,7 +728,7 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
         l = expression.this
         rs = expression.expressions
 
-        if all(_is_datetrunc_predicate(l, r) for r in rs):
+        if rs and all(_is_datetrunc_predicate(l, r) for r in rs):
             unit = l.unit.name.lower()
 
             ranges = []

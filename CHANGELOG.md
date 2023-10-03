@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v18.11.2] - 2023-10-03
+### :bug: Bug Fixes
+- [`513fe2c`](https://github.com/tobymao/sqlglot/commit/513fe2c5cf06db2a797cdc0422a49a95103c403e) - **parser**: support END keyword when parsing create procedure DDLs *(PR [#2369](https://github.com/tobymao/sqlglot/pull/2369) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`1ba5f98`](https://github.com/tobymao/sqlglot/commit/1ba5f98b400483e53d7b1c56a7d5a599f4926234) - distinct from parsing *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.11.1] - 2023-10-03
 ### :bug: Bug Fixes
 - [`f777155`](https://github.com/tobymao/sqlglot/commit/f777155eb6249a51290d38eaa1dfa1f867a38602) - unescape escape sequences on read, re-escape them on generation *(PR [#2367](https://github.com/tobymao/sqlglot/pull/2367) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1631,3 +1637,4 @@ Changelog
 [v18.10.1]: https://github.com/tobymao/sqlglot/compare/v18.10.0...v18.10.1
 [v18.11.0]: https://github.com/tobymao/sqlglot/compare/v18.10.1...v18.11.0
 [v18.11.1]: https://github.com/tobymao/sqlglot/compare/v18.11.0...v18.11.1
+[v18.11.2]: https://github.com/tobymao/sqlglot/compare/v18.11.1...v18.11.2

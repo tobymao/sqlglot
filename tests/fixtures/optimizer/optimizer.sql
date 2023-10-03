@@ -1023,3 +1023,25 @@ SELECT
 FROM "table1" AS "table1"
 LEFT JOIN "alias3"
   ON "table1"."cid" = "alias3"."cid";
+
+# title: CTE with EXPLODE cannot be merged
+# dialect: spark
+# execute: false
+SELECT Name,
+       FruitStruct.`$id`,
+       FruitStruct.value
+  FROM
+       (SELECT Name,
+               explode(Fruits) as FruitStruct
+          FROM fruits_table);
+WITH `_q_0` AS (
+  SELECT
+    `fruits_table`.`name` AS `name`,
+    EXPLODE(`fruits_table`.`fruits`) AS `fruitstruct`
+  FROM `fruits_table` AS `fruits_table`
+)
+SELECT
+  `_q_0`.`name` AS `name`,
+  `_q_0`.`fruitstruct`.`$id` AS `$id`,
+  `_q_0`.`fruitstruct`.`value` AS `value`
+FROM `_q_0` AS `_q_0`;

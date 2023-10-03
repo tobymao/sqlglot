@@ -546,6 +546,53 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.left.type.this, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type.this, exp.DataType.Type.INT)
 
+    def test_interval_math_annotation(self):
+        schema = {
+            "x": {
+                "a": "DATE",
+                "b": "DATETIME",
+            }
+        }
+        for sql, expected_type, *expected_sql in [
+            (
+                "SELECT '2023-01-01' + INTERVAL '1' DAY",
+                exp.DataType.Type.DATE,
+                "SELECT CAST('2023-01-01' AS DATE) + INTERVAL '1' DAY",
+            ),
+            (
+                "SELECT '2023-01-01' + INTERVAL '1' HOUR",
+                exp.DataType.Type.DATETIME,
+                "SELECT CAST('2023-01-01' AS DATETIME) + INTERVAL '1' HOUR",
+            ),
+            (
+                "SELECT '2023-01-01 00:00:01' + INTERVAL '1' HOUR",
+                exp.DataType.Type.DATETIME,
+                "SELECT CAST('2023-01-01 00:00:01' AS DATETIME) + INTERVAL '1' HOUR",
+            ),
+            ("SELECT 'nonsense' + INTERVAL '1' DAY", exp.DataType.Type.UNKNOWN),
+            ("SELECT x.a + INTERVAL '1' DAY FROM x AS x", exp.DataType.Type.DATE),
+            ("SELECT x.a + INTERVAL '1' HOUR FROM x AS x", exp.DataType.Type.DATETIME),
+            ("SELECT x.b + INTERVAL '1' DAY FROM x AS x", exp.DataType.Type.DATETIME),
+            ("SELECT x.b + INTERVAL '1' HOUR FROM x AS x", exp.DataType.Type.DATETIME),
+            (
+                "SELECT DATE_ADD('2023-01-01', 1, 'DAY')",
+                exp.DataType.Type.DATE,
+                "SELECT DATE_ADD(CAST('2023-01-01' AS DATE), 1, 'DAY')",
+            ),
+            (
+                "SELECT DATE_ADD('2023-01-01 00:00:00', 1, 'DAY')",
+                exp.DataType.Type.DATETIME,
+                "SELECT DATE_ADD(CAST('2023-01-01 00:00:00' AS DATETIME), 1, 'DAY')",
+            ),
+            ("SELECT DATE_ADD(x.a, 1, 'DAY') FROM x AS x", exp.DataType.Type.DATE),
+            ("SELECT DATE_ADD(x.a, 1, 'HOUR') FROM x AS x", exp.DataType.Type.DATETIME),
+            ("SELECT DATE_ADD(x.b, 1, 'DAY') FROM x AS x", exp.DataType.Type.DATETIME),
+        ]:
+            with self.subTest(sql):
+                expression = annotate_types(parse_one(sql), schema=schema)
+                self.assertEqual(expected_type, expression.expressions[0].type.this)
+                self.assertEqual(expected_sql[0] if expected_sql else sql, expression.sql())
+
     def test_lateral_annotation(self):
         expression = optimizer.optimize(
             parse_one("SELECT c FROM (select 1 a) as x LATERAL VIEW EXPLODE (a) AS c")

@@ -426,10 +426,7 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
 
         if l.__class__ in INVERSE_DATE_OPS:
             a = l.this
-            b = exp.Interval(
-                this=l.expression.copy(),
-                unit=l.unit.copy(),
-            )
+            b = l.interval()
         else:
             a, b = l.left, l.right
 

@@ -181,7 +181,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
         and inner_select.args.get("from")
         and not outer_scope.pivots
-        and not any(e.find(exp.AggFunc, exp.Select) for e in inner_select.expressions)
+        and not any(e.find(exp.AggFunc, exp.Select, exp.Explode) for e in inner_select.expressions)
         and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
         and not (
             isinstance(from_or_join, exp.Join)

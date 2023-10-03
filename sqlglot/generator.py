@@ -768,9 +768,11 @@ class Generator:
             )
 
         begin = " BEGIN" if expression.args.get("begin") else ""
+        end = " END" if expression.args.get("end") else ""
+
         expression_sql = self.sql(expression, "expression")
         if expression_sql:
-            expression_sql = f"{begin}{self.sep()}{expression_sql}"
+            expression_sql = f"{begin}{self.sep()}{expression_sql}{end}"
 
             if self.CREATE_FUNCTION_RETURN_AS or not isinstance(expression.expression, exp.Return):
                 if properties_locs.get(exp.Properties.Location.POST_ALIAS):

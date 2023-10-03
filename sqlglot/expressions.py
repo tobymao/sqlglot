@@ -1046,6 +1046,7 @@ class Create(DDL):
         "indexes": False,
         "no_schema_binding": False,
         "begin": False,
+        "end": False,
         "clone": False,
     }
 

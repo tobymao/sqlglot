@@ -1,6 +1,28 @@
 Changelog
 =========
 
+## [v18.11.0] - 2023-10-03
+### :sparkles: New Features
+- [`e4da5d7`](https://github.com/tobymao/sqlglot/commit/e4da5d732d8b3add5c73a0aee66838a806a8e506) - **clickhouse**: add support for SAMPLE BY property in CREATE DDL *(PR [#2355](https://github.com/tobymao/sqlglot/pull/2355) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#2352](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`8dc2a9c`](https://github.com/tobymao/sqlglot/commit/8dc2a9ccbec63b9a2dec577547e301046a02a4d8) - add the ability to set meta in sql comments *(PR [#2351](https://github.com/tobymao/sqlglot/pull/2351) by [@tobymao](https://github.com/tobymao))*
+- [`d2047ec`](https://github.com/tobymao/sqlglot/commit/d2047ec67d486e42506db7d0f1a642a5e6c40c11) - **snowflake**: add support for staged file file_format clause *(PR [#2359](https://github.com/tobymao/sqlglot/pull/2359) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`55e2d15`](https://github.com/tobymao/sqlglot/commit/55e2d15519830a91a420c5ad3315b75ddd2087ce) - switch identifier normalization off using comments *(PR [#2361](https://github.com/tobymao/sqlglot/pull/2361) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`1df9333`](https://github.com/tobymao/sqlglot/commit/1df93336d49a12f4ac00b0da45c05c07735ffa11) - **parser**: exclude set operators from unnest offset alias token set *(PR [#2349](https://github.com/tobymao/sqlglot/pull/2349) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2348](undefined) opened by [@sean-rose](https://github.com/sean-rose)*
+- [`a794bfe`](https://github.com/tobymao/sqlglot/commit/a794bfef771ced62dd3720a9d3bd49e9e99bd020) - **hive**: don't generate WithDataProperty *(PR [#2350](https://github.com/tobymao/sqlglot/pull/2350) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`5fb7174`](https://github.com/tobymao/sqlglot/commit/5fb71743d9274b7e0e825a761be3672c6299e453) - fix perf issues with nested left joins *(commit by [@tobymao](https://github.com/tobymao))*
+- [`ac4e572`](https://github.com/tobymao/sqlglot/commit/ac4e572be99a636ea013db3c33bf01bc80732d57) - handle strings in Table.parts, use dialect for parsing in table_name *(PR [#2353](https://github.com/tobymao/sqlglot/pull/2353) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`e8273e2`](https://github.com/tobymao/sqlglot/commit/e8273e26b2300e7782c33c9858b0217af3570e4c) - **hive**: don't generate BYTE when transpiling Oracle's VARCHAR(5 BYTE) *(PR [#2358](https://github.com/tobymao/sqlglot/pull/2358) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2356](undefined) opened by [@CaryMoore-DB](https://github.com/CaryMoore-DB)*
+- [`2bc30a5`](https://github.com/tobymao/sqlglot/commit/2bc30a5de6c642a49e8ad66dbc5c6f6c82cb77d9) - **mysql**: DATE_ADD for datetimes *(PR [#2360](https://github.com/tobymao/sqlglot/pull/2360) by [@barakalon](https://github.com/barakalon))*
+- [`a270c15`](https://github.com/tobymao/sqlglot/commit/a270c15480e2db592b0a2f13c8fb3edb8587cdaa) - **redshift**: treat single quote as an escape character *(PR [#2365](https://github.com/tobymao/sqlglot/pull/2365) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2364](undefined) opened by [@erdrix](https://github.com/erdrix)*
+- [`0e93890`](https://github.com/tobymao/sqlglot/commit/0e93890670596b5cf97d66eabb84bd0be4f0bb13) - **optimizer**: don't merge CTEs with EXPLODE projections into outer scopes *(PR [#2366](https://github.com/tobymao/sqlglot/pull/2366) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v18.10.1] - 2023-09-29
 ### :sparkles: New Features
 - [`4665016`](https://github.com/tobymao/sqlglot/commit/466501635d131a91812684441fdfbbfede53a242) - **postgres**: struct_extract *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1600,3 +1622,4 @@ Changelog
 [v18.9.0]: https://github.com/tobymao/sqlglot/compare/v18.8.0...v18.9.0
 [v18.10.0]: https://github.com/tobymao/sqlglot/compare/v18.9.0...v18.10.0
 [v18.10.1]: https://github.com/tobymao/sqlglot/compare/v18.10.0...v18.10.1
+[v18.11.0]: https://github.com/tobymao/sqlglot/compare/v18.10.1...v18.11.0

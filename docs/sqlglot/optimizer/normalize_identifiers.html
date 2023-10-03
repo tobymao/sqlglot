@@ -80,28 +80,44 @@
 </span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a><span class="sd">    Normalize all unquoted identifiers to either lower or upper case, depending</span>
 </span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a><span class="sd">    on the dialect. This essentially makes those identifiers case-insensitive.</span>
 </span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">    Note:</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">        Some dialects (e.g. BigQuery) treat identifiers as case-insensitive even</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a><span class="sd">        when they&#39;re quoted, so in these cases all identifiers are normalized.</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a><span class="sd">    Example:</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&#39;SELECT Bar.A AS A FROM &quot;Foo&quot;.Bar&#39;)</span>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(expression).sql()</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">        &#39;SELECT bar.a AS a FROM &quot;Foo&quot;.bar&#39;</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(&quot;foo&quot;, dialect=&quot;snowflake&quot;).sql(dialect=&quot;snowflake&quot;)</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a><span class="sd">        &#39;FOO&#39;</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="sd">    Args:</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        expression: The expression to transform.</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">        dialect: The dialect to use in order to decide how to normalize identifiers.</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="sd">    Returns:</span>
-</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="sd">        The transformed expression.</span>
-</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a>    <span class="k">return</span> <span class="n">expression</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">normalize_identifier</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a><span class="sd">    It&#39;s possible to make this a no-op by adding a special comment next to the</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a><span class="sd">    identifier of interest:</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a><span class="sd">        SELECT a /* sqlglot.meta case_sensitive */ FROM table</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a><span class="sd">    In this example, the identifier `a` will not be normalized.</span>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a><span class="sd">    Note:</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a><span class="sd">        Some dialects (e.g. BigQuery) treat identifiers as case-insensitive even</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a><span class="sd">        when they&#39;re quoted, so in these cases all identifiers are normalized.</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a><span class="sd">    Example:</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&#39;SELECT Bar.A AS A FROM &quot;Foo&quot;.Bar&#39;)</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(expression).sql()</span>
+</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a><span class="sd">        &#39;SELECT bar.a AS a FROM &quot;Foo&quot;.bar&#39;</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(&quot;foo&quot;, dialect=&quot;snowflake&quot;).sql(dialect=&quot;snowflake&quot;)</span>
+</span><span id="L-42"><a href="#L-42"><span class="linenos">42</span></a><span class="sd">        &#39;FOO&#39;</span>
+</span><span id="L-43"><a href="#L-43"><span class="linenos">43</span></a>
+</span><span id="L-44"><a href="#L-44"><span class="linenos">44</span></a><span class="sd">    Args:</span>
+</span><span id="L-45"><a href="#L-45"><span class="linenos">45</span></a><span class="sd">        expression: The expression to transform.</span>
+</span><span id="L-46"><a href="#L-46"><span class="linenos">46</span></a><span class="sd">        dialect: The dialect to use in order to decide how to normalize identifiers.</span>
+</span><span id="L-47"><a href="#L-47"><span class="linenos">47</span></a>
+</span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="sd">    Returns:</span>
+</span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="sd">        The transformed expression.</span>
+</span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>
+</span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>    <span class="n">dialect</span> <span class="o">=</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a>    <span class="k">def</span> <span class="nf">_normalize</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">E</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">E</span><span class="p">:</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;case_sensitive&quot;</span><span class="p">):</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">replace_children</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">_normalize</span><span class="p">)</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a>            <span class="n">node</span> <span class="o">=</span> <span class="n">dialect</span><span class="o">.</span><span class="n">normalize_identifier</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+</span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a>        <span class="k">return</span> <span class="n">node</span>
+</span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a>
+</span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a>    <span class="k">return</span> <span class="n">_normalize</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -122,33 +138,57 @@
 </span><span id="normalize_identifiers-23"><a href="#normalize_identifiers-23"><span class="linenos">23</span></a><span class="sd">    Normalize all unquoted identifiers to either lower or upper case, depending</span>
 </span><span id="normalize_identifiers-24"><a href="#normalize_identifiers-24"><span class="linenos">24</span></a><span class="sd">    on the dialect. This essentially makes those identifiers case-insensitive.</span>
 </span><span id="normalize_identifiers-25"><a href="#normalize_identifiers-25"><span class="linenos">25</span></a>
-</span><span id="normalize_identifiers-26"><a href="#normalize_identifiers-26"><span class="linenos">26</span></a><span class="sd">    Note:</span>
-</span><span id="normalize_identifiers-27"><a href="#normalize_identifiers-27"><span class="linenos">27</span></a><span class="sd">        Some dialects (e.g. BigQuery) treat identifiers as case-insensitive even</span>
-</span><span id="normalize_identifiers-28"><a href="#normalize_identifiers-28"><span class="linenos">28</span></a><span class="sd">        when they&#39;re quoted, so in these cases all identifiers are normalized.</span>
-</span><span id="normalize_identifiers-29"><a href="#normalize_identifiers-29"><span class="linenos">29</span></a>
-</span><span id="normalize_identifiers-30"><a href="#normalize_identifiers-30"><span class="linenos">30</span></a><span class="sd">    Example:</span>
-</span><span id="normalize_identifiers-31"><a href="#normalize_identifiers-31"><span class="linenos">31</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
-</span><span id="normalize_identifiers-32"><a href="#normalize_identifiers-32"><span class="linenos">32</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&#39;SELECT Bar.A AS A FROM &quot;Foo&quot;.Bar&#39;)</span>
-</span><span id="normalize_identifiers-33"><a href="#normalize_identifiers-33"><span class="linenos">33</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(expression).sql()</span>
-</span><span id="normalize_identifiers-34"><a href="#normalize_identifiers-34"><span class="linenos">34</span></a><span class="sd">        &#39;SELECT bar.a AS a FROM &quot;Foo&quot;.bar&#39;</span>
-</span><span id="normalize_identifiers-35"><a href="#normalize_identifiers-35"><span class="linenos">35</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(&quot;foo&quot;, dialect=&quot;snowflake&quot;).sql(dialect=&quot;snowflake&quot;)</span>
-</span><span id="normalize_identifiers-36"><a href="#normalize_identifiers-36"><span class="linenos">36</span></a><span class="sd">        &#39;FOO&#39;</span>
-</span><span id="normalize_identifiers-37"><a href="#normalize_identifiers-37"><span class="linenos">37</span></a>
-</span><span id="normalize_identifiers-38"><a href="#normalize_identifiers-38"><span class="linenos">38</span></a><span class="sd">    Args:</span>
-</span><span id="normalize_identifiers-39"><a href="#normalize_identifiers-39"><span class="linenos">39</span></a><span class="sd">        expression: The expression to transform.</span>
-</span><span id="normalize_identifiers-40"><a href="#normalize_identifiers-40"><span class="linenos">40</span></a><span class="sd">        dialect: The dialect to use in order to decide how to normalize identifiers.</span>
-</span><span id="normalize_identifiers-41"><a href="#normalize_identifiers-41"><span class="linenos">41</span></a>
-</span><span id="normalize_identifiers-42"><a href="#normalize_identifiers-42"><span class="linenos">42</span></a><span class="sd">    Returns:</span>
-</span><span id="normalize_identifiers-43"><a href="#normalize_identifiers-43"><span class="linenos">43</span></a><span class="sd">        The transformed expression.</span>
-</span><span id="normalize_identifiers-44"><a href="#normalize_identifiers-44"><span class="linenos">44</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="normalize_identifiers-45"><a href="#normalize_identifiers-45"><span class="linenos">45</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="normalize_identifiers-46"><a href="#normalize_identifiers-46"><span class="linenos">46</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="normalize_identifiers-47"><a href="#normalize_identifiers-47"><span class="linenos">47</span></a>    <span class="k">return</span> <span class="n">expression</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span><span class="o">.</span><span class="n">normalize_identifier</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="normalize_identifiers-26"><a href="#normalize_identifiers-26"><span class="linenos">26</span></a><span class="sd">    It&#39;s possible to make this a no-op by adding a special comment next to the</span>
+</span><span id="normalize_identifiers-27"><a href="#normalize_identifiers-27"><span class="linenos">27</span></a><span class="sd">    identifier of interest:</span>
+</span><span id="normalize_identifiers-28"><a href="#normalize_identifiers-28"><span class="linenos">28</span></a>
+</span><span id="normalize_identifiers-29"><a href="#normalize_identifiers-29"><span class="linenos">29</span></a><span class="sd">        SELECT a /* sqlglot.meta case_sensitive */ FROM table</span>
+</span><span id="normalize_identifiers-30"><a href="#normalize_identifiers-30"><span class="linenos">30</span></a>
+</span><span id="normalize_identifiers-31"><a href="#normalize_identifiers-31"><span class="linenos">31</span></a><span class="sd">    In this example, the identifier `a` will not be normalized.</span>
+</span><span id="normalize_identifiers-32"><a href="#normalize_identifiers-32"><span class="linenos">32</span></a>
+</span><span id="normalize_identifiers-33"><a href="#normalize_identifiers-33"><span class="linenos">33</span></a><span class="sd">    Note:</span>
+</span><span id="normalize_identifiers-34"><a href="#normalize_identifiers-34"><span class="linenos">34</span></a><span class="sd">        Some dialects (e.g. BigQuery) treat identifiers as case-insensitive even</span>
+</span><span id="normalize_identifiers-35"><a href="#normalize_identifiers-35"><span class="linenos">35</span></a><span class="sd">        when they&#39;re quoted, so in these cases all identifiers are normalized.</span>
+</span><span id="normalize_identifiers-36"><a href="#normalize_identifiers-36"><span class="linenos">36</span></a>
+</span><span id="normalize_identifiers-37"><a href="#normalize_identifiers-37"><span class="linenos">37</span></a><span class="sd">    Example:</span>
+</span><span id="normalize_identifiers-38"><a href="#normalize_identifiers-38"><span class="linenos">38</span></a><span class="sd">        &gt;&gt;&gt; import sqlglot</span>
+</span><span id="normalize_identifiers-39"><a href="#normalize_identifiers-39"><span class="linenos">39</span></a><span class="sd">        &gt;&gt;&gt; expression = sqlglot.parse_one(&#39;SELECT Bar.A AS A FROM &quot;Foo&quot;.Bar&#39;)</span>
+</span><span id="normalize_identifiers-40"><a href="#normalize_identifiers-40"><span class="linenos">40</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(expression).sql()</span>
+</span><span id="normalize_identifiers-41"><a href="#normalize_identifiers-41"><span class="linenos">41</span></a><span class="sd">        &#39;SELECT bar.a AS a FROM &quot;Foo&quot;.bar&#39;</span>
+</span><span id="normalize_identifiers-42"><a href="#normalize_identifiers-42"><span class="linenos">42</span></a><span class="sd">        &gt;&gt;&gt; normalize_identifiers(&quot;foo&quot;, dialect=&quot;snowflake&quot;).sql(dialect=&quot;snowflake&quot;)</span>
+</span><span id="normalize_identifiers-43"><a href="#normalize_identifiers-43"><span class="linenos">43</span></a><span class="sd">        &#39;FOO&#39;</span>
+</span><span id="normalize_identifiers-44"><a href="#normalize_identifiers-44"><span class="linenos">44</span></a>
+</span><span id="normalize_identifiers-45"><a href="#normalize_identifiers-45"><span class="linenos">45</span></a><span class="sd">    Args:</span>
+</span><span id="normalize_identifiers-46"><a href="#normalize_identifiers-46"><span class="linenos">46</span></a><span class="sd">        expression: The expression to transform.</span>
+</span><span id="normalize_identifiers-47"><a href="#normalize_identifiers-47"><span class="linenos">47</span></a><span class="sd">        dialect: The dialect to use in order to decide how to normalize identifiers.</span>
+</span><span id="normalize_identifiers-48"><a href="#normalize_identifiers-48"><span class="linenos">48</span></a>
+</span><span id="normalize_identifiers-49"><a href="#normalize_identifiers-49"><span class="linenos">49</span></a><span class="sd">    Returns:</span>
+</span><span id="normalize_identifiers-50"><a href="#normalize_identifiers-50"><span class="linenos">50</span></a><span class="sd">        The transformed expression.</span>
+</span><span id="normalize_identifiers-51"><a href="#normalize_identifiers-51"><span class="linenos">51</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="normalize_identifiers-52"><a href="#normalize_identifiers-52"><span class="linenos">52</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="normalize_identifiers-53"><a href="#normalize_identifiers-53"><span class="linenos">53</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="normalize_identifiers-54"><a href="#normalize_identifiers-54"><span class="linenos">54</span></a>
+</span><span id="normalize_identifiers-55"><a href="#normalize_identifiers-55"><span class="linenos">55</span></a>    <span class="n">dialect</span> <span class="o">=</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
+</span><span id="normalize_identifiers-56"><a href="#normalize_identifiers-56"><span class="linenos">56</span></a>
+</span><span id="normalize_identifiers-57"><a href="#normalize_identifiers-57"><span class="linenos">57</span></a>    <span class="k">def</span> <span class="nf">_normalize</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">E</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">E</span><span class="p">:</span>
+</span><span id="normalize_identifiers-58"><a href="#normalize_identifiers-58"><span class="linenos">58</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">node</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;case_sensitive&quot;</span><span class="p">):</span>
+</span><span id="normalize_identifiers-59"><a href="#normalize_identifiers-59"><span class="linenos">59</span></a>            <span class="n">exp</span><span class="o">.</span><span class="n">replace_children</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">_normalize</span><span class="p">)</span>
+</span><span id="normalize_identifiers-60"><a href="#normalize_identifiers-60"><span class="linenos">60</span></a>            <span class="n">node</span> <span class="o">=</span> <span class="n">dialect</span><span class="o">.</span><span class="n">normalize_identifier</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+</span><span id="normalize_identifiers-61"><a href="#normalize_identifiers-61"><span class="linenos">61</span></a>        <span class="k">return</span> <span class="n">node</span>
+</span><span id="normalize_identifiers-62"><a href="#normalize_identifiers-62"><span class="linenos">62</span></a>
+</span><span id="normalize_identifiers-63"><a href="#normalize_identifiers-63"><span class="linenos">63</span></a>    <span class="k">return</span> <span class="n">_normalize</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span></pre></div>
 
 
             <div class="docstring"><p>Normalize all unquoted identifiers to either lower or upper case, depending
 on the dialect. This essentially makes those identifiers case-insensitive.</p>
+
+<p>It's possible to make this a no-op by adding a special comment next to the
+identifier of interest:</p>
+
+<pre><code>SELECT a /* sqlglot.meta case_sensitive */ FROM table
+</code></pre>
+
+<p>In this example, the identifier <code>a</code> will not be normalized.</p>
 
 <h6 id="note">Note:</h6>
 

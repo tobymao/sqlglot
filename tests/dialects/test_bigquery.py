@@ -139,6 +139,16 @@ class TestBigQuery(Validator):
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_all(
+            "SELECT '\\n'",
+            read={
+                "bigquery": "SELECT '''\n'''",
+            },
+            write={
+                "bigquery": "SELECT '\\n'",
+                "postgres": "SELECT '\n'",
+            },
+        )
+        self.validate_all(
             "TRIM(item, '*')",
             read={
                 "snowflake": "TRIM(item, '*')",

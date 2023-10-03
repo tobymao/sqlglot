@@ -346,6 +346,7 @@ class Generator:
     # Autofilled
     INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
     INVERSE_TIME_TRIE: t.Dict = {}
+    INVERSE_ESCAPE_SEQUENCES: t.Dict[str, str] = {}
     INDEX_OFFSET = 0
     UNNEST_COLUMN_ONLY = False
     ALIAS_POST_TABLESAMPLE = False
@@ -353,7 +354,6 @@ class Generator:
     STRICT_STRING_CONCAT = False
     NORMALIZE_FUNCTIONS: bool | str = "upper"
     NULL_ORDERING = "nulls_are_small"
-    ESCAPE_LINE_BREAK = False
 
     can_identify: t.Callable[[str, str | bool], bool]
 
@@ -1670,8 +1670,8 @@ class Generator:
 
     def escape_str(self, text: str) -> str:
         text = text.replace(self.QUOTE_END, self._escaped_quote_end)
-        if self.ESCAPE_LINE_BREAK:
-            text = text.replace("\n", "\\n")
+        if self.INVERSE_ESCAPE_SEQUENCES:
+            text = "".join(self.INVERSE_ESCAPE_SEQUENCES.get(ch, ch) for ch in text)
         elif self.pretty:
             text = text.replace("\n", self.SENTINEL_LINE_BREAK)
         return text

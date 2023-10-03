@@ -1285,6 +1285,7 @@ class Parser(metaclass=_Parser):
         indexes = None
         no_schema_binding = None
         begin = None
+        end = None
         clone = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:
@@ -1315,6 +1316,8 @@ class Parser(metaclass=_Parser):
                     extend_props(self._parse_properties())
                 else:
                     expression = self._parse_statement()
+
+                end = self._match_text_seq("END")
 
                 if return_:
                     expression = self.expression(exp.Return, this=expression)
@@ -1395,6 +1398,7 @@ class Parser(metaclass=_Parser):
             indexes=indexes,
             no_schema_binding=no_schema_binding,
             begin=begin,
+            end=end,
             clone=clone,
         )
 

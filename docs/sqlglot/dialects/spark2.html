@@ -103,6 +103,9 @@
                                             <a class="variable" href="#Spark2.Generator.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
                                     </li>
                                     <li>
+                                            <a class="variable" href="#Spark2.Generator.INVERSE_ESCAPE_SEQUENCES">INVERSE_ESCAPE_SEQUENCES</a>
+                                    </li>
+                                    <li>
                                             <a class="function" href="#Spark2.Generator.can_identify">can_identify</a>
                                     </li>
                                     <li>
@@ -170,6 +173,9 @@
                         </li>
                         <li>
                                 <a class="variable" href="#Spark2.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Spark2.INVERSE_ESCAPE_SEQUENCES">INVERSE_ESCAPE_SEQUENCES</a>
                         </li>
                         <li>
                                 <a class="variable" href="#Spark2.QUOTE_START">QUOTE_START</a>
@@ -732,6 +738,18 @@
     
 
                             </div>
+                            <div id="Spark2.INVERSE_ESCAPE_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_ESCAPE_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spark2.INVERSE_ESCAPE_SEQUENCES"></a>
+    
+    
+
+                            </div>
                             <div id="Spark2.QUOTE_START" class="classattr">
                                 <div class="attr variable">
             <span class="name">QUOTE_START</span>        =
@@ -876,6 +894,7 @@
                 <dd id="Spark2.LOG_BASE_FIRST" class="variable"><a href="dialect.html#Dialect.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
                 <dd id="Spark2.NULL_ORDERING" class="variable"><a href="dialect.html#Dialect.NULL_ORDERING">NULL_ORDERING</a></dd>
                 <dd id="Spark2.FORMAT_MAPPING" class="variable"><a href="dialect.html#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
+                <dd id="Spark2.ESCAPE_SEQUENCES" class="variable"><a href="dialect.html#Dialect.ESCAPE_SEQUENCES">ESCAPE_SEQUENCES</a></dd>
                 <dd id="Spark2.PSEUDOCOLUMNS" class="variable"><a href="dialect.html#Dialect.PSEUDOCOLUMNS">PSEUDOCOLUMNS</a></dd>
                 <dd id="Spark2.get_or_raise" class="function"><a href="dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>
                 <dd id="Spark2.format_time" class="function"><a href="dialect.html#Dialect.format_time">format_time</a></dd>
@@ -1518,6 +1537,18 @@ Default: True</li>
     
 
                             </div>
+                            <div id="Spark2.Generator.INVERSE_ESCAPE_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">INVERSE_ESCAPE_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
+<span class="default_value">{}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Spark2.Generator.INVERSE_ESCAPE_SEQUENCES"></a>
+    
+    
+
+                            </div>
                             <div id="Spark2.Generator.can_identify" class="classattr">
                                         <input id="Spark2.Generator.can_identify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1530,26 +1561,26 @@ Default: True</li>
 
     </div>
     <a class="headerlink" href="#Spark2.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Spark2.Generator.can_identify-272"><a href="#Spark2.Generator.can_identify-272"><span class="linenos">272</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Spark2.Generator.can_identify-273"><a href="#Spark2.Generator.can_identify-273"><span class="linenos">273</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Spark2.Generator.can_identify-274"><a href="#Spark2.Generator.can_identify-274"><span class="linenos">274</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Spark2.Generator.can_identify-275"><a href="#Spark2.Generator.can_identify-275"><span class="linenos">275</span></a>
-</span><span id="Spark2.Generator.can_identify-276"><a href="#Spark2.Generator.can_identify-276"><span class="linenos">276</span></a><span class="sd">        Args:</span>
-</span><span id="Spark2.Generator.can_identify-277"><a href="#Spark2.Generator.can_identify-277"><span class="linenos">277</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Spark2.Generator.can_identify-278"><a href="#Spark2.Generator.can_identify-278"><span class="linenos">278</span></a><span class="sd">            identify:</span>
-</span><span id="Spark2.Generator.can_identify-279"><a href="#Spark2.Generator.can_identify-279"><span class="linenos">279</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Spark2.Generator.can_identify-280"><a href="#Spark2.Generator.can_identify-280"><span class="linenos">280</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Spark2.Generator.can_identify-281"><a href="#Spark2.Generator.can_identify-281"><span class="linenos">281</span></a>
-</span><span id="Spark2.Generator.can_identify-282"><a href="#Spark2.Generator.can_identify-282"><span class="linenos">282</span></a><span class="sd">        Returns:</span>
-</span><span id="Spark2.Generator.can_identify-283"><a href="#Spark2.Generator.can_identify-283"><span class="linenos">283</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Spark2.Generator.can_identify-284"><a href="#Spark2.Generator.can_identify-284"><span class="linenos">284</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Spark2.Generator.can_identify-285"><a href="#Spark2.Generator.can_identify-285"><span class="linenos">285</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Spark2.Generator.can_identify-286"><a href="#Spark2.Generator.can_identify-286"><span class="linenos">286</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Spark2.Generator.can_identify-287"><a href="#Spark2.Generator.can_identify-287"><span class="linenos">287</span></a>
-</span><span id="Spark2.Generator.can_identify-288"><a href="#Spark2.Generator.can_identify-288"><span class="linenos">288</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Spark2.Generator.can_identify-289"><a href="#Spark2.Generator.can_identify-289"><span class="linenos">289</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="Spark2.Generator.can_identify-290"><a href="#Spark2.Generator.can_identify-290"><span class="linenos">290</span></a>
-</span><span id="Spark2.Generator.can_identify-291"><a href="#Spark2.Generator.can_identify-291"><span class="linenos">291</span></a>        <span class="k">return</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Spark2.Generator.can_identify-279"><a href="#Spark2.Generator.can_identify-279"><span class="linenos">279</span></a>    <span class="nd">@classmethod</span>
+</span><span id="Spark2.Generator.can_identify-280"><a href="#Spark2.Generator.can_identify-280"><span class="linenos">280</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Spark2.Generator.can_identify-281"><a href="#Spark2.Generator.can_identify-281"><span class="linenos">281</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
+</span><span id="Spark2.Generator.can_identify-282"><a href="#Spark2.Generator.can_identify-282"><span class="linenos">282</span></a>
+</span><span id="Spark2.Generator.can_identify-283"><a href="#Spark2.Generator.can_identify-283"><span class="linenos">283</span></a><span class="sd">        Args:</span>
+</span><span id="Spark2.Generator.can_identify-284"><a href="#Spark2.Generator.can_identify-284"><span class="linenos">284</span></a><span class="sd">            text: The text to check.</span>
+</span><span id="Spark2.Generator.can_identify-285"><a href="#Spark2.Generator.can_identify-285"><span class="linenos">285</span></a><span class="sd">            identify:</span>
+</span><span id="Spark2.Generator.can_identify-286"><a href="#Spark2.Generator.can_identify-286"><span class="linenos">286</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
+</span><span id="Spark2.Generator.can_identify-287"><a href="#Spark2.Generator.can_identify-287"><span class="linenos">287</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
+</span><span id="Spark2.Generator.can_identify-288"><a href="#Spark2.Generator.can_identify-288"><span class="linenos">288</span></a>
+</span><span id="Spark2.Generator.can_identify-289"><a href="#Spark2.Generator.can_identify-289"><span class="linenos">289</span></a><span class="sd">        Returns:</span>
+</span><span id="Spark2.Generator.can_identify-290"><a href="#Spark2.Generator.can_identify-290"><span class="linenos">290</span></a><span class="sd">            Whether or not the given text can be identified.</span>
+</span><span id="Spark2.Generator.can_identify-291"><a href="#Spark2.Generator.can_identify-291"><span class="linenos">291</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="Spark2.Generator.can_identify-292"><a href="#Spark2.Generator.can_identify-292"><span class="linenos">292</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
+</span><span id="Spark2.Generator.can_identify-293"><a href="#Spark2.Generator.can_identify-293"><span class="linenos">293</span></a>            <span class="k">return</span> <span class="kc">True</span>
+</span><span id="Spark2.Generator.can_identify-294"><a href="#Spark2.Generator.can_identify-294"><span class="linenos">294</span></a>
+</span><span id="Spark2.Generator.can_identify-295"><a href="#Spark2.Generator.can_identify-295"><span class="linenos">295</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
+</span><span id="Spark2.Generator.can_identify-296"><a href="#Spark2.Generator.can_identify-296"><span class="linenos">296</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="Spark2.Generator.can_identify-297"><a href="#Spark2.Generator.can_identify-297"><span class="linenos">297</span></a>
+</span><span id="Spark2.Generator.can_identify-298"><a href="#Spark2.Generator.can_identify-298"><span class="linenos">298</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1750,7 +1781,6 @@ Default: True</li>
                 <dd id="Spark2.Generator.STRICT_STRING_CONCAT" class="variable"><a href="../generator.html#Generator.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
                 <dd id="Spark2.Generator.NORMALIZE_FUNCTIONS" class="variable"><a href="../generator.html#Generator.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
                 <dd id="Spark2.Generator.NULL_ORDERING" class="variable"><a href="../generator.html#Generator.NULL_ORDERING">NULL_ORDERING</a></dd>
-                <dd id="Spark2.Generator.ESCAPE_LINE_BREAK" class="variable"><a href="../generator.html#Generator.ESCAPE_LINE_BREAK">ESCAPE_LINE_BREAK</a></dd>
                 <dd id="Spark2.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
                 <dd id="Spark2.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
                 <dd id="Spark2.Generator.normalize" class="variable"><a href="../generator.html#Generator.normalize">normalize</a></dd>
@@ -2086,6 +2116,7 @@ Default: True</li>
                 <dd id="Spark2.Tokenizer.HEREDOC_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.HEREDOC_STRINGS">HEREDOC_STRINGS</a></dd>
                 <dd id="Spark2.Tokenizer.IDENTIFIER_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIER_ESCAPES">IDENTIFIER_ESCAPES</a></dd>
                 <dd id="Spark2.Tokenizer.VAR_SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.VAR_SINGLE_TOKENS">VAR_SINGLE_TOKENS</a></dd>
+                <dd id="Spark2.Tokenizer.ESCAPE_SEQUENCES" class="variable"><a href="../tokens.html#Tokenizer.ESCAPE_SEQUENCES">ESCAPE_SEQUENCES</a></dd>
                 <dd id="Spark2.Tokenizer.WHITE_SPACE" class="variable"><a href="../tokens.html#Tokenizer.WHITE_SPACE">WHITE_SPACE</a></dd>
                 <dd id="Spark2.Tokenizer.COMMANDS" class="variable"><a href="../tokens.html#Tokenizer.COMMANDS">COMMANDS</a></dd>
                 <dd id="Spark2.Tokenizer.COMMAND_PREFIX_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.COMMAND_PREFIX_TOKENS">COMMAND_PREFIX_TOKENS</a></dd>

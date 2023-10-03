@@ -1,6 +1,13 @@
 Changelog
 =========
 
+## [v18.11.1] - 2023-10-03
+### :bug: Bug Fixes
+- [`f777155`](https://github.com/tobymao/sqlglot/commit/f777155eb6249a51290d38eaa1dfa1f867a38602) - unescape escape sequences on read, re-escape them on generation *(PR [#2367](https://github.com/tobymao/sqlglot/pull/2367) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2325](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`0d1e674`](https://github.com/tobymao/sqlglot/commit/0d1e674015a6ff3eca90a6b6263119ad01a55db6) - **optimizer**: handle edge case in DATE_TRUNC simplification *(PR [#2368](https://github.com/tobymao/sqlglot/pull/2368) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v18.11.0] - 2023-10-03
 ### :sparkles: New Features
 - [`e4da5d7`](https://github.com/tobymao/sqlglot/commit/e4da5d732d8b3add5c73a0aee66838a806a8e506) - **clickhouse**: add support for SAMPLE BY property in CREATE DDL *(PR [#2355](https://github.com/tobymao/sqlglot/pull/2355) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1623,3 +1630,4 @@ Changelog
 [v18.10.0]: https://github.com/tobymao/sqlglot/compare/v18.9.0...v18.10.0
 [v18.10.1]: https://github.com/tobymao/sqlglot/compare/v18.10.0...v18.10.1
 [v18.11.0]: https://github.com/tobymao/sqlglot/compare/v18.10.1...v18.11.0
+[v18.11.1]: https://github.com/tobymao/sqlglot/compare/v18.11.0...v18.11.1

@@ -496,8 +496,7 @@ class Generator:
         if not comments or isinstance(expression, exp.Binary):
             return sql
 
-        sep = "\n" if self.pretty else " "
-        comments_sql = sep.join(
+        comments_sql = " ".join(
             f"/*{self.pad_comment(comment)}*/" for comment in comments if comment
         )
 

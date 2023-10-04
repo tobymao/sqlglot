@@ -440,6 +440,7 @@ class Postgres(Dialect):
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("postgres"),
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.VariancePop: rename_func("VAR_POP"),
+            exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
         }
 

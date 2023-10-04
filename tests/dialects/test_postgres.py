@@ -724,3 +724,11 @@ class TestPostgres(Validator):
                 "presto": "CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR))",
             },
         )
+
+    def test_variance(self):
+        self.validate_all("VAR_SAMP(x)", write={"postgres": "VAR_SAMP(x)"})
+        self.validate_all("VAR_POP(x)", write={"postgres": "VAR_POP(x)"})
+        self.validate_all("VARIANCE(x)", write={"postgres": "VAR_SAMP(x)"})
+        self.validate_all(
+            "VAR_POP(x)", read={"": "VARIANCE_POP(x)"}, write={"postgres": "VAR_POP(x)"}
+        )

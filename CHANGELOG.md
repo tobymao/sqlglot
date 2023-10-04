@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v18.11.3] - 2023-10-04
+### :sparkles: New Features
+- [`347ac51`](https://github.com/tobymao/sqlglot/commit/347ac51da6a553a7904739f0f3ad6b4bb4db01c6) - **redshift**: add support for Redshift's super array index iteration *(PR [#2373](https://github.com/tobymao/sqlglot/pull/2373) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *addresses issue [#2372](undefined) opened by [@erdrix](https://github.com/erdrix)*
+- [`160d841`](https://github.com/tobymao/sqlglot/commit/160d8415d297f998a800c518ce2e85ec41deedae) - **bigquery**: add support for ML.PREDICT function *(PR [#2375](https://github.com/tobymao/sqlglot/pull/2375) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`6a65a09`](https://github.com/tobymao/sqlglot/commit/6a65a096e69f2e0cee933d0221d0f6a93aeec159) - **postgres**: translate variance_pop to var_pop and variance to var_samp *(PR [#2371](https://github.com/tobymao/sqlglot/pull/2371) by [@cpcloud](https://github.com/cpcloud))*
+
+
 ## [v18.11.2] - 2023-10-03
 ### :bug: Bug Fixes
 - [`513fe2c`](https://github.com/tobymao/sqlglot/commit/513fe2c5cf06db2a797cdc0422a49a95103c403e) - **parser**: support END keyword when parsing create procedure DDLs *(PR [#2369](https://github.com/tobymao/sqlglot/pull/2369) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1638,3 +1648,4 @@ Changelog
 [v18.11.0]: https://github.com/tobymao/sqlglot/compare/v18.10.1...v18.11.0
 [v18.11.1]: https://github.com/tobymao/sqlglot/compare/v18.11.0...v18.11.1
 [v18.11.2]: https://github.com/tobymao/sqlglot/compare/v18.11.1...v18.11.2
+[v18.11.3]: https://github.com/tobymao/sqlglot/compare/v18.11.2...v18.11.3

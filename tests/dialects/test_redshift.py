@@ -283,6 +283,12 @@ ORDER BY
   orderkey_index""",
             pretty=True,
         )
+        self.validate_identity(
+            "SELECT attr AS attr, JSON_TYPEOF(val) AS value_type FROM customer_orders_lineitem AS c, UNPIVOT c.c_orders[0] WHERE c_custkey = 9451"
+        )
+        self.validate_identity(
+            "SELECT attr AS attr, JSON_TYPEOF(val) AS value_type FROM customer_orders_lineitem AS c, UNPIVOT c.c_orders AS val AT attr WHERE c_custkey = 9451"
+        )
 
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError

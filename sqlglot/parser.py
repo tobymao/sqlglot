@@ -2622,7 +2622,9 @@ class Parser(metaclass=_Parser):
 
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table, this=bracket) if bracket else None
-        this: exp.Expression = bracket or self._parse_table_parts(schema=schema)
+        this: exp.Expression = bracket or t.cast(
+            exp.Expression, self._parse_bracket(self._parse_table_parts(schema=schema))
+        )
 
         if schema:
             return self._parse_schema(this=this)

@@ -1405,6 +1405,9 @@ class Generator:
 
         if expression.this:
             this = self.sql(expression, "this")
+            if not expressions:
+                return f"UNPIVOT {this}"
+
             on = f"{self.seg('ON')} {expressions}"
             using = self.expressions(expression, key="using", flat=True)
             using = f"{self.seg('USING')} {using}" if using else ""

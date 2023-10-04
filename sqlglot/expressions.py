@@ -3432,7 +3432,7 @@ class Pivot(Expression):
     arg_types = {
         "this": False,
         "alias": False,
-        "expressions": True,
+        "expressions": False,
         "field": False,
         "unpivot": False,
         "using": False,

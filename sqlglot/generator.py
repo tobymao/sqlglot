@@ -2887,6 +2887,14 @@ class Generator:
     def opclass_sql(self, expression: exp.Opclass) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
+    def predict_sql(self, expression: exp.Predict) -> str:
+        model = self.sql(expression, "this")
+        model = f"MODEL {model}"
+        table = self.sql(expression, "expression")
+        table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
+        parameters = self.sql(expression, "params_struct")
+        return self.func("PREDICT", model, table, parameters or None)
+
 
 def cached_generator(
     cache: t.Optional[t.Dict[int, str]] = None

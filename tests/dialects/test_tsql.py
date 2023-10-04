@@ -32,7 +32,7 @@ class TestTSQL(Validator):
         self.validate_all(
             """CREATE TABLE [dbo].[mytable](
                 [email] [varchar](255) NOT NULL,
-                CONSTRAINT [UN_t_mytable] UNIQUE NONCLUSTERED 
+                CONSTRAINT [UN_t_mytable] UNIQUE NONCLUSTERED
                 (
                     [email] ASC
                 )
@@ -343,7 +343,7 @@ class TestTSQL(Validator):
             "CAST(x as DOUBLE)",
             write={
                 "spark": "CAST(x AS DOUBLE)",
-                "tsql": "CAST(x AS DOUBLE)",
+                "tsql": "CAST(x AS FLOAT)",
             },
         )
 

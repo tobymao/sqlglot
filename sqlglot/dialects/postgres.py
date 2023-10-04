@@ -439,6 +439,7 @@ class Postgres(Dialect):
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("postgres"),
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
+            exp.VariancePop: rename_func("VAR_POP"),
             exp.Xor: bool_xor_sql,
         }
 

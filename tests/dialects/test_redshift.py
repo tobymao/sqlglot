@@ -273,6 +273,16 @@ class TestRedshift(Validator):
             "SELECT DATE_ADD('day', 1, DATE('2023-01-01'))",
             "SELECT DATEADD(day, 1, CAST(DATE('2023-01-01') AS DATE))",
         )
+        self.validate_identity(
+            """SELECT
+  c_name,
+  orders.o_orderkey AS orderkey,
+  index AS orderkey_index
+FROM customer_orders_lineitem AS c, c.c_orders AS orders AT index
+ORDER BY
+  orderkey_index""",
+            pretty=True,
+        )
 
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError

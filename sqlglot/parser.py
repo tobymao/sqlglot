@@ -2639,6 +2639,12 @@ class Parser(metaclass=_Parser):
         if alias:
             this.set("alias", alias)
 
+        if self._match_text_seq("AT"):
+            this.set(
+                "index",
+                self._parse_id_var(any_token=False, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS),
+            )
+
         this.set("hints", self._parse_table_hints())
 
         if not this.args.get("pivots"):

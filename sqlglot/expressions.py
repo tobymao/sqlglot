@@ -2465,6 +2465,7 @@ class Table(Expression):
         "version": False,
         "format": False,
         "pattern": False,
+        "index": False,
     }
 
     @property

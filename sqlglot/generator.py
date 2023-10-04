@@ -1350,13 +1350,17 @@ class Generator:
         pivots = f" {pivots}" if pivots else ""
         joins = self.expressions(expression, key="joins", sep="", skip_first=True)
         laterals = self.expressions(expression, key="laterals", sep="")
+
         file_format = self.sql(expression, "format")
         if file_format:
             pattern = self.sql(expression, "pattern")
             pattern = f", PATTERN => {pattern}" if pattern else ""
             file_format = f" (FILE_FORMAT => {file_format}{pattern})"
 
-        return f"{table}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}"
+        index = self.sql(expression, "index")
+        index = f" AT {index}" if index else ""
+
+        return f"{table}{version}{file_format}{alias}{index}{hints}{pivots}{joins}{laterals}"
 
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "

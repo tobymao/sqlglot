@@ -2622,7 +2622,9 @@ class Parser(metaclass=_Parser):
 
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table, this=bracket) if bracket else None
-        this: exp.Expression = bracket or self._parse_table_parts(schema=schema)
+        this = t.cast(
+            exp.Expression, bracket or self._parse_bracket(self._parse_table_parts(schema=schema))
+        )
 
         if schema:
             return self._parse_schema(this=this)
@@ -2638,6 +2640,9 @@ class Parser(metaclass=_Parser):
         alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
         if alias:
             this.set("alias", alias)
+
+        if self._match_text_seq("AT"):
+            this.set("index", self._parse_id_var())
 
         this.set("hints", self._parse_table_hints())
 

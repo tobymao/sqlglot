@@ -31,6 +31,7 @@ class Redshift(Postgres):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
 
     SUPPORTS_USER_DEFINED_TYPES = False
+    INDEX_OFFSET = 0
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
@@ -56,6 +57,24 @@ class Redshift(Postgres):
             ),
             "STRTOL": exp.FromBase.from_arg_list,
         }
+
+        def _parse_table(
+            self,
+            schema: bool = False,
+            joins: bool = False,
+            alias_tokens: t.Optional[t.Collection[TokenType]] = None,
+            parse_bracket: bool = False,
+        ) -> t.Optional[exp.Expression]:
+            # Redshift supports UNPIVOTing SUPER objects, e.g. `UNPIVOT foo.obj[0] AS val AT attr`
+            unpivot = self._match(TokenType.UNPIVOT)
+            table = super()._parse_table(
+                schema=schema,
+                joins=joins,
+                alias_tokens=alias_tokens,
+                parse_bracket=parse_bracket,
+            )
+
+            return self.expression(exp.Pivot, this=table, unpivot=True) if unpivot else table
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True

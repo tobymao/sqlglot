@@ -656,7 +656,7 @@ def unix_timestamp(
 
 def from_utc_timestamp(timestamp: ColumnOrName, tz: ColumnOrName) -> Column:
     tz_column = tz if isinstance(tz, Column) else lit(tz)
-    return Column.invoke_anonymous_function(timestamp, "FROM_UTC_TIMESTAMP", tz_column)
+    return Column.invoke_expression_over_column(timestamp, expression.AtTimeZone, zone=tz_column)
 
 
 def to_utc_timestamp(timestamp: ColumnOrName, tz: ColumnOrName) -> Column:

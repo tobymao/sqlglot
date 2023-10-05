@@ -3892,7 +3892,9 @@ class Parser(metaclass=_Parser):
     def _parse_unnamed_constraint(
         self, constraints: t.Optional[t.Collection[str]] = None
     ) -> t.Optional[exp.Expression]:
-        if not self._match_texts(constraints or self.CONSTRAINT_PARSERS):
+        if self._match(TokenType.IDENTIFIER, advance=False) or not self._match_texts(
+            constraints or self.CONSTRAINT_PARSERS
+        ):
             return None
 
         constraint = self._prev.text.upper()

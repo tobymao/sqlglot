@@ -2040,8 +2040,12 @@ class FreespaceProperty(Property):
     arg_types = {"this": True, "percent": False}
 
 
-class InputOutputFormat(Expression):
-    arg_types = {"input_format": False, "output_format": False}
+class InputModelProperty(Property):
+    arg_types = {"this": True}
+
+
+class OutputModelProperty(Property):
+    arg_types = {"this": True}
 
 
 class IsolatedLoadingProperty(Property):
@@ -2137,6 +2141,10 @@ class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
 
+class RemoteWithConnectionModelProperty(Property):
+    arg_types = {"this": True}
+
+
 class ReturnsProperty(Property):
     arg_types = {"this": True, "is_table": False, "table": False}
 
@@ -2209,6 +2217,10 @@ class StabilityProperty(Property):
 
 class TemporaryProperty(Property):
     arg_types = {}
+
+
+class TransformModelProperty(Property):
+    arg_types = {"expressions": True}
 
 
 class TransientProperty(Property):
@@ -2291,6 +2303,10 @@ class Properties(Expression):
 
 class Qualify(Expression):
     pass
+
+
+class InputOutputFormat(Expression):
+    arg_types = {"input_format": False, "output_format": False}
 
 
 # https://www.ibm.com/docs/en/ias?topic=procedures-return-statement-in-sql

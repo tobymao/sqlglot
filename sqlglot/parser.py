@@ -236,6 +236,7 @@ class Parser(metaclass=_Parser):
         TokenType.SCHEMA,
         TokenType.TABLE,
         TokenType.VIEW,
+        TokenType.MODEL,
         TokenType.DICTIONARY,
     }
 
@@ -649,6 +650,7 @@ class Parser(metaclass=_Parser):
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
+        "INPUT": lambda self: self.expression(exp.InputModelProperty, this=self._parse_schema()),
         "JOURNAL": lambda self, **kwargs: self._parse_journal(**kwargs),
         "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),
         "LAYOUT": lambda self: self._parse_dict_property(this="LAYOUT"),
@@ -664,11 +666,13 @@ class Parser(metaclass=_Parser):
         "NO": lambda self: self._parse_no_property(),
         "ON": lambda self: self._parse_on_property(),
         "ORDER BY": lambda self: self._parse_order(skip_order_token=True),
+        "OUTPUT": lambda self: self.expression(exp.OutputModelProperty, this=self._parse_schema()),
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(in_props=True),
         "RANGE": lambda self: self._parse_dict_range(this="RANGE"),
+        "REMOTE": lambda self: self._parse_remote_with_connection(),
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
         "ROW_FORMAT": lambda self: self._parse_property_assignment(exp.RowFormatProperty),
@@ -690,6 +694,9 @@ class Parser(metaclass=_Parser):
         "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty),
         "TO": lambda self: self._parse_to_table(),
         "TRANSIENT": lambda self: self.expression(exp.TransientProperty),
+        "TRANSFORM": lambda self: self.expression(
+            exp.TransformModelProperty, expressions=self._parse_wrapped_csv(self._parse_expression)
+        ),
         "TTL": lambda self: self._parse_ttl(),
         "USING": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "VOLATILE": lambda self: self._parse_volatile_property(),
@@ -1786,6 +1793,12 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.EQ)
         return self.expression(
             exp.CharacterSetProperty, this=self._parse_var_or_string(), default=default
+        )
+
+    def _parse_remote_with_connection(self) -> exp.RemoteWithConnectionModelProperty:
+        self._match_text_seq("WITH", "CONNECTION")
+        return self.expression(
+            exp.RemoteWithConnectionModelProperty, this=self._parse_table_parts()
         )
 
     def _parse_returns(self) -> exp.ReturnsProperty:

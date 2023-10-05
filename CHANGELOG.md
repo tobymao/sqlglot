@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v18.11.4] - 2023-10-05
+### :sparkles: New Features
+- [`3266e51`](https://github.com/tobymao/sqlglot/commit/3266e51fa3f2fcb311bc2fe8b212e423d4253082) - **bigquery**: improve support for CREATE MODEL DDL statement *(PR [#2380](https://github.com/tobymao/sqlglot/pull/2380) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+### :bug: Bug Fixes
+- [`dd8334d`](https://github.com/tobymao/sqlglot/commit/dd8334d35d757b7309246ceb4e00f077eb19c9d6) - **parser**: don't consume identifier in unnamed constraint parser *(PR [#2377](https://github.com/tobymao/sqlglot/pull/2377) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2376](undefined) opened by [@Nitrino](https://github.com/Nitrino)*
+
+
 ## [v18.11.3] - 2023-10-04
 ### :sparkles: New Features
 - [`347ac51`](https://github.com/tobymao/sqlglot/commit/347ac51da6a553a7904739f0f3ad6b4bb4db01c6) - **redshift**: add support for Redshift's super array index iteration *(PR [#2373](https://github.com/tobymao/sqlglot/pull/2373) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1649,3 +1658,4 @@ Changelog
 [v18.11.1]: https://github.com/tobymao/sqlglot/compare/v18.11.0...v18.11.1
 [v18.11.2]: https://github.com/tobymao/sqlglot/compare/v18.11.1...v18.11.2
 [v18.11.3]: https://github.com/tobymao/sqlglot/compare/v18.11.2...v18.11.3
+[v18.11.4]: https://github.com/tobymao/sqlglot/compare/v18.11.3...v18.11.4

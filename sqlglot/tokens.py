@@ -263,6 +263,7 @@ class TokenType(AutoName):
     MEMBER_OF = auto()
     MERGE = auto()
     MOD = auto()
+    MODEL = auto()
     NATURAL = auto()
     NEXT = auto()
     NOTNULL = auto()

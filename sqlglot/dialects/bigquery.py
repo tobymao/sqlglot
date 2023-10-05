@@ -260,15 +260,16 @@ class BigQuery(Dialect):
             "ANY TYPE": TokenType.VARIANT,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
-            "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "BYTES": TokenType.BINARY,
+            "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "DECLARE": TokenType.COMMAND,
             "FLOAT64": TokenType.DOUBLE,
+            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "INT64": TokenType.BIGINT,
+            "MODEL": TokenType.MODEL,
+            "NOT DETERMINISTIC": TokenType.VOLATILE,
             "RECORD": TokenType.STRUCT,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
-            "NOT DETERMINISTIC": TokenType.VOLATILE,
-            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
         }
         KEYWORDS.pop("DIV")
 

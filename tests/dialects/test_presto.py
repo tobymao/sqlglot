@@ -353,6 +353,12 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "CAST('2012-10-31 00:00' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
+            read={
+                "spark": "FROM_UTC_TIMESTAMP('2012-10-31 00:00', 'America/Sao_Paulo')",
+            },
+        )
+        self.validate_all(
             "CAST(x AS TIMESTAMP)",
             write={"presto": "CAST(x AS TIMESTAMP)"},
             read={"mysql": "CAST(x AS DATETIME)", "clickhouse": "CAST(x AS DATETIME64)"},

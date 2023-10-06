@@ -205,7 +205,7 @@ def _remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
 
         for when in expression.expressions:
             when.transform(
-                lambda node: exp.column(node.name)
+                lambda node: exp.column(node.this)
                 if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
                 else node,
                 copy=False,

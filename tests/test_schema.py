@@ -272,3 +272,8 @@ class TestSchema(unittest.TestCase):
             str(ctx.exception),
             "Table z must match the schema's nesting level: 2.",
         )
+
+    def test_has_column(self):
+        schema = MappingSchema({"x": {"c": "int"}})
+        self.assertTrue(schema.has_column("x", exp.column("c")))
+        self.assertFalse(schema.has_column("x", exp.column("k")))

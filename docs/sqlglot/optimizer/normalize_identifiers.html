@@ -60,7 +60,7 @@
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a>
 </span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
 </span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a>
-</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">parse_one</span>
 </span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a><span class="kn">from</span> <span class="nn">sqlglot._typing</span> <span class="kn">import</span> <span class="n">E</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="kn">from</span> <span class="nn">sqlglot.dialects.dialect</span> <span class="kn">import</span> <span class="n">Dialect</span><span class="p">,</span> <span class="n">DialectType</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a>
@@ -107,7 +107,7 @@
 </span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="sd">        The transformed expression.</span>
 </span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">parse_one</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">into</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Identifier</span><span class="p">)</span>
 </span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a>
 </span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a>    <span class="n">dialect</span> <span class="o">=</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
 </span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a>
@@ -165,7 +165,7 @@
 </span><span id="normalize_identifiers-50"><a href="#normalize_identifiers-50"><span class="linenos">50</span></a><span class="sd">        The transformed expression.</span>
 </span><span id="normalize_identifiers-51"><a href="#normalize_identifiers-51"><span class="linenos">51</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="normalize_identifiers-52"><a href="#normalize_identifiers-52"><span class="linenos">52</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-</span><span id="normalize_identifiers-53"><a href="#normalize_identifiers-53"><span class="linenos">53</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">to_identifier</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="normalize_identifiers-53"><a href="#normalize_identifiers-53"><span class="linenos">53</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">parse_one</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="n">dialect</span><span class="p">,</span> <span class="n">into</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Identifier</span><span class="p">)</span>
 </span><span id="normalize_identifiers-54"><a href="#normalize_identifiers-54"><span class="linenos">54</span></a>
 </span><span id="normalize_identifiers-55"><a href="#normalize_identifiers-55"><span class="linenos">55</span></a>    <span class="n">dialect</span> <span class="o">=</span> <span class="n">Dialect</span><span class="o">.</span><span class="n">get_or_raise</span><span class="p">(</span><span class="n">dialect</span><span class="p">)</span>
 </span><span id="normalize_identifiers-56"><a href="#normalize_identifiers-56"><span class="linenos">56</span></a>

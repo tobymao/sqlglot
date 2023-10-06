@@ -71,7 +71,7 @@ class Schema(abc.ABC):
     def get_column_type(
         self,
         table: exp.Table | str,
-        column: exp.Column,
+        column: exp.Column | str,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> exp.DataType:
@@ -91,7 +91,7 @@ class Schema(abc.ABC):
     def has_column(
         self,
         table: exp.Table | str,
-        column: exp.Column,
+        column: exp.Column | str,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> bool:
@@ -107,7 +107,8 @@ class Schema(abc.ABC):
         Returns:
             True if the column appears in the schema, False otherwise.
         """
-        return column.name in self.column_names(table, dialect=dialect, normalize=normalize)
+        name = column if isinstance(column, str) else column.name
+        return name in self.column_names(table, dialect=dialect, normalize=normalize)
 
     @property
     @abc.abstractmethod
@@ -308,7 +309,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
     def get_column_type(
         self,
         table: exp.Table | str,
-        column: exp.Column,
+        column: exp.Column | str,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> exp.DataType:
@@ -332,7 +333,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
     def has_column(
         self,
         table: exp.Table | str,
-        column: exp.Column,
+        column: exp.Column | str,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> bool:

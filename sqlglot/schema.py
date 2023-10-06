@@ -71,7 +71,7 @@ class Schema(abc.ABC):
     def get_column_type(
         self,
         table: exp.Table | str,
-        column: exp.Column,
+        column: exp.Column | str,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> exp.DataType:
@@ -87,6 +87,28 @@ class Schema(abc.ABC):
         Returns:
             The resulting column type.
         """
+
+    def has_column(
+        self,
+        table: exp.Table | str,
+        column: exp.Column | str,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> bool:
+        """
+        Returns whether or not `column` appears in `table`'s schema.
+
+        Args:
+            table: the source table.
+            column: the target column.
+            dialect: the SQL dialect that will be used to parse `table` if it's a string.
+            normalize: whether to normalize identifiers according to the dialect of interest.
+
+        Returns:
+            True if the column appears in the schema, False otherwise.
+        """
+        name = column if isinstance(column, str) else column.name
+        return name in self.column_names(table, dialect=dialect, normalize=normalize)
 
     @property
     @abc.abstractmethod
@@ -287,7 +309,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
     def get_column_type(
         self,
         table: exp.Table | str,
-        column: exp.Column,
+        column: exp.Column | str,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
     ) -> exp.DataType:
@@ -307,6 +329,22 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
                 return self._to_data_type(column_type.upper(), dialect=dialect)
 
         return exp.DataType.build("unknown")
+
+    def has_column(
+        self,
+        table: exp.Table | str,
+        column: exp.Column | str,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> bool:
+        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+
+        normalized_column_name = self._normalize_name(
+            column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
+        )
+
+        table_schema = self.find(normalized_table, raise_on_missing=False)
+        return normalized_column_name in table_schema if table_schema else False
 
     def _normalize(self, schema: t.Dict) -> t.Dict:
         """

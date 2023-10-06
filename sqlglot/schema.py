@@ -88,6 +88,27 @@ class Schema(abc.ABC):
             The resulting column type.
         """
 
+    def has_column(
+        self,
+        table: exp.Table | str,
+        column: exp.Column,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> bool:
+        """
+        Returns whether or not `column` appears in `table`'s schema.
+
+        Args:
+            table: the source table.
+            column: the target column.
+            dialect: the SQL dialect that will be used to parse `table` if it's a string.
+            normalize: whether to normalize identifiers according to the dialect of interest.
+
+        Returns:
+            True if the column appears in the schema, False otherwise.
+        """
+        return column.name in self.column_names(table, dialect=dialect, normalize=normalize)
+
     @property
     @abc.abstractmethod
     def supported_table_args(self) -> t.Tuple[str, ...]:

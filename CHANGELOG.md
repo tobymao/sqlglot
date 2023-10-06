@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v18.11.5] - 2023-10-06
+### :sparkles: New Features
+- [`ae27e46`](https://github.com/tobymao/sqlglot/commit/ae27e46cf60bbbcb456997afe942a6e8ab9d03c1) - **spark**: from_utc_timestamp -> at time zone *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`d9bfaa7`](https://github.com/tobymao/sqlglot/commit/d9bfaa7a5d3a43c5fa1d34dd3b33d1847e0cbb13) - preserve identifiers in postgres merge *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.11.4] - 2023-10-05
 ### :sparkles: New Features
 - [`3266e51`](https://github.com/tobymao/sqlglot/commit/3266e51fa3f2fcb311bc2fe8b212e423d4253082) - **bigquery**: improve support for CREATE MODEL DDL statement *(PR [#2380](https://github.com/tobymao/sqlglot/pull/2380) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1659,3 +1667,4 @@ Changelog
 [v18.11.2]: https://github.com/tobymao/sqlglot/compare/v18.11.1...v18.11.2
 [v18.11.3]: https://github.com/tobymao/sqlglot/compare/v18.11.2...v18.11.3
 [v18.11.4]: https://github.com/tobymao/sqlglot/compare/v18.11.3...v18.11.4
+[v18.11.5]: https://github.com/tobymao/sqlglot/compare/v18.11.4...v18.11.5

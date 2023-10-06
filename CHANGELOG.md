@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v18.11.6] - 2023-10-06
+### :bug: Bug Fixes
+- [`ef12aa7`](https://github.com/tobymao/sqlglot/commit/ef12aa7b4c24b431dbedcf917f61d18a89dc3a0f) - normalize_identifiers parses identifier strings *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.11.5] - 2023-10-06
 ### :sparkles: New Features
 - [`ae27e46`](https://github.com/tobymao/sqlglot/commit/ae27e46cf60bbbcb456997afe942a6e8ab9d03c1) - **spark**: from_utc_timestamp -> at time zone *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1668,3 +1673,4 @@ Changelog
 [v18.11.3]: https://github.com/tobymao/sqlglot/compare/v18.11.2...v18.11.3
 [v18.11.4]: https://github.com/tobymao/sqlglot/compare/v18.11.3...v18.11.4
 [v18.11.5]: https://github.com/tobymao/sqlglot/compare/v18.11.4...v18.11.5
+[v18.11.6]: https://github.com/tobymao/sqlglot/compare/v18.11.5...v18.11.6

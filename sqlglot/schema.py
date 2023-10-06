@@ -308,6 +308,22 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
 
         return exp.DataType.build("unknown")
 
+    def has_column(
+        self,
+        table: exp.Table | str,
+        column: exp.Column,
+        dialect: DialectType = None,
+        normalize: t.Optional[bool] = None,
+    ) -> bool:
+        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+
+        normalized_column_name = self._normalize_name(
+            column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
+        )
+
+        table_schema = self.find(normalized_table, raise_on_missing=False)
+        return normalized_column_name in table_schema if table_schema else False
+
     def _normalize(self, schema: t.Dict) -> t.Dict:
         """
         Normalizes all identifiers in the schema.

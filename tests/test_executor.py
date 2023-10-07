@@ -4,6 +4,7 @@ from datetime import date
 from multiprocessing import Pool
 
 import duckdb
+import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
@@ -94,6 +95,11 @@ class TestExecutor(unittest.TestCase):
                     sql, _ = self.sqls[i]
                     a = self.cached_execute(sql)
                     b = pd.DataFrame(table.rows, columns=table.columns)
+
+                    # The executor represents NULL values as None, whereas DuckDB represents them as NaN,
+                    # and so the following is done to silence Pandas' "Mismatched null-like values" warnings
+                    b = b.fillna(value=np.nan)
+
                     assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
 
     def test_execute_callable(self):

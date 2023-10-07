@@ -73,7 +73,7 @@ def simplify(expression):
         node = simplify_not(node)
         node = flatten(node)
         node = simplify_connectors(node, root)
-        node = remove_compliments(node, root)
+        node = remove_complements(node, root)
         node = simplify_coalesce(node)
         node.parent = expression.parent
         node = simplify_literals(node, root)
@@ -287,19 +287,19 @@ def _simplify_comparison(expression, left, right, or_=False):
     return None
 
 
-def remove_compliments(expression, root=True):
+def remove_complements(expression, root=True):
     """
-    Removing compliments.
+    Removing complements.
 
     A AND NOT A -> FALSE
     A OR NOT A -> TRUE
     """
     if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
-        compliment = exp.false() if isinstance(expression, exp.And) else exp.true()
+        complement = exp.false() if isinstance(expression, exp.And) else exp.true()
 
         for a, b in itertools.permutations(expression.flatten(), 2):
             if is_complement(a, b):
-                return compliment
+                return complement
     return expression
 
 
@@ -609,21 +609,38 @@ SAFE_CONCATS = (exp.SafeConcat, exp.SafeDPipe)
 
 def simplify_concat(expression):
     """Reduces all groups that contain string literals by concatenating them."""
-    if not isinstance(expression, CONCATS) or isinstance(expression, exp.ConcatWs):
+    if not isinstance(expression, CONCATS) or (
+        # We can't reduce a CONCAT_WS call if we don't statically know the separator
+        isinstance(expression, exp.ConcatWs)
+        and not expression.expressions[0].is_string
+    ):
         return expression
+
+    if isinstance(expression, exp.ConcatWs):
+        sep_expr, *expressions = expression.expressions
+        sep = sep_expr.name
+        concat_type = exp.ConcatWs
+    else:
+        expressions = expression.expressions
+        sep = ""
+        concat_type = exp.SafeConcat if isinstance(expression, SAFE_CONCATS) else exp.Concat
 
     new_args = []
     for is_string_group, group in itertools.groupby(
-        expression.expressions or expression.flatten(), lambda e: e.is_string
+        expressions or expression.flatten(), lambda e: e.is_string
     ):
         if is_string_group:
-            new_args.append(exp.Literal.string("".join(string.name for string in group)))
+            new_args.append(exp.Literal.string(sep.join(string.name for string in group)))
         else:
             new_args.extend(group)
 
-    # Ensures we preserve the right concat type, i.e. whether it's "safe" or not
-    concat_type = exp.SafeConcat if isinstance(expression, SAFE_CONCATS) else exp.Concat
-    return new_args[0] if len(new_args) == 1 else concat_type(expressions=new_args)
+    if len(new_args) == 1 and new_args[0].is_string:
+        return new_args[0]
+
+    if concat_type is exp.ConcatWs:
+        new_args = [sep_expr] + new_args
+
+    return concat_type(expressions=new_args)
 
 
 DateRange = t.Tuple[datetime.date, datetime.date]

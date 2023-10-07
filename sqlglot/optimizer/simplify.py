@@ -638,7 +638,7 @@ def simplify_concat(expression):
         return new_args[0]
 
     if concat_type is exp.ConcatWs:
-        new_args = [exp.Literal.string(sep)] + new_args
+        new_args = [sep_expr] + new_args
 
     return concat_type(expressions=new_args)
 

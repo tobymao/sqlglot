@@ -619,10 +619,8 @@ def simplify_concat(expression):
     if isinstance(expression, exp.ConcatWs):
         # Skip the separator value
         sep_expr, *expressions = expression.expressions
-
-        # CONCAT_WS is equivalent to CONCAT when the separator is the empty string
         sep = sep_expr.name
-        concat_type = exp.ConcatWs if sep else exp.Concat
+        concat_type = exp.ConcatWs
     else:
         expressions = expression.expressions
         sep = ""

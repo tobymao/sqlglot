@@ -700,7 +700,7 @@ CONCAT_WS('-', x, y);
 CONCAT_WS('-', x, y);
 
 CONCAT_WS('', x, y);
-CONCAT(x, y);
+CONCAT_WS('', x, y);
 
 CONCAT_WS('-', x);
 CONCAT_WS('-', x);

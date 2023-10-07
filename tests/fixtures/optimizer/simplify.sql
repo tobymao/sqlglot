@@ -669,17 +669,44 @@ a AND b AND (ROW() OVER () = 1 OR ROW() OVER () IS NULL);
 CONCAT(x, y);
 CONCAT(x, y);
 
+CONCAT_WS(sep, x, y);
+CONCAT_WS(sep, x, y);
+
 CONCAT(x);
 x;
 
 CONCAT('a', 'b', 'c');
 'abc';
 
+CONCAT('a', NULL);
+CONCAT('a', NULL);
+
+CONCAT_WS('-', 'a', 'b', 'c');
+'a-b-c';
+
 CONCAT('a', x, y, 'b', 'c');
 CONCAT('a', x, y, 'bc');
 
+CONCAT_WS('-', 'a', x, y, 'b', 'c');
+CONCAT_WS('-', 'a', x, y, 'b-c');
+
 'a' || 'b';
 'ab';
+
+CONCAT_WS('-', 'a');
+'a';
+
+CONCAT_WS('-', x, y);
+CONCAT_WS('-', x, y);
+
+CONCAT_WS('', x, y);
+CONCAT_WS('', x, y);
+
+CONCAT_WS('-', x);
+CONCAT_WS('-', x);
+
+CONCAT_WS(sep, 'a', 'b');
+CONCAT_WS(sep, 'a', 'b');
 
 'a' || 'b' || x;
 CONCAT('ab', x);

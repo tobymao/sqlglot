@@ -8,6 +8,7 @@ from decimal import Decimal
 from sqlglot import exp
 from sqlglot.generator import cached_generator
 from sqlglot.helper import first, merge_ranges, while_changing
+from sqlglot.optimizer.scope import find_all_in_scope
 
 # Final means that an expression should not be simplified
 FINAL = "final"
@@ -400,7 +401,7 @@ def propagate_constants(expression, root=True):
             constant_mapping[l] = (id(l), r)
 
         if constant_mapping:
-            for column in expression.find_all(exp.Column):
+            for column in find_all_in_scope(expression, exp.Column):
                 parent = column.parent
                 column_id, constant = constant_mapping.get(column) or (None, None)
                 if (

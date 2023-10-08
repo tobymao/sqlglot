@@ -895,5 +895,5 @@ x = 5 AND (y = x OR z = 1);
 x = 5 AND x + 3 = 8;
 x = 5;
 
-SELECT * FROM t1 LEFT JOIN t2 ON t1.x = t2.y AND t2.y > 5 AND t1.x = 5;
-SELECT * FROM t1 LEFT JOIN t2 ON FALSE;
+x = 5 AND (SELECT x FROM t WHERE y = 1);
+x = 5 AND (SELECT x FROM t WHERE y = 1);

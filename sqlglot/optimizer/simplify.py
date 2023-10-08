@@ -372,7 +372,7 @@ def absorb_and_eliminate(expression, root=True):
 
 def propagate_constants(expression, root=True):
     """
-    Propagate constants for conjunctions normalized into DNF:
+    Propagate constants for conjunctions in DNF:
 
     SELECT * FROM t WHERE a = b AND b = 5 becomes
     SELECT * FROM t WHERE a = 5 AND b = 5

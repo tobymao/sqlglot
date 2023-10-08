@@ -386,7 +386,7 @@ def propagate_constants(expression, root=True):
         and (root or not expression.same_parent)
         and normalized(expression, dnf=True)
     ):
-        constant_mapping: t.Dict[exp.Column, [int, exp.Literal]] = {}
+        constant_mapping: t.Dict[exp.Column, t.Tuple[int, exp.Literal]] = {}
         for eq in expression.find_all(exp.EQ):
             l, r = eq.left, eq.right
 

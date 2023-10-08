@@ -391,6 +391,8 @@ def propagate_constants(expression, root=True):
         for eq in expression.find_all(exp.EQ):
             l, r = eq.left, eq.right
 
+            # TODO: create a helper that can be used to detect nested literal expressions such
+            # as CAST('2012-01-01' AS DATE), since we usually want to treat those as literals too
             if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
                 pass
             elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):

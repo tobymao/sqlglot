@@ -402,7 +402,9 @@ def propagate_constants(expression, root=True):
         if constant_mapping:
             for column in expression.find_all(exp.Column):
                 id_and_constant = constant_mapping.get(column)
-                if id_and_constant and id(column) != id_and_constant[0]:
+                if id_and_constant and id(column) != id_and_constant[0] and not (
+                    isinstance(column.parent, exp.Is) and type(column.parent.expression) is exp.Null
+                ):
                     column.replace(id_and_constant[1].copy())
 
     return expression

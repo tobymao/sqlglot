@@ -190,3 +190,12 @@ class TestDatabricks(Validator):
                 "databricks": "WITH x AS (SELECT 1) SELECT * FROM x",
             },
         )
+
+    def test_update_from(self):
+        self.validate_all(
+            "MERGE INTO mynewtable USING zipcodes AS z ON LEFT(mynewtable.zip, 5) = z.zipcode WHEN MATCHED THEN UPDATE SET state = z.state",
+            read={
+                "tsql": "UPDATE mynewtable SET state = z.state FROM t_merge mynewtable JOIN zipcodes z ON LEFT(mynewtable.zip,5) = z.zipcode",
+                "databricks": "MERGE INTO mynewtable USING zipcodes z ON LEFT(mynewtable.zip, 5) = z.zipcode WHEN MATCHED THEN UPDATE SET state = z.state",
+            },
+        )

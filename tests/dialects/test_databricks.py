@@ -199,3 +199,10 @@ class TestDatabricks(Validator):
                 "databricks": "MERGE INTO mynewtable USING zipcodes z ON LEFT(mynewtable.zip, 5) = z.zipcode WHEN MATCHED THEN UPDATE SET state = z.state",
             },
         )
+        # tsql update from w/o join
+        self.validate_all(
+            "UPDATE statezips AS r_new SET r_new.geo = CASE WHEN r_new.geo LIKE '%west%' OR r_new.zip = '0' THEN 'West' ELSE 'Midwest' END WHERE r_new.geo IS NULL",
+            read={
+                "tsql": "UPDATE r_new SET r_new.geo = CASE WHEN r_new.geo LIKE '%west%' or r_new.zip = '0' THEN 'West' ELSE 'Midwest' END FROM statezips r_new WHERE r_new.geo IS NULL"
+            },
+        )

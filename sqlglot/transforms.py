@@ -13,35 +13,19 @@ def update_from(expression: exp.Expression) -> exp.Expression:
     """Transform UPDATE FROM to MERGE INTO"""
     from_expression = expression.find(exp.From)
     if isinstance(expression, exp.Update) and from_expression:
-        # perform MERGE INTO
-        """
-        class Update(Expression):
-            arg_types = {
-                    "with": False,
-                    "this": False,
-                    "expressions": True,
-                    "from": False,
-                    "where": False,
-                    "returning": False,
-                    "order": False,
-                    "limit": False,
-                }
-        class Merge(Expression):
-            arg_types = {"this": True, "using": True, "on": True, "expressions": True}
-        """
         join = from_expression.find(exp.Join)
         if join:
             on = join.args.get("on")
             table = join.find(exp.Table)
             this = expression.this
-            expression.find(exp.Comment)
-
-            # {"matched": True, "source": False, "condition": False, "then": True}
-            # WHEN MATCHED THEN UPDATE SET state = z.state
-            then = exp.Update(expressions=expression)
+            then = exp.Update(expressions=expression.expressions)
             when = exp.When(matched=True, then=then)
-
             expression = exp.Merge(this=this, using=table, on=on, expressions=[when])
+        else:
+            table = from_expression.find(exp.Table)
+            expression = exp.Update(
+                this=table, expressions=expression.expressions, where=expression.args["where"]
+            )
 
     return expression
 

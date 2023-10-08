@@ -897,3 +897,6 @@ x = 5;
 
 x = 5 AND (SELECT x FROM t WHERE y = 1);
 x = 5 AND (SELECT x FROM t WHERE y = 1);
+
+x = 1 AND y > 0 AND (SELECT z = 5 FROM t WHERE y = 1);
+x = 1 AND y > 0 AND (SELECT z = 5 FROM t WHERE y = 1);

@@ -388,7 +388,7 @@ def propagate_constants(expression, root=True):
         and normalized(expression, dnf=True)
     ):
         constant_mapping: t.Dict[exp.Column, t.Tuple[int, exp.Literal]] = {}
-        for eq in expression.find_all(exp.EQ):
+        for eq in find_all_in_scope(expression, exp.EQ):
             l, r = eq.left, eq.right
 
             # TODO: create a helper that can be used to detect nested literal expressions such

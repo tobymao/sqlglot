@@ -625,22 +625,22 @@ t0.x = t1.x AND t0.y < t1.y AND t0.y <= t1.y;
 t0.x = t1.x AND t0.y < t1.y AND t0.y <= t1.y;
 
 --------------------------------------
--- Coalesce
+-- COALESCE
 --------------------------------------
 COALESCE(x);
 x;
 
 COALESCE(x, 1) = 2;
-x = 2 AND NOT x IS NULL;
+x = 2;
 
 2 = COALESCE(x, 1);
-2 = x AND NOT x IS NULL;
+2 = x;
 
 COALESCE(x, 1, 1) = 1 + 1;
-x = 2 AND NOT x IS NULL;
+x = 2;
 
 COALESCE(x, 1, 2) = 2;
-x = 2 AND NOT x IS NULL;
+x = 2;
 
 COALESCE(x, 3) <= 2;
 x <= 2 AND NOT x IS NULL;
@@ -864,3 +864,36 @@ x < CAST('2020-01-07' AS DATE);
 
 x - INTERVAL '1' day = CAST(y AS DATE);
 x - INTERVAL '1' day = CAST(y AS DATE);
+
+--------------------------------------
+-- Constant Propagation
+--------------------------------------
+x = 5 AND y = x;
+x = 5 AND y = 5;
+
+x = 5 OR y = x;
+x = 5 OR y = x;
+
+(x = 5 AND y = x) OR y = 1;
+(x = 5 AND y = 5) OR y = 1;
+
+t.x = 5 AND y = x;
+t.x = 5 AND y = x;
+
+t.x = 'a' AND y = CONCAT_WS('-', t.x, 'b');
+t.x = 'a' AND y = 'a-b';
+
+x = 5 AND y = x AND y + 1 < 5;
+FALSE;
+
+x = 5 AND x = 6;
+FALSE;
+
+x = 5 AND (y = x OR z = 1);
+x = 5 AND (y = x OR z = 1);
+
+x = 5 AND x + 3 = 8;
+x = 5;
+
+SELECT * FROM t1 LEFT JOIN t2 ON t1.x = t2.y AND t2.y > 5 AND t1.x = 5;
+SELECT * FROM t1 LEFT JOIN t2 ON FALSE;

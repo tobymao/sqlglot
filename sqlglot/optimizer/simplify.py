@@ -65,6 +65,7 @@ def simplify(expression):
         node = rewrite_between(node)
         node = uniq_sort(node, generate, root)
         node = absorb_and_eliminate(node, root)
+        node = propagate_constants(node, root)
         node = simplify_concat(node)
 
         exp.replace_children(node, lambda e: _simplify(e, False))
@@ -365,6 +366,44 @@ def absorb_and_eliminate(expression, root=True):
                     elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
                         a.replace(ab)
                         b.replace(ab)
+
+    return expression
+
+
+def propagate_constants(expression, root=True):
+    """
+    Propagate constants for conjunctions normalized into DNF:
+
+    SELECT * FROM t WHERE a = b AND b = 5 becomes
+    SELECT * FROM t WHERE a = 5 AND b = 5
+
+    Reference: https://www.sqlite.org/optoverview.html
+    """
+    from sqlglot.optimizer.normalize import normalized
+
+    if (
+        isinstance(expression, exp.And)
+        and (root or not expression.same_parent)
+        and normalized(expression, dnf=True)
+    ):
+        constant_mapping: t.Dict[exp.Column, [int, exp.Literal]] = {}
+        for eq in expression.find_all(exp.EQ):
+            l, r = eq.left, eq.right
+
+            if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
+                pass
+            elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):
+                l, r = r, l
+            else:
+                continue
+
+            constant_mapping[l] = (id(l), r)
+
+        if constant_mapping:
+            for column in expression.find_all(exp.Column):
+                id_and_constant = constant_mapping.get(column)
+                if id_and_constant and id(column) != id_and_constant[0]:
+                    column.replace(id_and_constant[1].copy())
 
     return expression
 

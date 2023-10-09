@@ -39,10 +39,14 @@ def optimize_joins(expression):
                     if len(other_table_names(dep)) < 2:
                         continue
 
+                    operator = type(on)
                     for predicate in on.flatten():
                         if name in exp.column_table_names(predicate):
                             predicate.replace(exp.true())
-                            join.on(predicate, copy=False)
+                            predicate = exp._combine(
+                                [join.args.get("on"), predicate], operator, copy=False
+                            )
+                            join.on(predicate, append=False, copy=False)
 
     expression = reorder_joins(expression)
     expression = normalize(expression)

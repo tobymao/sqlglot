@@ -487,7 +487,7 @@ class Expression(metaclass=_Expression):
         """
         for node, _, _ in self.dfs(prune=lambda n, p, *_: p and not type(n) is self.__class__):
             if not type(node) is self.__class__:
-                yield node.unnest() if unnest else node
+                yield node.unnest() if unnest and not isinstance(node, Subquery) else node
 
     def __str__(self) -> str:
         return self.sql()

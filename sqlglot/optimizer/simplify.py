@@ -5,9 +5,11 @@ import typing as t
 from collections import deque
 from decimal import Decimal
 
+import sqlglot
 from sqlglot import exp
 from sqlglot.generator import cached_generator
 from sqlglot.helper import first, merge_ranges, while_changing
+from sqlglot.optimizer.scope import find_all_in_scope
 
 # Final means that an expression should not be simplified
 FINAL = "final"
@@ -17,7 +19,7 @@ class UnsupportedUnit(Exception):
     pass
 
 
-def simplify(expression):
+def simplify(expression, constant_propagation=False):
     """
     Rewrite sqlglot AST to simplify expressions.
 
@@ -29,6 +31,8 @@ def simplify(expression):
 
     Args:
         expression (sqlglot.Expression): expression to simplify
+        constant_propagation: whether or not the constant propagation rule should be used
+
     Returns:
         sqlglot.Expression: simplified expression
     """
@@ -66,6 +70,9 @@ def simplify(expression):
         node = uniq_sort(node, generate, root)
         node = absorb_and_eliminate(node, root)
         node = simplify_concat(node)
+
+        if constant_propagation:
+            node = propagate_constants(node, root)
 
         exp.replace_children(node, lambda e: _simplify(e, False))
 
@@ -365,6 +372,50 @@ def absorb_and_eliminate(expression, root=True):
                     elif ab in rhs and (is_complement(aa, ba) or is_complement(aa, bb)):
                         a.replace(ab)
                         b.replace(ab)
+
+    return expression
+
+
+def propagate_constants(expression, root=True):
+    """
+    Propagate constants for conjunctions in DNF:
+
+    SELECT * FROM t WHERE a = b AND b = 5 becomes
+    SELECT * FROM t WHERE a = 5 AND b = 5
+
+    Reference: https://www.sqlite.org/optoverview.html
+    """
+
+    if (
+        isinstance(expression, exp.And)
+        and (root or not expression.same_parent)
+        and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
+    ):
+        constant_mapping = {}
+        for eq in find_all_in_scope(expression, exp.EQ):
+            l, r = eq.left, eq.right
+
+            # TODO: create a helper that can be used to detect nested literal expressions such
+            # as CAST(123456 AS BIGINT), since we usually want to treat those as literals too
+            if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
+                pass
+            elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):
+                l, r = r, l
+            else:
+                continue
+
+            constant_mapping[l] = (id(l), r)
+
+        if constant_mapping:
+            for column in find_all_in_scope(expression, exp.Column):
+                parent = column.parent
+                column_id, constant = constant_mapping.get(column) or (None, None)
+                if (
+                    column_id is not None
+                    and id(column) != column_id
+                    and not (isinstance(parent, exp.Is) and isinstance(parent.expression, exp.Null))
+                ):
+                    column.replace(constant.copy())
 
     return expression
 

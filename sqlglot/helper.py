@@ -441,6 +441,14 @@ def first(it: t.Iterable[T]) -> T:
 
 
 def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:
+    """
+    Merges a sequence of ranges, represented as tuples (low, high) whose values
+    belong to some totally-ordered set.
+
+    Example:
+        >>> merge_ranges([(1, 3), (2, 6)])
+        [(1, 6)]
+    """
     if not ranges:
         return []
 

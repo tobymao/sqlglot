@@ -625,7 +625,7 @@ t0.x = t1.x AND t0.y < t1.y AND t0.y <= t1.y;
 t0.x = t1.x AND t0.y < t1.y AND t0.y <= t1.y;
 
 --------------------------------------
--- Coalesce
+-- COALESCE
 --------------------------------------
 COALESCE(x);
 x;
@@ -864,3 +864,48 @@ x < CAST('2020-01-07' AS DATE);
 
 x - INTERVAL '1' day = CAST(y AS DATE);
 x - INTERVAL '1' day = CAST(y AS DATE);
+
+--------------------------------------
+-- Constant Propagation
+--------------------------------------
+x = 5 AND y = x;
+x = 5 AND y = 5;
+
+5 = x AND y = x;
+y = 5 AND 5 = x;
+
+x = 5 OR y = x;
+x = 5 OR y = x;
+
+(x = 5 AND y = x) OR y = 1;
+(x = 5 AND y = 5) OR y = 1;
+
+t.x = 5 AND y = x;
+t.x = 5 AND y = x;
+
+t.x = 'a' AND y = CONCAT_WS('-', t.x, 'b');
+t.x = 'a' AND y = 'a-b';
+
+x = 5 AND y = x AND y + 1 < 5;
+FALSE;
+
+x = 5 AND x = 6;
+FALSE;
+
+x = 5 AND (y = x OR z = 1);
+x = 5 AND (y = x OR z = 1);
+
+x = 5 AND x + 3 = 8;
+x = 5;
+
+x = 5 AND (SELECT x FROM t WHERE y = 1);
+x = 5 AND (SELECT x FROM t WHERE y = 1);
+
+x = 1 AND y > 0 AND (SELECT z = 5 FROM t WHERE y = 1);
+x = 1 AND y > 0 AND (SELECT z = 5 FROM t WHERE y = 1);
+
+x = 1 AND x = y AND (SELECT z FROM t WHERE a AND (b OR c));
+x = 1 AND (SELECT z FROM t WHERE a AND (b OR c)) AND 1 = y;
+
+SELECT * FROM t1, t2, t3 WHERE t1.a = 39 AND t2.b = t1.a AND t3.c = t2.b;
+SELECT * FROM t1, t2, t3 WHERE t1.a = 39 AND t2.b = 39 AND t3.c = 39;

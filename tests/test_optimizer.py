@@ -45,6 +45,10 @@ def normalize(expression, **kwargs):
     return optimizer.simplify.simplify(expression)
 
 
+def simplify(expression, **kwargs):
+    return optimizer.simplify.simplify(expression, constant_propagation=True, **kwargs)
+
+
 class TestOptimizer(unittest.TestCase):
     maxDiff = None
 
@@ -271,7 +275,7 @@ class TestOptimizer(unittest.TestCase):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
     def test_simplify(self):
-        self.check_file("simplify", optimizer.simplify.simplify)
+        self.check_file("simplify", simplify)
 
         expression = parse_one("TRUE AND TRUE AND TRUE")
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression))

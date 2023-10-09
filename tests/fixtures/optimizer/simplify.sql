@@ -871,6 +871,9 @@ x - INTERVAL '1' day = CAST(y AS DATE);
 x = 5 AND y = x;
 x = 5 AND y = 5;
 
+5 = x AND y = x;
+y = 5 AND 5 = x;
+
 x = 5 OR y = x;
 x = 5 OR y = x;
 

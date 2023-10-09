@@ -24,7 +24,7 @@ def update_from_to_merge_into(expression: exp.Expression) -> exp.Expression:
         else:
             table = from_expression.this
             expression = exp.Update(
-                this=table, expressions=expression.expressions, where=expression.args["where"]
+                this=table, expressions=expression.expressions, where=expression.args.get("where")
             )
 
     return expression

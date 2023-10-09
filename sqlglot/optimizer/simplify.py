@@ -19,7 +19,7 @@ class UnsupportedUnit(Exception):
     pass
 
 
-def simplify(expression):
+def simplify(expression, constant_propagation=False):
     """
     Rewrite sqlglot AST to simplify expressions.
 
@@ -31,6 +31,8 @@ def simplify(expression):
 
     Args:
         expression (sqlglot.Expression): expression to simplify
+        constant_propagation: whether or not the constant propagation rule should be used
+
     Returns:
         sqlglot.Expression: simplified expression
     """
@@ -67,8 +69,10 @@ def simplify(expression):
         node = rewrite_between(node)
         node = uniq_sort(node, generate, root)
         node = absorb_and_eliminate(node, root)
-        node = propagate_constants(node, root)
         node = simplify_concat(node)
+
+        if constant_propagation:
+            node = propagate_constants(node, root)
 
         exp.replace_children(node, lambda e: _simplify(e, False))
 

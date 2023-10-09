@@ -369,7 +369,7 @@ SELECT
   "y"."b" AS "b"
 FROM "x" AS "x"
 RIGHT JOIN "y_2" AS "y"
-  ON "x"."a" = 1;
+  ON "x"."a" = "y"."b";
 
 
 # title: lateral column alias reference

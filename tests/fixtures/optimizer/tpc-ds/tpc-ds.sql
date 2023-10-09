@@ -2029,7 +2029,18 @@ JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_year" = 2001
   AND "store_sales"."ss_sold_date_sk" = "date_dim"."d_date_sk"
 JOIN "household_demographics" AS "household_demographics"
-  ON FALSE
+  ON "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
+  AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
+  AND "customer_demographics"."cd_education_status" = 'Primary'
+  AND "customer_demographics"."cd_education_status" = 'Secondary'
+  AND "customer_demographics"."cd_marital_status" = 'D'
+  AND "customer_demographics"."cd_marital_status" = 'M'
+  AND "customer_demographics"."cd_marital_status" = 'U'
+  AND "household_demographics"."hd_dep_count" = 1
+  AND "household_demographics"."hd_dep_count" = 3
+  AND "store_sales"."ss_hdemo_sk" = "household_demographics"."hd_demo_sk"
+  AND "store_sales"."ss_sales_price" <= 100.00
+  AND "store_sales"."ss_sales_price" >= 150.00
 JOIN "store" AS "store"
   ON "store"."s_store_sk" = "store_sales"."ss_store_sk";
 
@@ -11676,28 +11687,28 @@ JOIN "customer_demographics" AS "cd1"
   ON "cd1"."cd_demo_sk" = "web_returns"."wr_refunded_cdemo_sk"
   AND (
     (
-      "cd1"."cd_education_status" = 'Advanced Degree'
+      "cd1"."cd_education_status" = "cd2"."cd_education_status"
+      AND "cd1"."cd_education_status" = 'Advanced Degree'
+      AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
       AND "cd1"."cd_marital_status" = 'M'
       AND "web_sales"."ws_sales_price" <= 200.00
       AND "web_sales"."ws_sales_price" >= 150.00
-      AND 'Advanced Degree' = "cd2"."cd_education_status"
-      AND 'M' = "cd2"."cd_marital_status"
     )
     OR (
-      "cd1"."cd_education_status" = 'Primary'
+      "cd1"."cd_education_status" = "cd2"."cd_education_status"
+      AND "cd1"."cd_education_status" = 'Primary'
+      AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
       AND "cd1"."cd_marital_status" = 'W'
       AND "web_sales"."ws_sales_price" <= 150.00
       AND "web_sales"."ws_sales_price" >= 100.00
-      AND 'Primary' = "cd2"."cd_education_status"
-      AND 'W' = "cd2"."cd_marital_status"
     )
     OR (
-      "cd1"."cd_education_status" = 'Secondary'
+      "cd1"."cd_education_status" = "cd2"."cd_education_status"
+      AND "cd1"."cd_education_status" = 'Secondary'
+      AND "cd1"."cd_marital_status" = "cd2"."cd_marital_status"
       AND "cd1"."cd_marital_status" = 'D'
       AND "web_sales"."ws_sales_price" <= 100.00
       AND "web_sales"."ws_sales_price" >= 50.00
-      AND 'D' = "cd2"."cd_marital_status"
-      AND 'Secondary' = "cd2"."cd_education_status"
     )
   )
 GROUP BY

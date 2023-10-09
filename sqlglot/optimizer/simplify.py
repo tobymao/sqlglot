@@ -5,6 +5,7 @@ import typing as t
 from collections import deque
 from decimal import Decimal
 
+import sqlglot
 from sqlglot import exp
 from sqlglot.generator import cached_generator
 from sqlglot.helper import first, merge_ranges, while_changing
@@ -384,9 +385,9 @@ def propagate_constants(expression, root=True):
     if (
         isinstance(expression, exp.And)
         and (root or not expression.same_parent)
-        and exp.normalized(expression, dnf=True)
+        and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
     ):
-        constant_mapping: t.Dict[exp.Column, t.Tuple[int, exp.Literal]] = {}
+        constant_mapping = {}
         for eq in find_all_in_scope(expression, exp.EQ):
             l, r = eq.left, eq.right
 

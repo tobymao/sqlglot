@@ -487,7 +487,7 @@ class Expression(metaclass=_Expression):
         """
         for node, _, _ in self.dfs(prune=lambda n, p, *_: p and not type(n) is self.__class__):
             if not type(node) is self.__class__:
-                yield node.unnest() if unnest else node
+                yield node.unnest() if unnest and not isinstance(node, Subquery) else node
 
     def __str__(self) -> str:
         return self.sql()
@@ -6388,27 +6388,6 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
         raise ValueError(error_message)
 
     return function
-
-
-def normalized(expression: Expression, dnf: bool = False) -> bool:
-    """
-    Checks whether a given expression is in a normal form of interest.
-
-    Example:
-        >>> normalized(maybe_parse("(a AND b) OR c OR (d AND e)"), dnf=True)
-        True
-        >>> normalized(maybe_parse("(a OR b) AND c"))
-        True
-        >>> normalized(maybe_parse("a AND (b OR c)"), dnf=True)
-        False
-
-    Args:
-        expression: The target expression.
-        dnf: Whether or not to check if the expression is in Disjunctive Normal Form (DNF).
-            Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).
-    """
-    ancestor, root = (And, Or) if dnf else (Or, And)
-    return not any(connector.find_ancestor(ancestor) for connector in expression.find_all(root))
 
 
 def true() -> Boolean:

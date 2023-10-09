@@ -1,4 +1,5 @@
 from sqlglot import exp
+from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.optimizer.simplify import simplify
 
@@ -54,7 +55,7 @@ def pushdown(condition, sources, scope_ref_count):
         return
 
     condition = condition.replace(simplify(condition))
-    cnf_like = exp.normalized(condition) or not exp.normalized(condition, dnf=True)
+    cnf_like = normalized(condition) or not normalized(condition, dnf=True)
 
     predicates = list(
         condition.flatten()

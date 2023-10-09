@@ -82,7 +82,6 @@ class Oracle(Dialect):
                 this=self._parse_format_json(self._parse_bitwise()),
                 order=self._parse_order(),
             ),
-            "JSON_TABLE": lambda self: self._parse_json_table(),
             "XMLTABLE": _parse_xml_table,
         }
 
@@ -95,29 +94,6 @@ class Oracle(Dialect):
         # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..
         # Reference: https://stackoverflow.com/a/336455
         DISTINCT_TOKENS = {TokenType.DISTINCT, TokenType.UNIQUE}
-
-        # Note: this is currently incomplete; it only implements the "JSON_value_column" part
-        def _parse_json_column_def(self) -> exp.JSONColumnDef:
-            this = self._parse_id_var()
-            kind = self._parse_types(allow_identifiers=False)
-            path = self._match_text_seq("PATH") and self._parse_string()
-            return self.expression(exp.JSONColumnDef, this=this, kind=kind, path=path)
-
-        def _parse_json_table(self) -> exp.JSONTable:
-            this = self._parse_format_json(self._parse_bitwise())
-            path = self._match(TokenType.COMMA) and self._parse_string()
-            error_handling = self._parse_on_handling("ERROR", "ERROR", "NULL")
-            empty_handling = self._parse_on_handling("EMPTY", "ERROR", "NULL")
-            self._match(TokenType.COLUMN)
-            expressions = self._parse_wrapped_csv(self._parse_json_column_def, optional=True)
-
-            return exp.JSONTable(
-                this=this,
-                expressions=expressions,
-                path=path,
-                error_handling=error_handling,
-                empty_handling=empty_handling,
-            )
 
         def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
             return self.expression(

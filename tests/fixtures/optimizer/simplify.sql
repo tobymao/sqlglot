@@ -906,3 +906,6 @@ x = 1 AND y > 0 AND (SELECT z = 5 FROM t WHERE y = 1);
 
 x = 1 AND x = y AND (SELECT z FROM t WHERE a AND (b OR c));
 x = 1 AND (SELECT z FROM t WHERE a AND (b OR c)) AND 1 = y;
+
+SELECT * FROM t1, t2, t3 WHERE t1.a = 39 AND t2.b = t1.a AND t3.c = t2.b;
+SELECT * FROM t1, t2, t3 WHERE t1.a = 39 AND t2.b = 39 AND t3.c = 39;

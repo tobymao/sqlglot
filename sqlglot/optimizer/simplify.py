@@ -380,12 +380,11 @@ def propagate_constants(expression, root=True):
 
     Reference: https://www.sqlite.org/optoverview.html
     """
-    from sqlglot.optimizer.normalize import normalized
 
     if (
         isinstance(expression, exp.And)
         and (root or not expression.same_parent)
-        and normalized(expression, dnf=True)
+        and exp.normalized(expression, dnf=True)
     ):
         constant_mapping: t.Dict[exp.Column, t.Tuple[int, exp.Literal]] = {}
         for eq in find_all_in_scope(expression, exp.EQ):

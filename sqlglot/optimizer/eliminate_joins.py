@@ -1,5 +1,4 @@
 from sqlglot import expressions as exp
-from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
 
@@ -152,13 +151,13 @@ def join_condition(join):
     #   ON x.a = y.b AND y.b > 1
     #
     # should pull y.b as the join key and x.a as the source key
-    if normalized(on):
+    if exp.normalized(on):
         on = on if isinstance(on, exp.And) else exp.and_(on, exp.true(), copy=False)
 
         for condition in on.flatten():
             if isinstance(condition, exp.EQ):
                 extract_condition(condition)
-    elif normalized(on, dnf=True):
+    elif exp.normalized(on, dnf=True):
         conditions = None
 
         for condition in on.flatten():

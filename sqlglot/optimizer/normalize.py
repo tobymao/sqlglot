@@ -32,7 +32,7 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
 
     for node, *_ in tuple(expression.walk(prune=lambda e, *_: isinstance(e, exp.Connector))):
         if isinstance(node, exp.Connector):
-            if normalized(node, dnf=dnf):
+            if exp.normalized(node, dnf=dnf):
                 continue
             root = node is expression
             original = node.copy()
@@ -61,12 +61,6 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
                 expression = node
 
     return expression
-
-
-def normalized(expression, dnf=False):
-    ancestor, root = (exp.And, exp.Or) if dnf else (exp.Or, exp.And)
-
-    return not any(connector.find_ancestor(ancestor) for connector in expression.find_all(root))
 
 
 def normalization_distance(expression, dnf=False):
@@ -117,7 +111,7 @@ def distributive_law(expression, dnf, max_distance, generate):
     x OR (y AND z) -> (x OR y) AND (x OR z)
     (x AND y) OR (y AND z) -> (x OR y) AND (x OR z) AND (y OR y) AND (y OR z)
     """
-    if normalized(expression, dnf=dnf):
+    if exp.normalized(expression, dnf=dnf):
         return expression
 
     distance = normalization_distance(expression, dnf=dnf)

@@ -9,20 +9,20 @@ if t.TYPE_CHECKING:
     from sqlglot.generator import Generator
 
 
-def update_from(expression: exp.Expression) -> exp.Expression:
+def update_from_to_merge_into(expression: exp.Expression) -> exp.Expression:
     """Transform UPDATE FROM to MERGE INTO"""
     from_expression = expression.find(exp.From)
     if isinstance(expression, exp.Update) and from_expression:
         join = from_expression.find(exp.Join)
         if join:
             on = join.args.get("on")
-            table = join.find(exp.Table)
+            table = join.this
             this = expression.this
             then = exp.Update(expressions=expression.expressions)
             when = exp.When(matched=True, then=then)
             expression = exp.Merge(this=this, using=table, on=on, expressions=[when])
         else:
-            table = from_expression.find(exp.Table)
+            table = from_expression.this
             expression = exp.Update(
                 this=table, expressions=expression.expressions, where=expression.args["where"]
             )

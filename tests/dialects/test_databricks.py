@@ -193,10 +193,10 @@ class TestDatabricks(Validator):
 
     def test_update_from(self):
         self.validate_all(
-            "MERGE INTO mynewtable USING zipcodes AS z ON LEFT(mynewtable.zip, 5) = z.zipcode WHEN MATCHED THEN UPDATE SET state = z.state",
+            "MERGE INTO statezips USING zipcodes AS z ON LEFT(statezips.zip, 5) = z.zipcode WHEN MATCHED THEN UPDATE SET state = z.state",
             read={
-                "tsql": "UPDATE mynewtable SET state = z.state FROM t_merge mynewtable JOIN zipcodes z ON LEFT(mynewtable.zip,5) = z.zipcode",
-                "databricks": "MERGE INTO mynewtable USING zipcodes z ON LEFT(mynewtable.zip, 5) = z.zipcode WHEN MATCHED THEN UPDATE SET state = z.state",
+                "tsql": "UPDATE statezips SET state = z.state FROM statezips JOIN zipcodes z ON LEFT(statezips.zip,5) = z.zipcode",
+                "databricks": "MERGE INTO statezips USING zipcodes z ON LEFT(statezips.zip, 5) = z.zipcode WHEN MATCHED THEN UPDATE SET state = z.state",
             },
         )
         # tsql update from w/o join

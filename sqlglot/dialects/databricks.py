@@ -49,7 +49,7 @@ class Databricks(Spark):
                 ]
             ),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
-            exp.Update: transforms.preprocess([transforms.update_from]),
+            exp.Update: transforms.preprocess([transforms.update_from_to_merge_into]),
         }
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:

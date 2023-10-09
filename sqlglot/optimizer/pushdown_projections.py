@@ -9,7 +9,9 @@ from sqlglot.schema import ensure_schema
 SELECT_ALL = object()
 
 # Selection to use if selection list is empty
-DEFAULT_SELECTION = lambda: alias("1", "_")
+DEFAULT_SELECTION = lambda is_agg: alias(
+    exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_"
+)
 
 
 def pushdown_projections(expression, schema=None, remove_unused_selections=True):
@@ -98,6 +100,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
     new_selections = []
     removed = False
     star = False
+    is_agg = False
 
     select_all = SELECT_ALL in parent_selections
 
@@ -112,6 +115,9 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
                 star = True
             removed = True
 
+        if not is_agg and selection.find(exp.AggFunc):
+            is_agg = True
+
     if star:
         resolver = Resolver(scope, schema)
         names = {s.alias_or_name for s in new_selections}
@@ -124,7 +130,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
 
     # If there are no remaining selections, just select a single constant
     if not new_selections:
-        new_selections.append(DEFAULT_SELECTION())
+        new_selections.append(DEFAULT_SELECTION(is_agg))
 
     scope.expression.select(*new_selections, append=False, copy=False)
 

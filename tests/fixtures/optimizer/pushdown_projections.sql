@@ -70,6 +70,15 @@ WITH cte AS (SELECT 1 AS x, 3 AS z) SELECT cte.a AS a, cte.z AS z FROM cte AS ct
 WITH cte(x, y, z) AS (SELECT 1, 2, 3) SELECT a, z FROM (SELECT * FROM cte AS cte(b)) AS cte(a);
 WITH cte AS (SELECT 1 AS x, 3 AS z) SELECT cte.a AS a, cte.z AS z FROM (SELECT cte.b AS a, cte.z AS z FROM cte AS cte(b)) AS cte;
 
+WITH y AS (SELECT a FROM x) SELECT 1 FROM y;
+WITH y AS (SELECT 1 AS _ FROM x AS x) SELECT 1 AS "1" FROM y;
+
+WITH y AS (SELECT SUM(a) FROM x) SELECT 1 FROM y;
+WITH y AS (SELECT MAX(1) AS _ FROM x AS x) SELECT 1 AS "1" FROM y;
+
+WITH y AS (SELECT a FROM x GROUP BY a) SELECT 1 FROM y;
+WITH y AS (SELECT 1 AS _ FROM x AS x GROUP BY x.a) SELECT 1 AS "1" FROM y;
+
 --------------------------------------
 -- Unknown Star Expansion
 --------------------------------------

@@ -792,6 +792,7 @@ class Parser(metaclass=_Parser):
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
+        "JSON_TABLE": lambda self: self._parse_json_table(),
         "LOG": lambda self: self._parse_logarithm(),
         "MATCH": lambda self: self._parse_match_against(),
         "OPENJSON": lambda self: self._parse_open_json(),
@@ -4345,6 +4346,29 @@ class Parser(metaclass=_Parser):
             unique_keys=unique_keys,
             return_type=return_type,
             encoding=encoding,
+        )
+
+    # Note: this is currently incomplete; it only implements the "JSON_value_column" part
+    def _parse_json_column_def(self) -> exp.JSONColumnDef:
+        this = self._parse_id_var()
+        kind = self._parse_types(allow_identifiers=False)
+        path = self._match_text_seq("PATH") and self._parse_string()
+        return self.expression(exp.JSONColumnDef, this=this, kind=kind, path=path)
+
+    def _parse_json_table(self) -> exp.JSONTable:
+        this = self._parse_format_json(self._parse_bitwise())
+        path = self._match(TokenType.COMMA) and self._parse_string()
+        error_handling = self._parse_on_handling("ERROR", "ERROR", "NULL")
+        empty_handling = self._parse_on_handling("EMPTY", "ERROR", "NULL")
+        self._match_text_seq("COLUMNS")
+        expressions = self._parse_wrapped_csv(self._parse_json_column_def, optional=True)
+
+        return exp.JSONTable(
+            this=this,
+            expressions=expressions,
+            path=path,
+            error_handling=error_handling,
+            empty_handling=empty_handling,
         )
 
     def _parse_logarithm(self) -> exp.Func:

@@ -1,6 +1,31 @@
 Changelog
 =========
 
+## [v18.12.0] - 2023-10-10
+### :boom: BREAKING CHANGES
+- due to [`28308da`](https://github.com/tobymao/sqlglot/commit/28308dae5ab7a0aff3ca2afeff88fa4554babba3) - support spark trycast, treat databricks as strict_cast closes [#2389](https://github.com/tobymao/sqlglot/pull/2389) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  support spark trycast, treat databricks as strict_cast closes #2389
+
+- due to [`c7c3869`](https://github.com/tobymao/sqlglot/commit/c7c3869b01e984a243c071660f27a2c6c4863892) - add explode outer and change hiearchy are explosions closes [#2393](https://github.com/tobymao/sqlglot/pull/2393) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  add explode outer and change hiearchy are explosions closes #2393
+
+
+### :sparkles: New Features
+- [`f4f8366`](https://github.com/tobymao/sqlglot/commit/f4f8366f6f761fefd72cd2a1ee4c462a0e18ec42) - **schema**: add method to check if column exists *(PR [#2381](https://github.com/tobymao/sqlglot/pull/2381) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`da2c6f1`](https://github.com/tobymao/sqlglot/commit/da2c6f167be2de8b61ab9b0fb60c2bc2b6b24408) - **optimizer**: simplify CONCAT_WS *(PR [#2383](https://github.com/tobymao/sqlglot/pull/2383) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`cca58dd`](https://github.com/tobymao/sqlglot/commit/cca58dd2e7a45d1150b37f8e76baa3571fed8135) - **optimizer**: propagate constants *(PR [#2386](https://github.com/tobymao/sqlglot/pull/2386) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`28308da`](https://github.com/tobymao/sqlglot/commit/28308dae5ab7a0aff3ca2afeff88fa4554babba3) - support spark trycast, treat databricks as strict_cast closes [#2389](https://github.com/tobymao/sqlglot/pull/2389) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`c7c3869`](https://github.com/tobymao/sqlglot/commit/c7c3869b01e984a243c071660f27a2c6c4863892) - add explode outer and change hiearchy are explosions closes [#2393](https://github.com/tobymao/sqlglot/pull/2393) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`0fb1652`](https://github.com/tobymao/sqlglot/commit/0fb1652784845f083b87e952644a8a9790d28d8e) - replace executor None values with np.NaN to silence Pandas>2.1 warnings *(PR [#2384](https://github.com/tobymao/sqlglot/pull/2384) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`a849794`](https://github.com/tobymao/sqlglot/commit/a8497944424a524fdc1c9fdb9e10aa2f3558bdd5) - **mysql**: move parsing logic for JSON_TABLE to base parser *(PR [#2387](https://github.com/tobymao/sqlglot/pull/2387) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`e08c1c0`](https://github.com/tobymao/sqlglot/commit/e08c1c0e8a5a2fbc46872d163eac52071b49a1cf) - correctly handle agg subexpressions with no selections *(PR [#2390](https://github.com/tobymao/sqlglot/pull/2390) by [@ginter](https://github.com/ginter))*
+- [`8afa7a1`](https://github.com/tobymao/sqlglot/commit/8afa7a12ca35400133a49571b49d001bdb526188) - **schema**: don't specialize type variable in MappingSchema *(PR [#2394](https://github.com/tobymao/sqlglot/pull/2394) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v18.11.6] - 2023-10-06
 ### :bug: Bug Fixes
 - [`ef12aa7`](https://github.com/tobymao/sqlglot/commit/ef12aa7b4c24b431dbedcf917f61d18a89dc3a0f) - normalize_identifiers parses identifier strings *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1674,3 +1699,4 @@ Changelog
 [v18.11.4]: https://github.com/tobymao/sqlglot/compare/v18.11.3...v18.11.4
 [v18.11.5]: https://github.com/tobymao/sqlglot/compare/v18.11.4...v18.11.5
 [v18.11.6]: https://github.com/tobymao/sqlglot/compare/v18.11.5...v18.11.6
+[v18.12.0]: https://github.com/tobymao/sqlglot/compare/v18.11.6...v18.12.0

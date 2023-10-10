@@ -577,22 +577,30 @@
 </span><span id="L-441"><a href="#L-441"><span class="linenos">441</span></a>
 </span><span id="L-442"><a href="#L-442"><span class="linenos">442</span></a>
 </span><span id="L-443"><a href="#L-443"><span class="linenos">443</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
-</span><span id="L-444"><a href="#L-444"><span class="linenos">444</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
-</span><span id="L-445"><a href="#L-445"><span class="linenos">445</span></a>        <span class="k">return</span> <span class="p">[]</span>
-</span><span id="L-446"><a href="#L-446"><span class="linenos">446</span></a>
-</span><span id="L-447"><a href="#L-447"><span class="linenos">447</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
-</span><span id="L-448"><a href="#L-448"><span class="linenos">448</span></a>
-</span><span id="L-449"><a href="#L-449"><span class="linenos">449</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span id="L-450"><a href="#L-450"><span class="linenos">450</span></a>
-</span><span id="L-451"><a href="#L-451"><span class="linenos">451</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="L-453"><a href="#L-453"><span class="linenos">453</span></a>
-</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
-</span><span id="L-455"><a href="#L-455"><span class="linenos">455</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-444"><a href="#L-444"><span class="linenos">444</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-445"><a href="#L-445"><span class="linenos">445</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
+</span><span id="L-446"><a href="#L-446"><span class="linenos">446</span></a><span class="sd">    belong to some totally-ordered set.</span>
+</span><span id="L-447"><a href="#L-447"><span class="linenos">447</span></a>
+</span><span id="L-448"><a href="#L-448"><span class="linenos">448</span></a><span class="sd">    Example:</span>
+</span><span id="L-449"><a href="#L-449"><span class="linenos">449</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
+</span><span id="L-450"><a href="#L-450"><span class="linenos">450</span></a><span class="sd">        [(1, 6)]</span>
+</span><span id="L-451"><a href="#L-451"><span class="linenos">451</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
+</span><span id="L-453"><a href="#L-453"><span class="linenos">453</span></a>        <span class="k">return</span> <span class="p">[]</span>
+</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a>
+</span><span id="L-455"><a href="#L-455"><span class="linenos">455</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a>
+</span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
 </span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a>
-</span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a>    <span class="k">return</span> <span class="n">merged</span>
+</span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a>
+</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
+</span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a>
+</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>    <span class="k">return</span> <span class="n">merged</span>
 </span></pre></div>
 
 
@@ -1641,26 +1649,47 @@ type <code>str</code> and <code>bytes</code> are not regarded as iterables.</p>
     </div>
     <a class="headerlink" href="#merge_ranges"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="merge_ranges-444"><a href="#merge_ranges-444"><span class="linenos">444</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
-</span><span id="merge_ranges-445"><a href="#merge_ranges-445"><span class="linenos">445</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
-</span><span id="merge_ranges-446"><a href="#merge_ranges-446"><span class="linenos">446</span></a>        <span class="k">return</span> <span class="p">[]</span>
-</span><span id="merge_ranges-447"><a href="#merge_ranges-447"><span class="linenos">447</span></a>
-</span><span id="merge_ranges-448"><a href="#merge_ranges-448"><span class="linenos">448</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
-</span><span id="merge_ranges-449"><a href="#merge_ranges-449"><span class="linenos">449</span></a>
-</span><span id="merge_ranges-450"><a href="#merge_ranges-450"><span class="linenos">450</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span id="merge_ranges-451"><a href="#merge_ranges-451"><span class="linenos">451</span></a>
-</span><span id="merge_ranges-452"><a href="#merge_ranges-452"><span class="linenos">452</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="merge_ranges-453"><a href="#merge_ranges-453"><span class="linenos">453</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="merge_ranges-454"><a href="#merge_ranges-454"><span class="linenos">454</span></a>
-</span><span id="merge_ranges-455"><a href="#merge_ranges-455"><span class="linenos">455</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
-</span><span id="merge_ranges-456"><a href="#merge_ranges-456"><span class="linenos">456</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="merge_ranges-457"><a href="#merge_ranges-457"><span class="linenos">457</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="merge_ranges-458"><a href="#merge_ranges-458"><span class="linenos">458</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="merge_ranges-445"><a href="#merge_ranges-445"><span class="linenos">445</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="merge_ranges-446"><a href="#merge_ranges-446"><span class="linenos">446</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
+</span><span id="merge_ranges-447"><a href="#merge_ranges-447"><span class="linenos">447</span></a><span class="sd">    belong to some totally-ordered set.</span>
+</span><span id="merge_ranges-448"><a href="#merge_ranges-448"><span class="linenos">448</span></a>
+</span><span id="merge_ranges-449"><a href="#merge_ranges-449"><span class="linenos">449</span></a><span class="sd">    Example:</span>
+</span><span id="merge_ranges-450"><a href="#merge_ranges-450"><span class="linenos">450</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
+</span><span id="merge_ranges-451"><a href="#merge_ranges-451"><span class="linenos">451</span></a><span class="sd">        [(1, 6)]</span>
+</span><span id="merge_ranges-452"><a href="#merge_ranges-452"><span class="linenos">452</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="merge_ranges-453"><a href="#merge_ranges-453"><span class="linenos">453</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
+</span><span id="merge_ranges-454"><a href="#merge_ranges-454"><span class="linenos">454</span></a>        <span class="k">return</span> <span class="p">[]</span>
+</span><span id="merge_ranges-455"><a href="#merge_ranges-455"><span class="linenos">455</span></a>
+</span><span id="merge_ranges-456"><a href="#merge_ranges-456"><span class="linenos">456</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+</span><span id="merge_ranges-457"><a href="#merge_ranges-457"><span class="linenos">457</span></a>
+</span><span id="merge_ranges-458"><a href="#merge_ranges-458"><span class="linenos">458</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
 </span><span id="merge_ranges-459"><a href="#merge_ranges-459"><span class="linenos">459</span></a>
-</span><span id="merge_ranges-460"><a href="#merge_ranges-460"><span class="linenos">460</span></a>    <span class="k">return</span> <span class="n">merged</span>
+</span><span id="merge_ranges-460"><a href="#merge_ranges-460"><span class="linenos">460</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="merge_ranges-461"><a href="#merge_ranges-461"><span class="linenos">461</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="merge_ranges-462"><a href="#merge_ranges-462"><span class="linenos">462</span></a>
+</span><span id="merge_ranges-463"><a href="#merge_ranges-463"><span class="linenos">463</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
+</span><span id="merge_ranges-464"><a href="#merge_ranges-464"><span class="linenos">464</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="merge_ranges-465"><a href="#merge_ranges-465"><span class="linenos">465</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="merge_ranges-466"><a href="#merge_ranges-466"><span class="linenos">466</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="merge_ranges-467"><a href="#merge_ranges-467"><span class="linenos">467</span></a>
+</span><span id="merge_ranges-468"><a href="#merge_ranges-468"><span class="linenos">468</span></a>    <span class="k">return</span> <span class="n">merged</span>
 </span></pre></div>
 
 
-    
+            <div class="docstring"><p>Merges a sequence of ranges, represented as tuples (low, high) whose values
+belong to some totally-ordered set.</p>
+
+<h6 id="example">Example:</h6>
+
+<blockquote>
+  <div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">merge_ranges</span><span class="p">([(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">)])</span>
+<span class="go">[(1, 6)]</span>
+</code></pre>
+  </div>
+</blockquote>
+</div>
+
 
                 </section>
     </main>

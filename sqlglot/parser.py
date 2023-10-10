@@ -4354,22 +4354,43 @@ class Parser(metaclass=_Parser):
 
     # Note: this is currently incomplete; it only implements the "JSON_value_column" part
     def _parse_json_column_def(self) -> exp.JSONColumnDef:
-        this = self._parse_id_var()
-        kind = self._parse_types(allow_identifiers=False)
+        if not self._match_text_seq("NESTED"):
+            this = self._parse_id_var()
+            kind = self._parse_types(allow_identifiers=False)
+            nested = None
+        else:
+            this = None
+            kind = None
+            nested = True
+
         path = self._match_text_seq("PATH") and self._parse_string()
-        return self.expression(exp.JSONColumnDef, this=this, kind=kind, path=path)
+        nested_schema = nested and self._parse_json_schema()
+
+        return self.expression(
+            exp.JSONColumnDef,
+            this=this,
+            kind=kind,
+            path=path,
+            nested_schema=nested_schema,
+        )
+
+    def _parse_json_schema(self) -> exp.JSONSchema:
+        self._match_text_seq("COLUMNS")
+        return self.expression(
+            exp.JSONSchema,
+            expressions=self._parse_wrapped_csv(self._parse_json_column_def, optional=True),
+        )
 
     def _parse_json_table(self) -> exp.JSONTable:
         this = self._parse_format_json(self._parse_bitwise())
         path = self._match(TokenType.COMMA) and self._parse_string()
         error_handling = self._parse_on_handling("ERROR", "ERROR", "NULL")
         empty_handling = self._parse_on_handling("EMPTY", "ERROR", "NULL")
-        self._match_text_seq("COLUMNS")
-        expressions = self._parse_wrapped_csv(self._parse_json_column_def, optional=True)
+        schema = self._parse_json_schema()
 
         return exp.JSONTable(
             this=this,
-            expressions=expressions,
+            schema=schema,
             path=path,
             error_handling=error_handling,
             empty_handling=empty_handling,

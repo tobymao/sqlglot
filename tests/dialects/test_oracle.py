@@ -234,19 +234,28 @@ MATCH_RECOGNIZE (
 
     def test_json_table(self):
         self.validate_identity(
-            "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS (foo PATH 'bar'))"
+            "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"
         )
         self.validate_identity(
             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS foo PATH 'bar')",
-            "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS (foo PATH 'bar'))",
+            "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))",
         )
         self.validate_identity(
             """SELECT
   CASE WHEN DBMS_LOB.GETLENGTH(info) < 32000 THEN DBMS_LOB.SUBSTR(info) END AS info_txt,
   info AS info_clob
 FROM schemaname.tablename ar
-INNER JOIN JSON_TABLE(:emps, '$[*]' COLUMNS (empno NUMBER PATH '$')) jt
+INNER JOIN JSON_TABLE(:emps, '$[*]' COLUMNS(empno NUMBER PATH '$')) jt
   ON ar.empno = jt.empno""",
+            pretty=True,
+        )
+        self.validate_identity(
+            """SELECT
+  *
+FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
+  tempid NUMBER PATH '$.tempid',
+  NESTED PATH '$.calid[*]' COLUMNS(last_dt PATH '$.last_dt ')
+)) src""",
             pretty=True,
         )
 

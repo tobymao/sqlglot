@@ -2179,12 +2179,20 @@ class Generator:
         )
 
     def jsoncolumndef_sql(self, expression: exp.JSONColumnDef) -> str:
+        path = self.sql(expression, "path")
+        path = f" PATH {path}" if path else ""
+        nested_schema = self.sql(expression, "nested_schema")
+
+        if nested_schema:
+            return f"NESTED{path} {nested_schema}"
+
         this = self.sql(expression, "this")
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
-        path = self.sql(expression, "path")
-        path = f" PATH {path}" if path else ""
         return f"{this}{kind}{path}"
+
+    def jsonschema_sql(self, expression: exp.JSONSchema) -> str:
+        return self.func("COLUMNS", *expression.expressions)
 
     def jsontable_sql(self, expression: exp.JSONTable) -> str:
         this = self.sql(expression, "this")
@@ -2194,9 +2202,9 @@ class Generator:
         error_handling = f" {error_handling}" if error_handling else ""
         empty_handling = expression.args.get("empty_handling")
         empty_handling = f" {empty_handling}" if empty_handling else ""
-        columns = f" COLUMNS ({self.expressions(expression, skip_first=True)})"
+        schema = self.sql(expression, "schema")
         return self.func(
-            "JSON_TABLE", this, suffix=f"{path}{error_handling}{empty_handling}{columns})"
+            "JSON_TABLE", this, suffix=f"{path}{error_handling}{empty_handling} {schema})"
         )
 
     def openjsoncolumndef_sql(self, expression: exp.OpenJSONColumnDef) -> str:

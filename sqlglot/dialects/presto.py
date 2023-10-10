@@ -34,7 +34,7 @@ def _approx_distinct_sql(self: Presto.Generator, expression: exp.ApproxDistinct)
 
 
 def _explode_to_unnest_sql(self: Presto.Generator, expression: exp.Lateral) -> str:
-    if isinstance(expression.this, (exp.Explode, exp.Posexplode)):
+    if isinstance(expression.this, exp.Explode):
         expression = expression.copy()
         return self.sql(
             exp.Join(

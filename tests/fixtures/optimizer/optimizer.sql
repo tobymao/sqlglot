@@ -15,6 +15,35 @@ SELECT
   "q"."x" AS "x"
 FROM UNNEST(ARRAY(1, 2)) AS "q"("x", "y");
 
+# title: explode_outer
+# dialect: spark
+# execute: false
+CREATE OR REPLACE TEMPORARY VIEW latest_boo AS
+SELECT
+    TRIM(split(points, ':')[0]) as points_type,
+    TRIM(split(points, ':')[1]) as points_value
+FROM (
+         SELECT
+             explode_outer(split(object_pointsText, ',')) as points
+         FROM (
+                  SELECT
+                      object_pointstext,
+                  FROM boo
+              )
+         WHERE object_pointstext IS NOT NULL
+     );
+CREATE OR REPLACE TEMPORARY VIEW `latest_boo` AS
+SELECT
+  TRIM(SPLIT(`_q_1`.`points`, ':')[0]) AS `points_type`,
+  TRIM(SPLIT(`_q_1`.`points`, ':')[1]) AS `points_value`
+FROM (
+  SELECT
+    EXPLODE_OUTER(SPLIT(`boo`.`object_pointstext`, ',')) AS `points`
+  FROM `boo` AS `boo`
+  WHERE
+    NOT `boo`.`object_pointstext` IS NULL
+) AS `_q_1`;
+
 # title: Union in CTE
 WITH cte AS (
     (

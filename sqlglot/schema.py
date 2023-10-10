@@ -192,7 +192,7 @@ class AbstractMappingSchema(t.Generic[T]):
         )
 
 
-class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
+class MappingSchema(AbstractMappingSchema[t.Dict[str, str | exp.DataType]], Schema):
     """
     Schema based on a nested mapping.
 

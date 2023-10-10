@@ -4635,7 +4635,6 @@ class JSONArrayAgg(Func):
 class JSONColumnDef(Expression):
     arg_types = {
         "this": False,
-        "expressions": False,
         "kind": False,
         "path": False,
         "nested_schema": False,

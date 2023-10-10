@@ -361,7 +361,18 @@ TBLPROPERTIES (
             "SELECT CAST(123456 AS VARCHAR(3))",
             write={
                 "": "SELECT TRY_CAST(123456 AS TEXT)",
+                "databricks": "SELECT TRY_CAST(123456 AS STRING)",
                 "spark": "SELECT CAST(123456 AS STRING)",
+                "spark2": "SELECT CAST(123456 AS STRING)",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_CAST('a' AS INT)",
+            write={
+                "": "SELECT TRY_CAST('a' AS INT)",
+                "databricks": "SELECT TRY_CAST('a' AS INT)",
+                "spark": "SELECT TRY_CAST('a' AS INT)",
+                "spark2": "SELECT CAST('a' AS INT)",
             },
         )
         self.validate_all(

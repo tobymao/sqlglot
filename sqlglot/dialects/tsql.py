@@ -477,7 +477,9 @@ class TSQL(Dialect):
             returns.set("table", table)
             return returns
 
-        def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
+        def _parse_convert(
+            self, strict: bool, safe: t.Optional[bool] = None
+        ) -> t.Optional[exp.Expression]:
             to = self._parse_types()
             self._match(TokenType.COMMA)
             this = self._parse_conjunction()
@@ -513,12 +515,13 @@ class TSQL(Dialect):
                         exp.Cast if strict else exp.TryCast,
                         to=to,
                         this=self.expression(exp.TimeToStr, this=this, format=format_norm),
+                        safe=safe,
                     )
                 elif to.this == DataType.Type.TEXT:
                     return self.expression(exp.TimeToStr, this=this, format=format_norm)
 
             # Entails a simple cast without any format requirement
-            return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+            return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, safe=safe)
 
         def _parse_user_defined_function(
             self, kind: t.Optional[TokenType] = None

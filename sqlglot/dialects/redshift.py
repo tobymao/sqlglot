@@ -93,11 +93,13 @@ class Redshift(Postgres):
 
             return this
 
-        def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
+        def _parse_convert(
+            self, strict: bool, safe: t.Optional[bool] = None
+        ) -> t.Optional[exp.Expression]:
             to = self._parse_types()
             self._match(TokenType.COMMA)
             this = self._parse_bitwise()
-            return self.expression(exp.TryCast, this=this, to=to)
+            return self.expression(exp.TryCast, this=this, to=to, safe=safe)
 
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []

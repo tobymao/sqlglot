@@ -4538,6 +4538,18 @@ class Explode(Func):
     pass
 
 
+class ExplodeOuter(Explode):
+    pass
+
+
+class Posexplode(Explode):
+    pass
+
+
+class PosexplodeOuter(Posexplode):
+    pass
+
+
 class Floor(Func):
     arg_types = {"this": True, "decimals": False}
 
@@ -4788,10 +4800,6 @@ class Month(Func):
 
 class Nvl2(Func):
     arg_types = {"this": True, "true": True, "false": False}
-
-
-class Posexplode(Func):
-    pass
 
 
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict#mlpredict_function

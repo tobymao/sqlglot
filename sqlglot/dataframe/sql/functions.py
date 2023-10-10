@@ -1019,11 +1019,11 @@ def posexplode(col: ColumnOrName) -> Column:
 
 
 def explode_outer(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "EXPLODE_OUTER")
+    return Column.invoke_expression_over_column(col, expression.ExplodeOuter)
 
 
 def posexplode_outer(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "POSEXPLODE_OUTER")
+    return Column.invoke_expression_over_column(col, expression.PosexplodeOuter)
 
 
 def get_json_object(col: ColumnOrName, path: str) -> Column:

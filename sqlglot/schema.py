@@ -326,7 +326,7 @@ class MappingSchema(AbstractMappingSchema[t.Dict[str, str]], Schema):
             if isinstance(column_type, exp.DataType):
                 return column_type
             elif isinstance(column_type, str):
-                return self._to_data_type(column_type.upper(), dialect=dialect)
+                return self._to_data_type(column_type, dialect=dialect)
 
         return exp.DataType.build("unknown")
 

@@ -827,6 +827,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(exp.DataType.Type.ARRAY, expression.selects[0].type.this)
         self.assertEqual(expression.selects[0].type.sql(), "ARRAY<INT>")
 
+        schema = MappingSchema({"t": {"c": "STRUCT<`f` STRING>"}}, dialect="bigquery")
+        expression = annotate_types(parse_one("SELECT t.c FROM t"), schema=schema)
+
+        self.assertEqual(expression.selects[0].type.sql(dialect="bigquery"), "STRUCT<`f` STRING>")
+
     def test_type_annotation_cache(self):
         sql = "SELECT 1 + 1"
         expression = annotate_types(parse_one(sql))

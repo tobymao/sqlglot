@@ -798,12 +798,12 @@ class Parser(metaclass=_Parser):
         "OPENJSON": lambda self: self._parse_open_json(),
         "POSITION": lambda self: self._parse_position(),
         "PREDICT": lambda self: self._parse_predict(),
-        "SAFE_CAST": lambda self: self._parse_cast(False),
+        "SAFE_CAST": lambda self: self._parse_cast(False, safe=True),
         "STRING_AGG": lambda self: self._parse_string_agg(),
         "SUBSTRING": lambda self: self._parse_substring(),
         "TRIM": lambda self: self._parse_trim(),
-        "TRY_CAST": lambda self: self._parse_cast(False),
-        "TRY_CONVERT": lambda self: self._parse_convert(False),
+        "TRY_CAST": lambda self: self._parse_cast(False, safe=True),
+        "TRY_CONVERT": lambda self: self._parse_convert(False, safe=True),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -4136,7 +4136,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.AnyValue, this=this, having=having, max=is_max)
 
-    def _parse_cast(self, strict: bool) -> exp.Expression:
+    def _parse_cast(self, strict: bool, safe: t.Optional[bool] = None) -> exp.Expression:
         this = self._parse_conjunction()
 
         if not self._match(TokenType.ALIAS):
@@ -4177,7 +4177,9 @@ class Parser(metaclass=_Parser):
 
                 return this
 
-        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, format=fmt)
+        return self.expression(
+            exp.Cast if strict else exp.TryCast, this=this, to=to, format=fmt, safe=safe
+        )
 
     def _parse_concat(self) -> t.Optional[exp.Expression]:
         args = self._parse_csv(self._parse_conjunction)
@@ -4231,7 +4233,9 @@ class Parser(metaclass=_Parser):
         order = self._parse_order(this=seq_get(args, 0))
         return self.expression(exp.GroupConcat, this=order, separator=seq_get(args, 1))
 
-    def _parse_convert(self, strict: bool) -> t.Optional[exp.Expression]:
+    def _parse_convert(
+        self, strict: bool, safe: t.Optional[bool] = None
+    ) -> t.Optional[exp.Expression]:
         this = self._parse_bitwise()
 
         if self._match(TokenType.USING):
@@ -4243,7 +4247,7 @@ class Parser(metaclass=_Parser):
         else:
             to = None
 
-        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to)
+        return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, safe=safe)
 
     def _parse_decode(self) -> t.Optional[exp.Decode | exp.Case]:
         """

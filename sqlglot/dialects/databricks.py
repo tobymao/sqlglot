@@ -10,6 +10,7 @@ from sqlglot.tokens import TokenType
 class Databricks(Spark):
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
+        STRICT_CAST = True
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
@@ -50,6 +51,8 @@ class Databricks(Spark):
             ),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         }
+
+        TRANSFORMS.pop(exp.TryCast)
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             constraint = expression.find(exp.GeneratedAsIdentityColumnConstraint)

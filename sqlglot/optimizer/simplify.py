@@ -9,7 +9,7 @@ import sqlglot
 from sqlglot import exp
 from sqlglot.generator import cached_generator
 from sqlglot.helper import first, merge_ranges, while_changing
-from sqlglot.optimizer.scope import find_all_in_scope
+from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
 
 # Final means that an expression should not be simplified
 FINAL = "final"
@@ -392,19 +392,20 @@ def propagate_constants(expression, root=True):
         and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
     ):
         constant_mapping = {}
-        for eq in find_all_in_scope(expression, exp.EQ):
-            l, r = eq.left, eq.right
+        for expr, *_ in walk_in_scope(expression, prune=lambda node, *_: isinstance(node, exp.If)):
+            if isinstance(expr, exp.EQ):
+                l, r = expr.left, expr.right
 
-            # TODO: create a helper that can be used to detect nested literal expressions such
-            # as CAST(123456 AS BIGINT), since we usually want to treat those as literals too
-            if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
-                pass
-            elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):
-                l, r = r, l
-            else:
-                continue
+                # TODO: create a helper that can be used to detect nested literal expressions such
+                # as CAST(123456 AS BIGINT), since we usually want to treat those as literals too
+                if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
+                    pass
+                elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):
+                    l, r = r, l
+                else:
+                    continue
 
-            constant_mapping[l] = (id(l), r)
+                constant_mapping[l] = (id(l), r)
 
         if constant_mapping:
             for column in find_all_in_scope(expression, exp.Column):

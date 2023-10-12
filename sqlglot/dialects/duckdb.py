@@ -136,6 +136,7 @@ class DuckDB(Dialect):
             "TIMESTAMP_S": TokenType.TIMESTAMP_S,
             "TIMESTAMP_MS": TokenType.TIMESTAMP_MS,
             "TIMESTAMP_NS": TokenType.TIMESTAMP_NS,
+            "TIMESTAMP_US": TokenType.TIMESTAMP,
         }
 
     class Parser(parser.Parser):

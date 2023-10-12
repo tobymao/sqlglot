@@ -70,6 +70,7 @@ def simplify(expression, constant_propagation=False):
         node = uniq_sort(node, generate, root)
         node = absorb_and_eliminate(node, root)
         node = simplify_concat(node)
+        node = simplify_conditionals(node)
 
         if constant_propagation:
             node = propagate_constants(node, root)
@@ -693,6 +694,26 @@ def simplify_concat(expression):
         new_args = [sep_expr] + new_args
 
     return concat_type(expressions=new_args)
+
+
+def simplify_conditionals(expression):
+    """Simplifies expressions like IF, CASE if their condition is statically known."""
+    if isinstance(expression, exp.Case):
+        for case in expression.args["ifs"]:
+            cond = case.this
+            if always_true(cond):
+                return case.args["true"]
+            elif is_false(cond):
+                case.pop()
+                if not expression.args["ifs"]:
+                    return expression.args.get("default")
+    elif isinstance(expression, exp.If):
+        if always_true(expression.this):
+            return expression.args["true"]
+        if is_false(expression.this) and expression.args.get("false"):
+            return expression.args["false"]
+
+    return expression
 
 
 DateRange = t.Tuple[datetime.date, datetime.date]

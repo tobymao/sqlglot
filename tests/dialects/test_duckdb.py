@@ -790,3 +790,11 @@ class TestDuckDB(Validator):
                 "duckdb": "ALTER TABLE db.t1 RENAME TO t2",
             },
         )
+
+    def test_timestamps_with_units(self):
+        self.validate_all(
+            "SELECT w::TIMESTAMP_S, x::TIMESTAMP_MS, y::TIMESTAMP_US, z::TIMESTAMP_NS",
+            write={
+                "duckdb": "SELECT CAST(w AS TIMESTAMP_S), CAST(x AS TIMESTAMP_MS), CAST(y AS TIMESTAMP), CAST(z AS TIMESTAMP_NS)",
+            },
+        )

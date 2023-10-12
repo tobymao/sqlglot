@@ -133,6 +133,9 @@ class DuckDB(Dialect):
             "UINTEGER": TokenType.UINT,
             "USMALLINT": TokenType.USMALLINT,
             "UTINYINT": TokenType.UTINYINT,
+            "TIMESTAMP_S": TokenType.TIMESTAMP_S,
+            "TIMESTAMP_MS": TokenType.TIMESTAMP_MS,
+            "TIMESTAMP_NS": TokenType.TIMESTAMP_NS,
         }
 
     class Parser(parser.Parser):
@@ -321,6 +324,9 @@ class DuckDB(Dialect):
             exp.DataType.Type.UINT: "UINTEGER",
             exp.DataType.Type.VARBINARY: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
+            exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
+            exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
+            exp.DataType.Type.TIMESTAMP_NS: "TIMESTAMP_NS",
         }
 
         STAR_MAPPING = {**generator.Generator.STAR_MAPPING, "except": "EXCLUDE"}

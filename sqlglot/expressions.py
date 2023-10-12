@@ -3605,6 +3605,9 @@ class DataType(Expression):
         TIMESTAMP = auto()
         TIMESTAMPLTZ = auto()
         TIMESTAMPTZ = auto()
+        TIMESTAMP_S = auto()
+        TIMESTAMP_MS = auto()
+        TIMESTAMP_NS = auto()
         TINYINT = auto()
         TSMULTIRANGE = auto()
         TSRANGE = auto()
@@ -3661,6 +3664,9 @@ class DataType(Expression):
         Type.TIMESTAMP,
         Type.TIMESTAMPTZ,
         Type.TIMESTAMPLTZ,
+        Type.TIMESTAMP_S,
+        Type.TIMESTAMP_MS,
+        Type.TIMESTAMP_NS,
         Type.DATE,
         Type.DATETIME,
         Type.DATETIME64,

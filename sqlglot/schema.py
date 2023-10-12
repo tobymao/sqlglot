@@ -5,7 +5,6 @@ import typing as t
 
 import sqlglot
 from sqlglot import expressions as exp
-from sqlglot._typing import T
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import ParseError, SchemaError
 from sqlglot.helper import dict_depth
@@ -123,7 +122,7 @@ class Schema(abc.ABC):
         return True
 
 
-class AbstractMappingSchema(t.Generic[T]):
+class AbstractMappingSchema:
     def __init__(
         self,
         mapping: t.Optional[t.Dict] = None,
@@ -162,7 +161,7 @@ class AbstractMappingSchema(t.Generic[T]):
 
     def find(
         self, table: exp.Table, trie: t.Optional[t.Dict] = None, raise_on_missing: bool = True
-    ) -> t.Optional[T]:
+    ) -> t.Optional[t.Any]:
         parts = self.table_parts(table)[0 : len(self.supported_table_args)]
         value, trie = in_trie(self.mapping_trie if trie is None else trie, parts)
 

@@ -6,6 +6,18 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_all(
+            "SELECT APPROXIMATE COUNT(DISTINCT y)",
+            read={
+                "spark": "SELECT APPROX_COUNT_DISTINCT(y)",
+            },
+            write={
+                "redshift": "SELECT APPROXIMATE COUNT(DISTINCT y)",
+                "spark": "SELECT APPROX_COUNT_DISTINCT(y)",
+            },
+        )
+        self.validate_identity("SELECT APPROXIMATE AS y")
+
         self.validate_identity(
             "SELECT 'a''b'",
             "SELECT 'a\\'b'",

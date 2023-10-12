@@ -1226,9 +1226,10 @@ class Generator:
         kind = expression.args.get("kind")
         this = f" {self.sql(expression, 'this')}" if expression.this else ""
         for_or_in = expression.args.get("for_or_in")
+        for_or_in = f" {for_or_in}" if for_or_in else ""
         lock_type = expression.args.get("lock_type")
         override = " OVERRIDE" if expression.args.get("override") else ""
-        return f"LOCKING {kind}{this} {for_or_in} {lock_type}{override}"
+        return f"LOCKING {kind}{this}{for_or_in} {lock_type}{override}"
 
     def withdataproperty_sql(self, expression: exp.WithDataProperty) -> str:
         data_sql = f"WITH {'NO ' if expression.args.get('no') else ''}DATA"

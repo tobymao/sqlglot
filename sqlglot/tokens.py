@@ -743,7 +743,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,
-        "TIMESTAMP_US": TokenType.TIMESTAMP,
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
         "INT4RANGE": TokenType.INT4RANGE,

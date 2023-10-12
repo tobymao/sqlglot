@@ -105,7 +105,7 @@ class RowReader:
         return self.row[self.columns[column]]
 
 
-class Tables(AbstractMappingSchema[Table]):
+class Tables(AbstractMappingSchema):
     pass
 
 

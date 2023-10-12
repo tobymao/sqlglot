@@ -48,6 +48,14 @@ class TestTeradata(Validator):
         self.validate_identity("HELP STATISTICS personnel.employee FROM my_qcd")
 
     def test_create(self):
+        self.validate_identity(
+            "REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
+            "CREATE OR REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
+        )
+        self.validate_identity(
+            "REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
+            "CREATE OR REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
+        )
         self.validate_identity("CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)")
         self.validate_identity("CREATE TABLE x (y INT) PARTITION BY y INDEX (y)")
         self.validate_identity(

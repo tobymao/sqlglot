@@ -2107,7 +2107,7 @@ class LockingProperty(Property):
     arg_types = {
         "this": False,
         "kind": True,
-        "for_or_in": True,
+        "for_or_in": False,
         "lock_type": True,
         "override": False,
     }

@@ -702,9 +702,11 @@ def simplify_conditionals(expression):
         this = expression.this
         for case in expression.args["ifs"]:
             cond = this.eq(case.this) if this else case.this
+
             if always_true(cond):
                 return case.args["true"]
-            elif is_false(cond):
+
+            if is_false(cond):
                 case.pop()
                 if not expression.args["ifs"]:
                     return expression.args.get("default") or exp.null()

@@ -709,14 +709,14 @@ def simplify_conditionals(expression):
             if always_true(cond):
                 return case.args["true"]
 
-            if is_false(cond):
+            if always_false(cond):
                 case.pop()
                 if not expression.args["ifs"]:
                     return expression.args.get("default") or exp.null()
     elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
         if always_true(expression.this):
             return expression.args["true"]
-        if is_false(expression.this):
+        if always_false(expression.this):
             return expression.args.get("false") or exp.null()
 
     return expression
@@ -877,6 +877,10 @@ def always_true(expression):
     return (isinstance(expression, exp.Boolean) and expression.this) or isinstance(
         expression, exp.Literal
     )
+
+
+def always_false(expression):
+    return is_false(expression) or is_null(expression)
 
 
 def is_complement(a, b):

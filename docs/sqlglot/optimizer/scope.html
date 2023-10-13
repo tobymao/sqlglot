@@ -375,8 +375,8 @@
 </span><span id="L-137"><a href="#L-137"><span class="linenos">137</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collected</span><span class="p">:</span>
 </span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">()</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>
-</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
+</span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>
 </span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 </span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>        <span class="k">return</span> <span class="n">find_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
@@ -969,7 +969,7 @@
 </span><span id="L-731"><a href="#L-731"><span class="linenos">731</span></a>    <span class="k">yield from</span> <span class="n">_traverse_scope</span><span class="p">(</span><span class="n">query_scope</span><span class="p">)</span>
 </span><span id="L-732"><a href="#L-732"><span class="linenos">732</span></a>
 </span><span id="L-733"><a href="#L-733"><span class="linenos">733</span></a>
-</span><span id="L-734"><a href="#L-734"><span class="linenos">734</span></a><span class="k">def</span> <span class="nf">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="L-734"><a href="#L-734"><span class="linenos">734</span></a><span class="k">def</span> <span class="nf">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="L-735"><a href="#L-735"><span class="linenos">735</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-736"><a href="#L-736"><span class="linenos">736</span></a><span class="sd">    Returns a generator object which visits all nodes in the syntrax tree, stopping at</span>
 </span><span id="L-737"><a href="#L-737"><span class="linenos">737</span></a><span class="sd">    nodes that start child scopes.</span>
@@ -978,76 +978,80 @@
 </span><span id="L-740"><a href="#L-740"><span class="linenos">740</span></a><span class="sd">        expression (exp.Expression):</span>
 </span><span id="L-741"><a href="#L-741"><span class="linenos">741</span></a><span class="sd">        bfs (bool): if set to True the BFS traversal order will be applied,</span>
 </span><span id="L-742"><a href="#L-742"><span class="linenos">742</span></a><span class="sd">            otherwise the DFS traversal will be used instead.</span>
-</span><span id="L-743"><a href="#L-743"><span class="linenos">743</span></a>
-</span><span id="L-744"><a href="#L-744"><span class="linenos">744</span></a><span class="sd">    Yields:</span>
-</span><span id="L-745"><a href="#L-745"><span class="linenos">745</span></a><span class="sd">        tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key</span>
-</span><span id="L-746"><a href="#L-746"><span class="linenos">746</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-747"><a href="#L-747"><span class="linenos">747</span></a>    <span class="c1"># We&#39;ll use this variable to pass state into the dfs generator.</span>
-</span><span id="L-748"><a href="#L-748"><span class="linenos">748</span></a>    <span class="c1"># Whenever we set it to True, we exclude a subtree from traversal.</span>
-</span><span id="L-749"><a href="#L-749"><span class="linenos">749</span></a>    <span class="n">prune</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-750"><a href="#L-750"><span class="linenos">750</span></a>
-</span><span id="L-751"><a href="#L-751"><span class="linenos">751</span></a>    <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">_</span><span class="p">:</span> <span class="n">prune</span><span class="p">):</span>
-</span><span id="L-752"><a href="#L-752"><span class="linenos">752</span></a>        <span class="n">prune</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="L-753"><a href="#L-753"><span class="linenos">753</span></a>
-</span><span id="L-754"><a href="#L-754"><span class="linenos">754</span></a>        <span class="k">yield</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span>
-</span><span id="L-755"><a href="#L-755"><span class="linenos">755</span></a>
-</span><span id="L-756"><a href="#L-756"><span class="linenos">756</span></a>        <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="n">expression</span><span class="p">:</span>
-</span><span id="L-757"><a href="#L-757"><span class="linenos">757</span></a>            <span class="k">continue</span>
-</span><span id="L-758"><a href="#L-758"><span class="linenos">758</span></a>        <span class="k">if</span> <span class="p">(</span>
-</span><span id="L-759"><a href="#L-759"><span class="linenos">759</span></a>            <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">CTE</span><span class="p">)</span>
-</span><span id="L-760"><a href="#L-760"><span class="linenos">760</span></a>            <span class="ow">or</span> <span class="p">(</span>
-</span><span id="L-761"><a href="#L-761"><span class="linenos">761</span></a>                <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">)</span>
-</span><span id="L-762"><a href="#L-762"><span class="linenos">762</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">From</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">))</span>
-</span><span id="L-763"><a href="#L-763"><span class="linenos">763</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
-</span><span id="L-764"><a href="#L-764"><span class="linenos">764</span></a>            <span class="p">)</span>
-</span><span id="L-765"><a href="#L-765"><span class="linenos">765</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)</span>
-</span><span id="L-766"><a href="#L-766"><span class="linenos">766</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">)</span>
-</span><span id="L-767"><a href="#L-767"><span class="linenos">767</span></a>        <span class="p">):</span>
-</span><span id="L-768"><a href="#L-768"><span class="linenos">768</span></a>            <span class="n">prune</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-769"><a href="#L-769"><span class="linenos">769</span></a>
-</span><span id="L-770"><a href="#L-770"><span class="linenos">770</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)):</span>
-</span><span id="L-771"><a href="#L-771"><span class="linenos">771</span></a>                <span class="c1"># The following args are not actually in the inner scope, so we should visit them</span>
-</span><span id="L-772"><a href="#L-772"><span class="linenos">772</span></a>                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;joins&quot;</span><span class="p">,</span> <span class="s2">&quot;laterals&quot;</span><span class="p">,</span> <span class="s2">&quot;pivots&quot;</span><span class="p">):</span>
-</span><span id="L-773"><a href="#L-773"><span class="linenos">773</span></a>                    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]:</span>
-</span><span id="L-774"><a href="#L-774"><span class="linenos">774</span></a>                        <span class="k">yield from</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
-</span><span id="L-775"><a href="#L-775"><span class="linenos">775</span></a>
-</span><span id="L-776"><a href="#L-776"><span class="linenos">776</span></a>
-</span><span id="L-777"><a href="#L-777"><span class="linenos">777</span></a><span class="k">def</span> <span class="nf">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="L-778"><a href="#L-778"><span class="linenos">778</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-779"><a href="#L-779"><span class="linenos">779</span></a><span class="sd">    Returns a generator object which visits all nodes in this scope and only yields those that</span>
-</span><span id="L-780"><a href="#L-780"><span class="linenos">780</span></a><span class="sd">    match at least one of the specified expression types.</span>
-</span><span id="L-781"><a href="#L-781"><span class="linenos">781</span></a>
-</span><span id="L-782"><a href="#L-782"><span class="linenos">782</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
-</span><span id="L-783"><a href="#L-783"><span class="linenos">783</span></a>
-</span><span id="L-784"><a href="#L-784"><span class="linenos">784</span></a><span class="sd">    Args:</span>
-</span><span id="L-785"><a href="#L-785"><span class="linenos">785</span></a><span class="sd">        expression (exp.Expression):</span>
-</span><span id="L-786"><a href="#L-786"><span class="linenos">786</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
-</span><span id="L-787"><a href="#L-787"><span class="linenos">787</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
-</span><span id="L-788"><a href="#L-788"><span class="linenos">788</span></a>
-</span><span id="L-789"><a href="#L-789"><span class="linenos">789</span></a><span class="sd">    Yields:</span>
-</span><span id="L-790"><a href="#L-790"><span class="linenos">790</span></a><span class="sd">        exp.Expression: nodes</span>
-</span><span id="L-791"><a href="#L-791"><span class="linenos">791</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-792"><a href="#L-792"><span class="linenos">792</span></a>    <span class="k">for</span> <span class="n">expression</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">):</span>
-</span><span id="L-793"><a href="#L-793"><span class="linenos">793</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ensure_collection</span><span class="p">(</span><span class="n">expression_types</span><span class="p">))):</span>
-</span><span id="L-794"><a href="#L-794"><span class="linenos">794</span></a>            <span class="k">yield</span> <span class="n">expression</span>
-</span><span id="L-795"><a href="#L-795"><span class="linenos">795</span></a>
-</span><span id="L-796"><a href="#L-796"><span class="linenos">796</span></a>
-</span><span id="L-797"><a href="#L-797"><span class="linenos">797</span></a><span class="k">def</span> <span class="nf">find_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="L-798"><a href="#L-798"><span class="linenos">798</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-799"><a href="#L-799"><span class="linenos">799</span></a><span class="sd">    Returns the first node in this scope which matches at least one of the specified types.</span>
+</span><span id="L-743"><a href="#L-743"><span class="linenos">743</span></a><span class="sd">        prune ((node, parent, arg_key) -&gt; bool): callable that returns True if</span>
+</span><span id="L-744"><a href="#L-744"><span class="linenos">744</span></a><span class="sd">            the generator should stop traversing this branch of the tree.</span>
+</span><span id="L-745"><a href="#L-745"><span class="linenos">745</span></a>
+</span><span id="L-746"><a href="#L-746"><span class="linenos">746</span></a><span class="sd">    Yields:</span>
+</span><span id="L-747"><a href="#L-747"><span class="linenos">747</span></a><span class="sd">        tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key</span>
+</span><span id="L-748"><a href="#L-748"><span class="linenos">748</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-749"><a href="#L-749"><span class="linenos">749</span></a>    <span class="c1"># We&#39;ll use this variable to pass state into the dfs generator.</span>
+</span><span id="L-750"><a href="#L-750"><span class="linenos">750</span></a>    <span class="c1"># Whenever we set it to True, we exclude a subtree from traversal.</span>
+</span><span id="L-751"><a href="#L-751"><span class="linenos">751</span></a>    <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-752"><a href="#L-752"><span class="linenos">752</span></a>
+</span><span id="L-753"><a href="#L-753"><span class="linenos">753</span></a>    <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span>
+</span><span id="L-754"><a href="#L-754"><span class="linenos">754</span></a>        <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">crossed_scope_boundary</span> <span class="ow">or</span> <span class="p">(</span><span class="n">prune</span> <span class="ow">and</span> <span class="n">prune</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
+</span><span id="L-755"><a href="#L-755"><span class="linenos">755</span></a>    <span class="p">):</span>
+</span><span id="L-756"><a href="#L-756"><span class="linenos">756</span></a>        <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="L-757"><a href="#L-757"><span class="linenos">757</span></a>
+</span><span id="L-758"><a href="#L-758"><span class="linenos">758</span></a>        <span class="k">yield</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span>
+</span><span id="L-759"><a href="#L-759"><span class="linenos">759</span></a>
+</span><span id="L-760"><a href="#L-760"><span class="linenos">760</span></a>        <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="n">expression</span><span class="p">:</span>
+</span><span id="L-761"><a href="#L-761"><span class="linenos">761</span></a>            <span class="k">continue</span>
+</span><span id="L-762"><a href="#L-762"><span class="linenos">762</span></a>        <span class="k">if</span> <span class="p">(</span>
+</span><span id="L-763"><a href="#L-763"><span class="linenos">763</span></a>            <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">CTE</span><span class="p">)</span>
+</span><span id="L-764"><a href="#L-764"><span class="linenos">764</span></a>            <span class="ow">or</span> <span class="p">(</span>
+</span><span id="L-765"><a href="#L-765"><span class="linenos">765</span></a>                <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">)</span>
+</span><span id="L-766"><a href="#L-766"><span class="linenos">766</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">From</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">))</span>
+</span><span id="L-767"><a href="#L-767"><span class="linenos">767</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+</span><span id="L-768"><a href="#L-768"><span class="linenos">768</span></a>            <span class="p">)</span>
+</span><span id="L-769"><a href="#L-769"><span class="linenos">769</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)</span>
+</span><span id="L-770"><a href="#L-770"><span class="linenos">770</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">)</span>
+</span><span id="L-771"><a href="#L-771"><span class="linenos">771</span></a>        <span class="p">):</span>
+</span><span id="L-772"><a href="#L-772"><span class="linenos">772</span></a>            <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-773"><a href="#L-773"><span class="linenos">773</span></a>
+</span><span id="L-774"><a href="#L-774"><span class="linenos">774</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)):</span>
+</span><span id="L-775"><a href="#L-775"><span class="linenos">775</span></a>                <span class="c1"># The following args are not actually in the inner scope, so we should visit them</span>
+</span><span id="L-776"><a href="#L-776"><span class="linenos">776</span></a>                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;joins&quot;</span><span class="p">,</span> <span class="s2">&quot;laterals&quot;</span><span class="p">,</span> <span class="s2">&quot;pivots&quot;</span><span class="p">):</span>
+</span><span id="L-777"><a href="#L-777"><span class="linenos">777</span></a>                    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]:</span>
+</span><span id="L-778"><a href="#L-778"><span class="linenos">778</span></a>                        <span class="k">yield from</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
+</span><span id="L-779"><a href="#L-779"><span class="linenos">779</span></a>
+</span><span id="L-780"><a href="#L-780"><span class="linenos">780</span></a>
+</span><span id="L-781"><a href="#L-781"><span class="linenos">781</span></a><span class="k">def</span> <span class="nf">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="L-782"><a href="#L-782"><span class="linenos">782</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-783"><a href="#L-783"><span class="linenos">783</span></a><span class="sd">    Returns a generator object which visits all nodes in this scope and only yields those that</span>
+</span><span id="L-784"><a href="#L-784"><span class="linenos">784</span></a><span class="sd">    match at least one of the specified expression types.</span>
+</span><span id="L-785"><a href="#L-785"><span class="linenos">785</span></a>
+</span><span id="L-786"><a href="#L-786"><span class="linenos">786</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
+</span><span id="L-787"><a href="#L-787"><span class="linenos">787</span></a>
+</span><span id="L-788"><a href="#L-788"><span class="linenos">788</span></a><span class="sd">    Args:</span>
+</span><span id="L-789"><a href="#L-789"><span class="linenos">789</span></a><span class="sd">        expression (exp.Expression):</span>
+</span><span id="L-790"><a href="#L-790"><span class="linenos">790</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
+</span><span id="L-791"><a href="#L-791"><span class="linenos">791</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
+</span><span id="L-792"><a href="#L-792"><span class="linenos">792</span></a>
+</span><span id="L-793"><a href="#L-793"><span class="linenos">793</span></a><span class="sd">    Yields:</span>
+</span><span id="L-794"><a href="#L-794"><span class="linenos">794</span></a><span class="sd">        exp.Expression: nodes</span>
+</span><span id="L-795"><a href="#L-795"><span class="linenos">795</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-796"><a href="#L-796"><span class="linenos">796</span></a>    <span class="k">for</span> <span class="n">expression</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">):</span>
+</span><span id="L-797"><a href="#L-797"><span class="linenos">797</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ensure_collection</span><span class="p">(</span><span class="n">expression_types</span><span class="p">))):</span>
+</span><span id="L-798"><a href="#L-798"><span class="linenos">798</span></a>            <span class="k">yield</span> <span class="n">expression</span>
+</span><span id="L-799"><a href="#L-799"><span class="linenos">799</span></a>
 </span><span id="L-800"><a href="#L-800"><span class="linenos">800</span></a>
-</span><span id="L-801"><a href="#L-801"><span class="linenos">801</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
-</span><span id="L-802"><a href="#L-802"><span class="linenos">802</span></a>
-</span><span id="L-803"><a href="#L-803"><span class="linenos">803</span></a><span class="sd">    Args:</span>
-</span><span id="L-804"><a href="#L-804"><span class="linenos">804</span></a><span class="sd">        expression (exp.Expression):</span>
-</span><span id="L-805"><a href="#L-805"><span class="linenos">805</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
-</span><span id="L-806"><a href="#L-806"><span class="linenos">806</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
-</span><span id="L-807"><a href="#L-807"><span class="linenos">807</span></a>
-</span><span id="L-808"><a href="#L-808"><span class="linenos">808</span></a><span class="sd">    Returns:</span>
-</span><span id="L-809"><a href="#L-809"><span class="linenos">809</span></a><span class="sd">        exp.Expression: the node which matches the criteria or None if no node matching</span>
-</span><span id="L-810"><a href="#L-810"><span class="linenos">810</span></a><span class="sd">        the criteria was found.</span>
-</span><span id="L-811"><a href="#L-811"><span class="linenos">811</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-812"><a href="#L-812"><span class="linenos">812</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="L-801"><a href="#L-801"><span class="linenos">801</span></a><span class="k">def</span> <span class="nf">find_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="L-802"><a href="#L-802"><span class="linenos">802</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-803"><a href="#L-803"><span class="linenos">803</span></a><span class="sd">    Returns the first node in this scope which matches at least one of the specified types.</span>
+</span><span id="L-804"><a href="#L-804"><span class="linenos">804</span></a>
+</span><span id="L-805"><a href="#L-805"><span class="linenos">805</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
+</span><span id="L-806"><a href="#L-806"><span class="linenos">806</span></a>
+</span><span id="L-807"><a href="#L-807"><span class="linenos">807</span></a><span class="sd">    Args:</span>
+</span><span id="L-808"><a href="#L-808"><span class="linenos">808</span></a><span class="sd">        expression (exp.Expression):</span>
+</span><span id="L-809"><a href="#L-809"><span class="linenos">809</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
+</span><span id="L-810"><a href="#L-810"><span class="linenos">810</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
+</span><span id="L-811"><a href="#L-811"><span class="linenos">811</span></a>
+</span><span id="L-812"><a href="#L-812"><span class="linenos">812</span></a><span class="sd">    Returns:</span>
+</span><span id="L-813"><a href="#L-813"><span class="linenos">813</span></a><span class="sd">        exp.Expression: the node which matches the criteria or None if no node matching</span>
+</span><span id="L-814"><a href="#L-814"><span class="linenos">814</span></a><span class="sd">        the criteria was found.</span>
+</span><span id="L-815"><a href="#L-815"><span class="linenos">815</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-816"><a href="#L-816"><span class="linenos">816</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1300,8 +1304,8 @@
 </span><span id="Scope-138"><a href="#Scope-138"><span class="linenos">138</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collected</span><span class="p">:</span>
 </span><span id="Scope-139"><a href="#Scope-139"><span class="linenos">139</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">()</span>
 </span><span id="Scope-140"><a href="#Scope-140"><span class="linenos">140</span></a>
-</span><span id="Scope-141"><a href="#Scope-141"><span class="linenos">141</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="Scope-142"><a href="#Scope-142"><span class="linenos">142</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
+</span><span id="Scope-141"><a href="#Scope-141"><span class="linenos">141</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="Scope-142"><a href="#Scope-142"><span class="linenos">142</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span><span id="Scope-143"><a href="#Scope-143"><span class="linenos">143</span></a>
 </span><span id="Scope-144"><a href="#Scope-144"><span class="linenos">144</span></a>    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 </span><span id="Scope-145"><a href="#Scope-145"><span class="linenos">145</span></a>        <span class="k">return</span> <span class="n">find_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
@@ -1891,14 +1895,14 @@ a list of the left and right child scopes.</li>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">walk</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">bfs</span><span class="o">=</span><span class="kc">True</span></span><span class="return-annotation">):</span></span>
+        <span class="name">walk</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">bfs</span><span class="o">=</span><span class="kc">True</span>, </span><span class="param"><span class="n">prune</span><span class="o">=</span><span class="kc">None</span></span><span class="return-annotation">):</span></span>
 
                 <label class="view-source-button" for="Scope.walk-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#Scope.walk"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.walk-141"><a href="#Scope.walk-141"><span class="linenos">141</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="Scope.walk-142"><a href="#Scope.walk-142"><span class="linenos">142</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Scope.walk-141"><a href="#Scope.walk-141"><span class="linenos">141</span></a>    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span><span id="Scope.walk-142"><a href="#Scope.walk-142"><span class="linenos">142</span></a>        <span class="k">return</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -2642,13 +2646,13 @@ incomplete properties which is confusing.</p>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">walk_in_scope</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">expression</span>, </span><span class="param"><span class="n">bfs</span><span class="o">=</span><span class="kc">True</span></span><span class="return-annotation">):</span></span>
+        <span class="name">walk_in_scope</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">expression</span>, </span><span class="param"><span class="n">bfs</span><span class="o">=</span><span class="kc">True</span>, </span><span class="param"><span class="n">prune</span><span class="o">=</span><span class="kc">None</span></span><span class="return-annotation">):</span></span>
 
                 <label class="view-source-button" for="walk_in_scope-view-source"><span>View Source</span></label>
 
     </div>
     <a class="headerlink" href="#walk_in_scope"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="walk_in_scope-735"><a href="#walk_in_scope-735"><span class="linenos">735</span></a><span class="k">def</span> <span class="nf">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="walk_in_scope-735"><a href="#walk_in_scope-735"><span class="linenos">735</span></a><span class="k">def</span> <span class="nf">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 </span><span id="walk_in_scope-736"><a href="#walk_in_scope-736"><span class="linenos">736</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="walk_in_scope-737"><a href="#walk_in_scope-737"><span class="linenos">737</span></a><span class="sd">    Returns a generator object which visits all nodes in the syntrax tree, stopping at</span>
 </span><span id="walk_in_scope-738"><a href="#walk_in_scope-738"><span class="linenos">738</span></a><span class="sd">    nodes that start child scopes.</span>
@@ -2657,38 +2661,42 @@ incomplete properties which is confusing.</p>
 </span><span id="walk_in_scope-741"><a href="#walk_in_scope-741"><span class="linenos">741</span></a><span class="sd">        expression (exp.Expression):</span>
 </span><span id="walk_in_scope-742"><a href="#walk_in_scope-742"><span class="linenos">742</span></a><span class="sd">        bfs (bool): if set to True the BFS traversal order will be applied,</span>
 </span><span id="walk_in_scope-743"><a href="#walk_in_scope-743"><span class="linenos">743</span></a><span class="sd">            otherwise the DFS traversal will be used instead.</span>
-</span><span id="walk_in_scope-744"><a href="#walk_in_scope-744"><span class="linenos">744</span></a>
-</span><span id="walk_in_scope-745"><a href="#walk_in_scope-745"><span class="linenos">745</span></a><span class="sd">    Yields:</span>
-</span><span id="walk_in_scope-746"><a href="#walk_in_scope-746"><span class="linenos">746</span></a><span class="sd">        tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key</span>
-</span><span id="walk_in_scope-747"><a href="#walk_in_scope-747"><span class="linenos">747</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="walk_in_scope-748"><a href="#walk_in_scope-748"><span class="linenos">748</span></a>    <span class="c1"># We&#39;ll use this variable to pass state into the dfs generator.</span>
-</span><span id="walk_in_scope-749"><a href="#walk_in_scope-749"><span class="linenos">749</span></a>    <span class="c1"># Whenever we set it to True, we exclude a subtree from traversal.</span>
-</span><span id="walk_in_scope-750"><a href="#walk_in_scope-750"><span class="linenos">750</span></a>    <span class="n">prune</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="walk_in_scope-751"><a href="#walk_in_scope-751"><span class="linenos">751</span></a>
-</span><span id="walk_in_scope-752"><a href="#walk_in_scope-752"><span class="linenos">752</span></a>    <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">_</span><span class="p">:</span> <span class="n">prune</span><span class="p">):</span>
-</span><span id="walk_in_scope-753"><a href="#walk_in_scope-753"><span class="linenos">753</span></a>        <span class="n">prune</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="walk_in_scope-754"><a href="#walk_in_scope-754"><span class="linenos">754</span></a>
-</span><span id="walk_in_scope-755"><a href="#walk_in_scope-755"><span class="linenos">755</span></a>        <span class="k">yield</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span>
-</span><span id="walk_in_scope-756"><a href="#walk_in_scope-756"><span class="linenos">756</span></a>
-</span><span id="walk_in_scope-757"><a href="#walk_in_scope-757"><span class="linenos">757</span></a>        <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="n">expression</span><span class="p">:</span>
-</span><span id="walk_in_scope-758"><a href="#walk_in_scope-758"><span class="linenos">758</span></a>            <span class="k">continue</span>
-</span><span id="walk_in_scope-759"><a href="#walk_in_scope-759"><span class="linenos">759</span></a>        <span class="k">if</span> <span class="p">(</span>
-</span><span id="walk_in_scope-760"><a href="#walk_in_scope-760"><span class="linenos">760</span></a>            <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">CTE</span><span class="p">)</span>
-</span><span id="walk_in_scope-761"><a href="#walk_in_scope-761"><span class="linenos">761</span></a>            <span class="ow">or</span> <span class="p">(</span>
-</span><span id="walk_in_scope-762"><a href="#walk_in_scope-762"><span class="linenos">762</span></a>                <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">)</span>
-</span><span id="walk_in_scope-763"><a href="#walk_in_scope-763"><span class="linenos">763</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">From</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">))</span>
-</span><span id="walk_in_scope-764"><a href="#walk_in_scope-764"><span class="linenos">764</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
-</span><span id="walk_in_scope-765"><a href="#walk_in_scope-765"><span class="linenos">765</span></a>            <span class="p">)</span>
-</span><span id="walk_in_scope-766"><a href="#walk_in_scope-766"><span class="linenos">766</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)</span>
-</span><span id="walk_in_scope-767"><a href="#walk_in_scope-767"><span class="linenos">767</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">)</span>
-</span><span id="walk_in_scope-768"><a href="#walk_in_scope-768"><span class="linenos">768</span></a>        <span class="p">):</span>
-</span><span id="walk_in_scope-769"><a href="#walk_in_scope-769"><span class="linenos">769</span></a>            <span class="n">prune</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="walk_in_scope-770"><a href="#walk_in_scope-770"><span class="linenos">770</span></a>
-</span><span id="walk_in_scope-771"><a href="#walk_in_scope-771"><span class="linenos">771</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)):</span>
-</span><span id="walk_in_scope-772"><a href="#walk_in_scope-772"><span class="linenos">772</span></a>                <span class="c1"># The following args are not actually in the inner scope, so we should visit them</span>
-</span><span id="walk_in_scope-773"><a href="#walk_in_scope-773"><span class="linenos">773</span></a>                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;joins&quot;</span><span class="p">,</span> <span class="s2">&quot;laterals&quot;</span><span class="p">,</span> <span class="s2">&quot;pivots&quot;</span><span class="p">):</span>
-</span><span id="walk_in_scope-774"><a href="#walk_in_scope-774"><span class="linenos">774</span></a>                    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]:</span>
-</span><span id="walk_in_scope-775"><a href="#walk_in_scope-775"><span class="linenos">775</span></a>                        <span class="k">yield from</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
+</span><span id="walk_in_scope-744"><a href="#walk_in_scope-744"><span class="linenos">744</span></a><span class="sd">        prune ((node, parent, arg_key) -&gt; bool): callable that returns True if</span>
+</span><span id="walk_in_scope-745"><a href="#walk_in_scope-745"><span class="linenos">745</span></a><span class="sd">            the generator should stop traversing this branch of the tree.</span>
+</span><span id="walk_in_scope-746"><a href="#walk_in_scope-746"><span class="linenos">746</span></a>
+</span><span id="walk_in_scope-747"><a href="#walk_in_scope-747"><span class="linenos">747</span></a><span class="sd">    Yields:</span>
+</span><span id="walk_in_scope-748"><a href="#walk_in_scope-748"><span class="linenos">748</span></a><span class="sd">        tuple[exp.Expression, Optional[exp.Expression], str]: node, parent, arg key</span>
+</span><span id="walk_in_scope-749"><a href="#walk_in_scope-749"><span class="linenos">749</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="walk_in_scope-750"><a href="#walk_in_scope-750"><span class="linenos">750</span></a>    <span class="c1"># We&#39;ll use this variable to pass state into the dfs generator.</span>
+</span><span id="walk_in_scope-751"><a href="#walk_in_scope-751"><span class="linenos">751</span></a>    <span class="c1"># Whenever we set it to True, we exclude a subtree from traversal.</span>
+</span><span id="walk_in_scope-752"><a href="#walk_in_scope-752"><span class="linenos">752</span></a>    <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="walk_in_scope-753"><a href="#walk_in_scope-753"><span class="linenos">753</span></a>
+</span><span id="walk_in_scope-754"><a href="#walk_in_scope-754"><span class="linenos">754</span></a>    <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span>
+</span><span id="walk_in_scope-755"><a href="#walk_in_scope-755"><span class="linenos">755</span></a>        <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">,</span> <span class="n">prune</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">crossed_scope_boundary</span> <span class="ow">or</span> <span class="p">(</span><span class="n">prune</span> <span class="ow">and</span> <span class="n">prune</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
+</span><span id="walk_in_scope-756"><a href="#walk_in_scope-756"><span class="linenos">756</span></a>    <span class="p">):</span>
+</span><span id="walk_in_scope-757"><a href="#walk_in_scope-757"><span class="linenos">757</span></a>        <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="walk_in_scope-758"><a href="#walk_in_scope-758"><span class="linenos">758</span></a>
+</span><span id="walk_in_scope-759"><a href="#walk_in_scope-759"><span class="linenos">759</span></a>        <span class="k">yield</span> <span class="n">node</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">key</span>
+</span><span id="walk_in_scope-760"><a href="#walk_in_scope-760"><span class="linenos">760</span></a>
+</span><span id="walk_in_scope-761"><a href="#walk_in_scope-761"><span class="linenos">761</span></a>        <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="n">expression</span><span class="p">:</span>
+</span><span id="walk_in_scope-762"><a href="#walk_in_scope-762"><span class="linenos">762</span></a>            <span class="k">continue</span>
+</span><span id="walk_in_scope-763"><a href="#walk_in_scope-763"><span class="linenos">763</span></a>        <span class="k">if</span> <span class="p">(</span>
+</span><span id="walk_in_scope-764"><a href="#walk_in_scope-764"><span class="linenos">764</span></a>            <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">CTE</span><span class="p">)</span>
+</span><span id="walk_in_scope-765"><a href="#walk_in_scope-765"><span class="linenos">765</span></a>            <span class="ow">or</span> <span class="p">(</span>
+</span><span id="walk_in_scope-766"><a href="#walk_in_scope-766"><span class="linenos">766</span></a>                <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">)</span>
+</span><span id="walk_in_scope-767"><a href="#walk_in_scope-767"><span class="linenos">767</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">From</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Join</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">))</span>
+</span><span id="walk_in_scope-768"><a href="#walk_in_scope-768"><span class="linenos">768</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+</span><span id="walk_in_scope-769"><a href="#walk_in_scope-769"><span class="linenos">769</span></a>            <span class="p">)</span>
+</span><span id="walk_in_scope-770"><a href="#walk_in_scope-770"><span class="linenos">770</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)</span>
+</span><span id="walk_in_scope-771"><a href="#walk_in_scope-771"><span class="linenos">771</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">)</span>
+</span><span id="walk_in_scope-772"><a href="#walk_in_scope-772"><span class="linenos">772</span></a>        <span class="p">):</span>
+</span><span id="walk_in_scope-773"><a href="#walk_in_scope-773"><span class="linenos">773</span></a>            <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="walk_in_scope-774"><a href="#walk_in_scope-774"><span class="linenos">774</span></a>
+</span><span id="walk_in_scope-775"><a href="#walk_in_scope-775"><span class="linenos">775</span></a>            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Subquery</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)):</span>
+</span><span id="walk_in_scope-776"><a href="#walk_in_scope-776"><span class="linenos">776</span></a>                <span class="c1"># The following args are not actually in the inner scope, so we should visit them</span>
+</span><span id="walk_in_scope-777"><a href="#walk_in_scope-777"><span class="linenos">777</span></a>                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;joins&quot;</span><span class="p">,</span> <span class="s2">&quot;laterals&quot;</span><span class="p">,</span> <span class="s2">&quot;pivots&quot;</span><span class="p">):</span>
+</span><span id="walk_in_scope-778"><a href="#walk_in_scope-778"><span class="linenos">778</span></a>                    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]:</span>
+</span><span id="walk_in_scope-779"><a href="#walk_in_scope-779"><span class="linenos">779</span></a>                        <span class="k">yield from</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -2701,6 +2709,8 @@ nodes that start child scopes.</p>
 <li><strong>expression (exp.Expression):</strong> </li>
 <li><strong>bfs (bool):</strong>  if set to True the BFS traversal order will be applied,
 otherwise the DFS traversal will be used instead.</li>
+<li><strong>prune ((node, parent, arg_key) -> bool):</strong>  callable that returns True if
+the generator should stop traversing this branch of the tree.</li>
 </ul>
 
 <h6 id="yields">Yields:</h6>
@@ -2723,24 +2733,24 @@ otherwise the DFS traversal will be used instead.</li>
 
     </div>
     <a class="headerlink" href="#find_all_in_scope"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="find_all_in_scope-778"><a href="#find_all_in_scope-778"><span class="linenos">778</span></a><span class="k">def</span> <span class="nf">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="find_all_in_scope-779"><a href="#find_all_in_scope-779"><span class="linenos">779</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="find_all_in_scope-780"><a href="#find_all_in_scope-780"><span class="linenos">780</span></a><span class="sd">    Returns a generator object which visits all nodes in this scope and only yields those that</span>
-</span><span id="find_all_in_scope-781"><a href="#find_all_in_scope-781"><span class="linenos">781</span></a><span class="sd">    match at least one of the specified expression types.</span>
-</span><span id="find_all_in_scope-782"><a href="#find_all_in_scope-782"><span class="linenos">782</span></a>
-</span><span id="find_all_in_scope-783"><a href="#find_all_in_scope-783"><span class="linenos">783</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
-</span><span id="find_all_in_scope-784"><a href="#find_all_in_scope-784"><span class="linenos">784</span></a>
-</span><span id="find_all_in_scope-785"><a href="#find_all_in_scope-785"><span class="linenos">785</span></a><span class="sd">    Args:</span>
-</span><span id="find_all_in_scope-786"><a href="#find_all_in_scope-786"><span class="linenos">786</span></a><span class="sd">        expression (exp.Expression):</span>
-</span><span id="find_all_in_scope-787"><a href="#find_all_in_scope-787"><span class="linenos">787</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
-</span><span id="find_all_in_scope-788"><a href="#find_all_in_scope-788"><span class="linenos">788</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
-</span><span id="find_all_in_scope-789"><a href="#find_all_in_scope-789"><span class="linenos">789</span></a>
-</span><span id="find_all_in_scope-790"><a href="#find_all_in_scope-790"><span class="linenos">790</span></a><span class="sd">    Yields:</span>
-</span><span id="find_all_in_scope-791"><a href="#find_all_in_scope-791"><span class="linenos">791</span></a><span class="sd">        exp.Expression: nodes</span>
-</span><span id="find_all_in_scope-792"><a href="#find_all_in_scope-792"><span class="linenos">792</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="find_all_in_scope-793"><a href="#find_all_in_scope-793"><span class="linenos">793</span></a>    <span class="k">for</span> <span class="n">expression</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">):</span>
-</span><span id="find_all_in_scope-794"><a href="#find_all_in_scope-794"><span class="linenos">794</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ensure_collection</span><span class="p">(</span><span class="n">expression_types</span><span class="p">))):</span>
-</span><span id="find_all_in_scope-795"><a href="#find_all_in_scope-795"><span class="linenos">795</span></a>            <span class="k">yield</span> <span class="n">expression</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="find_all_in_scope-782"><a href="#find_all_in_scope-782"><span class="linenos">782</span></a><span class="k">def</span> <span class="nf">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="find_all_in_scope-783"><a href="#find_all_in_scope-783"><span class="linenos">783</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="find_all_in_scope-784"><a href="#find_all_in_scope-784"><span class="linenos">784</span></a><span class="sd">    Returns a generator object which visits all nodes in this scope and only yields those that</span>
+</span><span id="find_all_in_scope-785"><a href="#find_all_in_scope-785"><span class="linenos">785</span></a><span class="sd">    match at least one of the specified expression types.</span>
+</span><span id="find_all_in_scope-786"><a href="#find_all_in_scope-786"><span class="linenos">786</span></a>
+</span><span id="find_all_in_scope-787"><a href="#find_all_in_scope-787"><span class="linenos">787</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
+</span><span id="find_all_in_scope-788"><a href="#find_all_in_scope-788"><span class="linenos">788</span></a>
+</span><span id="find_all_in_scope-789"><a href="#find_all_in_scope-789"><span class="linenos">789</span></a><span class="sd">    Args:</span>
+</span><span id="find_all_in_scope-790"><a href="#find_all_in_scope-790"><span class="linenos">790</span></a><span class="sd">        expression (exp.Expression):</span>
+</span><span id="find_all_in_scope-791"><a href="#find_all_in_scope-791"><span class="linenos">791</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
+</span><span id="find_all_in_scope-792"><a href="#find_all_in_scope-792"><span class="linenos">792</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
+</span><span id="find_all_in_scope-793"><a href="#find_all_in_scope-793"><span class="linenos">793</span></a>
+</span><span id="find_all_in_scope-794"><a href="#find_all_in_scope-794"><span class="linenos">794</span></a><span class="sd">    Yields:</span>
+</span><span id="find_all_in_scope-795"><a href="#find_all_in_scope-795"><span class="linenos">795</span></a><span class="sd">        exp.Expression: nodes</span>
+</span><span id="find_all_in_scope-796"><a href="#find_all_in_scope-796"><span class="linenos">796</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="find_all_in_scope-797"><a href="#find_all_in_scope-797"><span class="linenos">797</span></a>    <span class="k">for</span> <span class="n">expression</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">walk_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">):</span>
+</span><span id="find_all_in_scope-798"><a href="#find_all_in_scope-798"><span class="linenos">798</span></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ensure_collection</span><span class="p">(</span><span class="n">expression_types</span><span class="p">))):</span>
+</span><span id="find_all_in_scope-799"><a href="#find_all_in_scope-799"><span class="linenos">799</span></a>            <span class="k">yield</span> <span class="n">expression</span>
 </span></pre></div>
 
 
@@ -2777,22 +2787,22 @@ match at least one of the specified expression types.</p>
 
     </div>
     <a class="headerlink" href="#find_in_scope"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="find_in_scope-798"><a href="#find_in_scope-798"><span class="linenos">798</span></a><span class="k">def</span> <span class="nf">find_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-</span><span id="find_in_scope-799"><a href="#find_in_scope-799"><span class="linenos">799</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="find_in_scope-800"><a href="#find_in_scope-800"><span class="linenos">800</span></a><span class="sd">    Returns the first node in this scope which matches at least one of the specified types.</span>
-</span><span id="find_in_scope-801"><a href="#find_in_scope-801"><span class="linenos">801</span></a>
-</span><span id="find_in_scope-802"><a href="#find_in_scope-802"><span class="linenos">802</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
-</span><span id="find_in_scope-803"><a href="#find_in_scope-803"><span class="linenos">803</span></a>
-</span><span id="find_in_scope-804"><a href="#find_in_scope-804"><span class="linenos">804</span></a><span class="sd">    Args:</span>
-</span><span id="find_in_scope-805"><a href="#find_in_scope-805"><span class="linenos">805</span></a><span class="sd">        expression (exp.Expression):</span>
-</span><span id="find_in_scope-806"><a href="#find_in_scope-806"><span class="linenos">806</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
-</span><span id="find_in_scope-807"><a href="#find_in_scope-807"><span class="linenos">807</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
-</span><span id="find_in_scope-808"><a href="#find_in_scope-808"><span class="linenos">808</span></a>
-</span><span id="find_in_scope-809"><a href="#find_in_scope-809"><span class="linenos">809</span></a><span class="sd">    Returns:</span>
-</span><span id="find_in_scope-810"><a href="#find_in_scope-810"><span class="linenos">810</span></a><span class="sd">        exp.Expression: the node which matches the criteria or None if no node matching</span>
-</span><span id="find_in_scope-811"><a href="#find_in_scope-811"><span class="linenos">811</span></a><span class="sd">        the criteria was found.</span>
-</span><span id="find_in_scope-812"><a href="#find_in_scope-812"><span class="linenos">812</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="find_in_scope-813"><a href="#find_in_scope-813"><span class="linenos">813</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="find_in_scope-802"><a href="#find_in_scope-802"><span class="linenos">802</span></a><span class="k">def</span> <span class="nf">find_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+</span><span id="find_in_scope-803"><a href="#find_in_scope-803"><span class="linenos">803</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="find_in_scope-804"><a href="#find_in_scope-804"><span class="linenos">804</span></a><span class="sd">    Returns the first node in this scope which matches at least one of the specified types.</span>
+</span><span id="find_in_scope-805"><a href="#find_in_scope-805"><span class="linenos">805</span></a>
+</span><span id="find_in_scope-806"><a href="#find_in_scope-806"><span class="linenos">806</span></a><span class="sd">    This does NOT traverse into subscopes.</span>
+</span><span id="find_in_scope-807"><a href="#find_in_scope-807"><span class="linenos">807</span></a>
+</span><span id="find_in_scope-808"><a href="#find_in_scope-808"><span class="linenos">808</span></a><span class="sd">    Args:</span>
+</span><span id="find_in_scope-809"><a href="#find_in_scope-809"><span class="linenos">809</span></a><span class="sd">        expression (exp.Expression):</span>
+</span><span id="find_in_scope-810"><a href="#find_in_scope-810"><span class="linenos">810</span></a><span class="sd">        expression_types (tuple[type]|type): the expression type(s) to match.</span>
+</span><span id="find_in_scope-811"><a href="#find_in_scope-811"><span class="linenos">811</span></a><span class="sd">        bfs (bool): True to use breadth-first search, False to use depth-first.</span>
+</span><span id="find_in_scope-812"><a href="#find_in_scope-812"><span class="linenos">812</span></a>
+</span><span id="find_in_scope-813"><a href="#find_in_scope-813"><span class="linenos">813</span></a><span class="sd">    Returns:</span>
+</span><span id="find_in_scope-814"><a href="#find_in_scope-814"><span class="linenos">814</span></a><span class="sd">        exp.Expression: the node which matches the criteria or None if no node matching</span>
+</span><span id="find_in_scope-815"><a href="#find_in_scope-815"><span class="linenos">815</span></a><span class="sd">        the criteria was found.</span>
+</span><span id="find_in_scope-816"><a href="#find_in_scope-816"><span class="linenos">816</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="find_in_scope-817"><a href="#find_in_scope-817"><span class="linenos">817</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">find_all_in_scope</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">expression_types</span><span class="p">,</span> <span class="n">bfs</span><span class="o">=</span><span class="n">bfs</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
 </span></pre></div>
 
 

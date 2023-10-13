@@ -1,6 +1,23 @@
 Changelog
 =========
 
+## [v18.13.0] - 2023-10-13
+### :sparkles: New Features
+- [`e2e960a`](https://github.com/tobymao/sqlglot/commit/e2e960acfdd02cbb22689f1f0f5f00d50e4a537e) - **duckdb**: add parsing support for timestamp types with unit suffixes *(PR [#2400](https://github.com/tobymao/sqlglot/pull/2400) by [@cpcloud](https://github.com/cpcloud))*
+- [`f024ac5`](https://github.com/tobymao/sqlglot/commit/f024ac5c7321bfdc605dc8bae72d96f1349bd485) - redshift approximate count distinct *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`d7021d1`](https://github.com/tobymao/sqlglot/commit/d7021d1609b44b9a9fec5d09b5cb862162a3280b) - **optimizer**: don't propagate equality constraints from IF/CASE outwards *(PR [#2396](https://github.com/tobymao/sqlglot/pull/2396) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`ed45fad`](https://github.com/tobymao/sqlglot/commit/ed45fadedb90e3e58e67e47f19091ff147a63ff6) - **teradata**: FOR in LOCKING ROW FOR ACCESS is optional *(PR [#2402](https://github.com/tobymao/sqlglot/pull/2402) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2401](undefined) opened by [@hsheth2](https://github.com/hsheth2)*
+
+### :recycle: Refactors
+- [`d83f242`](https://github.com/tobymao/sqlglot/commit/d83f242420e4feaa950244322806678ad868cedf) - split out when matched *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`85a16b1`](https://github.com/tobymao/sqlglot/commit/85a16b16ab7ead731ab255fdb8efb13558d0b232) - remove generic schema type *(PR [#2399](https://github.com/tobymao/sqlglot/pull/2399) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v18.12.0] - 2023-10-10
 ### :boom: BREAKING CHANGES
 - due to [`28308da`](https://github.com/tobymao/sqlglot/commit/28308dae5ab7a0aff3ca2afeff88fa4554babba3) - support spark trycast, treat databricks as strict_cast closes [#2389](https://github.com/tobymao/sqlglot/pull/2389) *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -1700,3 +1717,4 @@ Changelog
 [v18.11.5]: https://github.com/tobymao/sqlglot/compare/v18.11.4...v18.11.5
 [v18.11.6]: https://github.com/tobymao/sqlglot/compare/v18.11.5...v18.11.6
 [v18.12.0]: https://github.com/tobymao/sqlglot/compare/v18.11.6...v18.12.0
+[v18.13.0]: https://github.com/tobymao/sqlglot/compare/v18.12.0...v18.13.0

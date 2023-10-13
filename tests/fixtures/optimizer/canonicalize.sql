@@ -16,7 +16,6 @@ SELECT CAST('2022-01-01' AS DATE) + INTERVAL '1' day AS "_col_0";
 --------------------------------------
 -- Ensure boolean predicates
 --------------------------------------
-
 SELECT a FROM x WHERE b;
 SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE "x"."b" <> 0;
 

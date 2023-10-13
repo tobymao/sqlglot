@@ -935,6 +935,9 @@ x;
 IF(FALSE, x, y);
 y;
 
+IF(FALSE, x);
+NULL;
+
 IF(NULL, x, y);
 CASE WHEN NULL THEN x ELSE y END;
 

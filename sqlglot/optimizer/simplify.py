@@ -711,8 +711,8 @@ def simplify_conditionals(expression):
     elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
         if always_true(expression.this):
             return expression.args["true"]
-        if is_false(expression.this) and expression.args.get("false"):
-            return expression.args["false"]
+        if is_false(expression.this):
+            return expression.args.get("false") or exp.null()
 
     return expression
 

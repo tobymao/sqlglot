@@ -5025,7 +5025,17 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.ON)
         on = self._parse_conjunction()
 
+        return self.expression(
+            exp.Merge,
+            this=target,
+            using=using,
+            on=on,
+            expressions=self._parse_when_matched(),
+        )
+
+    def _parse_when_matched(self) -> t.List[exp.When]:
         whens = []
+
         while self._match(TokenType.WHEN):
             matched = not self._match(TokenType.NOT)
             self._match_text_seq("MATCHED")
@@ -5072,14 +5082,7 @@ class Parser(metaclass=_Parser):
                     then=then,
                 )
             )
-
-        return self.expression(
-            exp.Merge,
-            this=target,
-            using=using,
-            on=on,
-            expressions=whens,
-        )
+        return whens
 
     def _parse_show(self) -> t.Optional[exp.Expression]:
         parser = self._find_parser(self.SHOW_PARSERS, self.SHOW_TRIE)

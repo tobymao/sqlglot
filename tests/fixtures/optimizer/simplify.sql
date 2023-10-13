@@ -916,8 +916,50 @@ x = 1;
 x = 1 AND IF(x = 5, FALSE, TRUE);
 x = 1;
 
+-- Simplified to x = 1 if the canonicalize rule runs first
+x = 1 AND CASE x WHEN 5 THEN FALSE ELSE TRUE END;
+x = 1 AND CASE 1 WHEN 5 THEN FALSE ELSE TRUE END;
+
 x = y AND CASE WHEN x = 5 THEN FALSE ELSE TRUE END;
 x = y AND CASE WHEN x = 5 THEN FALSE ELSE TRUE END;
 
 x = 1 AND CASE WHEN y = 5 THEN x = z END;
 x = 1 AND CASE WHEN y = 5 THEN 1 = z END;
+
+--------------------------------------
+-- Simplify Conditionals
+--------------------------------------
+IF(TRUE, x, y);
+x;
+
+IF(FALSE, x, y);
+y;
+
+IF(NULL, x, y);
+CASE WHEN NULL THEN x ELSE y END;
+
+IF(cond, x, y);
+CASE WHEN cond THEN x ELSE y END;
+
+CASE WHEN TRUE THEN x ELSE y END;
+x;
+
+CASE WHEN FALSE THEN x ELSE y END;
+y;
+
+CASE WHEN FALSE THEN x WHEN FALSE THEN y WHEN TRUE THEN z END;
+z;
+
+-- Simplified to w if the canonicalize rule runs first
+CASE 4 WHEN 1 THEN x WHEN 2 THEN y WHEN 3 THEN z ELSE w END;
+CASE 4 WHEN 1 THEN x WHEN 2 THEN y WHEN 3 THEN z ELSE w END;
+
+CASE WHEN value = 1 THEN x ELSE y END;
+CASE WHEN value = 1 THEN x ELSE y END;
+
+CASE WHEN FALSE THEN x END;
+NULL;
+
+-- This is simplified to NULL if the canonicalize rule runs first
+CASE 1 WHEN 1 + 1 THEN x END;
+CASE 1 WHEN 2 THEN x END;

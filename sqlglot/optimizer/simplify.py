@@ -699,15 +699,16 @@ def simplify_concat(expression):
 def simplify_conditionals(expression):
     """Simplifies expressions like IF, CASE if their condition is statically known."""
     if isinstance(expression, exp.Case):
+        this = expression.this
         for case in expression.args["ifs"]:
-            cond = case.this
+            cond = this.eq(case.this) if this else case.this
             if always_true(cond):
                 return case.args["true"]
             elif is_false(cond):
                 case.pop()
                 if not expression.args["ifs"]:
-                    return expression.args.get("default")
-    elif isinstance(expression, exp.If):
+                    return expression.args.get("default") or exp.null()
+    elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
         if always_true(expression.this):
             return expression.args["true"]
         if is_false(expression.this) and expression.args.get("false"):

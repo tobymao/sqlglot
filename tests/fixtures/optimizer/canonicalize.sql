@@ -16,7 +16,6 @@ SELECT CAST('2022-01-01' AS DATE) + INTERVAL '1' day AS "_col_0";
 --------------------------------------
 -- Ensure boolean predicates
 --------------------------------------
-
 SELECT a FROM x WHERE b;
 SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE "x"."b" <> 0;
 
@@ -52,3 +51,21 @@ DATE_ADD(CAST("x" AS DATE), 1, 'YEAR');
 
 DATE_ADD('2023-01-01', 1, 'YEAR');
 DATE_ADD(CAST('2023-01-01' AS DATE), 1, 'YEAR');
+
+--------------------------------------
+-- Expand case conditions
+--------------------------------------
+CASE WHEN cond THEN x ELSE y END;
+CASE WHEN "cond" THEN "x" ELSE "y" END;
+
+CASE WHEN cond THEN x END;
+CASE WHEN "cond" THEN "x" END;
+
+CASE x WHEN y THEN z ELSE w END;
+CASE WHEN "x" = "y" THEN "z" ELSE "w" END;
+
+CASE x WHEN y THEN z END;
+CASE WHEN "x" = "y" THEN "z" END;
+
+CASE x1 + x2 WHEN x3 THEN x4 WHEN x5 + x6 THEN x7 ELSE x8 END;
+CASE WHEN ("x1" + "x2") = "x3" THEN "x4" WHEN ("x1" + "x2") = ("x5" + "x6") THEN "x7" ELSE "x8" END;

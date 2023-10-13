@@ -45,7 +45,10 @@ def normalize(expression, **kwargs):
     return optimizer.simplify.simplify(expression)
 
 
-def simplify(expression, **kwargs):
+def simplify(expression, canonicalize: bool = False, **kwargs):
+    if canonicalize:
+        expression = optimizer.canonicalize.canonicalize(expression)
+
     return optimizer.simplify.simplify(expression, constant_propagation=True, **kwargs)
 
 
@@ -294,6 +297,21 @@ class TestOptimizer(unittest.TestCase):
 
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_concat.sql(dialect="presto"))
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_safe_concat.sql())
+
+        case = simplify(parse_one("CASE 1 WHEN 1 + 1 THEN x END"), canonicalize=True)
+        self.assertEqual(case.sql(), "NULL")
+
+        case = simplify(
+            parse_one("CASE 4 WHEN 1 THEN x WHEN 2 THEN y WHEN 3 THEN z ELSE w END"),
+            canonicalize=True,
+        )
+        self.assertEqual(case.sql(), "w")
+
+        case = simplify(
+            parse_one("x = 1 AND CASE x WHEN 5 THEN FALSE ELSE TRUE END"),
+            canonicalize=True,
+        )
+        self.assertEqual(case.sql(), "x = 1")
 
     def test_unnest_subqueries(self):
         self.check_file(

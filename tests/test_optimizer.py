@@ -45,10 +45,7 @@ def normalize(expression, **kwargs):
     return optimizer.simplify.simplify(expression)
 
 
-def simplify(expression, canonicalize: bool = False, **kwargs):
-    if canonicalize:
-        expression = optimizer.canonicalize.canonicalize(expression)
-
+def simplify(expression, **kwargs):
     return optimizer.simplify.simplify(expression, constant_propagation=True, **kwargs)
 
 

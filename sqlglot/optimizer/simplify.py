@@ -701,7 +701,10 @@ def simplify_conditionals(expression):
     if isinstance(expression, exp.Case):
         this = expression.this
         for case in expression.args["ifs"]:
-            cond = this.eq(case.this) if this else case.this
+            cond = case.this
+            if this:
+                # Convert CASE x WHEN matching_value ... to CASE WHEN x = matching_value ...
+                cond = cond.replace(this.pop().eq(cond))
 
             if always_true(cond):
                 return case.args["true"]

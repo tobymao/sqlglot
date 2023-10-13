@@ -22,7 +22,6 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
     expression = remove_redundant_casts(expression)
     expression = ensure_bool_predicates(expression)
     expression = remove_ascending_order(expression)
-    expression = expand_case_conditions(expression)
 
     return expression
 
@@ -70,7 +69,11 @@ def ensure_bool_predicates(expression: exp.Expression) -> exp.Expression:
         _replace_int_predicate(expression.left)
         _replace_int_predicate(expression.right)
 
-    elif isinstance(expression, (exp.Where, exp.Having, exp.If)):
+    elif isinstance(expression, (exp.Where, exp.Having)) or (
+        # We can't replace num in CASE x WHEN num ..., because it's not the full predicate
+        isinstance(expression, exp.If)
+        and not (isinstance(expression.parent, exp.Case) and expression.parent.this)
+    ):
         _replace_int_predicate(expression.this)
 
     return expression
@@ -80,16 +83,6 @@ def remove_ascending_order(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Ordered) and expression.args.get("desc") is False:
         # Convert ORDER BY a ASC to ORDER BY a
         expression.set("desc", None)
-
-    return expression
-
-
-def expand_case_conditions(expression: exp.Expression) -> exp.Expression:
-    if isinstance(expression, exp.Case) and expression.this:
-        this = expression.this.pop()
-        for cond in expression.args["ifs"]:
-            matching_expr = cond.this
-            matching_expr.replace(this.eq(matching_expr))
 
     return expression
 

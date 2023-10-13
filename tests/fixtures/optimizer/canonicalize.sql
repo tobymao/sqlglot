@@ -51,21 +51,3 @@ DATE_ADD(CAST("x" AS DATE), 1, 'YEAR');
 
 DATE_ADD('2023-01-01', 1, 'YEAR');
 DATE_ADD(CAST('2023-01-01' AS DATE), 1, 'YEAR');
-
---------------------------------------
--- Expand case conditions
---------------------------------------
-CASE WHEN cond THEN x ELSE y END;
-CASE WHEN "cond" THEN "x" ELSE "y" END;
-
-CASE WHEN cond THEN x END;
-CASE WHEN "cond" THEN "x" END;
-
-CASE x WHEN y THEN z ELSE w END;
-CASE WHEN "x" = "y" THEN "z" ELSE "w" END;
-
-CASE x WHEN y THEN z END;
-CASE WHEN "x" = "y" THEN "z" END;
-
-CASE x1 + x2 WHEN x3 THEN x4 WHEN x5 + x6 THEN x7 ELSE x8 END;
-CASE WHEN ("x1" + "x2") = "x3" THEN "x4" WHEN ("x1" + "x2") = ("x5" + "x6") THEN "x7" ELSE "x8" END;

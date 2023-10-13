@@ -916,9 +916,8 @@ x = 1;
 x = 1 AND IF(x = 5, FALSE, TRUE);
 x = 1;
 
--- Simplified to x = 1 if the canonicalize rule runs first
 x = 1 AND CASE x WHEN 5 THEN FALSE ELSE TRUE END;
-x = 1 AND CASE 1 WHEN 5 THEN FALSE ELSE TRUE END;
+x = 1;
 
 x = y AND CASE WHEN x = 5 THEN FALSE ELSE TRUE END;
 x = y AND CASE WHEN x = 5 THEN FALSE ELSE TRUE END;
@@ -953,9 +952,8 @@ y;
 CASE WHEN FALSE THEN x WHEN FALSE THEN y WHEN TRUE THEN z END;
 z;
 
--- Simplified to w if the canonicalize rule runs first
 CASE 4 WHEN 1 THEN x WHEN 2 THEN y WHEN 3 THEN z ELSE w END;
-CASE 4 WHEN 1 THEN x WHEN 2 THEN y WHEN 3 THEN z ELSE w END;
+w;
 
 CASE WHEN value = 1 THEN x ELSE y END;
 CASE WHEN value = 1 THEN x ELSE y END;
@@ -963,6 +961,20 @@ CASE WHEN value = 1 THEN x ELSE y END;
 CASE WHEN FALSE THEN x END;
 NULL;
 
--- This is simplified to NULL if the canonicalize rule runs first
 CASE 1 WHEN 1 + 1 THEN x END;
-CASE 1 WHEN 2 THEN x END;
+NULL;
+
+CASE WHEN cond THEN x ELSE y END;
+CASE WHEN cond THEN x ELSE y END;
+
+CASE WHEN cond THEN x END;
+CASE WHEN cond THEN x END;
+
+CASE x WHEN y THEN z ELSE w END;
+CASE WHEN x = y THEN z ELSE w END;
+
+CASE x WHEN y THEN z END;
+CASE WHEN x = y THEN z END;
+
+CASE x1 + x2 WHEN x3 THEN x4 WHEN x5 + x6 THEN x7 ELSE x8 END;
+CASE WHEN (x1 + x2) = x3 THEN x4 WHEN (x1 + x2) = (x5 + x6) THEN x7 ELSE x8 END;

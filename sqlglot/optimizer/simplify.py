@@ -70,6 +70,7 @@ def simplify(expression, constant_propagation=False):
         node = uniq_sort(node, generate, root)
         node = absorb_and_eliminate(node, root)
         node = simplify_concat(node)
+        node = simplify_conditionals(node)
 
         if constant_propagation:
             node = propagate_constants(node, root)
@@ -695,6 +696,32 @@ def simplify_concat(expression):
     return concat_type(expressions=new_args)
 
 
+def simplify_conditionals(expression):
+    """Simplifies expressions like IF, CASE if their condition is statically known."""
+    if isinstance(expression, exp.Case):
+        this = expression.this
+        for case in expression.args["ifs"]:
+            cond = case.this
+            if this:
+                # Convert CASE x WHEN matching_value ... to CASE WHEN x = matching_value ...
+                cond = cond.replace(this.pop().eq(cond))
+
+            if always_true(cond):
+                return case.args["true"]
+
+            if always_false(cond):
+                case.pop()
+                if not expression.args["ifs"]:
+                    return expression.args.get("default") or exp.null()
+    elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
+        if always_true(expression.this):
+            return expression.args["true"]
+        if always_false(expression.this):
+            return expression.args.get("false") or exp.null()
+
+    return expression
+
+
 DateRange = t.Tuple[datetime.date, datetime.date]
 
 
@@ -850,6 +877,10 @@ def always_true(expression):
     return (isinstance(expression, exp.Boolean) and expression.this) or isinstance(
         expression, exp.Literal
     )
+
+
+def always_false(expression):
+    return is_false(expression) or is_null(expression)
 
 
 def is_complement(a, b):

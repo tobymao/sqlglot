@@ -69,7 +69,11 @@ def ensure_bool_predicates(expression: exp.Expression) -> exp.Expression:
         _replace_int_predicate(expression.left)
         _replace_int_predicate(expression.right)
 
-    elif isinstance(expression, (exp.Where, exp.Having, exp.If)):
+    elif isinstance(expression, (exp.Where, exp.Having)) or (
+        # We can't replace num in CASE x WHEN num ..., because it's not the full predicate
+        isinstance(expression, exp.If)
+        and not (isinstance(expression.parent, exp.Case) and expression.parent.this)
+    ):
         _replace_int_predicate(expression.this)
 
     return expression

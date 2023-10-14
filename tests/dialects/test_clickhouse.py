@@ -86,6 +86,12 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "match('thomas', '.*thomas.*')",
+            read={
+                "postgres": "'thomas' ~* '.*thomas.*'",
+            },
+        )
+        self.validate_all(
             "SELECT '\\0'",
             read={
                 "mysql": "SELECT '\0'",

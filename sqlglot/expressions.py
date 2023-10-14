@@ -4877,7 +4877,7 @@ class RegexpLike(Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 
-class RegexpILike(Func):
+class RegexpILike(Binary, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 

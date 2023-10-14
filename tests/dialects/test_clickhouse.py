@@ -6,6 +6,8 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_all("has([1, 2, 3])", read={"postgres": "any(ARRAY[1, 2, 3])"})
+
         string_types = [
             "BLOB",
             "LONGBLOB",

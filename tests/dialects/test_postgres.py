@@ -732,3 +732,8 @@ class TestPostgres(Validator):
         self.validate_all(
             "VAR_POP(x)", read={"": "VARIANCE_POP(x)"}, write={"postgres": "VAR_POP(x)"}
         )
+
+    def test_regexp_binary(self):
+        """See https://github.com/tobymao/sqlglot/pull/2404 for details."""
+        self.assertIsInstance(parse_one("'thomas' ~ '.*thomas.*'", read="postgres"), exp.Binary)
+        self.assertIsInstance(parse_one("'thomas' ~* '.*thomas.*'", read="postgres"), exp.Binary)

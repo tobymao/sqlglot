@@ -6,6 +6,9 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity(
+            "CREATE OR REPLACE VIEW v1 AS SELECT id, AVG(average_metric1) AS m1, AVG(average_metric2) AS m2 FROM t GROUP BY id WITH NO SCHEMA BINDING"
+        )
         self.validate_all(
             "SELECT APPROXIMATE COUNT(DISTINCT y)",
             read={

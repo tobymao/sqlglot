@@ -2952,6 +2952,7 @@ class Parser(metaclass=_Parser):
             cube = None
             totals = None
 
+            index = self._index
             with_ = self._match(TokenType.WITH)
             if self._match(TokenType.ROLLUP):
                 rollup = with_ or self._parse_wrapped_csv(self._parse_column)
@@ -2966,6 +2967,8 @@ class Parser(metaclass=_Parser):
                 elements["totals"] = True  # type: ignore
 
             if not (grouping_sets or rollup or cube or totals):
+                if with_:
+                    self._retreat(index)
                 break
 
         return self.expression(exp.Group, **elements)  # type: ignore

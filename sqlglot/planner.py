@@ -425,8 +425,8 @@ class SetOperation(Step):
         cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
     ) -> Step:
         assert isinstance(expression, exp.Union)
-        left = Step.from_expression(expression.left, ctes)
-        right = Step.from_expression(expression.right, ctes)
+        left = Step.from_expression(expression.left, ctes)  # type: ignore[arg-type]
+        right = Step.from_expression(expression.right, ctes)  # type: ignore[arg-type]
         step = cls(
             op=expression.__class__,
             left=left.name,

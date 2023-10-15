@@ -371,7 +371,6 @@ class ClickHouse(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Select: transforms.preprocess([transforms.eliminate_qualify]),
-            exp.Any: lambda self, e: self.func("has", e.this.unnest()),
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
             exp.Array: inline_array_sql,

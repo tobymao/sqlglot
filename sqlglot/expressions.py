@@ -2607,11 +2607,11 @@ class Union(Subqueryable):
         return self.this.unnest().selects
 
     @property
-    def left(self) -> t.Optional[Expression]:
+    def left(self) -> Expression:
         return self.this
 
     @property
-    def right(self) -> t.Optional[Expression]:
+    def right(self) -> Expression:
         return self.expression
 
 
@@ -3805,11 +3805,11 @@ class Binary(Condition):
 
     @property
     def left(self) -> Expression:
-        return t.cast(Expression, self.this)
+        return self.this
 
     @property
     def right(self) -> Expression:
-        return t.cast(Expression, self.expression)
+        return self.expression
 
 
 class Add(Binary):

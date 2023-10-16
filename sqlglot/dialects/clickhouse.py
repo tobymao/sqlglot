@@ -388,7 +388,6 @@ class ClickHouse(Dialect):
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
             exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
-            exp.RegexpILike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
             exp.StartsWith: rename_func("startsWith"),
             exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
@@ -418,6 +417,11 @@ class ClickHouse(Dialect):
             "FUNCTION",
             "NAMED COLLECTION",
         }
+
+        def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
+            # Manually add a flag to make the search case-insensitive
+            regex = self.func("CONCAT", "'(?i)'", expression.expression)
+            return f"match({self.format_args(expression.this, regex)})"
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             # String is the standard ClickHouse type, every other variant is just an alias.

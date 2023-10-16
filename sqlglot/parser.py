@@ -3173,7 +3173,13 @@ class Parser(metaclass=_Parser):
         return self._parse_tokens(self._parse_equality, self.CONJUNCTION)
 
     def _parse_equality(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_comparison, self.EQUALITY)
+        expression = self._parse_tokens(self._parse_comparison, self.EQUALITY)
+        if isinstance(expression, (exp.EQ, exp.NEQ)) and (
+            isinstance(expression.left, exp.Null) or isinstance(expression.right, exp.Null)
+        ):
+            expression = exp.Null()
+
+        return expression
 
     def _parse_comparison(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_range, self.COMPARISON)

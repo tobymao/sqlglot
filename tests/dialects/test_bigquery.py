@@ -139,6 +139,13 @@ class TestBigQuery(Validator):
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_all(
+            "NULL",
+            read={
+                "duckdb": "NULL = a",
+                "postgres": "a = NULL",
+            },
+        )
+        self.validate_all(
             "SELECT '\\n'",
             read={
                 "bigquery": "SELECT '''\n'''",

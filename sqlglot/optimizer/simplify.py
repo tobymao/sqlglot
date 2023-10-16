@@ -478,8 +478,7 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
             return expression
 
         if l.__class__ in INVERSE_DATE_OPS:
-            # could be any of the INVERSE_DATE_OPS keys
-            l = t.cast(exp.IntervalOp, l.expression)
+            l = t.cast(exp.IntervalOp, l)
             a = l.this
             b = l.interval()
         else:

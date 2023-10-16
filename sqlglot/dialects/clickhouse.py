@@ -418,6 +418,25 @@ class ClickHouse(Dialect):
             "NAMED COLLECTION",
         }
 
+        def _any_to_has(
+            self, expression: exp.EQ | exp.NEQ, default: t.Callable[[t.Any], str]
+        ) -> str:
+            if isinstance(expression.left, exp.Any):
+                arr = expression.left
+                this = expression.right
+            elif isinstance(expression.right, exp.Any):
+                arr = expression.right
+                this = expression.left
+            else:
+                return default(expression)
+            return self.func("has", arr.this.unnest(), this)
+
+        def eq_sql(self, expression: exp.EQ) -> str:
+            return self._any_to_has(expression, super().eq_sql)
+
+        def neq_sql(self, expression: exp.NEQ) -> str:
+            return f"NOT {self._any_to_has(expression, super().neq_sql)}"
+
         def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
             # Manually add a flag to make the search case-insensitive
             regex = self.func("CONCAT", "'(?i)'", expression.expression)

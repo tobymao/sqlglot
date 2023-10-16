@@ -120,14 +120,14 @@ class Expression(metaclass=_Expression):
         return hash((self.__class__, self.hashable_args))
 
     @property
-    def this(self):
+    def this(self) -> t.Any:
         """
         Retrieves the argument with key "this".
         """
         return self.args.get("this")
 
     @property
-    def expression(self):
+    def expression(self) -> t.Any:
         """
         Retrieves the argument with key "expression".
         """
@@ -2607,11 +2607,11 @@ class Union(Subqueryable):
         return self.this.unnest().selects
 
     @property
-    def left(self):
+    def left(self) -> Expression:
         return self.this
 
     @property
-    def right(self):
+    def right(self) -> Expression:
         return self.expression
 
 
@@ -3804,11 +3804,11 @@ class Binary(Condition):
     arg_types = {"this": True, "expression": True}
 
     @property
-    def left(self):
+    def left(self) -> Expression:
         return self.this
 
     @property
-    def right(self):
+    def right(self) -> Expression:
         return self.expression
 
 

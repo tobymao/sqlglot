@@ -632,6 +632,13 @@ class BigQuery(Dialect):
             "within",
         }
 
+        def eq_sql(self, expression: exp.EQ) -> str:
+            # Operands of = cannot be NULL in BigQuery
+            if isinstance(expression.left, exp.Null) or isinstance(expression.right, exp.Null):
+                return "NULL"
+
+            return self.binary(expression, "=")
+
         def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
             parent = expression.parent
 

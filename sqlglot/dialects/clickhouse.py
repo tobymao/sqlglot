@@ -418,6 +418,11 @@ class ClickHouse(Dialect):
             "NAMED COLLECTION",
         }
 
+        def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
+            # Manually add a flag to make the search case-insensitive
+            regex = self.func("CONCAT", "'(?i)'", expression.expression)
+            return f"match({self.format_args(expression.this, regex)})"
+
         def datatype_sql(self, expression: exp.DataType) -> str:
             # String is the standard ClickHouse type, every other variant is just an alias.
             # Additionally, any supplied length parameter will be ignored.

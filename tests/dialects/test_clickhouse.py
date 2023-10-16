@@ -86,6 +86,18 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "SELECT match('ThOmAs', CONCAT('(?i)', 'thomas'))",
+            read={
+                "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
+            },
+        )
+        self.validate_all(
+            "SELECT match('ThOmAs', CONCAT('(?i)', x)) FROM t",
+            read={
+                "postgres": "SELECT 'ThOmAs' ~* x FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT '\\0'",
             read={
                 "mysql": "SELECT '\0'",

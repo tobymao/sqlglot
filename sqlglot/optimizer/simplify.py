@@ -478,9 +478,12 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
             return expression
 
         if l.__class__ in INVERSE_DATE_OPS:
+            # could be any of the INVERSE_DATE_OPS keys
+            l = t.cast(exp.IntervalOp, l.expression)
             a = l.this
             b = l.interval()
         else:
+            l = t.cast(exp.Binary, l)
             a, b = l.left, l.right
 
         if not a_predicate(a) and b_predicate(b):
@@ -813,6 +816,7 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
         else:
             return expression
 
+        l = t.cast(exp.DateTrunc, l)
         unit = l.unit.name.lower()
         date = extract_date(r)
 
@@ -825,6 +829,7 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
         rs = expression.expressions
 
         if rs and all(_is_datetrunc_predicate(l, r) for r in rs):
+            l = t.cast(exp.DateTrunc, l)
             unit = l.unit.name.lower()
 
             ranges = []

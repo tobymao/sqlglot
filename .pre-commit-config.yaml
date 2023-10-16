@@ -25,8 +25,8 @@ repos:
         files: ^(sqlglot/|tests/|setup.py)
       - id: mypy
         name: mypy
-        entry: mypy
+        entry: mypy sqlglot tests
         language: system
         types: [ python ]
         files: ^(sqlglot/|tests/)
-        require_serial: true
+        pass_filenames: false

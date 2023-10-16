@@ -634,10 +634,8 @@ class BigQuery(Dialect):
 
         def eq_sql(self, expression: exp.EQ) -> str:
             # Operands of = cannot be NULL in BigQuery
-            if isinstance(expression.left, exp.Null):
-                return self.sql(expression.right.is_(expression.left))
-            if isinstance(expression.right, exp.Null):
-                return self.sql(expression.left.is_(expression.right))
+            if isinstance(expression.left, exp.Null) or isinstance(expression.right, exp.Null):
+                return "NULL"
 
             return self.binary(expression, "=")
 

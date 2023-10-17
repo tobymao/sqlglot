@@ -23,11 +23,11 @@ def qualify_tables(
     Examples:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT 1 FROM tbl")
-        >>> qualify_tables(expression, db="db").sql()
+        >>> qualify_tables(expression, dialect="", db="db").sql()
         'SELECT 1 FROM db.tbl AS tbl'
         >>>
         >>> expression = sqlglot.parse_one("SELECT 1 FROM (t1 JOIN t2) AS t")
-        >>> qualify_tables(expression).sql()
+        >>> qualify_tables(expression, dialect="").sql()
         'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
 
     Args:

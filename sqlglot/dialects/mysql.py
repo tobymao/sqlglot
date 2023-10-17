@@ -21,7 +21,6 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     parse_date_delta_with_interval,
     rename_func,
-    simplify_literal,
     strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
@@ -689,6 +688,8 @@ class MySQL(Dialect):
 
         LIMIT_FETCH = "LIMIT"
 
+        LIMIT_ONLY_LITERALS = True
+
         # MySQL doesn't support many datatypes in cast.
         # https://dev.mysql.com/doc/refman/8.0/en/cast-functions.html#function_cast
         CAST_MAPPING = {
@@ -711,16 +712,6 @@ class MySQL(Dialect):
             if expression.this in self.UNSIGNED_TYPE_MAPPING:
                 result = f"{result} UNSIGNED"
             return result
-
-        def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
-            # MySQL requires simple literal values for its LIMIT clause.
-            expression = simplify_literal(expression.copy())
-            return super().limit_sql(expression, top=top)
-
-        def offset_sql(self, expression: exp.Offset) -> str:
-            # MySQL requires simple literal values for its OFFSET clause.
-            expression = simplify_literal(expression.copy())
-            return super().offset_sql(expression)
 
         def xor_sql(self, expression: exp.Xor) -> str:
             if expression.expressions:

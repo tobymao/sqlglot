@@ -586,6 +586,8 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT * FROM test LIMIT 1 OFFSET 1",
                 "postgres": "SELECT * FROM test LIMIT 0 + 1 OFFSET 0 + 1",
+                "presto": "SELECT * FROM test OFFSET 1 LIMIT 1",
+                "trino": "SELECT * FROM test OFFSET 1 LIMIT 1",
             },
         )
         self.validate_all(

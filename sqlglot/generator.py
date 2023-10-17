@@ -11,6 +11,9 @@ from sqlglot.helper import apply_index_offset, csv, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
 logger = logging.getLogger("sqlglot")
 
 
@@ -140,6 +143,9 @@ class Generator:
 
     # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
+
+    # Whether or not limit and fetch allows expresions or just limits
+    LIMIT_ONLY_LITERALS = False
 
     # Whether or not a table is allowed to be renamed with a db
     RENAME_TABLE_WITH_DB = True
@@ -1629,18 +1635,19 @@ class Generator:
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
         args = ", ".join(
-            sql
-            for sql in (
-                self.sql(expression, "offset"),
-                self.sql(expression, "expression"),
-            )
-            if sql
+            self.sql(self._simplify_unless_literal(e) if self.LIMIT_ONLY_LITERALS else e)
+            for e in (expression.args.get(k) for k in ("offset", "expression"))
+            if e
         )
         return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args}"
 
     def offset_sql(self, expression: exp.Offset) -> str:
         this = self.sql(expression, "this")
-        return f"{this}{self.seg('OFFSET')} {self.sql(expression, 'expression')}"
+        expression = expression.expression
+        expression = (
+            self._simplify_unless_literal(expression) if self.LIMIT_ONLY_LITERALS else expression
+        )
+        return f"{this}{self.seg('OFFSET')} {self.sql(expression)}"
 
     def setitem_sql(self, expression: exp.SetItem) -> str:
         kind = self.sql(expression, "kind")
@@ -2911,6 +2918,14 @@ class Generator:
         table = f"TABLE {table}" if not isinstance(expression.expression, exp.Subquery) else table
         parameters = self.sql(expression, "params_struct")
         return self.func("PREDICT", model, table, parameters or None)
+
+    def _simplify_unless_literal(self, expression: E) -> E:
+        if not isinstance(expression, exp.Literal):
+            from sqlglot.optimizer.simplify import simplify
+
+            expression = simplify(expression.copy())
+
+        return expression
 
 
 def cached_generator(

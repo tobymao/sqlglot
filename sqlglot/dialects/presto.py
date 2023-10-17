@@ -252,6 +252,7 @@ class Presto(Dialect):
         TZ_TO_WITH_TIME_ZONE = True
         NVL2_SUPPORTED = False
         STRUCT_DELIMITER = ("(", ")")
+        LIMIT_ONLY_LITERALS = True
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

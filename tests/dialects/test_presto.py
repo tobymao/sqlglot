@@ -441,6 +441,22 @@ class TestPresto(Validator):
             },
         )
 
+        self.validate_all(
+            "CREATE OR REPLACE VIEW x (cola) SELECT 1 as cola",
+            write={
+                "spark": "CREATE OR REPLACE VIEW x (cola) AS SELECT 1 AS cola",
+                "presto": "CREATE OR REPLACE VIEW x AS SELECT 1 AS cola",
+            },
+        )
+
+        self.validate_all(
+            'CREATE TABLE IF NOT EXISTS x ("cola" INTEGER, "ds" TEXT) WITH (PARTITIONED BY=("ds"))',
+            write={
+                "spark": "CREATE TABLE IF NOT EXISTS x (`cola` INT, `ds` STRING) PARTITIONED BY (`ds`)",
+                "presto": """CREATE TABLE IF NOT EXISTS x ("cola" INTEGER, "ds" VARCHAR) WITH (PARTITIONED_BY=ARRAY['ds'])""",
+            },
+        )
+
     def test_quotes(self):
         self.validate_all(
             "''''",

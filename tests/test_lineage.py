@@ -222,7 +222,10 @@ class TestLineage(unittest.TestCase):
                 "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS THIS)"
             ),
         )
-        self.assertEqual(downstream.expression.sql(), "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS VALUE")
+        self.assertEqual(
+            downstream.expression.sql(),
+            "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS VALUE",
+        )
 
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "TEST_TABLE.RESULT")

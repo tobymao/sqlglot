@@ -101,7 +101,6 @@ def qualify_tables(
                 if isinstance(udtf, exp.Lateral) and dialect == "snowflake":
                     _qualify_snowflake_lateral(udtf)
 
-
     return expression
 
 
@@ -109,7 +108,11 @@ FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
 
 
 def _qualify_snowflake_lateral(lateral: exp.Lateral) -> None:
-    if isinstance(lateral.this, exp.Anonymous) and lateral.this.this and lateral.this.this.upper() == "FLATTEN":
+    if (
+        isinstance(lateral.this, exp.Anonymous)
+        and lateral.this.this
+        and lateral.this.this.upper() == "FLATTEN"
+    ):
         table_alias = lateral.args.get("alias")
         if table_alias:
             table_alias.set(

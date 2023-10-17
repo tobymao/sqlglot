@@ -4168,6 +4168,11 @@ class Abs(Func):
     pass
 
 
+class Flatten(Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+
+
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform
 class Transform(Func):
     arg_types = {"this": True, "expression": True}
@@ -4540,8 +4545,10 @@ class Exp(Func):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/flatten
 class Explode(Func):
-    pass
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
 
 
 class ExplodeOuter(Explode):

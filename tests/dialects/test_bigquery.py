@@ -9,6 +9,8 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
+
         with self.assertRaises(TokenError):
             transpile("'\\'", read="bigquery")
 

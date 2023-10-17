@@ -1,6 +1,21 @@
 Changelog
 =========
 
+## [v18.14.0] - 2023-10-17
+### :bug: Bug Fixes
+- [`4163d5f`](https://github.com/tobymao/sqlglot/commit/4163d5f8ad1d926830a4273d1e8f3ec4a059b13b) - make `RegexpILike` a subclass of `Binary` as well as `Func` *(PR [#2404](https://github.com/tobymao/sqlglot/pull/2404) by [@samuelcolvin](https://github.com/samuelcolvin))*
+- [`de0cd98`](https://github.com/tobymao/sqlglot/commit/de0cd98ff682868ecb2299425f52ea45a9b88f27) - clickhouse any -> has closes [#2408](https://github.com/tobymao/sqlglot/pull/2408) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`463b6d6`](https://github.com/tobymao/sqlglot/commit/463b6d63ecdb6a0cf9b44716494aaad7f3efb26b) - **redshift**: add a missing retreat in the group by parser *(PR [#2412](https://github.com/tobymao/sqlglot/pull/2412) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2411](undefined) opened by [@mrmammadov](https://github.com/mrmammadov)*
+- [`f8109be`](https://github.com/tobymao/sqlglot/commit/f8109be1b0b620c48db30b82519a5d17b992cce7) - **bigquery**: revert commit 09e2eeb, only reduce NULL for BQ at sqlgen time *(PR [#2414](https://github.com/tobymao/sqlglot/pull/2414) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`f970f7c`](https://github.com/tobymao/sqlglot/commit/f970f7cd424747c4e18cd902cc99f55383e79dbc) - **clickhouse**: map RegexpILike to match *(PR [#2407](https://github.com/tobymao/sqlglot/pull/2407) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2406](undefined) opened by [@samuelcolvin](https://github.com/samuelcolvin)*
+- [`1c8883f`](https://github.com/tobymao/sqlglot/commit/1c8883fa66fdc95c8166a7fba4d443dca6e8fd86) - clickhouse any transpilation closes [#2408](https://github.com/tobymao/sqlglot/pull/2408) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`586de82`](https://github.com/tobymao/sqlglot/commit/586de8263b577e791355db39e9e3a0526fd7a1fc) - casting *(commit by [@tobymao](https://github.com/tobymao))*
+- [`d9958f9`](https://github.com/tobymao/sqlglot/commit/d9958f9438eecf8137361ab76f02acda63e59790) - presto/trino limit can only contain literals *(commit by [@tobymao](https://github.com/tobymao))*
+- [`7744648`](https://github.com/tobymao/sqlglot/commit/77446481dd59c213368fe554e8011e9a7f5c0f71) - trino view column and partition column *(PR [#2416](https://github.com/tobymao/sqlglot/pull/2416) by [@eakmanrq](https://github.com/eakmanrq))*
+
+
 ## [v18.13.0] - 2023-10-13
 ### :sparkles: New Features
 - [`e2e960a`](https://github.com/tobymao/sqlglot/commit/e2e960acfdd02cbb22689f1f0f5f00d50e4a537e) - **duckdb**: add parsing support for timestamp types with unit suffixes *(PR [#2400](https://github.com/tobymao/sqlglot/pull/2400) by [@cpcloud](https://github.com/cpcloud))*
@@ -1718,3 +1733,4 @@ Changelog
 [v18.11.6]: https://github.com/tobymao/sqlglot/compare/v18.11.5...v18.11.6
 [v18.12.0]: https://github.com/tobymao/sqlglot/compare/v18.11.6...v18.12.0
 [v18.13.0]: https://github.com/tobymao/sqlglot/compare/v18.12.0...v18.13.0
+[v18.14.0]: https://github.com/tobymao/sqlglot/compare/v18.13.0...v18.14.0

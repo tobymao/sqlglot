@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
     no_pivot_sql,
     no_safe_divide_sql,
+    no_timestamp_sql,
     regexp_extract_sql,
     rename_func,
     right_to_substring_sql,
@@ -350,6 +351,7 @@ class Presto(Dialect):
             exp.StrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.StructExtract: struct_extract_sql,
             exp.Table: transforms.preprocess([_unnest_sequence]),
+            exp.Timestamp: no_timestamp_sql,
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToDate: timestrtotime_sql,
             exp.TimeStrToTime: timestrtotime_sql,
@@ -369,7 +371,6 @@ class Presto(Dialect):
             exp.WithinGroup: transforms.preprocess(
                 [transforms.remove_within_group_for_percentiles]
             ),
-            exp.Timestamp: transforms.preprocess([transforms.timestamp_to_cast]),
             exp.Xor: bool_xor_sql,
         }
 

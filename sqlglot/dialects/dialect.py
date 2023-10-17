@@ -10,7 +10,7 @@ from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import flatten, seq_get
 from sqlglot.parser import Parser
-from sqlglot.time import format_time
+from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
@@ -593,6 +593,14 @@ def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
     return self.func(
         "DATE_TRUNC", exp.Literal.string(expression.text("unit") or "day"), expression.this
     )
+
+
+def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
+    if not expression.expression:
+        return self.sql(exp.cast(expression.this, to=exp.DataType.Type.TIMESTAMP))
+    if expression.text("expression").lower() in TIMEZONES:
+        return self.sql(exp.AtTimeZone(this=expression.this, zone=expression.expression))
+    return self.function_fallback_sql(expression)
 
 
 def locate_to_strposition(args: t.List) -> exp.Expression:

@@ -1113,7 +1113,7 @@ def reverse(col: ColumnOrName) -> Column:
 
 
 def flatten(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(None, expression.Flatten, expressions=[col])
+    return Column.invoke_expression_over_column(col, expression.Flatten)
 
 
 def map_keys(col: ColumnOrName) -> Column:

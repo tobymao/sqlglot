@@ -4169,8 +4169,7 @@ class Abs(Func):
 
 
 class Flatten(Func):
-    arg_types = {"expressions": True}
-    is_var_len_args = True
+    pass
 
 
 # https://spark.apache.org/docs/latest/api/sql/index.html#transform

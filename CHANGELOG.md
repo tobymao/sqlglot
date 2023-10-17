@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v18.15.0] - 2023-10-17
+### :bug: Bug Fixes
+- [`d75d760`](https://github.com/tobymao/sqlglot/commit/d75d760778973d88325e0b6d167243385140d698) - bigquery parse_json wide_number_mode *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.14.0] - 2023-10-17
 ### :bug: Bug Fixes
 - [`4163d5f`](https://github.com/tobymao/sqlglot/commit/4163d5f8ad1d926830a4273d1e8f3ec4a059b13b) - make `RegexpILike` a subclass of `Binary` as well as `Func` *(PR [#2404](https://github.com/tobymao/sqlglot/pull/2404) by [@samuelcolvin](https://github.com/samuelcolvin))*
@@ -1734,3 +1739,4 @@ Changelog
 [v18.12.0]: https://github.com/tobymao/sqlglot/compare/v18.11.6...v18.12.0
 [v18.13.0]: https://github.com/tobymao/sqlglot/compare/v18.12.0...v18.13.0
 [v18.14.0]: https://github.com/tobymao/sqlglot/compare/v18.13.0...v18.14.0
+[v18.15.0]: https://github.com/tobymao/sqlglot/compare/v18.14.0...v18.15.0

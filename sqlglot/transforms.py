@@ -352,15 +352,6 @@ def epoch_cast_to_ts(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def timestamp_to_cast(expression: exp.Expression) -> exp.Expression:
-    if isinstance(expression, exp.Timestamp) and not expression.expression:
-        return exp.cast(
-            expression.this,
-            to=exp.DataType.Type.TIMESTAMP,
-        )
-    return expression
-
-
 def eliminate_semi_and_anti_joins(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Select):
         for join in expression.args.get("joins") or []:

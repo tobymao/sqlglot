@@ -599,7 +599,12 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
     if not expression.expression:
         return self.sql(exp.cast(expression.this, to=exp.DataType.Type.TIMESTAMP))
     if expression.text("expression").lower() in TIMEZONES:
-        return self.sql(exp.AtTimeZone(this=expression.this, zone=expression.expression))
+        return self.sql(
+            exp.AtTimeZone(
+                this=exp.cast(expression.this, to=exp.DataType.Type.TIMESTAMP),
+                zone=expression.expression,
+            )
+        )
     return self.function_fallback_sql(expression)
 
 

@@ -6,6 +6,7 @@ from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
+    generatedasidentitycolumnconstraint_sql,
     rename_func,
     ts_or_ds_to_date_sql,
 )
@@ -171,6 +172,7 @@ class Redshift(Postgres):
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.FromBase: rename_func("STRTOL"),
+            exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.JSONExtract: _json_sql,
             exp.JSONExtractScalar: _json_sql,
             exp.SafeConcat: concat_to_dpipe_sql,

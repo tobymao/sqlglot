@@ -262,6 +262,7 @@ class Snowflake(Dialect):
             ),
             "DATEDIFF": _parse_datediff,
             "DIV0": _div0_to_if,
+            "FLATTEN": exp.Explode.from_arg_list,
             "IFF": exp.If.from_arg_list,
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
@@ -325,6 +326,22 @@ class Snowflake(Dialect):
             TokenType.MOD,
             TokenType.SLASH,
         }
+        FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
+
+        def _parse_lateral(self) -> t.Optional[exp.Lateral]:
+            lateral = super()._parse_lateral()
+            if not lateral:
+                return lateral
+
+            if isinstance(lateral.this, exp.Explode):
+                table_alias = lateral.args.get("alias")
+                columns = [exp.to_identifier(col) for col in self.FLATTEN_COLUMNS]
+                if table_alias and not table_alias.args.get("columns"):
+                    table_alias.set("columns", columns)
+                elif not table_alias:
+                    exp.alias_(lateral, "_flattened", table=columns, copy=False)
+
+            return lateral
 
         def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             # https://docs.snowflake.com/en/user-guide/querying-stage
@@ -452,6 +469,7 @@ class Snowflake(Dialect):
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.Explode: rename_func("FLATTEN"),
             exp.Extract: rename_func("DATE_PART"),
             exp.GenerateSeries: lambda self, e: self.func(
                 "ARRAY_GENERATE_RANGE", e.args["start"], e.args["end"] + 1, e.args.get("step")

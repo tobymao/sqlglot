@@ -199,3 +199,22 @@ class TestLineage(unittest.TestCase):
             "SELECT x FROM (SELECT ax AS x FROM a UNION SELECT bx FROM b UNION SELECT cx FROM c)",
         )
         assert len(node.downstream) == 3
+
+    def test_lineage_lateral_flatten(self) -> None:
+        node = lineage(
+            "VALUE",
+            "SELECT FLATTENED.VALUE FROM TEST_TABLE, LATERAL FLATTEN(INPUT => RESULT, OUTER => TRUE) FLATTENED",
+            dialect="snowflake",
+        )
+        self.assertEqual(node.name, "VALUE")
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.name, "FLATTENED.VALUE")
+        self.assertEqual(
+            downstream.source.sql(dialect="snowflake"),
+            "LATERAL FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS FLATTENED(SEQ, KEY, PATH, INDEX, VALUE, THIS)",
+        )
+        self.assertEqual(
+            downstream.expression.sql(dialect="snowflake"),
+            "VALUE",
+        )

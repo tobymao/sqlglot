@@ -1895,12 +1895,13 @@ class Generator:
 
     def schema_sql(self, expression: exp.Schema) -> str:
         this = self.sql(expression, "this")
-        this = f"{this} " if this else ""
         sql = self.schema_columns_sql(expression)
-        return f"{this}{sql}"
+        return f"{this} {sql}" if this and sql else this or sql
 
     def schema_columns_sql(self, expression: exp.Schema) -> str:
-        return f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
+        if expression.expressions:
+            return f"({self.sep('')}{self.expressions(expression)}{self.seg(')', sep='')}"
+        return ""
 
     def star_sql(self, expression: exp.Star) -> str:
         except_ = self.expressions(expression, key="except", flat=True)

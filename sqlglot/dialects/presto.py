@@ -69,9 +69,10 @@ def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
 
     if expression.parent:
         for schema in expression.parent.find_all(exp.Schema):
-            if isinstance(schema.parent, exp.Property):
+            column_defs = schema.find_all(exp.ColumnDef)
+            if column_defs and isinstance(schema.parent, exp.Property):
                 expression = expression.copy()
-                expression.expressions.extend(schema.expressions)
+                expression.expressions.extend(column_defs)
 
     return self.schema_sql(expression)
 
@@ -418,3 +419,15 @@ class Presto(Dialect):
                 self.sql(expression, "offset"),
                 self.sql(limit),
             ]
+
+        def create_sql(self, expression: exp.Create) -> str:
+            """
+            Presto doesn't support CREATE VIEW with expressions (ex: `CREATE VIEW x (cola)` then `(cola)` is the expression),
+            so we need to remove them
+            """
+            kind = expression.args["kind"]
+            schema = expression.this
+            if kind == "VIEW" and schema.expressions:
+                expression = expression.copy()
+                expression.this.set("expressions", None)
+            return super().create_sql(expression)

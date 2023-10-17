@@ -916,6 +916,22 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f(SEQ, KE
             pretty=True,
         )
 
+        self.validate_all(
+            """
+            SELECT id as "ID",
+              value AS "Contact"
+            FROM persons p,
+              lateral flatten(input => p.c, path => 'contact')
+            """,
+            write={
+                "snowflake": """SELECT
+  id AS "ID",
+  value AS "Contact"
+FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattened(SEQ, KEY, PATH, INDEX, VALUE, THIS)""",
+            },
+            pretty=True,
+        )
+
     def test_minus(self):
         self.validate_all(
             "SELECT 1 EXCEPT SELECT 1",

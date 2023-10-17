@@ -4168,7 +4168,6 @@ class Abs(Func):
     pass
 
 
-# https://docs.snowflake.com/en/sql-reference/functions/flatten
 class Flatten(Func):
     arg_types = {"expressions": True}
     is_var_len_args = True
@@ -4546,8 +4545,10 @@ class Exp(Func):
     pass
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/flatten
 class Explode(Func):
-    pass
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
 
 
 class ExplodeOuter(Explode):

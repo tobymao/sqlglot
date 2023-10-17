@@ -8,6 +8,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     any_value_to_max_sql,
+    generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
     move_insert_cte_sql,
@@ -617,6 +618,7 @@ class TSQL(Dialect):
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.Extract: rename_func("DATEPART"),
+            exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
             exp.Insert: move_insert_cte_sql,
@@ -778,11 +780,3 @@ class TSQL(Dialect):
             this = self.sql(expression, "this")
             expressions = self.expressions(expression, flat=True, sep=" ")
             return f"CONSTRAINT {this} {expressions}"
-
-        # https://learn.microsoft.com/en-us/answers/questions/448821/create-table-in-sql-server
-        def generatedasidentitycolumnconstraint_sql(
-            self, expression: exp.GeneratedAsIdentityColumnConstraint
-        ) -> str:
-            start = self.sql(expression, "start") or "1"
-            increment = self.sql(expression, "increment") or "1"
-            return f"IDENTITY({start}, {increment})"

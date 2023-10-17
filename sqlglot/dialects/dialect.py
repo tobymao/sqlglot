@@ -795,3 +795,11 @@ def move_insert_cte_sql(self: Generator, expression: exp.Insert) -> str:
         expression = expression.copy()
         expression.set("with", expression.expression.args["with"].pop())
     return self.insert_sql(expression)
+
+
+def generatedasidentitycolumnconstraint_sql(
+    self: Generator, expression: exp.GeneratedAsIdentityColumnConstraint
+) -> str:
+    start = self.sql(expression, "start") or "1"
+    increment = self.sql(expression, "increment") or "1"
+    return f"IDENTITY({start}, {increment})"

@@ -212,22 +212,9 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.name, "FLATTENED.VALUE")
         self.assertEqual(
             downstream.source.sql(),
-            (
-                "LATERAL FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS FLATTENED("
-                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS SEQ, "
-                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS KEY, "
-                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS PATH, "
-                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS INDEX, "
-                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS VALUE, "
-                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS THIS)"
-            ),
+            "LATERAL FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS FLATTENED(SEQ, KEY, PATH, INDEX, VALUE, THIS)",
         )
         self.assertEqual(
             downstream.expression.sql(),
-            "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS VALUE",
+            "VALUE",
         )
-
-        downstream = downstream.downstream[0]
-        self.assertEqual(downstream.name, "TEST_TABLE.RESULT")
-        self.assertEqual(downstream.source.sql(), "TEST_TABLE AS TEST_TABLE")
-        self.assertEqual(downstream.expression.sql(), "TEST_TABLE AS TEST_TABLE")

@@ -3,7 +3,6 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot._typing import E
-from sqlglot.dialects.dialect import DialectType
 from sqlglot.helper import csv_reader, name_sequence
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema
@@ -11,7 +10,6 @@ from sqlglot.schema import Schema
 
 def qualify_tables(
     expression: E,
-    dialect: DialectType,
     db: t.Optional[str] = None,
     catalog: t.Optional[str] = None,
     schema: t.Optional[Schema] = None,
@@ -23,11 +21,11 @@ def qualify_tables(
     Examples:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT 1 FROM tbl")
-        >>> qualify_tables(expression, dialect="", db="db").sql()
+        >>> qualify_tables(expression, db="db").sql()
         'SELECT 1 FROM db.tbl AS tbl'
         >>>
         >>> expression = sqlglot.parse_one("SELECT 1 FROM (t1 JOIN t2) AS t")
-        >>> qualify_tables(expression, dialect="").sql()
+        >>> qualify_tables(expression).sql()
         'SELECT 1 FROM (SELECT * FROM t1 AS t1, t2 AS t2) AS t'
 
     Args:
@@ -98,28 +96,5 @@ def qualify_tables(
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
                     for i, e in enumerate(udtf.expressions[0].expressions):
                         table_alias.append("columns", exp.to_identifier(f"_col_{i}"))
-                if isinstance(udtf, exp.Lateral) and dialect == "snowflake":
-                    _qualify_snowflake_lateral(udtf)
 
     return expression
-
-
-FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
-
-
-def _qualify_snowflake_lateral(lateral: exp.Lateral) -> None:
-    if (
-        isinstance(lateral.this, exp.Anonymous)
-        and lateral.this.this
-        and lateral.this.this.upper() == "FLATTEN"
-    ):
-        table_alias = lateral.args.get("alias")
-        if table_alias:
-            table_alias.set(
-                "columns",
-                [
-                    exp.Alias(this=lateral.this, alias=exp.to_identifier(col))
-                    for col in FLATTEN_COLUMNS
-                ],
-            )
-            lateral.set("alias", table_alias)

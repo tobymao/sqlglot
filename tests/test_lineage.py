@@ -199,3 +199,32 @@ class TestLineage(unittest.TestCase):
             "SELECT x FROM (SELECT ax AS x FROM a UNION SELECT bx FROM b UNION SELECT cx FROM c)",
         )
         assert len(node.downstream) == 3
+
+    def test_lineage_lateral_flatten(self) -> None:
+        node = lineage(
+            "VALUE",
+            "SELECT FLATTENED.VALUE FROM TEST_TABLE, LATERAL FLATTEN(INPUT => RESULT, OUTER => TRUE) FLATTENED",
+            dialect="snowflake",
+        )
+        self.assertEqual(node.name, "VALUE")
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.name, "FLATTENED.VALUE")
+        self.assertEqual(
+            downstream.source.sql(),
+            (
+                "LATERAL FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS FLATTENED("
+                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS SEQ, "
+                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS KEY, "
+                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS PATH, "
+                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS INDEX, "
+                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS VALUE, "
+                "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS THIS)"
+            ),
+        )
+        self.assertEqual(downstream.expression.sql(), "FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS VALUE")
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(downstream.name, "TEST_TABLE.RESULT")
+        self.assertEqual(downstream.source.sql(), "TEST_TABLE AS TEST_TABLE")
+        self.assertEqual(downstream.expression.sql(), "TEST_TABLE AS TEST_TABLE")

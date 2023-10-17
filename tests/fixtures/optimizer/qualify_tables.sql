@@ -109,3 +109,8 @@ SELECT * FROM ((SELECT * FROM c.db.t AS t) AS _q_0);
 # title: wrapped subquery without alias joined with a table
 SELECT * FROM ((SELECT * FROM t1) INNER JOIN t2 ON a = b);
 SELECT * FROM ((SELECT * FROM c.db.t1 AS t1) AS _q_0 INNER JOIN c.db.t2 AS t2 ON a = b);
+
+# title: using lateral flatten
+# dialect: snowflake
+SELECT flattened.value FROM z, LATERAL FLATTEN(input => result, outer => true) as flattened;
+SELECT flattened.value FROM c.db.z AS z, LATERAL FLATTEN(input => result, outer => TRUE) AS flattened(FLATTEN(input => result, outer => TRUE) AS SEQ, FLATTEN(input => result, outer => TRUE) AS KEY, FLATTEN(input => result, outer => TRUE) AS PATH, FLATTEN(input => result, outer => TRUE) AS INDEX, FLATTEN(input => result, outer => TRUE) AS VALUE, FLATTEN(input => result, outer => TRUE) AS THIS);

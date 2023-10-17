@@ -34,7 +34,7 @@ def qualify_columns(expression, **kwargs):
 
 
 def pushdown_projections(expression, **kwargs):
-    expression = optimizer.qualify_tables.qualify_tables(expression)
+    expression = optimizer.qualify_tables.qualify_tables(expression, dialect="")
     expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
     expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
     return expression
@@ -182,6 +182,8 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "qualify_tables",
             optimizer.qualify_tables.qualify_tables,
+            set_dialect=True,
+            dialect="",
             db="db",
             catalog="c",
         )

@@ -206,7 +206,6 @@ class Snowflake(Dialect):
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
-    FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
 
     TIME_MAPPING = {
         "YYYY": "%Y",
@@ -326,6 +325,7 @@ class Snowflake(Dialect):
             TokenType.MOD,
             TokenType.SLASH,
         }
+        FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
 
         def _parse_lateral(self) -> t.Optional[exp.Lateral]:
             lateral = super()._parse_lateral()
@@ -334,7 +334,7 @@ class Snowflake(Dialect):
 
             if isinstance(lateral.this, exp.Flatten):
                 table_alias = lateral.args.get("alias")
-                columns = [exp.to_identifier(col) for col in Snowflake.FLATTEN_COLUMNS]
+                columns = [exp.to_identifier(col) for col in self.FLATTEN_COLUMNS]
                 if table_alias and not table_alias.args.get("columns"):
                     table_alias.set("columns", columns)
                 elif not table_alias:

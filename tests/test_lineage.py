@@ -218,3 +218,8 @@ class TestLineage(unittest.TestCase):
             downstream.expression.sql(dialect="snowflake"),
             "VALUE",
         )
+        self.assertEqual(len(downstream.downstream), 1)
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(downstream.name, "TEST_TABLE.RESULT")
+        self.assertEqual(downstream.source.sql(dialect="snowflake"), "TEST_TABLE AS TEST_TABLE")

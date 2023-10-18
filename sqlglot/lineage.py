@@ -143,7 +143,13 @@ def lineage(
             upstream.downstream.append(node)
 
         # Find all columns that went into creating this one to list their lineage nodes.
-        for c in set(select.find_all(exp.Column)):
+        source_columns = set(select.find_all(exp.Column))
+
+        # If the source is a UDTF find columns used in the UTDF to generate the table
+        if isinstance(source, exp.UDTF):
+            source_columns |= set(source.find_all(exp.Column))
+
+        for c in set(source_columns):
             table = c.table
             source = scope.sources.get(table)
 

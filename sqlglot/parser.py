@@ -2426,9 +2426,9 @@ class Parser(metaclass=_Parser):
             table_alias: t.Optional[exp.TableAlias] = self.expression(
                 exp.TableAlias, this=table, columns=columns
             )
-        elif isinstance(this, exp.Subquery) and this.alias:
-            # Ensures parity between the Subquery's and the Lateral's "alias" args
-            table_alias = this.args["alias"].copy()
+        elif isinstance(this, (exp.Subquery, exp.Unnest)) and this.alias:
+            # We move the alias from the lateral's child node to the lateral itself
+            table_alias = this.args["alias"].pop()
         else:
             table_alias = self._parse_table_alias()
 

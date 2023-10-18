@@ -309,6 +309,7 @@ class Snowflake(Dialect):
                 expressions=self._parse_csv(self._parse_id_var),
                 unset=True,
             ),
+            "SWAP": lambda self: self._parse_alter_table_swap(),
         }
 
         STATEMENT_PARSERS = {
@@ -405,6 +406,10 @@ class Snowflake(Dialect):
                     scope = self._parse_table()
 
             return self.expression(exp.Show, this=this, scope=scope, scope_kind=scope_kind)
+
+        def _parse_alter_table_swap(self) -> exp.SwapTable:
+            self._match_text_seq("WITH")
+            return self.expression(exp.SwapTable, this=self._parse_table(schema=True))
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
@@ -614,3 +619,7 @@ class Snowflake(Dialect):
             increment = expression.args.get("increment")
             increment = f" INCREMENT {increment}" if increment else ""
             return f"AUTOINCREMENT{start}{increment}"
+
+        def swaptable_sql(self, expression: exp.RenameTable) -> str:
+            this = self.sql(expression, "this")
+            return f"SWAP WITH {this}"

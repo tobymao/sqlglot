@@ -1617,9 +1617,6 @@ class Generator:
     def lateral_sql(self, expression: exp.Lateral) -> str:
         this = self.sql(expression, "this")
 
-        if isinstance(expression.this, exp.Subquery):
-            return f"LATERAL {this}"
-
         if expression.args.get("view"):
             alias = expression.args["alias"]
             columns = self.expressions(alias, key="columns", flat=True)

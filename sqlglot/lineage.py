@@ -149,7 +149,7 @@ def lineage(
         if isinstance(source, exp.UDTF):
             source_columns |= set(source.find_all(exp.Column))
 
-        for c in set(source_columns):
+        for c in source_columns:
             table = c.table
             source = scope.sources.get(table)
 

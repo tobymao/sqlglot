@@ -9,6 +9,8 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("SELECT DAYOFMONTH(CURRENT_TIMESTAMP())")
+        self.validate_identity("SELECT DAYOFYEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("LISTAGG(data['some_field'], ',')")
         self.validate_identity("WEEKOFYEAR(tstamp)")
         self.validate_identity("SELECT SUM(amount) FROM mytable GROUP BY ALL")

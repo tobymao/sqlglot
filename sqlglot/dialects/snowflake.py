@@ -620,6 +620,6 @@ class Snowflake(Dialect):
             increment = f" INCREMENT {increment}" if increment else ""
             return f"AUTOINCREMENT{start}{increment}"
 
-        def swaptable_sql(self, expression: exp.RenameTable) -> str:
+        def swaptable_sql(self, expression: exp.SwapTable) -> str:
             this = self.sql(expression, "this")
             return f"SWAP WITH {this}"

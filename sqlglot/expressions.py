@@ -1235,6 +1235,10 @@ class RenameTable(Expression):
     pass
 
 
+class SwapTable(Expression):
+    pass
+
+
 class Comment(Expression):
     arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
 

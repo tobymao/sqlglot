@@ -473,7 +473,9 @@ class Snowflake(Dialect):
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
+            exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
+            exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Explode: rename_func("FLATTEN"),
             exp.Extract: rename_func("DATE_PART"),
             exp.GenerateSeries: lambda self, e: self.func(

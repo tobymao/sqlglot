@@ -150,6 +150,7 @@ class Teradata(Dialect):
             return self.expression(exp.RangeN, this=this, expressions=expressions, each=each)
 
     class Generator(generator.Generator):
+        LIMIT_IS_TOP = True
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False

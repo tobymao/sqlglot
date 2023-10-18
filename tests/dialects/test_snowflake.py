@@ -36,6 +36,7 @@ class TestSnowflake(Validator):
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("REGEXP_REPLACE('target', 'pattern', '\n')")
+        self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity(
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
@@ -1150,3 +1151,8 @@ MATCH_RECOGNIZE (
 
         self.assertIsNotNone(table)
         self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
+
+    def test_swap(self):
+        ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")
+        assert isinstance(ast, exp.AlterTable)
+        assert isinstance(ast.args["actions"][0], exp.SwapTable)

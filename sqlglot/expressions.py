@@ -23,7 +23,7 @@ from enum import auto
 from functools import reduce
 
 from sqlglot._typing import E
-from sqlglot.errors import ParseError
+from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import (
     AutoName,
     camel_to_snake_case,
@@ -3704,7 +3704,9 @@ class DataType(Expression):
                 return DataType(this=DataType.Type.UNKNOWN, **kwargs)
 
             try:
-                data_type_exp = parse_one(dtype, read=dialect, into=DataType)
+                data_type_exp = parse_one(
+                    dtype, read=dialect, into=DataType, error_level=ErrorLevel.IGNORE
+                )
             except ParseError:
                 if udt:
                     return DataType(this=DataType.Type.USERDEFINED, kind=dtype, **kwargs)

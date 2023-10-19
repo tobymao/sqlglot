@@ -1,6 +1,24 @@
 Changelog
 =========
 
+## [v18.15.1] - 2023-10-19
+### :sparkles: New Features
+- [`469226b`](https://github.com/tobymao/sqlglot/commit/469226b31443038ff2c28ce1a03c8c96df598f44) - **snowflake**: support for ALTER TABLE SWAP WITH *(PR [#2420](https://github.com/tobymao/sqlglot/pull/2420) by [@teraamp](https://github.com/teraamp))*
+- [`13a5df2`](https://github.com/tobymao/sqlglot/commit/13a5df2d20fa57efd4699ce93d98789666131173) - **lineage**: lineage from UDTFs that use columns *(PR [#2424](https://github.com/tobymao/sqlglot/pull/2424) by [@edpaget](https://github.com/edpaget))*
+- [`8d7e4e9`](https://github.com/tobymao/sqlglot/commit/8d7e4e9ec0ef639376d1b4db55f6578e1eb431d1) - show version in cli *(commit by [@tobymao](https://github.com/tobymao))*
+- [`88ddaa7`](https://github.com/tobymao/sqlglot/commit/88ddaa7f49327b37acdb6cd87b4189b872b964c1) - make data type build more flexible *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`e1186a5`](https://github.com/tobymao/sqlglot/commit/e1186a5c4c75e876aedb47185beef50396089650) - **redshift**: generate the IDENTITY constraint correctly *(PR [#2418](https://github.com/tobymao/sqlglot/pull/2418) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`a00b5b5`](https://github.com/tobymao/sqlglot/commit/a00b5b56d5c2d197bb1d1d56bfeedb9c7ab40ddf) - smarter detection of timestamp() fallback to cast *(commit by [@tobymao](https://github.com/tobymao))*
+- [`c5028d4`](https://github.com/tobymao/sqlglot/commit/c5028d4a651f80aa2599cd69bfe486f8b7ce5d0f) - **teradata**: teradata only supports top closes [#2419](https://github.com/tobymao/sqlglot/pull/2419) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`3173683`](https://github.com/tobymao/sqlglot/commit/31736832153872b0dcab067cea8b76970369e58a) - **snowflake**: map DAYOF[MONTH|YEAR] back to itself fixes [#2422](https://github.com/tobymao/sqlglot/pull/2422) *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+- [`e612089`](https://github.com/tobymao/sqlglot/commit/e6120897fb46c4bbc90184d177d45df264e49768) - ts_or_ds reparse closes [#2428](https://github.com/tobymao/sqlglot/pull/2428) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`fda3576`](https://github.com/tobymao/sqlglot/commit/fda35766ee93e2e01ff1ee53ae804d6fe5109ce3) - fix type hint of swaptable_sql *(commit by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v18.15.0] - 2023-10-17
 ### :bug: Bug Fixes
 - [`d75d760`](https://github.com/tobymao/sqlglot/commit/d75d760778973d88325e0b6d167243385140d698) - bigquery parse_json wide_number_mode *(commit by [@tobymao](https://github.com/tobymao))*
@@ -1740,3 +1758,4 @@ Changelog
 [v18.13.0]: https://github.com/tobymao/sqlglot/compare/v18.12.0...v18.13.0
 [v18.14.0]: https://github.com/tobymao/sqlglot/compare/v18.13.0...v18.14.0
 [v18.15.0]: https://github.com/tobymao/sqlglot/compare/v18.14.0...v18.15.0
+[v18.15.1]: https://github.com/tobymao/sqlglot/compare/v18.15.0...v18.15.1

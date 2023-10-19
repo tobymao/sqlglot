@@ -861,6 +861,10 @@ FROM foo""",
 
         self.assertEqual(exp.DataType.build("ARRAY<UNKNOWN>").sql(), "ARRAY<UNKNOWN>")
         self.assertEqual(exp.DataType.build("ARRAY<NULL>").sql(), "ARRAY<NULL>")
+        self.assertEqual(exp.DataType.build("varchar(100) collate 'en-ci'").sql(), "VARCHAR(100)")
+
+        with self.assertRaises(ParseError):
+            exp.DataType.build("varchar(")
 
     def test_rename_table(self):
         self.assertEqual(

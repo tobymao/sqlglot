@@ -58,6 +58,12 @@ parser.add_argument(
     default="IMMEDIATE",
     help="IGNORE, WARN, RAISE, IMMEDIATE (default)",
 )
+parser.add_argument(
+    "--version",
+    action="version",
+    version=sqlglot.__version__,
+    help="Display the SQLGlot version",
+)
 
 
 args = parser.parse_args()

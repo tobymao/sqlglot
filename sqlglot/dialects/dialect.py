@@ -704,9 +704,13 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
         _dialect = Dialect.get_or_raise(dialect)
         time_format = self.format_time(expression)
         if time_format and time_format not in (_dialect.TIME_FORMAT, _dialect.DATE_FORMAT):
-            return self.sql(exp.cast(str_to_time_sql(self, expression), "date"))
-
-        return self.sql(exp.cast(self.sql(expression, "this"), "date"))
+            return self.sql(
+                exp.cast(
+                    exp.StrToTime(this=expression.this, format=expression.args["format"]),
+                    "date",
+                )
+            )
+        return self.sql(exp.cast(expression.this, "date"))
 
     return _ts_or_ds_to_date_sql
 

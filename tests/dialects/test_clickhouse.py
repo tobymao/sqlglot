@@ -6,6 +6,8 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_identity("x <> y")
+
         self.validate_all(
             "has([1], x)",
             read={

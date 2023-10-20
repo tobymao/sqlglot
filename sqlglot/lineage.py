@@ -123,6 +123,17 @@ def lineage(
 
             return upstream
 
+        subquery = select.unalias()
+
+        if isinstance(subquery, exp.Subquery):
+            upstream = upstream or Node(name="SUBQUERY", source=scope.expression, expression=select)
+            scope = t.cast(Scope, build_scope(subquery.unnest()))
+
+            for select in subquery.named_selects:
+                to_node(select, scope=scope, upstream=upstream)
+
+            return upstream
+
         if isinstance(scope.expression, exp.Select):
             # For better ergonomics in our node labels, replace the full select with
             # a version that has only the column we care about.

@@ -223,3 +223,15 @@ class TestLineage(unittest.TestCase):
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "TEST_TABLE.RESULT")
         self.assertEqual(downstream.source.sql(dialect="snowflake"), "TEST_TABLE AS TEST_TABLE")
+
+    def test_subquery(self) -> None:
+        node = lineage(
+            "output",
+            "SELECT (SELECT max(t3.my_column) my_column FROM foo t3) AS output FROM table3",
+        )
+        self.assertEqual(node.name, "SUBQUERY")
+        node = node.downstream[0]
+        self.assertEqual(node.name, "my_column")
+        node = node.downstream[0]
+        self.assertEqual(node.name, "t3.my_column")
+        self.assertEqual(node.source.sql(), "foo AS t3")

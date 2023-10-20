@@ -347,6 +347,12 @@ class Generator:
         exp.With,
     )
 
+    # Expressions that should not have their comments generated in maybe_comment
+    EXCLUDE_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
+        exp.Binary,
+        exp.Union,
+    )
+
     # Expressions that can remain unwrapped when appearing in the context of an INTERVAL
     UNWRAPPED_INTERVAL_VALUES: t.Tuple[t.Type[exp.Expression], ...] = (
         exp.Column,
@@ -507,7 +513,7 @@ class Generator:
             else None
         )
 
-        if not comments or isinstance(expression, exp.Binary):
+        if not comments or isinstance(expression, self.EXCLUDE_COMMENTS):
             return sql
 
         comments_sql = " ".join(
@@ -2713,8 +2719,8 @@ class Generator:
             self.unsupported(f"Unsupported property {expression.__class__.__name__}")
         return f"{property_name} {self.sql(expression, 'this')}"
 
-    def set_operation(self, expression: exp.Expression, op: str) -> str:
-        this = self.sql(expression, "this")
+    def set_operation(self, expression: exp.Union, op: str) -> str:
+        this = self.maybe_comment(self.sql(expression, "this"), comments=expression.comments)
         op = self.seg(op)
         return self.query_modifiers(
             expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}"

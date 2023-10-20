@@ -99,6 +99,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
+                "tsql": "CAST(a AS VARCHAR(MAX))",
                 "doris": "CAST(a AS STRING)",
             },
         )
@@ -179,6 +180,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS TEXT)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS STRING)",
+                "tsql": "CAST(a AS VARCHAR(MAX))",
                 "doris": "CAST(a AS STRING)",
             },
         )
@@ -197,6 +199,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS VARCHAR)",
                 "spark": "CAST(a AS STRING)",
                 "starrocks": "CAST(a AS VARCHAR)",
+                "tsql": "CAST(a AS VARCHAR)",
                 "doris": "CAST(a AS VARCHAR)",
             },
         )
@@ -215,6 +218,7 @@ class TestDialect(Validator):
                 "snowflake": "CAST(a AS VARCHAR(3))",
                 "spark": "CAST(a AS VARCHAR(3))",
                 "starrocks": "CAST(a AS VARCHAR(3))",
+                "tsql": "CAST(a AS VARCHAR(3))",
                 "doris": "CAST(a AS VARCHAR(3))",
             },
         )

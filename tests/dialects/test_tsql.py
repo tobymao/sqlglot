@@ -1374,7 +1374,7 @@ FROM OPENJSON(@json) WITH (
     Date DATETIME2 '$.Order.Date',
     Customer VARCHAR(200) '$.AccountNumber',
     Quantity INTEGER '$.Item.Quantity',
-    "Order" TEXT AS JSON
+    "Order" VARCHAR(MAX) AS JSON
 )"""
             },
             pretty=True,

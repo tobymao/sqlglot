@@ -87,7 +87,18 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
 
     def test_comments(self):
-        self.validate("SELECT\n  foo\n/* comments */\n;", "SELECT foo /* comments */")
+        self.validate(
+            "SELECT * FROM t1\n/*x*/\nUNION ALL SELECT * FROM t2",
+            "SELECT * FROM t1 /* x */ UNION ALL SELECT * FROM t2",
+        )
+        self.validate(
+            "SELECT * FROM t1\n/*x*/\nINTERSECT ALL SELECT * FROM t2",
+            "SELECT * FROM t1 /* x */ INTERSECT ALL SELECT * FROM t2",
+        )
+        self.validate(
+            "SELECT\n  foo\n/* comments */\n;",
+            "SELECT foo /* comments */",
+        )
         self.validate(
             "SELECT * FROM a INNER /* comments */ JOIN b",
             "SELECT * FROM a /* comments */ INNER JOIN b",
@@ -377,6 +388,47 @@ LEFT OUTER JOIN b""",
             """SELECT
   a /* sqlglot.meta case_sensitive */ /* noqa */
 FROM tbl""",
+            pretty=True,
+        )
+        self.validate(
+            """
+SELECT
+  'hotel1' AS hotel,
+  *
+FROM dw_1_dw_1_1.exactonline_1.transactionlines
+/*
+    UNION ALL
+    SELECT
+      'Thon Partner Hotel Jølster' AS hotel,
+      name,
+      date,
+      CAST(identifier AS VARCHAR) AS identifier,
+      value
+    FROM d2o_889_oupjr_1348.public.accountvalues_forecast
+*/
+UNION ALL
+SELECT
+  'hotel2' AS hotel,
+  *
+FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
+            """SELECT
+  'hotel1' AS hotel,
+  *
+FROM dw_1_dw_1_1.exactonline_1.transactionlines /*
+    UNION ALL
+    SELECT
+      'Thon Partner Hotel Jølster' AS hotel,
+      name,
+      date,
+      CAST(identifier AS VARCHAR) AS identifier,
+      value
+    FROM d2o_889_oupjr_1348.public.accountvalues_forecast
+*/
+UNION ALL
+SELECT
+  'hotel2' AS hotel,
+  *
+FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
             pretty=True,
         )
 

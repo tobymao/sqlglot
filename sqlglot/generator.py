@@ -347,7 +347,7 @@ class Generator:
         exp.With,
     )
 
-    # Expressions who should not have their comments generated in maybe_comment
+    # Expressions that should not have their comments generated in maybe_comment
     EXCLUDE_COMMENTS: t.Tuple[t.Type[exp.Expression], ...] = (
         exp.Binary,
         exp.Union,

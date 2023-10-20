@@ -3160,6 +3160,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             expression,
+            comments=self._prev.comments,
             this=this,
             distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
             by_name=self._match_text_seq("BY", "NAME"),

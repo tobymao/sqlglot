@@ -1983,7 +1983,7 @@ class ChecksumProperty(Property):
 
 
 class CollateProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "default": False}
 
 
 class CopyGrantsProperty(Property):

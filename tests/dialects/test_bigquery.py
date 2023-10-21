@@ -9,6 +9,8 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
+        self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
 
         with self.assertRaises(TokenError):

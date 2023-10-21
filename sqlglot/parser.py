@@ -629,11 +629,14 @@ class Parser(metaclass=_Parser):
         "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
-        "CHARACTER SET": lambda self: self._parse_character_set(),
+        "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
+        "CHARACTER SET": lambda self, **kwargs: self._parse_character_set(**kwargs),
         "CHECKSUM": lambda self: self._parse_checksum(),
         "CLUSTER BY": lambda self: self._parse_cluster(),
         "CLUSTERED": lambda self: self._parse_clustered_by(),
-        "COLLATE": lambda self: self._parse_property_assignment(exp.CollateProperty),
+        "COLLATE": lambda self, **kwargs: self._parse_property_assignment(
+            exp.CollateProperty, **kwargs
+        ),
         "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
         "COPY": lambda self: self._parse_copy_property(),
         "DATABLOCKSIZE": lambda self, **kwargs: self._parse_datablocksize(**kwargs),
@@ -1443,8 +1446,8 @@ class Parser(metaclass=_Parser):
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
-        if self._match_pair(TokenType.DEFAULT, TokenType.CHARACTER_SET):
-            return self._parse_character_set(default=True)
+        if self._match(TokenType.DEFAULT) and self._match_texts(self.PROPERTY_PARSERS):
+            return self.PROPERTY_PARSERS[self._prev.text.upper()](self, default=True)
 
         if self._match_text_seq("COMPOUND", "SORTKEY"):
             return self._parse_sortkey(compound=True)
@@ -1480,10 +1483,10 @@ class Parser(metaclass=_Parser):
             else self._parse_var_or_string() or self._parse_number() or self._parse_id_var(),
         )
 
-    def _parse_property_assignment(self, exp_class: t.Type[E]) -> E:
+    def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
-        return self.expression(exp_class, this=self._parse_field())
+        return self.expression(exp_class, this=self._parse_field(), **kwargs)
 
     def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Properties]:
         properties = []

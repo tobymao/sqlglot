@@ -19,6 +19,9 @@ class TestTranspile(unittest.TestCase):
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
+    def test_weird_chars(self):
+        self.assertEqual(transpile("0Êß")[0], "0 AS Êß")
+
     def test_alias(self):
         self.assertEqual(transpile("SELECT SUM(y) KEEP")[0], "SELECT SUM(y) AS KEEP")
         self.assertEqual(transpile("SELECT 1 overwrite")[0], "SELECT 1 AS overwrite")

@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v18.16.1] - 2023-10-21
+### :sparkles: New Features
+- [`16fb83f`](https://github.com/tobymao/sqlglot/commit/16fb83ff3f9a2bd77ce3edfa6f4932916a033d4c) - **bigquery**: default collate closes [#2434](https://github.com/tobymao/sqlglot/pull/2434) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`87efe41`](https://github.com/tobymao/sqlglot/commit/87efe41839a4f8e14e9b5dc0810156d06ae053a7) - **duckdb**: regexp_replace modifiers closes [#2436](https://github.com/tobymao/sqlglot/pull/2436) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`be38964`](https://github.com/tobymao/sqlglot/commit/be3896441016f0356ca3d3c02f74deed6a63879e) - infinite loop due to uppercase expansion *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.16.0] - 2023-10-21
 ### :bug: Bug Fixes
 - [`5b388bc`](https://github.com/tobymao/sqlglot/commit/5b388bc72aa8e9e01561b077ddbaeb1935894403) - attach comments to Union expressions *(PR [#2432](https://github.com/tobymao/sqlglot/pull/2432) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
@@ -1768,3 +1777,4 @@ Changelog
 [v18.15.0]: https://github.com/tobymao/sqlglot/compare/v18.14.0...v18.15.0
 [v18.15.1]: https://github.com/tobymao/sqlglot/compare/v18.15.0...v18.15.1
 [v18.16.0]: https://github.com/tobymao/sqlglot/compare/v18.15.1...v18.16.0
+[v18.16.1]: https://github.com/tobymao/sqlglot/compare/v18.16.0...v18.16.1

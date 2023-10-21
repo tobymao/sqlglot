@@ -4884,6 +4884,7 @@ class RegexpReplace(Func):
         "position": False,
         "occurrence": False,
         "parameters": False,
+        "modifiers": False,
     }
 
 

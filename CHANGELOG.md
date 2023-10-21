@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v18.16.0] - 2023-10-21
+### :bug: Bug Fixes
+- [`5b388bc`](https://github.com/tobymao/sqlglot/commit/5b388bc72aa8e9e01561b077ddbaeb1935894403) - attach comments to Union expressions *(PR [#2432](https://github.com/tobymao/sqlglot/pull/2432) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+  - :arrow_lower_right: *fixes issue [#2430](undefined) opened by [@SudarshanVS](https://github.com/SudarshanVS)*
+- [`e6721d1`](https://github.com/tobymao/sqlglot/commit/e6721d17d111b952c717e8a21b176e08a68226a7) - subquery lineage closes [#2431](https://github.com/tobymao/sqlglot/pull/2431) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`b4f76eb`](https://github.com/tobymao/sqlglot/commit/b4f76eb6ff7a4bdb377c3aac8cbde886c3894416) - **clickhouse**: neq bug closes [#2435](https://github.com/tobymao/sqlglot/pull/2435) *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v18.15.1] - 2023-10-19
 ### :sparkles: New Features
 - [`469226b`](https://github.com/tobymao/sqlglot/commit/469226b31443038ff2c28ce1a03c8c96df598f44) - **snowflake**: support for ALTER TABLE SWAP WITH *(PR [#2420](https://github.com/tobymao/sqlglot/pull/2420) by [@teraamp](https://github.com/teraamp))*
@@ -1759,3 +1767,4 @@ Changelog
 [v18.14.0]: https://github.com/tobymao/sqlglot/compare/v18.13.0...v18.14.0
 [v18.15.0]: https://github.com/tobymao/sqlglot/compare/v18.14.0...v18.15.0
 [v18.15.1]: https://github.com/tobymao/sqlglot/compare/v18.15.0...v18.15.1
+[v18.16.0]: https://github.com/tobymao/sqlglot/compare/v18.15.1...v18.16.0

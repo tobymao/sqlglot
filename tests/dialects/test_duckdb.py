@@ -249,6 +249,7 @@ class TestDuckDB(Validator):
             "SELECT ARRAY_LENGTH([0], 1) AS x",
             write={"duckdb": "SELECT ARRAY_LENGTH([0], 1) AS x"},
         )
+        self.validate_identity("REGEXP_REPLACE(this, pattern, replacement, modifiers)")
         self.validate_all(
             "REGEXP_MATCHES(x, y)",
             write={

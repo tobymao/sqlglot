@@ -234,6 +234,9 @@ class TestParser(unittest.TestCase):
             "CREATE TABLE t (i UInt8) ENGINE=AggregatingMergeTree() ORDER BY tuple()",
         )
 
+        with self.assertRaises(ParseError):
+            parse_one("SELECT A[:")
+
     def test_space(self):
         self.assertEqual(
             parse_one("SELECT ROW() OVER(PARTITION  BY x) FROM x GROUP  BY y").sql(),

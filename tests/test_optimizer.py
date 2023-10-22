@@ -550,6 +550,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.left.type.this, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type.this, exp.DataType.Type.INT)
 
+        expression = annotate_types(parse_one("SELECT A[:]")).expressions[0]
+
+        self.assertEqual(expression.type.this, exp.DataType.Type.UNKNOWN)
+        self.assertEqual(expression.expressions[0].type.this, exp.DataType.Type.UNKNOWN)
+
     def test_interval_math_annotation(self):
         schema = {
             "x": {

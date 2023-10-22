@@ -4050,6 +4050,11 @@ class Parser(metaclass=_Parser):
                 )
             )
 
+        if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:
+            self.raise_error("Expected ]")
+        elif not self._match(TokenType.R_BRACE) and bracket_kind == TokenType.L_BRACE:
+            self.raise_error("Expected }")
+
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
             this = self.expression(exp.Struct, expressions=expressions)
@@ -4058,11 +4063,6 @@ class Parser(metaclass=_Parser):
         else:
             expressions = apply_index_offset(this, expressions, -self.INDEX_OFFSET)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
-
-        if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:
-            self.raise_error("Expected ]")
-        elif not self._match(TokenType.R_BRACE) and bracket_kind == TokenType.L_BRACE:
-            self.raise_error("Expected }")
 
         self._add_comments(this)
         return self._parse_bracket(this)

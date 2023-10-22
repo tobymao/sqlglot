@@ -102,6 +102,20 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "SELECT CURRENT_DATE()",
+            read={
+                "clickhouse": "SELECT CURRENT_DATE()",
+                "postgres": "SELECT CURRENT_DATE",
+            },
+        )
+        self.validate_all(
+            "SELECT CURRENT_TIMESTAMP()",
+            read={
+                "clickhouse": "SELECT CURRENT_TIMESTAMP()",
+                "postgres": "SELECT CURRENT_TIMESTAMP",
+            },
+        )
+        self.validate_all(
             "SELECT match('ThOmAs', CONCAT('(?i)', 'thomas'))",
             read={
                 "postgres": "SELECT 'ThOmAs' ~* 'thomas'",

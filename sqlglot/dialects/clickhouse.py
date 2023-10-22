@@ -375,6 +375,7 @@ class ClickHouse(Dialect):
             exp.ApproxDistinct: rename_func("uniq"),
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
+            exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: lambda self, e: self.func(
                 "DATE_ADD", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
             ),

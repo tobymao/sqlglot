@@ -61,6 +61,18 @@ class TestSnowflake(Validator):
             "SELECT {'test': 'best'}::VARIANT",
             "SELECT CAST(OBJECT_CONSTRUCT('test', 'best') AS VARIANT)",
         )
+        self.validate_identity(
+            "SELECT {fn DAYNAME('2022-5-13')}",
+            "SELECT DAYNAME('2022-5-13')",
+        )
+        self.validate_identity(
+            "SELECT {fn LOG(5)}",
+            "SELECT LN(5)",
+        )
+        self.validate_identity(
+            "SELECT {fn CEILING(5.3)}",
+            "SELECT CEIL(5.3)",
+        )
 
         self.validate_all("CAST(x AS BYTEINT)", write={"snowflake": "CAST(x AS INT)"})
         self.validate_all("CAST(x AS CHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})

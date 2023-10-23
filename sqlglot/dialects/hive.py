@@ -113,6 +113,7 @@ def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff) -> str:
     diff_sql = f"{sql_func}({self.format_args(expression.this, expression.expression)})"
 
     if months_between:
+        # MONTHS_BETWEEN returns a float, so we need to truncate the fractional part
         diff_sql = f"CAST({diff_sql} AS INT)"
 
     return f"{diff_sql}{multiplier_sql}"

@@ -545,6 +545,12 @@ class Snowflake(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def log_sql(self, expression: exp.Log) -> str:
+            if not expression.expression:
+                return self.func("LN", expression.this)
+
+            return super().log_sql(expression)
+
         def unnest_sql(self, expression: exp.Unnest) -> str:
             selects = ["value"]
             unnest_alias = expression.args.get("alias")

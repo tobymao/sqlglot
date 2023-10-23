@@ -538,11 +538,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         elif this.type.is_type(exp.DataType.Type.ARRAY):
             contained_type = seq_get(this.type.expressions, 0) or exp.DataType.Type.UNKNOWN
             self._set_type(expression, contained_type)
-        elif this.type.is_type(exp.DataType.Type.MAP) and bracket_arg in this.keys:
+        elif isinstance(this, (exp.Map, exp.VarMap)) and bracket_arg in this.keys:
             index = this.keys.index(bracket_arg)
             value = seq_get(this.values, index)
             value_type = value.type if value else exp.DataType.Type.UNKNOWN
-            self._set_type(expression, value_type)
+            self._set_type(expression, value_type or exp.DataType.Type.UNKNOWN)
         else:
             self._set_type(expression, exp.DataType.Type.UNKNOWN)
 

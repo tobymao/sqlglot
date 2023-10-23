@@ -632,6 +632,11 @@ class TestExpressions(unittest.TestCase):
         week = unit.find(exp.Week)
         self.assertEqual(week.this, exp.var("thursday"))
 
+        for abbreviated_unit, unnabreviated_unit in exp.TimeUnit.UNABBREVIATED_UNIT_NAME.items():
+            interval = parse_one(f"interval '500 {abbreviated_unit}'")
+            self.assertIsInstance(interval.unit, exp.Var)
+            self.assertEqual(interval.unit.name, unnabreviated_unit)
+
     def test_identifier(self):
         self.assertTrue(exp.to_identifier('"x"').quoted)
         self.assertFalse(exp.to_identifier("x").quoted)

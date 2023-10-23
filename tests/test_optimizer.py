@@ -555,6 +555,26 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.type.this, exp.DataType.Type.UNKNOWN)
         self.assertEqual(expression.expressions[0].type.this, exp.DataType.Type.UNKNOWN)
 
+        expression = annotate_types(parse_one("SELECT ARRAY[1, 2, 3][1]")).expressions[0]
+        self.assertEqual(expression.this.type.sql(), "ARRAY<INT>")
+        self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+
+        expression = annotate_types(parse_one("SELECT ARRAY[1, 2, 3][1 : 2]")).expressions[0]
+        self.assertEqual(expression.this.type.sql(), "ARRAY<INT>")
+        self.assertEqual(expression.type.sql(), "ARRAY<INT>")
+
+        expression = annotate_types(
+            parse_one("SELECT ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]][1][2]")
+        ).expressions[0]
+        self.assertEqual(expression.this.this.type.sql(), "ARRAY<ARRAY<INT>>")
+        self.assertEqual(expression.this.type.sql(), "ARRAY<INT>")
+        self.assertEqual(expression.type.this, exp.DataType.Type.INT)
+
+        expression = annotate_types(
+            parse_one("SELECT ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]][1:2]")
+        ).expressions[0]
+        self.assertEqual(expression.type.sql(), "ARRAY<ARRAY<INT>>")
+
     def test_interval_math_annotation(self):
         schema = {
             "x": {

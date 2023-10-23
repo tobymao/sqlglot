@@ -313,6 +313,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNIQUE,
         TokenType.UNPIVOT,
         TokenType.UPDATE,
+        TokenType.USE,
         TokenType.VOLATILE,
         TokenType.WINDOW,
         *CREATABLES,

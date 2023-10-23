@@ -175,6 +175,7 @@ class Redshift(Postgres):
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.JSONExtract: _json_sql,
             exp.JSONExtractScalar: _json_sql,
+            exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.SafeConcat: concat_to_dpipe_sql,
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]

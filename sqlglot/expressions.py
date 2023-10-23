@@ -4174,6 +4174,10 @@ class Abs(Func):
     pass
 
 
+class ApproxTopK(AggFunc):
+    arg_types = {"this": True, "expression": False, "counters": False}
+
+
 class Flatten(Func):
     pass
 

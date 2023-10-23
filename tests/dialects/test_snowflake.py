@@ -9,6 +9,10 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
+        expr.selects[0].assert_is(exp.AggFunc)
+        self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
+
         self.validate_identity("SELECT DAYOFMONTH(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT DAYOFYEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("LISTAGG(data['some_field'], ',')")

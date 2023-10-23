@@ -531,14 +531,18 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         self._annotate_args(expression)
 
         bracket_arg = expression.expressions[0]
+        this = expression.this
 
         if isinstance(bracket_arg, exp.Slice):
-            self._set_type(expression, expression.this.type)
-        elif expression.this.type.is_type(exp.DataType.Type.ARRAY):
-            contained_type = (
-                seq_get(expression.this.type.expressions, 0) or exp.DataType.Type.UNKNOWN
-            )
+            self._set_type(expression, this.type)
+        elif this.type.is_type(exp.DataType.Type.ARRAY):
+            contained_type = seq_get(this.type.expressions, 0) or exp.DataType.Type.UNKNOWN
             self._set_type(expression, contained_type)
+        elif this.type.is_type(exp.DataType.Type.MAP) and bracket_arg in this.keys:
+            index = this.keys.index(bracket_arg)
+            value = seq_get(this.values, index)
+            value_type = value.type if value else exp.DataType.Type.UNKNOWN
+            self._set_type(expression, value_type)
         else:
             self._set_type(expression, exp.DataType.Type.UNKNOWN)
 

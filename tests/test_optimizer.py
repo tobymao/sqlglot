@@ -550,6 +550,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.left.type.this, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type.this, exp.DataType.Type.INT)
 
+    def test_bracket_annotation(self):
         expression = annotate_types(parse_one("SELECT A[:]")).expressions[0]
 
         self.assertEqual(expression.type.this, exp.DataType.Type.UNKNOWN)
@@ -574,6 +575,21 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             parse_one("SELECT ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]][1:2]")
         ).expressions[0]
         self.assertEqual(expression.type.sql(), "ARRAY<ARRAY<INT>>")
+
+        expression = annotate_types(parse_one("MAP(1.0, 2, '2', 3.0)['2']", read="spark"))
+        self.assertEqual(expression.type.this, exp.DataType.Type.DOUBLE)
+
+        expression = annotate_types(parse_one("MAP(1.0, 2, x, 3.0)[2]", read="spark"))
+        self.assertEqual(expression.type.this, exp.DataType.Type.UNKNOWN)
+
+        expression = annotate_types(parse_one("MAP(ARRAY(1.0, x), ARRAY(2, 3.0))[x]"))
+        self.assertEqual(expression.type.this, exp.DataType.Type.DOUBLE)
+
+        expression = annotate_types(
+            parse_one("SELECT MAP(1.0, 2, 2, t.y)[2] FROM t", read="spark"),
+            schema={"t": {"y": "int"}},
+        ).expressions[0]
+        self.assertEqual(expression.type.this, exp.DataType.Type.INT)
 
     def test_interval_math_annotation(self):
         schema = {

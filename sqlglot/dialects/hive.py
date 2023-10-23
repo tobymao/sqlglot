@@ -106,10 +106,15 @@ def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff) -> str:
         sec_diff = f"UNIX_TIMESTAMP({left}) - UNIX_TIMESTAMP({right})"
         return f"({sec_diff}){factor}" if factor else sec_diff
 
-    sql_func = "MONTHS_BETWEEN" if unit in DIFF_MONTH_SWITCH else "DATEDIFF"
+    months_between = unit in DIFF_MONTH_SWITCH
+    sql_func = "MONTHS_BETWEEN" if months_between else "DATEDIFF"
     _, multiplier = DATE_DELTA_INTERVAL.get(unit, ("", 1))
     multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""
     diff_sql = f"{sql_func}({self.format_args(expression.this, expression.expression)})"
+
+    if months_between:
+        # MONTHS_BETWEEN returns a float, so we need to truncate the fractional part
+        diff_sql = f"CAST({diff_sql} AS INT)"
 
     return f"{diff_sql}{multiplier_sql}"
 

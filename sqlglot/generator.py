@@ -891,6 +891,10 @@ class Generator:
         alias = self.sql(expression, "this")
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
+
+        if not alias and not self.UNNEST_COLUMN_ONLY:
+            alias = "_t"
+
         return f"{alias}{columns}"
 
     def bitstring_sql(self, expression: exp.BitString) -> str:

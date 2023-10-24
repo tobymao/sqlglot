@@ -2450,7 +2450,7 @@ QUERY_MODIFIERS = {
     "windows": False,
     "distribute": False,
     "sort": False,
-    "clustass": False,
+    "cluster": False,
     "order": False,
     "limit": False,
     "offset": False,

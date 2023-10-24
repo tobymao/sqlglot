@@ -4082,14 +4082,14 @@ class TimeUnit(Expression):
         "y": "year",
     }
 
+    VAR_LIKE = (Column, Literal, Var)
+
     def __init__(self, **args):
         unit = args.get("unit")
-        if isinstance(unit, (Column, Literal)):
+        if isinstance(unit, self.VAR_LIKE):
             args["unit"] = Var(this=self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name)
         elif isinstance(unit, Week):
             unit.set("this", Var(this=unit.this.name))
-        elif isinstance(unit, Var):
-            unit.set("this", self.UNABBREVIATED_UNIT_NAME.get(unit.this) or unit.this)
 
         super().__init__(**args)
 

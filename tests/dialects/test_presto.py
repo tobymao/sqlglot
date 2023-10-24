@@ -559,6 +559,37 @@ class TestPresto(Validator):
         )
 
         self.validate_all(
+            "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+            read={
+                "bigquery": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "clickhouse": "SELECT argMax(a.id, a.timestamp) FROM a",
+                "duckdb": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "snowflake": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "spark": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "teradata": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+            },
+            write={
+                "bigquery": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "clickhouse": "SELECT argMax(a.id, a.timestamp) FROM a",
+                "duckdb": "SELECT ARG_MAX(a.id, a.timestamp) FROM a",
+                "presto": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "snowflake": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "spark": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+                "teradata": "SELECT MAX_BY(a.id, a.timestamp) FROM a",
+            },
+        )
+        self.validate_all(
+            "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
+            write={
+                "clickhouse": "SELECT argMin(a.id, a.timestamp) FROM a",
+                "duckdb": "SELECT ARG_MIN(a.id, a.timestamp) FROM a",
+                "presto": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
+                "snowflake": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
+                "spark": "SELECT MIN_BY(a.id, a.timestamp) FROM a",
+                "teradata": "SELECT MIN_BY(a.id, a.timestamp, 3) FROM a",
+            },
+        )
+        self.validate_all(
             """JSON '"foo"'""",
             write={
                 "bigquery": """PARSE_JSON('"foo"')""",

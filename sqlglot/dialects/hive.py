@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
+    arg_max_or_min_no_count,
     create_with_partitions_sql,
     format_time_lambda,
     if_sql,
@@ -431,6 +432,8 @@ class Hive(Dialect):
             exp.Property: _property_sql,
             exp.AnyValue: rename_func("FIRST"),
             exp.ApproxDistinct: approx_count_distinct_sql,
+            exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
+            exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayJoin: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),
             exp.ArraySize: rename_func("SIZE"),

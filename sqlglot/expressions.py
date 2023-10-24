@@ -4189,6 +4189,16 @@ class Abs(Func):
     pass
 
 
+class ArgMax(AggFunc):
+    arg_types = {"this": True, "expression": True, "count": False}
+    _sql_names = ["ARG_MAX", "ARGMAX", "MAX_BY"]
+
+
+class ArgMin(AggFunc):
+    arg_types = {"this": True, "expression": True, "count": False}
+    _sql_names = ["ARG_MIN", "ARGMIN", "MIN_BY"]
+
+
 class ApproxTopK(AggFunc):
     arg_types = {"this": True, "expression": False, "counters": False}
 

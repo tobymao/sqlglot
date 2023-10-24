@@ -4069,10 +4069,25 @@ class TimeUnit(Expression):
 
     arg_types = {"unit": False}
 
+    UNABBREVIATED_UNIT_NAME = {
+        "d": "day",
+        "h": "hour",
+        "m": "minute",
+        "ms": "millisecond",
+        "ns": "nanosecond",
+        "q": "quarter",
+        "s": "second",
+        "us": "microsecond",
+        "w": "week",
+        "y": "year",
+    }
+
+    VAR_LIKE = (Column, Literal, Var)
+
     def __init__(self, **args):
         unit = args.get("unit")
-        if isinstance(unit, (Column, Literal)):
-            args["unit"] = Var(this=unit.name)
+        if isinstance(unit, self.VAR_LIKE):
+            args["unit"] = Var(this=self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name)
         elif isinstance(unit, Week):
             unit.set("this", Var(this=unit.this.name))
 

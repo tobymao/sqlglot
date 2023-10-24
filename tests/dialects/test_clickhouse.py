@@ -102,6 +102,13 @@ class TestClickhouse(Validator):
         )
 
         self.validate_all(
+            "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' microsecond",
+            read={
+                "duckdb": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
+                "postgres": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
+            },
+        )
+        self.validate_all(
             "SELECT CURRENT_DATE()",
             read={
                 "clickhouse": "SELECT CURRENT_DATE()",

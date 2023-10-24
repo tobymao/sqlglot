@@ -93,36 +93,15 @@ def lineage(
 
         # Find the specific select clause that is the source of the column we want.
         # This can either be a specific, named select or a generic `*` clause.
-        select = (
-            scope.expression.selects[column]
-            if isinstance(column, int)
-            else next(
-                (select for select in scope.expression.selects if select.alias_or_name == column),
-                exp.Star() if scope.expression.is_star else None,
-            )
-        )
-
-        if not select:
-            raise ValueError(f"Could not find {column} in {scope.expression}")
+        select = _must_column_from_select(scope, column)
 
         if isinstance(scope.expression, exp.Union):
             upstream = upstream or Node(name="UNION", source=scope.expression, expression=select)
 
-            index = (
-                column
-                if isinstance(column, int)
-                else next(
-                    (
-                        i
-                        for i, select in enumerate(scope.expression.selects)
-                        if select.alias_or_name == column
-                    ),
-                    exp.Star() if scope.expression.is_star else None,
-                )
-            )
+            index = _must_column_from_select(scope, column)
 
             for s in scope.union_scopes:
-                to_node(index, scope=s, upstream=upstream)
+                to_node(index.name, scope=s, upstream=upstream)
 
             return upstream
 
@@ -182,6 +161,23 @@ def lineage(
         return node
 
     return to_node(column if isinstance(column, str) else column.name, scope)
+
+
+def _must_column_from_select(scope: Scope, column: int | str) -> exp.Column | exp.Star:
+    select = (
+        scope.expression.selects[column]
+        if isinstance(column, int)
+        else next(
+            (select for select in scope.expression.selects if select.alias_or_name == column),
+            exp.Star() if scope.expression.is_star else None,
+        )
+    )
+
+    if select:
+        return select
+
+    raise ValueError(f"Could not find {column} in {scope.expression}")
+
 
 
 class LineageHTML:

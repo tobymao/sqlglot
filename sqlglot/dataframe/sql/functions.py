@@ -84,11 +84,11 @@ def min(col: ColumnOrName) -> Column:
 
 
 def max_by(col: ColumnOrName, ord: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "MAX_BY", ord)
+    return Column.invoke_expression_over_column(col, expression.ArgMax, expression=ord)
 
 
 def min_by(col: ColumnOrName, ord: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "MIN_BY", ord)
+    return Column.invoke_expression_over_column(col, expression.ArgMin, expression=ord)
 
 
 def count(col: ColumnOrName) -> Column:

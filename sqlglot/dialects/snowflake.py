@@ -460,6 +460,8 @@ class Snowflake(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ArgMax: rename_func("MAX_BY"),
+            exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),

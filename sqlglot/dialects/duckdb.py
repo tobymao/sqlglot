@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
+    arg_max_or_min_no_count,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
     binary_from_function,
@@ -249,6 +250,8 @@ class DuckDB(Dialect):
             if e.expressions and e.expressions[0].find(exp.Select)
             else inline_array_sql(self, e),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
+            exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
+            exp.ArgMin: arg_max_or_min_no_count("ARG_MIN"),
             exp.ArraySort: _array_sort_sql,
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.BitwiseXor: rename_func("XOR"),

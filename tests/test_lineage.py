@@ -235,3 +235,28 @@ class TestLineage(unittest.TestCase):
         node = node.downstream[0]
         self.assertEqual(node.name, "t3.my_column")
         self.assertEqual(node.source.sql(), "foo AS t3")
+
+    def test_lineage_cte_union(self) -> None:
+        query = """
+        WITH dataset AS (
+            SELECT *
+            FROM catalog.db.table_a
+
+            UNION
+
+            SELECT *
+            FROM catalog.db.table_b
+        )
+
+        SELECT x, created_at FROM dataset;
+        """
+        node = lineage("x", query)
+
+        self.assertEqual(node.name, "x")
+
+        downstream_a = node.downstream[0]
+        self.assertEqual(downstream_a.name, "0")
+        self.assertEqual(downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a")
+        downstream_b = node.downstream[1]
+        self.assertEqual(downstream_b.name, "0")
+        self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")

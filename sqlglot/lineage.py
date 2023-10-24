@@ -112,11 +112,17 @@ def lineage(
                 column
                 if isinstance(column, int)
                 else next(
-                    i
-                    for i, select in enumerate(scope.expression.selects)
-                    if select.alias_or_name == column
+                    (
+                        i
+                        for i, select in enumerate(scope.expression.selects)
+                        if select.alias_or_name == column or select.is_star
+                    ),
+                    -1,  # mypy will not allow a None here, but a negative index should never be returned
                 )
             )
+
+            if index == -1:
+                raise ValueError(f"Could not find {column} in {scope.expression}")
 
             for s in scope.union_scopes:
                 to_node(index, scope=s, upstream=upstream)

@@ -93,7 +93,6 @@ def lineage(
 
         # Find the specific select clause that is the source of the column we want.
         # This can either be a specific, named select or a generic `*` clause.
-
         select = (
             scope.expression.selects[column]
             if isinstance(column, int)

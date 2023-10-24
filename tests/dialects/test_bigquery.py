@@ -143,6 +143,13 @@ class TestBigQuery(Validator):
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_all(
+            "SELECT * FROM t WHERE EXISTS(SELECT * FROM unnest(nums) AS x WHERE x > 1)",
+            write={
+                "bigquery": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS x WHERE x > 1)",
+                "duckdb": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS _t(x) WHERE x > 1)",
+            },
+        )
+        self.validate_all(
             "NULL",
             read={
                 "duckdb": "NULL = a",
@@ -476,9 +483,8 @@ class TestBigQuery(Validator):
             },
             write={
                 "bigquery": "SELECT * FROM UNNEST(['7', '14']) AS x",
-                "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS (x)",
-                "hive": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS (x)",
-                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS (x)",
+                "presto": "SELECT * FROM UNNEST(ARRAY['7', '14']) AS _t(x)",
+                "spark": "SELECT * FROM UNNEST(ARRAY('7', '14')) AS _t(x)",
             },
         )
         self.validate_all(

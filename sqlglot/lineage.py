@@ -112,9 +112,12 @@ def lineage(
                 column
                 if isinstance(column, int)
                 else next(
-                    i
-                    for i, select in enumerate(scope.expression.selects)
-                    if select.alias_or_name == column
+                    (
+                        i
+                        for i, select in enumerate(scope.expression.selects)
+                        if select.alias_or_name == column
+                    ),
+                    exp.Star() if scope.expression.is_star else None,
                 )
             )
 

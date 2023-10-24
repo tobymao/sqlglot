@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    arg_max_or_min_no_count,
     inline_array_sql,
     no_pivot_sql,
     rename_func,
@@ -373,6 +374,8 @@ class ClickHouse(Dialect):
             exp.Select: transforms.preprocess([transforms.eliminate_qualify]),
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
+            exp.ArgMax: arg_max_or_min_no_count("argMax"),
+            exp.ArgMin: arg_max_or_min_no_count("argMin"),
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),

@@ -280,6 +280,8 @@ class Presto(Dialect):
             exp.AnyValue: rename_func("ARBITRARY"),
             exp.ApproxDistinct: _approx_distinct_sql,
             exp.ApproxQuantile: rename_func("APPROX_PERCENTILE"),
+            exp.ArgMax: rename_func("MAX_BY"),
+            exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),

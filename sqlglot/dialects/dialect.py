@@ -822,3 +822,13 @@ def generatedasidentitycolumnconstraint_sql(
     start = self.sql(expression, "start") or "1"
     increment = self.sql(expression, "increment") or "1"
     return f"IDENTITY({start}, {increment})"
+
+
+def arg_max_or_min_no_count(name: str) -> t.Callable[[Generator, exp.ArgMax | exp.ArgMin], str]:
+    def _arg_max_or_min_sql(self: Generator, expression: exp.ArgMax | exp.ArgMin) -> str:
+        if expression.args.get("count"):
+            self.unsupported(f"Only two arguments are supported in function {name}.")
+
+        return self.func(name, expression.this, expression.expression)
+
+    return _arg_max_or_min_sql

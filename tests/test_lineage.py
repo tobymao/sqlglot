@@ -253,4 +253,13 @@ class TestLineage(unittest.TestCase):
         node = lineage("x", query)
 
         self.assertEqual(node.name, "x")
-        self.assertEqual(len(node.downstream), 2)
+
+        downstream_a = node.downstream[0]
+        self.assertEqual(downstream_a.name, "*")
+        self.assertEqual(downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a")
+        downstream_b = node.downstream[1]
+        self.assertEqual(downstream_b.name, "*")
+        self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
+
+        # downstream_a = downstream_a.downstream[0]
+        # self.assertEqual(downstream_a.source.sql(), "catalog.db.table_a AS table_a")

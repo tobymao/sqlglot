@@ -108,8 +108,24 @@ def lineage(
         if isinstance(scope.expression, exp.Union):
             upstream = upstream or Node(name="UNION", source=scope.expression, expression=select)
 
+            index = (
+                column
+                if isinstance(column, int)
+                else next(
+                    (
+                        i
+                        for i, select in enumerate(scope.expression.selects)
+                        if select.alias_or_name == column or select.is_star
+                    ),
+                    None,
+                )
+            )
+
+            if index is None:
+                raise ValueError(f"Could not find {column} in {scope.expression}")
+
             for s in scope.union_scopes:
-                to_node(select.name, scope=s, upstream=upstream)
+                to_node(index, scope=s, upstream=upstream)
 
             return upstream
 

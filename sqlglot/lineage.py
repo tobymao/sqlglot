@@ -159,6 +159,11 @@ def lineage(
         if upstream:
             upstream.downstream.append(node)
 
+        # if the select is a star add all scope sources as downstreams
+        if select.is_star:
+            for source in scope.sources.values():
+                node.downstream.append(Node(name=select.sql(), source=source, expression=source))
+
         # Find all columns that went into creating this one to list their lineage nodes.
         source_columns = set(select.find_all(exp.Column))
 

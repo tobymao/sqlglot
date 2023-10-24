@@ -260,3 +260,16 @@ class TestLineage(unittest.TestCase):
         downstream_b = node.downstream[1]
         self.assertEqual(downstream_b.name, "0")
         self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
+
+    def test_select_star(self) -> None:
+        node = lineage("x", "SELECT x from (SELECT * from table_a)")
+
+        self.assertEqual(node.name, "x")
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.name, "_q_0.x")
+        self.assertEqual(downstream.source.sql(), "SELECT * FROM table_a AS table_a")
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(downstream.name, "*")
+        self.assertEqual(downstream.source.sql(), "table_a AS table_a")

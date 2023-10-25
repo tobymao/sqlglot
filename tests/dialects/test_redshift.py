@@ -10,6 +10,18 @@ class TestRedshift(Validator):
             "SELECT * FROM x WHERE y = DATEADD('month', -1, DATE_TRUNC('month', (SELECT y FROM #temp_table)))",
             "SELECT * FROM x WHERE y = DATEADD(month, -1, CAST(DATE_TRUNC('month', (SELECT y FROM #temp_table)) AS DATE))",
         )
+
+        self.validate_all(
+            "LISTAGG(sellerid, ', ')",
+            read={
+                "duckdb": "STRING_AGG(sellerid, ', ')",
+            },
+            write={
+                # GROUP_CONCAT and STRING_AGG are aliases in DuckDB
+                "duckdb": "GROUP_CONCAT(sellerid, ', ')",
+                "redshift": "LISTAGG(sellerid, ', ')",
+            },
+        )
         self.validate_all(
             "SELECT APPROXIMATE COUNT(DISTINCT y)",
             read={

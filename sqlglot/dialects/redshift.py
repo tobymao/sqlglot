@@ -56,6 +56,7 @@ class Redshift(Postgres):
                 expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
                 unit=seq_get(args, 0),
             ),
+            "LISTAGG": exp.GroupConcat.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
         }
 
@@ -175,6 +176,7 @@ class Redshift(Postgres):
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.JSONExtract: _json_sql,
             exp.JSONExtractScalar: _json_sql,
+            exp.GroupConcat: rename_func("LISTAGG"),
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.SafeConcat: concat_to_dpipe_sql,
             exp.Select: transforms.preprocess(

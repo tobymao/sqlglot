@@ -393,7 +393,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             full_outer_join.set("side", "left")
             expression_copy.args["joins"][index].set("side", "right")
 
-            return exp.union(expression, expression_copy)
+            return exp.union(expression, expression_copy, copy=False)
 
     return expression
 

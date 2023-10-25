@@ -567,6 +567,13 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            # MySQL doesn't support FULL OUTER joins
+            "SELECT * FROM t1 LEFT OUTER JOIN t2 ON t1.x = t2.x UNION SELECT * FROM t1 RIGHT OUTER JOIN t2 ON t1.x = t2.x",
+            read={
+                "postgres": "SELECT * FROM t1 FULL OUTER JOIN t2 ON t1.x = t2.x",
+            },
+        )
+        self.validate_all(
             "a XOR b",
             read={
                 "mysql": "a XOR b",

@@ -429,6 +429,9 @@
             <li>
                     <a class="function" href="#generatedasidentitycolumnconstraint_sql">generatedasidentitycolumnconstraint_sql</a>
             </li>
+            <li>
+                    <a class="function" href="#arg_max_or_min_no_count">arg_max_or_min_no_count</a>
+            </li>
     </ul>
 
 
@@ -1276,6 +1279,16 @@
 </span><span id="L-822"><a href="#L-822"><span class="linenos">822</span></a>    <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;1&quot;</span>
 </span><span id="L-823"><a href="#L-823"><span class="linenos">823</span></a>    <span class="n">increment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="s2">&quot;increment&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;1&quot;</span>
 </span><span id="L-824"><a href="#L-824"><span class="linenos">824</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;IDENTITY(</span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span><span id="L-825"><a href="#L-825"><span class="linenos">825</span></a>
+</span><span id="L-826"><a href="#L-826"><span class="linenos">826</span></a>
+</span><span id="L-827"><a href="#L-827"><span class="linenos">827</span></a><span class="k">def</span> <span class="nf">arg_max_or_min_no_count</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMax</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMin</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-828"><a href="#L-828"><span class="linenos">828</span></a>    <span class="k">def</span> <span class="nf">_arg_max_or_min_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMax</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-829"><a href="#L-829"><span class="linenos">829</span></a>        <span class="k">if</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">):</span>
+</span><span id="L-830"><a href="#L-830"><span class="linenos">830</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Only two arguments are supported in function </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="L-831"><a href="#L-831"><span class="linenos">831</span></a>
+</span><span id="L-832"><a href="#L-832"><span class="linenos">832</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-833"><a href="#L-833"><span class="linenos">833</span></a>
+</span><span id="L-834"><a href="#L-834"><span class="linenos">834</span></a>    <span class="k">return</span> <span class="n">_arg_max_or_min_sql</span>
 </span></pre></div>
 
 
@@ -3998,6 +4011,31 @@ columns are removed from the create statement.</p>
 </span><span id="generatedasidentitycolumnconstraint_sql-823"><a href="#generatedasidentitycolumnconstraint_sql-823"><span class="linenos">823</span></a>    <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;1&quot;</span>
 </span><span id="generatedasidentitycolumnconstraint_sql-824"><a href="#generatedasidentitycolumnconstraint_sql-824"><span class="linenos">824</span></a>    <span class="n">increment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="s2">&quot;increment&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;1&quot;</span>
 </span><span id="generatedasidentitycolumnconstraint_sql-825"><a href="#generatedasidentitycolumnconstraint_sql-825"><span class="linenos">825</span></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;IDENTITY(</span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">increment</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="arg_max_or_min_no_count">
+                            <input id="arg_max_or_min_no_count-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">arg_max_or_min_no_count</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">name</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="n">Callable</span><span class="p">[[</span><span class="n"><a href="../generator.html#Generator">sqlglot.generator.Generator</a></span><span class="p">,</span> <span class="n"><a href="../expressions.html#ArgMax">sqlglot.expressions.ArgMax</a></span> <span class="o">|</span> <span class="n"><a href="../expressions.html#ArgMin">sqlglot.expressions.ArgMin</a></span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span>:</span></span>
+
+                <label class="view-source-button" for="arg_max_or_min_no_count-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#arg_max_or_min_no_count"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="arg_max_or_min_no_count-828"><a href="#arg_max_or_min_no_count-828"><span class="linenos">828</span></a><span class="k">def</span> <span class="nf">arg_max_or_min_no_count</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMax</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMin</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="arg_max_or_min_no_count-829"><a href="#arg_max_or_min_no_count-829"><span class="linenos">829</span></a>    <span class="k">def</span> <span class="nf">_arg_max_or_min_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMax</span> <span class="o">|</span> <span class="n">exp</span><span class="o">.</span><span class="n">ArgMin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="arg_max_or_min_no_count-830"><a href="#arg_max_or_min_no_count-830"><span class="linenos">830</span></a>        <span class="k">if</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">):</span>
+</span><span id="arg_max_or_min_no_count-831"><a href="#arg_max_or_min_no_count-831"><span class="linenos">831</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Only two arguments are supported in function </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="arg_max_or_min_no_count-832"><a href="#arg_max_or_min_no_count-832"><span class="linenos">832</span></a>
+</span><span id="arg_max_or_min_no_count-833"><a href="#arg_max_or_min_no_count-833"><span class="linenos">833</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="arg_max_or_min_no_count-834"><a href="#arg_max_or_min_no_count-834"><span class="linenos">834</span></a>
+</span><span id="arg_max_or_min_no_count-835"><a href="#arg_max_or_min_no_count-835"><span class="linenos">835</span></a>    <span class="k">return</span> <span class="n">_arg_max_or_min_sql</span>
 </span></pre></div>
 
 

@@ -629,6 +629,7 @@ class MySQL(Dialect):
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,
+                    transforms.eliminate_full_outer_join,
                 ]
             ),
             exp.StrPosition: strposition_to_locate_sql,

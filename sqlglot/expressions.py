@@ -5459,7 +5459,12 @@ def _wrap(expression: E, kind: t.Type[Expression]) -> E | Paren:
 
 
 def union(
-    left: ExpOrStr, right: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+    left: ExpOrStr,
+    right: ExpOrStr,
+    distinct: bool = True,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
 ) -> Union:
     """
     Initializes a syntax tree from one UNION expression.
@@ -5475,19 +5480,25 @@ def union(
             If an `Expression` instance is passed, it will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
+        copy: whether or not to copy the expression.
         opts: other options to use to parse the input expressions.
 
     Returns:
         The new Union instance.
     """
-    left = maybe_parse(sql_or_expression=left, dialect=dialect, **opts)
-    right = maybe_parse(sql_or_expression=right, dialect=dialect, **opts)
+    left = maybe_parse(sql_or_expression=left, dialect=dialect, copy=copy, **opts)
+    right = maybe_parse(sql_or_expression=right, dialect=dialect, copy=copy, **opts)
 
     return Union(this=left, expression=right, distinct=distinct)
 
 
 def intersect(
-    left: ExpOrStr, right: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+    left: ExpOrStr,
+    right: ExpOrStr,
+    distinct: bool = True,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
 ) -> Intersect:
     """
     Initializes a syntax tree from one INTERSECT expression.
@@ -5503,19 +5514,25 @@ def intersect(
             If an `Expression` instance is passed, it will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
+        copy: whether or not to copy the expression.
         opts: other options to use to parse the input expressions.
 
     Returns:
         The new Intersect instance.
     """
-    left = maybe_parse(sql_or_expression=left, dialect=dialect, **opts)
-    right = maybe_parse(sql_or_expression=right, dialect=dialect, **opts)
+    left = maybe_parse(sql_or_expression=left, dialect=dialect, copy=copy, **opts)
+    right = maybe_parse(sql_or_expression=right, dialect=dialect, copy=copy, **opts)
 
     return Intersect(this=left, expression=right, distinct=distinct)
 
 
 def except_(
-    left: ExpOrStr, right: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+    left: ExpOrStr,
+    right: ExpOrStr,
+    distinct: bool = True,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
 ) -> Except:
     """
     Initializes a syntax tree from one EXCEPT expression.
@@ -5531,13 +5548,14 @@ def except_(
             If an `Expression` instance is passed, it will be used as-is.
         distinct: set the DISTINCT flag if and only if this is true.
         dialect: the dialect used to parse the input expression.
+        copy: whether or not to copy the expression.
         opts: other options to use to parse the input expressions.
 
     Returns:
         The new Except instance.
     """
-    left = maybe_parse(sql_or_expression=left, dialect=dialect, **opts)
-    right = maybe_parse(sql_or_expression=right, dialect=dialect, **opts)
+    left = maybe_parse(sql_or_expression=left, dialect=dialect, copy=copy, **opts)
+    right = maybe_parse(sql_or_expression=right, dialect=dialect, copy=copy, **opts)
 
     return Except(this=left, expression=right, distinct=distinct)
 

@@ -164,8 +164,9 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
 
 
 def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp.Expression]:
+    """Convert explode/posexplode into unnest (used in hive -> presto)."""
+
     def _explode_to_unnest(expression: exp.Expression) -> exp.Expression:
-        """Convert explode/posexplode into unnest (used in hive -> presto)."""
         if isinstance(expression, exp.Select):
             from sqlglot.optimizer.scope import Scope
 
@@ -297,6 +298,7 @@ PERCENTILES = (exp.PercentileCont, exp.PercentileDisc)
 
 
 def add_within_group_for_percentiles(expression: exp.Expression) -> exp.Expression:
+    """Transforms percentiles by adding a WITHIN GROUP clause to them."""
     if (
         isinstance(expression, PERCENTILES)
         and not isinstance(expression.parent, exp.WithinGroup)
@@ -311,6 +313,7 @@ def add_within_group_for_percentiles(expression: exp.Expression) -> exp.Expressi
 
 
 def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expression:
+    """Transforms percentiles by getting rid of their corresponding WITHIN GROUP clause."""
     if (
         isinstance(expression, exp.WithinGroup)
         and isinstance(expression.this, PERCENTILES)
@@ -324,6 +327,7 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
 
 
 def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression:
+    """Uses projection output names in recursive CTE definitions to define the CTEs' columns."""
     if isinstance(expression, exp.With) and expression.recursive:
         next_name = name_sequence("_c_")
 
@@ -342,6 +346,7 @@ def add_recursive_cte_column_names(expression: exp.Expression) -> exp.Expression
 
 
 def epoch_cast_to_ts(expression: exp.Expression) -> exp.Expression:
+    """Replace 'epoch' in casts by the equivalent date literal."""
     if (
         isinstance(expression, (exp.Cast, exp.TryCast))
         and expression.name.lower() == "epoch"
@@ -353,6 +358,7 @@ def epoch_cast_to_ts(expression: exp.Expression) -> exp.Expression:
 
 
 def eliminate_semi_and_anti_joins(expression: exp.Expression) -> exp.Expression:
+    """Convert SEMI and ANTI joins into equivalent forms that use EXIST instead."""
     if isinstance(expression, exp.Select):
         for join in expression.args.get("joins") or []:
             on = join.args.get("on")

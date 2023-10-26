@@ -4795,10 +4795,15 @@ class Parser(metaclass=_Parser):
     def _parse_parameter(self) -> exp.Parameter:
         self._match(TokenType.L_BRACE)
 
-        this = self._parse_var() or self._parse_identifier() or self._parse_primary()
-        expression = None
-        if self._match(TokenType.COLON):
-            expression = self._parse_var() or self._parse_identifier() or self._parse_primary()
+        def _parse_parameter_part() -> t.Optional[exp.Expression]:
+            return (
+                self._parse_identifier()
+                or self._parse_primary()
+                or self._parse_var(any_token=True)
+            )
+
+        this = _parse_parameter_part()
+        expression = self._match(TokenType.COLON) and _parse_parameter_part()
 
         self._match(TokenType.R_BRACE)
         return self.expression(exp.Parameter, this=this, expression=expression)

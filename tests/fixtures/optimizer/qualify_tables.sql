@@ -117,3 +117,7 @@ SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS x;
 # title: lateral unnest without alias
 SELECT x FROM t, LATERAL UNNEST(t.xs);
 SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS _q_0;
+
+# title: table with ordinality
+SELECT * FROM t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json;
+SELECT * FROM c.db.t AS t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json;

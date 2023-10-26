@@ -2682,6 +2682,10 @@ class Parser(metaclass=_Parser):
             for join in iter(self._parse_join, None):
                 this.append("joins", join)
 
+        if self._match_pair(TokenType.WITH, TokenType.ORDINALITY):
+            this.set("ordinality", True)
+            this.set("alias", self._parse_table_alias())
+
         return this
 
     def _parse_version(self) -> t.Optional[exp.Version]:

@@ -4797,9 +4797,7 @@ class Parser(metaclass=_Parser):
 
         def _parse_parameter_part() -> t.Optional[exp.Expression]:
             return (
-                self._parse_identifier()
-                or self._parse_primary()
-                or self._parse_var(any_token=True)
+                self._parse_identifier() or self._parse_primary() or self._parse_var(any_token=True)
             )
 
         this = _parse_parameter_part()

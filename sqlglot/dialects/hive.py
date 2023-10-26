@@ -229,6 +229,11 @@ class Hive(Dialect):
         STRING_ESCAPES = ["\\"]
         ENCODE = "utf-8"
 
+        SINGLE_TOKENS = {
+            **tokens.Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.PARAMETER,
+        }
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ADD ARCHIVE": TokenType.COMMAND,
@@ -521,7 +526,10 @@ class Hive(Dialect):
 
         def parameter_sql(self, expression: exp.Parameter) -> str:
             this = self.sql(expression, "this")
+            expression_sql = self.sql(expression, "expression")
+
             parent = expression.parent
+            this = f"{this}:{expression_sql}" if expression_sql else this
 
             if isinstance(parent, exp.EQ) and isinstance(parent.parent, exp.SetItem):
                 # We need to produce SET key = value instead of SET ${key} = value

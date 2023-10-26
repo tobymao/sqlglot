@@ -390,6 +390,8 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("SET hiveconf:some_var = 5")
+        self.validate_identity("SELECT ${hiveconf:some_var}")
         self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")
         self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
 

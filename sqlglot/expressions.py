@@ -2486,6 +2486,7 @@ class Table(Expression):
         "format": False,
         "pattern": False,
         "index": False,
+        "ordinality": False,
     }
 
     @property
@@ -2649,11 +2650,7 @@ class Update(Expression):
 
 
 class Values(UDTF):
-    arg_types = {
-        "expressions": True,
-        "ordinality": False,
-        "alias": False,
-    }
+    arg_types = {"expressions": True, "alias": False}
 
 
 class Var(Expression):

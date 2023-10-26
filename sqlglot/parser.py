@@ -2683,7 +2683,8 @@ class Parser(metaclass=_Parser):
                 this.append("joins", join)
 
         if self._match_pair(TokenType.WITH, TokenType.ORDINALITY):
-            this.set("offset", self._parse_table_alias() or True)
+            this.set("ordinality", True)
+            this.set("alias", self._parse_table_alias())
 
         return this
 

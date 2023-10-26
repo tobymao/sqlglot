@@ -2486,7 +2486,7 @@ class Table(Expression):
         "format": False,
         "pattern": False,
         "index": False,
-        "offset": False,
+        "ordinality": False,
     }
 
     @property

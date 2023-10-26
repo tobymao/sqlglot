@@ -1385,14 +1385,12 @@ class Generator:
         index = self.sql(expression, "index")
         index = f" AT {index}" if index else ""
 
-        offset = expression.args.get("offset") or ""
-        if offset:
-            ordinality = " WITH ORDINALITY"
-            offset = ordinality if offset is True else f"{ordinality} AS {self.sql(offset)}"
+        ordinality = expression.args.get("ordinality") or ""
+        if ordinality:
+            ordinality = f" WITH ORDINALITY{alias}"
+            alias = ""
 
-        return (
-            f"{table}{version}{file_format}{alias}{index}{hints}{pivots}{joins}{laterals}{offset}"
-        )
+        return f"{table}{version}{file_format}{alias}{index}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "

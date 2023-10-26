@@ -429,6 +429,21 @@ class TestHive(Validator):
         self.validate_identity(
             "SELECT key, value, GROUPING__ID, COUNT(*) FROM T1 GROUP BY key, value WITH ROLLUP"
         )
+
+        self.validate_all(
+            "SET hiveconf:some_var = 5",
+            write={
+                "hive": "SET hiveconf:some_var = 5",
+                "spark": "SET hiveconf:some_var = 5",
+            },
+        )
+        self.validate_all(
+            "SELECT ${hiveconf:some_var}",
+            write={
+                "hive": "SELECT ${hiveconf:some_var}",
+                "spark": "SELECT ${hiveconf:some_var}",
+            },
+        )
         self.validate_all(
             "SELECT A.1a AS b FROM test_a AS A",
             write={

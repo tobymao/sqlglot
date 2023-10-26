@@ -3498,7 +3498,7 @@ class Star(Expression):
 
 
 class Parameter(Condition):
-    arg_types = {"this": True, "wrapped": False}
+    arg_types = {"this": True, "expression": False}
 
 
 class SessionParameter(Condition):

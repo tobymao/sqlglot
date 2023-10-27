@@ -5168,7 +5168,7 @@ class Use(Expression):
 
 
 class Merge(Expression):
-    arg_types = {"this": True, "using": True, "on": True, "expressions": True}
+    arg_types = {"this": True, "using": True, "on": True, "expressions": True, "with": False}
 
 
 class When(Func):

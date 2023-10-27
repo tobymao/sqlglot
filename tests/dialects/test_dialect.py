@@ -839,10 +839,6 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "STR_TO_DATE(x, '%Y-%m-%dT%H:%M:%S')",
-            read={
-                "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
-                "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%H:%i:%S')",
-            },
             write={
                 "drill": "TO_DATE(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%T')",

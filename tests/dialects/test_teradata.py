@@ -148,17 +148,18 @@ class TestTeradata(Validator):
         self.validate_all("a MOD b", write={"teradata": "a MOD b", "mysql": "a % b"})
 
     def test_abbrev(self):
-        self.validate_all("a LT b", write={"teradata": "a < b"})
-        self.validate_all("a LE b", write={"teradata": "a <= b"})
-        self.validate_all("a GT b", write={"teradata": "a > b"})
-        self.validate_all("a GE b", write={"teradata": "a >= b"})
-        self.validate_all("a ^= b", write={"teradata": "a <> b"})
-        self.validate_all("a NE b", write={"teradata": "a <> b"})
-        self.validate_all("a NOT= b", write={"teradata": "a <> b"})
-
-        self.validate_all(
-            "SEL a FROM b",
-            write={"teradata": "SELECT a FROM b"},
+        self.validate_identity("a LT b", "a < b")
+        self.validate_identity("a LE b", "a <= b")
+        self.validate_identity("a GT b", "a > b")
+        self.validate_identity("a GE b", "a >= b")
+        self.validate_identity("a ^= b", "a <> b")
+        self.validate_identity("a NE b", "a <> b")
+        self.validate_identity("a NOT= b", "a <> b")
+        self.validate_identity("a EQ b", "a = b")
+        self.validate_identity("SEL a FROM b", "SELECT a FROM b")
+        self.validate_identity(
+            "SELECT col1, col2 FROM dbc.table1 WHERE col1 EQ 'value1' MINUS SELECT col1, col2 FROM dbc.table2",
+            "SELECT col1, col2 FROM dbc.table1 WHERE col1 = 'value1' EXCEPT SELECT col1, col2 FROM dbc.table2",
         )
 
     def test_datatype(self):

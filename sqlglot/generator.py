@@ -901,7 +901,7 @@ class Generator:
         sql = self.expressions(expression, flat=True)
         recursive = (
             "RECURSIVE "
-            if expression.args.get("recursive") and self.CTE_RECURSIVE_KEYWORD_REQUIRED
+            if self.CTE_RECURSIVE_KEYWORD_REQUIRED and expression.args.get("recursive")
             else ""
         )
 

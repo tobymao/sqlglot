@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
-    move_insert_cte_sql,
     parse_date_delta,
     rename_func,
     timestrtotime_sql,
@@ -596,6 +595,8 @@ class TSQL(Dialect):
         ALTER_TABLE_ADD_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
         COMPUTED_COLUMN_WITH_TYPE = False
+        SUPPORTS_NESTED_CTES = False
+        CTE_RECURSIVE_KEYWORD_REQUIRED = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -622,7 +623,6 @@ class TSQL(Dialect):
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
-            exp.Insert: move_insert_cte_sql,
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
@@ -714,7 +714,7 @@ class TSQL(Dialect):
             elif expression.args.get("replace"):
                 sql = sql.replace("CREATE OR REPLACE ", "CREATE OR ALTER ", 1)
 
-            return sql
+            return self.prepend_ctes(expression, sql)
 
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"

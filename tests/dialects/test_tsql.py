@@ -7,6 +7,36 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_all(
+            "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c FROM t) AS temp",
+            read={
+                "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT c FROM t",
+            },
+        )
+        self.validate_all(
+            "WITH y AS (SELECT 2 AS c) INSERT INTO t SELECT * FROM y",
+            read={
+                "duckdb": "WITH y AS (SELECT 2 AS c) INSERT INTO t SELECT * FROM y",
+            },
+        )
+        self.validate_all(
+            "WITH t(c) AS (SELECT 1) SELECT 1 AS c UNION (SELECT c FROM t)",
+            read={
+                "duckdb": "SELECT 1 AS c UNION (WITH t(c) AS (SELECT 1) SELECT c FROM t)",
+            },
+        )
+        self.validate_all(
+            "WITH t(c) AS (SELECT 1) MERGE INTO x AS z USING (SELECT c FROM t) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+            read={
+                "postgres": "MERGE INTO x AS z USING (WITH t(c) AS (SELECT 1) SELECT c FROM t) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+            },
+        )
+        self.validate_all(
+            "WITH t(n) AS (SELECT 1 AS n UNION ALL SELECT n + 1 AS n FROM t WHERE n < 4) SELECT * FROM (SELECT SUM(n) AS s4 FROM t) AS subq",
+            read={
+                "duckdb": "SELECT * FROM (WITH RECURSIVE t(n) AS (SELECT 1 AS n UNION ALL SELECT n + 1 AS n FROM t WHERE n < 4) SELECT SUM(n) AS s4 FROM t) AS subq",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE #mytemptable (a INTEGER)",
             read={
                 "duckdb": "CREATE TEMPORARY TABLE mytemptable (a INT)",

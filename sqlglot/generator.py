@@ -230,6 +230,12 @@ class Generator:
     # Whether or not data types support additional specifiers like e.g. CHAR or BYTE (oracle)
     DATA_TYPE_SPECIFIERS_ALLOWED = False
 
+    # Whether or not nested CTEs (e.g. defined inside of subqueries) are allowed
+    SUPPORTS_NESTED_CTES = True
+
+    # Whether or not the "RECURSIVE" keyword is required when defining recursive CTEs
+    CTE_RECURSIVE_KEYWORD_REQUIRED = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -468,9 +474,17 @@ class Generator:
         if cache is not None:
             self._cache = cache
 
+        if not self.SUPPORTS_NESTED_CTES and isinstance(expression, exp.Expression):
+            from sqlglot.transforms import move_ctes_to_top_level
+
+            expression = move_ctes_to_top_level(expression)
+
         self.unsupported_messages = []
         sql = self.sql(expression).strip()
         self._cache = None
+
+        if self.pretty:
+            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
 
         if self.unsupported_level == ErrorLevel.IGNORE:
             return sql
@@ -481,8 +495,6 @@ class Generator:
         elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
             raise UnsupportedError(concat_messages(self.unsupported_messages, self.max_unsupported))
 
-        if self.pretty:
-            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
         return sql
 
     def unsupported(self, message: str) -> None:
@@ -879,7 +891,11 @@ class Generator:
 
     def with_sql(self, expression: exp.With) -> str:
         sql = self.expressions(expression, flat=True)
-        recursive = "RECURSIVE " if expression.args.get("recursive") else ""
+        recursive = (
+            "RECURSIVE "
+            if expression.args.get("recursive") and self.CTE_RECURSIVE_KEYWORD_REQUIRED
+            else ""
+        )
 
         return f"WITH {recursive}{sql}"
 
@@ -2792,7 +2808,9 @@ class Generator:
         on = f"ON {self.sql(expression, 'on')}"
         expressions = self.expressions(expression, sep=" ")
 
-        return f"MERGE INTO {this}{table_alias} {using} {on} {expressions}"
+        return self.prepend_ctes(
+            expression, f"MERGE INTO {this}{table_alias} {using} {on} {expressions}"
+        )
 
     def tochar_sql(self, expression: exp.ToChar) -> str:
         if expression.args.get("format"):

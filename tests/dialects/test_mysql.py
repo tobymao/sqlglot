@@ -564,6 +564,13 @@ class TestMySQL(Validator):
             "STR_TO_DATE(x, '%M')",
             read={"": "TS_OR_DS_TO_DATE(x, '%B')"},
         )
+        self.validate_all(
+            "STR_TO_DATE(x, '%Y-%m-%d')",
+            write={"presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)"},
+        )
+        self.validate_all(
+            "STR_TO_DATE(x, '%Y-%m-%dT%T')", write={"presto": "DATE_PARSE(x, '%Y-%m-%dT%T')"}
+        )
 
     def test_mysql(self):
         self.validate_all(

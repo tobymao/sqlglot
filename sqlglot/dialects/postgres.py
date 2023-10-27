@@ -409,6 +409,7 @@ class Postgres(Dialect):
             exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
             exp.Merge: transforms.preprocess([_remove_target_from_merge]),
+            exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]
             ),
@@ -445,6 +446,7 @@ class Postgres(Dialect):
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
+            exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }

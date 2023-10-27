@@ -77,6 +77,10 @@ class TestSnowflake(Validator):
             "SELECT {fn CEILING(5.3)}",
             "SELECT CEIL(5.3)",
         )
+        self.validate_identity(
+            "SELECT TO_TIMESTAMP(x) FROM t",
+            "SELECT CAST(x AS TIMESTAMPNTZ) FROM t",
+        )
 
         self.validate_all("CAST(x AS BYTEINT)", write={"snowflake": "CAST(x AS INT)"})
         self.validate_all("CAST(x AS CHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})

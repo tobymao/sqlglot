@@ -32,7 +32,7 @@ def _check_int(s: str) -> bool:
 
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
-def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime]:
+def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, exp.Cast]:
     if len(args) == 2:
         first_arg, second_arg = args
         if second_arg.is_string:
@@ -60,8 +60,8 @@ def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime]:
     # reduce it using `simplify_literals` first and then check if it's a Literal.
     first_arg = seq_get(args, 0)
     if not isinstance(simplify_literals(first_arg, root=True), Literal):
-        # case: <variant_expr>
-        return format_time_lambda(exp.StrToTime, "snowflake", default=True)(args)
+        # case: <variant_expr> or other expressions such as columns
+        return exp.cast(first_arg, "timestamp")
 
     if first_arg.is_string:
         if _check_int(first_arg.this):

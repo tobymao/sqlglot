@@ -405,16 +405,11 @@ def move_ctes_to_top_level(expression: exp.Expression) -> exp.Expression:
 
         SELECT * FROM (WITH t(c) AS (SELECT 1) SELECT * FROM t) AS subq
 
-    are invalid in those dialects. This transformation ensures all CTEs are moved
-    to the top level so that the final SQL code is valid from a syntax standpoint.
+    are invalid in those dialects. This transformation can be used to ensure all CTEs are
+    moved to the top level so that the final SQL code is valid from a syntax standpoint.
 
     TODO: handle name clashes whilst moving CTEs (it can get quite tricky & costly).
     """
-    # This transformation is only applied to the root expression, if it supports CTEs
-    if expression.parent or "with" not in expression.arg_types:
-        return expression
-
-    expression = expression.copy()
     top_level_with = expression.args.get("with")
     for node in expression.find_all(exp.With):
         if node.parent is expression:

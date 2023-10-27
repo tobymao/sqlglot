@@ -474,10 +474,19 @@ class Generator:
         if cache is not None:
             self._cache = cache
 
-        if not self.SUPPORTS_NESTED_CTES and isinstance(expression, exp.Expression):
+        # Some dialects only support CTEs at the top level expression, so we need to bubble up nested
+        # CTEs to that level in order to produce a syntactically valid expression. This transformation
+        # happens here to minimize code duplication, since many expressions support CTEs.
+        if (
+            not self.SUPPORTS_NESTED_CTES
+            and isinstance(expression, exp.Expression)
+            and not expression.parent
+            and "with" in expression.arg_types
+            and any(node.parent is not expression for node in expression.find_all(exp.With))
+        ):
             from sqlglot.transforms import move_ctes_to_top_level
 
-            expression = move_ctes_to_top_level(expression)
+            expression = move_ctes_to_top_level(expression.copy())
 
         self.unsupported_messages = []
         sql = self.sql(expression).strip()

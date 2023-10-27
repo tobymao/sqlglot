@@ -483,9 +483,6 @@ class Generator:
         sql = self.sql(expression).strip()
         self._cache = None
 
-        if self.pretty:
-            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
-
         if self.unsupported_level == ErrorLevel.IGNORE:
             return sql
 
@@ -495,6 +492,8 @@ class Generator:
         elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
             raise UnsupportedError(concat_messages(self.unsupported_messages, self.max_unsupported))
 
+        if self.pretty:
+            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
         return sql
 
     def unsupported(self, message: str) -> None:

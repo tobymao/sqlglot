@@ -60,9 +60,33 @@ def _date_trunc_sql(self: MySQL.Generator, expression: exp.DateTrunc) -> str:
     return f"STR_TO_DATE({concat}, '{date_format}')"
 
 
-def _str_to_date(args: t.List) -> exp.StrToDate:
-    date_format = MySQL.format_time(seq_get(args, 1))
-    return exp.StrToDate(this=seq_get(args, 0), format=date_format)
+# All specifiers for time parts (as opposed to date parts)
+# https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
+TIME_SPECIFIERS = {"f", "H", "h", "I", "i", "k", "l", "p", "r", "S", "s", "T"}
+
+
+def _has_time_specifier(date_format: str) -> bool:
+    i = 0
+    length = len(date_format)
+
+    while i < length:
+        if date_format[i] == "%":
+            i += 1
+            if i < length and date_format[i] in TIME_SPECIFIERS:
+                return True
+        i += 1
+    return False
+
+
+def _str_to_date(args: t.List) -> exp.StrToDate | exp.StrToTime:
+    mysql_date_format = seq_get(args, 1)
+    date_format = MySQL.format_time(mysql_date_format)
+    this = seq_get(args, 0)
+
+    if mysql_date_format and _has_time_specifier(mysql_date_format.name):
+        return exp.StrToTime(this=this, format=date_format)
+
+    return exp.StrToDate(this=this, format=date_format)
 
 
 def _str_to_date_sql(

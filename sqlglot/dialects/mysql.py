@@ -67,10 +67,12 @@ TIME_SPECIFIERS = {"f", "H", "h", "I", "i", "k", "l", "p", "r", "S", "s", "T"}
 
 def _has_time_specifier(date_format: str) -> bool:
     i = 0
-    while i < len(date_format):
+    length = len(date_format)
+
+    while i < length:
         if date_format[i] == "%":
             i += 1
-            if i < len(date_format) and date_format[i] in TIME_SPECIFIERS:
+            if i < length and date_format[i] in TIME_SPECIFIERS:
                 return True
         i += 1
     return False

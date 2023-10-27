@@ -22,6 +22,7 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE test (foo HSTORE)")
         self.validate_identity("CREATE TABLE test (foo JSONB)")
         self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
+        self.validate_identity("CREATE TABLE test (foo INT) PARTITION BY HASH(foo)")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")

@@ -1256,6 +1256,11 @@ WHERE
             },
         )
 
+    def test_temporal_table(self):
+        self.validate_identity(
+            'CREATE TABLE test([data] CHAR(7), [valid_from] DATETIME2 (2) GENERATED ALWAYS AS ROW START HIDDEN NOT NULL, [valid_to] DATETIME2 (2) GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,; PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to]); WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history], DATA_CONSISTENCY_CHECK=ON));'
+        )
+
     def test_system_time(self):
         self.validate_all(
             "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo'",

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
@@ -63,7 +62,18 @@ def _date_trunc_sql(self: MySQL.Generator, expression: exp.DateTrunc) -> str:
 
 # All specifiers for time parts (as opposed to date parts)
 # https://dev.mysql.com/doc/refman/8.0/en/date-and-time-functions.html#function_date-format
-TIME_SPECIFIER_PATTERN = re.compile(r"(?<!%)%[fHhIiklprSsT]")
+TIME_SPECIFIERS = {"f", "H", "h", "I", "i", "k", "l", "p", "r", "S", "s", "T"}
+
+
+def _has_time_specifier(date_format: str) -> bool:
+    i = 0
+    while i < len(date_format):
+        if date_format[i] == "%":
+            i += 1
+            if i < len(date_format) and date_format[i] in TIME_SPECIFIERS:
+                return True
+        i += 1
+    return False
 
 
 def _str_to_date(args: t.List) -> exp.StrToDate | exp.StrToTime:
@@ -71,7 +81,7 @@ def _str_to_date(args: t.List) -> exp.StrToDate | exp.StrToTime:
     date_format = MySQL.format_time(mysql_date_format)
     this = seq_get(args, 0)
 
-    if mysql_date_format and TIME_SPECIFIER_PATTERN.search(mysql_date_format.name):
+    if mysql_date_format and _has_time_specifier(mysql_date_format.name):
         return exp.StrToTime(this=this, format=date_format)
 
     return exp.StrToDate(this=this, format=date_format)

@@ -61,7 +61,7 @@ def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, 
     first_arg = seq_get(args, 0)
     if not isinstance(simplify_literals(first_arg, root=True), Literal):
         # case: <variant_expr> or other expressions such as columns
-        return exp.cast(first_arg, "timestamp")
+        return exp.TimeStrToTime.from_arg_list(args)
 
     if first_arg.is_string:
         if _check_int(first_arg.this):

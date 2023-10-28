@@ -310,6 +310,7 @@ class Generator:
         exp.Order: exp.Properties.Location.POST_SCHEMA,
         exp.OutputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
+        exp.PartitionedOfProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
         exp.Property: exp.Properties.Location.POST_WITH,
         exp.RemoteWithConnectionModelProperty: exp.Properties.Location.POST_SCHEMA,
@@ -1261,6 +1262,29 @@ class Generator:
         elif expression.args.get("for_none"):
             for_ = " FOR NONE"
         return f"WITH{no}{concurrent} ISOLATED LOADING{for_}"
+
+    def partitionboundspec_sql(self, expression: exp.PartitionBoundSpec) -> str:
+        if isinstance(expression.this, list):
+            return f"IN ({self.expressions(expression, key='this', flat=True)})"
+        if expression.this:
+            modulus = self.sql(expression, "this")
+            remainder = self.sql(expression, "expression")
+            return f"WITH (MODULUS {modulus}, REMAINDER {remainder})"
+
+        from_expressions = self.expressions(expression, key="from_expressions", flat=True)
+        to_expressions = self.expressions(expression, key="to_expressions", flat=True)
+        return f"FROM ({from_expressions}) TO ({to_expressions})"
+
+    def partitionedofproperty_sql(self, expression: exp.PartitionedOfProperty) -> str:
+        this = self.sql(expression, "this")
+
+        for_values_or_default = expression.expression
+        if isinstance(for_values_or_default, exp.PartitionBoundSpec):
+            for_values_or_default = f" FOR VALUES {self.sql(for_values_or_default)}"
+        else:
+            for_values_or_default = " DEFAULT"
+
+        return f"PARTITION OF {this}{for_values_or_default}"
 
     def lockingproperty_sql(self, expression: exp.LockingProperty) -> str:
         kind = expression.args.get("kind")

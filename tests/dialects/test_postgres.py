@@ -9,13 +9,6 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_ddl(self):
-        self.validate_identity(
-            "CREATE INDEX foo ON bar.baz USING btree(col1 varchar_pattern_ops ASC, col2)"
-        )
-        self.validate_identity(
-            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
-            "CREATE TABLE test (x TIMESTAMP[][])",
-        )
         self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
         self.validate_identity("CREATE TABLE test (elems JSONB[])")
         self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
@@ -26,6 +19,29 @@ class TestPostgres(Validator):
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
+        self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
+        self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
+        self.validate_identity(
+            "CREATE TABLE cust_part3 PARTITION OF customers FOR VALUES WITH (MODULUS 3, REMAINDER 2)"
+        )
+        self.validate_identity(
+            "CREATE TABLE measurement_y2016m07 PARTITION OF measurement (unitsales DEFAULT 0) FOR VALUES FROM ('2016-07-01') TO ('2016-08-01')"
+        )
+        self.validate_identity(
+            "CREATE TABLE measurement_ym_older PARTITION OF measurement_year_month FOR VALUES FROM (MINVALUE, MINVALUE) TO (2016, 11)"
+        )
+        self.validate_identity(
+            "CREATE TABLE measurement_ym_y2016m11 PARTITION OF measurement_year_month FOR VALUES FROM (2016, 11) TO (2016, 12)"
+        )
+        self.validate_identity(
+            "CREATE TABLE cities_ab PARTITION OF cities (CONSTRAINT city_id_nonzero CHECK (city_id <> 0)) FOR VALUES IN ('a', 'b')"
+        )
+        self.validate_identity(
+            "CREATE TABLE cities_ab PARTITION OF cities (CONSTRAINT city_id_nonzero CHECK (city_id <> 0)) FOR VALUES IN ('a', 'b') PARTITION BY RANGE(population)"
+        )
+        self.validate_identity(
+            "CREATE INDEX foo ON bar.baz USING btree(col1 varchar_pattern_ops ASC, col2)"
+        )
         self.validate_identity(
             "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO NOTHING RETURNING *"
         )
@@ -44,7 +60,10 @@ class TestPostgres(Validator):
         self.validate_identity(
             "DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid RETURNING a"
         )
-        self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
+        self.validate_identity(
+            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
+            "CREATE TABLE test (x TIMESTAMP[][])",
+        )
 
         self.validate_all(
             "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",

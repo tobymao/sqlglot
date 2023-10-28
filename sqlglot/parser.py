@@ -674,6 +674,7 @@ class Parser(metaclass=_Parser):
         "ON": lambda self: self._parse_on_property(),
         "ORDER BY": lambda self: self._parse_order(skip_order_token=True),
         "OUTPUT": lambda self: self.expression(exp.OutputModelProperty, this=self._parse_schema()),
+        "PARTITION": lambda self: self._parse_partitioned_of(),
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED BY": lambda self: self._parse_partitioned_by(),
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
@@ -1742,6 +1743,58 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.PARTITION_BY):
             return self._parse_csv(self._parse_conjunction)
         return []
+
+    def _parse_partition_bound_spec(self) -> exp.PartitionBoundSpec:
+        def _parse_partition_bound_expr() -> t.Optional[exp.Expression]:
+            if self._match_text_seq("MINVALUE"):
+                return exp.var("MINVALUE")
+            if self._match_text_seq("MAXVALUE"):
+                return exp.var("MAXVALUE")
+            return self._parse_bitwise()
+
+        this: t.Optional[exp.Expression | t.List[exp.Expression]] = None
+        expression = None
+        from_expressions = None
+        to_expressions = None
+
+        if self._match(TokenType.IN):
+            this = self._parse_wrapped_csv(self._parse_bitwise)
+        elif self._match(TokenType.FROM):
+            from_expressions = self._parse_wrapped_csv(_parse_partition_bound_expr)
+            self._match_text_seq("TO")
+            to_expressions = self._parse_wrapped_csv(_parse_partition_bound_expr)
+        elif self._match_text_seq("WITH", "(", "MODULUS"):
+            this = self._parse_number()
+            self._match_text_seq(",", "REMAINDER")
+            expression = self._parse_number()
+            self._match_r_paren()
+        else:
+            self.raise_error("Failed to parse partition bound spec.")
+
+        return self.expression(
+            exp.PartitionBoundSpec,
+            this=this,
+            expression=expression,
+            from_expressions=from_expressions,
+            to_expressions=to_expressions,
+        )
+
+    # https://www.postgresql.org/docs/current/sql-createtable.html
+    def _parse_partitioned_of(self) -> t.Optional[exp.PartitionedOfProperty]:
+        if not self._match_text_seq("OF"):
+            self._retreat(self._index - 1)
+            return None
+
+        this = self._parse_table(schema=True)
+
+        if self._match(TokenType.DEFAULT):
+            expression: exp.Var | exp.PartitionBoundSpec = exp.var("DEFAULT")
+        elif self._match_text_seq("FOR", "VALUES"):
+            expression = self._parse_partition_bound_spec()
+        else:
+            self.raise_error("Expecting either DEFAULT or FOR VALUES clause.")
+
+        return self.expression(exp.PartitionedOfProperty, this=this, expression=expression)
 
     def _parse_partitioned_by(self) -> exp.PartitionedByProperty:
         self._match(TokenType.EQ)

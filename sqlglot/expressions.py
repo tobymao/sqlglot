@@ -2145,6 +2145,22 @@ class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
 
+# https://www.postgresql.org/docs/current/sql-createtable.html
+class PartitionBoundSpec(Expression):
+    # this -> IN / MODULUS, expression -> REMAINDER, from_expressions -> FROM (...), to_expressions -> TO (...)
+    arg_types = {
+        "this": False,
+        "expression": False,
+        "from_expressions": False,
+        "to_expressions": False,
+    }
+
+
+class PartitionedOfProperty(Property):
+    # this -> parent_table (schema), expression -> FOR VALUES ... / DEFAULT
+    arg_types = {"this": True, "expression": True}
+
+
 class RemoteWithConnectionModelProperty(Property):
     arg_types = {"this": True}
 

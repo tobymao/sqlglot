@@ -134,7 +134,9 @@ def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
 
 
 def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
-    kind = expression.args["kind"]
+    kind = expression.args.get("kind")
+    if not kind:
+        return expression
 
     if kind.this == exp.DataType.Type.SERIAL:
         data_type = exp.DataType(this=exp.DataType.Type.INT)

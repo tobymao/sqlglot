@@ -3864,7 +3864,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_generated_as_identity(
         self,
-    ) -> exp.GeneratedAsIdentityColumnConstraint | exp.ComputedColumnConstraint:
+    ) -> exp.GeneratedAsIdentityColumnConstraint | exp.ComputedColumnConstraint | exp.GeneratedAsRowColumnConstraint:
         if self._match_text_seq("BY", "DEFAULT"):
             on_null = self._match_pair(TokenType.ON, TokenType.NULL)
             this = self.expression(
@@ -3875,6 +3875,14 @@ class Parser(metaclass=_Parser):
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
 
         self._match(TokenType.ALIAS)
+
+        if self._match_text_seq("ROW"):
+            start = self._match_text_seq("START")
+            if not start:
+                self._match_text_seq("END")
+            hidden = self._match_text_seq("HIDDEN")
+            return self.expression(exp.GeneratedAsRowColumnConstraint, this=True, start=start, hidden=hidden)
+
         identity = self._match_text_seq("IDENTITY")
 
         if self._match(TokenType.L_PAREN):

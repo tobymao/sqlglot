@@ -1351,6 +1351,15 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     }
 
 
+class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
+    # this:
+    arg_types = {
+        "this": False,
+        "start": False,
+        "hidden": False,
+    }
+
+
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
 class IndexColumnConstraint(ColumnConstraintKind):
     arg_types = {

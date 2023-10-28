@@ -1780,8 +1780,11 @@ class Parser(metaclass=_Parser):
         )
 
     # https://www.postgresql.org/docs/current/sql-createtable.html
-    def _parse_partitioned_of(self) -> exp.PartitionedOfProperty:
-        self._match_text_seq("OF")
+    def _parse_partitioned_of(self) -> t.Optional[exp.PartitionedOfProperty]:
+        if not self._match_text_seq("OF"):
+            self._retreat(self._index - 1)
+            return None
+
         this = self._parse_table(schema=True)
 
         if self._match(TokenType.DEFAULT):

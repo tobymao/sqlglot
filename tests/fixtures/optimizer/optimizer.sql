@@ -480,8 +480,8 @@ JOIN "company_table" AS "company_table_2"
 LEFT JOIN "unlocked" AS "unlocked"
   ON "company_table_2"."id" = "unlocked"."company_id"
 WHERE
-  CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE
-  AND NOT "company_table_2"."id" IS NULL;
+  NOT "company_table_2"."id" IS NULL
+  AND CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE;
 
 # title: db.table alias clash
 # execute: false

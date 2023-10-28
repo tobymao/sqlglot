@@ -67,7 +67,7 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         order = expression.args.get("order")
 
         if order:
-            window.set("order", order.pop().copy())
+            window.set("order", order.pop())
         else:
             window.set("order", exp.Order(expressions=[c.copy() for c in distinct_cols]))
 
@@ -75,9 +75,9 @@ def eliminate_distinct_on(expression: exp.Expression) -> exp.Expression:
         expression.select(window, copy=False)
 
         return (
-            exp.select(*outer_selects)
-            .from_(expression.subquery("_t"))
-            .where(exp.column(row_number).eq(1))
+            exp.select(*outer_selects, copy=False)
+            .from_(expression.subquery("_t", copy=False), copy=False)
+            .where(exp.column(row_number).eq(1), copy=False)
         )
 
     return expression
@@ -118,9 +118,11 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
                 else:
                     expr.replace(column)
             elif expr.name not in expression.named_selects:
-                expression.select(expr.copy(), copy=False)
+                expression.select(expr, copy=False)
 
-        return outer_selects.from_(expression.subquery(alias="_t")).where(qualify_filters)
+        return outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(
+            qualify_filters, copy=False
+        )
 
     return expression
 
@@ -189,7 +191,7 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
             )
 
             # we use list here because expression.selects is mutated inside the loop
-            for select in expression.selects.copy():
+            for select in list(expression.selects):
                 explode = select.find(exp.Explode)
 
                 if explode:
@@ -446,7 +448,7 @@ def preprocess(
     def _to_sql(self, expression: exp.Expression) -> str:
         expression_type = type(expression)
 
-        expression = transforms[0](expression.copy())
+        expression = transforms[0](expression)
         for t in transforms[1:]:
             expression = t(expression)
 

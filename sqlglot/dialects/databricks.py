@@ -35,7 +35,7 @@ class Databricks(Spark):
             exp.DatetimeSub: lambda self, e: self.func(
                 "TIMESTAMPADD",
                 e.text("unit"),
-                exp.Mul(this=e.expression.copy(), expression=exp.Literal.number(-1)),
+                exp.Mul(this=e.expression, expression=exp.Literal.number(-1)),
                 e.this,
             ),
             exp.DatetimeDiff: lambda self, e: self.func(
@@ -63,14 +63,12 @@ class Databricks(Spark):
                 and kind.this in exp.DataType.INTEGER_TYPES
             ):
                 # only BIGINT generated identity constraints are supported
-                expression = expression.copy()
                 expression.set("kind", exp.DataType.build("bigint"))
             return super().columndef_sql(expression, sep)
 
         def generatedasidentitycolumnconstraint_sql(
             self, expression: exp.GeneratedAsIdentityColumnConstraint
         ) -> str:
-            expression = expression.copy()
             expression.set("this", True)  # trigger ALWAYS in super class
             return super().generatedasidentitycolumnconstraint_sql(expression)
 

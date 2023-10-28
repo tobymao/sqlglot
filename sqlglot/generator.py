@@ -413,7 +413,6 @@ class Generator:
         "unsupported_messages",
         "_escaped_quote_end",
         "_escaped_identifier_end",
-        "_cache",
     )
 
     def __init__(
@@ -453,26 +452,28 @@ class Generator:
         self._escaped_identifier_end: str = (
             self.TOKENIZER_CLASS.IDENTIFIER_ESCAPES[0] + self.IDENTIFIER_END
         )
-        self._cache: t.Optional[t.Dict[int, str]] = None
 
     def generate(
         self,
         expression: t.Optional[exp.Expression],
-        cache: t.Optional[t.Dict[int, str]] = None,
+        copy: bool = True,
     ) -> str:
         """
         Generates the SQL string corresponding to the given syntax tree.
 
         Args:
             expression: The syntax tree.
-            cache: An optional sql string cache. This leverages the hash of an Expression
-                which can be slow to compute, so only use it if you set _hash on each node.
+            copy: Whether or not to copy the expression. The generator preforms mutations so
+                it is safer to copy.
 
         Returns:
             The SQL string corresponding to `expression`.
         """
-        if cache is not None:
-            self._cache = cache
+        if not expression:
+            return ""
+
+        if copy:
+            expression = expression.copy()
 
         # Some dialects only support CTEs at the top level expression, so we need to bubble up nested
         # CTEs to that level in order to produce a syntactically valid expression. This transformation
@@ -486,11 +487,10 @@ class Generator:
         ):
             from sqlglot.transforms import move_ctes_to_top_level
 
-            expression = move_ctes_to_top_level(expression.copy())
+            expression = move_ctes_to_top_level(expression)
 
         self.unsupported_messages = []
         sql = self.sql(expression).strip()
-        self._cache = None
 
         if self.unsupported_level == ErrorLevel.IGNORE:
             return sql
@@ -615,12 +615,6 @@ class Generator:
                 return self.sql(value)
             return ""
 
-        if self._cache is not None:
-            expression_id = hash(expression)
-
-            if expression_id in self._cache:
-                return self._cache[expression_id]
-
         transform = self.TRANSFORMS.get(expression.__class__)
 
         if callable(transform):
@@ -641,11 +635,7 @@ class Generator:
         else:
             raise ValueError(f"Expected an Expression. Received {type(expression)}: {expression}")
 
-        sql = self.maybe_comment(sql, expression) if self.comments and comment else sql
-
-        if self._cache is not None:
-            self._cache[expression_id] = sql
-        return sql
+        return self.maybe_comment(sql, expression) if self.comments and comment else sql
 
     def uncache_sql(self, expression: exp.Uncache) -> str:
         table = self.sql(expression, "this")
@@ -1046,7 +1036,7 @@ class Generator:
             where = self.sql(expression, "expression").strip()
             return f"{this} FILTER({where})"
 
-        agg = expression.this.copy()
+        agg = expression.this
         agg_arg = agg.this
         cond = expression.expression.this
         agg_arg.replace(exp.If(this=cond.copy(), true=agg_arg.copy()))
@@ -1112,9 +1102,9 @@ class Generator:
         for p in expression.expressions:
             p_loc = self.PROPERTIES_LOCATION[p.__class__]
             if p_loc == exp.Properties.Location.POST_WITH:
-                with_properties.append(p.copy())
+                with_properties.append(p)
             elif p_loc == exp.Properties.Location.POST_SCHEMA:
-                root_properties.append(p.copy())
+                root_properties.append(p)
 
         return self.root_properties(
             exp.Properties(expressions=root_properties)
@@ -1148,7 +1138,7 @@ class Generator:
         for p in properties.expressions:
             p_loc = self.PROPERTIES_LOCATION[p.__class__]
             if p_loc != exp.Properties.Location.UNSUPPORTED:
-                properties_locs[p_loc].append(p.copy())
+                properties_locs[p_loc].append(p)
             else:
                 self.unsupported(f"Unsupported property {p.key}")
 
@@ -1518,7 +1508,6 @@ class Generator:
             return f"{values} AS {alias}" if alias else values
 
         # Converts `VALUES...` expression into a series of select unions.
-        expression = expression.copy()
         alias_node = expression.args.get("alias")
         column_names = alias_node and alias_node.columns
 
@@ -2001,8 +1990,7 @@ class Generator:
 
         if self.UNNEST_WITH_ORDINALITY:
             if alias and isinstance(offset, exp.Expression):
-                alias = alias.copy()
-                alias.append("columns", offset.copy())
+                alias.append("columns", offset)
 
         if alias and self.UNNEST_COLUMN_ONLY:
             columns = alias.columns
@@ -2167,7 +2155,6 @@ class Generator:
         return f"PRIMARY KEY ({expressions}){options}"
 
     def if_sql(self, expression: exp.If) -> str:
-        expression = expression.copy()
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
 
     def matchagainst_sql(self, expression: exp.MatchAgainst) -> str:
@@ -2539,7 +2526,7 @@ class Generator:
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
         return self.sql(
             exp.Cast(
-                this=exp.Div(this=expression.this.copy(), expression=expression.expression.copy()),
+                this=exp.Div(this=expression.this, expression=expression.expression),
                 to=exp.DataType(this=exp.DataType.Type.INT),
             )
         )
@@ -2808,7 +2795,6 @@ class Generator:
         hints = table.args.get("hints")
         if hints and table.alias and isinstance(hints[0], exp.WithTableHint):
             # T-SQL syntax is MERGE ... <target_table> [WITH (<merge_hint>)] [[AS] table_alias]
-            table = table.copy()
             table_alias = f" AS {self.sql(table.args['alias'].pop())}"
 
         this = self.sql(table)
@@ -2927,12 +2913,12 @@ class Generator:
 
         case = exp.Case().when(
             expression.this.is_(exp.null()).not_(copy=False),
-            expression.args["true"].copy(),
+            expression.args["true"],
             copy=False,
         )
         else_cond = expression.args.get("false")
         if else_cond:
-            case.else_(else_cond.copy(), copy=False)
+            case.else_(else_cond, copy=False)
 
         return self.sql(case)
 
@@ -2962,15 +2948,6 @@ class Generator:
         if not isinstance(expression, exp.Literal):
             from sqlglot.optimizer.simplify import simplify
 
-            expression = simplify(expression.copy())
+            expression = simplify(expression)
 
         return expression
-
-
-def cached_generator(
-    cache: t.Optional[t.Dict[int, str]] = None
-) -> t.Callable[[exp.Expression], str]:
-    """Returns a cached generator."""
-    cache = {} if cache is None else cache
-    generator = Generator(normalize=True, identify="safe")
-    return lambda e: generator.generate(e, cache)

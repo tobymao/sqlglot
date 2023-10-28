@@ -50,7 +50,7 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
         else:
             for column in defs.values():
                 auto_increment = None
-                for constraint in column.constraints.copy():
+                for constraint in column.constraints:
                     if isinstance(constraint.kind, exp.PrimaryKeyColumnConstraint):
                         break
                     if isinstance(constraint.kind, exp.AutoIncrementColumnConstraint):

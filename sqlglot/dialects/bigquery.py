@@ -69,7 +69,6 @@ def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
     returns = expression.find(exp.ReturnsProperty)
 
     if kind.upper() == "FUNCTION" and returns and returns.args.get("is_table"):
-        expression = expression.copy()
         expression.set("kind", "TABLE FUNCTION")
 
         if isinstance(expression.expression, (exp.Subquery, exp.Literal)):
@@ -699,6 +698,5 @@ class BigQuery(Dialect):
 
         def version_sql(self, expression: exp.Version) -> str:
             if expression.name == "TIMESTAMP":
-                expression = expression.copy()
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)

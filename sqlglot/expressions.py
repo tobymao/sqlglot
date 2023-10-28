@@ -1208,7 +1208,7 @@ class ColumnPosition(Expression):
 
 class ColumnDef(Expression):
     arg_types = {
-        "this": False,
+        "this": True,
         "kind": False,
         "constraints": False,
         "exists": False,

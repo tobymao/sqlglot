@@ -463,7 +463,7 @@ class Generator:
 
         Args:
             expression: The syntax tree.
-            copy: Whether or not to copy the expression. The generator preforms mutations so
+            copy: Whether or not to copy the expression. The generator performs mutations so
                 it is safer to copy.
 
         Returns:

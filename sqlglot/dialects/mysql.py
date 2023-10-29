@@ -117,7 +117,9 @@ def _date_add_sql(
     def func(self: MySQL.Generator, expression: exp.Expression) -> str:
         this = self.sql(expression, "this")
         unit = expression.text("unit").upper() or "DAY"
-        return f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression.copy(), unit=unit))})"
+        return (
+            f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
+        )
 
     return func
 
@@ -134,8 +136,6 @@ def _remove_ts_or_ds_to_date(
     args: t.Tuple[str, ...] = ("this",),
 ) -> t.Callable[[MySQL.Generator, exp.Func], str]:
     def func(self: MySQL.Generator, expression: exp.Func) -> str:
-        expression = expression.copy()
-
         for arg_key in args:
             arg = expression.args.get(arg_key)
             if isinstance(arg, exp.TsOrDsToDate) and not arg.args.get("format"):
@@ -753,7 +753,6 @@ class MySQL(Dialect):
             to = self.CAST_MAPPING.get(expression.to.this)
 
             if to:
-                expression = expression.copy()
                 expression.to.set("this", to)
             return super().cast_sql(expression)
 

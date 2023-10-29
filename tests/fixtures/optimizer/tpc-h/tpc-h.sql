@@ -249,9 +249,9 @@ FROM "orders" AS "orders"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."l_orderkey" = "orders"."o_orderkey"
 WHERE
-  CAST("orders"."o_orderdate" AS DATE) < CAST('1993-10-01' AS DATE)
+  NOT "_u_0"."l_orderkey" IS NULL
+  AND CAST("orders"."o_orderdate" AS DATE) < CAST('1993-10-01' AS DATE)
   AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1993-07-01' AS DATE)
-  AND NOT "_u_0"."l_orderkey" IS NULL
 GROUP BY
   "orders"."o_orderpriority"
 ORDER BY
@@ -1348,8 +1348,8 @@ WHERE
     "_u_2"."l_orderkey" IS NULL
     OR NOT ARRAY_ANY("_u_2"."_u_3", "_x" -> "_x" <> "l1"."l_suppkey")
   )
-  AND ARRAY_ANY("_u_0"."_u_1", "_x" -> "_x" <> "l1"."l_suppkey")
   AND NOT "_u_0"."l_orderkey" IS NULL
+  AND ARRAY_ANY("_u_0"."_u_1", "_x" -> "_x" <> "l1"."l_suppkey")
 GROUP BY
   "supplier"."s_name"
 ORDER BY

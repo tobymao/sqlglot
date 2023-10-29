@@ -560,7 +560,6 @@ class Snowflake(Dialect):
             offset = expression.args.get("offset")
             if offset:
                 if unnest_alias:
-                    expression = expression.copy()
                     unnest_alias.append("columns", offset.pop())
 
                 selects.append("index")

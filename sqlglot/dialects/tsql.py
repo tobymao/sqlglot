@@ -157,8 +157,6 @@ def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToSt
 
 
 def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
-    expression = expression.copy()
-
     this = expression.this
     distinct = expression.find(exp.Distinct)
     if distinct:
@@ -685,7 +683,6 @@ class TSQL(Dialect):
             return sql
 
         def create_sql(self, expression: exp.Create) -> str:
-            expression = expression.copy()
             kind = self.sql(expression, "kind").upper()
             exists = expression.args.pop("exists", None)
             sql = super().create_sql(expression)

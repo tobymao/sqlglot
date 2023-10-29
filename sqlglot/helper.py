@@ -184,9 +184,7 @@ def apply_index_offset(
         annotate_types(expression)
     if t.cast(exp.DataType, expression.type).this in exp.DataType.INTEGER_TYPES:
         logger.warning("Applying array index offset (%s)", offset)
-        expression = simplify(
-            exp.Add(this=expression.copy(), expression=exp.Literal.number(offset))
-        )
+        expression = simplify(exp.Add(this=expression, expression=exp.Literal.number(offset)))
         return [expression]
 
     return expressions

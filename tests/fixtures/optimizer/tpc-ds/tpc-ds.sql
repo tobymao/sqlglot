@@ -2547,8 +2547,8 @@ JOIN "date_dim" AS "date_dim"
   )
 WHERE
   "_u_3"."_u_4" IS NULL
-  AND ARRAY_ANY("_u_0"."_u_2", "_x" -> "cs1"."cs_warehouse_sk" <> "_x")
   AND NOT "_u_0"."_u_1" IS NULL
+  AND ARRAY_ANY("_u_0"."_u_2", "_x" -> "cs1"."cs_warehouse_sk" <> "_x")
 ORDER BY
   COUNT(DISTINCT "cs1"."cs_order_number")
 LIMIT 100;
@@ -12586,8 +12586,8 @@ JOIN "web_site" AS "web_site"
   AND "ws1"."ws_web_site_sk" = "web_site"."web_site_sk"
 WHERE
   "_u_3"."_u_4" IS NULL
-  AND ARRAY_ANY("_u_0"."_u_2", "_x" -> "ws1"."ws_warehouse_sk" <> "_x")
   AND NOT "_u_0"."_u_1" IS NULL
+  AND ARRAY_ANY("_u_0"."_u_2", "_x" -> "ws1"."ws_warehouse_sk" <> "_x")
 ORDER BY
   COUNT(DISTINCT "ws1"."ws_order_number")
 LIMIT 100;

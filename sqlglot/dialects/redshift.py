@@ -209,7 +209,6 @@ class Redshift(Postgres):
             `TEXT` to `VARCHAR`.
             """
             if expression.is_type("text"):
-                expression = expression.copy()
                 expression.set("this", exp.DataType.Type.VARCHAR)
                 precision = expression.args.get("expressions")
 

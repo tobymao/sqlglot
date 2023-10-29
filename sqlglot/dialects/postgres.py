@@ -43,8 +43,6 @@ DATE_DIFF_FACTOR = {
 
 def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, exp.DateAdd | exp.DateSub], str]:
     def func(self: Postgres.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
-        expression = expression.copy()
-
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
 
@@ -96,7 +94,6 @@ def _substring_sql(self: Postgres.Generator, expression: exp.Substring) -> str:
 
 
 def _string_agg_sql(self: Postgres.Generator, expression: exp.GroupConcat) -> str:
-    expression = expression.copy()
     separator = expression.args.get("separator") or exp.Literal.string(",")
 
     order = ""
@@ -119,7 +116,6 @@ def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
     auto = expression.find(exp.AutoIncrementColumnConstraint)
 
     if auto:
-        expression = expression.copy()
         expression.args["constraints"].remove(auto.parent)
         kind = expression.args["kind"]
 
@@ -148,7 +144,6 @@ def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
         data_type = None
 
     if data_type:
-        expression = expression.copy()
         expression.args["kind"].replace(data_type)
         constraints = expression.args["constraints"]
         generated = exp.ColumnConstraint(kind=exp.GeneratedAsIdentityColumnConstraint(this=False))
@@ -456,7 +451,6 @@ class Postgres(Dialect):
         def bracket_sql(self, expression: exp.Bracket) -> str:
             """Forms like ARRAY[1, 2, 3][3] aren't allowed; we need to wrap the ARRAY."""
             if isinstance(expression.this, exp.Array):
-                expression = expression.copy()
                 expression.set("this", exp.paren(expression.this, copy=False))
 
             return super().bracket_sql(expression)

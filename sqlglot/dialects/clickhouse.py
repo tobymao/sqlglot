@@ -461,7 +461,6 @@ class ClickHouse(Dialect):
 
         def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
             # Clickhouse errors out if we try to cast a NULL value to TEXT
-            expression = expression.copy()
             return self.func(
                 "CONCAT",
                 *[

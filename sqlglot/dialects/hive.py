@@ -53,8 +53,6 @@ DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 
 def _create_sql(self, expression: exp.Create) -> str:
-    expression = expression.copy()
-
     # remove UNIQUE column constraints
     for constraint in expression.find_all(exp.UniqueColumnConstraint):
         if constraint.parent:
@@ -88,7 +86,7 @@ def _add_date_sql(self: Hive.Generator, expression: exp.DateAdd | exp.DateSub) -
     if expression.expression.is_number:
         modified_increment = exp.Literal.number(int(expression.text("expression")) * multiplier)
     else:
-        modified_increment = expression.expression.copy()
+        modified_increment = expression.expression
         if multiplier != 1:
             modified_increment = exp.Mul(  # type: ignore
                 this=modified_increment, expression=exp.Literal.number(multiplier)
@@ -539,8 +537,6 @@ class Hive(Dialect):
             return f"${{{this}}}"
 
         def schema_sql(self, expression: exp.Schema) -> str:
-            expression = expression.copy()
-
             for ordered in expression.find_all(exp.Ordered):
                 if ordered.args.get("desc") is False:
                     ordered.set("desc", None)
@@ -548,8 +544,6 @@ class Hive(Dialect):
             return super().schema_sql(expression)
 
         def constraint_sql(self, expression: exp.Constraint) -> str:
-            expression = expression.copy()
-
             for prop in list(expression.find_all(exp.Properties)):
                 prop.pop()
 

@@ -315,11 +315,14 @@ class Dialect(metaclass=_Dialect):
     ) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse_into(expression_type, self.tokenize(sql), sql)
 
-    def generate(self, expression: t.Optional[exp.Expression], copy: bool = True, **opts) -> str:
+    def generate(self, expression: exp.Expression, copy: bool = True, **opts) -> str:
         return self.generator(**opts).generate(expression, copy=copy)
 
     def transpile(self, sql: str, **opts) -> t.List[str]:
-        return [self.generate(expression, **opts) for expression in self.parse(sql)]
+        return [
+            self.generate(expression, copy=False, **opts) if expression else ""
+            for expression in self.parse(sql)
+        ]
 
     def tokenize(self, sql: str) -> t.List[Token]:
         return self.tokenizer.tokenize(sql)

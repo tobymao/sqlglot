@@ -453,11 +453,7 @@ class Generator:
             self.TOKENIZER_CLASS.IDENTIFIER_ESCAPES[0] + self.IDENTIFIER_END
         )
 
-    def generate(
-        self,
-        expression: t.Optional[exp.Expression],
-        copy: bool = True,
-    ) -> str:
+    def generate(self, expression: exp.Expression, copy: bool = True) -> str:
         """
         Generates the SQL string corresponding to the given syntax tree.
 
@@ -469,9 +465,6 @@ class Generator:
         Returns:
             The SQL string corresponding to `expression`.
         """
-        if not expression:
-            return ""
-
         if copy:
             expression = expression.copy()
 

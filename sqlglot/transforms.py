@@ -118,7 +118,7 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
                 else:
                     expr.replace(column)
             elif expr.name not in expression.named_selects:
-                expression.select(expr, copy=False)
+                expression.select(expr.copy(), copy=False)
 
         return outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(
             qualify_filters, copy=False

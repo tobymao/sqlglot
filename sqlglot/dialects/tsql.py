@@ -580,6 +580,16 @@ class TSQL(Dialect):
 
             return super()._parse_if()
 
+        def _parse_period_for_system_time(self) -> exp.PeriodForSystemTimeConstraint:
+            self._match(TokenType.TIMESTAMP_SNAPSHOT)
+            self._match_l_paren()
+
+            start = self._parse_id_var()
+            self._match(TokenType.COMMA)
+            end = self._parse_id_var()
+            self._match_r_paren()
+            return exp.PeriodForSystemTimeConstraint(start=start, end=end)
+
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             return self.expression(
                 exp.UniqueColumnConstraint,

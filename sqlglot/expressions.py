@@ -5049,7 +5049,7 @@ class FromBase(Func):
 
 
 class Struct(Func):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": False}
     is_var_len_args = True
 
 

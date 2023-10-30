@@ -753,7 +753,6 @@ class Parser(metaclass=_Parser):
         )
         or self.expression(exp.OnProperty, this=self._parse_id_var()),
         "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
-        "PERIOD": lambda self: self._parse_period_for_system_time(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "REFERENCES": lambda self: self._parse_references(match=False),
         "TITLE": lambda self: self.expression(

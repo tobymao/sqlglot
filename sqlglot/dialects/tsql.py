@@ -403,6 +403,11 @@ class TSQL(Dialect):
             TokenType.END: lambda self: self._parse_command(),
         }
 
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "PERIOD": lambda self: self._parse_period_for_system_time(),
+        }
+
         LOG_DEFAULTS_TO_LN = True
 
         CONCAT_NULL_OUTPUTS_STRING = True

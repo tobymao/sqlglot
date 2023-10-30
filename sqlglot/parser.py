@@ -4246,17 +4246,12 @@ class Parser(metaclass=_Parser):
         fmt = None
         to = self._parse_types()
 
-        if not to:
-            self.raise_error("Expected TYPE after CAST")
-        elif isinstance(to, exp.Identifier):
-            to = exp.DataType.build(to.name, udt=True)
-        elif to.this == exp.DataType.Type.CHAR:
-            if self._match(TokenType.CHARACTER_SET):
-                to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
-        elif self._match(TokenType.FORMAT):
+        if self._match(TokenType.FORMAT):
             fmt_string = self._parse_string()
             fmt = self._parse_at_time_zone(fmt_string)
 
+            if not to:
+                to = exp.DataType.build(exp.DataType.Type.UNKNOWN)
             if to.this in exp.DataType.TEMPORAL_TYPES:
                 this = self.expression(
                     exp.StrToDate if to.this == exp.DataType.Type.DATE else exp.StrToTime,
@@ -4272,8 +4267,14 @@ class Parser(metaclass=_Parser):
 
                 if isinstance(fmt, exp.AtTimeZone) and isinstance(this, exp.StrToTime):
                     this.set("zone", fmt.args["zone"])
-
                 return this
+        elif not to:
+            self.raise_error("Expected TYPE after CAST")
+        elif isinstance(to, exp.Identifier):
+            to = exp.DataType.build(to.name, udt=True)
+        elif to.this == exp.DataType.Type.CHAR:
+            if self._match(TokenType.CHARACTER_SET):
+                to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
 
         return self.expression(
             exp.Cast if strict else exp.TryCast, this=this, to=to, format=fmt, safe=safe

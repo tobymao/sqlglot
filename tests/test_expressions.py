@@ -443,7 +443,7 @@ class TestExpressions(unittest.TestCase):
                 return None
             return node
 
-        self.assertEqual(expression.transform(remove_non_list_arg).sql(), "CAST(x AS )")
+        self.assertEqual(expression.transform(remove_non_list_arg).sql(), "CAST(x AS)")
 
         expression = parse_one("SELECT a, b FROM x")
 
@@ -855,16 +855,16 @@ FROM foo""",
         self.assertEqual(exp.DataType.build("HSTORE", dialect="postgres").sql(), "HSTORE")
         self.assertEqual(exp.DataType.build("NULL").sql(), "NULL")
         self.assertEqual(exp.DataType.build("NULL", dialect="bigquery").sql(), "NULL")
-        self.assertEqual(exp.DataType.build("UNKNOWN").sql(), "UNKNOWN")
-        self.assertEqual(exp.DataType.build("UNKNOWN", dialect="bigquery").sql(), "UNKNOWN")
-        self.assertEqual(exp.DataType.build("UNKNOWN", dialect="snowflake").sql(), "UNKNOWN")
+        self.assertEqual(exp.DataType.build("UNKNOWN").sql(), "")
+        self.assertEqual(exp.DataType.build("UNKNOWN", dialect="bigquery").sql(), "")
+        self.assertEqual(exp.DataType.build("UNKNOWN", dialect="snowflake").sql(), "")
         self.assertEqual(exp.DataType.build("TIMESTAMP", dialect="bigquery").sql(), "TIMESTAMPTZ")
         self.assertEqual(
             exp.DataType.build("struct<x int>", dialect="spark").sql(), "STRUCT<x INT>"
         )
         self.assertEqual(exp.DataType.build("USER-DEFINED").sql(), "USER-DEFINED")
 
-        self.assertEqual(exp.DataType.build("ARRAY<UNKNOWN>").sql(), "ARRAY<UNKNOWN>")
+        self.assertEqual(exp.DataType.build("ARRAY<UNKNOWN>").sql(), "ARRAY")
         self.assertEqual(exp.DataType.build("ARRAY<NULL>").sql(), "ARRAY<NULL>")
         self.assertEqual(exp.DataType.build("varchar(100) collate 'en-ci'").sql(), "VARCHAR(100)")
 

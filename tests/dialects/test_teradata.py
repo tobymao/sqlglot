@@ -188,3 +188,4 @@ class TestTeradata(Validator):
                 "": "STR_TO_DATE('1992-01', '%Y-%d')",
             },
         )
+        self.validate_identity("CAST('1992-01' AS FORMAT 'YYYY-DD')")

@@ -855,12 +855,18 @@ WHERE
 
     def test_datename(self):
         self.validate_all(
-            "SELECT DATENAME(mm,'1970-01-01')",
-            write={"spark": "SELECT DATE_FORMAT(CAST('1970-01-01' AS TIMESTAMP), 'MMMM')"},
+            "SELECT DATENAME(mm, '1970-01-01')",
+            write={
+                "spark": "SELECT DATE_FORMAT(CAST('1970-01-01' AS TIMESTAMP), 'MMMM')",
+                "tsql": "SELECT FORMAT(CAST('1970-01-01' AS DATETIME2), 'MMMM')",
+            },
         )
         self.validate_all(
-            "SELECT DATENAME(dw,'1970-01-01')",
-            write={"spark": "SELECT DATE_FORMAT(CAST('1970-01-01' AS TIMESTAMP), 'EEEE')"},
+            "SELECT DATENAME(dw, '1970-01-01')",
+            write={
+                "spark": "SELECT DATE_FORMAT(CAST('1970-01-01' AS TIMESTAMP), 'EEEE')",
+                "tsql": "SELECT FORMAT(CAST('1970-01-01' AS DATETIME2), 'dddd')",
+            },
         )
 
     def test_datepart(self):

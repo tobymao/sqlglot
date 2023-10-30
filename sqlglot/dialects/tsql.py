@@ -243,6 +243,7 @@ class TSQL(Dialect):
         "MMM": "%b",
         "MM": "%m",
         "M": "%-m",
+        "dddd": "%A",
         "dd": "%d",
         "d": "%-d",
         "HH": "%H",

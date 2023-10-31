@@ -62,7 +62,7 @@ def qualify_tables(
                 if isinstance(source.this, exp.Identifier):
                     if not source.args.get("db"):
                         source.set("db", exp.to_identifier(db))
-                    if not source.args.get("catalog"):
+                    if not source.args.get("catalog") and source.args.get("db"):
                         source.set("catalog", exp.to_identifier(catalog))
 
                 if not source.alias:

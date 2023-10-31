@@ -4078,8 +4078,10 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.TIMESTAMP_SNAPSHOT)
 
         id_vars = self._parse_wrapped_id_vars()
-        return exp.PeriodForSystemTimeConstraint(
-            this=seq_get(id_vars, 0), expression=seq_get(id_vars, 1)
+        return self.expression(
+            exp.PeriodForSystemTimeConstraint,
+            this=seq_get(id_vars, 0),
+            expression=seq_get(id_vars, 1),
         )
 
     def _parse_primary_key(

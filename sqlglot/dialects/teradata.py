@@ -112,9 +112,13 @@ class Teradata(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
+            # TRY_CAST is called TRYCAST in Teradata.
+            # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
+            "TRYCAST": parser.Parser.FUNCTION_PARSERS["TRY_CAST"],
             "RANGE_N": lambda self: self._parse_rangen(),
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
+        FUNCTION_PARSERS.pop("TRY_CAST")
 
         def _parse_translate(self, strict: bool) -> exp.Expression:
             this = self._parse_conjunction()
@@ -191,6 +195,9 @@ class Teradata(Dialect):
                 expression.to.pop()
 
             return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+        def trycast_sql(self, expression: exp.TryCast) -> str:
+            return self.cast_sql(expression, safe_prefix="TRY")
 
         def tablesample_sql(
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "

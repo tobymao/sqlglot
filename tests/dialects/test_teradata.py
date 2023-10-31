@@ -191,3 +191,14 @@ class TestTeradata(Validator):
             },
         )
         self.validate_identity("CAST('1992-01' AS FORMAT 'YYYY-DD')")
+
+        self.validate_all(
+            "TRYCAST('-2.5' AS DECIMAL(5, 2))",
+            read={
+                "snowflake": "TRY_CAST('-2.5' AS DECIMAL(5, 2))",
+            },
+            write={
+                "snowflake": "TRY_CAST('-2.5' AS DECIMAL(5, 2))",
+                "teradata": "TRYCAST('-2.5' AS DECIMAL(5, 2))",
+            },
+        )

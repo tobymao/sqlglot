@@ -118,7 +118,6 @@ class Teradata(Dialect):
             "RANGE_N": lambda self: self._parse_rangen(),
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
-        FUNCTION_PARSERS.pop("TRY_CAST")
 
         def _parse_translate(self, strict: bool) -> exp.Expression:
             this = self._parse_conjunction()

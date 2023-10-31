@@ -112,7 +112,6 @@ class Teradata(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
-            # TRY_CAST is called TRYCAST in Teradata.
             # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Data-Type-Conversions/TRYCAST
             "TRYCAST": parser.Parser.FUNCTION_PARSERS["TRY_CAST"],
             "RANGE_N": lambda self: self._parse_rangen(),

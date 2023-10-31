@@ -56,6 +56,7 @@ class TokenType(AutoName):
     SESSION_PARAMETER = auto()
     DAMP = auto()
     XOR = auto()
+    DOUBLE_STAR = auto()
 
     BLOCK_START = auto()
     BLOCK_END = auto()

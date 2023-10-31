@@ -339,12 +339,6 @@ class Postgres(Dialect):
             TokenType.END: lambda self: self._parse_commit_or_rollback(),
         }
 
-        def _parse_factor(self) -> t.Optional[exp.Expression]:
-            return self._parse_tokens(self._parse_exponent, self.FACTOR)
-
-        def _parse_exponent(self) -> t.Optional[exp.Expression]:
-            return self._parse_tokens(self._parse_unary, self.EXPONENT)
-
         def _parse_date_part(self) -> exp.Expression:
             part = self._parse_type()
             self._match(TokenType.COMMA)

@@ -423,6 +423,8 @@ class Parser(metaclass=_Parser):
         TokenType.STAR: exp.Mul,
     }
 
+    EXPONENT = set()
+
     TIMES = {
         TokenType.TIME,
         TokenType.TIMETZ,
@@ -3376,7 +3378,10 @@ class Parser(metaclass=_Parser):
         return self._parse_tokens(self._parse_factor, self.TERM)
 
     def _parse_factor(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_unary, self.FACTOR)
+        return self._parse_tokens(self._parse_exponent, self.FACTOR)
+
+    def _parse_exponent(self) -> t.Optional[exp.Expression]:
+        return self._parse_tokens(self._parse_unary, self.EXPONENT)
 
     def _parse_unary(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.UNARY_PARSERS):

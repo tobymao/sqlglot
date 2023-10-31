@@ -36,7 +36,7 @@ class Teradata(Dialect):
         # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Arithmetic-Trigonometric-Hyperbolic-Operators/Functions
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "**": TokenType.DOUBLE_STAR,
+            "**": TokenType.DSTAR,
             "^=": TokenType.NEQ,
             "BYTEINT": TokenType.SMALLINT,
             "COLLECT": TokenType.COMMAND,
@@ -119,14 +119,8 @@ class Teradata(Dialect):
         }
 
         EXPONENT = {
-            TokenType.DOUBLE_STAR: exp.Pow,
+            TokenType.DSTAR: exp.Pow,
         }
-
-        def _parse_factor(self) -> t.Optional[exp.Expression]:
-            return self._parse_tokens(self._parse_exponent, self.FACTOR)
-
-        def _parse_exponent(self) -> t.Optional[exp.Expression]:
-            return self._parse_tokens(self._parse_unary, self.EXPONENT)
 
         def _parse_translate(self, strict: bool) -> exp.Expression:
             this = self._parse_conjunction()

@@ -246,6 +246,15 @@ class TestOptimizer(unittest.TestCase):
             "CREATE FUNCTION `udfs`.`myTest`(`x` FLOAT64) AS (1)",
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one("SELECT `bar_bazfoo_$id` FROM test", read="spark"),
+                schema={"test": {"bar_bazFoo_$id": "BIGINT"}},
+                dialect="spark",
+            ).sql(dialect="spark"),
+            "SELECT `test`.`bar_bazfoo_$id` AS `bar_bazfoo_$id` FROM `test` AS `test`",
+        )
+
         self.check_file(
             "qualify_columns", qualify_columns, execute=True, schema=self.schema, set_dialect=True
         )

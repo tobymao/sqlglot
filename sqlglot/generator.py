@@ -246,7 +246,6 @@ class Generator:
         exp.DataType.Type.LONGBLOB: "BLOB",
         exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
-        exp.DataType.Type.UNKNOWN: "",
     }
 
     STAR_MAPPING = {

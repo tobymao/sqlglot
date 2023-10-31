@@ -1,12 +1,18 @@
 from __future__ import annotations
 
-import datetime
 import functools
 import typing as t
 
 from sqlglot import exp
 from sqlglot._typing import E
-from sqlglot.helper import ensure_list, seq_get, subclasses
+from sqlglot.helper import (
+    ensure_list,
+    is_date_unit,
+    is_iso_date,
+    is_iso_datetime,
+    seq_get,
+    subclasses,
+)
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema, ensure_schema
 
@@ -18,10 +24,6 @@ if t.TYPE_CHECKING:
         t.Tuple[exp.DataType.Type, exp.DataType.Type],
         BinaryCoercionFunc,
     ]
-
-
-# Interval units that operate on date components
-DATE_UNITS = {"day", "week", "month", "quarter", "year", "year_month"}
 
 
 def annotate_types(
@@ -60,49 +62,22 @@ def _annotate_with_type_lambda(data_type: exp.DataType.Type) -> t.Callable[[Type
     return lambda self, e: self._annotate_with_type(e, data_type)
 
 
-def _is_iso_date(text: str) -> bool:
-    try:
-        datetime.date.fromisoformat(text)
-        return True
-    except ValueError:
-        return False
-
-
-def _is_iso_datetime(text: str) -> bool:
-    try:
-        datetime.datetime.fromisoformat(text)
-        return True
-    except ValueError:
-        return False
-
-
 def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
-    if not unit:
-        return l.type and l.type.this or exp.DataType.Type.UNKNOWN
-
     date_text = l.name
+    is_iso_date_ = is_iso_date(date_text)
 
-    is_iso_date = _is_iso_date(date_text)
-
-    if is_iso_date and unit.name.lower() in DATE_UNITS:
-        l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DATE))
+    if is_iso_date_ and is_date_unit(unit):
         return exp.DataType.Type.DATE
 
     # An ISO date is also an ISO datetime, but not vice versa
-    if is_iso_date or _is_iso_datetime(date_text):
-        l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DATETIME))
+    if is_iso_date_ or is_iso_datetime(date_text):
         return exp.DataType.Type.DATETIME
 
     return exp.DataType.Type.UNKNOWN
 
 
 def _coerce_date(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
-    if not unit:
-        return l.type and l.type.this or exp.DataType.Type.UNKNOWN
-
-    if unit.name.lower() not in DATE_UNITS:
-        if l.type and l.type.this == exp.DataType.Type.DATE:
-            l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DATETIME))
+    if not is_date_unit(unit):
         return exp.DataType.Type.DATETIME
     return l.type.this if l.type else exp.DataType.Type.UNKNOWN
 
@@ -209,6 +184,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.DataType.Type.INT: {
             exp.Ceil,
             exp.DatetimeDiff,
+            exp.DateDiff,
             exp.Extract,
             exp.TimestampDiff,
             exp.TimeDiff,
@@ -281,7 +257,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
         exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
-        exp.DateDiff: lambda self, e: self._annotate_datediff(e),
         exp.DateSub: lambda self, e: self._annotate_timeunit(e),
         exp.DateTrunc: lambda self, e: self._annotate_timeunit(e),
         exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
@@ -534,16 +509,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             datatype = exp.DataType.Type.UNKNOWN
 
         self._set_type(expression, datatype)
-        return expression
-
-    def _annotate_datediff(self, expression: exp.DateDiff) -> exp.DateDiff:
-        self._annotate_args(expression)
-
-        for e in (expression.this, expression.expression):
-            if not e.type.is_type(*exp.DataType.TEMPORAL_TYPES):
-                e.replace(exp.cast(e.copy(), to=exp.DataType.Type.DATETIME))
-
-        self._set_type(expression, exp.DataType.Type.INT)
         return expression
 
     def _annotate_bracket(self, expression: exp.Bracket) -> exp.Bracket:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import ParseError, exp, parse_one
+from sqlglot import exp
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import Dialect, DialectType
 
@@ -49,10 +49,7 @@ def normalize_identifiers(expression, dialect=None):
         The transformed expression.
     """
     if isinstance(expression, str):
-        try:
-            expression = parse_one(expression, dialect=dialect, into=exp.Identifier)
-        except ParseError:
-            expression = exp.to_identifier(expression)
+        expression = exp.parse_identifier(expression, dialect=dialect)
 
     dialect = Dialect.get_or_raise(dialect)
 

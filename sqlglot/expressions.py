@@ -5892,7 +5892,7 @@ def to_identifier(name, quoted=None, copy=True):
     Args:
         name: The name to turn into an identifier.
         quoted: Whether or not force quote the identifier.
-        copy: Whether or not to copy a passed in Identefier node.
+        copy: Whether or not to copy name if it's an Identifier.
 
     Returns:
         The identifier ast node.
@@ -5911,6 +5911,25 @@ def to_identifier(name, quoted=None, copy=True):
     else:
         raise ValueError(f"Name needs to be a string or an Identifier, got: {name.__class__}")
     return identifier
+
+
+def parse_identifier(name: str, dialect: DialectType = None) -> Identifier:
+    """
+    Parses a given string into an identifier.
+
+    Args:
+        name: The name to parse into an identifier.
+        dialect: The dialect to parse against.
+
+    Returns:
+        The identifier ast node.
+    """
+    try:
+        expression = maybe_parse(name, dialect=dialect, into=Identifier)
+    except ParseError:
+        expression = to_identifier(name)
+
+    return expression
 
 
 INTERVAL_STRING_RE = re.compile(r"\s*([0-9]+)\s*([a-zA-Z]+)\s*")

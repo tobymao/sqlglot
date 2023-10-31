@@ -3,10 +3,9 @@ from __future__ import annotations
 import abc
 import typing as t
 
-import sqlglot
 from sqlglot import expressions as exp
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.errors import ParseError, SchemaError
+from sqlglot.errors import SchemaError
 from sqlglot.helper import dict_depth
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
@@ -448,19 +447,16 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
 
 def normalize_name(
-    name: str | exp.Identifier,
+    identifier: str | exp.Identifier,
     dialect: DialectType = None,
     is_table: bool = False,
     normalize: t.Optional[bool] = True,
 ) -> str:
-    try:
-        identifier = sqlglot.maybe_parse(name, dialect=dialect, into=exp.Identifier)
-    except ParseError:
-        return name if isinstance(name, str) else name.name
+    if isinstance(identifier, str):
+        identifier = exp.parse_identifier(identifier, dialect=dialect)
 
-    name = identifier.name
     if not normalize:
-        return name
+        return identifier.name
 
     # This can be useful for normalize_identifier
     identifier.meta["is_table"] = is_table

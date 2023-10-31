@@ -27,6 +27,14 @@ def _parse_date_add(args: t.List) -> exp.DateAdd:
     )
 
 
+def _parse_datediff(args: t.List) -> exp.DateDiff:
+    return exp.DateDiff(
+        this=exp.TsOrDsToDate(this=seq_get(args, 2)),
+        expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
+        unit=seq_get(args, 0),
+    )
+
+
 class Redshift(Postgres):
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
@@ -51,11 +59,8 @@ class Redshift(Postgres):
             ),
             "DATEADD": _parse_date_add,
             "DATE_ADD": _parse_date_add,
-            "DATEDIFF": lambda args: exp.DateDiff(
-                this=exp.TsOrDsToDate(this=seq_get(args, 2)),
-                expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
-                unit=seq_get(args, 0),
-            ),
+            "DATEDIFF": _parse_datediff,
+            "DATE_DIFF": _parse_datediff,
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
         }

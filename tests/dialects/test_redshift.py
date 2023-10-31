@@ -7,6 +7,10 @@ class TestRedshift(Validator):
 
     def test_redshift(self):
         self.validate_identity(
+            "SELECT DATE_DIFF('month', CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",
+            "SELECT DATEDIFF(month, CAST(CAST('2020-02-29 00:00:00' AS TIMESTAMP) AS DATE), CAST(CAST('2020-03-02 00:00:00' AS TIMESTAMP) AS DATE))",
+        )
+        self.validate_identity(
             "SELECT * FROM x WHERE y = DATEADD('month', -1, DATE_TRUNC('month', (SELECT y FROM #temp_table)))",
             "SELECT * FROM x WHERE y = DATEADD(month, -1, CAST(DATE_TRUNC('month', (SELECT y FROM #temp_table)) AS DATE))",
         )

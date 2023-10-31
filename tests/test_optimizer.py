@@ -103,6 +103,10 @@ class TestOptimizer(unittest.TestCase):
                 "d": "TEXT",
                 "e": "TEXT",
             },
+            "temporal": {
+                "d": "DATE",
+                "t": "DATETIME",
+            },
         }
 
     def check_file(self, file, func, pretty=False, execute=False, set_dialect=False, **kwargs):
@@ -609,45 +613,60 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 "b": "DATETIME",
             }
         }
-        for sql, expected_type, *expected_sql in [
+        for sql, expected_type in [
             (
                 "SELECT '2023-01-01' + INTERVAL '1' DAY",
                 exp.DataType.Type.DATE,
-                "SELECT CAST('2023-01-01' AS DATE) + INTERVAL '1' DAY",
             ),
             (
                 "SELECT '2023-01-01' + INTERVAL '1' HOUR",
                 exp.DataType.Type.DATETIME,
-                "SELECT CAST('2023-01-01' AS DATETIME) + INTERVAL '1' HOUR",
             ),
             (
                 "SELECT '2023-01-01 00:00:01' + INTERVAL '1' HOUR",
                 exp.DataType.Type.DATETIME,
-                "SELECT CAST('2023-01-01 00:00:01' AS DATETIME) + INTERVAL '1' HOUR",
             ),
             ("SELECT 'nonsense' + INTERVAL '1' DAY", exp.DataType.Type.UNKNOWN),
             ("SELECT x.a + INTERVAL '1' DAY FROM x AS x", exp.DataType.Type.DATE),
-            ("SELECT x.a + INTERVAL '1' HOUR FROM x AS x", exp.DataType.Type.DATETIME),
+            (
+                "SELECT x.a + INTERVAL '1' HOUR FROM x AS x",
+                exp.DataType.Type.DATETIME,
+            ),
             ("SELECT x.b + INTERVAL '1' DAY FROM x AS x", exp.DataType.Type.DATETIME),
             ("SELECT x.b + INTERVAL '1' HOUR FROM x AS x", exp.DataType.Type.DATETIME),
             (
                 "SELECT DATE_ADD('2023-01-01', 1, 'DAY')",
                 exp.DataType.Type.DATE,
-                "SELECT DATE_ADD(CAST('2023-01-01' AS DATE), 1, 'DAY')",
             ),
             (
                 "SELECT DATE_ADD('2023-01-01 00:00:00', 1, 'DAY')",
                 exp.DataType.Type.DATETIME,
-                "SELECT DATE_ADD(CAST('2023-01-01 00:00:00' AS DATETIME), 1, 'DAY')",
             ),
             ("SELECT DATE_ADD(x.a, 1, 'DAY') FROM x AS x", exp.DataType.Type.DATE),
-            ("SELECT DATE_ADD(x.a, 1, 'HOUR') FROM x AS x", exp.DataType.Type.DATETIME),
+            (
+                "SELECT DATE_ADD(x.a, 1, 'HOUR') FROM x AS x",
+                exp.DataType.Type.DATETIME,
+            ),
             ("SELECT DATE_ADD(x.b, 1, 'DAY') FROM x AS x", exp.DataType.Type.DATETIME),
+            ("SELECT DATE_TRUNC('DAY', x.a) FROM x AS x", exp.DataType.Type.DATE),
+            ("SELECT DATE_TRUNC('DAY', x.b) FROM x AS x", exp.DataType.Type.DATETIME),
+            (
+                "SELECT DATE_TRUNC('SECOND', x.a) FROM x AS x",
+                exp.DataType.Type.DATETIME,
+            ),
+            (
+                "SELECT DATE_TRUNC('DAY', '2023-01-01') FROM x AS x",
+                exp.DataType.Type.DATE,
+            ),
+            (
+                "SELECT DATEDIFF('2023-01-01', '2023-01-02', DAY) FROM x AS x",
+                exp.DataType.Type.INT,
+            ),
         ]:
             with self.subTest(sql):
                 expression = annotate_types(parse_one(sql), schema=schema)
                 self.assertEqual(expected_type, expression.expressions[0].type.this)
-                self.assertEqual(expected_sql[0] if expected_sql else sql, expression.sql())
+                self.assertEqual(sql, expression.sql())
 
     def test_lateral_annotation(self):
         expression = optimizer.optimize(

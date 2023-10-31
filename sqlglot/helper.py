@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import inspect
 import logging
 import re
@@ -463,3 +464,27 @@ def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:
             merged.append((start, end))
 
     return merged
+
+
+def is_iso_date(text: str) -> bool:
+    try:
+        datetime.date.fromisoformat(text)
+        return True
+    except ValueError:
+        return False
+
+
+def is_iso_datetime(text: str) -> bool:
+    try:
+        datetime.datetime.fromisoformat(text)
+        return True
+    except ValueError:
+        return False
+
+
+# Interval units that operate on date components
+DATE_UNITS = {"day", "week", "month", "quarter", "year", "year_month"}
+
+
+def is_date_unit(expression: t.Optional[exp.Expression]) -> bool:
+    return expression is not None and expression.name.lower() in DATE_UNITS

@@ -618,7 +618,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             ),
             ("SELECT 'nonsense' + INTERVAL '1' DAY", exp.DataType.Type.UNKNOWN),
             ("SELECT x.a + INTERVAL '1' DAY FROM x AS x", exp.DataType.Type.DATE),
-            ("SELECT x.a + INTERVAL '1' HOUR FROM x AS x", exp.DataType.Type.DATETIME),
+            (
+                "SELECT x.a + INTERVAL '1' HOUR FROM x AS x",
+                exp.DataType.Type.DATETIME,
+                "SELECT CAST(x.a AS DATETIME) + INTERVAL '1' HOUR FROM x AS x",
+            ),
             ("SELECT x.b + INTERVAL '1' DAY FROM x AS x", exp.DataType.Type.DATETIME),
             ("SELECT x.b + INTERVAL '1' HOUR FROM x AS x", exp.DataType.Type.DATETIME),
             (
@@ -632,8 +636,29 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 "SELECT DATE_ADD(CAST('2023-01-01 00:00:00' AS DATETIME), 1, 'DAY')",
             ),
             ("SELECT DATE_ADD(x.a, 1, 'DAY') FROM x AS x", exp.DataType.Type.DATE),
-            ("SELECT DATE_ADD(x.a, 1, 'HOUR') FROM x AS x", exp.DataType.Type.DATETIME),
+            (
+                "SELECT DATE_ADD(x.a, 1, 'HOUR') FROM x AS x",
+                exp.DataType.Type.DATETIME,
+                "SELECT DATE_ADD(CAST(x.a AS DATETIME), 1, 'HOUR') FROM x AS x",
+            ),
             ("SELECT DATE_ADD(x.b, 1, 'DAY') FROM x AS x", exp.DataType.Type.DATETIME),
+            ("SELECT DATE_TRUNC('DAY', x.a) FROM x AS x", exp.DataType.Type.DATE),
+            ("SELECT DATE_TRUNC('DAY', x.b) FROM x AS x", exp.DataType.Type.DATETIME),
+            (
+                "SELECT DATE_TRUNC('SECOND', x.a) FROM x AS x",
+                exp.DataType.Type.DATETIME,
+                "SELECT DATE_TRUNC('SECOND', CAST(x.a AS DATETIME)) FROM x AS x",
+            ),
+            (
+                "SELECT DATE_TRUNC('DAY', '2023-01-01') FROM x AS x",
+                exp.DataType.Type.DATE,
+                "SELECT DATE_TRUNC('DAY', CAST('2023-01-01' AS DATE)) FROM x AS x",
+            ),
+            (
+                "SELECT DATEDIFF('2023-01-01', '2023-01-02', DAY) FROM x AS x",
+                exp.DataType.Type.INT,
+                "SELECT DATEDIFF(CAST('2023-01-01' AS DATETIME), CAST('2023-01-02' AS DATETIME), DAY) FROM x AS x",
+            ),
         ]:
             with self.subTest(sql):
                 expression = annotate_types(parse_one(sql), schema=schema)

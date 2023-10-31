@@ -76,13 +76,15 @@ def _is_iso_datetime(text: str) -> bool:
         return False
 
 
-def _coerce_literal_and_interval(l: exp.Expression, r: exp.Expression) -> exp.DataType.Type:
+def _coerce_date_literal(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
+    if not unit:
+        return l.type and l.type.this or exp.DataType.Type.UNKNOWN
+
     date_text = l.name
-    unit = r.text("unit").lower()
 
     is_iso_date = _is_iso_date(date_text)
 
-    if is_iso_date and unit in DATE_UNITS:
+    if is_iso_date and unit.name.lower() in DATE_UNITS:
         l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DATE))
         return exp.DataType.Type.DATE
 
@@ -94,9 +96,13 @@ def _coerce_literal_and_interval(l: exp.Expression, r: exp.Expression) -> exp.Da
     return exp.DataType.Type.UNKNOWN
 
 
-def _coerce_date_and_interval(l: exp.Expression, r: exp.Expression) -> exp.DataType.Type:
-    unit = r.text("unit").lower()
-    if unit not in DATE_UNITS:
+def _coerce_date(l: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.DataType.Type:
+    if not unit:
+        return l.type and l.type.this or exp.DataType.Type.UNKNOWN
+
+    if unit.name.lower() not in DATE_UNITS:
+        if l.type and l.type.this == exp.DataType.Type.DATE:
+            l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DATETIME))
         return exp.DataType.Type.DATETIME
     return l.type.this if l.type else exp.DataType.Type.UNKNOWN
 
@@ -171,7 +177,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.Date,
             exp.DateFromParts,
             exp.DateStrToDate,
-            exp.DateTrunc,
             exp.DiToDate,
             exp.StrToDate,
             exp.TimeStrToDate,
@@ -203,7 +208,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         },
         exp.DataType.Type.INT: {
             exp.Ceil,
-            exp.DateDiff,
             exp.DatetimeDiff,
             exp.Extract,
             exp.TimestampDiff,
@@ -276,8 +280,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Case: lambda self, e: self._annotate_by_args(e, "default", "ifs"),
         exp.Coalesce: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.DataType: lambda self, e: self._annotate_with_type(e, e.copy()),
-        exp.DateAdd: lambda self, e: self._annotate_dateadd(e),
-        exp.DateSub: lambda self, e: self._annotate_dateadd(e),
+        exp.DateAdd: lambda self, e: self._annotate_timeunit(e),
+        exp.DateDiff: lambda self, e: self._annotate_datediff(e),
+        exp.DateSub: lambda self, e: self._annotate_timeunit(e),
+        exp.DateTrunc: lambda self, e: self._annotate_timeunit(e),
         exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
@@ -306,13 +312,17 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     BINARY_COERCIONS: BinaryCoercions = {
         **swap_all(
             {
-                (t, exp.DataType.Type.INTERVAL): _coerce_literal_and_interval
+                (t, exp.DataType.Type.INTERVAL): lambda l, r: _coerce_date_literal(
+                    l, r.args.get("unit")
+                )
                 for t in exp.DataType.TEXT_TYPES
             }
         ),
         **swap_all(
             {
-                (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL): _coerce_date_and_interval,
+                (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL): lambda l, r: _coerce_date(
+                    l, r.args.get("unit")
+                ),
             }
         ),
     }
@@ -511,20 +521,29 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    def _annotate_dateadd(self, expression: exp.IntervalOp) -> exp.IntervalOp:
+    def _annotate_timeunit(
+        self, expression: exp.TimeUnit | exp.DateTrunc
+    ) -> exp.TimeUnit | exp.DateTrunc:
         self._annotate_args(expression)
 
         if expression.this.type.this in exp.DataType.TEXT_TYPES:
-            datatype = _coerce_literal_and_interval(expression.this, expression.interval())
-        elif (
-            expression.this.type.is_type(exp.DataType.Type.DATE)
-            and expression.text("unit").lower() not in DATE_UNITS
-        ):
-            datatype = exp.DataType.Type.DATETIME
+            datatype = _coerce_date_literal(expression.this, expression.unit)
+        elif expression.this.type.is_type(*exp.DataType.TEMPORAL_TYPES):
+            datatype = _coerce_date(expression.this, expression.unit)
         else:
-            datatype = expression.this.type
+            datatype = exp.DataType.Type.UNKNOWN
 
         self._set_type(expression, datatype)
+        return expression
+
+    def _annotate_datediff(self, expression: exp.DateDiff) -> exp.DateDiff:
+        self._annotate_args(expression)
+
+        for e in (expression.this, expression.expression):
+            if not e.type.is_type(*exp.DataType.TEMPORAL_TYPES):
+                e.replace(exp.cast(e.copy(), to=exp.DataType.Type.DATETIME))
+
+        self._set_type(expression, exp.DataType.Type.INT)
         return expression
 
     def _annotate_bracket(self, expression: exp.Bracket) -> exp.Bracket:

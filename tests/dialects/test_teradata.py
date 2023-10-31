@@ -161,6 +161,8 @@ class TestTeradata(Validator):
             "SELECT col1, col2 FROM dbc.table1 WHERE col1 EQ 'value1' MINUS SELECT col1, col2 FROM dbc.table2",
             "SELECT col1, col2 FROM dbc.table1 WHERE col1 = 'value1' EXCEPT SELECT col1, col2 FROM dbc.table2",
         )
+        self.validate_identity("UPD a SET b = 1", "UPDATE a SET b = 1")
+        self.validate_identity("DEL FROM a", "DELETE FROM a")
 
     def test_datatype(self):
         self.validate_all(

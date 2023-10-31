@@ -38,6 +38,7 @@ class Teradata(Dialect):
             "^=": TokenType.NEQ,
             "BYTEINT": TokenType.SMALLINT,
             "COLLECT": TokenType.COMMAND,
+            "DEL": TokenType.DELETE,
             "EQ": TokenType.EQ,
             "GE": TokenType.GTE,
             "GT": TokenType.GT,
@@ -53,6 +54,7 @@ class Teradata(Dialect):
             "SEL": TokenType.SELECT,
             "ST_GEOMETRY": TokenType.GEOMETRY,
             "TOP": TokenType.TOP,
+            "UPD": TokenType.UPDATE,
         }
 
         # Teradata does not support % as a modulo operator

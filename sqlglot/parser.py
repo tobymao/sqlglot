@@ -753,6 +753,7 @@ class Parser(metaclass=_Parser):
         )
         or self.expression(exp.OnProperty, this=self._parse_id_var()),
         "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
+        "PERIOD": lambda self: self._parse_period_for_system_time(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "REFERENCES": lambda self: self._parse_references(match=False),
         "TITLE": lambda self: self.expression(
@@ -3864,7 +3865,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_generated_as_identity(
         self,
-    ) -> exp.GeneratedAsIdentityColumnConstraint | exp.ComputedColumnConstraint | exp.GeneratedAsRowColumnConstraint:
+    ) -> (
+        exp.GeneratedAsIdentityColumnConstraint
+        | exp.ComputedColumnConstraint
+        | exp.GeneratedAsRowColumnConstraint
+    ):
         if self._match_text_seq("BY", "DEFAULT"):
             on_null = self._match_pair(TokenType.ON, TokenType.NULL)
             this = self.expression(
@@ -3879,9 +3884,9 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("ROW"):
             start = self._match_text_seq("START")
             if not start:
-                self._match_text_seq("END")
+                self._match(TokenType.END)
             hidden = self._match_text_seq("HIDDEN")
-            return self.expression(exp.GeneratedAsRowColumnConstraint, this=True, start=start, hidden=hidden)
+            return self.expression(exp.GeneratedAsRowColumnConstraint, start=start, hidden=hidden)
 
         identity = self._match_text_seq("IDENTITY")
 
@@ -4054,6 +4059,14 @@ class Parser(metaclass=_Parser):
 
     def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
         return self._parse_field()
+
+    def _parse_period_for_system_time(self) -> exp.PeriodForSystemTimeConstraint:
+        self._match(TokenType.TIMESTAMP_SNAPSHOT)
+
+        id_vars = self._parse_wrapped_id_vars()
+        return exp.PeriodForSystemTimeConstraint(
+            this=seq_get(id_vars, 0), expression=seq_get(id_vars, 1)
+        )
 
     def _parse_primary_key(
         self, wrapped_optional: bool = False, in_props: bool = False

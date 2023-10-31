@@ -1296,8 +1296,9 @@ class ColumnConstraintKind(Expression):
 class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
+
 class PeriodForSystemTimeConstraint(ColumnConstraintKind):
-    ar_types = {"this": False, "start": True, "end": True}
+    arg_types = {"this": True, "expression": True}
 
 
 class CaseSpecificColumnConstraint(ColumnConstraintKind):
@@ -1355,9 +1356,7 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
 
 
 class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
-    # this:
     arg_types = {
-        "this": False,
         "start": False,
         "hidden": False,
     }

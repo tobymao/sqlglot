@@ -403,11 +403,6 @@ class TSQL(Dialect):
             TokenType.END: lambda self: self._parse_command(),
         }
 
-        CONSTRAINT_PARSERS = {
-            **parser.Parser.CONSTRAINT_PARSERS,
-            "PERIOD": lambda self: self._parse_period_for_system_time(),
-        }
-
         LOG_DEFAULTS_TO_LN = True
 
         CONCAT_NULL_OUTPUTS_STRING = True
@@ -584,16 +579,6 @@ class TSQL(Dialect):
                 self._retreat(index)
 
             return super()._parse_if()
-
-        def _parse_period_for_system_time(self) -> exp.PeriodForSystemTimeConstraint:
-            self._match(TokenType.TIMESTAMP_SNAPSHOT)
-            self._match_l_paren()
-
-            start = self._parse_id_var()
-            self._match(TokenType.COMMA)
-            end = self._parse_id_var()
-            self._match_r_paren()
-            return exp.PeriodForSystemTimeConstraint(start=start, end=end)
 
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
             return self.expression(

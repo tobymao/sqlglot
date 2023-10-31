@@ -284,7 +284,6 @@ class TokenType(AutoName):
     PARTITION = auto()
     PARTITION_BY = auto()
     PERCENT = auto()
-    PERIOD = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()
     PRAGMA = auto()

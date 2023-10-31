@@ -33,8 +33,10 @@ class Teradata(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Expressions-and-Predicates/March-2017/Comparison-Operators-and-Functions/Comparison-Operators/ANSI-Compliance
+        # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Arithmetic-Trigonometric-Hyperbolic-Operators/Functions
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "**": TokenType.DSTAR,
             "^=": TokenType.NEQ,
             "BYTEINT": TokenType.SMALLINT,
             "COLLECT": TokenType.COMMAND,
@@ -118,6 +120,10 @@ class Teradata(Dialect):
             "TRANSLATE": lambda self: self._parse_translate(self.STRICT_CAST),
         }
 
+        EXPONENT = {
+            TokenType.DSTAR: exp.Pow,
+        }
+
         def _parse_translate(self, strict: bool) -> exp.Expression:
             this = self._parse_conjunction()
 
@@ -179,6 +185,7 @@ class Teradata(Dialect):
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
+            exp.Pow: lambda self, e: self.binary(e, "**"),
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),

@@ -225,6 +225,7 @@ class TestSnowflake(Validator):
                 "spark": "POWER(x, 2)",
                 "sqlite": "POWER(x, 2)",
                 "starrocks": "POWER(x, 2)",
+                "teradata": "x ** 2",
                 "trino": "POWER(x, 2)",
                 "tsql": "POWER(x, 2)",
             },

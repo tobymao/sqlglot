@@ -33,6 +33,7 @@ class Teradata(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Expressions-and-Predicates/March-2017/Comparison-Operators-and-Functions/Comparison-Operators/ANSI-Compliance
+        # https://docs.teradata.com/r/SQL-Functions-Operators-Expressions-and-Predicates/June-2017/Arithmetic-Trigonometric-Hyperbolic-Operators/Functions
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "**": TokenType.DOUBLE_STAR,

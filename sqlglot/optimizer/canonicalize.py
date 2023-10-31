@@ -110,27 +110,25 @@ def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
             _replace_cast(b, exp.DataType.Type.DATE)
 
 
-def _coerce_timeunit_arg(
-    expression: exp.Expression, unit: t.Optional[exp.Expression]
-) -> exp.Expression:
-    if not expression.type:
-        return expression
+def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:
+    if not arg.type:
+        return arg
 
-    if expression.type.this in exp.DataType.TEXT_TYPES:
-        date_text = expression.name
+    if arg.type.this in exp.DataType.TEXT_TYPES:
+        date_text = arg.name
         is_iso_date_ = is_iso_date(date_text)
 
         if is_iso_date_ and is_date_unit(unit):
-            return expression.replace(exp.cast(expression.copy(), to=exp.DataType.Type.DATE))
+            return arg.replace(exp.cast(arg.copy(), to=exp.DataType.Type.DATE))
 
         # An ISO date is also an ISO datetime, but not vice versa
         if is_iso_date_ or is_iso_datetime(date_text):
-            return expression.replace(exp.cast(expression.copy(), to=exp.DataType.Type.DATETIME))
+            return arg.replace(exp.cast(arg.copy(), to=exp.DataType.Type.DATETIME))
 
-    elif expression.type.this == exp.DataType.Type.DATE and not is_date_unit(unit):
-        return expression.replace(exp.cast(expression.copy(), to=exp.DataType.Type.DATETIME))
+    elif arg.type.this == exp.DataType.Type.DATE and not is_date_unit(unit):
+        return arg.replace(exp.cast(arg.copy(), to=exp.DataType.Type.DATETIME))
 
-    return expression
+    return arg
 
 
 def _coerce_datediff_args(node: exp.DateDiff) -> None:

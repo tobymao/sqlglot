@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import itertools
+import typing as t
 
 from sqlglot import exp
+from sqlglot.helper import is_date_unit, is_iso_date, is_iso_datetime
 
 
 def canonicalize(expression: exp.Expression) -> exp.Expression:
@@ -49,6 +51,10 @@ def coerce_type(node: exp.Expression) -> exp.Expression:
         *exp.DataType.TEMPORAL_TYPES
     ):
         _replace_cast(node.expression, exp.DataType.Type.DATETIME)
+    elif isinstance(node, (exp.DateAdd, exp.DateSub, exp.DateTrunc)):
+        _coerce_timeunit_arg(node.this, node.unit)
+    elif isinstance(node, exp.DateDiff):
+        _coerce_datediff_args(node)
 
     return node
 
@@ -89,13 +95,46 @@ def remove_ascending_order(expression: exp.Expression) -> exp.Expression:
 
 def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
     for a, b in itertools.permutations([a, b]):
+        if isinstance(b, exp.Interval):
+            a = _coerce_timeunit_arg(a, b.unit)
         if (
             a.type
             and a.type.this == exp.DataType.Type.DATE
             and b.type
-            and b.type.this not in (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL)
+            and b.type.this
+            not in (
+                exp.DataType.Type.DATE,
+                exp.DataType.Type.INTERVAL,
+            )
         ):
             _replace_cast(b, exp.DataType.Type.DATE)
+
+
+def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:
+    if not arg.type:
+        return arg
+
+    if arg.type.this in exp.DataType.TEXT_TYPES:
+        date_text = arg.name
+        is_iso_date_ = is_iso_date(date_text)
+
+        if is_iso_date_ and is_date_unit(unit):
+            return arg.replace(exp.cast(arg.copy(), to=exp.DataType.Type.DATE))
+
+        # An ISO date is also an ISO datetime, but not vice versa
+        if is_iso_date_ or is_iso_datetime(date_text):
+            return arg.replace(exp.cast(arg.copy(), to=exp.DataType.Type.DATETIME))
+
+    elif arg.type.this == exp.DataType.Type.DATE and not is_date_unit(unit):
+        return arg.replace(exp.cast(arg.copy(), to=exp.DataType.Type.DATETIME))
+
+    return arg
+
+
+def _coerce_datediff_args(node: exp.DateDiff) -> None:
+    for e in (node.this, node.expression):
+        if e.type.this not in exp.DataType.TEMPORAL_TYPES:
+            e.replace(exp.cast(e.copy(), to=exp.DataType.Type.DATETIME))
 
 
 def _replace_cast(node: exp.Expression, to: exp.DataType.Type) -> None:

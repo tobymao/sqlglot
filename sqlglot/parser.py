@@ -3378,7 +3378,9 @@ class Parser(metaclass=_Parser):
         return self._parse_tokens(self._parse_factor, self.TERM)
 
     def _parse_factor(self) -> t.Optional[exp.Expression]:
-        return self._parse_tokens(self._parse_exponent, self.FACTOR)
+        if self.EXPONENT:
+            return self._parse_tokens(self._parse_exponent, self.FACTOR)
+        return self._parse_tokens(self._parse_unary, self.FACTOR)
 
     def _parse_exponent(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_unary, self.EXPONENT)

@@ -2254,6 +2254,11 @@ class WithJournalTableProperty(Property):
     arg_types = {"this": True}
 
 
+class WithSystemVersioningProperty(Property):
+    # this -> history table name, expression -> data consistency check
+    arg_types = {"this": True, "expression": False}
+
+
 class Properties(Expression):
     arg_types = {"expressions": True}
 

@@ -696,6 +696,7 @@ class Parser(metaclass=_Parser):
             exp.StabilityProperty, this=exp.Literal.string("STABLE")
         ),
         "STORED": lambda self: self._parse_stored(),
+        "SYSTEM_VERSIONING": lambda self: self._parse_system_versioning_property(),
         "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
         "TEMP": lambda self: self.expression(exp.TemporaryProperty),
         "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty),
@@ -1523,6 +1524,19 @@ class Parser(metaclass=_Parser):
             return exp.VolatileProperty()
 
         return self.expression(exp.StabilityProperty, this=exp.Literal.string("VOLATILE"))
+
+    def _parse_system_versioning_property(self) -> exp.WithSystemVersioningProperty:
+        self._match_pair(TokenType.EQ, TokenType.ON)
+        self._match_l_paren()
+        self._match_texts(["HISTORY_TABLE"])
+        self._match(TokenType.EQ)
+        this = exp.WithSystemVersioningProperty(this=(self._parse_table_parts()))
+        if self._match(TokenType.COMMA):
+            self._match_texts(["DATA_CONSISTENCY_CHECK"])
+            self._match(TokenType.EQ)
+            this.set("expression", self._match_texts(["ON", "OFF"]))
+        self._match_r_paren()
+        return this
 
     def _parse_with_property(
         self,

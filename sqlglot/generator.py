@@ -328,6 +328,7 @@ class Generator:
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
+        exp.WithSystemVersioningProperty: exp.Properties.Location.POST_CREATE,
     }
 
     # Keywords that can't be used as unquoted identifier names

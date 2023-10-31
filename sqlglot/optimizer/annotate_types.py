@@ -503,7 +503,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         if expression.this.type.this in exp.DataType.TEXT_TYPES:
             datatype = _coerce_date_literal(expression.this, expression.unit)
-        elif expression.this.type.is_type(*exp.DataType.TEMPORAL_TYPES):
+        elif expression.this.type.this in exp.DataType.TEMPORAL_TYPES:
             datatype = _coerce_date(expression.this, expression.unit)
         else:
             datatype = exp.DataType.Type.UNKNOWN

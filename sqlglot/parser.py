@@ -423,7 +423,7 @@ class Parser(metaclass=_Parser):
         TokenType.STAR: exp.Mul,
     }
 
-    EXPONENT = set()
+    EXPONENT: t.Dict[TokenType, t.Type[exp.Expression]] = {}
 
     TIMES = {
         TokenType.TIME,

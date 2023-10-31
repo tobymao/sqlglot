@@ -183,6 +183,13 @@ class Teradata(Dialect):
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
         }
 
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            if expression.to.this == exp.DataType.Type.UNKNOWN and expression.args.get("format"):
+                # We don't actually want to print the unknown type in CAST(<value> AS FORMAT <format>)
+                expression.to.pop()
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
+
         def tablesample_sql(
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
         ) -> str:

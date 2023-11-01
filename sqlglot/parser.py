@@ -879,6 +879,7 @@ class Parser(metaclass=_Parser):
     CLONE_KINDS = {"TIMESTAMP", "OFFSET", "STATEMENT"}
 
     OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS"}
+    OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
 
     TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
 
@@ -2565,9 +2566,8 @@ class Parser(metaclass=_Parser):
         if self._match_texts(self.OPCLASS_FOLLOW_KEYWORDS, advance=False):
             return this
 
-        opclass = self._parse_var(any_token=True)
-        if opclass:
-            return self.expression(exp.Opclass, this=this, expression=opclass)
+        if not self._match_set(self.OPTYPE_FOLLOW_TOKENS, advance=False):
+            return self.expression(exp.Opclass, this=this, expression=self._parse_table_parts())
 
         return this
 

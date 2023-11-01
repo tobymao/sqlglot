@@ -654,6 +654,7 @@ class Parser(metaclass=_Parser):
         "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "FREESPACE": lambda self: self._parse_freespace(),
         "HEAP": lambda self: self.expression(exp.HeapProperty),
+        "HISTORY_TABLE": lambda self: self._parse_property_assignment(exp.HistoryTableProperty),
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
@@ -1527,16 +1528,8 @@ class Parser(metaclass=_Parser):
 
     def _parse_system_versioning_property(self) -> exp.WithSystemVersioningProperty:
         self._match_pair(TokenType.EQ, TokenType.ON)
-        self._match_l_paren()
-        self._match_text_seq("HISTORY_TABLE")
-        self._match(TokenType.EQ)
-        this = self.expression(exp.WithSystemVersioningProperty, this=self._parse_table_parts())
-        if self._match(TokenType.COMMA):
-            self._match_text_seq("DATA_CONSISTENCY_CHECK")
-            self._match(TokenType.EQ)
-            this.set("expression", self._match_texts(("ON", "OFF")))
-        self._match_r_paren()
-        return this
+        this = self._parse_wrapped_csv(self._parse_property)
+        return self.expression(exp.WithSystemVersioningProperty, this=this)
 
     def _parse_with_property(
         self,
@@ -3634,11 +3627,21 @@ class Parser(metaclass=_Parser):
         tokens: t.Optional[t.Collection[TokenType]] = None,
         anonymous_func: bool = False,
     ) -> t.Optional[exp.Expression]:
-        return (
+        before_index = self._index
+        this = (
             self._parse_primary()
             or self._parse_function(anonymous=anonymous_func)
             or self._parse_id_var(any_token=any_token, tokens=tokens)
         )
+        after_index = self._index
+        if isinstance(this, exp.Identifier):
+            self._retreat(before_index)
+            try:
+                this = self._parse_table_parts()
+            except ParseError:
+                self._retreat(after_index)
+
+        return this
 
     def _parse_function(
         self,

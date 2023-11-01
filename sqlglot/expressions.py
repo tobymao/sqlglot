@@ -1297,6 +1297,10 @@ class AutoIncrementColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class PeriodForSystemTimeConstraint(ColumnConstraintKind):
+    arg_types = {"this": True, "expression": True}
+
+
 class CaseSpecificColumnConstraint(ColumnConstraintKind):
     arg_types = {"not_": True}
 
@@ -1349,6 +1353,10 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
         "maxvalue": False,
         "cycle": False,
     }
+
+
+class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
+    arg_types = {"start": True, "hidden": False}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
@@ -2257,6 +2265,11 @@ class WithDataProperty(Property):
 
 class WithJournalTableProperty(Property):
     arg_types = {"this": True}
+
+
+class WithSystemVersioningProperty(Property):
+    # this -> history table name, expression -> data consistency check
+    arg_types = {"this": True, "expression": False}
 
 
 class Properties(Expression):

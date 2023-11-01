@@ -335,6 +335,7 @@ class Generator:
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
+        exp.WithSystemVersioningProperty: exp.Properties.Location.POST_SCHEMA,
     }
 
     # Keywords that can't be used as unquoted identifier names
@@ -751,6 +752,18 @@ class Generator:
         expr = f"({expr})" if expr else "IDENTITY"
 
         return f"GENERATED{this} AS {expr}{sequence_opts}"
+
+    def generatedasrowcolumnconstraint_sql(
+        self, expression: exp.GeneratedAsRowColumnConstraint
+    ) -> str:
+        start = "START" if expression.args["start"] else "END"
+        hidden = " HIDDEN" if expression.args.get("hidden") else ""
+        return f"GENERATED ALWAYS AS ROW {start}{hidden}"
+
+    def periodforsystemtimeconstraint_sql(
+        self, expression: exp.PeriodForSystemTimeConstraint
+    ) -> str:
+        return f"PERIOD FOR SYSTEM_TIME ({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
 
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"
@@ -1285,6 +1298,20 @@ class Generator:
         if statistics is not None:
             statistics_sql = f" AND {'NO ' if not statistics else ''}STATISTICS"
         return f"{data_sql}{statistics_sql}"
+
+    def withsystemversioningproperty_sql(self, expression: exp.WithSystemVersioningProperty) -> str:
+        sql = "WITH(SYSTEM_VERSIONING=ON"
+        if expression.this is None:
+            return f"{sql})"
+
+        history_table = self.sql(expression.this)
+        sql = f"{sql}(HISTORY_TABLE={history_table}"
+        if expression.expression is None:
+            return f"{sql}))"
+
+        data_consistency_check = "ON" if expression.expression else "OFF"
+        sql = f"{sql}, DATA_CONSISTENCY_CHECK={data_consistency_check}"
+        return f"{sql}))"
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")

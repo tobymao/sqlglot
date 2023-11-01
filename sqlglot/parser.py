@@ -699,6 +699,7 @@ class Parser(metaclass=_Parser):
             exp.StabilityProperty, this=exp.Literal.string("STABLE")
         ),
         "STORED": lambda self: self._parse_stored(),
+        "SYSTEM_VERSIONING": lambda self: self._parse_system_versioning_property(),
         "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
         "TEMP": lambda self: self.expression(exp.TemporaryProperty),
         "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty),
@@ -756,6 +757,7 @@ class Parser(metaclass=_Parser):
         )
         or self.expression(exp.OnProperty, this=self._parse_id_var()),
         "PATH": lambda self: self.expression(exp.PathColumnConstraint, this=self._parse_string()),
+        "PERIOD": lambda self: self._parse_period_for_system_time(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "REFERENCES": lambda self: self._parse_references(match=False),
         "TITLE": lambda self: self.expression(
@@ -777,7 +779,7 @@ class Parser(metaclass=_Parser):
         "RENAME": lambda self: self._parse_alter_table_rename(),
     }
 
-    SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE"}
+    SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE", "PERIOD"}
 
     NO_PAREN_FUNCTION_PARSERS = {
         "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
@@ -1526,6 +1528,19 @@ class Parser(metaclass=_Parser):
             return exp.VolatileProperty()
 
         return self.expression(exp.StabilityProperty, this=exp.Literal.string("VOLATILE"))
+
+    def _parse_system_versioning_property(self) -> exp.WithSystemVersioningProperty:
+        self._match_pair(TokenType.EQ, TokenType.ON)
+        self._match_l_paren()
+        self._match_text_seq("HISTORY_TABLE")
+        self._match(TokenType.EQ)
+        this = self.expression(exp.WithSystemVersioningProperty, this=self._parse_table_parts())
+        if self._match(TokenType.COMMA):
+            self._match_text_seq("DATA_CONSISTENCY_CHECK")
+            self._match(TokenType.EQ)
+            this.set("expression", self._match_texts(("ON", "OFF")))
+        self._match_r_paren()
+        return this
 
     def _parse_with_property(
         self,
@@ -3924,7 +3939,11 @@ class Parser(metaclass=_Parser):
 
     def _parse_generated_as_identity(
         self,
-    ) -> exp.GeneratedAsIdentityColumnConstraint | exp.ComputedColumnConstraint:
+    ) -> (
+        exp.GeneratedAsIdentityColumnConstraint
+        | exp.ComputedColumnConstraint
+        | exp.GeneratedAsRowColumnConstraint
+    ):
         if self._match_text_seq("BY", "DEFAULT"):
             on_null = self._match_pair(TokenType.ON, TokenType.NULL)
             this = self.expression(
@@ -3935,6 +3954,14 @@ class Parser(metaclass=_Parser):
             this = self.expression(exp.GeneratedAsIdentityColumnConstraint, this=True)
 
         self._match(TokenType.ALIAS)
+
+        if self._match_text_seq("ROW"):
+            start = self._match_text_seq("START")
+            if not start:
+                self._match(TokenType.END)
+            hidden = self._match_text_seq("HIDDEN")
+            return self.expression(exp.GeneratedAsRowColumnConstraint, start=start, hidden=hidden)
+
         identity = self._match_text_seq("IDENTITY")
 
         if self._match(TokenType.L_PAREN):
@@ -4106,6 +4133,16 @@ class Parser(metaclass=_Parser):
 
     def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
         return self._parse_field()
+
+    def _parse_period_for_system_time(self) -> exp.PeriodForSystemTimeConstraint:
+        self._match(TokenType.TIMESTAMP_SNAPSHOT)
+
+        id_vars = self._parse_wrapped_id_vars()
+        return self.expression(
+            exp.PeriodForSystemTimeConstraint,
+            this=seq_get(id_vars, 0),
+            expression=seq_get(id_vars, 1),
+        )
 
     def _parse_primary_key(
         self, wrapped_optional: bool = False, in_props: bool = False

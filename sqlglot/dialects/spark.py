@@ -56,7 +56,11 @@ class Spark(Spark2):
 
         def _parse_generated_as_identity(
             self,
-        ) -> exp.GeneratedAsIdentityColumnConstraint | exp.ComputedColumnConstraint:
+        ) -> (
+            exp.GeneratedAsIdentityColumnConstraint
+            | exp.ComputedColumnConstraint
+            | exp.GeneratedAsRowColumnConstraint
+        ):
             this = super()._parse_generated_as_identity()
             if this.expression:
                 return self.expression(exp.ComputedColumnConstraint, this=this.expression)

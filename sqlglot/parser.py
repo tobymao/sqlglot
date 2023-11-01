@@ -5098,9 +5098,8 @@ class Parser(metaclass=_Parser):
 
         self._retreat(index)
         if not self.ALTER_TABLE_ADD_COLUMN_KEYWORD and self._match_text_seq("ADD"):
-            return self._parse_csv(self._parse_field_def)
-
-        return self._parse_csv(self._parse_add_column)
+            return self._parse_wrapped_csv(self._parse_field_def, optional=True)
+        return self._parse_wrapped_csv(self._parse_add_column, optional=True)
 
     def _parse_alter_table_alter(self) -> exp.AlterColumn:
         self._match(TokenType.COLUMN)

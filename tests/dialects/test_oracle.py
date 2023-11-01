@@ -6,6 +6,10 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity(
+            "ALTER TABLE Payments ADD (Stock NUMBER NOT NULL, dropid VARCHAR2(500) NOT NULL)"
+        )
+        self.validate_identity("ALTER TABLE Payments ADD Stock NUMBER NOT NULL")
         self.validate_identity("SELECT x FROM t WHERE cond FOR UPDATE")
         self.validate_identity("SELECT JSON_OBJECT(k1: v1 FORMAT JSON, k2: v2 FORMAT JSON)")
         self.validate_identity("SELECT JSON_OBJECT('name': first_name || ' ' || last_name) FROM t")

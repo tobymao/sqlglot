@@ -1531,16 +1531,19 @@ class Parser(metaclass=_Parser):
 
     def _parse_system_versioning_property(self) -> exp.WithSystemVersioningProperty:
         self._match_pair(TokenType.EQ, TokenType.ON)
-        self._match_l_paren()
-        self._match_text_seq("HISTORY_TABLE")
-        self._match(TokenType.EQ)
-        this = self.expression(exp.WithSystemVersioningProperty, this=self._parse_table_parts())
-        if self._match(TokenType.COMMA):
-            self._match_text_seq("DATA_CONSISTENCY_CHECK")
-            self._match(TokenType.EQ)
-            this.set("expression", self._match_texts(("ON", "OFF")))
-        self._match_r_paren()
-        return this
+
+        prop = self.expression(exp.WithSystemVersioningProperty)
+        if self._match(TokenType.L_PAREN):
+            self._match_text_seq("HISTORY_TABLE", "=")
+            prop.set("this", self._parse_table_parts())
+
+            if self._match(TokenType.COMMA):
+                self._match_text_seq("DATA_CONSISTENCY_CHECK", "=")
+                prop.set("expression", self._advance_any() and self._prev.text.upper())
+
+            self._match_r_paren()
+
+        return prop
 
     def _parse_with_property(
         self,

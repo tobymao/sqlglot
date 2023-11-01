@@ -43,6 +43,9 @@ class TestPostgres(Validator):
             "CREATE INDEX foo ON bar.baz USING btree(col1 varchar_pattern_ops ASC, col2)"
         )
         self.validate_identity(
+            "CREATE INDEX index_issues_on_title_trigram ON public.issues USING gin(title public.gin_trgm_ops)"
+        )
+        self.validate_identity(
             "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO NOTHING RETURNING *"
         )
         self.validate_identity(

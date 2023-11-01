@@ -759,7 +759,7 @@ class Generator:
     def periodforsystemtimeconstraint_sql(
         self, expression: exp.PeriodForSystemTimeConstraint
     ) -> str:
-        return f"PERIOD FOR SYSTEM_TIME ({expression.this}, {expression.expression})"
+        return f"PERIOD FOR SYSTEM_TIME ({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
 
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"

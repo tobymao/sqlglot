@@ -750,7 +750,7 @@ class Generator:
         return f"GENERATED{this} AS {expr}{sequence_opts}"
 
     def generatedasrowcolumnconstraint_sql(
-        self, expression: exp.GeneratedAsIdentityColumnConstraint
+        self, expression: exp.GeneratedAsRowColumnConstraint
     ) -> str:
         start = "START" if expression.args["start"] else "END"
         hidden = " HIDDEN" if expression.args["hidden"] else ""

@@ -42,8 +42,8 @@ RULES = (
 def optimize(
     expression: str | exp.Expression,
     schema: t.Optional[dict | Schema] = None,
-    db: t.Optional[str] = None,
-    catalog: t.Optional[str] = None,
+    db: t.Optional[str | exp.Identifier] = None,
+    catalog: t.Optional[str | exp.Identifier] = None,
     dialect: DialectType = None,
     rules: t.Sequence[t.Callable] = RULES,
     **kwargs,

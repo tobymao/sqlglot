@@ -1269,9 +1269,18 @@ class Generator:
         return f"{data_sql}{statistics_sql}"
 
     def withsystemversioningproperty_sql(self, expression: exp.WithSystemVersioningProperty) -> str:
+        sql = f"WITH(SYSTEM_VERSIONING=ON"
+        if expression.this is None:
+            return f"{sql})"
+
         history_table = self.sql(expression.this)
+        sql = f"{sql}(HISTORY_TABLE={history_table}"
+        if expression.expression is None:
+            return f"{sql}))"
+
         data_consistency_check = "ON" if expression.expression else "OFF"
-        return f"WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE={history_table}, DATA_CONSISTENCY_CHECK={data_consistency_check}))"
+        sql = f"{sql}, DATA_CONSISTENCY_CHECK={data_consistency_check}"
+        return f"{sql}))"
 
     def insert_sql(self, expression: exp.Insert) -> str:
         overwrite = expression.args.get("overwrite")

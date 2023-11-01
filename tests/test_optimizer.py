@@ -183,6 +183,18 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_tables(self):
+        self.assertEqual(
+            optimizer.qualify_tables.qualify_tables(
+                parse_one("select a from b"), catalog="catalog"
+            ).sql(),
+            "SELECT a FROM b AS b",
+        )
+
+        self.assertEqual(
+            optimizer.qualify_tables.qualify_tables(parse_one("select a from b"), db='"DB"').sql(),
+            'SELECT a FROM "DB".b AS b',
+        )
+
         self.check_file(
             "qualify_tables",
             optimizer.qualify_tables.qualify_tables,
@@ -1008,10 +1020,3 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         query = parse_one("select a.b:c from d", read="snowflake")
         qualified = optimizer.qualify.qualify(query)
         self.assertEqual(qualified.expressions[0].alias, "c")
-
-    def test_qualify_tables_no_schema(self):
-        query = parse_one("select a from b")
-        self.assertEqual(
-            optimizer.qualify_tables.qualify_tables(query, catalog="catalog").sql(),
-            "SELECT a FROM b AS b",
-        )

@@ -753,7 +753,7 @@ class Generator:
         self, expression: exp.GeneratedAsRowColumnConstraint
     ) -> str:
         start = "START" if expression.args["start"] else "END"
-        hidden = " HIDDEN" if expression.args["hidden"] else ""
+        hidden = " HIDDEN" if expression.args.get("hidden") else ""
         return f"GENERATED ALWAYS AS ROW {start}{hidden}"
 
     def periodforsystemtimeconstraint_sql(

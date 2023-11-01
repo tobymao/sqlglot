@@ -1269,7 +1269,7 @@ class Generator:
         return f"{data_sql}{statistics_sql}"
 
     def withsystemversioningproperty_sql(self, expression: exp.WithSystemVersioningProperty) -> str:
-        sql = f"WITH(SYSTEM_VERSIONING=ON"
+        sql = "WITH(SYSTEM_VERSIONING=ON"
         if expression.this is None:
             return f"{sql})"
 

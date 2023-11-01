@@ -5926,7 +5926,7 @@ def to_identifier(name, quoted=None, copy=True):
     return identifier
 
 
-def parse_identifier(name: str, dialect: DialectType = None) -> Identifier:
+def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Identifier:
     """
     Parses a given string into an identifier.
 

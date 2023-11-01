@@ -2521,14 +2521,7 @@ class Generator:
         actions = expression.args["actions"]
 
         if isinstance(actions[0], exp.ColumnDef):
-            if self.ALTER_TABLE_ADD_COLUMN_KEYWORD:
-                actions = self.expressions(
-                    expression,
-                    key="actions",
-                    prefix="ADD COLUMN ",
-                )
-            else:
-                actions = f"ADD {self.expressions(expression, key='actions')}"
+            actions = self.add_column_sql(expression)
         elif isinstance(actions[0], exp.Schema):
             actions = self.expressions(expression, key="actions", prefix="ADD COLUMNS ")
         elif isinstance(actions[0], exp.Delete):
@@ -2539,6 +2532,15 @@ class Generator:
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         only = " ONLY" if expression.args.get("only") else ""
         return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')} {actions}"
+
+    def add_column_sql(self, expression: exp.AlterTable) -> str:
+        if self.ALTER_TABLE_ADD_COLUMN_KEYWORD:
+            return self.expressions(
+                expression,
+                key="actions",
+                prefix="ADD COLUMN ",
+            )
+        return f"ADD {self.expressions(expression, key='actions', flat=True)}"
 
     def droppartition_sql(self, expression: exp.DropPartition) -> str:
         expressions = self.expressions(expression)

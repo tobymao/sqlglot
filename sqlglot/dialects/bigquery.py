@@ -358,6 +358,17 @@ class BigQuery(Dialect):
 
         NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
 
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.END: lambda self: self._parse_as_command(self._prev),
+            TokenType.FOR: lambda self: self._parse_for_in(),
+        }
+
+        def _parse_for_in(self) -> exp.ForIn:
+            this = self._parse_range()
+            self._match_text_seq("DO")
+            return self.expression(exp.ForIn, this=this, expression=self._parse_statement())
+
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
             this = super()._parse_table_part(schema=schema) or self._parse_number()
 

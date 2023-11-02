@@ -2993,6 +2993,11 @@ class Generator:
         parameters = self.sql(expression, "params_struct")
         return self.func("PREDICT", model, table, parameters or None)
 
+    def forin_sql(self, expression: exp.ForIn) -> str:
+        this = self.sql(expression, "this")
+        expression_sql = self.sql(expression, "expression")
+        return f"FOR {this} DO {expression_sql}"
+
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):
             from sqlglot.optimizer.simplify import simplify

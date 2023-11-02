@@ -4090,6 +4090,11 @@ class In(Predicate):
     }
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#for-in
+class ForIn(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class TimeUnit(Expression):
     """Automatically converts unit arg into a var."""
 

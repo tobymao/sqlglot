@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v19.0.3] - 2023-11-02
+### :bug: Bug Fixes
+- [`cdaf832`](https://github.com/tobymao/sqlglot/commit/cdaf832a392549f2910d97f1659c2dce0b0a6cf4) - **planner**: missing step of subquery *(PR [#2503](https://github.com/tobymao/sqlglot/pull/2503) by [@Thearas](https://github.com/Thearas))*
+
+### :wrench: Chores
+- [`c51d9ae`](https://github.com/tobymao/sqlglot/commit/c51d9ae7c45a66d32b4264712cc7d652964411fa) - fix type hint for normalize_identifiers *(PR [#2505](https://github.com/tobymao/sqlglot/pull/2505) by [@GeorgeSittas](https://github.com/GeorgeSittas))*
+
+
 ## [v19.0.2] - 2023-11-01
 ### :sparkles: New Features
 - [`3d60f0e`](https://github.com/tobymao/sqlglot/commit/3d60f0edd570ba51660110e3752d57a783b172ed) - **optimizer**: more date function coercion *(PR [#2493](https://github.com/tobymao/sqlglot/pull/2493) by [@barakalon](https://github.com/barakalon))*
@@ -1876,3 +1884,4 @@ Changelog
 [v19.0.0]: https://github.com/tobymao/sqlglot/compare/v18.17.0...v19.0.0
 [v19.0.1]: https://github.com/tobymao/sqlglot/compare/v19.0.0...v19.0.1
 [v19.0.2]: https://github.com/tobymao/sqlglot/compare/v19.0.1...v19.0.2
+[v19.0.3]: https://github.com/tobymao/sqlglot/compare/v19.0.2...v19.0.3

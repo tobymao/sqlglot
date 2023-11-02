@@ -361,10 +361,10 @@ class BigQuery(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_as_command(self._prev),
-            TokenType.FOR: lambda self: self._parse_for(),
+            TokenType.FOR: lambda self: self._parse_for_in(),
         }
 
-        def _parse_for(self) -> exp.ForIn:
+        def _parse_for_in(self) -> exp.ForIn:
             this = self._parse_range()
             self._match_text_seq("DO")
             return self.expression(exp.ForIn, this=this, expression=self._parse_statement())

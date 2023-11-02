@@ -13,7 +13,7 @@ def normalize_identifiers(expression: E, dialect: DialectType = None) -> E:
 
 
 @t.overload
-def normalize_identifiers(expression: str, dialect: DialectType = None) -> exp.Expression:
+def normalize_identifiers(expression: str, dialect: DialectType = None) -> exp.Identifier:
     ...
 
 

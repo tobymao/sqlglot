@@ -263,6 +263,7 @@ class BigQuery(Dialect):
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "DECLARE": TokenType.COMMAND,
+            "END": TokenType.COMMAND,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "INT64": TokenType.BIGINT,
@@ -357,6 +358,16 @@ class BigQuery(Dialect):
         RANGE_PARSERS.pop(TokenType.OVERLAPS, None)
 
         NULL_TOKENS = {TokenType.NULL, TokenType.UNKNOWN}
+
+        STATEMENT_PARSERS = {
+            **parser.Parser.STATEMENT_PARSERS,
+            TokenType.FOR: lambda self: self._parse_for(),
+        }
+
+        def _parse_for(self) -> exp.ForIn:
+            this = self._parse_range()
+            self._match_text_seq("DO")
+            return self.expression(exp.ForIn, this=this, expression=self._parse_statement())
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
             this = super()._parse_table_part(schema=schema) or self._parse_number()

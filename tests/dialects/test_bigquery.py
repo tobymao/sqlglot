@@ -1,6 +1,13 @@
 from unittest import mock
 
-from sqlglot import ErrorLevel, ParseError, TokenError, UnsupportedError, transpile
+from sqlglot import (
+    ErrorLevel,
+    ParseError,
+    TokenError,
+    UnsupportedError,
+    parse,
+    transpile,
+)
 from tests.dialects.test_dialect import Validator
 
 
@@ -36,6 +43,15 @@ class TestBigQuery(Validator):
 
         with self.assertRaises(ParseError):
             transpile("DATE_ADD(x, day)", read="bigquery")
+
+        for_in_stmts = parse(
+            "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
+            read="bigquery",
+        )
+        self.assertEqual(
+            [s.sql(dialect="bigquery") for s in for_in_stmts],
+            ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
+        )
 
         self.validate_identity("SELECT test.Unknown FROM test")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")

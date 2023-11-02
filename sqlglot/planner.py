@@ -107,7 +107,15 @@ class Step:
         from_ = expression.args.get("from")
 
         if isinstance(expression, exp.Select) and from_:
-            step = Scan.from_expression(from_.this, ctes)
+            step_from = Scan.from_expression(from_.this, ctes)
+
+            if isinstance(from_.this, exp.Subquery):
+                step = Scan()
+                step.name = from_.alias_or_name
+                step.source = exp.to_identifier(from_.alias_or_name)
+                step.add_dependency(step_from)
+            else:
+                step = step_from
         elif isinstance(expression, exp.Union):
             step = SetOperation.from_expression(expression, ctes)
         else:

@@ -11,6 +11,9 @@ class TestTeradata(Validator):
             "SELECT * FROM tbl SAMPLE 0.33, .25, .1",
             "SELECT * FROM tbl SAMPLE 0.33, 0.25, 0.1",
         )
+        self.validate_identity(
+            "CREATE TABLE foo (baz DATE FORMAT 'YYYY/MM/DD' TITLE 'title' INLINE LENGTH 1 COMPRESS ('a', 'b'))"
+        )
 
         self.validate_all(
             "DATABASE tduser",

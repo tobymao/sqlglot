@@ -104,6 +104,13 @@ class Teradata(Dialect):
         FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS}
         FUNC_TOKENS.remove(TokenType.REPLACE)
 
+        CONSTRAINT_PARSERS = {
+            **parser.Parser.CONSTRAINT_PARSERS,
+            "TITLE": lambda self: self.expression(
+                exp.TitleColumnConstraint, this=self._parse_var_or_string()
+            ),
+        }
+
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.DATABASE: lambda self: self.expression(

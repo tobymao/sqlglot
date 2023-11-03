@@ -760,9 +760,6 @@ class Parser(metaclass=_Parser):
         "PERIOD": lambda self: self._parse_period_for_system_time(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(),
         "REFERENCES": lambda self: self._parse_references(match=False),
-        "TITLE": lambda self: self.expression(
-            exp.TitleColumnConstraint, this=self._parse_var_or_string()
-        ),
         "TTL": lambda self: self.expression(exp.MergeTreeTTL, expressions=[self._parse_bitwise()]),
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),

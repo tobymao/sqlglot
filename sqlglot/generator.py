@@ -2176,7 +2176,7 @@ class Generator:
     def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
         expressions = expression.expressions
         if self.STRICT_STRING_CONCAT:
-            expressions = (exp.cast(e, "text") for e in expressions)
+            expressions = [exp.cast(e, "text") for e in expressions]
         return self.func("CONCAT", *expressions)
 
     def check_sql(self, expression: exp.Check) -> str:

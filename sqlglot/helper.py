@@ -284,7 +284,7 @@ def csv_reader(read_csv: exp.ReadCSV) -> t.Any:
     file = open_file(read_csv.name)
 
     delimiter = ","
-    args = iter(arg.name for arg in args)
+    args = iter(arg.name for arg in args)  # type: ignore
     for k, v in zip(args, args):
         if k == "delimiter":
             delimiter = v

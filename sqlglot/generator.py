@@ -2153,6 +2153,10 @@ class Generator:
         expressions = self.expressions(expression, flat=True)
         return f"CONSTRAINT {this} {expressions}"
 
+    def unnamedconstraint_sql(self, expression: exp.UnnamedConstraint) -> str:
+        expressions = self.expressions(expression, flat=True, sep=" ")
+        return expressions
+
     def nextvaluefor_sql(self, expression: exp.NextValueFor) -> str:
         order = expression.args.get("order")
         order = f" OVER ({self.order_sql(order, flat=True)})" if order else ""

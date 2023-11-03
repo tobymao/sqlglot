@@ -134,7 +134,7 @@ class Expression(metaclass=_Expression):
         return self.args.get("expression")
 
     @property
-    def expressions(self):
+    def expressions(self) -> t.List[t.Any]:
         """
         Retrieves the argument with key "expressions".
         """

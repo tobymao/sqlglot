@@ -3990,9 +3990,11 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_inline(self) -> exp.InlineLengthColumnConstraint:
+    def _parse_inline(self) -> t.Optional[exp.InlineLengthColumnConstraint]:
         self._match_text_seq("LENGTH")
-        return self.expression(exp.InlineLengthColumnConstraint, this=self._parse_bitwise())
+        if self._match(TokenType.NUMBER):
+            return self.expression(exp.InlineLengthColumnConstraint, this=self._prev.text)
+        return None
 
     def _parse_not_constraint(
         self,

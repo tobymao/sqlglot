@@ -3926,6 +3926,11 @@ class NullSafeNEQ(Binary, Predicate):
     pass
 
 
+# Represents e.g. := in DuckDB which is mostly used for setting parameters
+class PropertyEQ(Binary):
+    pass
+
+
 class Distance(Binary):
     pass
 

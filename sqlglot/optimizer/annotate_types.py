@@ -165,6 +165,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.DataType.Type.DOUBLE: {
             exp.ApproxQuantile,
             exp.Avg,
+            exp.Div,
             exp.Exp,
             exp.Ln,
             exp.Log,
@@ -272,6 +273,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
+        exp.TypedDiv: lambda self, e: self._annotate_typeddiv(e),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
     }
 
@@ -530,4 +532,19 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         else:
             self._set_type(expression, exp.DataType.Type.UNKNOWN)
 
+        return expression
+
+    def _annotate_typeddiv(self, expression: exp.TypedDiv) -> exp.TypedDiv:
+        self._annotate_args(expression)
+
+        l, r = expression.left, expression.right
+        l_is_int = l.type and l.type.this in exp.DataType.INTEGER_TYPES
+        r_is_int = r.type and r.type.this in exp.DataType.INTEGER_TYPES
+
+        if l_is_int and r_is_int:
+            datatype = exp.DataType.Type.BIGINT
+        else:
+            datatype = exp.DataType.Type.DOUBLE
+
+        self._set_type(expression, datatype)
         return expression

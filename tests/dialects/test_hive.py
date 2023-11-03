@@ -687,7 +687,7 @@ class TestHive(Validator):
             "x div y",
             write={
                 "duckdb": "x // y",
-                "presto": "CAST(x / y AS INTEGER)",
+                "presto": "CAST(CAST(x AS DOUBLE) / y AS INTEGER)",
                 "hive": "CAST(x / y AS INT)",
                 "spark": "CAST(x / y AS INT)",
             },

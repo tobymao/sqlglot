@@ -7,6 +7,7 @@ from sqlglot import (
     ParseError,
     TokenError,
     UnsupportedError,
+    exp,
     parse_one,
 )
 from sqlglot.dialects import Hive
@@ -1442,6 +1443,48 @@ class TestDialect(Validator):
                 "spark": "FILTER(the_array, x -> x > 0)",
             },
         )
+        self.validate_all(
+            "a / b",
+            write={
+                "bigquery": "a / b",
+                "clickhouse": "a / b",
+                "hive": "a / b",
+                "mysql": "a / b",
+                "oracle": "a / b",
+                "postgres": "CAST(a AS DOUBLE PRECISION) / b",
+                "presto": "CAST(a AS DOUBLE) / b",
+                "snowflake": "a / b",
+                "sqlite": "CAST(a AS REAL) / b",
+            },
+        )
+
+    def test_div(self):
+        typed_div = exp.TypedDiv(this=exp.column("a"), expression=exp.column("b"))
+        div = exp.Div(this=exp.column("a"), expression=exp.column("b"))
+        typed_div_dialect = "presto"
+        div_dialect = "hive"
+        INT = exp.DataType.Type.INT
+        FLOAT = exp.DataType.Type.FLOAT
+
+        for expression, types, dialect, expected in [
+            (typed_div, (None, None), typed_div_dialect, "a / b"),
+            (typed_div, (None, None), div_dialect, "a / b"),
+            (div, (None, None), typed_div_dialect, "CAST(a AS DOUBLE) / b"),
+            (div, (None, None), div_dialect, "a / b"),
+            (typed_div, (INT, INT), typed_div_dialect, "a / b"),
+            (typed_div, (INT, INT), div_dialect, "CAST(a AS BIGINT) / CAST(b AS BIGINT)"),
+            (div, (INT, INT), typed_div_dialect, "CAST(a AS DOUBLE) / b"),
+            (div, (INT, INT), div_dialect, "a / b"),
+            (typed_div, (FLOAT, FLOAT), typed_div_dialect, "a / b"),
+            (typed_div, (FLOAT, FLOAT), div_dialect, "a / b"),
+            (div, (FLOAT, FLOAT), typed_div_dialect, "a / b"),
+            (div, (FLOAT, FLOAT), div_dialect, "a / b"),
+        ]:
+            with self.subTest(f"{expression.__class__.__name__} {types} {dialect} -> {expected}"):
+                expression = expression.copy()
+                expression.left.type = types[0]
+                expression.right.type = types[1]
+                self.assertEqual(expected, expression.sql(dialect=dialect))
 
     def test_limit(self):
         self.validate_all(

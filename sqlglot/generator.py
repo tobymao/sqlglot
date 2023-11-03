@@ -2591,6 +2591,15 @@ class Generator:
     def div_sql(self, expression: exp.Div) -> str:
         return self.binary(expression, "/")
 
+    def typeddiv_sql(self, expression: exp.TypedDiv) -> str:
+        l, r = expression.left, expression.right
+
+        if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
+            l.replace(exp.cast(l.copy(), to=exp.DataType.Type.BIGINT))
+            r.replace(exp.cast(r.copy(), to=exp.DataType.Type.BIGINT))
+
+        return self.binary(expression, "/")
+
     def overlaps_sql(self, expression: exp.Overlaps) -> str:
         return self.binary(expression, "OVERLAPS")
 

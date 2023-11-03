@@ -4024,19 +4024,23 @@ class Parser(metaclass=_Parser):
         return this
 
     def _parse_constraint(self) -> t.Optional[exp.Expression]:
-        if not self._match(TokenType.CONSTRAINT):
-            return self._parse_unnamed_constraint(constraints=self.SCHEMA_UNNAMED_CONSTRAINTS)
-
-        this = self._parse_id_var()
+        index = self._index
+        this = self._parse_id_var() if self._match(TokenType.CONSTRAINT) else None
         expressions = []
-
         while True:
             constraint = self._parse_unnamed_constraint() or self._parse_function()
             if not constraint:
                 break
             expressions.append(constraint)
 
-        return self.expression(exp.Constraint, this=this, expressions=expressions)
+        if not expressions:
+            self._retreat(index)
+            return None
+        return self.expression(
+            exp.UnnamedConstraint if this is None else exp.Constraint,
+            this=this,
+            expressions=expressions,
+        )
 
     def _parse_unnamed_constraint(
         self, constraints: t.Optional[t.Collection[str]] = None

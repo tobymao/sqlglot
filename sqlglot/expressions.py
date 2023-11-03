@@ -1421,6 +1421,10 @@ class Constraint(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
+class UnnamedConstraint(Expression):
+    arg_types = {"this": False, "expressions": True}
+
+
 class Delete(Expression):
     arg_types = {
         "with": False,

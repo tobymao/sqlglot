@@ -299,6 +299,7 @@ class Parser(metaclass=_Parser):
         TokenType.PIVOT,
         TokenType.PRAGMA,
         TokenType.RANGE,
+        TokenType.RECURSIVE,
         TokenType.REFERENCES,
         TokenType.RIGHT,
         TokenType.ROW,
@@ -390,6 +391,7 @@ class Parser(metaclass=_Parser):
     }
 
     EQUALITY = {
+        TokenType.COLON_EQ: exp.PropertyEQ,
         TokenType.EQ: exp.EQ,
         TokenType.NEQ: exp.NEQ,
         TokenType.NULLSAFE_EQ: exp.NullSafeEQ,
@@ -2796,7 +2798,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.UNNEST):
             return None
 
-        expressions = self._parse_wrapped_csv(self._parse_type)
+        expressions = self._parse_wrapped_csv(self._parse_equality)
         offset = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
 
         alias = self._parse_table_alias() if with_alias else None

@@ -374,8 +374,10 @@ class Presto(Dialect):
             exp.Xor: bool_xor_sql,
         }
 
+        KEY_VALUE_DEFINITONS = (exp.EQ, exp.PropertyEQ, exp.Slice)
+
         def struct_sql(self, expression: exp.Struct) -> str:
-            if any(isinstance(arg, (exp.EQ, exp.Slice)) for arg in expression.expressions):
+            if any(isinstance(arg, self.KEY_VALUE_DEFINITONS) for arg in expression.expressions):
                 self.unsupported("Struct with key-value definitions is unsupported.")
                 return self.function_fallback_sql(expression)
 

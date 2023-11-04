@@ -229,12 +229,22 @@ class TestLineage(unittest.TestCase):
             "output",
             "SELECT (SELECT max(t3.my_column) my_column FROM foo t3) AS output FROM table3",
         )
-        self.assertEqual(node.name, "SUBQUERY")
+        self.assertEqual(node.name, "output")
         node = node.downstream[0]
         self.assertEqual(node.name, "my_column")
         node = node.downstream[0]
         self.assertEqual(node.name, "t3.my_column")
         self.assertEqual(node.source.sql(), "foo AS t3")
+
+        node = lineage(
+            "y",
+            "SELECT SUM((SELECT max(a) a from x) + (SELECT min(b) b from x) + c) AS y FROM x",
+        )
+        self.assertEqual(node.name, "y")
+        self.assertEqual(len(node.downstream), 3)
+        self.assertEqual(node.downstream[0].name, "a")
+        self.assertEqual(node.downstream[1].name, "b")
+        self.assertEqual(node.downstream[2].name, "x.c")
 
     def test_lineage_cte_union(self) -> None:
         query = """

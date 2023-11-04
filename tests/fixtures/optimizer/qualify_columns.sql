@@ -306,6 +306,10 @@ WITH cte AS (SELECT 1 AS x) SELECT cte.a AS a FROM cte AS cte(a);
 WITH cte(x, y) AS (SELECT 1, 2) SELECT cte.* FROM cte AS cte(a);
 WITH cte AS (SELECT 1 AS x, 2 AS y) SELECT cte.a AS a, cte.y AS y FROM cte AS cte(a);
 
+# execute: false
+WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FROM player;
+WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player;
+
 --------------------------------------
 -- Except and Replace
 --------------------------------------
@@ -488,7 +492,7 @@ FROM (
 );
 SELECT _q_0.i AS i, _q_0.j AS j FROM (SELECT x.a + 1 AS i, x.a + 1 + 1 AS j FROM x AS x) AS _q_0;
 
-# title: wrap expanded alias to ensure operator precedence isn't broken
+# title: wrap expanded alias to ensure operator precedence isnt broken
 # execute: false
 SELECT x.a + x.b AS f, f * x.b FROM x;
 SELECT x.a + x.b AS f, (x.a + x.b) * x.b AS _col_1 FROM x AS x;

@@ -151,6 +151,7 @@ def lineage(
 
         for subquery in find_all_in_scope(select, exp.Subqueryable):
             subquery_scope = build_scope(subquery)
+            assert subquery_scope
 
             for s in subquery.named_selects:
                 to_node(s, scope=subquery_scope, upstream=node)

@@ -929,6 +929,10 @@ class Parser(metaclass=_Parser):
     # True means a / b is integer division if both a and b are integers.
     TYPED_DIVISION = False
 
+    # False means 1 / 0 throws an error.
+    # True means 1 / 0 returns null.
+    SAFE_DIVISION = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3407,8 +3411,9 @@ class Parser(metaclass=_Parser):
             factor = self._parse_tokens(self._parse_exponent, self.FACTOR)
         else:
             factor = self._parse_tokens(self._parse_unary, self.FACTOR)
-        if self.TYPED_DIVISION and isinstance(factor, exp.Div):
-            factor.args["typed"] = True
+        if isinstance(factor, exp.Div):
+            factor.args["typed"] = self.TYPED_DIVISION
+            factor.args["safe"] = self.SAFE_DIVISION
         return factor
 
     def _parse_exponent(self) -> t.Optional[exp.Expression]:

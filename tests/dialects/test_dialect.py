@@ -1467,7 +1467,7 @@ class TestDialect(Validator):
             },
         )
 
-    def test_div(self):
+    def test_typeddiv(self):
         typed_div = exp.Div(this=exp.column("a"), expression=exp.column("b"), typed=True)
         div = exp.Div(this=exp.column("a"), expression=exp.column("b"))
         typed_div_dialect = "presto"
@@ -1497,6 +1497,21 @@ class TestDialect(Validator):
                 expression = expression.copy()
                 expression.left.type = types[0]
                 expression.right.type = types[1]
+                self.assertEqual(expected, expression.sql(dialect=dialect))
+
+    def test_safediv(self):
+        safe_div = exp.Div(this=exp.column("a"), expression=exp.column("b"), safe=True)
+        div = exp.Div(this=exp.column("a"), expression=exp.column("b"))
+        safe_div_dialect = "mysql"
+        div_dialect = "snowflake"
+
+        for expression, dialect, expected in [
+            (safe_div, safe_div_dialect, "a / b"),
+            (safe_div, div_dialect, "a / NULLIF(b, 0)"),
+            (div, safe_div_dialect, "a / b"),
+            (div, div_dialect, "a / b"),
+        ]:
+            with self.subTest(f"{expression.__class__.__name__} {dialect} -> {expected}"):
                 self.assertEqual(expected, expression.sql(dialect=dialect))
 
     def test_limit(self):

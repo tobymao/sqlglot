@@ -182,6 +182,10 @@ class Dialect(metaclass=_Dialect):
     # True means a / b is integer division if both a and b are integers.
     TYPED_DIVISION = False
 
+    # False means 1 / 0 throws an error.
+    # True means 1 / 0 returns null.
+    SAFE_DIVISION = False
+
     DATE_FORMAT = "'%Y-%m-%d'"
     DATEINT_FORMAT = "'%Y%m%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"

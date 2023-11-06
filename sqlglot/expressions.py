@@ -4669,6 +4669,10 @@ class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
 
 
+class Nullif(Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Initcap(Func):
     arg_types = {"this": True, "expression": False}
 
@@ -6536,6 +6540,27 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
         raise ValueError(error_message)
 
     return function
+
+
+def case(
+    expression: t.Optional[ExpOrStr] = None,
+    **opts,
+) -> Case:
+    """
+    Initialize a CASE statement.
+
+    Example:
+        case().when("a = 1", "foo").else_("bar")
+
+    Args:
+        expression: Optionally, the input expression (not all dialects support this)
+        **opts: Extra keyword arguments for parsing `expression`
+    """
+    if expression is not None:
+        this = maybe_parse(expression, **opts)
+    else:
+        this = None
+    return Case(this=this, ifs=[])
 
 
 def true() -> Boolean:

@@ -824,6 +824,12 @@ class Expression(metaclass=_Expression):
     def rlike(self, other: ExpOrStr) -> RegexpLike:
         return self._binop(RegexpLike, other)
 
+    def div(self, other: ExpOrStr, typed: bool = False, safe: bool = False) -> Div:
+        div = self._binop(Div, other)
+        div.args["typed"] = typed
+        div.args["safe"] = safe
+        return div
+
     def __lt__(self, other: t.Any) -> LT:
         return self._binop(LT, other)
 

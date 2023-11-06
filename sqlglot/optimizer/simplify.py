@@ -1123,7 +1123,6 @@ GEN_MAP = {
     exp.Sub: lambda e: _binary(e, "-"),
     exp.Subquery: lambda e: f"({gen(e.args.values())})",
     exp.Table: lambda e: gen(e.args.values()),
-    exp.TypedDiv: lambda e: _binary(e, "/"),
     exp.Var: lambda e: e.name,
 }
 

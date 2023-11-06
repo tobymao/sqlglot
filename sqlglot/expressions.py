@@ -3884,11 +3884,7 @@ class BitwiseXor(Binary):
 
 
 class Div(Binary):
-    pass
-
-
-class TypedDiv(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "typed": False, "safe": False}
 
 
 class Overlaps(Binary):

@@ -1468,7 +1468,7 @@ class TestDialect(Validator):
         )
 
     def test_div(self):
-        typed_div = exp.TypedDiv(this=exp.column("a"), expression=exp.column("b"))
+        typed_div = exp.Div(this=exp.column("a"), expression=exp.column("b"), typed=True)
         div = exp.Div(this=exp.column("a"), expression=exp.column("b"))
         typed_div_dialect = "presto"
         div_dialect = "hive"

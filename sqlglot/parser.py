@@ -924,6 +924,11 @@ class Parser(metaclass=_Parser):
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
+    # Whether the behavior of a / b depends on the types of a and b.
+    # False means a / b is always float division.
+    # True means a / b is integer division if both a and b are integers.
+    TYPED_DIVISION = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3399,8 +3404,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_factor(self) -> t.Optional[exp.Expression]:
         if self.EXPONENT:
-            return self._parse_tokens(self._parse_exponent, self.FACTOR)
-        return self._parse_tokens(self._parse_unary, self.FACTOR)
+            factor = self._parse_tokens(self._parse_exponent, self.FACTOR)
+        else:
+            factor = self._parse_tokens(self._parse_unary, self.FACTOR)
+        if self.TYPED_DIVISION and isinstance(factor, exp.Div):
+            factor.args["typed"] = True
+        return factor
 
     def _parse_exponent(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_unary, self.EXPONENT)

@@ -135,9 +135,6 @@ class _Dialect(type):
 
         klass.generator_class.can_identify = klass.can_identify
 
-        if klass.TYPED_DIVISION:
-            klass.parser_class.FACTOR = {**klass.parser_class.FACTOR, TokenType.SLASH: exp.TypedDiv}
-
         return klass
 
 

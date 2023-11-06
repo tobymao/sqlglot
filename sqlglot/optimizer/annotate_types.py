@@ -261,6 +261,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.DateSub: lambda self, e: self._annotate_timeunit(e),
         exp.DateTrunc: lambda self, e: self._annotate_timeunit(e),
         exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
+        exp.Div: lambda self, e: self._annotate_div(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
         exp.Interval: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
@@ -273,7 +274,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
-        exp.TypedDiv: lambda self, e: self._annotate_typeddiv(e),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
     }
 
@@ -534,12 +534,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
-    def _annotate_typeddiv(self, expression: exp.TypedDiv) -> exp.TypedDiv:
+    def _annotate_div(self, expression: exp.Div) -> exp.Div:
         self._annotate_args(expression)
 
         left_type, right_type = expression.left.type.this, expression.right.type.this  # type: ignore
 
-        if left_type in exp.DataType.INTEGER_TYPES and right_type in exp.DataType.INTEGER_TYPES:
+        if expression.args.get("typed") and left_type in exp.DataType.INTEGER_TYPES and right_type in exp.DataType.INTEGER_TYPES:
             self._set_type(expression, exp.DataType.Type.BIGINT)
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))

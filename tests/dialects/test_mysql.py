@@ -984,3 +984,28 @@ COMMENT='客户账户表'"""
                 "mysql": "DATE_FORMAT(x, '%M')",
             },
         )
+
+    def test_safe_div(self):
+        self.validate_all(
+            "a / b",
+            write={
+                "bigquery": "a / NULLIF(b, 0)",
+                "clickhouse": "a / b",
+                "databricks": "a / NULLIF(b, 0)",
+                "duckdb": "a / b",
+                "hive": "a / b",
+                "mysql": "a / b",
+                "oracle": "a / NULLIF(b, 0)",
+                "snowflake": "a / NULLIF(b, 0)",
+                "spark": "a / b",
+                "starrocks": "a / b",
+                "drill": "CAST(a AS DOUBLE) / NULLIF(b, 0)",
+                "postgres": "CAST(a AS DOUBLE PRECISION) / NULLIF(b, 0)",
+                "presto": "CAST(a AS DOUBLE) / NULLIF(b, 0)",
+                "redshift": "CAST(a AS DOUBLE PRECISION) / NULLIF(b, 0)",
+                "sqlite": "CAST(a AS REAL) / b",
+                "teradata": "CAST(a AS DOUBLE) / NULLIF(b, 0)",
+                "trino": "CAST(a AS DOUBLE) / NULLIF(b, 0)",
+                "tsql": "CAST(a AS FLOAT) / NULLIF(b, 0)",
+            },
+        )

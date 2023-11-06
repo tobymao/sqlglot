@@ -241,6 +241,10 @@ class Generator:
     # True means a / b is integer division if both a and b are integers.
     TYPED_DIVISION = False
 
+    # False means 1 / 0 throws an error.
+    # True means 1 / 0 returns null.
+    SAFE_DIVISION = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2594,28 +2598,26 @@ class Generator:
         return self.dpipe_sql(expression)
 
     def div_sql(self, expression: exp.Div) -> str:
-        if self.TYPED_DIVISION:
-            l, r = expression.left, expression.right
+        l, r = expression.left, expression.right
 
+        if not self.SAFE_DIVISION and expression.args.get("safe"):
+            r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
+
+        if self.TYPED_DIVISION and not expression.args.get("typed"):
             if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(
                 *exp.DataType.FLOAT_TYPES
             ):
                 l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
 
-        return self.binary(expression, "/")
-
-    def typeddiv_sql(self, expression: exp.TypedDiv) -> str:
-        if self.TYPED_DIVISION:
-            return self.binary(expression, "/")
-
-        l, r = expression.left, expression.right
-        if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
-            return self.sql(
-                exp.cast(
-                    l / r,
-                    to=exp.DataType.Type.BIGINT,
+        elif not self.TYPED_DIVISION and expression.args.get("typed"):
+            if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
+                return self.sql(
+                    exp.cast(
+                        l / r,
+                        to=exp.DataType.Type.BIGINT,
+                    )
                 )
-            )
+
         return self.binary(expression, "/")
 
     def overlaps_sql(self, expression: exp.Overlaps) -> str:

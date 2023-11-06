@@ -101,8 +101,6 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
 
 
 class Spark2(Hive):
-    SAFE_DIVISION = False
-
     class Parser(Hive.Parser):
         TRIM_PATTERN_FIRST = True
 

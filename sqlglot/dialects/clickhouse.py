@@ -37,6 +37,7 @@ class ClickHouse(Dialect):
     NULL_ORDERING = "nulls_are_last"
     STRICT_STRING_CONCAT = True
     SUPPORTS_USER_DEFINED_TYPES = False
+    SAFE_DIVISION = True
 
     ESCAPE_SEQUENCES = {
         "\\0": "\0",

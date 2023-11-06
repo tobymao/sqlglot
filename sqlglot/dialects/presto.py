@@ -66,7 +66,7 @@ def _schema_sql(self: Presto.Generator, expression: exp.Schema) -> str:
     if isinstance(expression.parent, exp.Property):
         expressions = []
         for e in expression.expressions:
-            if isinstance(e, exp.UnnamedConstraint):
+            if isinstance(e, exp.UnnamedConstraints):
                 expressions.extend(e.expressions)
             else:
                 expressions.append(e)

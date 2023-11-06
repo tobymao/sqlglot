@@ -2153,7 +2153,7 @@ class Generator:
         expressions = self.expressions(expression, flat=True)
         return f"CONSTRAINT {this} {expressions}"
 
-    def unnamedconstraint_sql(self, expression: exp.UnnamedConstraint) -> str:
+    def unnamedconstraints_sql(self, expression: exp.UnnamedConstraints) -> str:
         expressions = self.expressions(expression, flat=True, sep=" ")
         return expressions
 

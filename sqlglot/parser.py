@@ -4035,11 +4035,13 @@ class Parser(metaclass=_Parser):
         if not expressions:
             self._retreat(index)
             return None
-        return self.expression(
-            exp.UnnamedConstraint if this is None else exp.Constraint,
-            this=this,
-            expressions=expressions,
-        )
+
+        if this is None and len(expressions) == 1:
+            return expressions[0]
+        elif this is None:
+            return self.expression(exp.UnnamedConstraints, this=this, expressions=expressions)
+        else:
+            return self.expression(exp.Constraint, this=this, expressions=expressions)
 
     def _parse_unnamed_constraint(
         self, constraints: t.Optional[t.Collection[str]] = None

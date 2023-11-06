@@ -1421,7 +1421,7 @@ class Constraint(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
-class UnnamedConstraint(Expression):
+class UnnamedConstraints(Expression):
     arg_types = {"this": False, "expressions": True}
 
 

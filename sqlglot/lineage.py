@@ -149,12 +149,16 @@ def lineage(
         if upstream:
             upstream.downstream.append(node)
 
-        for subquery in find_all_in_scope(select, exp.Subqueryable):
-            subquery_scope = build_scope(subquery)
-            assert subquery_scope
+        subquery_scopes = {
+            id(subquery_scope.expression): subquery_scope
+            for subquery_scope in scope.subquery_scopes
+        }
 
-            for s in subquery.named_selects:
-                to_node(s, scope=subquery_scope, upstream=node)
+        for subquery in find_all_in_scope(select, exp.Subqueryable):
+            subquery_scope = subquery_scopes[id(subquery)]
+
+            for name in subquery.named_selects:
+                to_node(name, scope=subquery_scope, upstream=node)
 
         # if the select is a star add all scope sources as downstreams
         if select.is_star:

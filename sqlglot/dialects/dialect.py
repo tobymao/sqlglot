@@ -135,9 +135,6 @@ class _Dialect(type):
 
         klass.generator_class.can_identify = klass.can_identify
 
-        if klass.TYPED_DIVISION:
-            klass.parser_class.FACTOR = {**klass.parser_class.FACTOR, TokenType.SLASH: exp.TypedDiv}
-
         return klass
 
 
@@ -184,6 +181,10 @@ class Dialect(metaclass=_Dialect):
     # False means a / b is always float division.
     # True means a / b is integer division if both a and b are integers.
     TYPED_DIVISION = False
+
+    # False means 1 / 0 throws an error.
+    # True means 1 / 0 returns null.
+    SAFE_DIVISION = False
 
     DATE_FORMAT = "'%Y-%m-%d'"
     DATEINT_FORMAT = "'%Y%m%d'"

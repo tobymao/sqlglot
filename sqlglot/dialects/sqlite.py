@@ -66,6 +66,7 @@ class SQLite(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
+    SAFE_DIVISION = True
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]

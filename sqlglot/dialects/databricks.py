@@ -8,6 +8,8 @@ from sqlglot.tokens import TokenType
 
 
 class Databricks(Spark):
+    SAFE_DIVISION = False
+
     class Parser(Spark.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = True

@@ -182,6 +182,7 @@ class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
     SUPPORTS_USER_DEFINED_TYPES = False
+    SAFE_DIVISION = True
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None

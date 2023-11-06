@@ -824,6 +824,12 @@ class Expression(metaclass=_Expression):
     def rlike(self, other: ExpOrStr) -> RegexpLike:
         return self._binop(RegexpLike, other)
 
+    def div(self, other: ExpOrStr, typed: bool = False, safe: bool = False) -> Div:
+        div = self._binop(Div, other)
+        div.args["typed"] = typed
+        div.args["safe"] = safe
+        return div
+
     def __lt__(self, other: t.Any) -> LT:
         return self._binop(LT, other)
 
@@ -3884,11 +3890,7 @@ class BitwiseXor(Binary):
 
 
 class Div(Binary):
-    pass
-
-
-class TypedDiv(Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "typed": False, "safe": False}
 
 
 class Overlaps(Binary):
@@ -4671,6 +4673,10 @@ class Xor(Connector, Func):
 
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
+
+
+class Nullif(Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class Initcap(Func):
@@ -6540,6 +6546,27 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
         raise ValueError(error_message)
 
     return function
+
+
+def case(
+    expression: t.Optional[ExpOrStr] = None,
+    **opts,
+) -> Case:
+    """
+    Initialize a CASE statement.
+
+    Example:
+        case().when("a = 1", "foo").else_("bar")
+
+    Args:
+        expression: Optionally, the input expression (not all dialects support this)
+        **opts: Extra keyword arguments for parsing `expression`
+    """
+    if expression is not None:
+        this = maybe_parse(expression, **opts)
+    else:
+        this = None
+    return Case(this=this, ifs=[])
 
 
 def true() -> Boolean:

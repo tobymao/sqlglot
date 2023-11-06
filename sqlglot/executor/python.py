@@ -397,6 +397,20 @@ def _lambda_sql(self, e: exp.Lambda) -> str:
     return f"lambda {self.expressions(e, flat=True)}: {self.sql(e, 'this')}"
 
 
+def _div_sql(self: generator.Generator, e: exp.Div) -> str:
+    denominator = self.sql(e, "expression")
+
+    if e.args.get("safe"):
+        denominator += " or None"
+
+    sql = f"DIV({self.sql(e, 'this')}, {denominator})"
+
+    if e.args.get("typed"):
+        sql = f"int({sql})"
+
+    return sql
+
+
 class Python(Dialect):
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\"]
@@ -414,6 +428,7 @@ class Python(Dialect):
             exp.Cast: lambda self, e: f"CAST({self.sql(e.this)}, exp.DataType.Type.{e.args['to']})",
             exp.Column: lambda self, e: f"scope[{self.sql(e, 'table') or None}][{self.sql(e.this)}]",
             exp.Distinct: lambda self, e: f"set({self.sql(e, 'this')})",
+            exp.Div: _div_sql,
             exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
             exp.In: lambda self, e: f"{self.sql(e, 'this')} in {{{self.expressions(e, flat=True)}}}",
             exp.Interval: lambda self, e: f"INTERVAL({self.sql(e.this)}, '{self.sql(e.unit)}')",

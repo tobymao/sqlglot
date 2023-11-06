@@ -22,6 +22,7 @@ from sqlglot.expressions import (
     Expression as Expression,
     alias_ as alias,
     and_ as and_,
+    case as case,
     cast as cast,
     column as column,
     condition as condition,

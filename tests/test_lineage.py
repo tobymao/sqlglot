@@ -246,6 +246,19 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[1].name, "b")
         self.assertEqual(node.downstream[2].name, "x.c")
 
+        node = lineage(
+            "x",
+            "WITH cte AS (SELECT a, b FROM z) SELECT sum(SELECT a FROM cte) AS x, (SELECT b FROM cte) as y FROM cte",
+        )
+        self.assertEqual(node.name, "x")
+        self.assertEqual(len(node.downstream), 1)
+        node = node.downstream[0]
+        self.assertEqual(node.name, "a")
+        node = node.downstream[0]
+        self.assertEqual(node.name, "cte.a")
+        node = node.downstream[0]
+        self.assertEqual(node.name, "z.a")
+
     def test_lineage_cte_union(self) -> None:
         query = """
         WITH dataset AS (

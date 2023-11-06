@@ -236,6 +236,11 @@ class Generator:
     # Whether or not the "RECURSIVE" keyword is required when defining recursive CTEs
     CTE_RECURSIVE_KEYWORD_REQUIRED = True
 
+    # Whether the behavior of a / b depends on the types of a and b.
+    # False means a / b is always float division.
+    # True means a / b is integer division if both a and b are integers.
+    TYPED_DIVISION = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2589,15 +2594,28 @@ class Generator:
         return self.dpipe_sql(expression)
 
     def div_sql(self, expression: exp.Div) -> str:
+        if self.TYPED_DIVISION:
+            l, r = expression.left, expression.right
+
+            if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(
+                *exp.DataType.FLOAT_TYPES
+            ):
+                l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
+
         return self.binary(expression, "/")
 
     def typeddiv_sql(self, expression: exp.TypedDiv) -> str:
+        if self.TYPED_DIVISION:
+            return self.binary(expression, "/")
+
         l, r = expression.left, expression.right
-
         if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
-            l.replace(exp.cast(l.copy(), to=exp.DataType.Type.BIGINT))
-            r.replace(exp.cast(r.copy(), to=exp.DataType.Type.BIGINT))
-
+            return self.sql(
+                exp.cast(
+                    l / r,
+                    to=exp.DataType.Type.BIGINT,
+                )
+            )
         return self.binary(expression, "/")
 
     def overlaps_sql(self, expression: exp.Overlaps) -> str:

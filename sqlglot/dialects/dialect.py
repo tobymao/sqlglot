@@ -17,15 +17,6 @@ from sqlglot.trie import new_trie
 B = t.TypeVar("B", bound=exp.Binary)
 
 
-def _cast_div_operands_sql(self: Generator, expression: exp.Div) -> str:
-    l, r = expression.left, expression.right
-
-    if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(*exp.DataType.FLOAT_TYPES):
-        l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
-
-    return self.binary(expression, "/")
-
-
 class Dialects(str, Enum):
     DIALECT = ""
 
@@ -146,8 +137,6 @@ class _Dialect(type):
 
         if klass.TYPED_DIVISION:
             klass.parser_class.FACTOR = {**klass.parser_class.FACTOR, TokenType.SLASH: exp.TypedDiv}
-            klass.generator_class.TRANSFORMS[exp.Div] = _cast_div_operands_sql
-            klass.generator_class.TRANSFORMS[exp.TypedDiv] = lambda self, e: self.binary(e, "/")
 
         return klass
 
@@ -191,7 +180,9 @@ class Dialect(metaclass=_Dialect):
     # Options are: "nulls_are_small", "nulls_are_large", "nulls_are_last"
     NULL_ORDERING = "nulls_are_small"
 
-    # Whether the behavior of a / b depends on the types of a and b
+    # Whether the behavior of a / b depends on the types of a and b.
+    # False means a / b is always float division.
+    # True means a / b is integer division if both a and b are integers.
     TYPED_DIVISION = False
 
     DATE_FORMAT = "'%Y-%m-%d'"

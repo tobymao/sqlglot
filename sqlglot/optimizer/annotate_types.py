@@ -537,14 +537,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_typeddiv(self, expression: exp.TypedDiv) -> exp.TypedDiv:
         self._annotate_args(expression)
 
-        l, r = expression.left, expression.right
-        l_is_int = l.type and l.type.this in exp.DataType.INTEGER_TYPES
-        r_is_int = r.type and r.type.this in exp.DataType.INTEGER_TYPES
+        left_type, right_type = expression.left.type.this, expression.right.type.this  # type: ignore
 
-        if l_is_int and r_is_int:
-            datatype = exp.DataType.Type.BIGINT
+        if left_type in exp.DataType.INTEGER_TYPES and right_type in exp.DataType.INTEGER_TYPES:
+            self._set_type(expression, exp.DataType.Type.BIGINT)
         else:
-            datatype = exp.DataType.Type.DOUBLE
+            self._set_type(expression, self._maybe_coerce(left_type, right_type))
 
-        self._set_type(expression, datatype)
         return expression

@@ -1448,13 +1448,22 @@ class TestDialect(Validator):
             write={
                 "bigquery": "a / b",
                 "clickhouse": "a / b",
+                "databricks": "a / b",
+                "duckdb": "a / b",
                 "hive": "a / b",
                 "mysql": "a / b",
                 "oracle": "a / b",
+                "snowflake": "a / b",
+                "spark": "a / b",
+                "starrocks": "a / b",
+                "drill": "CAST(a AS DOUBLE) / b",
                 "postgres": "CAST(a AS DOUBLE PRECISION) / b",
                 "presto": "CAST(a AS DOUBLE) / b",
-                "snowflake": "a / b",
+                "redshift": "CAST(a AS DOUBLE PRECISION) / b",
                 "sqlite": "CAST(a AS REAL) / b",
+                "teradata": "CAST(a AS DOUBLE) / b",
+                "trino": "CAST(a AS DOUBLE) / b",
+                "tsql": "CAST(a AS FLOAT) / b",
             },
         )
 
@@ -1472,13 +1481,17 @@ class TestDialect(Validator):
             (div, (None, None), typed_div_dialect, "CAST(a AS DOUBLE) / b"),
             (div, (None, None), div_dialect, "a / b"),
             (typed_div, (INT, INT), typed_div_dialect, "a / b"),
-            (typed_div, (INT, INT), div_dialect, "CAST(a AS BIGINT) / CAST(b AS BIGINT)"),
+            (typed_div, (INT, INT), div_dialect, "CAST(a / b AS BIGINT)"),
             (div, (INT, INT), typed_div_dialect, "CAST(a AS DOUBLE) / b"),
             (div, (INT, INT), div_dialect, "a / b"),
             (typed_div, (FLOAT, FLOAT), typed_div_dialect, "a / b"),
             (typed_div, (FLOAT, FLOAT), div_dialect, "a / b"),
             (div, (FLOAT, FLOAT), typed_div_dialect, "a / b"),
             (div, (FLOAT, FLOAT), div_dialect, "a / b"),
+            (typed_div, (INT, FLOAT), typed_div_dialect, "a / b"),
+            (typed_div, (INT, FLOAT), div_dialect, "a / b"),
+            (div, (INT, FLOAT), typed_div_dialect, "a / b"),
+            (div, (INT, FLOAT), div_dialect, "a / b"),
         ]:
             with self.subTest(f"{expression.__class__.__name__} {types} {dialect} -> {expected}"):
                 expression = expression.copy()

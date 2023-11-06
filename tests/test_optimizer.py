@@ -577,6 +577,14 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.left.type.this, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type.this, exp.DataType.Type.INT)
 
+    def test_typeddiv_annotation(self):
+        expressions = annotate_types(
+            parse_one("SELECT 2 / 3, 2 / 3.0", dialect="presto")
+        ).expressions
+
+        self.assertEqual(expressions[0].type.this, exp.DataType.Type.BIGINT)
+        self.assertEqual(expressions[1].type.this, exp.DataType.Type.DOUBLE)
+
     def test_bracket_annotation(self):
         expression = annotate_types(parse_one("SELECT A[:]")).expressions[0]
 

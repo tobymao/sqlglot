@@ -135,6 +135,9 @@ class _Dialect(type):
 
         klass.generator_class.can_identify = klass.can_identify
 
+        if klass.TYPED_DIVISION:
+            klass.parser_class.FACTOR = {**klass.parser_class.FACTOR, TokenType.SLASH: exp.TypedDiv}
+
         return klass
 
 
@@ -176,6 +179,11 @@ class Dialect(metaclass=_Dialect):
     # Indicates the default null ordering method to use if not explicitly set
     # Options are: "nulls_are_small", "nulls_are_large", "nulls_are_last"
     NULL_ORDERING = "nulls_are_small"
+
+    # Whether the behavior of a / b depends on the types of a and b.
+    # False means a / b is always float division.
+    # True means a / b is integer division if both a and b are integers.
+    TYPED_DIVISION = False
 
     DATE_FORMAT = "'%Y-%m-%d'"
     DATEINT_FORMAT = "'%Y%m%d'"

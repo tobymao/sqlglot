@@ -43,6 +43,7 @@ class Drill(Dialect):
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
+    TYPED_DIVISION = True
 
     TIME_MAPPING = {
         "y": "%Y",

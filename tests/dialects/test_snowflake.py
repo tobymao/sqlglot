@@ -242,8 +242,8 @@ class TestSnowflake(Validator):
             "DIV0(foo, bar)",
             write={
                 "snowflake": "IFF(bar = 0, 0, foo / bar)",
-                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",
-                "presto": "IF(bar = 0, 0, foo / bar)",
+                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE CAST(foo AS REAL) / bar END",
+                "presto": "IF(bar = 0, 0, CAST(foo AS DOUBLE) / bar)",
                 "spark": "IF(bar = 0, 0, foo / bar)",
                 "hive": "IF(bar = 0, 0, foo / bar)",
                 "duckdb": "CASE WHEN bar = 0 THEN 0 ELSE foo / bar END",

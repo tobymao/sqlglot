@@ -208,6 +208,7 @@ class TSQL(Dialect):
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
+    TYPED_DIVISION = True
 
     TIME_MAPPING = {
         "year": "%Y",

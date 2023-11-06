@@ -238,6 +238,9 @@ class Expression(metaclass=_Expression):
             dtype = DataType.build(dtype)
         self._type = dtype  # type: ignore
 
+    def is_type(self, *dtypes) -> bool:
+        return self.type is not None and self.type.is_type(*dtypes)
+
     @property
     def meta(self) -> t.Dict[str, t.Any]:
         if self._meta is None:
@@ -3881,6 +3884,10 @@ class BitwiseXor(Binary):
 
 
 class Div(Binary):
+    pass
+
+
+class TypedDiv(Binary):
     pass
 
 

@@ -536,7 +536,7 @@ class TestDuckDB(Validator):
             write={
                 "bigquery": "UNIX_TO_TIME(x / 1000)",
                 "duckdb": "TO_TIMESTAMP(x / 1000)",
-                "presto": "FROM_UNIXTIME(x / 1000)",
+                "presto": "FROM_UNIXTIME(CAST(x AS DOUBLE) / 1000)",
                 "spark": "CAST(FROM_UNIXTIME(x / 1000) AS TIMESTAMP)",
             },
         )

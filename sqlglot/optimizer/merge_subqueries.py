@@ -186,13 +186,13 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         and not (
             isinstance(from_or_join, exp.Join)
             and inner_select.args.get("where")
-            and from_or_join.side in {"FULL", "LEFT", "RIGHT"}
+            and from_or_join.side in ("FULL", "LEFT", "RIGHT")
         )
         and not (
             isinstance(from_or_join, exp.From)
             and inner_select.args.get("where")
             and any(
-                j.side in {"FULL", "RIGHT"} for j in outer_scope.expression.args.get("joins", [])
+                j.side in ("FULL", "RIGHT") for j in outer_scope.expression.args.get("joins", [])
             )
         )
         and not _outer_select_joins_on_inner_select_join()

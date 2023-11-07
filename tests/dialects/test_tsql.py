@@ -561,6 +561,14 @@ class TestTSQL(Validator):
         )
 
     def test_ddl(self):
+        for clusterd_keyword in ("CLUSTERED", "NONCLUSTERED"):
+            self.validate_identity(
+                'CREATE TABLE "dbo"."benchmark" ('
+                '"name" CHAR(7) NOT NULL, '
+                '"internal_id" VARCHAR(10) NOT NULL, '
+                f'UNIQUE {clusterd_keyword} ("internal_id" ASC))'
+            )
+
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7 END",
@@ -1452,18 +1460,4 @@ FROM OPENJSON(@json) WITH (
                 "tsql": "SET @count = (SELECT COUNT(1) FROM x)",
                 "spark": "SET count = (SELECT COUNT(1) FROM x)",
             },
-        )
-
-    def test_multiple_unnamed_constraints(self):
-        self.validate_identity(
-            'CREATE TABLE "dbo"."benchmark" ('
-            '"name" CHAR(7) NOT NULL, '
-            '"internal_id" VARCHAR(10) NOT NULL, '
-            'UNIQUE NONCLUSTERED ("internal_id" ASC))'
-        )
-        self.validate_identity(
-            'CREATE TABLE "dbo"."benchmark" ('
-            '"name" CHAR(7) NOT NULL, '
-            '"internal_id" VARCHAR(10) NOT NULL, '
-            'UNIQUE CLUSTERED ("internal_id" ASC))'
         )

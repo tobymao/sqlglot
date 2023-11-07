@@ -1400,7 +1400,7 @@ class Parser(metaclass=_Parser):
             if self._match_texts(self.CLONE_KEYWORDS):
                 copy = self._prev.text.lower() == "copy"
                 clone = self._parse_table(schema=True)
-                when = self._match_texts({"AT", "BEFORE"}) and self._prev.text.upper()
+                when = self._match_texts(("AT", "BEFORE")) and self._prev.text.upper()
                 clone_kind = (
                     self._match(TokenType.L_PAREN)
                     and self._match_texts(self.CLONE_KINDS)
@@ -2661,7 +2661,7 @@ class Parser(metaclass=_Parser):
             while self._match_set(self.TABLE_INDEX_HINT_TOKENS):
                 hint = exp.IndexTableHint(this=self._prev.text.upper())
 
-                self._match_texts({"INDEX", "KEY"})
+                self._match_texts(("INDEX", "KEY"))
                 if self._match(TokenType.FOR):
                     hint.set("target", self._advance_any() and self._prev.text.upper())
 
@@ -5014,7 +5014,7 @@ class Parser(metaclass=_Parser):
         if self._match_texts(self.TRANSACTION_KIND):
             this = self._prev.text
 
-        self._match_texts({"TRANSACTION", "WORK"})
+        self._match_texts(("TRANSACTION", "WORK"))
 
         modes = []
         while True:
@@ -5034,7 +5034,7 @@ class Parser(metaclass=_Parser):
         savepoint = None
         is_rollback = self._prev.token_type == TokenType.ROLLBACK
 
-        self._match_texts({"TRANSACTION", "WORK"})
+        self._match_texts(("TRANSACTION", "WORK"))
 
         if self._match_text_seq("TO"):
             self._match_text_seq("SAVEPOINT")
@@ -5260,7 +5260,7 @@ class Parser(metaclass=_Parser):
     ) -> t.Optional[exp.Expression]:
         index = self._index
 
-        if kind in {"GLOBAL", "SESSION"} and self._match_text_seq("TRANSACTION"):
+        if kind in ("GLOBAL", "SESSION") and self._match_text_seq("TRANSACTION"):
             return self._parse_set_transaction(global_=kind == "GLOBAL")
 
         left = self._parse_primary() or self._parse_id_var()

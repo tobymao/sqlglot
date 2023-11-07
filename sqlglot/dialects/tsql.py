@@ -434,7 +434,7 @@ class TSQL(Dialect):
             """
             rollback = self._prev.token_type == TokenType.ROLLBACK
 
-            self._match_texts({"TRAN", "TRANSACTION"})
+            self._match_texts(("TRAN", "TRANSACTION"))
             this = self._parse_id_var()
 
             if rollback:
@@ -580,7 +580,7 @@ class TSQL(Dialect):
             return super()._parse_if()
 
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
-            if self._match_texts({"CLUSTERED", "NONCLUSTERED"}):
+            if self._match_texts(("CLUSTERED", "NONCLUSTERED")):
                 this = self.CONSTRAINT_PARSERS[self._prev.text.upper()](self)
             else:
                 this = self._parse_schema(self._parse_id_var(any_token=False))

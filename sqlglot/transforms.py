@@ -394,6 +394,7 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
             index, full_outer_join = full_outer_joins[0]
             full_outer_join.set("side", "left")
             expression_copy.args["joins"][index].set("side", "right")
+            expression_copy.args.pop("with", None)  # remove CTEs from RIGHT side
 
             return exp.union(expression, expression_copy, copy=False)
 

@@ -248,6 +248,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             for data_type, expressions in TYPE_TO_EXPRESSIONS.items()
             for expr_type in expressions
         },
+        exp.Abs: lambda self, e: self._annotate_by_args(e, "this"),
         exp.Anonymous: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
         exp.Array: lambda self, e: self._annotate_by_args(e, "expressions", array=True),
         exp.ArrayAgg: lambda self, e: self._annotate_by_args(e, "this", array=True),

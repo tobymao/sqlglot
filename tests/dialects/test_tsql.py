@@ -561,6 +561,13 @@ class TestTSQL(Validator):
         )
 
     def test_ddl(self):
+        expression = parse_one("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B", dialect="tsql")
+        self.assertIsInstance(expression, exp.AlterTable)
+        self.assertIsInstance(expression.args["actions"][0], exp.Drop)
+        self.assertEqual(
+            expression.sql(dialect="tsql"), "ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B"
+        )
+
         for clusterd_keyword in ("CLUSTERED", "NONCLUSTERED"):
             self.validate_identity(
                 'CREATE TABLE "dbo"."benchmark" ('
@@ -630,7 +637,6 @@ class TestTSQL(Validator):
                 "tsql": "CREATE OR ALTER VIEW a.b AS SELECT 1",
             },
         )
-
         self.validate_all(
             "ALTER TABLE a ADD b INTEGER, c INTEGER",
             read={
@@ -641,7 +647,6 @@ class TestTSQL(Validator):
                 "tsql": "ALTER TABLE a ADD b INTEGER, c INTEGER",
             },
         )
-
         self.validate_all(
             "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             write={

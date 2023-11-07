@@ -1453,3 +1453,17 @@ FROM OPENJSON(@json) WITH (
                 "spark": "SET count = (SELECT COUNT(1) FROM x)",
             },
         )
+
+    def test_multiple_unnamed_constraints(self):
+        self.validate_identity(
+            'CREATE TABLE "dbo"."benchmark" ('
+            '"name" CHAR(7) NOT NULL, '
+            '"internal_id" VARCHAR(10) NOT NULL, '
+            'UNIQUE NONCLUSTERED ("internal_id" ASC))'
+        )
+        self.validate_identity(
+            'CREATE TABLE "dbo"."benchmark" ('
+            '"name" CHAR(7) NOT NULL, '
+            '"internal_id" VARCHAR(10) NOT NULL, '
+            'UNIQUE CLUSTERED ("internal_id" ASC))'
+        )

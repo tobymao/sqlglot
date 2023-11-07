@@ -3,7 +3,13 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
-from sqlglot.dialects.dialect import Dialect, no_ilike_sql, rename_func, trim_sql
+from sqlglot.dialects.dialect import (
+    Dialect,
+    format_time_lambda,
+    no_ilike_sql,
+    rename_func,
+    trim_sql,
+)
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
@@ -70,6 +76,7 @@ class Oracle(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "TO_CHAR": format_time_lambda(exp.TimeToStr, "oracle", default=True),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {

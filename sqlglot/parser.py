@@ -245,6 +245,7 @@ class Parser(metaclass=_Parser):
 
     CREATABLES = {
         TokenType.COLUMN,
+        TokenType.CONSTRAINT,
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,

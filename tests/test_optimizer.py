@@ -882,6 +882,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             ("MAX", "cold"): exp.DataType.Type.DATE,
             ("COUNT", "colb"): exp.DataType.Type.BIGINT,
             ("STDDEV", "cola"): exp.DataType.Type.DOUBLE,
+            ("ABS", "cola"): exp.DataType.Type.SMALLINT,
+            ("ABS", "colb"): exp.DataType.Type.FLOAT,
         }
 
         for (func, col), target_type in tests.items():

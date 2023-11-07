@@ -580,12 +580,11 @@ class TSQL(Dialect):
             return super()._parse_if()
 
         def _parse_unique(self) -> exp.UniqueColumnConstraint:
-            return self.expression(
-                exp.UniqueColumnConstraint,
-                this=None
-                if self._curr and self._curr.text.upper() in {"CLUSTERED", "NONCLUSTERED"}
-                else self._parse_schema(self._parse_id_var(any_token=False)),
-            )
+            if self._match_texts(["CLUSTERED", "NONCLUSTERED"]):
+                this = self.CONSTRAINT_PARSERS[self._prev.text.upper()](self)
+            else:
+                this = self._parse_schema(self._parse_id_var(any_token=False))
+            return self.expression(exp.UniqueColumnConstraint, this=this)
 
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True

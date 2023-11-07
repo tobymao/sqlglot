@@ -452,7 +452,7 @@ class MySQL(Dialect):
             self, kind: t.Optional[str] = None
         ) -> exp.IndexColumnConstraint:
             if kind:
-                self._match_texts({"INDEX", "KEY"})
+                self._match_texts(("INDEX", "KEY"))
 
             this = self._parse_id_var(any_token=False)
             index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
@@ -515,7 +515,7 @@ class MySQL(Dialect):
 
             log = self._parse_string() if self._match_text_seq("IN") else None
 
-            if this in {"BINLOG EVENTS", "RELAYLOG EVENTS"}:
+            if this in ("BINLOG EVENTS", "RELAYLOG EVENTS"):
                 position = self._parse_number() if self._match_text_seq("FROM") else None
                 db = None
             else:
@@ -764,7 +764,7 @@ class MySQL(Dialect):
 
             target = self.sql(expression, "target")
             target = f" {target}" if target else ""
-            if expression.name in {"COLUMNS", "INDEX"}:
+            if expression.name in ("COLUMNS", "INDEX"):
                 target = f" FROM{target}"
             elif expression.name == "GRANTS":
                 target = f" FOR{target}"

@@ -552,6 +552,7 @@ class TestSnowflake(Validator):
             staged_file.sql(dialect="snowflake"),
         )
 
+        self.validate_identity("SELECT metadata$filename FROM @s1/")
         self.validate_identity("SELECT * FROM @~")
         self.validate_identity("SELECT * FROM @~/some/path/to/file.csv")
         self.validate_identity("SELECT * FROM @mystage")

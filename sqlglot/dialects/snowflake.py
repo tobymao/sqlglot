@@ -349,7 +349,7 @@ class Snowflake(Dialect):
             table: t.Optional[exp.Expression] = None
             if self._match_text_seq("@"):
                 table_name = "@"
-                while True:
+                while self._curr:
                     self._advance()
                     table_name += self._prev.text
                     if not self._match_set(self.STAGED_FILE_SINGLE_TOKENS, advance=False):

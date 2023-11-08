@@ -114,6 +114,13 @@ class TestMySQL(Validator):
                 "mysql": "CREATE TABLE test (ts DATETIME, ts_tz TIMESTAMP, ts_ltz TIMESTAMP)",
             },
         )
+        self.validate_all(
+            "ALTER TABLE test_table ALTER COLUMN test_column SET DATA TYPE LONGTEXT",
+            write={
+                "mysql": "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
+            },
+        )
+        self.validate_identity("ALTER TABLE test_table ALTER COLUMN test_column SET DEFAULT 1")
 
     def test_identity(self):
         self.validate_identity("UNLOCK TABLES")

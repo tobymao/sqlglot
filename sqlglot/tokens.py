@@ -297,6 +297,7 @@ class TokenType(AutoName):
     QUOTE = auto()
     RANGE = auto()
     RECURSIVE = auto()
+    REFRESH = auto()
     REPLACE = auto()
     RETURNING = auto()
     REFERENCES = auto()

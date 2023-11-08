@@ -3030,6 +3030,11 @@ class Generator:
         expression_sql = self.sql(expression, "expression")
         return f"FOR {this} DO {expression_sql}"
 
+    def refresh_sql(self, expression: exp.Refresh) -> str:
+        this = self.sql(expression, "this")
+        table = "" if isinstance(expression.this, exp.Literal) else "TABLE "
+        return f"REFRESH {table}{this}"
+
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):
             from sqlglot.optimizer.simplify import simplify

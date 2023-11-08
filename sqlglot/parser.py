@@ -302,6 +302,7 @@ class Parser(metaclass=_Parser):
         TokenType.RANGE,
         TokenType.RECURSIVE,
         TokenType.REFERENCES,
+        TokenType.REFRESH,
         TokenType.RIGHT,
         TokenType.ROW,
         TokenType.ROWS,
@@ -563,6 +564,7 @@ class Parser(metaclass=_Parser):
         TokenType.MERGE: lambda self: self._parse_merge(),
         TokenType.PIVOT: lambda self: self._parse_simplified_pivot(),
         TokenType.PRAGMA: lambda self: self.expression(exp.Pragma, this=self._parse_expression()),
+        TokenType.REFRESH: lambda self: self._parse_refresh(),
         TokenType.ROLLBACK: lambda self: self._parse_commit_or_rollback(),
         TokenType.SET: lambda self: self._parse_set(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
@@ -5049,6 +5051,10 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Rollback, savepoint=savepoint)
 
         return self.expression(exp.Commit, chain=chain)
+
+    def _parse_refresh(self) -> exp.Refresh:
+        self._match(TokenType.TABLE)
+        return self.expression(exp.Refresh, this=self._parse_string() or self._parse_table())
 
     def _parse_add_column(self) -> t.Optional[exp.Expression]:
         if not self._match_text_seq("ADD"):

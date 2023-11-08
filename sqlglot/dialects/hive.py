@@ -242,10 +242,10 @@ class Hive(Dialect):
             "ADD JAR": TokenType.COMMAND,
             "ADD JARS": TokenType.COMMAND,
             "MSCK REPAIR": TokenType.COMMAND,
-            "REFRESH": TokenType.COMMAND,
-            "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
+            "REFRESH": TokenType.REFRESH,
             "TIMESTAMP AS OF": TokenType.TIMESTAMP_SNAPSHOT,
             "VERSION AS OF": TokenType.VERSION_SNAPSHOT,
+            "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
 
         NUMERIC_LITERALS = {

@@ -1021,6 +1021,10 @@ class Uncache(Expression):
     arg_types = {"this": True, "exists": False}
 
 
+class Refresh(Expression):
+    pass
+
+
 class DDL(Expression):
     @property
     def ctes(self):

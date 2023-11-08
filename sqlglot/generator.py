@@ -1463,7 +1463,7 @@ class Generator:
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
     ) -> str:
-        if self.ALIAS_POST_TABLESAMPLE and expression.this.alias:
+        if self.ALIAS_POST_TABLESAMPLE and expression.this and expression.this.alias:
             table = expression.this.copy()
             table.set("alias", None)
             this = self.sql(table)

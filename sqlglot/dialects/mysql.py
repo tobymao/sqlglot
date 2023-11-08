@@ -797,6 +797,14 @@ class MySQL(Dialect):
 
             return f"SHOW{full}{global_}{this}{target}{types}{db}{query}{log}{position}{channel}{mutex_or_status}{like}{where}{offset}{limit}"
 
+        def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+            dtype = self.sql(expression, "dtype")
+            if not dtype:
+                return super().altercolumn_sql(expression)
+
+            this = self.sql(expression, "this")
+            return f"MODIFY COLUMN {this} {dtype}"
+
         def _prefixed_sql(self, prefix: str, expression: exp.Expression, arg: str) -> str:
             sql = self.sql(expression, arg)
             return f" {prefix} {sql}" if sql else ""

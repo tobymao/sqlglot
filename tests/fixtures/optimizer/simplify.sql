@@ -43,6 +43,9 @@ TRUE;
 1.0 = 1;
 TRUE;
 
+CAST('2023-01-01' AS DATE) = CAST('2023-01-01' AS DATE);
+TRUE;
+
 'x' = 'y';
 FALSE;
 
@@ -663,6 +666,15 @@ ROW() OVER () = 1 OR ROW() OVER () IS NULL;
 a AND b AND COALESCE(ROW() OVER (), 1) = 1;
 a AND b AND (ROW() OVER () = 1 OR ROW() OVER () IS NULL);
 
+COALESCE(1, 2);
+1;
+
+COALESCE(CAST(CAST('2023-01-01' AS TIMESTAMP) AS DATE), x);
+CAST(CAST('2023-01-01' AS TIMESTAMP) AS DATE);
+
+COALESCE(CAST(NULL AS DATE), x);
+COALESCE(CAST(NULL AS DATE), x);
+
 --------------------------------------
 -- CONCAT
 --------------------------------------
@@ -775,6 +787,9 @@ x >= CAST('2022-01-01' AS DATE);
 
 DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02'));
 x >= CAST('2022-01-01' AS DATE);
+
+DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02', '%Y'));
+DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02', '%Y'));
 
 -- right is not a date
 DATE_TRUNC('year', x) <> '2021-01-02';

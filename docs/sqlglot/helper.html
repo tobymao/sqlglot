@@ -432,7 +432,7 @@
 </span><span id="L-284"><a href="#L-284"><span class="linenos">284</span></a>    <span class="n">file</span> <span class="o">=</span> <span class="n">open_file</span><span class="p">(</span><span class="n">read_csv</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </span><span id="L-285"><a href="#L-285"><span class="linenos">285</span></a>
 </span><span id="L-286"><a href="#L-286"><span class="linenos">286</span></a>    <span class="n">delimiter</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span>
-</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a>    <span class="n">args</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
+</span><span id="L-287"><a href="#L-287"><span class="linenos">287</span></a>    <span class="n">args</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 </span><span id="L-288"><a href="#L-288"><span class="linenos">288</span></a>    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 </span><span id="L-289"><a href="#L-289"><span class="linenos">289</span></a>        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;delimiter&quot;</span><span class="p">:</span>
 </span><span id="L-290"><a href="#L-290"><span class="linenos">290</span></a>            <span class="n">delimiter</span> <span class="o">=</span> <span class="n">v</span>
@@ -1252,7 +1252,7 @@ of the corresponding enum's identifier (e.g. FOO.value results in "FOO").</p>
 </span><span id="csv_reader-285"><a href="#csv_reader-285"><span class="linenos">285</span></a>    <span class="n">file</span> <span class="o">=</span> <span class="n">open_file</span><span class="p">(</span><span class="n">read_csv</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </span><span id="csv_reader-286"><a href="#csv_reader-286"><span class="linenos">286</span></a>
 </span><span id="csv_reader-287"><a href="#csv_reader-287"><span class="linenos">287</span></a>    <span class="n">delimiter</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span>
-</span><span id="csv_reader-288"><a href="#csv_reader-288"><span class="linenos">288</span></a>    <span class="n">args</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
+</span><span id="csv_reader-288"><a href="#csv_reader-288"><span class="linenos">288</span></a>    <span class="n">args</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 </span><span id="csv_reader-289"><a href="#csv_reader-289"><span class="linenos">289</span></a>    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
 </span><span id="csv_reader-290"><a href="#csv_reader-290"><span class="linenos">290</span></a>        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;delimiter&quot;</span><span class="p">:</span>
 </span><span id="csv_reader-291"><a href="#csv_reader-291"><span class="linenos">291</span></a>            <span class="n">delimiter</span> <span class="o">=</span> <span class="n">v</span>
@@ -1774,7 +1774,7 @@ belong to some totally-ordered set.</p>
                 <section id="DATE_UNITS">
                     <div class="attr variable">
             <span class="name">DATE_UNITS</span>        =
-<span class="default_value">{&#39;quarter&#39;, &#39;year_month&#39;, &#39;year&#39;, &#39;week&#39;, &#39;day&#39;, &#39;month&#39;}</span>
+<span class="default_value">{&#39;year_month&#39;, &#39;year&#39;, &#39;day&#39;, &#39;week&#39;, &#39;month&#39;, &#39;quarter&#39;}</span>
 
         
     </div>

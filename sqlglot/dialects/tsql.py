@@ -623,6 +623,7 @@ class TSQL(Dialect):
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
+            exp.Length: rename_func("LEN"),
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,

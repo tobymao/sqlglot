@@ -611,6 +611,13 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT * FROM testtable SAMPLE BLOCK (0.012) SEED (99992)",
             },
         )
+        self.validate_all(
+            "SELECT * FROM (SELECT * FROM t1 join t2 on t1.a = t2.c) SAMPLE (1)",
+            write={
+                "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) SAMPLE (1)",
+                "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) SAMPLE (1 PERCENT)",
+            },
+        )
 
     def test_timestamps(self):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")

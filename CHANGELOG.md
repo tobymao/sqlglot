@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v19.1.1] - 2023-11-08
+### :bug: Bug Fixes
+- [`ff69304`](https://github.com/tobymao/sqlglot/commit/ff693048669170b090ad7ab2e6fd76f06b057c2f) - snowflake->spark sample transpilation closes [#2526](https://github.com/tobymao/sqlglot/pull/2526) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`a43132b`](https://github.com/tobymao/sqlglot/commit/a43132bfaa4c18e88ad1a0156df020e78f3e0dfe) - Alter column set type statement for MySQL *(PR [#2527](https://github.com/tobymao/sqlglot/pull/2527) by [@izeigerman](https://github.com/izeigerman))*
+
+
 ## [v19.1.0] - 2023-11-08
 ### :boom: BREAKING CHANGES
 - due to [`c6db124`](https://github.com/tobymao/sqlglot/commit/c6db1240b8481af0003a4bed4225f8e46578f182) - transpile division *(PR [#2513](https://github.com/tobymao/sqlglot/pull/2513) by [@barakalon](https://github.com/barakalon))*:
@@ -1919,3 +1925,4 @@ Changelog
 [v19.0.2]: https://github.com/tobymao/sqlglot/compare/v19.0.1...v19.0.2
 [v19.0.3]: https://github.com/tobymao/sqlglot/compare/v19.0.2...v19.0.3
 [v19.1.0]: https://github.com/tobymao/sqlglot/compare/v19.0.3...v19.1.0
+[v19.1.1]: https://github.com/tobymao/sqlglot/compare/v19.1.0...v19.1.1

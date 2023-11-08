@@ -846,7 +846,7 @@ WHERE
         )
 
     def test_len(self):
-        self.validate_all("LEN(x)", write={"spark": "LENGTH(x)"})
+        self.validate_all("LEN(x)", read={"": "LENGTH(x)"}, write={"spark": "LENGTH(x)"})
 
     def test_replicate(self):
         self.validate_all("REPLICATE('x', 2)", write={"spark": "REPEAT('x', 2)"})

@@ -426,8 +426,6 @@ INVERSE_DATE_OPS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
     exp.DatetimeSub: exp.Add,
 }
 
-DATE_OPS = tuple(INVERSE_DATE_OPS)
-
 INVERSE_OPS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
     **INVERSE_DATE_OPS,
     exp.Add: exp.Sub,
@@ -509,7 +507,7 @@ def simplify_literals(expression, root=True):
                 return exp.Literal.number(value[1:])
             return exp.Literal.number(f"-{value}")
 
-    if isinstance(expression, DATE_OPS):
+    if type(expression) in INVERSE_DATE_OPS:
         return _simplify_binary(expression, expression.this, expression.interval()) or expression
 
     return expression

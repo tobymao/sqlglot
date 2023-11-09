@@ -4858,8 +4858,8 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_string(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.STRING):
-            return self.PRIMARY_PARSERS[TokenType.STRING](self, self._prev)
+        if self._match_set((TokenType.STRING, TokenType.RAW_STRING)):
+            return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
         return self._parse_placeholder()
 
     def _parse_string_as_identifier(self) -> t.Optional[exp.Identifier]:

@@ -7,6 +7,12 @@ class TestTSQL(Validator):
 
     def test_tsql(self):
         self.validate_all(
+            "WITH t AS (SELECT 0 AS c) SELECT * FROM t WHERE c = 0",
+            read={
+                "duckdb": "WITH t AS (SELECT 0 AS c) SELECT * FROM t WHERE NOT c",
+            },
+        )
+        self.validate_all(
             "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c FROM t) AS temp",
             read={
                 "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT c FROM t",

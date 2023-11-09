@@ -248,7 +248,7 @@ class Snowflake(Dialect):
         ):
             return t.cast(E, expression)
 
-        return Dialect.quote_identifier(expression, identify=identify)
+        return super().quote_identifier(expression, identify=identify)
 
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True

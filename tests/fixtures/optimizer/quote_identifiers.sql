@@ -15,6 +15,14 @@ SELECT * FROM DUAL;
 SELECT * FROM DUAL;
 
 # dialect: snowflake
+SELECT * FROM "DUAL";
+SELECT * FROM "DUAL";
+
+# dialect: snowflake
+SELECT * FROM "dual";
+SELECT * FROM "dual";
+
+# dialect: snowflake
 SELECT dual FROM t;
 SELECT "dual" FROM "t";
 

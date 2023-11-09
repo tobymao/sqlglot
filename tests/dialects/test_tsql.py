@@ -6,12 +6,10 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
-        self.validate_all(
-            "WITH t AS (SELECT 0 AS c) SELECT * FROM t WHERE c = 0",
-            read={
-                "duckdb": "WITH t AS (SELECT 0 AS c) SELECT * FROM t WHERE NOT c",
-            },
-        )
+        self.validate_identity("SELECT * FROM t WHERE NOT c", "SELECT * FROM t WHERE NOT c <> 0")
+        self.validate_identity("1 AND true", "1 <> 0 AND (1 = 1)")
+        self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
+
         self.validate_all(
             "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c FROM t) AS temp",
             read={
@@ -1140,9 +1138,11 @@ WHERE
 
     def test_iif(self):
         self.validate_identity(
-            "SELECT IF(cond, 'True', 'False')", "SELECT IIF(cond, 'True', 'False')"
+            "SELECT IF(cond, 'True', 'False')", "SELECT IIF(cond <> 0, 'True', 'False')"
         )
-        self.validate_identity("SELECT IIF(cond, 'True', 'False')")
+        self.validate_identity(
+            "SELECT IIF(cond, 'True', 'False')", "SELECT IIF(cond <> 0, 'True', 'False')"
+        )
         self.validate_all(
             "SELECT IIF(cond, 'True', 'False');",
             write={

@@ -3689,6 +3689,7 @@ class DataType(Expression):
         Type.BIGINT,
         Type.INT128,
         Type.INT256,
+        Type.BIT,
     }
 
     FLOAT_TYPES = {

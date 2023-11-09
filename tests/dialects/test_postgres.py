@@ -22,6 +22,9 @@ class TestPostgres(Validator):
         self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
         self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
         self.validate_identity(
+            "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION do_sth()"
+        )
+        self.validate_identity(
             "CREATE TABLE cust_part3 PARTITION OF customers FOR VALUES WITH (MODULUS 3, REMAINDER 2)"
         )
         self.validate_identity(

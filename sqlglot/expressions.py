@@ -1009,7 +1009,6 @@ class UDTF(DerivedTable, Unionable):
 
 class Cache(Expression):
     arg_types = {
-        "with": False,
         "this": True,
         "lazy": False,
         "options": False,

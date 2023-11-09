@@ -1723,12 +1723,16 @@ class Generator:
 
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
-        args = ", ".join(
-            self.sql(self._simplify_unless_literal(e) if self.LIMIT_ONLY_LITERALS else e)
+
+        args = [
+            self._simplify_unless_literal(e) if self.LIMIT_ONLY_LITERALS else e
             for e in (expression.args.get(k) for k in ("offset", "expression"))
             if e
-        )
-        return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args}"
+        ]
+
+        args_sql = ", ".join(self.sql(e) for e in args)
+        args_sql = f"({args_sql})" if any(top and not e.is_number for e in args) else args_sql
+        return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args_sql}"
 
     def offset_sql(self, expression: exp.Offset) -> str:
         this = self.sql(expression, "this")

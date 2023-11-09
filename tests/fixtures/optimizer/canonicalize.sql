@@ -19,6 +19,9 @@ SELECT CAST('2022-01-01' AS DATE) + INTERVAL '1' day AS "_col_0";
 SELECT a FROM x WHERE b;
 SELECT "x"."a" AS "a" FROM "x" AS "x" WHERE "x"."b" <> 0;
 
+SELECT NOT b FROM x;
+SELECT NOT "x"."b" <> 0 AS "_col_0" FROM "x" AS "x";
+
 SELECT a FROM x GROUP BY a HAVING SUM(b);
 SELECT "x"."a" AS "a" FROM "x" AS "x" GROUP BY "x"."a" HAVING SUM("x"."b") <> 0;
 

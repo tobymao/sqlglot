@@ -356,14 +356,14 @@ class TestDuckDB(Validator):
             "STRUCT_PACK(x := 1, y := '2')",
             write={
                 "duckdb": "{'x': 1, 'y': '2'}",
-                "spark": "STRUCT(x = 1, y = '2')",
+                "spark": "STRUCT(1 AS x, '2' AS y)",
             },
         )
         self.validate_all(
             "STRUCT_PACK(key1 := 'value1', key2 := 42)",
             write={
                 "duckdb": "{'key1': 'value1', 'key2': 42}",
-                "spark": "STRUCT(key1 = 'value1', key2 = 42)",
+                "spark": "STRUCT('value1' AS key1, 42 AS key2)",
             },
         )
         self.validate_all(

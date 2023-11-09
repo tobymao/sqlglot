@@ -224,6 +224,19 @@ class Spark2(Hive):
         WRAP_DERIVED_VALUES = False
         CREATE_FUNCTION_RETURN_AS = False
 
+        def struct_sql(self, expression: exp.Struct) -> str:
+            args = []
+            for arg in expression.expressions:
+                if isinstance(arg, self.KEY_VALUE_DEFINITONS):
+                    if isinstance(arg, exp.Bracket):
+                        args.append(exp.alias_(arg.this, arg.expressions[0].name))
+                    else:
+                        args.append(exp.alias_(arg.expression, arg.this.name))
+                else:
+                    args.append(arg)
+
+            return self.func("STRUCT", *args)
+
         def temporary_storage_provider(self, expression: exp.Create) -> exp.Create:
             # spark2, spark, Databricks require a storage provider for temporary tables
             provider = exp.FileFormatProperty(this=exp.Literal.string("parquet"))

@@ -378,6 +378,8 @@ class Generator:
         exp.Paren,
     )
 
+    KEY_VALUE_DEFINITONS = (exp.Bracket, exp.EQ, exp.PropertyEQ, exp.Slice)
+
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     # Autofilled

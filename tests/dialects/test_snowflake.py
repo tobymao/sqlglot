@@ -88,6 +88,14 @@ class TestSnowflake(Validator):
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all(
+            "SELECT { 'Manitoba': 'Winnipeg', 'foo': 'bar' } AS province_capital",
+            write={
+                "duckdb": "SELECT {'Manitoba': 'Winnipeg', 'foo': 'bar'} AS province_capital",
+                "snowflake": "SELECT OBJECT_CONSTRUCT('Manitoba', 'Winnipeg', 'foo', 'bar') AS province_capital",
+                "spark": "SELECT STRUCT('Manitoba' AS Winnipeg, 'foo' AS bar) AS province_capital",
+            },
+        )
+        self.validate_all(
             "SELECT COLLATE('B', 'und:ci')",
             write={
                 "bigquery": "SELECT COLLATE('B', 'und:ci')",

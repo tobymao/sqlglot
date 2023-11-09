@@ -298,6 +298,13 @@ class TestOptimizer(unittest.TestCase):
 
         self.assertEqual(optimizer.normalize_identifiers.normalize_identifiers("a%").sql(), '"a%"')
 
+    def test_quote_identifiers(self):
+        self.check_file(
+            "quote_identifiers",
+            optimizer.qualify_columns.quote_identifiers,
+            set_dialect=True,
+        )
+
     def test_pushdown_projection(self):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 

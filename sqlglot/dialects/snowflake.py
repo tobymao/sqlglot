@@ -241,7 +241,7 @@ class Snowflake(Dialect):
     def quote_identifier(cls, expression: E, identify: bool = True) -> E:
         if isinstance(expression, exp.Identifier) and not (
             # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
-            # unquoted DUAL keyword in a special way and does not map it to an existing table
+            # unquoted DUAL keyword in a special way and does not map it to a user-defined table
             expression.name.lower() == "dual"
             and isinstance(expression.parent, exp.Table)
         ):

@@ -17,3 +17,7 @@ SELECT * FROM DUAL;
 # dialect: snowflake
 SELECT dual FROM t;
 SELECT "dual" FROM "t";
+
+# dialect: snowflake
+SELECT * FROM t AS dual;
+SELECT * FROM "t" AS "dual";

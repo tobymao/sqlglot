@@ -3158,7 +3158,7 @@ class Parser(metaclass=_Parser):
             comments = self._prev_comments
             if top:
                 limit_paren = self._match(TokenType.L_PAREN)
-                expression = self._parse_number()
+                expression = self._parse_term() if limit_paren else self._parse_number()
 
                 if limit_paren:
                     self._match_r_paren()

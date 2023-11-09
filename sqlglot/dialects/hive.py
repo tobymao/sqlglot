@@ -120,16 +120,21 @@ def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff) -> str:
 
 def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:
     this = expression.this
-    if is_parse_json(this) and this.this.is_string:
-        # Since FROM_JSON requires a nested type, we always wrap the json string with
-        # an array to ensure that "naked" strings like "'a'" will be handled correctly
-        wrapped_json = exp.Literal.string(f"[{this.this.name}]")
 
-        from_json = self.func("FROM_JSON", wrapped_json, self.func("SCHEMA_OF_JSON", wrapped_json))
-        to_json = self.func("TO_JSON", from_json)
+    if is_parse_json(this):
+        if this.this.is_string:
+            # Since FROM_JSON requires a nested type, we always wrap the json string with
+            # an array to ensure that "naked" strings like "'a'" will be handled correctly
+            wrapped_json = exp.Literal.string(f"[{this.this.name}]")
 
-        # This strips the [, ] delimiters of the dummy array printed by TO_JSON
-        return self.func("REGEXP_EXTRACT", to_json, "'^.(.*).$'", "1")
+            from_json = self.func(
+                "FROM_JSON", wrapped_json, self.func("SCHEMA_OF_JSON", wrapped_json)
+            )
+            to_json = self.func("TO_JSON", from_json)
+
+            # This strips the [, ] delimiters of the dummy array printed by TO_JSON
+            return self.func("REGEXP_EXTRACT", to_json, "'^.(.*).$'", "1")
+        return self.sql(this)
 
     return self.func("TO_JSON", this, expression.args.get("options"))
 

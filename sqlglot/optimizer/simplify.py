@@ -507,6 +507,9 @@ def simplify_literals(expression, root=True):
                 return exp.Literal.number(value[1:])
             return exp.Literal.number(f"-{value}")
 
+    if type(expression) in INVERSE_DATE_OPS:
+        return _simplify_binary(expression, expression.this, expression.interval()) or expression
+
     return expression
 
 
@@ -557,9 +560,9 @@ def _simplify_binary(expression, a, b):
     elif _is_date_literal(a) and isinstance(b, exp.Interval):
         a, b = extract_date(a), extract_interval(b)
         if a and b:
-            if isinstance(expression, exp.Add):
+            if isinstance(expression, (exp.Add, exp.DateAdd, exp.DatetimeAdd)):
                 return date_literal(a + b)
-            if isinstance(expression, exp.Sub):
+            if isinstance(expression, (exp.Sub, exp.DateSub, exp.DatetimeSub)):
                 return date_literal(a - b)
     elif isinstance(a, exp.Interval) and _is_date_literal(b):
         a, b = extract_interval(a), extract_date(b)

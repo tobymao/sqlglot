@@ -685,6 +685,11 @@ class TSQL(Dialect):
 
             return sql
 
+        def not_sql(self, expression: exp.Not) -> str:
+            if isinstance(expression.this, exp.Column):
+                return f"{self.sql(expression, 'this')} = 0"
+            return super().not_sql(expression)
+
         def create_sql(self, expression: exp.Create) -> str:
             kind = self.sql(expression, "kind").upper()
             exists = expression.args.pop("exists", None)

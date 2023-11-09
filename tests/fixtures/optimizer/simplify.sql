@@ -450,6 +450,15 @@ CAST(x AS DATETIME) + INTERVAL '1' week;
 TS_OR_DS_TO_DATE('1998-12-01 00:00:01') - interval '90' day;
 CAST('1998-09-02' AS DATE);
 
+DATE_ADD(CAST('2023-01-02' AS DATE), -2, 'MONTH');
+CAST('2022-11-02' AS DATE);
+
+DATE_SUB(CAST('2023-01-02' AS DATE), 1 + 1, 'DAY');
+CAST('2022-12-31' AS DATE);
+
+DATE_ADD(x, 1, 'MONTH');
+DATE_ADD(x, 1, 'MONTH');
+
 --------------------------------------
 -- Comparisons
 --------------------------------------

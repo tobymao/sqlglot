@@ -233,6 +233,9 @@ class Generator:
     # Whether or not nested CTEs (e.g. defined inside of subqueries) are allowed
     SUPPORTS_NESTED_CTES = True
 
+    # Whether or not conditions require booleans WHERE x = 0 vs WHERE x
+    ENSURE_BOOLS = False
+
     # Whether or not the "RECURSIVE" keyword is required when defining recursive CTEs
     CTE_RECURSIVE_KEYWORD_REQUIRED = True
 
@@ -494,6 +497,11 @@ class Generator:
             from sqlglot.transforms import move_ctes_to_top_level
 
             expression = move_ctes_to_top_level(expression)
+
+        if self.ENSURE_BOOLS:
+            from sqlglot.transforms import ensure_bools
+
+            expression = ensure_bools(expression)
 
         self.unsupported_messages = []
         sql = self.sql(expression).strip()

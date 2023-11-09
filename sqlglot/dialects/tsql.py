@@ -597,6 +597,7 @@ class TSQL(Dialect):
         COMPUTED_COLUMN_WITH_TYPE = False
         SUPPORTS_NESTED_CTES = False
         CTE_RECURSIVE_KEYWORD_REQUIRED = False
+        ENSURE_BOOLS = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -684,11 +685,6 @@ class TSQL(Dialect):
                 sql = f"#{sql}"
 
             return sql
-
-        def not_sql(self, expression: exp.Not) -> str:
-            if isinstance(expression.this, exp.Column):
-                return f"{self.sql(expression, 'this')} = 0"
-            return super().not_sql(expression)
 
         def create_sql(self, expression: exp.Create) -> str:
             kind = self.sql(expression, "kind").upper()

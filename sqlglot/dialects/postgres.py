@@ -264,6 +264,7 @@ class Postgres(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
             "CHARACTER VARYING": TokenType.VARCHAR,
+            "CONSTRAINT TRIGGER": TokenType.COMMAND,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,

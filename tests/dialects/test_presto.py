@@ -890,6 +890,13 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "JSON_FORMAT(CAST(MAP_FROM_ENTRIES(ARRAY[('action_type', 'at')]) AS JSON))",
+            write={
+                "presto": "JSON_FORMAT(CAST(MAP_FROM_ENTRIES(ARRAY[('action_type', 'at')]) AS JSON))",
+                "spark": "TO_JSON(MAP_FROM_ENTRIES(ARRAY(('action_type', 'at'))))",
+            },
+        )
+        self.validate_all(
             "JSON_FORMAT(x)",
             read={
                 "spark": "TO_JSON(x)",

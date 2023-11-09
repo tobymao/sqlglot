@@ -48,6 +48,10 @@ class TestSnowflake(Validator):
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
         self.validate_identity(
+            "CREATE TABLE foo (ID INT COMMENT $$some comment$$)",
+            "CREATE TABLE foo (ID INT COMMENT 'some comment')",
+        )
+        self.validate_identity(
             "SELECT state, city, SUM(retail_price * quantity) AS gross_revenue FROM sales GROUP BY ALL"
         )
         self.validate_identity(

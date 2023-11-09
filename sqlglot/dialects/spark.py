@@ -67,8 +67,6 @@ class Spark(Spark2):
             return this
 
     class Generator(Spark2.Generator):
-        SUPPORTS_NESTED_CTES = True
-
         TYPE_MAPPING = {
             **Spark2.Generator.TYPE_MAPPING,
             exp.DataType.Type.MONEY: "DECIMAL(15, 4)",

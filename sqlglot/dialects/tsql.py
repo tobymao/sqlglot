@@ -213,7 +213,25 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
     ):
         from sqlglot.optimizer.qualify_columns import qualify_outputs
 
-        qualify_outputs(expression.this)
+        # We keep track of the unaliased column projection indexes instead of the expressions
+        # themselves, because the latter are going to be replaced by new nodes when the aliases
+        # are added and hence we won't be able to reach these newly added Alias parents
+        subqueryable = expression.this
+        unaliased_column_indexes = (
+            i
+            for i, c in enumerate(subqueryable.selects)
+            if isinstance(c, exp.Column) and not c.alias
+        )
+
+        qualify_outputs(subqueryable)
+
+        # Preserve the quoting information of columns for newly added Alias nodes
+        subqueryable_selects = subqueryable.selects
+        for select_index in unaliased_column_indexes:
+            alias = subqueryable_selects[select_index]
+            column = alias.this
+            if isinstance(column.this, exp.Identifier):
+                alias.args["alias"].set("quoted", column.this.quoted)
 
     return expression
 

@@ -202,6 +202,22 @@ def _parse_date_delta(
     return inner_func
 
 
+def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
+    """Ensures all output columns are aliased for CTEs and Subqueries."""
+    alias = expression.args.get("alias")
+
+    if (
+        isinstance(expression, (exp.CTE, exp.Subquery))
+        and isinstance(alias, exp.TableAlias)
+        and not alias.columns
+    ):
+        from sqlglot.optimizer.qualify_columns import qualify_outputs
+
+        qualify_outputs(expression.this)
+
+    return expression
+
+
 class TSQL(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
     NULL_ORDERING = "nulls_are_small"
@@ -618,6 +634,7 @@ class TSQL(Dialect):
             exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
             exp.DateAdd: generate_date_delta_with_unit_sql,
             exp.DateDiff: generate_date_delta_with_unit_sql,
+            exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.Extract: rename_func("DATEPART"),
@@ -636,6 +653,7 @@ class TSQL(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
+            exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
                 "HASHBYTES",

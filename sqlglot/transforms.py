@@ -432,6 +432,7 @@ def move_ctes_to_top_level(expression: exp.Expression) -> exp.Expression:
 
 
 def ensure_bools(expression: exp.Expression) -> exp.Expression:
+    """Converts numeric values used in conditions into explicit boolean expressions."""
     from sqlglot.optimizer.canonicalize import ensure_bools
 
     def _ensure_bool(node: exp.Expression) -> None:

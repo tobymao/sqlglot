@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v19.3.0] - 2023-11-10
+### :sparkles: New Features
+- [`1136f86`](https://github.com/tobymao/sqlglot/commit/1136f866ff491f265e7a4fd75d8e1efe3c300b33) - add exp.IsInf expression to represent ISINF, IS_INF *(PR [#2548](https://github.com/tobymao/sqlglot/pull/2548) by [@j1ah0ng](https://github.com/j1ah0ng))*
+
+### :bug: Bug Fixes
+- [`d92f2be`](https://github.com/tobymao/sqlglot/commit/d92f2beeeddf1f8e752e412e89212865e13e2128) - don't bubble up CTEs for the CREATE DDL statement *(PR [#2550](https://github.com/tobymao/sqlglot/pull/2550) by [@georgesittas](https://github.com/georgesittas))*
+- [`39ef0e1`](https://github.com/tobymao/sqlglot/commit/39ef0e131670c835a38619d3a6eb4be7a0680881) - **tsql**: preserve column projection quotes for newly added Alias nodes *(PR [#2551](https://github.com/tobymao/sqlglot/pull/2551) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v19.2.0] - 2023-11-10
 ### :boom: BREAKING CHANGES
 - due to [`9f42b6b`](https://github.com/tobymao/sqlglot/commit/9f42b6b0b49a7ef6ce7147347fbb136b51d2e8a1) - disallow nested CTEs for Spark and Databricks *(PR [#2544](https://github.com/tobymao/sqlglot/pull/2544) by [@georgesittas](https://github.com/georgesittas))*:
@@ -1971,3 +1980,4 @@ Changelog
 [v19.1.2]: https://github.com/tobymao/sqlglot/compare/v19.1.1...v19.1.2
 [v19.1.3]: https://github.com/tobymao/sqlglot/compare/v19.1.2...v19.1.3
 [v19.2.0]: https://github.com/tobymao/sqlglot/compare/v19.1.3...v19.2.0
+[v19.3.0]: https://github.com/tobymao/sqlglot/compare/v19.2.0...v19.3.0

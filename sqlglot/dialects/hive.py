@@ -417,7 +417,13 @@ class Hive(Dialect):
         INDEX_ON = "ON TABLE"
         EXTRACT_ALLOWS_QUOTES = False
         NVL2_SUPPORTED = False
-        SUPPORTS_NESTED_CTES = False
+
+        EXPRESSIONS_WITHOUT_NESTED_CTES = {
+            exp.Insert,
+            exp.Select,
+            exp.Subquery,
+            exp.Union,
+        }
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

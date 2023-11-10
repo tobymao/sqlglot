@@ -611,9 +611,18 @@ class TSQL(Dialect):
         ALTER_TABLE_ADD_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
         COMPUTED_COLUMN_WITH_TYPE = False
-        SUPPORTS_NESTED_CTES = False
         CTE_RECURSIVE_KEYWORD_REQUIRED = False
         ENSURE_BOOLS = True
+
+        EXPRESSIONS_WITHOUT_NESTED_CTES = {
+            exp.Delete,
+            exp.Insert,
+            exp.Merge,
+            exp.Select,
+            exp.Subquery,
+            exp.Union,
+            exp.Update,
+        }
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

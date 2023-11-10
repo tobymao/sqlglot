@@ -4691,6 +4691,10 @@ class IsNan(Func):
     _sql_names = ["IS_NAN", "ISNAN"]
 
 
+class IsInf(Func):
+    _sql_names = ["IS_INF", "ISINF"]
+
+
 class FormatJson(Expression):
     pass
 

@@ -8,7 +8,7 @@ from sqlglot._typing import E
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
-from sqlglot.optimizer.scope import Scope, traverse_scope, walk_in_scope
+from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
 from sqlglot.optimizer.simplify import simplify_parens
 from sqlglot.schema import Schema, ensure_schema
 
@@ -58,7 +58,7 @@ def qualify_columns(
 
         if not isinstance(scope.expression, exp.UDTF):
             _expand_stars(scope, resolver, using_column_tables, pseudocolumns)
-            _qualify_outputs(scope)
+            qualify_outputs(scope)
 
         _expand_group_by(scope)
         _expand_order_by(scope, resolver)
@@ -450,10 +450,16 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def _qualify_outputs(scope: Scope) -> None:
+def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
     """Ensure all output columns are aliased"""
-    new_selections = []
+    if isinstance(scope_or_expression, exp.Expression):
+        scope = build_scope(scope_or_expression)
+        if not isinstance(scope, Scope):
+            return
+    else:
+        scope = scope_or_expression
 
+    new_selections = []
     for i, (selection, aliased_column) in enumerate(
         itertools.zip_longest(scope.expression.selects, scope.outer_column_list)
     ):

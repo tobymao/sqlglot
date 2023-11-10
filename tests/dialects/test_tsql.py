@@ -30,7 +30,7 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
-            "WITH t(c) AS (SELECT 1) MERGE INTO x AS z USING (SELECT c FROM t) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
+            "WITH t(c) AS (SELECT 1) MERGE INTO x AS z USING (SELECT c AS c FROM t) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
             read={
                 "postgres": "MERGE INTO x AS z USING (WITH t(c) AS (SELECT 1) SELECT c FROM t) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b",
             },
@@ -1471,5 +1471,22 @@ FROM OPENJSON(@json) WITH (
                 "databricks": "SET count = (SELECT COUNT(1) FROM x)",
                 "tsql": "SET @count = (SELECT COUNT(1) FROM x)",
                 "spark": "SET count = (SELECT COUNT(1) FROM x)",
+            },
+        )
+
+    def test_qualify_derived_table_outputs(self):
+        self.validate_identity(
+            "WITH t AS (SELECT 1) SELECT * FROM t",
+            'WITH t AS (SELECT 1 AS "1") SELECT * FROM t',
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1) AS subq",
+            'SELECT * FROM (SELECT 1 AS "1") AS subq',
+        )
+
+        self.validate_all(
+            "WITH t1(c) AS (SELECT 1), t2 AS (SELECT CAST(c AS INTEGER) AS c FROM t1) SELECT * FROM t2",
+            read={
+                "duckdb": "WITH t1(c) AS (SELECT 1), t2 AS (SELECT CAST(c AS INTEGER) FROM t1) SELECT * FROM t2",
             },
         )

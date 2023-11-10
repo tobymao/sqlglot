@@ -748,10 +748,7 @@ class TSQL(Dialect):
                 if isinstance(subquery, exp.Subqueryable):
                     subquery = subquery.subquery()
 
-                if not subquery.alias:
-                    exp.alias_(subquery, "temp", table=True, copy=False)
-
-                select_into = exp.select("*").from_(subquery)
+                select_into = exp.select("*").from_(exp.alias_(subquery, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
                 select_into.set("with", ctas_with)
 

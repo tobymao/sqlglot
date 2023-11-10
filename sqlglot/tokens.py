@@ -707,7 +707,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "INT64": TokenType.BIGINT,
         "LONG": TokenType.BIGINT,
         "BIGINT": TokenType.BIGINT,
-        "INT8": TokenType.BIGINT,
+        "INT8": TokenType.TINYINT,
         "DEC": TokenType.DECIMAL,
         "DECIMAL": TokenType.DECIMAL,
         "BIGDECIMAL": TokenType.BIGDECIMAL,

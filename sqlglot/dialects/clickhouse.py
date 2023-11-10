@@ -65,7 +65,6 @@ class ClickHouse(Dialect):
             "FLOAT64": TokenType.DOUBLE,
             "GLOBAL": TokenType.GLOBAL,
             "INT256": TokenType.INT256,
-            "INT8": TokenType.TINYINT,
             "LOWCARDINALITY": TokenType.LOWCARDINALITY,
             "MAP": TokenType.MAP,
             "NESTED": TokenType.NESTED,

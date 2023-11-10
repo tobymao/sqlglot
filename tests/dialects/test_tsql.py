@@ -609,6 +609,12 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "SELECT * INTO foo.bar.baz FROM (SELECT * FROM a.b.c) AS temp",
+            read={
+                "": "CREATE TABLE foo.bar.baz AS (SELECT * FROM a.b.c)",
+            },
+        )
+        self.validate_all(
             "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = object_id('db.tbl') AND name = 'idx') EXEC('CREATE INDEX idx ON db.tbl')",
             read={
                 "": "CREATE INDEX IF NOT EXISTS idx ON db.tbl",

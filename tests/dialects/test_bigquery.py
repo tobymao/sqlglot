@@ -16,6 +16,10 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity(
+            "select array_contains([1, 2, 3], 1)",
+            "SELECT EXISTS(SELECT 1 FROM UNNEST([1, 2, 3]) AS _col WHERE _col = 1)",
+        )
         self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
         self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")

@@ -174,6 +174,16 @@ def _parse_to_hex(args: t.List) -> exp.Hex | exp.MD5:
     return exp.MD5(this=arg.this) if isinstance(arg, exp.MD5Digest) else exp.Hex(this=arg)
 
 
+def _array_contains_sql(self: BigQuery.Generator, expression: exp.ArrayContains) -> str:
+    return self.sql(
+        exp.Exists(
+            this=exp.select("1")
+            .from_(exp.Unnest(expressions=[expression.left]).as_("_unnest", table=["_col"]))
+            .where(exp.column("_col").eq(expression.right))
+        )
+    )
+
+
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -446,6 +456,7 @@ class BigQuery(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
+            exp.ArrayContains: _array_contains_sql,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CollateProperty: lambda self, e: f"DEFAULT COLLATE {self.sql(e, 'this')}"

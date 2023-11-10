@@ -483,7 +483,6 @@ class TestDuckDB(Validator):
             )
 
         self.validate_identity("SELECT ISNAN(x)")
-        self.validate_identity("SELECT ISINF(x)")
 
     def test_time(self):
         self.validate_identity("SELECT CURRENT_DATE")

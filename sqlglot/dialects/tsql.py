@@ -611,9 +611,18 @@ class TSQL(Dialect):
         ALTER_TABLE_ADD_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
         COMPUTED_COLUMN_WITH_TYPE = False
-        SUPPORTS_NESTED_CTES = False
         CTE_RECURSIVE_KEYWORD_REQUIRED = False
         ENSURE_BOOLS = True
+
+        EXPRESSIONS_WITHOUT_NESTED_CTES = {
+            exp.Delete,
+            exp.Insert,
+            exp.Merge,
+            exp.Select,
+            exp.Subquery,
+            exp.Union,
+            exp.Update,
+        }
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -711,8 +720,17 @@ class TSQL(Dialect):
 
             table = expression.find(exp.Table)
 
+            # Convert CTAS statement to SELECT .. INTO ..
             if kind == "TABLE" and expression.expression:
-                sql = f"SELECT * INTO {self.sql(table)} FROM ({self.sql(expression.expression)}) AS temp"
+                ctas_with = expression.expression.args.get("with")
+                if ctas_with:
+                    ctas_with = ctas_with.pop()
+
+                select_into = exp.select("*").from_(expression.expression.subquery(alias="temp"))
+                select_into.set("into", exp.Into(this=table))
+                select_into.set("with", ctas_with)
+
+                sql = self.sql(select_into)
 
             if exists:
                 identifier = self.sql(exp.Literal.string(exp.table_name(table) if table else ""))

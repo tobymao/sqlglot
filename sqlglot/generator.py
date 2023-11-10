@@ -230,9 +230,6 @@ class Generator:
     # Whether or not data types support additional specifiers like e.g. CHAR or BYTE (oracle)
     DATA_TYPE_SPECIFIERS_ALLOWED = False
 
-    # Whether or not nested CTEs (e.g. defined inside of subqueries) are allowed
-    SUPPORTS_NESTED_CTES = True
-
     # Whether or not conditions require booleans WHERE x = 0 vs WHERE x
     ENSURE_BOOLS = False
 
@@ -381,6 +378,9 @@ class Generator:
         exp.Paren,
     )
 
+    # Expressions that need to have all CTEs under them bubbled up to them
+    EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
+
     KEY_VALUE_DEFINITONS = (exp.Bracket, exp.EQ, exp.PropertyEQ, exp.Slice)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
@@ -484,14 +484,13 @@ class Generator:
         if copy:
             expression = expression.copy()
 
-        # Some dialects only support CTEs at the top level expression, so we need to bubble up nested
-        # CTEs to that level in order to produce a syntactically valid expression. This transformation
-        # happens here to minimize code duplication, since many expressions support CTEs.
+        # Some dialects only support CTEs at the top level expression for certain expression
+        # types, so we need to bubble up nested CTEs to that level in order to produce a
+        # syntactically valid expression. This transformation happens here to minimize code
+        # duplication, since many expressions support CTEs.
         if (
-            not self.SUPPORTS_NESTED_CTES
-            and isinstance(expression, exp.Expression)
-            and not expression.parent
-            and "with" in expression.arg_types
+            not expression.parent
+            and type(expression) in self.EXPRESSIONS_WITHOUT_NESTED_CTES
             and any(node.parent is not expression for node in expression.find_all(exp.With))
         ):
             from sqlglot.transforms import move_ctes_to_top_level

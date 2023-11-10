@@ -1480,6 +1480,10 @@ FROM OPENJSON(@json) WITH (
             'WITH t AS (SELECT 1 AS "1") SELECT * FROM t',
         )
         self.validate_identity(
+            'WITH t AS (SELECT "c") SELECT * FROM t',
+            'WITH t AS (SELECT "c" AS "c") SELECT * FROM t',
+        )
+        self.validate_identity(
             "SELECT * FROM (SELECT 1) AS subq",
             'SELECT * FROM (SELECT 1 AS "1") AS subq',
         )

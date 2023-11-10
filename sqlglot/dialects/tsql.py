@@ -229,9 +229,8 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
         subqueryable_selects = subqueryable.selects
         for select_index in unaliased_column_indexes:
             select = subqueryable_selects[select_index]
-            if isinstance(select, exp.Alias):
-                column_identifier = select.this.this
-                select.args["alias"].set("quoted", column_identifier.args.get("quoted"))
+            column_identifier = select.this.this
+            select.args["alias"].set("quoted", column_identifier.args.get("quoted"))
 
     return expression
 

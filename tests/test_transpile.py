@@ -809,26 +809,3 @@ FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
         with self.assertRaises(UnsupportedError) as ctx:
             unsupported(ErrorLevel.IMMEDIATE)
         self.assertEqual(str(ctx.exception).count(error), 1)
-
-    def test_isinf(self):
-        self.assertEqual(
-            transpile("SELECT ISINF(x)", read="duckdb", write="bigquery")[0], "SELECT IS_INF(x)"
-        )
-        self.assertEqual(
-            transpile("SELECT IS_INF(x)", read="bigquery", write="duckdb")[0], "SELECT ISINF(x)"
-        )
-
-    def test_isnan(self):
-        self.assertEqual(
-            transpile("SELECT ISNAN(x)", read="duckdb", write="bigquery")[0], "SELECT IS_NAN(x)"
-        )
-        self.assertEqual(
-            transpile("SELECT IS_NAN(x)", read="bigquery", write="duckdb")[0], "SELECT ISNAN(x)"
-        )
-
-        self.assertEqual(
-            transpile("SELECT ISNAN(x)", read="hive", write="bigquery")[0], "SELECT IS_NAN(x)"
-        )
-        self.assertEqual(
-            transpile("SELECT IS_NAN(x)", read="bigquery", write="hive")[0], "SELECT ISNAN(x)"
-        )

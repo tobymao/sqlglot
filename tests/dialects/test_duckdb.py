@@ -804,3 +804,17 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT CAST(w AS TIMESTAMP_S), CAST(x AS TIMESTAMP_MS), CAST(y AS TIMESTAMP), CAST(z AS TIMESTAMP_NS)",
             },
         )
+
+    def test_isnan(self):
+        self.validate_all(
+            "ISNAN(x)",
+            read={"bigquery": "IS_NAN(x)"},
+            write={"bigquery": "IS_NAN(x)", "duckdb": "ISNAN(x)"},
+        )
+
+    def test_isinf(self):
+        self.validate_all(
+            "ISINF(x)",
+            read={"bigquery": "IS_INF(x)"},
+            write={"bigquery": "IS_INF(x)", "duckdb": "ISINF(x)"},
+        )

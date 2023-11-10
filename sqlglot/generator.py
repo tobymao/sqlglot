@@ -490,6 +490,7 @@ class Generator:
         if (
             not self.SUPPORTS_NESTED_CTES
             and isinstance(expression, exp.Expression)
+            and not isinstance(expression, exp.Create)  # CTAS needs the CTEs to come after CREATE
             and not expression.parent
             and "with" in expression.arg_types
             and any(node.parent is not expression for node in expression.find_all(exp.With))

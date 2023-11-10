@@ -1,6 +1,21 @@
 Changelog
 =========
 
+## [v19.2.0] - 2023-11-10
+### :boom: BREAKING CHANGES
+- due to [`9f42b6b`](https://github.com/tobymao/sqlglot/commit/9f42b6b0b49a7ef6ce7147347fbb136b51d2e8a1) - disallow nested CTEs for Spark and Databricks *(PR [#2544](https://github.com/tobymao/sqlglot/pull/2544) by [@georgesittas](https://github.com/georgesittas))*:
+
+  disallow nested CTEs for Spark and Databricks (#2544)
+
+
+### :sparkles: New Features
+- [`91483b0`](https://github.com/tobymao/sqlglot/commit/91483b0daef2aec4a076b6d4214983d14bf9f105) - add / move fixed-width integer tokens to base class *(PR [#2540](https://github.com/tobymao/sqlglot/pull/2540) by [@j1ah0ng](https://github.com/j1ah0ng))*
+- [`45334eb`](https://github.com/tobymao/sqlglot/commit/45334eb226199b8e48ab2751567f65e8675f4ff5) - **bigquery**: array contains to exist unnest closes [#2547](https://github.com/tobymao/sqlglot/pull/2547) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`9f42b6b`](https://github.com/tobymao/sqlglot/commit/9f42b6b0b49a7ef6ce7147347fbb136b51d2e8a1) - disallow nested CTEs for Spark and Databricks *(PR [#2544](https://github.com/tobymao/sqlglot/pull/2544) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v19.1.3] - 2023-11-09
 ### :sparkles: New Features
 - [`d9d64e0`](https://github.com/tobymao/sqlglot/commit/d9d64e0d82c4c89dca132c4d16c0024fefd7aeda) - **postgres**: parse CREATE CONSTRAINT TRIGGER as Command *(PR [#2541](https://github.com/tobymao/sqlglot/pull/2541) by [@georgesittas](https://github.com/georgesittas))*
@@ -1955,3 +1970,4 @@ Changelog
 [v19.1.1]: https://github.com/tobymao/sqlglot/compare/v19.1.0...v19.1.1
 [v19.1.2]: https://github.com/tobymao/sqlglot/compare/v19.1.1...v19.1.2
 [v19.1.3]: https://github.com/tobymao/sqlglot/compare/v19.1.2...v19.1.3
+[v19.2.0]: https://github.com/tobymao/sqlglot/compare/v19.1.3...v19.2.0

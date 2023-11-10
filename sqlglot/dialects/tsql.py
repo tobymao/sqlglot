@@ -214,8 +214,8 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
         from sqlglot.optimizer.qualify_columns import qualify_outputs
 
         # We keep track of the unaliased column projection indexes instead of the expressions
-        # themselves, because the latter are going to be mutated when the aliases are added
-        # and hence we won't be able to reach their newly added Alias parents
+        # themselves, because the latter are going to be replaced by new nodes when the aliases
+        # are added and hence we won't be able to reach these newly added Alias parents
         subqueryable = expression.this
         unaliased_column_projection_indexes = (
             i

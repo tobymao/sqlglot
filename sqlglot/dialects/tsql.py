@@ -745,7 +745,7 @@ class TSQL(Dialect):
                     ctas_with = ctas_with.pop()
 
                 subquery = expression.expression
-                if not isinstance(subquery, exp.Subquery):
+                if isinstance(subquery, exp.Subqueryable):
                     subquery = subquery.subquery()
 
                 if not subquery.alias:

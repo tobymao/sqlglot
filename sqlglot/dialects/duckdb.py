@@ -126,8 +126,6 @@ class DuckDB(Dialect):
             "CHAR": TokenType.TEXT,
             "CHARACTER VARYING": TokenType.TEXT,
             "EXCLUDE": TokenType.EXCEPT,
-            "HUGEINT": TokenType.INT128,
-            "INT1": TokenType.TINYINT,
             "LOGICAL": TokenType.BOOLEAN,
             "PIVOT_WIDER": TokenType.PIVOT,
             "SIGNED": TokenType.INT,

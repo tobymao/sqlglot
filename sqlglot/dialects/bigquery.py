@@ -265,7 +265,6 @@ class BigQuery(Dialect):
             "DECLARE": TokenType.COMMAND,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
-            "INT64": TokenType.BIGINT,
             "MODEL": TokenType.MODEL,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "RECORD": TokenType.STRUCT,

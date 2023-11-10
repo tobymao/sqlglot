@@ -203,7 +203,7 @@ def _parse_date_delta(
 
 
 def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
-    """Ensures all output columns are aliased for CTEs and Subqueries."""
+    """Ensures all (unnamed) output columns are aliased for CTEs and Subqueries."""
     alias = expression.args.get("alias")
 
     if (

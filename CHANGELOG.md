@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v19.3.1] - 2023-11-10
+### :bug: Bug Fixes
+- [`1d557a7`](https://github.com/tobymao/sqlglot/commit/1d557a76496fd73552782a3f48d70253060faf77) - **tsql**: only call subquery method in CTAS if it's not one already *(PR [#2553](https://github.com/tobymao/sqlglot/pull/2553) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v19.3.0] - 2023-11-10
 ### :sparkles: New Features
 - [`1136f86`](https://github.com/tobymao/sqlglot/commit/1136f866ff491f265e7a4fd75d8e1efe3c300b33) - add exp.IsInf expression to represent ISINF, IS_INF *(PR [#2548](https://github.com/tobymao/sqlglot/pull/2548) by [@j1ah0ng](https://github.com/j1ah0ng))*
@@ -1981,3 +1986,4 @@ Changelog
 [v19.1.3]: https://github.com/tobymao/sqlglot/compare/v19.1.2...v19.1.3
 [v19.2.0]: https://github.com/tobymao/sqlglot/compare/v19.1.3...v19.2.0
 [v19.3.0]: https://github.com/tobymao/sqlglot/compare/v19.2.0...v19.3.0
+[v19.3.1]: https://github.com/tobymao/sqlglot/compare/v19.3.0...v19.3.1

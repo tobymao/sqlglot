@@ -278,6 +278,7 @@ class DuckDB(Dialect):
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsNan: rename_func("ISNAN"),
+            exp.IsInf: rename_func("ISINF"),
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONFormat: _json_format_sql,

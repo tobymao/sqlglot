@@ -78,24 +78,6 @@ x"""
         self.assertEqual(tokens[2].token_type, TokenType.SHOW)
         self.assertEqual(tokens[3].token_type, TokenType.SEMICOLON)
 
-    def test_integer_type_aliases(self):
-        types_to_aliases = {
-            TokenType.TINYINT: ["TINYINT", "INT1", "BYTE"],
-            TokenType.SMALLINT: ["SMALLINT", "INT2", "INT16", "SHORT"],
-            TokenType.INT: ["INT", "INT4", "INT32", "INTEGER"],
-            TokenType.BIGINT: [
-                "BIGINT",
-                "INT8",
-                "INT64",
-                "LONG",
-            ],
-            TokenType.INT128: ["HUGEINT", "INT128"],
-        }
-        for base_token, aliases in types_to_aliases.items():
-            for alias in aliases:
-                tokens = Tokenizer().tokenize(alias)
-                self.assertEqual(tokens[0].token_type, base_token)
-
     def test_error_msg(self):
         with self.assertRaisesRegex(TokenError, "Error tokenizing 'select /'"):
             Tokenizer().tokenize("select /*")

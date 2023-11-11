@@ -583,6 +583,8 @@ class Hive(Dialect):
                 and not expression.expressions
             ):
                 expression = exp.DataType.build("text")
+            elif expression.is_type(exp.DataType.Type.TEXT) and expression.expressions:
+                expression.set("this", exp.DataType.Type.VARCHAR)
             elif expression.this in exp.DataType.TEMPORAL_TYPES:
                 expression = exp.DataType.build(expression.this)
             elif expression.is_type("float"):

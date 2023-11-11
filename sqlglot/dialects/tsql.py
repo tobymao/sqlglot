@@ -238,7 +238,6 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
 
 class TSQL(Dialect):
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
-    NULL_ORDERING = "nulls_are_small"
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
@@ -631,6 +630,7 @@ class TSQL(Dialect):
         COMPUTED_COLUMN_WITH_TYPE = False
         CTE_RECURSIVE_KEYWORD_REQUIRED = False
         ENSURE_BOOLS = True
+        NULL_ORDERING_SUPPORTED = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,

@@ -1836,6 +1836,8 @@ class Generator:
         nulls_are_small = self.NULL_ORDERING == "nulls_are_small"
         nulls_are_last = self.NULL_ORDERING == "nulls_are_last"
 
+        this = self.sql(expression, "this")
+
         sort_order = " DESC" if desc else (" ASC" if desc is False else "")
         nulls_sort_change = ""
         if nulls_first and (
@@ -1849,13 +1851,13 @@ class Generator:
         ):
             nulls_sort_change = " NULLS LAST"
 
+        # If the NULLS FIRST/LAST clause is unsupported, we add another sort key to simulate it
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
-            self.unsupported(
-                "Sorting in an ORDER BY on NULLS FIRST/NULLS LAST is not supported by this dialect"
-            )
+            null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+            this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
             nulls_sort_change = ""
 
-        return f"{self.sql(expression, 'this')}{sort_order}{nulls_sort_change}"
+        return f"{this}{sort_order}{nulls_sort_change}"
 
     def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
         partition = self.partition_by_sql(expression)

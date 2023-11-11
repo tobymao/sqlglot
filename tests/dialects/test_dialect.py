@@ -1270,13 +1270,6 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM a ORDER BY col_a NULLS LAST",
-            write={
-                "mysql": UnsupportedError,
-                "starrocks": UnsupportedError,
-            },
-        )
-        self.validate_all(
             "POSITION(needle in haystack)",
             write={
                 "drill": "STRPOS(haystack, needle)",
@@ -1966,3 +1959,50 @@ SELECT
                 "tsql": "WITH t1(x) AS (SELECT 1), t2(y) AS (SELECT 2) SELECT * FROM (SELECT y AS y FROM t2) AS subq",
             },
         )
+
+    def test_unsupported_null_ordering(self):
+        # We'll transpile a portable query from the following dialects to MySQL / T-SQL, which
+        # both treat NULLs as small values, so the expected output queries should be equivalent
+        with_last_nulls = "duckdb"
+        with_small_nulls = "spark"
+        with_large_nulls = "postgres"
+
+        sql = "SELECT * FROM t ORDER BY c"
+        sql_nulls_last = "SELECT * FROM t ORDER BY CASE WHEN c IS NULL THEN 1 ELSE 0 END, c"
+        sql_nulls_first = "SELECT * FROM t ORDER BY CASE WHEN c IS NULL THEN 1 ELSE 0 END DESC, c"
+
+        for read_dialect, desc, nulls_first, expected_sql in (
+            (with_last_nulls, False, None, sql_nulls_last),
+            (with_last_nulls, True, None, sql),
+            (with_last_nulls, False, True, sql),
+            (with_last_nulls, True, True, sql_nulls_first),
+            (with_last_nulls, False, False, sql_nulls_last),
+            (with_last_nulls, True, False, sql),
+            (with_small_nulls, False, None, sql),
+            (with_small_nulls, True, None, sql),
+            (with_small_nulls, False, True, sql),
+            (with_small_nulls, True, True, sql_nulls_first),
+            (with_small_nulls, False, False, sql_nulls_last),
+            (with_small_nulls, True, False, sql),
+            (with_large_nulls, False, None, sql_nulls_last),
+            (with_large_nulls, True, None, sql_nulls_first),
+            (with_large_nulls, False, True, sql),
+            (with_large_nulls, True, True, sql_nulls_first),
+            (with_large_nulls, False, False, sql_nulls_last),
+            (with_large_nulls, True, False, sql),
+        ):
+            with self.subTest(
+                f"read: {read_dialect}, descending: {desc}, nulls first: {nulls_first}"
+            ):
+                sort_order = " DESC" if desc else ""
+                null_order = (
+                    " NULLS FIRST"
+                    if nulls_first
+                    else (" NULLS LAST" if nulls_first is not None else "")
+                )
+
+                expected_sql = f"{expected_sql}{sort_order}"
+                expression = parse_one(f"{sql}{sort_order}{null_order}", read=read_dialect)
+
+                self.assertEqual(expression.sql(dialect="mysql"), expected_sql)
+                self.assertEqual(expression.sql(dialect="tsql"), expected_sql)

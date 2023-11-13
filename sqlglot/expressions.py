@@ -1145,8 +1145,10 @@ class WithinGroup(Expression):
     arg_types = {"this": True, "expression": False}
 
 
+# clickhouse supports scalar ctes
+# https://clickhouse.com/docs/en/sql-reference/statements/select/with
 class CTE(DerivedTable):
-    arg_types = {"this": True, "alias": True}
+    arg_types = {"this": True, "alias": True, "scalar": False}
 
 
 class TableAlias(Expression):

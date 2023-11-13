@@ -320,6 +320,10 @@ class TestClickhouse(Validator):
         self.validate_identity("WITH (SELECT foo) AS bar SELECT bar + 5")
         self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")
 
+        query = parse_one("""WITH (SELECT 1) AS y SELECT * FROM y""", read="clickhouse")
+        self.assertIsInstance(query.args["with"].expressions[0].this, exp.Subquery)
+        self.assertEqual(query.args["with"].expressions[0].alias, "y")
+
     def test_ternary(self):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})
         self.validate_all(

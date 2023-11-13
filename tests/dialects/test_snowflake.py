@@ -1204,17 +1204,20 @@ MATCH_RECOGNIZE (
     def test_try_cast(self):
         self.validate_identity("SELECT TRY_CAST(x AS DOUBLE)")
 
+        self.validate_all("TRY_CAST('foo' AS TEXT)", read={"hive": "CAST('foo' AS STRING)"})
+        self.validate_all("CAST(5 + 5 AS TEXT)", read={"hive": "CAST(5 + 5 AS STRING)"})
+        self.validate_all(
+            "CAST(TRY_CAST('2020-01-01' AS DATE) AS TEXT)",
+            read={
+                "hive": "CAST(CAST('2020-01-01' AS DATE) AS STRING)",
+                "snowflake": "CAST(TRY_CAST('2020-01-01' AS DATE) AS TEXT)",
+            },
+        )
         self.validate_all(
             "TRY_CAST(x AS TEXT)",
             read={
                 "hive": "CAST(x AS STRING)",
                 "snowflake": "TRY_CAST(x AS TEXT)",
-            },
-        )
-        self.validate_all(
-            "TRY_CAST('foo' AS TEXT)",
-            read={
-                "hive": "CAST('foo' AS STRING)",
             },
         )
 

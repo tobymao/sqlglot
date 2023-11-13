@@ -564,9 +564,13 @@ class Snowflake(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             value = expression.this
-            if value.type is None or value.is_type(
-                *exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN
-            ):
+
+            if value.type is None:
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                value = annotate_types(value)
+
+            if value.is_type(*exp.DataType.TEXT_TYPES, exp.DataType.Type.UNKNOWN):
                 return super().trycast_sql(expression)
 
             # TRY_CAST only works for string values in Snowflake

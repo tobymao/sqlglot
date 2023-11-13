@@ -13,6 +13,9 @@ SELECT 1 + 3.2 AS "a" FROM "w" AS "w";
 SELECT CAST('2022-01-01' AS DATE) + INTERVAL '1' day;
 SELECT CAST('2022-01-01' AS DATE) + INTERVAL '1' day AS "_col_0";
 
+SELECT CAST('2022-01-01' AS DATE) IS NULL AS "a";
+SELECT CAST('2022-01-01' AS DATE) IS NULL AS "a";
+
 --------------------------------------
 -- Ensure boolean predicates
 --------------------------------------

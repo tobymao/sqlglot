@@ -519,6 +519,7 @@ class Snowflake(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
+            exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.StrPosition: lambda self, e: self.func(

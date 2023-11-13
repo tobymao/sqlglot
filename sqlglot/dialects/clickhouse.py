@@ -220,13 +220,12 @@ class ClickHouse(Dialect):
             except ParseError:
                 # WITH <expression> AS <identifier>
                 self._retreat(index)
-                this = self._parse_field()
-                alias = self._parse_table_alias()
+                statement = self._parse_statement()
 
-                if isinstance(this, exp.Subquery):
-                    this = this.this
+                if statement and isinstance(statement.this, exp.Alias):
+                    self.raise_error("Expected CTE to have alias")
 
-                return self.expression(exp.CTE, this=this, alias=alias)
+                return self.expression(exp.CTE, this=statement, alias=statement and statement.this)
 
         def _parse_join_parts(
             self,
@@ -469,10 +468,8 @@ class ClickHouse(Dialect):
             )
 
         def cte_sql(self, expression: exp.CTE) -> str:
-            if not isinstance(expression.this, exp.Subqueryable):
-                this = self.sql(expression, "this")
-                alias = self.sql(expression, "alias")
-                return f"{this} AS {alias}"
+            if isinstance(expression.this, exp.Alias):
+                return self.sql(expression, "this")
 
             return super().cte_sql(expression)
 

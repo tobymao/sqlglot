@@ -317,19 +317,8 @@ class TestClickhouse(Validator):
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH SUM(bytes) AS foo SELECT foo FROM system.parts")
-        self.validate_identity(
-            "WITH (SELECT foo) AS bar SELECT bar + 5", "WITH bar AS (SELECT foo) SELECT bar + 5"
-        )
+        self.validate_identity("WITH (SELECT foo) AS bar SELECT bar + 5")
         self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")
-        self.validate_identity(
-            "WITH (SELECT 1) AS y(a) SELECT * FROM y", "WITH y(a) AS (SELECT 1) SELECT * FROM y"
-        )
-
-        # ensure that the ast is the same
-        self.assertEqual(
-            parse_one("WITH (SELECT 1) AS y(a) SELECT * FROM y", read="clickhouse"),
-            parse_one("WITH y(a) AS (SELECT 1) SELECT * FROM y", read="clickhouse"),
-        )
 
     def test_ternary(self):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})

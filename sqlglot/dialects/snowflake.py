@@ -564,7 +564,7 @@ class Snowflake(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             value = expression.this
-            if value.is_string or value.is_type(*exp.DataType.TEXT_TYPES):
+            if value.type is None or value.is_type(*exp.DataType.TEXT_TYPES):
                 return super().trycast_sql(expression)
 
             # TRY_CAST only works for string values in Snowflake

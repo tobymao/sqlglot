@@ -1202,11 +1202,13 @@ MATCH_RECOGNIZE (
         assert isinstance(ast.args["actions"][0], exp.SwapTable)
 
     def test_try_cast(self):
+        self.validate_identity("SELECT TRY_CAST(x AS DOUBLE)")
+
         self.validate_all(
-            "CAST(x AS TEXT)",
+            "TRY_CAST(x AS TEXT)",
             read={
                 "hive": "CAST(x AS STRING)",
-                "snowflake": "CAST(x AS TEXT)",
+                "snowflake": "TRY_CAST(x AS TEXT)",
             },
         )
         self.validate_all(

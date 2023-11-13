@@ -1200,3 +1200,25 @@ MATCH_RECOGNIZE (
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")
         assert isinstance(ast, exp.AlterTable)
         assert isinstance(ast.args["actions"][0], exp.SwapTable)
+
+    def test_try_cast(self):
+        self.validate_all(
+            "CAST(x AS TEXT)",
+            read={
+                "hive": "CAST(x AS STRING)",
+                "snowflake": "CAST(x AS TEXT)",
+            },
+        )
+        self.validate_all(
+            "TRY_CAST('foo' AS TEXT)",
+            read={
+                "hive": "CAST('foo' AS STRING)",
+            },
+        )
+
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        expression = parse_one("SELECT CAST(t.x AS STRING) FROM t", read="hive")
+        expression = annotate_types(expression, schema={"t": {"x": "string"}})
+
+        self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(t.x AS TEXT) FROM t")

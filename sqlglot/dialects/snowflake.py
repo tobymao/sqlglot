@@ -562,6 +562,14 @@ class Snowflake(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def trycast_sql(self, expression: exp.TryCast) -> str:
+            value = expression.this
+            if value.is_string or value.is_type(*exp.DataType.TEXT_TYPES):
+                return super().trycast_sql(expression)
+
+            # TRY_CAST only works for string values in Snowflake
+            return self.cast_sql(expression)
+
         def log_sql(self, expression: exp.Log) -> str:
             if not expression.expression:
                 return self.func("LN", expression.this)

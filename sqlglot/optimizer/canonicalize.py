@@ -42,7 +42,7 @@ def replace_date_funcs(node: exp.Expression) -> exp.Expression:
     return node
 
 
-COERCED_DATE_OPS = (
+COERCIBLE_DATE_OPS = (
     exp.Add,
     exp.Sub,
     exp.EQ,
@@ -57,7 +57,7 @@ COERCED_DATE_OPS = (
 
 
 def coerce_type(node: exp.Expression) -> exp.Expression:
-    if isinstance(node, COERCED_DATE_OPS):
+    if isinstance(node, COERCIBLE_DATE_OPS):
         _coerce_date(node.left, node.right)
     elif isinstance(node, exp.Between):
         _coerce_date(node.this, node.args["low"])

@@ -1221,6 +1221,15 @@ MATCH_RECOGNIZE (
         from sqlglot.optimizer.annotate_types import annotate_types
 
         expression = parse_one("SELECT CAST(t.x AS STRING) FROM t", read="hive")
-        expression = annotate_types(expression, schema={"t": {"x": "string"}})
 
+        expression = annotate_types(expression, schema={"t": {"x": "string"}})
         self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(t.x AS TEXT) FROM t")
+
+        expression = annotate_types(expression, schema={"t": {"x": "int"}})
+        self.assertEqual(expression.sql(dialect="snowflake"), "SELECT CAST(t.x AS TEXT) FROM t")
+
+        # We can't infer FOO's type since it's a UDF in this case, so we don't get rid of TRY_CAST
+        expression = parse_one("SELECT TRY_CAST(FOO() AS TEXT)", read="snowflake")
+
+        expression = annotate_types(expression)
+        self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(FOO() AS TEXT)")

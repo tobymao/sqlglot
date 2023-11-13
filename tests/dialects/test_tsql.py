@@ -234,11 +234,13 @@ class TestTSQL(Validator):
         self.validate_all(
             "HASHBYTES('SHA1', x)",
             read={
+                "snowflake": "SHA1(x)",
                 "spark": "SHA(x)",
             },
             write={
-                "tsql": "HASHBYTES('SHA1', x)",
+                "snowflake": "SHA1(x)",
                 "spark": "SHA(x)",
+                "tsql": "HASHBYTES('SHA1', x)",
             },
         )
         self.validate_all(

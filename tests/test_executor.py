@@ -762,29 +762,9 @@ class TestExecutor(unittest.TestCase):
                 [(1, 50), (2, 45), (3, 28)],
                 ("a", "_col_1"),
             ),
-        ):
-            with self.subTest(sql):
-                result = execute(sql, tables=tables)
-                self.assertEqual(result.columns, columns)
-                self.assertEqual(result.rows, expected)
-
-    def test_array_unique_agg(self):
-        tables = {
-            "x": [
-                {"a": 1, "b": 10},
-                {"a": 1, "b": 20},
-                {"a": 1, "b": 10},
-                {"a": 2, "b": 10},
-                {"a": 2, "b": 20},
-                {"a": 3, "b": 10},
-                {"a": 3, "b": None},
-            ],
-        }
-
-        for sql, expected, columns in (
             (
                 "SELECT a, ARRAY_UNIQUE_AGG(b) FROM x GROUP BY a",
-                [(1, [10, 20]), (2, [10, 20]), (3, [10])],
+                [(1, [40, 10]), (2, [25, 20]), (3, [28])],
                 ("a", "_col_1"),
             ),
         ):

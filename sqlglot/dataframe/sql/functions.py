@@ -306,7 +306,7 @@ def collect_list(col: ColumnOrName) -> Column:
 
 
 def collect_set(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(col, expression.SetAgg)
+    return Column.invoke_expression_over_column(col, expression.ArrayUniqueAgg)
 
 
 def hypot(col1: t.Union[ColumnOrName, float], col2: t.Union[ColumnOrName, float]) -> Column:

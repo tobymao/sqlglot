@@ -4345,10 +4345,6 @@ class ArrayUnionAgg(AggFunc):
     pass
 
 
-class ArrayUniqueAgg(AggFunc):
-    pass
-
-
 class Avg(AggFunc):
     pass
 

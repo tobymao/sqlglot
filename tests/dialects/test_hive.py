@@ -708,10 +708,12 @@ class TestHive(Validator):
             "COLLECT_SET(x)",
             read={
                 "presto": "SET_AGG(x)",
+                "snowflake": "ARRAY_UNIQUE_AGG(x)",
             },
             write={
                 "presto": "SET_AGG(x)",
                 "hive": "COLLECT_SET(x)",
+                "snowflake": "ARRAY_UNIQUE_AGG(x)",
                 "spark": "COLLECT_SET(x)",
             },
         )

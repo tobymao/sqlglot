@@ -4298,6 +4298,10 @@ class ArrayAgg(AggFunc):
     pass
 
 
+class ArrayUniqueAgg(AggFunc):
+    pass
+
+
 class ArrayAll(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -4342,10 +4346,6 @@ class ArraySum(Func):
 
 
 class ArrayUnionAgg(AggFunc):
-    pass
-
-
-class ArrayUniqueAgg(AggFunc):
     pass
 
 
@@ -5018,10 +5018,6 @@ class RowNumber(Func):
 
 class SafeDivide(Func):
     arg_types = {"this": True, "expression": True}
-
-
-class SetAgg(AggFunc):
-    pass
 
 
 class SHA(Func):

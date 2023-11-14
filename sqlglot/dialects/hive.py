@@ -270,7 +270,7 @@ class Hive(Dialect):
             **parser.Parser.FUNCTIONS,
             "BASE64": exp.ToBase64.from_arg_list,
             "COLLECT_LIST": exp.ArrayAgg.from_arg_list,
-            "COLLECT_SET": exp.SetAgg.from_arg_list,
+            "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_ADD": lambda args: exp.TsOrDsAdd(
                 this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
             ),
@@ -489,7 +489,7 @@ class Hive(Dialect):
             exp.Right: right_to_substring_sql,
             exp.SafeDivide: no_safe_divide_sql,
             exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
-            exp.SetAgg: rename_func("COLLECT_SET"),
+            exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.Split: lambda self, e: f"SPLIT({self.sql(e, 'this')}, CONCAT('\\\\Q', {self.sql(e, 'expression')}))",
             exp.StrPosition: strposition_to_locate_sql,
             exp.StrToDate: _str_to_date_sql,

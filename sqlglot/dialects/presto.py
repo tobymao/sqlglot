@@ -230,6 +230,7 @@ class Presto(Dialect):
             ),
             "ROW": exp.Struct.from_arg_list,
             "SEQUENCE": exp.GenerateSeries.from_arg_list,
+            "SET_AGG": exp.ArrayUniqueAgg.from_arg_list,
             "SPLIT_TO_MAP": exp.StrToMap.from_arg_list,
             "STRPOS": lambda args: exp.StrPosition(
                 this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
@@ -285,6 +286,7 @@ class Presto(Dialect):
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),
             exp.ArraySize: rename_func("CARDINALITY"),
+            exp.ArrayUniqueAgg: rename_func("SET_AGG"),
             exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.BitwiseLeftShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.BitwiseNot: lambda self, e: f"BITWISE_NOT({self.sql(e, 'this')})",

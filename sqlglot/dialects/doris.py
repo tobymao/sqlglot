@@ -19,6 +19,7 @@ class Doris(MySQL):
     class Parser(MySQL.Parser):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
+            "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_TRUNC": parse_timestamp_trunc,
             "REGEXP": exp.RegexpLike.from_arg_list,
         }
@@ -47,7 +48,7 @@ class Doris(MySQL):
             exp.JSONExtract: arrow_json_extract_sql,
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
-            exp.SetAgg: rename_func("COLLECT_SET"),
+            exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.TimeStrToDate: rename_func("TO_DATE"),

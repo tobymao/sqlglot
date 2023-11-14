@@ -258,7 +258,6 @@ class Snowflake(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
-            "ARRAY_UNIQUE_AGG": exp.ArrayUniqueAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
                 # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
@@ -520,7 +519,6 @@ class Snowflake(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
-            exp.ArrayUniqueAgg: rename_func("ARRAY_UNIQUE_AGG"),
             exp.SHA: rename_func("SHA1"),
             exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
             exp.StartsWith: rename_func("STARTSWITH"),

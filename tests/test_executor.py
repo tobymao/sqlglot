@@ -777,7 +777,7 @@ class TestExecutor(unittest.TestCase):
                 {"a": 2, "b": 10},
                 {"a": 2, "b": 20},
                 {"a": 3, "b": 10},
-                {"a": 3, "b": None}
+                {"a": 3, "b": None},
             ],
         }
 
@@ -792,7 +792,6 @@ class TestExecutor(unittest.TestCase):
                 result = execute(sql, tables=tables)
                 self.assertEqual(result.columns, columns)
                 self.assertEqual(result.rows, expected)
-
 
     def test_dict_values(self):
         tables = {

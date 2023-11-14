@@ -707,12 +707,14 @@ class TestHive(Validator):
         self.validate_all(
             "COLLECT_SET(x)",
             read={
+                "doris": "COLLECT_SET(x)",
                 "presto": "SET_AGG(x)",
                 "snowflake": "ARRAY_UNIQUE_AGG(x)",
             },
             write={
-                "presto": "SET_AGG(x)",
+                "doris": "COLLECT_SET(x)",
                 "hive": "COLLECT_SET(x)",
+                "presto": "SET_AGG(x)",
                 "snowflake": "ARRAY_UNIQUE_AGG(x)",
                 "spark": "COLLECT_SET(x)",
             },

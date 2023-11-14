@@ -5,6 +5,7 @@ class TestDoris(Validator):
     dialect = "doris"
 
     def test_identity(self):
+        self.validate_identity("COLLECT_SET(x)")
         self.validate_identity("COALECSE(a, b, c, d)")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")

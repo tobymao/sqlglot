@@ -348,7 +348,7 @@ TBLPROPERTIES (
                 "bigquery": "SELECT REGEXP_CONTAINS('John Doe', 'John.*')",
                 "hive": "SELECT 'John Doe' RLIKE 'John.*'",
                 "postgres": "SELECT 'John Doe' ~ 'John.*'",
-                "snowflake": "SELECT REGEXP_LIKE('John Doe', 'John.*')",
+                "snowflake": "SELECT REGEXP_LIKE(COLLATE('John Doe', ''), COLLATE('John.*', ''))",
                 "spark": "SELECT 'John Doe' RLIKE 'John.*'",
             },
         )

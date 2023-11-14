@@ -40,7 +40,7 @@ class TestRedshift(Validator):
             "x ~* 'pat'",
             write={
                 "redshift": "x ~* 'pat'",
-                "snowflake": "REGEXP_LIKE(x, 'pat', 'i')",
+                "snowflake": "REGEXP_LIKE(COLLATE(x, ''), COLLATE('pat', ''), 'i')",
             },
         )
         self.validate_all(

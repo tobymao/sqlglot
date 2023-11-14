@@ -167,14 +167,21 @@ def _datatype_sql(self: Snowflake.Generator, expression: exp.DataType) -> str:
     return self.datatype_sql(expression)
 
 
-def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> str:
-    flag = expression.text("flag")
+def _regexplike_sql(self: Snowflake.Generator, expression: exp.RegexpILike | exp.RegexpLike) -> str:
+    flag = expression.args.get("flag")
 
-    if "i" not in flag:
-        flag += "i"
+    if isinstance(expression, exp.RegexpILike):
+        case_insensitive_flag = exp.Literal.string("i")
+        flag = self.func("CONCAT", case_insensitive_flag, flag) if flag else case_insensitive_flag
 
+    # Arguments with collation specifications are currently not supported, so we
+    # use an empty string as collation, which indicates to use no collation. See:
+    # https://docs.snowflake.com/en/sql-reference/functions/regexp_like
     return self.func(
-        "REGEXP_LIKE", expression.this, expression.expression, exp.Literal.string(flag)
+        "REGEXP_LIKE",
+        self.func("COLLATE", expression.this, "''"),
+        self.func("COLLATE", expression.expression, "''"),
+        flag,
     )
 
 
@@ -511,7 +518,8 @@ class Snowflake(Dialect):
             exp.PercentileDisc: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]
             ),
-            exp.RegexpILike: _regexpilike_sql,
+            exp.RegexpILike: _regexplike_sql,
+            exp.RegexpLike: _regexplike_sql,
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

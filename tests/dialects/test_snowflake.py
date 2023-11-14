@@ -33,7 +33,6 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT HLL(DISTINCT a, b, c)")
         self.validate_identity("$x")  # parameter
         self.validate_identity("a$b")  # valid snowflake identifier
-        self.validate_identity("SELECT REGEXP_LIKE(a, b, c)")
         self.validate_identity("CREATE TABLE foo (bar FLOAT AUTOINCREMENT START 0 INCREMENT 1)")
         self.validate_identity("ALTER TABLE IF EXISTS foo SET TAG a = 'a', b = 'b', c = 'c'")
         self.validate_identity("ALTER TABLE foo UNSET TAG a, b, c")
@@ -48,6 +47,10 @@ class TestSnowflake(Validator):
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
         self.validate_identity(
+            "SELECT REGEXP_LIKE(a, b, c)",
+            "SELECT REGEXP_LIKE(COLLATE(a, ''), COLLATE(b, ''), c)",
+        )
+        self.validate_identity(
             "CREATE TABLE foo (ID INT COMMENT $$some comment$$)",
             "CREATE TABLE foo (ID INT COMMENT 'some comment')",
         )
@@ -60,7 +63,7 @@ class TestSnowflake(Validator):
         )
         self.validate_identity(
             r"SELECT RLIKE(a, $$regular expression with \ characters: \d{2}-\d{3}-\d{4}$$, 'i') FROM log_source",
-            r"SELECT REGEXP_LIKE(a, 'regular expression with \\ characters: \\d{2}-\\d{3}-\\d{4}', 'i') FROM log_source",
+            r"SELECT REGEXP_LIKE(COLLATE(a, ''), COLLATE('regular expression with \\ characters: \\d{2}-\\d{3}-\\d{4}', ''), 'i') FROM log_source",
         )
         self.validate_identity(
             r"SELECT $$a ' \ \t \x21 z $ $$",
@@ -485,7 +488,7 @@ class TestSnowflake(Validator):
             "SELECT RLIKE(a, b)",
             write={
                 "hive": "SELECT a RLIKE b",
-                "snowflake": "SELECT REGEXP_LIKE(a, b)",
+                "snowflake": "SELECT REGEXP_LIKE(COLLATE(a, ''), COLLATE(b, ''))",
                 "spark": "SELECT a RLIKE b",
             },
         )

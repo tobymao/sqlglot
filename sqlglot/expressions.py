@@ -29,7 +29,6 @@ from sqlglot.helper import (
     camel_to_snake_case,
     ensure_collection,
     ensure_list,
-    filter_none,
     seq_get,
     subclasses,
 )
@@ -524,7 +523,8 @@ class Expression(metaclass=_Expression):
                 v._to_s(hide_missing=hide_missing, level=level + 1)
                 if hasattr(v, "_to_s")
                 else str(v)
-                for v in filter_none(ensure_list(vs))
+                for v in ensure_list(vs)
+                if v is not None
             )
             for k, vs in self.args.items()
         }
@@ -5429,7 +5429,8 @@ def _apply_list_builder(
             dialect=dialect,
             **opts,
         )
-        for expression in filter_none(expressions)
+        for expression in expressions
+        if expression is not None
     ]
 
     existing_expressions = inst.args.get(arg)
@@ -5450,7 +5451,7 @@ def _apply_conjunction_builder(
     dialect=None,
     **opts,
 ):
-    expressions = [exp for exp in filter_none(expressions) if exp != ""]
+    expressions = [exp for exp in expressions if exp is not None and exp != ""]
     if not expressions:
         return instance
 
@@ -5499,7 +5500,8 @@ def _combine(
 ) -> Expression:
     conditions = [
         condition(expression, dialect=dialect, copy=copy, **opts)
-        for expression in filter_none(expressions)
+        for expression in expressions
+        if expression is not None
     ]
 
     this, *rest = conditions

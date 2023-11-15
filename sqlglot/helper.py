@@ -466,11 +466,6 @@ def merge_ranges(ranges: t.List[t.Tuple[A, A]]) -> t.List[t.Tuple[A, A]]:
     return merged
 
 
-def filter_none(iterable: t.Iterable) -> t.Iterator:
-    """Returns a generator of values in `iterable` that are not `None`."""
-    return (x for x in iterable if x is not None)
-
-
 def is_iso_date(text: str) -> bool:
     try:
         datetime.date.fromisoformat(text)

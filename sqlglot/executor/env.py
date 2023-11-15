@@ -6,7 +6,7 @@ from functools import wraps
 
 from sqlglot import exp
 from sqlglot.generator import Generator
-from sqlglot.helper import PYTHON_VERSION, filter_none
+from sqlglot.helper import PYTHON_VERSION
 
 
 class reverse_key:
@@ -23,7 +23,7 @@ class reverse_key:
 def filter_nulls(func, empty_null=True):
     @wraps(func)
     def _func(values):
-        filtered = tuple(filter_none(values))
+        filtered = tuple(v for v in values if v is not None)
         if not filtered and empty_null:
             return None
         return func(filtered)
@@ -141,7 +141,7 @@ def interval(this, unit):
 
 @null_if_any("this", "expression")
 def arrayjoin(this, expression, null=None):
-    return expression.join(filter_none((x if x is not None else null for x in this)))
+    return expression.join(x for x in (x if x is not None else null for x in this) if x is not None)
 
 
 ENV = {
@@ -166,7 +166,7 @@ ENV = {
     "BITWISERIGHTSHIFT": null_if_any(lambda this, e: this >> e),
     "BITWISEXOR": null_if_any(lambda this, e: this ^ e),
     "CAST": cast,
-    "COALESCE": lambda *args: next(filter_none(args), None),
+    "COALESCE": lambda *args: next((a for a in args if a is not None), None),
     "CONCAT": null_if_any(lambda *args: "".join(args)),
     "SAFECONCAT": null_if_any(lambda *args: "".join(str(arg) for arg in args)),
     "CONCATWS": null_if_any(lambda this, *args: this.join(args)),

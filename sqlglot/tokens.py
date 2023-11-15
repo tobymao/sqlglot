@@ -374,7 +374,7 @@ class Token:
         col: int = 1,
         start: int = 0,
         end: int = 0,
-        comments: t.List[str] = [],
+        comments: t.Optional[t.List[str]] = None,
     ) -> None:
         """Token initializer.
 
@@ -393,7 +393,7 @@ class Token:
         self.col = col
         self.start = start
         self.end = end
-        self.comments = comments
+        self.comments = [] if comments is None else comments
 
     def __repr__(self) -> str:
         attributes = ", ".join(f"{k}: {getattr(self, k)}" for k in self.__slots__)

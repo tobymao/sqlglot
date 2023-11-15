@@ -542,12 +542,7 @@ class DataFrame:
         """
         columns = self._ensure_and_normalize_cols(cols)
         pre_ordered_col_indexes = [
-            x
-            for x in [
-                i if isinstance(col.expression, exp.Ordered) else None
-                for i, col in enumerate(columns)
-            ]
-            if x is not None
+            i for i, col in enumerate(columns) if isinstance(col.expression, exp.Ordered)
         ]
         if ascending is None:
             ascending = [True] * len(columns)

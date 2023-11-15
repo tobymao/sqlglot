@@ -17,7 +17,7 @@ from sqlglot.dataframe.sql.readwriter import DataFrameWriter
 from sqlglot.dataframe.sql.transforms import replace_id_value
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.dataframe.sql.window import Window
-from sqlglot.helper import ensure_list, filter_none, object_to_dict, seq_get
+from sqlglot.helper import ensure_list, object_to_dict, seq_get
 from sqlglot.optimizer import optimize as optimize_func
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 
@@ -542,11 +542,7 @@ class DataFrame:
         """
         columns = self._ensure_and_normalize_cols(cols)
         pre_ordered_col_indexes = [
-            x
-            for x in filter_none(
-                i if isinstance(col.expression, exp.Ordered) else None
-                for i, col in enumerate(columns)
-            )
+            i for i, col in enumerate(columns) if isinstance(col.expression, exp.Ordered)
         ]
         if ascending is None:
             ascending = [True] * len(columns)

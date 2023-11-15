@@ -139,6 +139,11 @@ def interval(this, unit):
     return datetime.timedelta(**{unit: float(this)})
 
 
+@null_if_any("this", "expression")
+def arrayjoin(this, expression, null=None):
+    return expression.join(filter(None, (x or null for x in this)))
+
+
 ENV = {
     "exp": exp,
     # aggs
@@ -153,7 +158,7 @@ ENV = {
     "ABS": null_if_any(lambda this: abs(this)),
     "ADD": null_if_any(lambda e, this: e + this),
     "ARRAYANY": null_if_any(lambda arr, func: any(func(e) for e in arr)),
-    "ARRAYJOIN": null_if_any(lambda arr, sep: sep.join(arr)),
+    "ARRAYJOIN": arrayjoin,
     "BETWEEN": null_if_any(lambda this, low, high: low <= this and this <= high),
     "BITWISEAND": null_if_any(lambda this, e: this & e),
     "BITWISELEFTSHIFT": null_if_any(lambda this, e: this << e),

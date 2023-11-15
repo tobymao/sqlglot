@@ -7,7 +7,7 @@ from functools import reduce
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
-from sqlglot.helper import apply_index_offset, csv, seq_get
+from sqlglot.helper import apply_index_offset, csv, filter_none, seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import Tokenizer, TokenType
 
@@ -2763,7 +2763,7 @@ class Generator:
         return f"{self.normalize_func(name)}{prefix}{self.format_args(*args)}{suffix}"
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
-        arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)
+        arg_sqls = tuple(self.sql(arg) for arg in filter_none(args))
         if self.pretty and self.text_width(arg_sqls) > self.max_text_width:
             return self.indent("\n" + f",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
         return ", ".join(arg_sqls)

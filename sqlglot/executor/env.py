@@ -153,6 +153,7 @@ ENV = {
     "ABS": null_if_any(lambda this: abs(this)),
     "ADD": null_if_any(lambda e, this: e + this),
     "ARRAYANY": null_if_any(lambda arr, func: any(func(e) for e in arr)),
+    "ARRAYJOIN": null_if_any(lambda arr,sep: sep.join(arr)),
     "BETWEEN": null_if_any(lambda this, low, high: low <= this and this <= high),
     "BITWISEAND": null_if_any(lambda this, e: this & e),
     "BITWISELEFTSHIFT": null_if_any(lambda this, e: this << e),
@@ -204,4 +205,5 @@ ENV = {
     "CURRENTDATE": datetime.date.today,
     "STRFTIME": null_if_any(lambda fmt, arg: datetime.datetime.fromisoformat(arg).strftime(fmt)),
     "TRIM": null_if_any(lambda this, e=None: this.strip(e)),
+    "STRUCT": lambda *args: {args[x]:args[x+1] for x in range(0, len(args), 2) if (args[x+1] is not None and args[x] is not None)}
 }

@@ -608,6 +608,7 @@ class TestMySQL(Validator):
                 "mysql": "SELECT * FROM test LIMIT 1 OFFSET 1",
                 "postgres": "SELECT * FROM test LIMIT 0 + 1 OFFSET 0 + 1",
                 "presto": "SELECT * FROM test OFFSET 1 LIMIT 1",
+                "snowflake": "SELECT * FROM test LIMIT 1 OFFSET 1",
                 "trino": "SELECT * FROM test OFFSET 1 LIMIT 1",
             },
         )

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v19.5.1] - 2023-11-16
+### :bug: Bug Fixes
+- [`932b610`](https://github.com/tobymao/sqlglot/commit/932b610bae7996b488a0406db76f308ddbfd5e44) - interval simplification with non literal *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v19.5.0] - 2023-11-16
 ### :boom: BREAKING CHANGES
 - due to [`96d514c`](https://github.com/tobymao/sqlglot/commit/96d514c52e9f467d0fac196cee3c7ba3441ace5b) - get rid of SetAgg to use ArrayUniqueAgg for consistency *(PR [#2566](https://github.com/tobymao/sqlglot/pull/2566) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2028,3 +2033,4 @@ Changelog
 [v19.3.1]: https://github.com/tobymao/sqlglot/compare/v19.3.0...v19.3.1
 [v19.4.0]: https://github.com/tobymao/sqlglot/compare/v19.3.1...v19.4.0
 [v19.5.0]: https://github.com/tobymao/sqlglot/compare/v19.4.0...v19.5.0
+[v19.5.1]: https://github.com/tobymao/sqlglot/compare/v19.5.0...v19.5.1

@@ -988,12 +988,11 @@ def _is_date_literal(expression: exp.Expression) -> bool:
 
 
 def extract_interval(expression):
-    n = int(expression.name)
-    unit = expression.text("unit").lower()
-
     try:
+        n = int(expression.name)
+        unit = expression.text("unit").lower()
         return interval(unit, n)
-    except (UnsupportedUnit, ModuleNotFoundError):
+    except (UnsupportedUnit, ModuleNotFoundError, ValueError):
         return None
 
 

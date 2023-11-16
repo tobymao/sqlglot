@@ -417,6 +417,9 @@ FALSE;
 1 IS NOT NULL;
 TRUE;
 
+date '1998-12-01' - interval x day;
+CAST('1998-12-01' AS DATE) - INTERVAL x day;
+
 date '1998-12-01' - interval '90' day;
 CAST('1998-09-02' AS DATE);
 

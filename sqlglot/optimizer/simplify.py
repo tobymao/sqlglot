@@ -5,7 +5,6 @@ import typing as t
 from collections import deque
 from decimal import Decimal
 
-import sqlglot
 from sqlglot import exp
 from sqlglot.helper import first, is_iterable, merge_ranges, while_changing
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
@@ -374,47 +373,88 @@ def absorb_and_eliminate(expression, root=True):
     return expression
 
 
-def propagate_constants(expression, root=True):
+# Type alias for a map of columns to their constant value
+ConstantMapping = t.Dict[exp.Column, t.Tuple[int, exp.Expression]]
+
+
+def _get_constant_mapping(ops: t.Iterable[exp.Expression]) -> ConstantMapping:
     """
-    Propagate constants for conjunctions in DNF:
+    Extract a constant mapping from `ops`
+    """
+    constant_mapping: ConstantMapping = {}
+
+    for op in ops:
+        if isinstance(op, exp.EQ):
+            l, r = op.left, op.right
+
+            # TODO: create a helper that can be used to detect nested literal expressions such
+            # as CAST(123456 AS BIGINT), since we usually want to treat those as literals too
+            if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
+                pass
+            elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):
+                l, r = r, l
+            else:
+                continue
+
+            constant_mapping[l] = (id(l), r)
+
+    return constant_mapping
+
+
+def _replace_column(column: exp.Column, constant_mapping: ConstantMapping) -> None:
+    """
+    Potentially replace `column` with a constant from `constant_mapping`
+    """
+    parent = column.parent
+    column_id, constant = constant_mapping.get(column) or (None, None)
+    if (
+        column_id is not None
+        and constant is not None
+        and id(column) != column_id
+        and not (isinstance(parent, exp.Is) and isinstance(parent.expression, exp.Null))
+    ):
+        column.replace(constant.copy())
+
+
+def propagate_constants(expression: exp.Expression, root: bool = True) -> exp.Expression:
+    """
+    Propagate constants for conjunctions:
 
     SELECT * FROM t WHERE a = b AND b = 5 becomes
     SELECT * FROM t WHERE a = 5 AND b = 5
 
     Reference: https://www.sqlite.org/optoverview.html
+
+    This also propagates constants into projections:
+
+    SELECT a FROM x WHERE a = 1 becomes
+    SELECT 1 FROM x WHERE a = 1
     """
+    if isinstance(expression, exp.Select):
+        where = expression.args.get("where")
+        if not where:
+            return expression
 
-    if (
-        isinstance(expression, exp.And)
-        and (root or not expression.same_parent)
-        and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
-    ):
-        constant_mapping = {}
-        for expr, *_ in walk_in_scope(expression, prune=lambda node, *_: isinstance(node, exp.If)):
-            if isinstance(expr, exp.EQ):
-                l, r = expr.left, expr.right
-
-                # TODO: create a helper that can be used to detect nested literal expressions such
-                # as CAST(123456 AS BIGINT), since we usually want to treat those as literals too
-                if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
-                    pass
-                elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):
-                    l, r = r, l
-                else:
-                    continue
-
-                constant_mapping[l] = (id(l), r)
+        conjunction = where.this
+        constant_mapping = _get_constant_mapping(
+            conjunction.flatten() if isinstance(conjunction, exp.And) else [conjunction]
+        )
 
         if constant_mapping:
-            for column in find_all_in_scope(expression, exp.Column):
-                parent = column.parent
-                column_id, constant = constant_mapping.get(column) or (None, None)
-                if (
-                    column_id is not None
-                    and id(column) != column_id
-                    and not (isinstance(parent, exp.Is) and isinstance(parent.expression, exp.Null))
-                ):
-                    column.replace(constant.copy())
+            for expr in expression.expressions:
+                for column in find_all_in_scope(expr, exp.Column):
+                    _replace_column(column, constant_mapping)
+
+    elif isinstance(expression, exp.And) and (root or not expression.same_parent):
+        constant_mapping = _get_constant_mapping(expression.flatten())
+
+        if constant_mapping:
+            # Not certain this is a safe transformation inside disjunctions... so lets just stay out for now
+            for node, *_ in walk_in_scope(
+                expression, prune=lambda n, *_: isinstance(n, (exp.Or, exp.Xor))
+            ):
+                if isinstance(node, exp.Column):
+                    _replace_column(node, constant_mapping)
 
     return expression
 

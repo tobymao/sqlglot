@@ -249,6 +249,7 @@ class Parser(metaclass=_Parser):
         TokenType.FUNCTION,
         TokenType.INDEX,
         TokenType.PROCEDURE,
+        TokenType.FOREIGN_KEY,
         *DB_CREATABLES,
     }
 

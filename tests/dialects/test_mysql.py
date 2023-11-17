@@ -610,6 +610,7 @@ class TestMySQL(Validator):
                 "presto": "SELECT * FROM test OFFSET 1 LIMIT 1",
                 "snowflake": "SELECT * FROM test LIMIT 1 OFFSET 1",
                 "trino": "SELECT * FROM test OFFSET 1 LIMIT 1",
+                "bigquery": "SELECT * FROM test LIMIT 1 OFFSET 1",
             },
         )
         self.validate_all(

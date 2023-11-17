@@ -450,6 +450,7 @@ class BigQuery(Dialect):
         NVL2_SUPPORTED = False
         UNNEST_WITH_ORDINALITY = False
         COLLATE_IS_FUNC = True
+        LIMIT_ONLY_LITERALS = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

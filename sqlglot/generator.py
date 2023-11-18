@@ -2648,7 +2648,7 @@ class Generator:
         return self.binary(expression, "=")
 
     def propertyeq_sql(self, expression: exp.PropertyEQ) -> str:
-        return self.binary(expression, "=")
+        return self.binary(expression, ":=")
 
     def escape_sql(self, expression: exp.Escape) -> str:
         return self.binary(expression, "ESCAPE")

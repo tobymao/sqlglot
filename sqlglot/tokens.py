@@ -526,6 +526,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "<=": TokenType.LTE,
         "<>": TokenType.NEQ,
         "!=": TokenType.NEQ,
+        ":=": TokenType.COLON_EQ,
         "<=>": TokenType.NULLSAFE_EQ,
         "->": TokenType.ARROW,
         "->>": TokenType.DARROW,

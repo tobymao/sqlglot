@@ -117,7 +117,6 @@ class DuckDB(Dialect):
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            ":=": TokenType.COLON_EQ,
             "//": TokenType.DIV,
             "ATTACH": TokenType.COMMAND,
             "BINARY": TokenType.VARBINARY,
@@ -355,9 +354,6 @@ class DuckDB(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
-
-        def propertyeq_sql(self, expression: exp.PropertyEQ) -> str:
-            return self.binary(expression, ":=")
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier: t.Optional[int] = None

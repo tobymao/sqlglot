@@ -10,6 +10,12 @@ SELECT CAST(1 AS VARCHAR) AS "a" FROM "w" AS "w";
 SELECT CAST(1 + 3.2 AS DOUBLE) AS a FROM w AS w;
 SELECT 1 + 3.2 AS "a" FROM "w" AS "w";
 
+SELECT '1' + 1 AS "col";
+SELECT '1' + 1 AS "col";
+
+SELECT '1' + '1' AS "col";
+SELECT CONCAT('1', '1') AS "col";
+
 SELECT CAST('2022-01-01' AS DATE) + INTERVAL '1' day;
 SELECT CAST('2022-01-01' AS DATE) + INTERVAL '1' day AS "_col_0";
 

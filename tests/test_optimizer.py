@@ -584,6 +584,11 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.right.this.left.type.this, exp.DataType.Type.INT)
         self.assertEqual(expression.right.this.right.type.this, exp.DataType.Type.INT)
 
+        for numeric_type in ("BIGINT", "DOUBLE", "INT"):
+            query = f"SELECT '1' + CAST(x AS {numeric_type})"
+            expression = annotate_types(parse_one(query)).expressions[0]
+            self.assertEqual(expression.type, exp.DataType.build(numeric_type))
+
     def test_typeddiv_annotation(self):
         expressions = annotate_types(
             parse_one("SELECT 2 / 3, 2 / 3.0", dialect="presto")

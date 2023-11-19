@@ -299,6 +299,16 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         ),
         **swap_all(
             {
+                # text + numeric will yield the numeric type to match most dialects' semantics
+                (text, numeric): lambda l, r: t.cast(
+                    exp.DataType.Type, l.type if l.type in exp.DataType.NUMERIC_TYPES else r.type
+                )
+                for text in exp.DataType.TEXT_TYPES
+                for numeric in exp.DataType.NUMERIC_TYPES
+            }
+        ),
+        **swap_all(
+            {
                 (exp.DataType.Type.DATE, exp.DataType.Type.INTERVAL): lambda l, r: _coerce_date(
                     l, r.args.get("unit")
                 ),

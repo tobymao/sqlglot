@@ -1045,6 +1045,43 @@ class DDL(Expression):
         return []
 
 
+class DML(Expression):
+    def returning(
+        self,
+        expression: ExpOrStr,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> DML:
+        """
+        Set the RETURNING expression. Not supported by all dialects.
+
+        Example:
+            >>> delete("tbl").returning("*", dialect="postgres").sql()
+            'DELETE FROM tbl RETURNING *'
+
+        Args:
+            expression: the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            Delete: the modified expression.
+        """
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="returning",
+            prefix="RETURNING",
+            dialect=dialect,
+            copy=copy,
+            into=Returning,
+            **opts,
+        )
+
+
 class Create(DDL):
     arg_types = {
         "with": False,
@@ -1435,7 +1472,7 @@ class Constraint(Expression):
     arg_types = {"this": True, "expressions": True}
 
 
-class Delete(Expression):
+class Delete(DML):
     arg_types = {
         "with": False,
         "this": False,
@@ -1515,41 +1552,6 @@ class Delete(Expression):
             into=Where,
             dialect=dialect,
             copy=copy,
-            **opts,
-        )
-
-    def returning(
-        self,
-        expression: ExpOrStr,
-        dialect: DialectType = None,
-        copy: bool = True,
-        **opts,
-    ) -> Delete:
-        """
-        Set the RETURNING expression. Not supported by all dialects.
-
-        Example:
-            >>> delete("tbl").returning("*", dialect="postgres").sql()
-            'DELETE FROM tbl RETURNING *'
-
-        Args:
-            expression: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
-            dialect: the dialect used to parse the input expressions.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            Delete: the modified expression.
-        """
-        return _apply_builder(
-            expression=expression,
-            instance=self,
-            arg="returning",
-            prefix="RETURNING",
-            dialect=dialect,
-            copy=copy,
-            into=Returning,
             **opts,
         )
 
@@ -1670,7 +1672,7 @@ class Index(Expression):
     }
 
 
-class Insert(DDL):
+class Insert(DDL, DML):
     arg_types = {
         "with": False,
         "this": True,
@@ -5739,7 +5741,9 @@ def delete(
     if where:
         delete_expr = delete_expr.where(where, dialect=dialect, copy=False, **opts)
     if returning:
-        delete_expr = delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
+        delete_expr = t.cast(
+            Delete, delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
+        )
     return delete_expr
 
 
@@ -5748,6 +5752,7 @@ def insert(
     into: ExpOrStr,
     columns: t.Optional[t.Sequence[ExpOrStr]] = None,
     overwrite: t.Optional[bool] = None,
+    returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
     copy: bool = True,
     **opts,
@@ -5764,6 +5769,7 @@ def insert(
         into: the tbl to insert data to.
         columns: optionally the table's column names.
         overwrite: whether to INSERT OVERWRITE or not.
+        returning: sql conditional parsed into a RETURNING statement
         dialect: the dialect used to parse the input expressions.
         copy: whether or not to copy the expression.
         **opts: other options to use to parse the input expressions.
@@ -5785,7 +5791,12 @@ def insert(
             **opts,
         )
 
-    return Insert(this=this, expression=expr, overwrite=overwrite)
+    insert = Insert(this=this, expression=expr, overwrite=overwrite)
+
+    if returning:
+        insert = t.cast(Insert, insert.returning(returning, dialect=dialect, copy=False, **opts))
+
+    return insert
 
 
 def condition(

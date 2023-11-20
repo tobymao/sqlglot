@@ -619,6 +619,10 @@ class TestBuild(unittest.TestCase):
                 "INSERT INTO tbl SELECT * FROM tbl2",
             ),
             (
+                lambda: exp.insert("SELECT * FROM tbl2", "tbl", returning="*"),
+                "INSERT INTO tbl SELECT * FROM tbl2 RETURNING *",
+            ),
+            (
                 lambda: exp.insert("SELECT * FROM tbl2", "tbl", overwrite=True),
                 "INSERT OVERWRITE TABLE tbl SELECT * FROM tbl2",
             ),

@@ -1,6 +1,18 @@
 Changelog
 =========
 
+## [v19.6.0] - 2023-11-20
+### :bug: Bug Fixes
+- [`7647227`](https://github.com/tobymao/sqlglot/commit/76472275018a069abc7079bc52cac94fb8d2d348) - **oracle**: parse DROP CONSTRAINT into DROP instead of Command *(PR [#2573](https://github.com/tobymao/sqlglot/pull/2573) by [@HassanShafiq123](https://github.com/HassanShafiq123))*
+  - :arrow_lower_right: *fixes issue [#2572](undefined) opened by [@HassanShafiq123](https://github.com/HassanShafiq123)*
+- [`f5899a1`](https://github.com/tobymao/sqlglot/commit/f5899a1a0da096e012b7abd0627a372e4202a612) - **bigquery**: bigquery only allows literals in LIMIT *(PR [#2574](https://github.com/tobymao/sqlglot/pull/2574) by [@treysp](https://github.com/treysp))*
+- [`757c433`](https://github.com/tobymao/sqlglot/commit/757c433944d6afd942b74edc84afb07b140e1a1c) - treat := as PropertyEQ in base sqlglot classes *(PR [#2576](https://github.com/tobymao/sqlglot/pull/2576) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2575](undefined) opened by [@j-bennet](https://github.com/j-bennet)*
+
+### :wrench: Chores
+- [`1e16001`](https://github.com/tobymao/sqlglot/commit/1e160012aecfb754294e2d6e207610741bdd264a) - cleanup tests *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v19.5.1] - 2023-11-16
 ### :bug: Bug Fixes
 - [`932b610`](https://github.com/tobymao/sqlglot/commit/932b610bae7996b488a0406db76f308ddbfd5e44) - interval simplification with non literal *(commit by [@tobymao](https://github.com/tobymao))*
@@ -2034,3 +2046,4 @@ Changelog
 [v19.4.0]: https://github.com/tobymao/sqlglot/compare/v19.3.1...v19.4.0
 [v19.5.0]: https://github.com/tobymao/sqlglot/compare/v19.4.0...v19.5.0
 [v19.5.1]: https://github.com/tobymao/sqlglot/compare/v19.5.0...v19.5.1
+[v19.6.0]: https://github.com/tobymao/sqlglot/compare/v19.5.1...v19.6.0

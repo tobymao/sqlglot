@@ -13,6 +13,7 @@ class TestTokens(unittest.TestCase):
             (" group bys ", 2),
             ("group by)", 2),
             ("group bys)", 3),
+            ("group \r", 1),
         ):
             tokens = Tokenizer().tokenize(string)
             self.assertTrue("GROUP" in tokens[0].text.upper())

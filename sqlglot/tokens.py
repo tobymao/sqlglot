@@ -1016,7 +1016,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     skip = True
             else:
                 char = ""
-                chars = " "
+                break
 
         if word:
             if self._scan_string(word):

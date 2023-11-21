@@ -6,6 +6,10 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_tsql(self):
+        self.validate_identity("SELECT TestSpecialChar.Test# FROM TestSpecialChar")
+        self.validate_identity("SELECT TestSpecialChar.Test@ FROM TestSpecialChar")
+        self.validate_identity("SELECT TestSpecialChar.Test$ FROM TestSpecialChar")
+        self.validate_identity("SELECT TestSpecialChar.Test_ FROM TestSpecialChar")
         self.validate_identity("SELECT TOP (2 + 1) 1")
         self.validate_identity("SELECT * FROM t WHERE NOT c", "SELECT * FROM t WHERE NOT c <> 0")
         self.validate_identity("1 AND true", "1 <> 0 AND (1 = 1)")

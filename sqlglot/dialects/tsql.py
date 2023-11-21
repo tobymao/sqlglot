@@ -354,6 +354,7 @@ class TSQL(Dialect):
         IDENTIFIERS = ['"', ("[", "]")]
         QUOTES = ["'", '"']
         HEX_STRINGS = [("0x", ""), ("0X", "")]
+        VAR_SINGLE_TOKENS = {"@", "$", "#"}
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

@@ -146,7 +146,7 @@ class TestDataframeColumn(unittest.TestCase):
         self.assertEqual("cola BETWEEN 1 AND 3", F.col("cola").between(1, 3).sql())
         self.assertEqual("cola BETWEEN 10.1 AND 12.1", F.col("cola").between(10.1, 12.1).sql())
         self.assertEqual(
-            "cola BETWEEN TO_DATE('2022-01-01') AND TO_DATE('2022-03-01')",
+            "cola BETWEEN CAST('2022-01-01' AS DATE) AND CAST('2022-03-01' AS DATE)",
             F.col("cola").between(datetime.date(2022, 1, 1), datetime.date(2022, 3, 1)).sql(),
         )
         self.assertEqual(

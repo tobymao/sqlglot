@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     bool_xor_sql,
     date_trunc_to_time,
+    datestrtodate_sql,
     encode_decode_sql,
     format_time_lambda,
     if_sql,
@@ -301,7 +302,7 @@ class Presto(Dialect):
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
             ),
-            exp.DateStrToDate: lambda self, e: f"CAST(DATE_PARSE({self.sql(e, 'this')}, {Presto.DATE_FORMAT}) AS DATE)",
+            exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
             exp.DateSub: lambda self, e: self.func(
                 "DATE_ADD",

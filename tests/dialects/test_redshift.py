@@ -77,6 +77,18 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATEADD('hour',0,CAST('2020-02-02 01:03:05.124' AS TIMESTAMP))",
+            write={
+                "redshift": "SELECT DATEADD(hour, 0, CAST('2020-02-02 01:03:05.124' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF('second', '2020-02-02 01:03:05.124','2020-02-02 00:00:00.000')",
+            write={
+                "redshift": "SELECT DATEDIFF(second, CAST('2020-02-02 01:03:05.124' AS TIMESTAMP), CAST('2020-02-02 00:00:00.000' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
             "SELECT STRTOL('abc', 16)",
             read={
                 "trino": "SELECT FROM_BASE('abc', 16)",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     approx_count_distinct_sql,
@@ -294,6 +294,9 @@ class DuckDB(Dialect):
             exp.ParseJSON: rename_func("JSON"),
             exp.PercentileCont: rename_func("QUANTILE_CONT"),
             exp.PercentileDisc: rename_func("QUANTILE_DISC"),
+            # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
+            # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
+            exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
             exp.Properties: no_properties_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpReplace: lambda self, e: self.func(

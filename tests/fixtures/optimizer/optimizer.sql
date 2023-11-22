@@ -548,6 +548,23 @@ FROM (
   FROM "sc"."tb" AS "tb"
 ) AS "_q_0" PIVOT(SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
 
+# title: pivoted source with explicit selections where one of them is excluded & selected at the same time
+# note: we need to respect the exclude when selecting * from pivoted source and not include the computed column twice
+# execute: false
+SELECT * EXCEPT (x), CAST(x AS TEXT) AS x FROM (SELECT a, b, c FROM sc.tb) PIVOT (SUM(c) FOR b IN ('x','y','z'));
+SELECT
+  "_q_1"."a" AS "a",
+  "_q_1"."y" AS "y",
+  "_q_1"."z" AS "z",
+  CAST("_q_1"."x" AS TEXT) AS "x"
+FROM (
+  SELECT
+    "tb"."a" AS "a",
+    "tb"."b" AS "b",
+    "tb"."c" AS "c"
+  FROM "sc"."tb" AS "tb"
+) AS "_q_0" PIVOT(SUM("_q_0"."c") FOR "_q_0"."b" IN ('x', 'y', 'z')) AS "_q_1";
+
 # title: pivoted source with implicit selections
 # execute: false
 SELECT * FROM (SELECT * FROM u) PIVOT (SUM(f) FOR h IN ('x', 'y'));

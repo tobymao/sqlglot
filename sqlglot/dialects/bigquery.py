@@ -184,6 +184,22 @@ def _array_contains_sql(self: BigQuery.Generator, expression: exp.ArrayContains)
     )
 
 
+def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> str:
+    expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
+    return date_add_interval_sql("DATE", "ADD")(self, expression)
+
+
+def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
+    expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
+    expression.expression.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
+
+    this_sql = self.sql(expression, "this")
+    expression_sql = self.sql(expression, "expression")
+    unit_sql = self.sql(expression.args.get("unit") or "DAY")
+
+    return f"DATE_DIFF({this_sql}, {expression_sql}, {unit_sql})"
+
+
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -521,7 +537,8 @@ class BigQuery(Dialect):
             exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
-            exp.TsOrDsAdd: date_add_interval_sql("DATE", "ADD"),
+            exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.Unhex: rename_func("FROM_HEX"),
             exp.Values: _derived_table_values_to_unnest,

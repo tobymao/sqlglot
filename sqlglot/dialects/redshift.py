@@ -14,25 +14,30 @@ from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
+DATE_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.TsOrDsAdd, exp.TsOrDsDiff]
+
 
 def _json_sql(self: Redshift.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar) -> str:
     return f'{self.sql(expression, "this")}."{expression.expression.name}"'
 
 
-def _parse_date_add(args: t.List) -> exp.DateAdd:
-    return exp.DateAdd(
-        this=exp.TsOrDsToDate(this=seq_get(args, 2)),
-        expression=seq_get(args, 1),
-        unit=seq_get(args, 0),
-    )
+def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
+    def _parse_delta(args: t.List) -> E:
+        return expr_type(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
+
+    return _parse_delta
 
 
-def _parse_datediff(args: t.List) -> exp.DateDiff:
-    return exp.DateDiff(
-        this=exp.TsOrDsToDate(this=seq_get(args, 2)),
-        expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
-        unit=seq_get(args, 0),
-    )
+def _date_delta_sql(name: str) -> t.Callable[[Redshift.Generator, DATE_DELTA], str]:
+    def _delta_sql(self: Redshift.Generator, expression: DATE_DELTA) -> str:
+        return self.func(
+            name, exp.var(expression.text("unit") or "day"), expression.expression, expression.this
+        )
+
+    return _delta_sql
 
 
 class Redshift(Postgres):
@@ -52,15 +57,13 @@ class Redshift(Postgres):
     class Parser(Postgres.Parser):
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
-            "ADD_MONTHS": lambda args: exp.DateAdd(
-                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-                expression=seq_get(args, 1),
-                unit=exp.var("month"),
+            "ADD_MONTHS": lambda args: exp.TsOrDsAdd(
+                this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.var("month")
             ),
-            "DATEADD": _parse_date_add,
-            "DATE_ADD": _parse_date_add,
-            "DATEDIFF": _parse_datediff,
-            "DATE_DIFF": _parse_datediff,
+            "DATEADD": _parse_date_delta(exp.TsOrDsAdd),
+            "DATE_ADD": _parse_date_delta(exp.TsOrDsAdd),
+            "DATEDIFF": _parse_date_delta(exp.TsOrDsDiff),
+            "DATE_DIFF": _parse_date_delta(exp.TsOrDsDiff),
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
         }
@@ -169,12 +172,8 @@ class Redshift(Postgres):
             exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
             exp.CurrentTimestamp: lambda self, e: "SYSDATE",
-            exp.DateAdd: lambda self, e: self.func(
-                "DATEADD", exp.var(e.text("unit") or "day"), e.expression, e.this
-            ),
-            exp.DateDiff: lambda self, e: self.func(
-                "DATEDIFF", exp.var(e.text("unit") or "day"), e.expression, e.this
-            ),
+            exp.DateAdd: _date_delta_sql("DATEADD"),
+            exp.DateDiff: _date_delta_sql("DATEDIFF"),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.FromBase: rename_func("STRTOL"),
@@ -188,6 +187,8 @@ class Redshift(Postgres):
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.TsOrDsAdd: _date_delta_sql("DATEADD"),
+            exp.TsOrDsDiff: _date_delta_sql("DATEDIFF"),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("redshift"),
         }
 

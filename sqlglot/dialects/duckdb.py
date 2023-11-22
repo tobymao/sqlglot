@@ -325,6 +325,12 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsDiff: lambda self, e: self.func(
+                "DATE_DIFF",
+                f"'{e.args.get('unit') or 'day'}'",
+                exp.cast(e.expression, "DATE"),
+                exp.cast(e.this, "DATE"),
+            ),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("duckdb"),
             exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),

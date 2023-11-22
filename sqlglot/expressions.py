@@ -5169,6 +5169,10 @@ class TsOrDsAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
+class TsOrDsDiff(Func, TimeUnit):
+    arg_types = {"this": True, "expression": True, "unit": False}
+
+
 class TsOrDsToDateStr(Func):
     pass
 

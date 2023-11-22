@@ -95,18 +95,21 @@ def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) 
     return exp.cast(exp.cast(expression.this, "TIMESTAMP", copy=True), "DATE").sql(dialect="presto")
 
 
-def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
-    this = expression.this
+def _ts_or_ds_delta_sql(
+    name: str,
+) -> t.Callable[[Presto.Generator, exp.TsOrDsAdd | exp.TsOrDsDiff], str]:
+    def _delta_sql(self: Presto.Generator, expression: exp.TsOrDsAdd | exp.TsOrDsDiff) -> str:
+        this = expression.this
+        expr = expression.expression
 
-    if not isinstance(this, exp.CurrentDate):
-        this = exp.cast(exp.cast(expression.this, "TIMESTAMP", copy=True), "DATE")
+        if not isinstance(this, exp.CurrentDate):
+            this = exp.cast(exp.cast(this, "TIMESTAMP", copy=True), "DATE")
+            if isinstance(expression, exp.TsOrDsDiff):
+                expr = exp.cast(exp.cast(expr, "TIMESTAMP", copy=True), "DATE")
 
-    return self.func(
-        "DATE_ADD",
-        exp.Literal.string(expression.text("unit") or "day"),
-        expression.expression,
-        this,
-    )
+        return self.func(name, exp.Literal.string(expression.text("unit") or "day"), expr, this)
+
+    return _delta_sql
 
 
 def _approx_percentile(args: t.List) -> exp.Expression:
@@ -364,7 +367,8 @@ class Presto(Dialect):
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),
             exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
-            exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsAdd: _ts_or_ds_delta_sql("DATE_ADD"),
+            exp.TsOrDsDiff: _ts_or_ds_delta_sql("DATE_DIFF"),
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",

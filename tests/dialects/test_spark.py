@@ -443,7 +443,7 @@ TBLPROPERTIES (
             "SELECT DATE_ADD(my_date_column, 1)",
             write={
                 "spark": "SELECT DATE_ADD(my_date_column, 1)",
-                "bigquery": "SELECT DATE_ADD(my_date_column, INTERVAL 1 DAY)",
+                "bigquery": "SELECT DATE_ADD(CAST(my_date_column AS DATETIME), INTERVAL 1 DAY)",
             },
         )
         self.validate_all(

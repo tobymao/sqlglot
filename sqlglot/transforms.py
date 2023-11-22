@@ -451,10 +451,8 @@ def ensure_bools(expression: exp.Expression) -> exp.Expression:
 
 def unqualify_columns(expression: exp.Expression) -> exp.Expression:
     for column in expression.find_all(exp.Column):
-        for part in ("table", "db", "catalog"):
-            arg = column.args.get(part)
-            if arg:
-                arg.pop()
+        for part in column.parts[:-1]:
+            part.pop()
 
     return expression
 

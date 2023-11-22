@@ -449,6 +449,18 @@ def ensure_bools(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def unqualify_columns(expression: exp.Expression) -> exp.Expression:
+    for column in expression.find_all(exp.Column):
+        if column.table:
+            column.args["table"].pop()
+        if column.db:
+            column.args["db"].pop()
+        if column.catalog:
+            column.args["catalog"].pop()
+
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

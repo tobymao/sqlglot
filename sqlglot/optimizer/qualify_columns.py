@@ -383,15 +383,18 @@ def _expand_stars(
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
 
             if columns and "*" not in columns:
+                table_id = id(table)
+                columns_to_exclude = except_columns.get(table_id) or set()
+
                 if pivot and has_pivoted_source and pivot_columns and pivot_output_columns:
                     implicit_columns = [col for col in columns if col not in pivot_columns]
                     new_selections.extend(
                         exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
                         for name in implicit_columns + pivot_output_columns
+                        if name not in columns_to_exclude
                     )
                     continue
 
-                table_id = id(table)
                 for name in columns:
                     if name in using_column_tables and table in using_column_tables[name]:
                         if name in coalesced_columns:
@@ -408,7 +411,7 @@ def _expand_stars(
                                 copy=False,
                             )
                         )
-                    elif name not in except_columns.get(table_id, set()):
+                    elif name not in columns_to_exclude:
                         alias_ = replace_columns.get(table_id, {}).get(name, name)
                         column = exp.column(name, table=table)
                         new_selections.append(

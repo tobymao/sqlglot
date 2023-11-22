@@ -103,9 +103,9 @@ def _ts_or_ds_delta_sql(
         expr = expression.expression
 
         if not isinstance(this, exp.CurrentDate):
-            this = exp.cast(exp.cast(this, "TIMESTAMP", copy=True), "DATE")
+            this = exp.cast(exp.cast(this, "TIMESTAMP"), "DATE")
             if isinstance(expression, exp.TsOrDsDiff):
-                expr = exp.cast(exp.cast(expr, "TIMESTAMP", copy=True), "DATE")
+                expr = exp.cast(exp.cast(expr, "TIMESTAMP"), "DATE")
 
         return self.func(name, exp.Literal.string(expression.text("unit") or "day"), expr, this)
 

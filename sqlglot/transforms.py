@@ -449,6 +449,15 @@ def ensure_bools(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def unqualify_columns(expression: exp.Expression) -> exp.Expression:
+    for column in expression.find_all(exp.Column):
+        # We only wanna pop off the table, db, catalog args
+        for part in column.parts[:-1]:
+            part.pop()
+
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

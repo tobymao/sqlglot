@@ -27,8 +27,8 @@ def _json_sql(self: Redshift.Generator, expression: exp.JSONExtract | exp.JSONEx
 def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     def _parse_delta(args: t.List) -> E:
         expr = expr_type(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
-        if isinstance(expr_type, exp.TsOrDsAdd):
-            expr.set("return_type", "TIMESTAMP")
+        if expr_type is exp.TsOrDsAdd:
+            expr.set("return_type", exp.DataType.build("TIMESTAMP"))
 
         return expr
 
@@ -65,7 +65,7 @@ class Redshift(Postgres):
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1),
                 unit=exp.var("month"),
-                return_type="TIMESTAMP",
+                return_type=exp.DataType.build("TIMESTAMP"),
             ),
             "DATEADD": _parse_date_delta(exp.TsOrDsAdd),
             "DATE_ADD": _parse_date_delta(exp.TsOrDsAdd),

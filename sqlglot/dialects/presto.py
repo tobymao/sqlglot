@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     struct_extract_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
+    ts_or_ds_add_cast,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
@@ -95,21 +96,19 @@ def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) 
     return exp.cast(exp.cast(expression.this, "TIMESTAMP", copy=True), "DATE").sql(dialect="presto")
 
 
-def _ts_or_ds_delta_sql(
-    name: str,
-) -> t.Callable[[Presto.Generator, exp.TsOrDsAdd | exp.TsOrDsDiff], str]:
-    def _delta_sql(self: Presto.Generator, expression: exp.TsOrDsAdd | exp.TsOrDsDiff) -> str:
-        this = expression.this
-        expr = expression.expression
+def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
+    if not isinstance(expression.this, exp.CurrentDate):
+        expression = ts_or_ds_add_cast(expression)
 
-        if not isinstance(this, exp.CurrentDate):
-            this = exp.cast(exp.cast(this, "TIMESTAMP"), "DATE")
-            if isinstance(expression, exp.TsOrDsDiff):
-                expr = exp.cast(exp.cast(expr, "TIMESTAMP"), "DATE")
+    unit = exp.Literal.string(expression.text("unit") or "day")
+    return self.func("DATE_ADD", unit, expression.expression, expression.this)
 
-        return self.func(name, exp.Literal.string(expression.text("unit") or "day"), expr, this)
 
-    return _delta_sql
+def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
+    this = exp.cast(expression.this, "TIMESTAMP")
+    expr = exp.cast(expression.expression, "TIMESTAMP")
+    unit = exp.Literal.string(expression.text("unit") or "day")
+    return self.func("DATE_DIFF", unit, expr, this)
 
 
 def _approx_percentile(args: t.List) -> exp.Expression:
@@ -367,8 +366,8 @@ class Presto(Dialect):
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),
             exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
-            exp.TsOrDsAdd: _ts_or_ds_delta_sql("DATE_ADD"),
-            exp.TsOrDsDiff: _ts_or_ds_delta_sql("DATE_DIFF"),
+            exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",

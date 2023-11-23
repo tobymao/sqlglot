@@ -830,3 +830,16 @@ def arg_max_or_min_no_count(name: str) -> t.Callable[[Generator, exp.ArgMax | ex
         return self.func(name, expression.this, expression.expression)
 
     return _arg_max_or_min_sql
+
+
+def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
+    this = expression.this.copy()
+
+    return_type = expression.return_type
+    if return_type.is_type(exp.DataType.Type.DATE):
+        # If we need to cast to a DATE, we cast to TIMESTAMP first to make sure we
+        # can truncate timestamp strings, because some dialects can't cast them to DATE
+        this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+
+    expression.this.replace(exp.cast(this, return_type))
+    return expression

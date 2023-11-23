@@ -64,7 +64,7 @@ class TestRedshift(Validator):
             "SELECT ADD_MONTHS('2008-03-31', 1)",
             write={
                 "redshift": "SELECT DATEADD(month, 1, '2008-03-31')",
-                "trino": "SELECT DATE_ADD('month', 1, CAST(CAST('2008-03-31' AS TIMESTAMP) AS DATE))",
+                "trino": "SELECT DATE_ADD('month', 1, CAST('2008-03-31' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -232,7 +232,7 @@ class TestRedshift(Validator):
             "DATEDIFF('day', a, b)",
             write={
                 "redshift": "DATEDIFF(day, a, b)",
-                "presto": "DATE_DIFF('day', CAST(CAST(a AS TIMESTAMP) AS DATE), CAST(CAST(b AS TIMESTAMP) AS DATE))",
+                "presto": "DATE_DIFF('day', CAST(a AS TIMESTAMP), CAST(b AS TIMESTAMP))",
             },
         )
         self.validate_all(

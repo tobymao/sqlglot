@@ -63,6 +63,7 @@ class TestRedshift(Validator):
         self.validate_all(
             "SELECT ADD_MONTHS('2008-03-31', 1)",
             write={
+                "duckdb": "SELECT CAST('2008-03-31' AS TIMESTAMP) + INTERVAL 1 month",
                 "redshift": "SELECT DATEADD(month, 1, '2008-03-31')",
                 "trino": "SELECT DATE_ADD('month', 1, CAST('2008-03-31' AS TIMESTAMP))",
             },

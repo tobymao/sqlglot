@@ -236,6 +236,15 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
+            write={
+                "bigquery": "SELECT DATE_DIFF(CAST('2009-12-31' AS DATETIME), CAST('2009-01-01' AS DATETIME), week)",
+                "duckdb": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
+                "redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
+                "presto": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
             "SELECT TOP 1 x FROM y",
             write={
                 "redshift": "SELECT x FROM y LIMIT 1",

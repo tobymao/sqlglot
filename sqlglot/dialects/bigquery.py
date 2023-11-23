@@ -192,7 +192,9 @@ def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> st
 def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
     expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
     expression.expression.replace(exp.cast(expression.expression, "TIMESTAMP", copy=True))
-    return self.func(expression.this, expression.expression, expression.args.get("unit") or "DAY")
+    return self.func(
+        "DATE_DIFF", expression.this, expression.expression, expression.args.get("unit") or "DAY"
+    )
 
 
 class BigQuery(Dialect):

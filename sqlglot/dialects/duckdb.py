@@ -37,7 +37,7 @@ def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
     interval = self.sql(exp.Interval(this=expression.expression, unit=unit))
-    return f"CAST({this} AS {expression.return_type}) + {interval}"
+    return f"CAST({this} AS {self.sql(expression.return_type)}) + {interval}"
 
 
 def _date_delta_sql(self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub) -> str:

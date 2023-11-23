@@ -185,7 +185,15 @@ def _array_contains_sql(self: BigQuery.Generator, expression: exp.ArrayContains)
 
 
 def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> str:
-    expression.this.replace(exp.cast(expression.this, expression.return_type, copy=True))
+    this = expression.this.copy()
+
+    return_type = expression.return_type
+    if return_type.is_type(exp.DataType.Type.DATE):
+        # If we need to cast to a DATE, we cast to TIMESTAMP first to make sure we
+        # can truncate timestamp strings, because BigQuery can't cast them to DATE
+        this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+
+    expression.this.replace(exp.cast(this, return_type))
     return date_add_interval_sql("DATE", "ADD")(self, expression)
 
 

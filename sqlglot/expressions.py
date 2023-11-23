@@ -5166,12 +5166,11 @@ class Trim(Func):
 
 
 class TsOrDsAdd(Func, TimeUnit):
-    # return_type (str) is what type the arguments (this, expression) should be cast to
     arg_types = {"this": True, "expression": True, "unit": False, "return_type": False}
 
     @property
-    def return_type(self) -> str:
-        return self.args.get("return_type") or "DATE"
+    def return_type(self) -> DataType:
+        return DataType.build(self.args.get("return_type") or DataType.Type.DATE)
 
 
 class TsOrDsDiff(Func, TimeUnit):

@@ -325,6 +325,7 @@ class TestHive(Validator):
             "DATE_ADD('2020-01-01', 1)",
             write={
                 "": "TS_OR_DS_ADD('2020-01-01', 1, DAY)",
+                "bigquery": "DATE_ADD(CAST(CAST('2020-01-01' AS DATETIME) AS DATE), INTERVAL 1 DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD('2020-01-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
@@ -335,6 +336,7 @@ class TestHive(Validator):
             "DATE_SUB('2020-01-01', 1)",
             write={
                 "": "TS_OR_DS_ADD('2020-01-01', 1 * -1, DAY)",
+                "bigquery": "DATE_ADD(CAST(CAST('2020-01-01' AS DATETIME) AS DATE), INTERVAL (1 * -1) DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL (1 * -1) DAY",
                 "hive": "DATE_ADD('2020-01-01', 1 * -1)",
                 "presto": "DATE_ADD('DAY', 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",

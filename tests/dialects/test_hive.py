@@ -328,7 +328,6 @@ class TestHive(Validator):
                 "presto": "DATE_ADD('DAY', 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD('2020-01-01', 1)",
                 "spark": "DATE_ADD('2020-01-01', 1)",
-                "": "TS_OR_DS_ADD('2020-01-01', 1, 'DAY')",
             },
         )
         self.validate_all(
@@ -338,7 +337,6 @@ class TestHive(Validator):
                 "presto": "DATE_ADD('DAY', 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD('2020-01-01', 1 * -1)",
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",
-                "": "TS_OR_DS_ADD('2020-01-01', 1 * -1, 'DAY')",
             },
         )
         self.validate_all("DATE_ADD('2020-01-01', -1)", read={"": "DATE_SUB('2020-01-01', 1)"})

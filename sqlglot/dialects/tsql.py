@@ -153,6 +153,11 @@ def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToSt
             )
         )
     )
+
+    # There is no format for "quarter"
+    if fmt.name.lower() == "quarter":
+        return self.func("DATEPART", "QUARTER", expression.this)
+
     return self.func("FORMAT", expression.this, fmt, expression.args.get("culture"))
 
 
@@ -245,9 +250,6 @@ class TSQL(Dialect):
 
     TIME_MAPPING = {
         "year": "%Y",
-        "qq": "%q",
-        "q": "%q",
-        "quarter": "%q",
         "dayofyear": "%j",
         "day": "%d",
         "dy": "%d",
@@ -684,9 +686,7 @@ class TSQL(Dialect):
             exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(
-                "HASHBYTES",
-                exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"),
-                e.this,
+                "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
             ),
             exp.TemporaryProperty: lambda self, e: "",
             exp.TimeStrToTime: timestrtotime_sql,

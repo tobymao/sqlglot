@@ -449,6 +449,12 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT CAST('2018-01-01 00:00:00' AS DATE) + INTERVAL 3 DAY",
+            read={
+                "hive": "SELECT DATE_ADD('2018-01-01 00:00:00', 3)",
+            },
+        )
+        self.validate_all(
             "SELECT CAST('2020-05-06' AS DATE) - INTERVAL 5 DAY",
             read={"bigquery": "SELECT DATE_SUB(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
         )

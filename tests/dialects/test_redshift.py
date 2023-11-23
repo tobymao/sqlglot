@@ -237,6 +237,16 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATEADD(month, 18, '2008-02-28')",
+            write={
+                "bigquery": "SELECT DATE_ADD(CAST('2008-02-28' AS DATETIME), INTERVAL 18 MONTH)",
+                "hive": "SELECT ADD_MONTHS('2008-02-28', 18)",
+                "duckdb": "SELECT CAST('2008-02-28' AS TIMESTAMP) + INTERVAL 18 month",
+                "presto": "SELECT DATE_ADD('month', 18, CAST('2008-02-28' AS TIMESTAMP))",
+                "redshift": "SELECT DATEADD(month, 18, '2008-02-28')",
+            },
+        )
+        self.validate_all(
             "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
             write={
                 "bigquery": "SELECT DATE_DIFF(CAST('2009-12-31' AS DATETIME), CAST('2009-01-01' AS DATETIME), week)",

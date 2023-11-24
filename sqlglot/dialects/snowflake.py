@@ -200,6 +200,14 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
     return _parse
 
 
+def _date_add_sql(self: Snowflake.Generator, expression: exp.DateAdd | exp.TsOrDsAdd) -> str:
+    return self.func("DATEADD", expression.text("unit"), expression.expression, expression.this)
+
+
+def _date_diff_sql(self: Snowflake.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
+    return self.func("DATEDIFF", expression.text("unit"), expression.expression, expression.this)
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
@@ -484,10 +492,8 @@ class Snowflake(Dialect):
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
             exp.BitwiseXor: rename_func("BITXOR"),
-            exp.DateAdd: lambda self, e: self.func("DATEADD", e.text("unit"), e.expression, e.this),
-            exp.DateDiff: lambda self, e: self.func(
-                "DATEDIFF", e.text("unit"), e.expression, e.this
-            ),
+            exp.DateAdd: _date_add_sql,
+            exp.DateDiff: _date_diff_sql,
             exp.DateStrToDate: datestrtodate_sql,
             exp.DataType: _datatype_sql,
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
@@ -540,6 +546,8 @@ class Snowflake(Dialect):
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
+            exp.TsOrDsAdd: _date_add_sql,
+            exp.TsOrDsDiff: _date_diff_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),

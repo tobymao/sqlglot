@@ -249,6 +249,7 @@ class TestRedshift(Validator):
                 "mysql": "SELECT DATE_ADD('2008-02-28', INTERVAL 18 MONTH)",
                 "presto": "SELECT DATE_ADD('month', 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "redshift": "SELECT DATEADD(month, 18, '2008-02-28')",
+                "snowflake": "SELECT DATEADD(month, 18, '2008-02-28')",
             },
         )
         self.validate_all(
@@ -257,14 +258,9 @@ class TestRedshift(Validator):
                 "bigquery": "SELECT DATE_DIFF(CAST('2009-12-31' AS DATETIME), CAST('2009-01-01' AS DATETIME), week)",
                 "duckdb": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
                 "hive": "SELECT DATEDIFF('2009-12-31', '2009-01-01') / 7",
-                "redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
                 "presto": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
-            },
-        )
-        self.validate_all(
-            "SELECT TOP 1 x FROM y",
-            write={
-                "redshift": "SELECT x FROM y LIMIT 1",
+                "redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
+                "snowflake": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
             },
         )
 
@@ -280,6 +276,10 @@ class TestRedshift(Validator):
         self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
+        self.validate_identity(
+            "SELECT TOP 1 x FROM y",
+            "SELECT x FROM y LIMIT 1",
+        )
         self.validate_identity(
             "SELECT DATE_DIFF('month', CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",
             "SELECT DATEDIFF(month, CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",

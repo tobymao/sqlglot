@@ -330,6 +330,7 @@ class TestHive(Validator):
                 "hive": "DATE_ADD('2020-01-01', 1)",
                 "presto": "DATE_ADD('DAY', 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "redshift": "DATEADD(DAY, 1, '2020-01-01')",
+                "snowflake": "DATEADD(DAY, 1, '2020-01-01')",
                 "spark": "DATE_ADD('2020-01-01', 1)",
             },
         )
@@ -342,6 +343,7 @@ class TestHive(Validator):
                 "hive": "DATE_ADD('2020-01-01', 1 * -1)",
                 "presto": "DATE_ADD('DAY', 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "redshift": "DATEADD(DAY, 1 * -1, '2020-01-01')",
+                "snowflake": "DATEADD(DAY, 1 * -1, '2020-01-01')",
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",
             },
         )

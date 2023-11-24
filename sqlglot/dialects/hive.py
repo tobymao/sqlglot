@@ -98,7 +98,7 @@ def _add_date_sql(
     return self.func(func, expression.this, modified_increment)
 
 
-def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff) -> str:
+def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
     unit = expression.text("unit").upper()
 
     factor = TIME_DIFF_FACTOR.get(unit)
@@ -513,6 +513,7 @@ class Hive(Dialect):
             exp.ToBase64: rename_func("BASE64"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsDiff: _date_diff_sql,
             exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,
             exp.UnixToStr: lambda self, e: self.func(

@@ -233,6 +233,9 @@ class TestRedshift(Validator):
         self.validate_all(
             "DATEDIFF('day', a, b)",
             write={
+                "bigquery": "DATE_DIFF(CAST(b AS DATETIME), CAST(a AS DATETIME), day)",
+                "duckdb": "DATE_DIFF('day', CAST(a AS TIMESTAMP), CAST(b AS TIMESTAMP))",
+                "hive": "DATEDIFF(b, a)",
                 "redshift": "DATEDIFF(day, a, b)",
                 "presto": "DATE_DIFF('day', CAST(a AS TIMESTAMP), CAST(b AS TIMESTAMP))",
             },
@@ -253,6 +256,7 @@ class TestRedshift(Validator):
             write={
                 "bigquery": "SELECT DATE_DIFF(CAST('2009-12-31' AS DATETIME), CAST('2009-01-01' AS DATETIME), week)",
                 "duckdb": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
+                "hive": "SELECT DATEDIFF('2009-12-31', '2009-01-01') / 7",
                 "redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
                 "presto": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
             },

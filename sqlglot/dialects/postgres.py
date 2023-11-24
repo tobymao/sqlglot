@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
+    DATE_ADD_OR_SUB,
     Dialect,
     any_value_to_max_sql,
     arrow_json_extract_scalar_sql,
@@ -41,11 +42,9 @@ DATE_DIFF_FACTOR = {
     "DAY": " / 86400",
 }
 
-DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub, exp.TsOrDsAdd]
 
-
-def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_DELTA], str]:
-    def func(self: Postgres.Generator, expression: DATE_DELTA) -> str:
+def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_ADD_OR_SUB], str]:
+    def func(self: Postgres.Generator, expression: DATE_ADD_OR_SUB) -> str:
         if isinstance(expression, exp.TsOrDsAdd):
             expression = ts_or_ds_add_cast(expression)
 

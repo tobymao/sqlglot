@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
-    DATE_DELTA,
+    DATE_ADD_OR_DIFF,
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
     generatedasidentitycolumnconstraint_sql,
@@ -34,8 +34,8 @@ def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     return _parse_delta
 
 
-def _date_delta_sql(name: str) -> t.Callable[[Redshift.Generator, DATE_DELTA], str]:
-    def _delta_sql(self: Redshift.Generator, expression: DATE_DELTA) -> str:
+def _date_delta_sql(name: str) -> t.Callable[[Redshift.Generator, DATE_ADD_OR_DIFF], str]:
+    def _delta_sql(self: Redshift.Generator, expression: DATE_ADD_OR_DIFF) -> str:
         return self.func(
             name, exp.var(expression.text("unit") or "day"), expression.expression, expression.this
         )

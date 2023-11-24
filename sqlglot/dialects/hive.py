@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
+    DATE_ADD_OR_SUB,
     Dialect,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
@@ -77,9 +78,7 @@ def _create_sql(self, expression: exp.Create) -> str:
     return create_with_partitions_sql(self, expression)
 
 
-def _add_date_sql(
-    self: Hive.Generator, expression: exp.DateAdd | exp.TsOrDsAdd | exp.DateSub
-) -> str:
+def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
     if isinstance(expression, exp.TsOrDsAdd) and not expression.unit:
         return self.func("DATE_ADD", expression.this, expression.expression)
 

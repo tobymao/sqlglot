@@ -6,7 +6,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
-    DATE_DELTA,
+    DATE_ADD_OR_DIFF,
     Dialect,
     any_value_to_max_sql,
     generatedasidentitycolumnconstraint_sql,
@@ -137,7 +137,7 @@ def _parse_hashbytes(args: t.List) -> exp.Expression:
     return exp.func("HASHBYTES", *args)
 
 
-def generate_date_delta_with_unit_sql(self: TSQL.Generator, expression: DATE_DELTA) -> str:
+def generate_date_delta_with_unit_sql(self: TSQL.Generator, expression: DATE_ADD_OR_DIFF) -> str:
     if isinstance(expression, (exp.DateDiff, exp.TsOrDsDiff)):
         func = "DATEDIFF"
     else:

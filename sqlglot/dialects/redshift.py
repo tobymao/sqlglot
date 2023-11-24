@@ -4,9 +4,9 @@ import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
-    DATE_ADD_OR_DIFF,
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
+    date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
     rename_func,
     ts_or_ds_to_date_sql,
@@ -32,15 +32,6 @@ def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
         return expr
 
     return _parse_delta
-
-
-def _date_delta_sql(name: str) -> t.Callable[[Redshift.Generator, DATE_ADD_OR_DIFF], str]:
-    def _delta_sql(self: Redshift.Generator, expression: DATE_ADD_OR_DIFF) -> str:
-        return self.func(
-            name, exp.var(expression.text("unit") or "day"), expression.expression, expression.this
-        )
-
-    return _delta_sql
 
 
 class Redshift(Postgres):
@@ -178,8 +169,8 @@ class Redshift(Postgres):
             exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
             exp.CurrentTimestamp: lambda self, e: "SYSDATE",
-            exp.DateAdd: _date_delta_sql("DATEADD"),
-            exp.DateDiff: _date_delta_sql("DATEDIFF"),
+            exp.DateAdd: date_delta_sql("DATEADD"),
+            exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.FromBase: rename_func("STRTOL"),
@@ -193,8 +184,8 @@ class Redshift(Postgres):
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
-            exp.TsOrDsAdd: _date_delta_sql("DATEADD"),
-            exp.TsOrDsDiff: _date_delta_sql("DATEDIFF"),
+            exp.TsOrDsAdd: date_delta_sql("DATEADD"),
+            exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("redshift"),
         }
 

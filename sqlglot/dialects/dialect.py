@@ -846,3 +846,12 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
 
     expression.this.replace(exp.cast(this, return_type))
     return expression
+
+
+def date_delta_sql(name: str) -> t.Callable[[Generator, DATE_ADD_OR_DIFF], str]:
+    def _delta_sql(self: Generator, expression: DATE_ADD_OR_DIFF) -> str:
+        return self.func(
+            name, exp.var(expression.text("unit") or "day"), expression.expression, expression.this
+        )
+
+    return _delta_sql

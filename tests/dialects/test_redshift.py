@@ -241,8 +241,9 @@ class TestRedshift(Validator):
             "SELECT DATEADD(month, 18, '2008-02-28')",
             write={
                 "bigquery": "SELECT DATE_ADD(CAST('2008-02-28' AS DATETIME), INTERVAL 18 MONTH)",
-                "hive": "SELECT ADD_MONTHS('2008-02-28', 18)",
                 "duckdb": "SELECT CAST('2008-02-28' AS TIMESTAMP) + INTERVAL 18 month",
+                "hive": "SELECT ADD_MONTHS('2008-02-28', 18)",
+                "mysql": "SELECT DATE_ADD('2008-02-28', INTERVAL 18 MONTH)",
                 "presto": "SELECT DATE_ADD('month', 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "redshift": "SELECT DATEADD(month, 18, '2008-02-28')",
             },

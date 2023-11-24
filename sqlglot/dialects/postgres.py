@@ -25,6 +25,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     timestrtotime_sql,
     trim_sql,
+    ts_or_ds_add_cast,
     ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import seq_get
@@ -40,9 +41,14 @@ DATE_DIFF_FACTOR = {
     "DAY": " / 86400",
 }
 
+DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub, exp.TsOrDsAdd]
 
-def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, exp.DateAdd | exp.DateSub], str]:
-    def func(self: Postgres.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+
+def _date_add_sql(kind: str) -> t.Callable[[Postgres.Generator, DATE_DELTA], str]:
+    def func(self: Postgres.Generator, expression: DATE_DELTA) -> str:
+        if isinstance(expression, exp.TsOrDsAdd):
+            expression = ts_or_ds_add_cast(expression)
+
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
 
@@ -60,8 +66,8 @@ def _date_diff_sql(self: Postgres.Generator, expression: exp.DateDiff) -> str:
     unit = expression.text("unit").upper()
     factor = DATE_DIFF_FACTOR.get(unit)
 
-    end = f"CAST({expression.this} AS TIMESTAMP)"
-    start = f"CAST({expression.expression} AS TIMESTAMP)"
+    end = f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
+    start = f"CAST({self.sql(expression, 'expression')} AS TIMESTAMP)"
 
     if factor is not None:
         return f"CAST(EXTRACT(epoch FROM {end} - {start}){factor} AS BIGINT)"
@@ -69,7 +75,7 @@ def _date_diff_sql(self: Postgres.Generator, expression: exp.DateDiff) -> str:
     age = f"AGE({end}, {start})"
 
     if unit == "WEEK":
-        unit = f"EXTRACT(year FROM {age}) * 48 + EXTRACT(month FROM {age}) * 4 + EXTRACT(day FROM {age}) / 7"
+        unit = f"EXTRACT(days FROM ({end} - {start})) / 7"
     elif unit == "MONTH":
         unit = f"EXTRACT(year FROM {age}) * 12 + EXTRACT(month FROM {age})"
     elif unit == "QUARTER":
@@ -430,6 +436,8 @@ class Postgres(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,
+            exp.TsOrDsAdd: _date_add_sql("+"),
+            exp.TsOrDsDiff: _date_diff_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("postgres"),
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.VariancePop: rename_func("VAR_POP"),

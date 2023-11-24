@@ -15,6 +15,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
 B = t.TypeVar("B", bound=exp.Binary)
+DATE_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.TsOrDsAdd, exp.TsOrDsDiff]
 
 
 class Dialects(str, Enum):

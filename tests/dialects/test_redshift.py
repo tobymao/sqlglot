@@ -67,6 +67,7 @@ class TestRedshift(Validator):
                 "duckdb": "SELECT CAST('2008-03-31' AS TIMESTAMP) + INTERVAL 1 month",
                 "redshift": "SELECT DATEADD(month, 1, '2008-03-31')",
                 "trino": "SELECT DATE_ADD('month', 1, CAST('2008-03-31' AS TIMESTAMP))",
+                "tsql": "SELECT DATEADD(month, 1, CAST('2008-03-31' AS DATETIME2))",
             },
         )
         self.validate_all(
@@ -251,6 +252,7 @@ class TestRedshift(Validator):
                 "presto": "SELECT DATE_ADD('month', 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "redshift": "SELECT DATEADD(month, 18, '2008-02-28')",
                 "snowflake": "SELECT DATEADD(month, 18, '2008-02-28')",
+                "tsql": "SELECT DATEADD(month, 18, CAST('2008-02-28' AS DATETIME2))",
             },
         )
         self.validate_all(
@@ -263,6 +265,7 @@ class TestRedshift(Validator):
                 "presto": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
                 "redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
                 "snowflake": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
+                "tsql": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
             },
         )
 

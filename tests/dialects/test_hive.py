@@ -332,6 +332,7 @@ class TestHive(Validator):
                 "redshift": "DATEADD(DAY, 1, '2020-01-01')",
                 "snowflake": "DATEADD(DAY, 1, '2020-01-01')",
                 "spark": "DATE_ADD('2020-01-01', 1)",
+                "tsql": "DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
             },
         )
         self.validate_all(
@@ -345,6 +346,7 @@ class TestHive(Validator):
                 "redshift": "DATEADD(DAY, 1 * -1, '2020-01-01')",
                 "snowflake": "DATEADD(DAY, 1 * -1, '2020-01-01')",
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",
+                "tsql": "DATEADD(DAY, 1 * -1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
             },
         )
         self.validate_all("DATE_ADD('2020-01-01', -1)", read={"": "DATE_SUB('2020-01-01', 1)"})

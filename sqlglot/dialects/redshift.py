@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
+    DATE_DELTA,
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
     generatedasidentitycolumnconstraint_sql,
@@ -16,8 +17,6 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-
-DATE_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.TsOrDsAdd, exp.TsOrDsDiff]
 
 
 def _json_sql(self: Redshift.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar) -> str:

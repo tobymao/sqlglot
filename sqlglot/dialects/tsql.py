@@ -6,6 +6,7 @@ import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
+    DATE_DELTA,
     Dialect,
     any_value_to_max_sql,
     generatedasidentitycolumnconstraint_sql,
@@ -14,6 +15,7 @@ from sqlglot.dialects.dialect import (
     parse_date_delta,
     rename_func,
     timestrtotime_sql,
+    ts_or_ds_add_cast,
     ts_or_ds_to_date_sql,
 )
 from sqlglot.expressions import DataType
@@ -135,10 +137,14 @@ def _parse_hashbytes(args: t.List) -> exp.Expression:
     return exp.func("HASHBYTES", *args)
 
 
-def generate_date_delta_with_unit_sql(
-    self: TSQL.Generator, expression: exp.DateAdd | exp.DateDiff
-) -> str:
-    func = "DATEADD" if isinstance(expression, exp.DateAdd) else "DATEDIFF"
+def generate_date_delta_with_unit_sql(self: TSQL.Generator, expression: DATE_DELTA) -> str:
+    if isinstance(expression, (exp.DateDiff, exp.TsOrDsDiff)):
+        func = "DATEDIFF"
+    else:
+        func = "DATEADD"
+        if isinstance(expression, exp.TsOrDsAdd):
+            expression = ts_or_ds_add_cast(expression)
+
     return self.func(func, expression.text("unit"), expression.expression, expression.this)
 
 
@@ -691,6 +697,8 @@ class TSQL(Dialect):
             exp.TemporaryProperty: lambda self, e: "",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: _format_sql,
+            exp.TsOrDsAdd: generate_date_delta_with_unit_sql,
+            exp.TsOrDsDiff: generate_date_delta_with_unit_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("tsql"),
         }
 

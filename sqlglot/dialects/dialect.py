@@ -848,8 +848,11 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
     return expression
 
 
-def date_delta_sql(name: str) -> t.Callable[[Generator, DATE_ADD_OR_DIFF], str]:
+def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE_ADD_OR_DIFF], str]:
     def _delta_sql(self: Generator, expression: DATE_ADD_OR_DIFF) -> str:
+        if cast and isinstance(expression, exp.TsOrDsAdd):
+            expression = ts_or_ds_add_cast(expression)
+
         return self.func(
             name, exp.var(expression.text("unit") or "day"), expression.expression, expression.this
         )

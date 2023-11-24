@@ -80,6 +80,9 @@ def _create_sql(self, expression: exp.Create) -> str:
 def _add_date_sql(
     self: Hive.Generator, expression: exp.DateAdd | exp.TsOrDsAdd | exp.DateSub
 ) -> str:
+    if isinstance(expression, exp.TsOrDsAdd) and not expression.unit:
+        return self.func("DATE_ADD", expression.this, expression.expression)
+
     unit = expression.text("unit").upper()
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
 
@@ -119,12 +122,6 @@ def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff | exp.TsOrDsDi
         diff_sql = f"CAST({diff_sql} AS INT)"
 
     return f"{diff_sql}{multiplier_sql}"
-
-
-def _ts_or_ds_add_sql(self: Hive.Generator, expression: exp.TsOrDsAdd) -> str:
-    if expression.unit:
-        return _add_date_sql(self, expression)
-    return self.func("DATE_ADD", expression.this, expression.expression)
 
 
 def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:
@@ -512,7 +509,7 @@ class Hive(Dialect):
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.ToBase64: rename_func("BASE64"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS STRING), '-', ''), 1, 8) AS INT)",
-            exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsAdd: _add_date_sql,
             exp.TsOrDsDiff: _date_diff_sql,
             exp.TsOrDsToDate: _to_date_sql,
             exp.TryCast: no_trycast_sql,

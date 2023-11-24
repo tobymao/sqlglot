@@ -1433,13 +1433,13 @@ class Generator:
 
     def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
         table = ".".join(
-            part
-            for part in [
-                self.sql(expression, "catalog"),
-                self.sql(expression, "db"),
-                self.sql(expression, "this"),
-            ]
-            if part
+            self.sql(part)
+            for part in (
+                expression.args.get("catalog"),
+                expression.args.get("db"),
+                expression.args.get("this"),
+            )
+            if part is not None
         )
 
         version = self.sql(expression, "version")

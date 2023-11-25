@@ -305,7 +305,7 @@ class TestRedshift(Validator):
             "SELECT DATEADD(hour, 0, CAST('2020-02-02 01:03:05.124' AS TIMESTAMP))"
         )
         self.validate_identity(
-            "SELECT DATEDIFF(second, '2020-02-02 01:03:05.124', '2020-02-02 00:00:00.000')"
+            "SELECT DATEDIFF(second, '2020-02-02 00:00:00.000', '2020-02-02 01:03:05.124')"
         )
         self.validate_identity(
             "CREATE OR REPLACE VIEW v1 AS SELECT id, AVG(average_metric1) AS m1, AVG(average_metric2) AS m2 FROM t GROUP BY id WITH NO SCHEMA BINDING"

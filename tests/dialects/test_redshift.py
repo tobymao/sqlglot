@@ -260,7 +260,7 @@ class TestRedshift(Validator):
             write={
                 "bigquery": "SELECT DATE_DIFF(CAST('2009-12-31' AS DATETIME), CAST('2009-01-01' AS DATETIME), week)",
                 "duckdb": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
-                "hive": "SELECT DATEDIFF('2009-12-31', '2009-01-01') / 7",
+                "hive": "SELECT CAST(DATEDIFF('2009-12-31', '2009-01-01') / 7 AS INT)",
                 "postgres": "SELECT CAST(EXTRACT(days FROM (CAST('2009-12-31' AS TIMESTAMP) - CAST('2009-01-01' AS TIMESTAMP))) / 7 AS BIGINT)",
                 "presto": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
                 "redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",

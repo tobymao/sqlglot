@@ -116,11 +116,12 @@ def _date_diff_sql(self: Hive.Generator, expression: exp.DateDiff | exp.TsOrDsDi
     multiplier_sql = f" / {multiplier}" if multiplier > 1 else ""
     diff_sql = f"{sql_func}({self.format_args(expression.this, expression.expression)})"
 
-    if months_between:
-        # MONTHS_BETWEEN returns a float, so we need to truncate the fractional part
-        diff_sql = f"CAST({diff_sql} AS INT)"
+    if months_between or multiplier_sql:
+        # MONTHS_BETWEEN returns a float, so we need to truncate the fractional part.
+        # For the same reason, we want to truncate if there's a divisor present.
+        diff_sql = f"CAST({diff_sql}{multiplier_sql} AS INT)"
 
-    return f"{diff_sql}{multiplier_sql}"
+    return diff_sql
 
 
 def _json_format_sql(self: Hive.Generator, expression: exp.JSONFormat) -> str:

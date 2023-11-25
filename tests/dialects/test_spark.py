@@ -312,7 +312,7 @@ TBLPROPERTIES (
             write={
                 "bigquery": "SELECT DATE_DIFF(CAST('2020-12-31' AS DATE), CAST('2020-01-01' AS DATE), week)",
                 "duckdb": "SELECT DATE_DIFF('week', CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",
-                "hive": "SELECT DATEDIFF(TO_DATE('2020-12-31'), TO_DATE('2020-01-01')) / 7",
+                "hive": "SELECT CAST(DATEDIFF(TO_DATE('2020-12-31'), TO_DATE('2020-01-01')) / 7 AS INT)",
                 "postgres": "SELECT CAST(EXTRACT(days FROM (CAST(CAST('2020-12-31' AS DATE) AS TIMESTAMP) - CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP))) / 7 AS BIGINT)",
                 "redshift": "SELECT DATEDIFF(week, CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",
                 "snowflake": "SELECT DATEDIFF(week, CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",

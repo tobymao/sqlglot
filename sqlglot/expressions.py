@@ -3722,7 +3722,7 @@ class DataType(Expression):
     @classmethod
     def build(
         cls,
-        dtype: str | DataType | DataType.Type,
+        dtype: DATA_TYPE,
         dialect: DialectType = None,
         udt: bool = False,
         **kwargs,
@@ -3763,7 +3763,7 @@ class DataType(Expression):
 
         return DataType(**{**data_type_exp.args, **kwargs})
 
-    def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
+    def is_type(self, *dtypes: DATA_TYPE) -> bool:
         """
         Checks whether this DataType matches one of the provided data types. Nested types or precision
         will be compared using "structural equivalence" semantics, so e.g. array<int> != array<float>.
@@ -3789,6 +3789,9 @@ class DataType(Expression):
             if matches:
                 return True
         return False
+
+
+DATA_TYPE = t.Union[str, DataType, DataType.Type]
 
 
 # https://www.postgresql.org/docs/15/datatype-pseudo.html
@@ -4402,7 +4405,7 @@ class Cast(Func):
     def output_name(self) -> str:
         return self.name
 
-    def is_type(self, *dtypes: str | DataType | DataType.Type) -> bool:
+    def is_type(self, *dtypes: DATA_TYPE) -> bool:
         """
         Checks whether this Cast's DataType matches one of the provided data types. Nested types
         like arrays or structs will be compared using "structural equivalence" semantics, so e.g.
@@ -5166,6 +5169,15 @@ class Trim(Func):
 
 
 class TsOrDsAdd(Func, TimeUnit):
+    # return_type is used to correctly cast the arguments of this expression when transpiling it
+    arg_types = {"this": True, "expression": True, "unit": False, "return_type": False}
+
+    @property
+    def return_type(self) -> DataType:
+        return DataType.build(self.args.get("return_type") or DataType.Type.DATE)
+
+
+class TsOrDsDiff(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}
 
 
@@ -6180,7 +6192,7 @@ def column(
     )
 
 
-def cast(expression: ExpOrStr, to: str | DataType | DataType.Type, **opts) -> Cast:
+def cast(expression: ExpOrStr, to: DATA_TYPE, **opts) -> Cast:
     """Cast an expression to a data type.
 
     Example:

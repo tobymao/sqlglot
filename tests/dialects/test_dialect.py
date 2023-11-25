@@ -894,7 +894,7 @@ class TestDialect(Validator):
         self.validate_all(
             "TS_OR_DS_ADD(CURRENT_DATE, 1, 'DAY')",
             write={
-                "presto": "DATE_ADD('DAY', 1, CURRENT_DATE)",
+                "presto": "DATE_ADD('DAY', 1, CAST(CAST(CURRENT_DATE AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD(CURRENT_DATE, 1)",
             },
         )

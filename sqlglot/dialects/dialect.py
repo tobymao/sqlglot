@@ -16,6 +16,9 @@ from sqlglot.trie import new_trie
 
 B = t.TypeVar("B", bound=exp.Binary)
 
+DATE_ADD_OR_DIFF = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateDiff, exp.TsOrDsDiff]
+DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
+
 
 class Dialects(str, Enum):
     DIALECT = ""
@@ -830,3 +833,28 @@ def arg_max_or_min_no_count(name: str) -> t.Callable[[Generator, exp.ArgMax | ex
         return self.func(name, expression.this, expression.expression)
 
     return _arg_max_or_min_sql
+
+
+def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
+    this = expression.this.copy()
+
+    return_type = expression.return_type
+    if return_type.is_type(exp.DataType.Type.DATE):
+        # If we need to cast to a DATE, we cast to TIMESTAMP first to make sure we
+        # can truncate timestamp strings, because some dialects can't cast them to DATE
+        this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
+
+    expression.this.replace(exp.cast(this, return_type))
+    return expression
+
+
+def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE_ADD_OR_DIFF], str]:
+    def _delta_sql(self: Generator, expression: DATE_ADD_OR_DIFF) -> str:
+        if cast and isinstance(expression, exp.TsOrDsAdd):
+            expression = ts_or_ds_add_cast(expression)
+
+        return self.func(
+            name, exp.var(expression.text("unit") or "day"), expression.expression, expression.this
+        )
+
+    return _delta_sql

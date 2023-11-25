@@ -324,21 +324,29 @@ class TestHive(Validator):
         self.validate_all(
             "DATE_ADD('2020-01-01', 1)",
             write={
+                "": "TS_OR_DS_ADD('2020-01-01', 1, DAY)",
+                "bigquery": "DATE_ADD(CAST(CAST('2020-01-01' AS DATETIME) AS DATE), INTERVAL 1 DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
-                "presto": "DATE_ADD('DAY', 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD('2020-01-01', 1)",
+                "presto": "DATE_ADD('DAY', 1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
+                "redshift": "DATEADD(DAY, 1, '2020-01-01')",
+                "snowflake": "DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS TIMESTAMPNTZ) AS DATE))",
                 "spark": "DATE_ADD('2020-01-01', 1)",
-                "": "TS_OR_DS_ADD('2020-01-01', 1, 'DAY')",
+                "tsql": "DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
             },
         )
         self.validate_all(
             "DATE_SUB('2020-01-01', 1)",
             write={
+                "": "TS_OR_DS_ADD('2020-01-01', 1 * -1, DAY)",
+                "bigquery": "DATE_ADD(CAST(CAST('2020-01-01' AS DATETIME) AS DATE), INTERVAL (1 * -1) DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL (1 * -1) DAY",
-                "presto": "DATE_ADD('DAY', 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
                 "hive": "DATE_ADD('2020-01-01', 1 * -1)",
+                "presto": "DATE_ADD('DAY', 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMP) AS DATE))",
+                "redshift": "DATEADD(DAY, 1 * -1, '2020-01-01')",
+                "snowflake": "DATEADD(DAY, 1 * -1, CAST(CAST('2020-01-01' AS TIMESTAMPNTZ) AS DATE))",
                 "spark": "DATE_ADD('2020-01-01', 1 * -1)",
-                "": "TS_OR_DS_ADD('2020-01-01', 1 * -1, 'DAY')",
+                "tsql": "DATEADD(DAY, 1 * -1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
             },
         )
         self.validate_all("DATE_ADD('2020-01-01', -1)", read={"": "DATE_SUB('2020-01-01', 1)"})

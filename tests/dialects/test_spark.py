@@ -308,6 +308,18 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT DATEDIFF(week, '2020-01-01', '2020-12-31')",
+            write={
+                "bigquery": "SELECT DATE_DIFF(CAST('2020-12-31' AS DATE), CAST('2020-01-01' AS DATE), week)",
+                "duckdb": "SELECT DATE_DIFF('week', CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",
+                "hive": "SELECT DATEDIFF(TO_DATE('2020-12-31'), TO_DATE('2020-01-01')) / 7",
+                "postgres": "SELECT CAST(EXTRACT(days FROM (CAST(CAST('2020-12-31' AS DATE) AS TIMESTAMP) - CAST(CAST('2020-01-01' AS DATE) AS TIMESTAMP))) / 7 AS BIGINT)",
+                "redshift": "SELECT DATEDIFF(week, CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",
+                "snowflake": "SELECT DATEDIFF(week, CAST('2020-01-01' AS DATE), CAST('2020-12-31' AS DATE))",
+                "spark": "SELECT DATEDIFF(week, TO_DATE('2020-01-01'), TO_DATE('2020-12-31'))",
+            },
+        )
+        self.validate_all(
             "SELECT MONTHS_BETWEEN('1997-02-28 10:30:00', '1996-10-30')",
             write={
                 "duckdb": "SELECT DATEDIFF('month', CAST('1996-10-30' AS TIMESTAMP), CAST('1997-02-28 10:30:00' AS TIMESTAMP))",
@@ -443,7 +455,7 @@ TBLPROPERTIES (
             "SELECT DATE_ADD(my_date_column, 1)",
             write={
                 "spark": "SELECT DATE_ADD(my_date_column, 1)",
-                "bigquery": "SELECT DATE_ADD(my_date_column, INTERVAL 1 DAY)",
+                "bigquery": "SELECT DATE_ADD(CAST(CAST(my_date_column AS DATETIME) AS DATE), INTERVAL 1 DAY)",
             },
         )
         self.validate_all(

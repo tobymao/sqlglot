@@ -6,15 +6,6 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
-        self.validate_identity(
-            "SELECT DATE_DIFF('month', CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",
-            "SELECT DATEDIFF(month, CAST(CAST('2020-02-29 00:00:00' AS TIMESTAMP) AS DATE), CAST(CAST('2020-03-02 00:00:00' AS TIMESTAMP) AS DATE))",
-        )
-        self.validate_identity(
-            "SELECT * FROM x WHERE y = DATEADD('month', -1, DATE_TRUNC('month', (SELECT y FROM #temp_table)))",
-            "SELECT * FROM x WHERE y = DATEADD(month, -1, CAST(DATE_TRUNC('month', (SELECT y FROM #temp_table)) AS DATE))",
-        )
-
         self.validate_all(
             "LISTAGG(sellerid, ', ')",
             read={
@@ -72,8 +63,11 @@ class TestRedshift(Validator):
         self.validate_all(
             "SELECT ADD_MONTHS('2008-03-31', 1)",
             write={
-                "redshift": "SELECT DATEADD(month, 1, CAST('2008-03-31' AS DATE))",
-                "trino": "SELECT DATE_ADD('month', 1, CAST(CAST('2008-03-31' AS TIMESTAMP) AS DATE))",
+                "bigquery": "SELECT DATE_ADD(CAST('2008-03-31' AS DATETIME), INTERVAL 1 MONTH)",
+                "duckdb": "SELECT CAST('2008-03-31' AS TIMESTAMP) + INTERVAL 1 month",
+                "redshift": "SELECT DATEADD(month, 1, '2008-03-31')",
+                "trino": "SELECT DATE_ADD('month', 1, CAST('2008-03-31' AS TIMESTAMP))",
+                "tsql": "SELECT DATEADD(month, 1, CAST('2008-03-31' AS DATETIME2))",
             },
         )
         self.validate_all(
@@ -240,18 +234,43 @@ class TestRedshift(Validator):
         self.validate_all(
             "DATEDIFF('day', a, b)",
             write={
-                "redshift": "DATEDIFF(day, CAST(a AS DATE), CAST(b AS DATE))",
-                "presto": "DATE_DIFF('day', CAST(CAST(a AS TIMESTAMP) AS DATE), CAST(CAST(b AS TIMESTAMP) AS DATE))",
+                "bigquery": "DATE_DIFF(CAST(b AS DATETIME), CAST(a AS DATETIME), day)",
+                "duckdb": "DATE_DIFF('day', CAST(a AS TIMESTAMP), CAST(b AS TIMESTAMP))",
+                "hive": "DATEDIFF(b, a)",
+                "redshift": "DATEDIFF(day, a, b)",
+                "presto": "DATE_DIFF('day', CAST(a AS TIMESTAMP), CAST(b AS TIMESTAMP))",
             },
         )
         self.validate_all(
-            "SELECT TOP 1 x FROM y",
+            "SELECT DATEADD(month, 18, '2008-02-28')",
             write={
-                "redshift": "SELECT x FROM y LIMIT 1",
+                "bigquery": "SELECT DATE_ADD(CAST('2008-02-28' AS DATETIME), INTERVAL 18 MONTH)",
+                "duckdb": "SELECT CAST('2008-02-28' AS TIMESTAMP) + INTERVAL 18 month",
+                "hive": "SELECT ADD_MONTHS('2008-02-28', 18)",
+                "mysql": "SELECT DATE_ADD('2008-02-28', INTERVAL 18 MONTH)",
+                "postgres": "SELECT CAST('2008-02-28' AS TIMESTAMP) + INTERVAL '18 month'",
+                "presto": "SELECT DATE_ADD('month', 18, CAST('2008-02-28' AS TIMESTAMP))",
+                "redshift": "SELECT DATEADD(month, 18, '2008-02-28')",
+                "snowflake": "SELECT DATEADD(month, 18, CAST('2008-02-28' AS TIMESTAMPNTZ))",
+                "tsql": "SELECT DATEADD(month, 18, CAST('2008-02-28' AS DATETIME2))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
+            write={
+                "bigquery": "SELECT DATE_DIFF(CAST('2009-12-31' AS DATETIME), CAST('2009-01-01' AS DATETIME), week)",
+                "duckdb": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
+                "hive": "SELECT DATEDIFF('2009-12-31', '2009-01-01') / 7",
+                "postgres": "SELECT CAST(EXTRACT(days FROM (CAST('2009-12-31' AS TIMESTAMP) - CAST('2009-01-01' AS TIMESTAMP))) / 7 AS BIGINT)",
+                "presto": "SELECT DATE_DIFF('week', CAST('2009-01-01' AS TIMESTAMP), CAST('2009-12-31' AS TIMESTAMP))",
+                "redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
+                "snowflake": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
+                "tsql": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')",
             },
         )
 
     def test_identity(self):
+        self.validate_identity("SELECT DATEADD(day, 1, 'today')")
         self.validate_identity("SELECT * FROM #x")
         self.validate_identity("SELECT INTERVAL '5 day'")
         self.validate_identity("foo$")
@@ -263,12 +282,30 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
         self.validate_identity(
+            "SELECT TOP 1 x FROM y",
+            "SELECT x FROM y LIMIT 1",
+        )
+        self.validate_identity(
+            "SELECT DATE_DIFF('month', CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",
+            "SELECT DATEDIFF(month, CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",
+        )
+        self.validate_identity(
+            "SELECT * FROM x WHERE y = DATEADD('month', -1, DATE_TRUNC('month', (SELECT y FROM #temp_table)))",
+            "SELECT * FROM x WHERE y = DATEADD(month, -1, DATE_TRUNC('month', (SELECT y FROM #temp_table)))",
+        )
+        self.validate_identity(
             "SELECT 'a''b'",
             "SELECT 'a\\'b'",
         )
         self.validate_identity(
             "CREATE TABLE t (c BIGINT GENERATED BY DEFAULT AS IDENTITY (0, 1))",
             "CREATE TABLE t (c BIGINT IDENTITY(0, 1))",
+        )
+        self.validate_identity(
+            "SELECT DATEADD(hour, 0, CAST('2020-02-02 01:03:05.124' AS TIMESTAMP))"
+        )
+        self.validate_identity(
+            "SELECT DATEDIFF(second, '2020-02-02 00:00:00.000', '2020-02-02 01:03:05.124')"
         )
         self.validate_identity(
             "CREATE OR REPLACE VIEW v1 AS SELECT id, AVG(average_metric1) AS m1, AVG(average_metric2) AS m2 FROM t GROUP BY id WITH NO SCHEMA BINDING"
@@ -295,12 +332,8 @@ class TestRedshift(Validator):
             "CREATE TABLE SOUP (SOUP1 VARCHAR(50) NOT NULL ENCODE ZSTD, SOUP2 VARCHAR(70) NULL ENCODE DELTA)"
         )
         self.validate_identity(
-            "SELECT DATEADD(day, 1, 'today')",
-            "SELECT DATEADD(day, 1, CAST('today' AS DATE))",
-        )
-        self.validate_identity(
             "SELECT DATEADD('day', ndays, caldate)",
-            "SELECT DATEADD(day, ndays, CAST(caldate AS DATE))",
+            "SELECT DATEADD(day, ndays, caldate)",
         )
         self.validate_identity(
             "CONVERT(INT, x)",
@@ -308,7 +341,7 @@ class TestRedshift(Validator):
         )
         self.validate_identity(
             "SELECT DATE_ADD('day', 1, DATE('2023-01-01'))",
-            "SELECT DATEADD(day, 1, CAST(DATE('2023-01-01') AS DATE))",
+            "SELECT DATEADD(day, 1, DATE('2023-01-01'))",
         )
         self.validate_identity(
             """SELECT

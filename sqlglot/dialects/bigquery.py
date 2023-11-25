@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     regexp_replace_sql,
     rename_func,
     timestrtotime_sql,
+    ts_or_ds_add_cast,
     ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import seq_get, split_num_words
@@ -182,6 +183,17 @@ def _array_contains_sql(self: BigQuery.Generator, expression: exp.ArrayContains)
             .where(exp.column("_col").eq(expression.right))
         )
     )
+
+
+def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> str:
+    return date_add_interval_sql("DATE", "ADD")(self, ts_or_ds_add_cast(expression))
+
+
+def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
+    expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
+    expression.expression.replace(exp.cast(expression.expression, "TIMESTAMP", copy=True))
+    unit = expression.args.get("unit") or "DAY"
+    return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
 
 class BigQuery(Dialect):
@@ -521,7 +533,8 @@ class BigQuery(Dialect):
             exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
-            exp.TsOrDsAdd: date_add_interval_sql("DATE", "ADD"),
+            exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.Unhex: rename_func("FROM_HEX"),
             exp.Values: _derived_table_values_to_unnest,

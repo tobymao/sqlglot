@@ -34,14 +34,6 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_DIFF('week', CAST(CAST('2009-01-01' AS TIMESTAMP) AS DATE), CAST(CAST('2009-12-31' AS TIMESTAMP) AS DATE))",
-            read={"redshift": "SELECT DATEDIFF(week, '2009-01-01', '2009-12-31')"},
-        )
-        self.validate_all(
-            "SELECT DATE_ADD('month', 18, CAST(CAST('2008-02-28' AS TIMESTAMP) AS DATE))",
-            read={"redshift": "SELECT DATEADD(month, 18, '2008-02-28')"},
-        )
-        self.validate_all(
             "SELECT CAST('1970-01-01 00:00:00' AS TIMESTAMP)",
             read={"postgres": "SELECT 'epoch'::TIMESTAMP"},
         )
@@ -308,7 +300,12 @@ class TestPresto(Validator):
                 "hive": "CURRENT_TIMESTAMP()",
             },
         )
-
+        self.validate_all(
+            "SELECT DATE_ADD('DAY', 1, CAST(CURRENT_DATE AS TIMESTAMP))",
+            read={
+                "redshift": "SELECT DATEADD(DAY, 1, CURRENT_DATE)",
+            },
+        )
         self.validate_all(
             "DAY_OF_WEEK(timestamp '2012-08-08 01:00:00')",
             write={

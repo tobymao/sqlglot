@@ -8,6 +8,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     any_value_to_max_sql,
+    date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
@@ -133,13 +134,6 @@ def _parse_hashbytes(args: t.List) -> exp.Expression:
         return exp.SHA2(this=data, length=exp.Literal.number(512))
 
     return exp.func("HASHBYTES", *args)
-
-
-def generate_date_delta_with_unit_sql(
-    self: TSQL.Generator, expression: exp.DateAdd | exp.DateDiff
-) -> str:
-    func = "DATEADD" if isinstance(expression, exp.DateAdd) else "DATEDIFF"
-    return self.func(func, expression.text("unit"), expression.expression, expression.this)
 
 
 def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
@@ -662,8 +656,8 @@ class TSQL(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
             exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
-            exp.DateAdd: generate_date_delta_with_unit_sql,
-            exp.DateDiff: generate_date_delta_with_unit_sql,
+            exp.DateAdd: date_delta_sql("DATEADD"),
+            exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
             exp.CurrentDate: rename_func("GETDATE"),
             exp.CurrentTimestamp: rename_func("GETDATE"),
@@ -691,6 +685,8 @@ class TSQL(Dialect):
             exp.TemporaryProperty: lambda self, e: "",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: _format_sql,
+            exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
+            exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("tsql"),
         }
 

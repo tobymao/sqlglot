@@ -23,6 +23,7 @@ from sqlglot.dialects.dialect import (
     struct_extract_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
+    ts_or_ds_add_cast,
 )
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
@@ -96,17 +97,16 @@ def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) 
 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
-    this = expression.this
+    expression = ts_or_ds_add_cast(expression)
+    unit = exp.Literal.string(expression.text("unit") or "day")
+    return self.func("DATE_ADD", unit, expression.expression, expression.this)
 
-    if not isinstance(this, exp.CurrentDate):
-        this = exp.cast(exp.cast(expression.this, "TIMESTAMP", copy=True), "DATE")
 
-    return self.func(
-        "DATE_ADD",
-        exp.Literal.string(expression.text("unit") or "day"),
-        expression.expression,
-        this,
-    )
+def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
+    this = exp.cast(expression.this, "TIMESTAMP")
+    expr = exp.cast(expression.expression, "TIMESTAMP")
+    unit = exp.Literal.string(expression.text("unit") or "day")
+    return self.func("DATE_DIFF", unit, expr, this)
 
 
 def _approx_percentile(args: t.List) -> exp.Expression:
@@ -365,6 +365,7 @@ class Presto(Dialect):
             exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",

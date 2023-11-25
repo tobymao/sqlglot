@@ -531,7 +531,15 @@ class TestMySQL(Validator):
         )
         self.validate_all(
             "SELECT DATEDIFF(x, y)",
-            write={"mysql": "SELECT DATEDIFF(x, y)", "presto": "SELECT DATE_DIFF('day', y, x)"},
+            read={
+                "presto": "SELECT DATE_DIFF('day', y, x)",
+                "redshift": "SELECT DATEDIFF(day, y, x)",
+            },
+            write={
+                "mysql": "SELECT DATEDIFF(x, y)",
+                "presto": "SELECT DATE_DIFF('day', y, x)",
+                "redshift": "SELECT DATEDIFF(day, y, x)",
+            },
         )
         self.validate_all(
             "DAYOFYEAR(x)",

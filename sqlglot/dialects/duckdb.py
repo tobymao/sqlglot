@@ -36,7 +36,8 @@ from sqlglot.tokens import TokenType
 def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
-    return f"CAST({this} AS DATE) + {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
+    interval = self.sql(exp.Interval(this=expression.expression, unit=unit))
+    return f"CAST({this} AS {self.sql(expression.return_type)}) + {interval}"
 
 
 def _date_delta_sql(self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
@@ -325,6 +326,12 @@ class DuckDB(Dialect):
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
+            exp.TsOrDsDiff: lambda self, e: self.func(
+                "DATE_DIFF",
+                f"'{e.args.get('unit') or 'day'}'",
+                exp.cast(e.expression, "TIMESTAMP"),
+                exp.cast(e.this, "TIMESTAMP"),
+            ),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("duckdb"),
             exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: rename_func("TO_TIMESTAMP"),

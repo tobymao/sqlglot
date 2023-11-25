@@ -97,9 +97,7 @@ def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) 
 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
-    if not isinstance(expression.this, exp.CurrentDate):
-        expression = ts_or_ds_add_cast(expression)
-
+    expression = ts_or_ds_add_cast(expression)
     unit = exp.Literal.string(expression.text("unit") or "day")
     return self.func("DATE_ADD", unit, expression.expression, expression.this)
 

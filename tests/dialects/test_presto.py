@@ -300,7 +300,12 @@ class TestPresto(Validator):
                 "hive": "CURRENT_TIMESTAMP()",
             },
         )
-
+        self.validate_all(
+            "SELECT DATE_ADD('DAY', 1, CAST(CURRENT_DATE AS TIMESTAMP))",
+            read={
+                "redshift": "SELECT DATEADD(DAY, 1, CURRENT_DATE)",
+            },
+        )
         self.validate_all(
             "DAY_OF_WEEK(timestamp '2012-08-08 01:00:00')",
             write={

@@ -251,7 +251,7 @@ class TestRedshift(Validator):
                 "postgres": "SELECT CAST('2008-02-28' AS TIMESTAMP) + INTERVAL '18 month'",
                 "presto": "SELECT DATE_ADD('month', 18, CAST('2008-02-28' AS TIMESTAMP))",
                 "redshift": "SELECT DATEADD(month, 18, '2008-02-28')",
-                "snowflake": "SELECT DATEADD(month, 18, '2008-02-28')",
+                "snowflake": "SELECT DATEADD(month, 18, CAST('2008-02-28' AS TIMESTAMPNTZ))",
                 "tsql": "SELECT DATEADD(month, 18, CAST('2008-02-28' AS DATETIME2))",
             },
         )

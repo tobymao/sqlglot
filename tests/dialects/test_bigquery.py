@@ -166,12 +166,6 @@ class TestBigQuery(Validator):
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_all(
-            "SELECT FORMAT_DATE('%Y-%m', CAST('2008-12-25' AS DATE))",
-            read={
-                "presto": "SELECT DATE_FORMAT(DATE '2008-12-25', '%Y-%m')",
-            },
-        )
-        self.validate_all(
             "SELECT * FROM t WHERE EXISTS(SELECT * FROM unnest(nums) AS x WHERE x > 1)",
             write={
                 "bigquery": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS x WHERE x > 1)",

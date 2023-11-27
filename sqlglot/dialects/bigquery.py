@@ -532,6 +532,7 @@ class BigQuery(Dialect):
             exp.TimestampAdd: date_add_interval_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
+            exp.TimeToStr: lambda self, e: f"FORMAT_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,

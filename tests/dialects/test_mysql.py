@@ -123,6 +123,7 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE test_table ALTER COLUMN test_column SET DEFAULT 1")
 
     def test_identity(self):
+        self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:00.0000')")
         self.validate_identity("SELECT @var1 := 1, @var2")
         self.validate_identity("UNLOCK TABLES")
         self.validate_identity("LOCK TABLES `app_fields` WRITE")

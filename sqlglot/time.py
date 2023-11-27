@@ -42,6 +42,10 @@ def format_time(
                 end -= 1
                 chars = sym
                 sym = None
+            else:
+                chars = chars[0]
+                end = start + 1
+
             start += len(chars)
             chunks.append(chars)
             current = trie

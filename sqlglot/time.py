@@ -42,6 +42,10 @@ def format_time(
                 end -= 1
                 chars = sym
                 sym = None
+            else:
+                chars = chars[0]
+                end = start + 1
+
             start += len(chars)
             chunks.append(chars)
             current = trie
@@ -53,13 +57,7 @@ def format_time(
         if result != TrieResult.FAILED and end > size:
             chunks.append(chars)
 
-    return "".join(
-        mapping.get(
-            chars,
-            ":".join(mapping.get(subchunk, subchunk) for subchunk in chars.split(":")),
-        )
-        for chars in chunks
-    )
+    return "".join(mapping.get(chars, chars) for chars in chunks)
 
 
 TIMEZONES = {

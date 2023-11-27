@@ -560,7 +560,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRFTIME(x, '%y-%-m-%S')",
             write={
-                "bigquery": "TIME_TO_STR(x, '%y-%-m-%S')",
+                "bigquery": "FORMAT_DATE('%y-%-m-%S', x)",
                 "duckdb": "STRFTIME(x, '%y-%-m-%S')",
                 "postgres": "TO_CHAR(x, 'YY-FMMM-SS')",
                 "presto": "DATE_FORMAT(x, '%y-%c-%s')",
@@ -570,6 +570,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
             write={
+                "bigquery": "FORMAT_DATE('%Y-%m-%d %H:%M:%S', x)",
                 "duckdb": "STRFTIME(x, '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_FORMAT(x, '%Y-%m-%d %T')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')",

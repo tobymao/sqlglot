@@ -451,12 +451,11 @@ def normalize_name(
     if isinstance(identifier, str):
         identifier = exp.parse_identifier(identifier, dialect=dialect)
 
-    # This can be useful for normalize_identifier
-    identifier.meta["is_table"] = is_table
-
     if not normalize:
         return identifier
 
+    # this is used for normalize_identifier, bigquery has special rules pertaining tables
+    identifier.meta["is_table"] = is_table
     return Dialect.get_or_raise(dialect).normalize_identifier(identifier)
 
 

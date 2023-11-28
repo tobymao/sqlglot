@@ -4291,8 +4291,9 @@ class Array(Func):
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
+# https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):
-    arg_types = {"this": True, "format": False}
+    arg_types = {"this": True, "format": False, "nlsparam": False}
 
 
 class GenerateSeries(Func):

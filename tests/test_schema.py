@@ -216,15 +216,15 @@ class TestSchema(unittest.TestCase):
         # Check that add_table normalizes both the table and the column names to be added / updated
         schema = MappingSchema()
         schema.add_table("Foo", {"SomeColumn": "INT", '"SomeColumn"': "DOUBLE"})
-        self.assertEqual(schema.column_names(exp.Table(this="fOO")), ["somecolumn", "SomeColumn"])
+        self.assertEqual(schema.column_names(exp.table_("fOO")), ["somecolumn", "SomeColumn"])
 
         # Check that names are normalized to uppercase for Snowflake
         schema = MappingSchema(schema={"x": {"foo": "int", '"bLa"': "int"}}, dialect="snowflake")
-        self.assertEqual(schema.column_names(exp.Table(this="x")), ["FOO", "bLa"])
+        self.assertEqual(schema.column_names(exp.table_("x")), ["FOO", "bLa"])
 
         # Check that switching off the normalization logic works as expected
         schema = MappingSchema(schema={"x": {"foo": "int"}}, normalize=False, dialect="snowflake")
-        self.assertEqual(schema.column_names(exp.Table(this="x")), ["foo"])
+        self.assertEqual(schema.column_names(exp.table_("x")), ["foo"])
 
         # Check that the correct dialect is used when calling schema methods
         # Note: T-SQL is case-insensitive by default, so `fo` in clickhouse will match the normalized table name

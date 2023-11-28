@@ -115,7 +115,26 @@ class TestExpressions(unittest.TestCase):
         self.assertIsNone(column.find_ancestor(exp.Join))
 
     def test_to_dot(self):
-        column = parse_one('a.b.c."d".e.f').find(exp.Column)
+        orig = parse_one('a.b.c."d".e.f')
+        self.assertEqual(".".join(str(p) for p in orig.parts), 'a.b.c."d".e.f')
+
+        self.assertEqual(
+            ".".join(
+                str(p)
+                for p in exp.Dot.build(
+                    [
+                        exp.to_table("a.b.c"),
+                        exp.to_identifier("d"),
+                        exp.to_identifier("e"),
+                        exp.to_identifier("f"),
+                    ]
+                ).parts
+            ),
+            "a.b.c.d.e.f",
+        )
+
+        self.assertEqual(".".join(str(p) for p in orig.parts), 'a.b.c."d".e.f')
+        column = orig.find(exp.Column)
         dot = column.to_dot()
 
         self.assertEqual(dot.sql(), 'a.b.c."d".e.f')

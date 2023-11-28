@@ -120,20 +120,22 @@ def _ensure_tables(d: t.Optional[t.Dict], dialect: DialectType = None) -> t.Dict
     depth = dict_depth(d)
     if depth > 1:
         return {
-            normalize_name(k, dialect=dialect, is_table=True): _ensure_tables(v, dialect=dialect)
+            normalize_name(k, dialect=dialect, is_table=True).name: _ensure_tables(
+                v, dialect=dialect
+            )
             for k, v in d.items()
         }
 
     result = {}
     for table_name, table in d.items():
-        table_name = normalize_name(table_name, dialect=dialect)
+        table_name = normalize_name(table_name, dialect=dialect).name
 
         if isinstance(table, Table):
             result[table_name] = table
         else:
             table = [
                 {
-                    normalize_name(column_name, dialect=dialect): value
+                    normalize_name(column_name, dialect=dialect).name: value
                     for column_name, value in row.items()
                 }
                 for row in table

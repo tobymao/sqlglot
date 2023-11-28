@@ -5699,7 +5699,7 @@ WHERE
   END > 0.1
 ORDER BY
   "v1"."sum_sales" - "v1"."avg_monthly_sales",
-  "v1"."d_moy"
+  "d_moy"
 LIMIT 100;
 
 --------------------------------------
@@ -6020,9 +6020,9 @@ WITH "date_dim_2" AS (
   WHERE
     "store"."currency_rank" <= 10 OR "store"."return_rank" <= 10
   ORDER BY
-    1,
-    "store"."return_rank",
-    "store"."currency_rank"
+    "channel",
+    "return_rank",
+    "currency_rank"
   LIMIT 100
 ), "cte_4" AS (
   SELECT
@@ -6997,7 +6997,7 @@ WHERE
   END > 0.1
 ORDER BY
   "v1"."sum_sales" - "v1"."avg_monthly_sales",
-  "v1"."avg_monthly_sales"
+  "avg_monthly_sales"
 LIMIT 100;
 
 --------------------------------------
@@ -10061,9 +10061,9 @@ WHERE
   AND "t_s_firstyear"."year1" = 1999
   AND "t_s_firstyear"."year_total" > 0
 ORDER BY
-  "t_s_secyear"."customer_id",
-  "t_s_secyear"."customer_first_name",
-  "t_s_secyear"."customer_last_name"
+  "customer_id",
+  "customer_first_name",
+  "customer_last_name"
 LIMIT 100;
 
 --------------------------------------

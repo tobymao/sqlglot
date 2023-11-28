@@ -1,6 +1,44 @@
 Changelog
 =========
 
+## [v19.7.0] - 2023-11-28
+### :boom: BREAKING CHANGES
+- due to [`8cd7d1c`](https://github.com/tobymao/sqlglot/commit/8cd7d1c0bb56aff6bcd08a3ae4e71f68022307b8) - use more canonical cast instead of to_date *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  use more canonical cast instead of to_date
+
+- due to [`c413b7f`](https://github.com/tobymao/sqlglot/commit/c413b7fa56c69da3297eb575de7600316b491f18) - expand positional args in order by as aliases *(PR [#2599](https://github.com/tobymao/sqlglot/pull/2599) by [@tobymao](https://github.com/tobymao))*:
+
+  expand positional args in order by as aliases (#2599)
+
+- due to [`13817f1`](https://github.com/tobymao/sqlglot/commit/13817f187a79bcc559f7e6939729fce8fecbd812) - avoid unnecessary copying in normalization *(PR [#2602](https://github.com/tobymao/sqlglot/pull/2602) by [@tobymao](https://github.com/tobymao))*:
+
+  avoid unnecessary copying in normalization (#2602)
+
+
+### :sparkles: New Features
+- [`739c3c7`](https://github.com/tobymao/sqlglot/commit/739c3c7e4ab1c5986323f2ff6e0ad24bfab8fa0a) - insert returning builder closes [#2579](https://github.com/tobymao/sqlglot/pull/2579) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`6e3c7c1`](https://github.com/tobymao/sqlglot/commit/6e3c7c197e8ca2dd48af389e12951ddd22313430) - **tsql**: default database .. closes [#2594](https://github.com/tobymao/sqlglot/pull/2594) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`8cd7d1c`](https://github.com/tobymao/sqlglot/commit/8cd7d1c0bb56aff6bcd08a3ae4e71f68022307b8) - use more canonical cast instead of to_date *(commit by [@tobymao](https://github.com/tobymao))*
+- [`08d60b6`](https://github.com/tobymao/sqlglot/commit/08d60b6ef414515920666b56ee8fadb386df0022) - **tsql**: add special chars in single var tokens *(PR [#2582](https://github.com/tobymao/sqlglot/pull/2582) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2581](undefined) opened by [@Hal-H2Apps](https://github.com/Hal-H2Apps)*
+- [`bf29a9b`](https://github.com/tobymao/sqlglot/commit/bf29a9b04152672d261649f392316cdaa39ef1e2) - handle ending spaces after keywords closes [#2585](https://github.com/tobymao/sqlglot/pull/2585) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f53f656`](https://github.com/tobymao/sqlglot/commit/f53f6565330cf594c07977b4f1d169220ae8fe19) - **optimizer**: respect EXCEPT when expanding star for PIVOTs *(PR [#2589](https://github.com/tobymao/sqlglot/pull/2589) by [@georgesittas](https://github.com/georgesittas))*
+- [`426075f`](https://github.com/tobymao/sqlglot/commit/426075fe17b60b419f38a8ef5735977b953b92af) - **duckdb**: unqualify columns under Pivot *(PR [#2590](https://github.com/tobymao/sqlglot/pull/2590) by [@georgesittas](https://github.com/georgesittas))*
+- [`4774431`](https://github.com/tobymao/sqlglot/commit/4774431e7f9cf8146d0e4721d8c49957696c7727) - **tsql**: generate DATEPART when the format is quarter *(PR [#2591](https://github.com/tobymao/sqlglot/pull/2591) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2586](undefined) opened by [@abadugu13](https://github.com/abadugu13)*
+- [`dc783a8`](https://github.com/tobymao/sqlglot/commit/dc783a8b723ca000e6ff2343675f4f0030716037) - **bigquery**: generate FORMAT_DATE for TimeToStr *(PR [#2596](https://github.com/tobymao/sqlglot/pull/2596) by [@georgesittas](https://github.com/georgesittas))*
+- [`2ecfd34`](https://github.com/tobymao/sqlglot/commit/2ecfd34628853711dc30e86b3888a88a2d0869a0) - time format chunk misses from mapping, but its constituent parts are not *(PR [#2598](https://github.com/tobymao/sqlglot/pull/2598) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2597](undefined) opened by [@j-bennet](https://github.com/j-bennet)*
+- [`c413b7f`](https://github.com/tobymao/sqlglot/commit/c413b7fa56c69da3297eb575de7600316b491f18) - expand positional args in order by as aliases *(PR [#2599](https://github.com/tobymao/sqlglot/pull/2599) by [@tobymao](https://github.com/tobymao))*
+- [`c66e413`](https://github.com/tobymao/sqlglot/commit/c66e413c916c15d8e485d42055a9214db936c56c) - **oracle**: to_char nlsparam closes [#2601](https://github.com/tobymao/sqlglot/pull/2601) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`13817f1`](https://github.com/tobymao/sqlglot/commit/13817f187a79bcc559f7e6939729fce8fecbd812) - avoid unnecessary copying in normalization *(PR [#2602](https://github.com/tobymao/sqlglot/pull/2602) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v19.6.0] - 2023-11-20
 ### :bug: Bug Fixes
 - [`7647227`](https://github.com/tobymao/sqlglot/commit/76472275018a069abc7079bc52cac94fb8d2d348) - **oracle**: parse DROP CONSTRAINT into DROP instead of Command *(PR [#2573](https://github.com/tobymao/sqlglot/pull/2573) by [@HassanShafiq123](https://github.com/HassanShafiq123))*
@@ -2047,3 +2085,4 @@ Changelog
 [v19.5.0]: https://github.com/tobymao/sqlglot/compare/v19.4.0...v19.5.0
 [v19.5.1]: https://github.com/tobymao/sqlglot/compare/v19.5.0...v19.5.1
 [v19.6.0]: https://github.com/tobymao/sqlglot/compare/v19.5.1...v19.6.0
+[v19.7.0]: https://github.com/tobymao/sqlglot/compare/v19.6.0...v19.7.0

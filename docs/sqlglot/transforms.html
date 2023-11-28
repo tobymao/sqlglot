@@ -76,6 +76,9 @@
                     <a class="function" href="#ensure_bools">ensure_bools</a>
             </li>
             <li>
+                    <a class="function" href="#unqualify_columns">unqualify_columns</a>
+            </li>
+            <li>
                     <a class="function" href="#preprocess">preprocess</a>
             </li>
     </ul>
@@ -552,50 +555,59 @@
 </span><span id="L-449"><a href="#L-449"><span class="linenos">449</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-450"><a href="#L-450"><span class="linenos">450</span></a>
 </span><span id="L-451"><a href="#L-451"><span class="linenos">451</span></a>
-</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
-</span><span id="L-453"><a href="#L-453"><span class="linenos">453</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
-</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="L-455"><a href="#L-455"><span class="linenos">455</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
-</span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
-</span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
+</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a><span class="k">def</span> <span class="nf">unqualify_columns</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="L-453"><a href="#L-453"><span class="linenos">453</span></a>    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">):</span>
+</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a>        <span class="c1"># We only wanna pop off the table, db, catalog args</span>
+</span><span id="L-455"><a href="#L-455"><span class="linenos">455</span></a>        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">column</span><span class="o">.</span><span class="n">parts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a>            <span class="n">part</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+</span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a>
+</span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a>    <span class="k">return</span> <span class="n">expression</span>
 </span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a>
-</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a><span class="sd">    Args:</span>
-</span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
-</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a>
-</span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a><span class="sd">    Returns:</span>
-</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a><span class="sd">        Function that can be used as a generator transform.</span>
-</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a>
-</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a>
-</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="L-472"><a href="#L-472"><span class="linenos">472</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a>
-</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
-</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-477"><a href="#L-477"><span class="linenos">477</span></a>
-</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
-</span><span id="L-479"><a href="#L-479"><span class="linenos">479</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
-</span><span id="L-480"><a href="#L-480"><span class="linenos">480</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Func</span><span class="p">):</span>
-</span><span id="L-482"><a href="#L-482"><span class="linenos">482</span></a>                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="L-483"><a href="#L-483"><span class="linenos">483</span></a>
-</span><span id="L-484"><a href="#L-484"><span class="linenos">484</span></a>                <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
-</span><span id="L-485"><a href="#L-485"><span class="linenos">485</span></a>                <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
-</span><span id="L-486"><a href="#L-486"><span class="linenos">486</span></a>                <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
-</span><span id="L-487"><a href="#L-487"><span class="linenos">487</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="L-488"><a href="#L-488"><span class="linenos">488</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
-</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a>                <span class="p">)</span>
-</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a>
-</span><span id="L-491"><a href="#L-491"><span class="linenos">491</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
+</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a>
+</span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
+</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
+</span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
+</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
+</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
+</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a>
+</span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a><span class="sd">    Args:</span>
+</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
+</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a>
+</span><span id="L-472"><a href="#L-472"><span class="linenos">472</span></a><span class="sd">    Returns:</span>
+</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a><span class="sd">        Function that can be used as a generator transform.</span>
+</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a>
+</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-477"><a href="#L-477"><span class="linenos">477</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a>
+</span><span id="L-479"><a href="#L-479"><span class="linenos">479</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-480"><a href="#L-480"><span class="linenos">480</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-482"><a href="#L-482"><span class="linenos">482</span></a>
+</span><span id="L-483"><a href="#L-483"><span class="linenos">483</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="L-484"><a href="#L-484"><span class="linenos">484</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
+</span><span id="L-485"><a href="#L-485"><span class="linenos">485</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-486"><a href="#L-486"><span class="linenos">486</span></a>
+</span><span id="L-487"><a href="#L-487"><span class="linenos">487</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
+</span><span id="L-488"><a href="#L-488"><span class="linenos">488</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
+</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Func</span><span class="p">):</span>
+</span><span id="L-491"><a href="#L-491"><span class="linenos">491</span></a>                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span><span id="L-492"><a href="#L-492"><span class="linenos">492</span></a>
-</span><span id="L-493"><a href="#L-493"><span class="linenos">493</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-</span><span id="L-494"><a href="#L-494"><span class="linenos">494</span></a>
-</span><span id="L-495"><a href="#L-495"><span class="linenos">495</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
+</span><span id="L-493"><a href="#L-493"><span class="linenos">493</span></a>                <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
+</span><span id="L-494"><a href="#L-494"><span class="linenos">494</span></a>                <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
+</span><span id="L-495"><a href="#L-495"><span class="linenos">495</span></a>                <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
+</span><span id="L-496"><a href="#L-496"><span class="linenos">496</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
+</span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a>                <span class="p">)</span>
+</span><span id="L-499"><a href="#L-499"><span class="linenos">499</span></a>
+</span><span id="L-500"><a href="#L-500"><span class="linenos">500</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
+</span><span id="L-501"><a href="#L-501"><span class="linenos">501</span></a>
+</span><span id="L-502"><a href="#L-502"><span class="linenos">502</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="L-503"><a href="#L-503"><span class="linenos">503</span></a>
+</span><span id="L-504"><a href="#L-504"><span class="linenos">504</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
 </span></pre></div>
 
 
@@ -1344,6 +1356,30 @@ moved to the top level so that the final SQL code is valid from a syntax standpo
 
 
                 </section>
+                <section id="unqualify_columns">
+                            <input id="unqualify_columns-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">unqualify_columns</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="n">expression</span><span class="p">:</span> <span class="n"><a href="expressions.html#Expression">sqlglot.expressions.Expression</a></span></span><span class="return-annotation">) -> <span class="n"><a href="expressions.html#Expression">sqlglot.expressions.Expression</a></span>:</span></span>
+
+                <label class="view-source-button" for="unqualify_columns-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#unqualify_columns"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="unqualify_columns-453"><a href="#unqualify_columns-453"><span class="linenos">453</span></a><span class="k">def</span> <span class="nf">unqualify_columns</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">:</span>
+</span><span id="unqualify_columns-454"><a href="#unqualify_columns-454"><span class="linenos">454</span></a>    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Column</span><span class="p">):</span>
+</span><span id="unqualify_columns-455"><a href="#unqualify_columns-455"><span class="linenos">455</span></a>        <span class="c1"># We only wanna pop off the table, db, catalog args</span>
+</span><span id="unqualify_columns-456"><a href="#unqualify_columns-456"><span class="linenos">456</span></a>        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">column</span><span class="o">.</span><span class="n">parts</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+</span><span id="unqualify_columns-457"><a href="#unqualify_columns-457"><span class="linenos">457</span></a>            <span class="n">part</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+</span><span id="unqualify_columns-458"><a href="#unqualify_columns-458"><span class="linenos">458</span></a>
+</span><span id="unqualify_columns-459"><a href="#unqualify_columns-459"><span class="linenos">459</span></a>    <span class="k">return</span> <span class="n">expression</span>
+</span></pre></div>
+
+
+    
+
+                </section>
                 <section id="preprocess">
                             <input id="preprocess-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
@@ -1355,50 +1391,50 @@ moved to the top level so that the final SQL code is valid from a syntax standpo
 
     </div>
     <a class="headerlink" href="#preprocess"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="preprocess-453"><a href="#preprocess-453"><span class="linenos">453</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
-</span><span id="preprocess-454"><a href="#preprocess-454"><span class="linenos">454</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
-</span><span id="preprocess-455"><a href="#preprocess-455"><span class="linenos">455</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="preprocess-456"><a href="#preprocess-456"><span class="linenos">456</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="preprocess-457"><a href="#preprocess-457"><span class="linenos">457</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
-</span><span id="preprocess-458"><a href="#preprocess-458"><span class="linenos">458</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
-</span><span id="preprocess-459"><a href="#preprocess-459"><span class="linenos">459</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
-</span><span id="preprocess-460"><a href="#preprocess-460"><span class="linenos">460</span></a>
-</span><span id="preprocess-461"><a href="#preprocess-461"><span class="linenos">461</span></a><span class="sd">    Args:</span>
-</span><span id="preprocess-462"><a href="#preprocess-462"><span class="linenos">462</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
-</span><span id="preprocess-463"><a href="#preprocess-463"><span class="linenos">463</span></a>
-</span><span id="preprocess-464"><a href="#preprocess-464"><span class="linenos">464</span></a><span class="sd">    Returns:</span>
-</span><span id="preprocess-465"><a href="#preprocess-465"><span class="linenos">465</span></a><span class="sd">        Function that can be used as a generator transform.</span>
-</span><span id="preprocess-466"><a href="#preprocess-466"><span class="linenos">466</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="preprocess-467"><a href="#preprocess-467"><span class="linenos">467</span></a>
-</span><span id="preprocess-468"><a href="#preprocess-468"><span class="linenos">468</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="preprocess-469"><a href="#preprocess-469"><span class="linenos">469</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="preprocess-470"><a href="#preprocess-470"><span class="linenos">470</span></a>
-</span><span id="preprocess-471"><a href="#preprocess-471"><span class="linenos">471</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="preprocess-472"><a href="#preprocess-472"><span class="linenos">472</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="preprocess-473"><a href="#preprocess-473"><span class="linenos">473</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="preprocess-474"><a href="#preprocess-474"><span class="linenos">474</span></a>
-</span><span id="preprocess-475"><a href="#preprocess-475"><span class="linenos">475</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-</span><span id="preprocess-476"><a href="#preprocess-476"><span class="linenos">476</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
-</span><span id="preprocess-477"><a href="#preprocess-477"><span class="linenos">477</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="preprocess-478"><a href="#preprocess-478"><span class="linenos">478</span></a>
-</span><span id="preprocess-479"><a href="#preprocess-479"><span class="linenos">479</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
-</span><span id="preprocess-480"><a href="#preprocess-480"><span class="linenos">480</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
-</span><span id="preprocess-481"><a href="#preprocess-481"><span class="linenos">481</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
-</span><span id="preprocess-482"><a href="#preprocess-482"><span class="linenos">482</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Func</span><span class="p">):</span>
-</span><span id="preprocess-483"><a href="#preprocess-483"><span class="linenos">483</span></a>                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
-</span><span id="preprocess-484"><a href="#preprocess-484"><span class="linenos">484</span></a>
-</span><span id="preprocess-485"><a href="#preprocess-485"><span class="linenos">485</span></a>                <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
-</span><span id="preprocess-486"><a href="#preprocess-486"><span class="linenos">486</span></a>                <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
-</span><span id="preprocess-487"><a href="#preprocess-487"><span class="linenos">487</span></a>                <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
-</span><span id="preprocess-488"><a href="#preprocess-488"><span class="linenos">488</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="preprocess-489"><a href="#preprocess-489"><span class="linenos">489</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
-</span><span id="preprocess-490"><a href="#preprocess-490"><span class="linenos">490</span></a>                <span class="p">)</span>
-</span><span id="preprocess-491"><a href="#preprocess-491"><span class="linenos">491</span></a>
-</span><span id="preprocess-492"><a href="#preprocess-492"><span class="linenos">492</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="preprocess-462"><a href="#preprocess-462"><span class="linenos">462</span></a><span class="k">def</span> <span class="nf">preprocess</span><span class="p">(</span>
+</span><span id="preprocess-463"><a href="#preprocess-463"><span class="linenos">463</span></a>    <span class="n">transforms</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">]],</span>
+</span><span id="preprocess-464"><a href="#preprocess-464"><span class="linenos">464</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Generator</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="preprocess-465"><a href="#preprocess-465"><span class="linenos">465</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="preprocess-466"><a href="#preprocess-466"><span class="linenos">466</span></a><span class="sd">    Creates a new transform by chaining a sequence of transformations and converts the resulting</span>
+</span><span id="preprocess-467"><a href="#preprocess-467"><span class="linenos">467</span></a><span class="sd">    expression to SQL, using either the &quot;_sql&quot; method corresponding to the resulting expression,</span>
+</span><span id="preprocess-468"><a href="#preprocess-468"><span class="linenos">468</span></a><span class="sd">    or the appropriate `Generator.TRANSFORMS` function (when applicable -- see below).</span>
+</span><span id="preprocess-469"><a href="#preprocess-469"><span class="linenos">469</span></a>
+</span><span id="preprocess-470"><a href="#preprocess-470"><span class="linenos">470</span></a><span class="sd">    Args:</span>
+</span><span id="preprocess-471"><a href="#preprocess-471"><span class="linenos">471</span></a><span class="sd">        transforms: sequence of transform functions. These will be called in order.</span>
+</span><span id="preprocess-472"><a href="#preprocess-472"><span class="linenos">472</span></a>
+</span><span id="preprocess-473"><a href="#preprocess-473"><span class="linenos">473</span></a><span class="sd">    Returns:</span>
+</span><span id="preprocess-474"><a href="#preprocess-474"><span class="linenos">474</span></a><span class="sd">        Function that can be used as a generator transform.</span>
+</span><span id="preprocess-475"><a href="#preprocess-475"><span class="linenos">475</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="preprocess-476"><a href="#preprocess-476"><span class="linenos">476</span></a>
+</span><span id="preprocess-477"><a href="#preprocess-477"><span class="linenos">477</span></a>    <span class="k">def</span> <span class="nf">_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="preprocess-478"><a href="#preprocess-478"><span class="linenos">478</span></a>        <span class="n">expression_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-479"><a href="#preprocess-479"><span class="linenos">479</span></a>
+</span><span id="preprocess-480"><a href="#preprocess-480"><span class="linenos">480</span></a>        <span class="n">expression</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-481"><a href="#preprocess-481"><span class="linenos">481</span></a>        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="preprocess-482"><a href="#preprocess-482"><span class="linenos">482</span></a>            <span class="n">expression</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-483"><a href="#preprocess-483"><span class="linenos">483</span></a>
+</span><span id="preprocess-484"><a href="#preprocess-484"><span class="linenos">484</span></a>        <span class="n">_sql_handler</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="o">.</span><span class="n">key</span> <span class="o">+</span> <span class="s2">&quot;_sql&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="preprocess-485"><a href="#preprocess-485"><span class="linenos">485</span></a>        <span class="k">if</span> <span class="n">_sql_handler</span><span class="p">:</span>
+</span><span id="preprocess-486"><a href="#preprocess-486"><span class="linenos">486</span></a>            <span class="k">return</span> <span class="n">_sql_handler</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-487"><a href="#preprocess-487"><span class="linenos">487</span></a>
+</span><span id="preprocess-488"><a href="#preprocess-488"><span class="linenos">488</span></a>        <span class="n">transforms_handler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">TRANSFORMS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
+</span><span id="preprocess-489"><a href="#preprocess-489"><span class="linenos">489</span></a>        <span class="k">if</span> <span class="n">transforms_handler</span><span class="p">:</span>
+</span><span id="preprocess-490"><a href="#preprocess-490"><span class="linenos">490</span></a>            <span class="k">if</span> <span class="n">expression_type</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expression</span><span class="p">):</span>
+</span><span id="preprocess-491"><a href="#preprocess-491"><span class="linenos">491</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Func</span><span class="p">):</span>
+</span><span id="preprocess-492"><a href="#preprocess-492"><span class="linenos">492</span></a>                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_fallback_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span><span id="preprocess-493"><a href="#preprocess-493"><span class="linenos">493</span></a>
-</span><span id="preprocess-494"><a href="#preprocess-494"><span class="linenos">494</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-</span><span id="preprocess-495"><a href="#preprocess-495"><span class="linenos">495</span></a>
-</span><span id="preprocess-496"><a href="#preprocess-496"><span class="linenos">496</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
+</span><span id="preprocess-494"><a href="#preprocess-494"><span class="linenos">494</span></a>                <span class="c1"># Ensures we don&#39;t enter an infinite loop. This can happen when the original expression</span>
+</span><span id="preprocess-495"><a href="#preprocess-495"><span class="linenos">495</span></a>                <span class="c1"># has the same type as the final expression and there&#39;s no _sql method available for it,</span>
+</span><span id="preprocess-496"><a href="#preprocess-496"><span class="linenos">496</span></a>                <span class="c1"># because then it&#39;d re-enter _to_sql.</span>
+</span><span id="preprocess-497"><a href="#preprocess-497"><span class="linenos">497</span></a>                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="preprocess-498"><a href="#preprocess-498"><span class="linenos">498</span></a>                    <span class="sa">f</span><span class="s2">&quot;Expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> requires a _sql method in order to be transformed.&quot;</span>
+</span><span id="preprocess-499"><a href="#preprocess-499"><span class="linenos">499</span></a>                <span class="p">)</span>
+</span><span id="preprocess-500"><a href="#preprocess-500"><span class="linenos">500</span></a>
+</span><span id="preprocess-501"><a href="#preprocess-501"><span class="linenos">501</span></a>            <span class="k">return</span> <span class="n">transforms_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
+</span><span id="preprocess-502"><a href="#preprocess-502"><span class="linenos">502</span></a>
+</span><span id="preprocess-503"><a href="#preprocess-503"><span class="linenos">503</span></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported expression type </span><span class="si">{</span><span class="n">expression</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+</span><span id="preprocess-504"><a href="#preprocess-504"><span class="linenos">504</span></a>
+</span><span id="preprocess-505"><a href="#preprocess-505"><span class="linenos">505</span></a>    <span class="k">return</span> <span class="n">_to_sql</span>
 </span></pre></div>
 
 

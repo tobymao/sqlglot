@@ -65,10 +65,10 @@ SELECT a AS j, b FROM x ORDER BY j;
 SELECT x.a AS j, x.b AS b FROM x AS x ORDER BY j;
 
 SELECT a AS j, b AS a FROM x ORDER BY 1;
-SELECT x.a AS j, x.b AS a FROM x AS x ORDER BY x.a;
+SELECT x.a AS j, x.b AS a FROM x AS x ORDER BY j;
 
 SELECT SUM(a) AS c, SUM(b) AS d FROM x ORDER BY 1, 2;
-SELECT SUM(x.a) AS c, SUM(x.b) AS d FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
+SELECT SUM(x.a) AS c, SUM(x.b) AS d FROM x AS x ORDER BY c, d;
 
 # execute: false
 SELECT CAST(a AS INT) FROM x ORDER BY a;
@@ -76,7 +76,7 @@ SELECT CAST(x.a AS INT) AS a FROM x AS x ORDER BY a;
 
 # execute: false
 SELECT SUM(a), SUM(b) AS c FROM x ORDER BY 1, 2;
-SELECT SUM(x.a) AS _col_0, SUM(x.b) AS c FROM x AS x ORDER BY SUM(x.a), SUM(x.b);
+SELECT SUM(x.a) AS _col_0, SUM(x.b) AS c FROM x AS x ORDER BY _col_0, c;
 
 SELECT a AS j, b FROM x GROUP BY j, b;
 SELECT x.a AS j, x.b AS b FROM x AS x GROUP BY x.a, x.b;
@@ -85,7 +85,10 @@ SELECT a, b FROM x GROUP BY 1, 2;
 SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
 
 SELECT a, b FROM x ORDER BY 1, 2;
-SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a, x.b;
+SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY a, b;
+
+SELECT DISTINCT a AS c, b AS d FROM x ORDER BY 1;
+SELECT DISTINCT x.a AS c, x.b AS d FROM x AS x ORDER BY c;
 
 SELECT 2 FROM x GROUP BY 1;
 SELECT 2 AS "2" FROM x AS x GROUP BY 1;

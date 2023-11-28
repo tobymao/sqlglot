@@ -237,7 +237,7 @@ def _expand_order_by(scope: Scope, resolver: Resolver) -> None:
     ordereds = order.expressions
     for ordered, new_expression in zip(
         ordereds,
-        _expand_positional_references(scope, (o.this for o in ordereds)),
+        _expand_positional_references(scope, (o.this for o in ordereds), alias=True),
     ):
         for agg in ordered.find_all(exp.AggFunc):
             for col in agg.find_all(exp.Column):
@@ -259,17 +259,23 @@ def _expand_order_by(scope: Scope, resolver: Resolver) -> None:
             )
 
 
-def _expand_positional_references(scope: Scope, expressions: t.Iterable[E]) -> t.List[E]:
-    new_nodes = []
+def _expand_positional_references(
+    scope: Scope, expressions: t.Iterable[exp.Expression], alias: bool = False
+) -> t.List[exp.Expression]:
+    new_nodes: t.List[exp.Expression] = []
     for node in expressions:
         if node.is_int:
-            select = _select_by_pos(scope, t.cast(exp.Literal, node)).this
+            select = _select_by_pos(scope, t.cast(exp.Literal, node))
 
-            if isinstance(select, exp.Literal):
-                new_nodes.append(node)
+            if alias:
+                new_nodes.append(exp.column(select.args["alias"].copy()))
             else:
-                new_nodes.append(select.copy())
-                scope.clear_cache()
+                select = select.this
+
+                if isinstance(select, exp.Literal):
+                    new_nodes.append(node)
+                else:
+                    new_nodes.append(select.copy())
         else:
             new_nodes.append(node)
 

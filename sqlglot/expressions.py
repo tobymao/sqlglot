@@ -3925,6 +3925,22 @@ class Dot(Binary):
 
         return t.cast(Dot, reduce(lambda x, y: Dot(this=x, expression=y), expressions))
 
+    @property
+    def parts(self) -> t.List[Expression]:
+        """Return the parts of a table / column in order catalog, db, table."""
+        this, *parts = self.flatten()
+
+        parts.reverse()
+
+        for arg in ("this", "table", "db", "catalog"):
+            part = this.args.get(arg)
+
+            if isinstance(part, Expression):
+                parts.append(part)
+
+        parts.reverse()
+        return parts
+
 
 class DPipe(Binary):
     pass

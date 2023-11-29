@@ -605,6 +605,7 @@ class Parser(metaclass=_Parser):
         TokenType.NATIONAL_STRING: lambda self, token: self.expression(
             exp.National, this=token.text
         ),
+        TokenType.PARAMETER: lambda self, _: self._parse_parameter(),
         TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, this=token.text),
         TokenType.HEREDOC_STRING: lambda self, token: self.expression(
             exp.RawString, this=token.text

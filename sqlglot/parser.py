@@ -605,7 +605,6 @@ class Parser(metaclass=_Parser):
         TokenType.NATIONAL_STRING: lambda self, token: self.expression(
             exp.National, this=token.text
         ),
-        TokenType.PARAMETER: lambda self, _: self._parse_parameter(),
         TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, this=token.text),
         TokenType.HEREDOC_STRING: lambda self, token: self.expression(
             exp.RawString, this=token.text
@@ -2881,7 +2880,7 @@ class Parser(metaclass=_Parser):
             num = (
                 self._parse_factor()
                 if self._match(TokenType.NUMBER, advance=False)
-                else self._parse_primary()
+                else self._parse_primary() or self._parse_placeholder()
             )
 
         if self._match_text_seq("BUCKET"):

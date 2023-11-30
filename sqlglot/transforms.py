@@ -199,11 +199,11 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                     explode_alias = ""
 
                     if isinstance(select, exp.Alias):
-                        explode_alias = select.alias
+                        explode_alias = select.args["alias"]
                         alias = select
                     elif isinstance(select, exp.Aliases):
-                        pos_alias = select.aliases[0].name
-                        explode_alias = select.aliases[1].name
+                        pos_alias = select.aliases[0]
+                        explode_alias = select.aliases[1]
                         alias = select.replace(exp.alias_(select.this, "", copy=False))
                     else:
                         alias = select.replace(exp.alias_(select, ""))

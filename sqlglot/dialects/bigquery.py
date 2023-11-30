@@ -196,6 +196,19 @@ def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> 
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
 
+def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> str:
+    scale = expression.args.get("scale")
+    timestamp = self.sql(expression, "this")
+    if scale == exp.UnixToTime.SECONDS:
+        return f"TIMESTAMP_SECONDS({timestamp})"
+    if scale == exp.UnixToTime.MILLIS:
+        return f"TIMESTAMP_MILLIS({timestamp})"
+    if scale == exp.UnixToTime.MICROS:
+        return f"TIMESTAMP_MICROS({timestamp})"
+
+    raise ValueError("Improper scale for timestamp")
+
+
 class BigQuery(Dialect):
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -337,6 +350,15 @@ class BigQuery(Dialect):
             "TIME_SUB": parse_date_delta_with_interval(exp.TimeSub),
             "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
             "TIMESTAMP_SUB": parse_date_delta_with_interval(exp.TimestampSub),
+            "TIMESTAMP_MICROS": lambda args: exp.UnixToTime(
+                this=seq_get(args, 0), scale=exp.UnixToTime.MICROS
+            ),
+            "TIMESTAMP_MILLIS": lambda args: exp.UnixToTime(
+                this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
+            ),
+            "TIMESTAMP_SECONDS": lambda args: exp.UnixToTime(
+                this=seq_get(args, 0), scale=exp.UnixToTime.SECONDS
+            ),
             "TO_JSON_STRING": exp.JSONFormat.from_arg_list,
         }
 
@@ -538,6 +560,7 @@ class BigQuery(Dialect):
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.Unhex: rename_func("FROM_HEX"),
+            exp.UnixToTime: _unix_to_time_sql,
             exp.Values: _derived_table_values_to_unnest,
             exp.VariancePop: rename_func("VAR_POP"),
         }

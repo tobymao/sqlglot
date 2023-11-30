@@ -515,7 +515,7 @@ class Snowflake(Dialect):
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,
-                    transforms.explode_to_unnest(0),
+                    transforms.explode_to_unnest(),
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),

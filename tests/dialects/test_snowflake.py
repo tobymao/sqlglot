@@ -375,7 +375,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT TO_TIMESTAMP(1659981729)",
             write={
-                "bigquery": "SELECT UNIX_TO_TIME(1659981729)",
+                "bigquery": "SELECT TIMESTAMP_SECONDS(1659981729)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729)",
                 "spark": "SELECT CAST(FROM_UNIXTIME(1659981729) AS TIMESTAMP)",
             },
@@ -383,7 +383,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT TO_TIMESTAMP(1659981729000, 3)",
             write={
-                "bigquery": "SELECT UNIX_TO_TIME(1659981729000, 'millis')",
+                "bigquery": "SELECT TIMESTAMP_MILLIS(1659981729000)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000, 3)",
                 "spark": "SELECT TIMESTAMP_MILLIS(1659981729000)",
             },
@@ -391,7 +391,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT TO_TIMESTAMP('1659981729')",
             write={
-                "bigquery": "SELECT UNIX_TO_TIME('1659981729')",
+                "bigquery": "SELECT TIMESTAMP_SECONDS('1659981729')",
                 "snowflake": "SELECT TO_TIMESTAMP('1659981729')",
                 "spark": "SELECT CAST(FROM_UNIXTIME('1659981729') AS TIMESTAMP)",
             },
@@ -399,7 +399,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
             write={
-                "bigquery": "SELECT UNIX_TO_TIME(1659981729000000000, 'micros')",
+                "bigquery": "SELECT TIMESTAMP_MICROS(1659981729000000000)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
                 "spark": "SELECT TIMESTAMP_MICROS(1659981729000000000)",
             },

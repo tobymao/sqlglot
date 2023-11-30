@@ -362,7 +362,7 @@ class Postgres(Dialect):
                     exp.Operator,
                     comments=self._prev_comments,
                     this=this,
-                    operator=exp.Anonymous(this="OPERATOR", expressions=[op]),
+                    operator=op,
                     expression=self._parse_bitwise(),
                 )
 

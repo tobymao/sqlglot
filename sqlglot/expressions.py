@@ -53,6 +53,7 @@ class _Expression(type):
 
 
 SQLGLOT_META = "sqlglot.meta"
+TABLE_PARTS = ("this", "db", "catalog")
 
 
 class Expression(metaclass=_Expression):
@@ -6041,17 +6042,19 @@ def to_interval(interval: str | Literal) -> Interval:
 
 
 @t.overload
-def to_table(sql_path: str | Table, **kwargs) -> Table:
+def to_table(
+    sql_path: str | Table, dialect: DialectType = None, copy: bool = True, **kwargs
+) -> Table:
     ...
 
 
 @t.overload
-def to_table(sql_path: None, **kwargs) -> None:
+def to_table(sql_path: None, dialect: DialectType = None, copy: bool = True, **kwargs) -> None:
     ...
 
 
 def to_table(
-    sql_path: t.Optional[str | Table], dialect: DialectType = None, **kwargs
+    sql_path: t.Optional[str | Table], dialect: DialectType = None, copy: bool = True, **kwargs
 ) -> t.Optional[Table]:
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
@@ -6060,13 +6063,14 @@ def to_table(
     Args:
         sql_path: a `[catalog].[schema].[table]` string.
         dialect: the source dialect according to which the table name will be parsed.
+        copy: Whether or not to copy a table if it is passed in.
         kwargs: the kwargs to instantiate the resulting `Table` expression with.
 
     Returns:
         A table expression.
     """
     if sql_path is None or isinstance(sql_path, Table):
-        return sql_path
+        return maybe_copy(sql_path, copy=copy)
     if not isinstance(sql_path, str):
         raise ValueError(f"Invalid type provided for a table: {type(sql_path)}")
 
@@ -6450,12 +6454,27 @@ def table_name(table: Table | str, dialect: DialectType = None) -> str:
     )
 
 
-def replace_tables(expression: E, mapping: t.Dict[str, str], copy: bool = True) -> E:
+def normalize_table_name(table: str | Table, dialect: DialectType = None, copy: bool = True) -> str:
+    """Returns a normalized table string name which can be used as a key."""
+    from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+
+    return ".".join(
+        p.name
+        for p in normalize_identifiers(
+            to_table(table, dialect=dialect, copy=copy), dialect=dialect
+        ).parts
+    )
+
+
+def replace_tables(
+    expression: E, mapping: t.Dict[str, str], dialect: DialectType = None, copy: bool = True
+) -> E:
     """Replace all tables in expression according to the mapping.
 
     Args:
         expression: expression node to be transformed and replaced.
         mapping: mapping of table names.
+        dialect: the dialect of the mapping table
         copy: whether or not to copy the expression.
 
     Examples:
@@ -6467,13 +6486,16 @@ def replace_tables(expression: E, mapping: t.Dict[str, str], copy: bool = True) 
         The mapped expression.
     """
 
+    mapping = {normalize_table_name(k, dialect=dialect): v for k, v in mapping.items()}
+
     def _replace_tables(node: Expression) -> Expression:
         if isinstance(node, Table):
-            new_name = mapping.get(table_name(node))
+            new_name = mapping.get(normalize_table_name(node, dialect=dialect))
+
             if new_name:
                 return to_table(
                     new_name,
-                    **{k: v for k, v in node.args.items() if k not in ("this", "db", "catalog")},
+                    **{k: v for k, v in node.args.items() if k not in TABLE_PARTS},
                 )
         return node
 
@@ -6517,7 +6539,10 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
 
 
 def expand(
-    expression: Expression, sources: t.Dict[str, Subqueryable], copy: bool = True
+    expression: Expression,
+    sources: t.Dict[str, Subqueryable],
+    dialect: DialectType = None,
+    copy: bool = True,
 ) -> Expression:
     """Transforms an expression by expanding all referenced sources into subqueries.
 
@@ -6532,15 +6557,17 @@ def expand(
     Args:
         expression: The expression to expand.
         sources: A dictionary of name to Subqueryables.
+        dialect: The dialect of the sources dict.
         copy: Whether or not to copy the expression during transformation. Defaults to True.
 
     Returns:
         The transformed expression.
     """
+    sources = {normalize_table_name(k, dialect=dialect): v for k, v in sources.items()}
 
     def _expand(node: Expression):
         if isinstance(node, Table):
-            name = table_name(node)
+            name = normalize_table_name(node, dialect=dialect)
             source = sources.get(name)
             if source:
                 subquery = source.subquery(node.alias or name)

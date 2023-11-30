@@ -225,10 +225,32 @@ class TestExpressions(unittest.TestCase):
     def test_replace_tables(self):
         self.assertEqual(
             exp.replace_tables(
-                parse_one("select * from a AS a, b, c.a, d.a cross join e.a"),
-                {"a": "a1", "b": "b.a", "c.a": "c.a2", "d.a": "d2"},
+                parse_one(
+                    'select * from a AS a, b, c.a, d.a cross join e.a cross join "f-F"."A" cross join G'
+                ),
+                {
+                    "a": "a1",
+                    "b": "b.a",
+                    "c.a": "c.a2",
+                    "d.a": "d2",
+                    "`f-F`.`A`": '"F"',
+                    "g": "g1.a",
+                },
+                dialect="bigquery",
             ).sql(),
-            "SELECT * FROM a1 AS a, b.a, c.a2, d2 CROSS JOIN e.a",
+            'SELECT * FROM a1 AS a, b.a, c.a2, d2 CROSS JOIN e.a CROSS JOIN "F" CROSS JOIN g1.a',
+        )
+
+    def test_expand(self):
+        self.assertEqual(
+            exp.expand(
+                parse_one('select * from "a-b"."C" AS a'),
+                {
+                    "`a-b`.`c`": parse_one("select 1"),
+                },
+                dialect="spark",
+            ).sql(),
+            "SELECT * FROM (SELECT 1) AS a /* source: a-b.c */",
         )
 
     def test_replace_placeholders(self):

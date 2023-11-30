@@ -15,8 +15,6 @@ if t.TYPE_CHECKING:
 
     ColumnMapping = t.Union[t.Dict, str, StructType, t.List]
 
-TABLE_ARGS = ("this", "db", "catalog")
-
 
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
@@ -147,7 +145,7 @@ class AbstractMappingSchema:
             if not depth:  # None
                 self._supported_table_args = tuple()
             elif 1 <= depth <= 3:
-                self._supported_table_args = TABLE_ARGS[:depth]
+                self._supported_table_args = exp.TABLE_PARTS[:depth]
             else:
                 raise SchemaError(f"Invalid mapping shape. Depth: {depth}")
 
@@ -156,7 +154,7 @@ class AbstractMappingSchema:
     def table_parts(self, table: exp.Table) -> t.List[str]:
         if isinstance(table.this, exp.ReadCSV):
             return [table.this.name]
-        return [table.text(part) for part in TABLE_ARGS if table.text(part)]
+        return [table.text(part) for part in exp.TABLE_PARTS if table.text(part)]
 
     def find(
         self, table: exp.Table, trie: t.Optional[t.Dict] = None, raise_on_missing: bool = True
@@ -387,7 +385,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         normalized_table = exp.maybe_parse(table, into=exp.Table, dialect=dialect, copy=normalize)
 
         if normalize:
-            for arg in TABLE_ARGS:
+            for arg in exp.TABLE_PARTS:
                 value = normalized_table.args.get(arg)
                 if isinstance(value, exp.Identifier):
                     normalized_table.set(

@@ -585,24 +585,28 @@ class Snowflake(Dialect):
             return super().log_sql(expression)
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
-            selects = ["value"]
             unnest_alias = expression.args.get("alias")
-
             offset = expression.args.get("offset")
-            if offset:
-                if unnest_alias:
-                    unnest_alias.append("columns", offset.pop())
 
-                selects.append("index")
+            columns = [
+                exp.to_identifier("seq"),
+                exp.to_identifier("key"),
+                exp.to_identifier("path"),
+                offset.pop() if isinstance(offset, exp.Expression) else exp.to_identifier("index"),
+                seq_get(unnest_alias.columns if unnest_alias else [], 0)
+                or exp.to_identifier("value"),
+                exp.to_identifier("this"),
+            ]
 
-            subquery = exp.Subquery(
-                this=exp.select(*selects).from_(
-                    f"TABLE(FLATTEN(INPUT => {self.sql(expression.expressions[0])}))"
-                ),
-            )
+            if unnest_alias:
+                unnest_alias.set("columns", columns)
+            else:
+                unnest_alias = exp.TableAlias(this="_u", columns=columns)
+
+            explode = f"TABLE(FLATTEN(INPUT => {self.sql(expression.expressions[0])}))"
             alias = self.sql(unnest_alias)
             alias = f" AS {alias}" if alias else ""
-            return f"{self.sql(subquery)}{alias}"
+            return f"{explode}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
             scope = self.sql(expression, "scope")

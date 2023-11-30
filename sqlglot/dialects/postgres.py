@@ -346,6 +346,27 @@ class Postgres(Dialect):
             TokenType.END: lambda self: self._parse_commit_or_rollback(),
         }
 
+        def _parse_tokens(
+            self, parse_method: t.Callable, expressions: t.Dict
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_tokens(parse_method, expressions)
+
+            if self._match_text_seq("OPERATOR", "("):
+                op = ""
+                while self._curr and not self._match(TokenType.R_PAREN):
+                    op += self._curr.text
+                    self._advance()
+
+                this = self.expression(
+                    exp.Operator,
+                    comments=self._prev_comments,
+                    this=this,
+                    operator=exp.Anonymous(this="OPERATOR", expressions=[op]),
+                    expression=parse_method(),
+                )
+
+            return this
+
         def _parse_date_part(self) -> exp.Expression:
             part = self._parse_type()
             self._match(TokenType.COMMA)

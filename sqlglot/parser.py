@@ -293,6 +293,7 @@ class Parser(metaclass=_Parser):
         TokenType.NATURAL,
         TokenType.NEXT,
         TokenType.OFFSET,
+        TokenType.OPERATOR,
         TokenType.ORDINALITY,
         TokenType.OVERLAPS,
         TokenType.OVERWRITE,
@@ -3336,7 +3337,7 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_between(self, this: exp.Expression) -> exp.Between:
+    def _parse_between(self, this: t.Optional[exp.Expression]) -> exp.Between:
         low = self._parse_bitwise()
         self._match(TokenType.AND)
         high = self._parse_bitwise()
@@ -5362,7 +5363,9 @@ class Parser(metaclass=_Parser):
         self._match_r_paren()
         return self.expression(exp.DictRange, this=this, min=min, max=max)
 
-    def _parse_comprehension(self, this: exp.Expression) -> t.Optional[exp.Comprehension]:
+    def _parse_comprehension(
+        self, this: t.Optional[exp.Expression]
+    ) -> t.Optional[exp.Comprehension]:
         index = self._index
         expression = self._parse_column()
         if not self._match(TokenType.IN):

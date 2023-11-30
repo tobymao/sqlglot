@@ -276,6 +276,7 @@ class TokenType(AutoName):
     OBJECT_IDENTIFIER = auto()
     OFFSET = auto()
     ON = auto()
+    OPERATOR = auto()
     ORDER_BY = auto()
     ORDERED = auto()
     ORDINALITY = auto()

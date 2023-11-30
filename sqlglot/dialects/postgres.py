@@ -284,6 +284,7 @@ class Postgres(Dialect):
             "TEMP": TokenType.TEMPORARY,
             "CSTRING": TokenType.PSEUDO_TYPE,
             "OID": TokenType.OBJECT_IDENTIFIER,
+            "OPERATOR": TokenType.OPERATOR,
             "REGCLASS": TokenType.OBJECT_IDENTIFIER,
             "REGCOLLATION": TokenType.OBJECT_IDENTIFIER,
             "REGCONFIG": TokenType.OBJECT_IDENTIFIER,
@@ -333,18 +334,42 @@ class Postgres(Dialect):
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
+            TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
             TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
             TokenType.DAT: lambda self, this: self.expression(
                 exp.MatchAgainst, this=self._parse_bitwise(), expressions=[this]
             ),
-            TokenType.AT_GT: binary_range_parser(exp.ArrayContains),
             TokenType.LT_AT: binary_range_parser(exp.ArrayContained),
+            TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         }
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_commit_or_rollback(),
         }
+
+        def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            while True:
+                if not self._match(TokenType.L_PAREN):
+                    break
+
+                op = ""
+                while self._curr and not self._match(TokenType.R_PAREN):
+                    op += self._curr.text
+                    self._advance()
+
+                this = self.expression(
+                    exp.Operator,
+                    comments=self._prev_comments,
+                    this=this,
+                    operator=op,
+                    expression=self._parse_bitwise(),
+                )
+
+                if not self._match(TokenType.OPERATOR):
+                    break
+
+            return this
 
         def _parse_date_part(self) -> exp.Expression:
             part = self._parse_type()

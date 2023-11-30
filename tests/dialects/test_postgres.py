@@ -177,6 +177,20 @@ class TestPostgres(Validator):
             },
         )
 
+    def test_operator(self):
+        expr = parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3", read="postgres")
+
+        expr.left.assert_is(exp.Operator)
+        expr.left.left.assert_is(exp.Literal)
+        expr.left.right.assert_is(exp.Literal)
+        expr.right.assert_is(exp.Literal)
+        self.assertEqual(expr.sql(dialect="postgres"), "1 OPERATOR(+) 2 OPERATOR(*) 3")
+
+        self.validate_identity("SELECT operator FROM t")
+        self.validate_identity("SELECT 1 OPERATOR(+) 2")
+        self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
+        self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
+
     def test_postgres(self):
         expr = parse_one(
             "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)", read="postgres"
@@ -203,6 +217,14 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.AlterTable)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        self.validate_identity(
+            "SELECT c.oid, n.nspname, c.relname "
+            "FROM pg_catalog.pg_class AS c "
+            "LEFT JOIN pg_catalog.pg_namespace AS n ON n.oid = c.relnamespace "
+            "WHERE c.relname OPERATOR(pg_catalog.~) '^(courses)$' COLLATE pg_catalog.default AND "
+            "pg_catalog.PG_TABLE_IS_VISIBLE(c.oid) "
+            "ORDER BY 2, 3"
+        )
         self.validate_identity(
             "SELECT ARRAY[]::INT[] AS foo",
             "SELECT CAST(ARRAY[] AS INT[]) AS foo",

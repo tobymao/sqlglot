@@ -186,6 +186,7 @@ class TestPostgres(Validator):
         expr.right.assert_is(exp.Literal)
         self.assertEqual(expr.sql(dialect="postgres"), "1 OPERATOR(+) 2 OPERATOR(*) 3")
 
+        self.validate_identity("SELECT operator FROM t")
         self.validate_identity("SELECT 1 OPERATOR(+) 2")
         self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
 

@@ -107,6 +107,19 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
     return f"CAST({sql} AS TEXT)"
 
 
+def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
+    scale = expression.args.get("scale")
+    timestamp = self.sql(expression, "this")
+    if scale in {None, exp.UnixToTime.SECONDS}:
+        return f"TO_TIMESTAMP({timestamp})"
+    if scale == exp.UnixToTime.MILLIS:
+        return f"EPOCH_MS({timestamp})"
+    if scale == exp.UnixToTime.MICROS:
+        return f"MAKE_TIMESTAMP({timestamp})"
+
+    raise ValueError("Improper scale for timestamp")
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -159,11 +172,15 @@ class DuckDB(Dialect):
             "DATETRUNC": date_trunc_to_time,
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
-                this=exp.Div(this=seq_get(args, 0), expression=exp.Literal.number(1000))
+                this=seq_get(args, 0),
+                scale=exp.UnixToTime.MILLIS,
             ),
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_VALUE": exp.Array.from_arg_list,
+            "MAKE_TIMESTAMP": lambda args: exp.UnixToTime(
+                this=seq_get(args, 0), scale=exp.UnixToTime.MICROS
+            ),
             "MEDIAN": lambda args: exp.PercentileCont(
                 this=seq_get(args, 0), expression=exp.Literal.number(0.5)
             ),
@@ -334,7 +351,7 @@ class DuckDB(Dialect):
             ),
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("duckdb"),
             exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
-            exp.UnixToTime: rename_func("TO_TIMESTAMP"),
+            exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),

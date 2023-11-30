@@ -109,6 +109,9 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("SELECT EPOCH_MS(10) AS t")
+        self.validate_identity("SELECT MAKE_TIMESTAMP(10) AS t")
+        self.validate_identity("SELECT TO_TIMESTAMP(10) AS t")
         self.validate_identity("SELECT UNNEST(column, recursive := TRUE) FROM table")
         self.validate_identity("VAR_POP(a)")
         self.validate_identity("SELECT * FROM foo ASOF LEFT JOIN bar ON a = b")
@@ -551,10 +554,10 @@ class TestDuckDB(Validator):
         self.validate_all(
             "EPOCH_MS(x)",
             write={
-                "bigquery": "UNIX_TO_TIME(x / 1000)",
-                "duckdb": "TO_TIMESTAMP(x / 1000)",
-                "presto": "FROM_UNIXTIME(CAST(x AS DOUBLE) / 1000)",
-                "spark": "CAST(FROM_UNIXTIME(x / 1000) AS TIMESTAMP)",
+                "bigquery": "TIMESTAMP_MILLIS(x)",
+                "duckdb": "EPOCH_MS(x)",
+                "presto": "FROM_UNIXTIME(x, 'millis')",
+                "spark": "TIMESTAMP_MILLIS(x)",
             },
         )
         self.validate_all(
@@ -589,7 +592,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "TO_TIMESTAMP(x)",
             write={
-                "bigquery": "UNIX_TO_TIME(x)",
+                "bigquery": "TIMESTAMP_SECONDS(x)",
                 "duckdb": "TO_TIMESTAMP(x)",
                 "presto": "FROM_UNIXTIME(x)",
                 "hive": "FROM_UNIXTIME(x)",

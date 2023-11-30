@@ -349,21 +349,27 @@ class Postgres(Dialect):
         }
 
         def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-            if not self._match(TokenType.L_PAREN):
-                return this
+            while True:
+                if not self._match(TokenType.L_PAREN):
+                    break
 
-            op = ""
-            while self._curr and not self._match(TokenType.R_PAREN):
-                op += self._curr.text
-                self._advance()
+                op = ""
+                while self._curr and not self._match(TokenType.R_PAREN):
+                    op += self._curr.text
+                    self._advance()
 
-            return self.expression(
-                exp.Operator,
-                comments=self._prev_comments,
-                this=this,
-                operator=exp.Anonymous(this="OPERATOR", expressions=[op]),
-                expression=self._parse_bitwise(),
-            )
+                this = self.expression(
+                    exp.Operator,
+                    comments=self._prev_comments,
+                    this=this,
+                    operator=exp.Anonymous(this="OPERATOR", expressions=[op]),
+                    expression=self._parse_bitwise(),
+                )
+
+                if not self._match(TokenType.OPERATOR):
+                    break
+
+            return this
 
         def _parse_date_part(self) -> exp.Expression:
             part = self._parse_type()

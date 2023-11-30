@@ -6042,14 +6042,12 @@ def to_interval(interval: str | Literal) -> Interval:
 
 
 @t.overload
-def to_table(
-    sql_path: str | Table, dialect: DialectType = None, copy: bool = True, **kwargs
-) -> Table:
+def to_table(sql_path: str | Table, **kwargs) -> Table:
     ...
 
 
 @t.overload
-def to_table(sql_path: None, dialect: DialectType = None, copy: bool = True, **kwargs) -> None:
+def to_table(sql_path: None, **kwargs) -> None:
     ...
 
 
@@ -6455,7 +6453,17 @@ def table_name(table: Table | str, dialect: DialectType = None) -> str:
 
 
 def normalize_table_name(table: str | Table, dialect: DialectType = None, copy: bool = True) -> str:
-    """Returns a normalized table string name which can be used as a key."""
+    """Returns a case normalized table name without quotes.
+
+    Args:
+        table: the table to normalize
+        dialect: the dialect to use for normalization rules
+        copy: whether or not to copy the expression.
+
+    Examples:
+        >>> normalize_table_name("`A-B`.c", dialect="bigquery")
+        'A-B.c'
+    """
     from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 
     return ".".join(

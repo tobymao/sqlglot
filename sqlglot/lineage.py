@@ -64,6 +64,7 @@ def lineage(
                 k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect))
                 for k, v in sources.items()
             },
+            dialect=dialect,
         )
 
     qualified = qualify.qualify(

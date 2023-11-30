@@ -188,6 +188,7 @@ class TestPostgres(Validator):
 
         self.validate_identity("SELECT operator FROM t")
         self.validate_identity("SELECT 1 OPERATOR(+) 2")
+        self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
         self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
 
     def test_postgres(self):

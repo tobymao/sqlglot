@@ -481,10 +481,27 @@ class Generator:
         if copy:
             expression = expression.copy()
 
-        # Some dialects only support CTEs at the top level expression for certain expression
-        # types, so we need to bubble up nested CTEs to that level in order to produce a
-        # syntactically valid expression. This transformation happens here to minimize code
-        # duplication, since many expressions support CTEs.
+        expression = self.preprocess(expression)
+
+        self.unsupported_messages = []
+        sql = self.sql(expression).strip()
+
+        if self.pretty:
+            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
+
+        if self.unsupported_level == ErrorLevel.IGNORE:
+            return sql
+
+        if self.unsupported_level == ErrorLevel.WARN:
+            for msg in self.unsupported_messages:
+                logger.warning(msg)
+        elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
+            raise UnsupportedError(concat_messages(self.unsupported_messages, self.max_unsupported))
+
+        return sql
+
+    def preprocess(self, expression: exp.Expression) -> exp.Expression:
+        """Apply generic preprocessing transformations to a given expression."""
         if (
             not expression.parent
             and type(expression) in self.EXPRESSIONS_WITHOUT_NESTED_CTES
@@ -499,21 +516,7 @@ class Generator:
 
             expression = ensure_bools(expression)
 
-        self.unsupported_messages = []
-        sql = self.sql(expression).strip()
-
-        if self.unsupported_level == ErrorLevel.IGNORE:
-            return sql
-
-        if self.unsupported_level == ErrorLevel.WARN:
-            for msg in self.unsupported_messages:
-                logger.warning(msg)
-        elif self.unsupported_level == ErrorLevel.RAISE and self.unsupported_messages:
-            raise UnsupportedError(concat_messages(self.unsupported_messages, self.max_unsupported))
-
-        if self.pretty:
-            sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
-        return sql
+        return expression
 
     def unsupported(self, message: str) -> None:
         if self.unsupported_level == ErrorLevel.IMMEDIATE:

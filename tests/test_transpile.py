@@ -706,6 +706,10 @@ FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
 
     def test_pretty_line_breaks(self):
         self.assertEqual(transpile("SELECT '1\n2'", pretty=True)[0], "SELECT\n  '1\n2'")
+        self.assertEqual(
+            transpile("SELECT '1\n2'", pretty=True, unsupported_level=ErrorLevel.IGNORE)[0],
+            "SELECT\n  '1\n2'",
+        )
 
     @mock.patch("sqlglot.parser.logger")
     def test_error_level(self, logger):

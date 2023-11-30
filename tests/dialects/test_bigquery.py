@@ -109,6 +109,9 @@ class TestBigQuery(Validator):
         self.validate_identity("ROLLBACK TRANSACTION")
         self.validate_identity("CAST(x AS BIGNUMERIC)")
         self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
+        self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")
+        self.validate_identity("SELECT TIMESTAMP_MICROS(2) AS t")
+        self.validate_identity("SELECT TIMESTAMP_MILLIS(2) AS t")
         self.validate_identity(
             "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count"
         )

@@ -3051,10 +3051,7 @@ class Generator:
         return f"REFRESH {table}{this}"
 
     def operator_sql(self, expression: exp.Operator) -> str:
-        this = self.sql(expression, "this")
-        operator = self.sql(expression, "operator")
-        expr = self.sql(expression, "expression")
-        return f"{this} {operator} {expr}"
+        return self.binary(expression, self.sql(expression, "operator"))
 
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):

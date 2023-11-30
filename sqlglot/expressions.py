@@ -4036,6 +4036,11 @@ class NEQ(Binary, Predicate):
     pass
 
 
+# https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH
+class Operator(Binary):
+    arg_types = {"this": True, "operator": True, "expression": True}
+
+
 class SimilarTo(Binary, Predicate):
     pass
 

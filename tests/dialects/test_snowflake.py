@@ -9,14 +9,30 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        self.validate_identity(
-            "SELECT * FROM unnest(x) with ordinality",
-            "SELECT * FROM TABLE(FLATTEN(INPUT => x)) AS _u(seq, key, path, index, value, this)",
-        )
-
         expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
+
+        self.assertEqual(
+            exp.select(exp.Explode(this=exp.column("x")).as_("y", quoted=True)).sql(
+                "snowflake", pretty=True
+            ),
+            """SELECT
+  IFF(pos = pos_2, "y", NULL) AS "y"
+FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
+  GREATEST(ARRAY_SIZE(x)) - 1
+) + 1))) AS _u(seq, key, path, index, pos, this)
+CROSS JOIN TABLE(FLATTEN(INPUT => x)) AS _u_2(seq, key, path, pos_2, "y", this)
+WHERE
+  pos = pos_2
+  OR (
+    pos > (
+      ARRAY_SIZE(x) - 1
+    ) AND pos_2 = (
+      ARRAY_SIZE(x) - 1
+    )
+  )""",
+        )
 
         self.validate_identity("SELECT user_id, value FROM table_name sample ($s) SEED (0)")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
@@ -53,6 +69,10 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity(
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
+        )
+        self.validate_identity(
+            "SELECT * FROM unnest(x) with ordinality",
+            "SELECT * FROM TABLE(FLATTEN(INPUT => x)) AS _u(seq, key, path, index, value, this)",
         )
         self.validate_identity(
             "CREATE TABLE foo (ID INT COMMENT $$some comment$$)",

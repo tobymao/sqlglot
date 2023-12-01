@@ -117,7 +117,7 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
     if scale == exp.UnixToTime.MICROS:
         return f"MAKE_TIMESTAMP({timestamp})"
     if scale == exp.UnixToTime.NANOS:
-        return f"MAKE_TIMESTAMP({timestamp} / 1000)"
+        return f"TO_TIMESTAMP({timestamp} / 1000000000)"
 
     self.unsupported(f"Unsupported scale for timestamp: {scale}.")
     return ""

@@ -556,7 +556,7 @@ class TestDuckDB(Validator):
             write={
                 "bigquery": "TIMESTAMP_MILLIS(x)",
                 "duckdb": "EPOCH_MS(x)",
-                "presto": "FROM_UNIXTIME(x, 'millis')",
+                "presto": "FROM_UNIXTIME(CAST(x AS DOUBLE) / 1000)",
                 "spark": "TIMESTAMP_MILLIS(x)",
             },
         )

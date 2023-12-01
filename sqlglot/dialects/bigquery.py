@@ -199,14 +199,17 @@ def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> 
 def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
-    if scale in {None, exp.UnixToTime.SECONDS}:
+    if scale in (None, exp.UnixToTime.SECONDS):
         return f"TIMESTAMP_SECONDS({timestamp})"
     if scale == exp.UnixToTime.MILLIS:
         return f"TIMESTAMP_MILLIS({timestamp})"
     if scale == exp.UnixToTime.MICROS:
         return f"TIMESTAMP_MICROS({timestamp})"
+    if scale == exp.UnixToTime.NANOS:
+        # We need to cast to INT64 because that's what BQ expects
+        return f"TIMESTAMP_MICROS(CAST({timestamp} / 1000 AS INT64))"
 
-    self.unsupported("Improper scale for timestamp")
+    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
     return ""
 
 

@@ -163,6 +163,11 @@ class TestDuckDB(Validator):
             read={
                 "bigquery": "SELECT some_arr[0] AS first FROM blah",
             },
+            write={
+                "bigquery": "SELECT some_arr[0] AS first FROM blah",
+                "duckdb": "SELECT some_arr[1] AS first FROM blah",
+                "presto": "SELECT some_arr[1] AS first FROM blah",
+            },
         )
         self.validate_all(
             "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",

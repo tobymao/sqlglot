@@ -531,11 +531,16 @@ class TestHive(Validator):
         )
         self.validate_all(
             "ARRAY_CONTAINS(x, 1)",
+            read={
+                "duckdb": "LIST_HAS(x, 1)",
+                "snowflake": "ARRAY_CONTAINS(1, x)",
+            },
             write={
                 "duckdb": "ARRAY_CONTAINS(x, 1)",
                 "presto": "CONTAINS(x, 1)",
                 "hive": "ARRAY_CONTAINS(x, 1)",
                 "spark": "ARRAY_CONTAINS(x, 1)",
+                "snowflake": "ARRAY_CONTAINS(1, x)",
             },
         )
         self.validate_all(

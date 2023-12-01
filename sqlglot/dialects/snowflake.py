@@ -263,6 +263,9 @@ class Snowflake(Dialect):
             **parser.Parser.FUNCTIONS,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
+            "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
+                this=seq_get(args, 1), expression=seq_get(args, 0)
+            ),
             "ARRAY_GENERATE_RANGE": lambda args: exp.GenerateSeries(
                 # ARRAY_GENERATE_RANGE has an exlusive end; we normalize it to be inclusive
                 start=seq_get(args, 0),
@@ -483,6 +486,7 @@ class Snowflake(Dialect):
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: inline_array_sql,
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
+            exp.ArrayContains: lambda self, e: self.func("ARRAY_CONTAINS", e.expression, e.this),
             exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this

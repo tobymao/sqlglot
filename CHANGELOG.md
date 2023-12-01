@@ -1,6 +1,13 @@
 Changelog
 =========
 
+## [v19.8.2] - 2023-12-01
+### :bug: Bug Fixes
+- [`5657a60`](https://github.com/tobymao/sqlglot/commit/5657a60169680c45feb67fe7a1da16b4c9ee22b6) - **tsql, teradata**: Distinct goes before top *(PR [#2618](https://github.com/tobymao/sqlglot/pull/2618) by [@treysp](https://github.com/treysp))*
+- [`c0e751a`](https://github.com/tobymao/sqlglot/commit/c0e751a71cd69746b7acb5f1950f1b925c826373) - **duckdb**: arrays are 1-indexed *(PR [#2619](https://github.com/tobymao/sqlglot/pull/2619) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2617](undefined) opened by [@j1ah0ng](https://github.com/j1ah0ng)*
+
+
 ## [v19.8.1] - 2023-12-01
 ### :bug: Bug Fixes
 - [`441f624`](https://github.com/tobymao/sqlglot/commit/441f624c5cafb49e3d73d4435b7cf4bf3e891150) - cannot have union with limit *(commit by [@tobymao](https://github.com/tobymao))*
@@ -2126,3 +2133,4 @@ Changelog
 [v19.7.0]: https://github.com/tobymao/sqlglot/compare/v19.6.0...v19.7.0
 [v19.8.0]: https://github.com/tobymao/sqlglot/compare/v19.7.0...v19.8.0
 [v19.8.1]: https://github.com/tobymao/sqlglot/compare/v19.8.0...v19.8.1
+[v19.8.2]: https://github.com/tobymao/sqlglot/compare/v19.8.1...v19.8.2

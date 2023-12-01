@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v19.8.1] - 2023-12-01
+### :bug: Bug Fixes
+- [`441f624`](https://github.com/tobymao/sqlglot/commit/441f624c5cafb49e3d73d4435b7cf4bf3e891150) - cannot have union with limit *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v19.8.0] - 2023-12-01
 ### :boom: BREAKING CHANGES
 - due to [`b5f690b`](https://github.com/tobymao/sqlglot/commit/b5f690bc36e2278ec9d9299041497485f73198a8) - add timestamp functions to BQ and DuckDB closes [#2611](https://github.com/tobymao/sqlglot/pull/2611) *(PR [#2612](https://github.com/tobymao/sqlglot/pull/2612) by [@j1ah0ng](https://github.com/j1ah0ng))*:
@@ -2120,3 +2125,4 @@ Changelog
 [v19.6.0]: https://github.com/tobymao/sqlglot/compare/v19.5.1...v19.6.0
 [v19.7.0]: https://github.com/tobymao/sqlglot/compare/v19.6.0...v19.7.0
 [v19.8.0]: https://github.com/tobymao/sqlglot/compare/v19.7.0...v19.8.0
+[v19.8.1]: https://github.com/tobymao/sqlglot/compare/v19.8.0...v19.8.1

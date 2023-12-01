@@ -445,7 +445,6 @@ WHERE
                 "spark": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'MM/dd/yyyy HH:mm:ss')",
             },
         )
-
         self.validate_all(
             "SELECT IFF(TRUE, 'true', 'false')",
             write={

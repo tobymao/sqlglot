@@ -48,6 +48,8 @@ def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str
         return f"TIMESTAMP_MILLIS({timestamp})"
     if scale == exp.UnixToTime.MICROS:
         return f"TIMESTAMP_MICROS({timestamp})"
+    if scale == exp.UnixToTime.NANOS:
+        return f"TIMESTAMP_MICROS({timestamp} / 1000)"
 
     self.unsupported(f"Unsupported scale for timestamp: {scale}.")
     return ""

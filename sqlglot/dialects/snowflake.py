@@ -101,6 +101,8 @@ def _unix_to_time_sql(self: Snowflake.Generator, expression: exp.UnixToTime) -> 
         return f"TO_TIMESTAMP({timestamp})"
     if scale == exp.UnixToTime.MILLIS:
         return f"TO_TIMESTAMP({timestamp}, 3)"
+    if scale == exp.UnixToTime.MICROS:
+        return f"TO_TIMESTAMP({timestamp} / 1000, 3)"
     if scale == exp.UnixToTime.NANOS:
         return f"TO_TIMESTAMP({timestamp}, 9)"
 

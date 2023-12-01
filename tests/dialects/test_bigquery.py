@@ -176,7 +176,7 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "SELECT TIMESTAMP_MICROS(x)",
                 "duckdb": "SELECT MAKE_TIMESTAMP(x)",
-                "snowflake": UnsupportedError,
+                "snowflake": "SELECT TO_TIMESTAMP(x / 1000, 3)",
                 "spark": "SELECT TIMESTAMP_MICROS(x)",
             },
         )

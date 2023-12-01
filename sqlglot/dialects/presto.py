@@ -175,11 +175,12 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     if scale in {None, exp.UnixToTime.SECONDS}:
         return rename_func("FROM_UNIXTIME")(self, expression)
     if scale == exp.UnixToTime.MILLIS:
-        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000)"
+        return f"FROM_UNIXTIME({timestamp} / 1000.0)"
     if scale == exp.UnixToTime.MICROS:
-        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000000)"
+        return f"FROM_UNIXTIME({timestamp} / 1000000.0)"
     if scale == exp.UnixToTime.NANOS:
-        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000000000)"
+        # We intentionally keep this in integer arithmetic to avoid losing too much precision
+        return f"FROM_UNIXTIME({timestamp} / 1000000000)"
 
     self.unsupported(f"Unsupported scale for timestamp: {scale}.")
     return ""

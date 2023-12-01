@@ -418,11 +418,11 @@ WHERE
         self.validate_all(
             "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
             write={
-                "bigquery": UnsupportedError,
-                "duckdb": UnsupportedError,
-                "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / 1000000000)",
+                "bigquery": "SELECT TIMESTAMP_MICROS(CAST(1659981729000000000 / 1000 AS INT64))",
+                "duckdb": "SELECT MAKE_TIMESTAMP(1659981729000000000 / 1000)",
+                "presto": "SELECT FROM_UNIXTIME(1659981729000000000 / 1000000000)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
-                "spark": UnsupportedError,
+                "spark": "SELECT TIMESTAMP_MICROS(1659981729000000000 / 1000)",
             },
         )
         self.validate_all(

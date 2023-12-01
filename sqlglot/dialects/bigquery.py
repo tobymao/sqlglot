@@ -205,6 +205,9 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
         return f"TIMESTAMP_MILLIS({timestamp})"
     if scale == exp.UnixToTime.MICROS:
         return f"TIMESTAMP_MICROS({timestamp})"
+    if scale == exp.UnixToTime.NANOS:
+        # We need to cast to INT64 because that's what BQ expects
+        return f"TIMESTAMP_MICROS(CAST({timestamp} / 1000 AS INT64))"
 
     self.unsupported(f"Unsupported scale for timestamp: {scale}.")
     return ""

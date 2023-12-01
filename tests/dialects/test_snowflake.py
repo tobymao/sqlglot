@@ -419,6 +419,7 @@ WHERE
             "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
             write={
                 "bigquery": UnsupportedError,
+                "duckdb": UnsupportedError,
                 "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / 1000000000)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
                 "spark": UnsupportedError,

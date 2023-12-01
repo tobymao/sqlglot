@@ -110,7 +110,7 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
-    if scale in {None, exp.UnixToTime.SECONDS}:
+    if scale in (None, exp.UnixToTime.SECONDS):
         return f"TO_TIMESTAMP({timestamp})"
     if scale == exp.UnixToTime.MILLIS:
         return f"EPOCH_MS({timestamp})"

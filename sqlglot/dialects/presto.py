@@ -172,7 +172,7 @@ def _first_last_sql(self: Presto.Generator, expression: exp.First | exp.Last) ->
 def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
-    if scale in {None, exp.UnixToTime.SECONDS}:
+    if scale in (None, exp.UnixToTime.SECONDS):
         return rename_func("FROM_UNIXTIME")(self, expression)
     if scale == exp.UnixToTime.MILLIS:
         return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000)"

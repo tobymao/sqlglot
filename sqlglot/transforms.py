@@ -393,11 +393,12 @@ def eliminate_full_outer_join(expression: exp.Expression) -> exp.Expression:
         full_outer_joins = [
             (index, join)
             for index, join in enumerate(expression.args.get("joins") or [])
-            if join.side == "FULL" and join.kind == "OUTER"
+            if join.side == "FULL"
         ]
 
         if len(full_outer_joins) == 1:
             expression_copy = expression.copy()
+            expression.set("limit", None)
             index, full_outer_join = full_outer_joins[0]
             full_outer_join.set("side", "left")
             expression_copy.args["joins"][index].set("side", "right")

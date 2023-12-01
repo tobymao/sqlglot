@@ -18,17 +18,17 @@ class TestSnowflake(Validator):
                 "snowflake", pretty=True
             ),
             """SELECT
-  IFF(pos = pos_2, "y", NULL) AS "y"
+  IFF(_u.pos = _u_2.pos_2, _u_2."y", NULL) AS "y"
 FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
   GREATEST(ARRAY_SIZE(x)) - 1
 ) + 1))) AS _u(seq, key, path, index, pos, this)
 CROSS JOIN TABLE(FLATTEN(INPUT => x)) AS _u_2(seq, key, path, pos_2, "y", this)
 WHERE
-  pos = pos_2
+  _u.pos = _u_2.pos_2
   OR (
-    pos > (
+    _u.pos > (
       ARRAY_SIZE(x) - 1
-    ) AND pos_2 = (
+    ) AND _u_2.pos_2 = (
       ARRAY_SIZE(x) - 1
     )
   )""",
@@ -118,6 +118,13 @@ WHERE
         self.validate_all("CAST(x AS CHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS CHARACTER VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
         self.validate_all("CAST(x AS NCHAR VARYING)", write={"snowflake": "CAST(x AS VARCHAR)"})
+        self.validate_all(
+            # We need to qualify the columns in this query because "value" would be ambiguous
+            'WITH t(x, "value") AS (SELECT [1, 2, 3], 1) SELECT IFF(_u.pos = _u_2.pos_2, _u_2."value", NULL) AS "value" FROM t, TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (GREATEST(ARRAY_SIZE(t.x)) - 1) + 1))) AS _u(seq, key, path, index, pos, this) CROSS JOIN TABLE(FLATTEN(INPUT => t.x)) AS _u_2(seq, key, path, pos_2, "value", this) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > (ARRAY_SIZE(t.x) - 1) AND _u_2.pos_2 = (ARRAY_SIZE(t.x) - 1))',
+            read={
+                "duckdb": 'WITH t(x, "value") AS (SELECT [1,2,3], 1) SELECT UNNEST(t.x) AS "value" FROM t',
+            },
+        )
         self.validate_all(
             "SELECT { 'Manitoba': 'Winnipeg', 'foo': 'bar' } AS province_capital",
             write={

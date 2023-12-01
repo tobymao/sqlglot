@@ -422,7 +422,7 @@ WHERE
                 "duckdb": "SELECT TO_TIMESTAMP(1659981729000000000 / 1000000000)",
                 "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / 1000000000)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
-                "spark": "SELECT TIMESTAMP_MICROS(1659981729000000000 / 1000)",
+                "spark": "SELECT TIMESTAMP_SECONDS(1659981729000000000 / 1000000000)",
             },
         )
         self.validate_all(

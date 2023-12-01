@@ -141,7 +141,7 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
 
 
 def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
-    """Convert cross join unnest into lateral view explode (used in presto -> hive)."""
+    """Convert cross join unnest into lateral view explode."""
     if isinstance(expression, exp.Select):
         for join in expression.args.get("joins") or []:
             unnest = join.this
@@ -166,7 +166,7 @@ def unnest_to_explode(expression: exp.Expression) -> exp.Expression:
 
 
 def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp.Expression]:
-    """Convert explode/posexplode into unnest (used in hive -> presto)."""
+    """Convert explode/posexplode into unnest."""
 
     def _explode_to_unnest(expression: exp.Expression) -> exp.Expression:
         if isinstance(expression, exp.Select):
@@ -230,9 +230,12 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
 
                     alias.set("alias", exp.to_identifier(explode_alias))
 
+                    series_table_alias = series.args["alias"].this
                     column = exp.If(
-                        this=exp.column(series_alias).eq(exp.column(pos_alias)),
-                        true=exp.column(explode_alias),
+                        this=exp.column(series_alias, table=series_table_alias).eq(
+                            exp.column(pos_alias, table=unnest_source_alias)
+                        ),
+                        true=exp.column(explode_alias, table=unnest_source_alias),
                     )
 
                     explode.replace(column)
@@ -242,8 +245,10 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                         expressions.insert(
                             expressions.index(alias) + 1,
                             exp.If(
-                                this=exp.column(series_alias).eq(exp.column(pos_alias)),
-                                true=exp.column(pos_alias),
+                                this=exp.column(series_alias, table=series_table_alias).eq(
+                                    exp.column(pos_alias, table=unnest_source_alias)
+                                ),
+                                true=exp.column(pos_alias, table=unnest_source_alias),
                             ).as_(pos_alias),
                         )
                         expression.set("expressions", expressions)
@@ -276,10 +281,12 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                         size = size - 1
 
                     expression.where(
-                        exp.column(series_alias)
-                        .eq(exp.column(pos_alias))
+                        exp.column(series_alias, table=series_table_alias)
+                        .eq(exp.column(pos_alias, table=unnest_source_alias))
                         .or_(
-                            (exp.column(series_alias) > size).and_(exp.column(pos_alias).eq(size))
+                            (exp.column(series_alias, table=series_table_alias) > size).and_(
+                                exp.column(pos_alias, table=unnest_source_alias).eq(size)
+                            )
                         ),
                         copy=False,
                     )

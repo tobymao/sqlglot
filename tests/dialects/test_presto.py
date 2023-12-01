@@ -1,6 +1,5 @@
-from unittest import mock
-
 from sqlglot import UnsupportedError, exp, parse_one
+from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -535,8 +534,7 @@ class TestPresto(Validator):
             },
         )
 
-    @mock.patch("sqlglot.helper.logger")
-    def test_presto(self, logger):
+    def test_presto(self):
         self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
         self.validate_identity(
             "SELECT * FROM example.testdb.customer_orders FOR VERSION AS OF 8954597067493422955"
@@ -555,6 +553,32 @@ class TestPresto(Validator):
         self.validate_identity(
             "SELECT SPLIT_TO_MAP('a:1;b:2;a:3', ';', ':', (k, v1, v2) -> CONCAT(v1, v2))"
         )
+
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_all(
+                "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
+                write={
+                    "postgres": UnsupportedError,
+                    "presto": "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
+                },
+            )
+            self.validate_all(
+                "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
+                write={
+                    "": "SELECT ARRAY(1, 2, 3)[3]",
+                    "postgres": "SELECT (ARRAY[1, 2, 3])[4]",
+                    "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
+                },
+            )
+
+            self.assertEqual(
+                cm.output,
+                [
+                    "WARNING:sqlglot:Applying array index offset (-1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                ],
+            )
 
         self.validate_all(
             "SELECT MAX_BY(a.id, a.timestamp) FROM a",
@@ -666,21 +690,6 @@ class TestPresto(Validator):
         self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' day"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})
         self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' WEEKS"})
-        self.validate_all(
-            "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
-            write={
-                "postgres": UnsupportedError,
-                "presto": "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
-            },
-        )
-        self.validate_all(
-            "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
-            write={
-                "": "SELECT ARRAY(1, 2, 3)[3]",
-                "postgres": "SELECT (ARRAY[1, 2, 3])[4]",
-                "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
-            },
-        )
         self.validate_all(
             "SELECT SUBSTRING(a, 1, 3), SUBSTRING(a, LENGTH(a) - (3 - 1))",
             read={

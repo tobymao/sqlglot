@@ -1,6 +1,5 @@
-from unittest import mock
-
 from sqlglot import ParseError, exp, parse_one, transpile
+from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -166,16 +165,28 @@ class TestPostgres(Validator):
             },
         )
 
-    @mock.patch("sqlglot.helper.logger")
-    def test_array_offset(self, logger):
-        self.validate_all(
-            "SELECT col[1]",
-            write={
-                "hive": "SELECT col[0]",
-                "postgres": "SELECT col[1]",
-                "presto": "SELECT col[1]",
-            },
-        )
+    def test_array_offset(self):
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_all(
+                "SELECT col[1]",
+                write={
+                    "bigquery": "SELECT col[0]",
+                    "duckdb": "SELECT col[1]",
+                    "hive": "SELECT col[0]",
+                    "postgres": "SELECT col[1]",
+                    "presto": "SELECT col[1]",
+                },
+            )
+
+            self.assertEqual(
+                cm.output,
+                [
+                    "WARNING:sqlglot:Applying array index offset (-1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                ],
+            )
 
     def test_operator(self):
         expr = parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3", read="postgres")

@@ -4,6 +4,7 @@ from unittest import mock
 
 from sqlglot import parse_one, transpile
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
+from sqlglot.helper import logger as helper_logger
 from tests.helpers import (
     assert_logger_contains,
     load_sql_fixture_pairs,
@@ -661,19 +662,27 @@ FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
             write="spark2",
         )
 
-    @mock.patch("sqlglot.helper.logger")
-    def test_index_offset(self, logger):
-        self.validate("x[0]", "x[1]", write="presto", identity=False)
-        self.validate("x[1]", "x[0]", read="presto", identity=False)
-        logger.warning.assert_any_call("Applying array index offset (%s)", 1)
-        logger.warning.assert_any_call("Applying array index offset (%s)", -1)
+    def test_index_offset(self):
+        with self.assertLogs(helper_logger) as cm:
+            self.validate("x[0]", "x[1]", write="presto", identity=False)
+            self.validate("x[1]", "x[0]", read="presto", identity=False)
 
-        self.validate("x[x - 1]", "x[x - 1]", write="presto", identity=False)
-        self.validate(
-            "x[array_size(y) - 1]", "x[CARDINALITY(y) - 1 + 1]", write="presto", identity=False
-        )
-        self.validate("x[3 - 1]", "x[3]", write="presto", identity=False)
-        self.validate("MAP(a, b)[0]", "MAP(a, b)[0]", write="presto", identity=False)
+            self.validate("x[x - 1]", "x[x - 1]", write="presto", identity=False)
+            self.validate(
+                "x[array_size(y) - 1]", "x[CARDINALITY(y) - 1 + 1]", write="presto", identity=False
+            )
+            self.validate("x[3 - 1]", "x[3]", write="presto", identity=False)
+            self.validate("MAP(a, b)[0]", "MAP(a, b)[0]", write="presto", identity=False)
+
+            self.assertEqual(
+                cm.output,
+                [
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (-1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                ],
+            )
 
     def test_identify_lambda(self):
         self.validate("x(y -> y)", 'X("y" -> "y")', identify=True)

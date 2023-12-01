@@ -1,4 +1,5 @@
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one, transpile
+from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -96,7 +97,6 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC")
-        self.validate_identity("[x.STRING_SPLIT(' ')[1] FOR x IN ['1', '2', 3] IF x.CONTAINS('1')]")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
         self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
@@ -503,6 +503,35 @@ class TestDuckDB(Validator):
             )
 
         self.validate_identity("SELECT ISNAN(x)")
+
+    def test_array_index(self):
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_all(
+                "SELECT some_arr[1] AS first FROM blah",
+                read={
+                    "bigquery": "SELECT some_arr[0] AS first FROM blah",
+                },
+                write={
+                    "bigquery": "SELECT some_arr[0] AS first FROM blah",
+                    "duckdb": "SELECT some_arr[1] AS first FROM blah",
+                    "presto": "SELECT some_arr[1] AS first FROM blah",
+                },
+            )
+            self.validate_identity(
+                "[x.STRING_SPLIT(' ')[1] FOR x IN ['1', '2', 3] IF x.CONTAINS('1')]"
+            )
+
+            self.assertEqual(
+                cm.output,
+                [
+                    "WARNING:sqlglot:Applying array index offset (-1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (-1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                ],
+            )
 
     def test_time(self):
         self.validate_identity("SELECT CURRENT_DATE")

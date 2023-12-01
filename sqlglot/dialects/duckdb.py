@@ -127,6 +127,7 @@ class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
+    INDEX_OFFSET = 1
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     RESOLVES_IDENTIFIERS_AS_UPPERCASE = None

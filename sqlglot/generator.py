@@ -1985,10 +1985,13 @@ class Generator:
                     )
                 kind = ""
 
+        # We use LIMIT_IS_TOP as a proxy for whether DISTINCT should go first because tsql and Teradata
+        # are the only dialects that use LIMIT_IS_TOP and both place DISTINCT first.
+        top_distinct = f"{distinct}{hint}{top}" if self.LIMIT_IS_TOP else f"{top}{hint}{distinct}"
         expressions = f"{self.sep()}{expressions}" if expressions else expressions
         sql = self.query_modifiers(
             expression,
-            f"SELECT{top}{hint}{distinct}{kind}{expressions}",
+            f"SELECT{top_distinct}{kind}{expressions}",
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )

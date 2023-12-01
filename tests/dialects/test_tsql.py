@@ -1232,9 +1232,14 @@ WHERE
 
     def test_top(self):
         self.validate_all(
-            "SELECT TOP 3 * FROM A",
+            "SELECT DISTINCT TOP 3 * FROM A",
+            read={
+                "spark": "SELECT DISTINCT * FROM A LIMIT 3",
+            },
             write={
-                "spark": "SELECT * FROM A LIMIT 3",
+                "spark": "SELECT DISTINCT * FROM A LIMIT 3",
+                "teradata": "SELECT DISTINCT TOP 3 * FROM A",
+                "tsql": "SELECT DISTINCT TOP 3 * FROM A",
             },
         )
         self.validate_all(

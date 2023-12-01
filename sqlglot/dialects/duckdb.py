@@ -117,7 +117,8 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
     if scale == exp.UnixToTime.MICROS:
         return f"MAKE_TIMESTAMP({timestamp})"
 
-    raise ValueError("Improper scale for timestamp")
+    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
+    return ""
 
 
 class DuckDB(Dialect):
@@ -172,8 +173,7 @@ class DuckDB(Dialect):
             "DATETRUNC": date_trunc_to_time,
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
-                this=seq_get(args, 0),
-                scale=exp.UnixToTime.MILLIS,
+                this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,

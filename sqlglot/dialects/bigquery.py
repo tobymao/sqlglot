@@ -206,7 +206,7 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
     if scale == exp.UnixToTime.MICROS:
         return f"TIMESTAMP_MICROS({timestamp})"
 
-    self.unsupported("Improper scale for timestamp")
+    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
     return ""
 
 

@@ -411,7 +411,6 @@ WHERE
         self.validate_all(
             "SELECT TO_TIMESTAMP('1659981729')",
             write={
-                "bigquery": "SELECT TIMESTAMP_SECONDS('1659981729')",
                 "snowflake": "SELECT TO_TIMESTAMP('1659981729')",
                 "spark": "SELECT CAST(FROM_UNIXTIME('1659981729') AS TIMESTAMP)",
             },
@@ -419,9 +418,10 @@ WHERE
         self.validate_all(
             "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
             write={
-                "bigquery": "SELECT TIMESTAMP_MICROS(1659981729000000000)",
+                "bigquery": UnsupportedError,
+                "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / 1000000000)",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
-                "spark": "SELECT TIMESTAMP_MICROS(1659981729000000000)",
+                "spark": UnsupportedError,
             },
         )
         self.validate_all(

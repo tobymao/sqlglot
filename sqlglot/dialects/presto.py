@@ -169,6 +169,22 @@ def _first_last_sql(self: Presto.Generator, expression: exp.First | exp.Last) ->
     return rename_func("ARBITRARY")(self, expression)
 
 
+def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str:
+    scale = expression.args.get("scale")
+    timestamp = self.sql(expression, "this")
+    if scale in {None, exp.UnixToTime.SECONDS}:
+        return rename_func("FROM_UNIXTIME")(self, expression)
+    if scale == exp.UnixToTime.MILLIS:
+        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000)"
+    if scale == exp.UnixToTime.MICROS:
+        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000000)"
+    if scale == exp.UnixToTime.NANOS:
+        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000000000)"
+
+    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
+    return ""
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
@@ -369,7 +385,7 @@ class Presto(Dialect):
             exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixToStr: lambda self, e: f"DATE_FORMAT(FROM_UNIXTIME({self.sql(e, 'this')}), {self.format_time(e)})",
-            exp.UnixToTime: rename_func("FROM_UNIXTIME"),
+            exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(FROM_UNIXTIME({self.sql(e, 'this')}) AS VARCHAR)",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.With: transforms.preprocess([transforms.add_recursive_cte_column_names]),

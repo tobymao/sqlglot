@@ -52,7 +52,7 @@ def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, 
         elif second_arg.name == "3":
             timescale = exp.UnixToTime.MILLIS
         elif second_arg.name == "9":
-            timescale = exp.UnixToTime.MICROS
+            timescale = exp.UnixToTime.NANOS
 
         return exp.UnixToTime(this=first_arg, scale=timescale)
 
@@ -101,10 +101,11 @@ def _unix_to_time_sql(self: Snowflake.Generator, expression: exp.UnixToTime) -> 
         return f"TO_TIMESTAMP({timestamp})"
     if scale == exp.UnixToTime.MILLIS:
         return f"TO_TIMESTAMP({timestamp}, 3)"
-    if scale == exp.UnixToTime.MICROS:
+    if scale == exp.UnixToTime.NANOS:
         return f"TO_TIMESTAMP({timestamp}, 9)"
 
-    raise ValueError("Improper scale for timestamp")
+    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
+    return ""
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/date_part.html

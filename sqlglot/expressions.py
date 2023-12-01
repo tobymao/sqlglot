@@ -5232,6 +5232,7 @@ class UnixToTime(Func):
     SECONDS = Literal.string("seconds")
     MILLIS = Literal.string("millis")
     MICROS = Literal.string("micros")
+    NANOS = Literal.string("nanos")
 
 
 class UnixToTimeStr(Func):

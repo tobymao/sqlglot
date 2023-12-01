@@ -110,14 +110,17 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = self.sql(expression, "this")
-    if scale in {None, exp.UnixToTime.SECONDS}:
+    if scale in (None, exp.UnixToTime.SECONDS):
         return f"TO_TIMESTAMP({timestamp})"
     if scale == exp.UnixToTime.MILLIS:
         return f"EPOCH_MS({timestamp})"
     if scale == exp.UnixToTime.MICROS:
         return f"MAKE_TIMESTAMP({timestamp})"
+    if scale == exp.UnixToTime.NANOS:
+        return f"TO_TIMESTAMP({timestamp} / 1000000000)"
 
-    raise ValueError("Improper scale for timestamp")
+    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
+    return ""
 
 
 class DuckDB(Dialect):
@@ -172,8 +175,7 @@ class DuckDB(Dialect):
             "DATETRUNC": date_trunc_to_time,
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
-                this=seq_get(args, 0),
-                scale=exp.UnixToTime.MILLIS,
+                this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,

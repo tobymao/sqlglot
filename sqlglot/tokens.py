@@ -791,7 +791,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "\t": TokenType.SPACE,
         "\n": TokenType.BREAK,
         "\r": TokenType.BREAK,
-        "\r\n": TokenType.BREAK,
     }
 
     COMMANDS = {
@@ -904,6 +903,10 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
+            # Ensures we don't count an extra line if we get a \r\n line break sequence
+            if self._char == "\r" and self._peek == "\n":
+                i = 2
+
             self._col = 1
             self._line += 1
         else:

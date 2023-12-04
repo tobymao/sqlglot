@@ -6429,12 +6429,15 @@ def column_table_names(expression: Expression, exclude: str = "") -> t.Set[str]:
     }
 
 
-def table_name(table: Table | str, dialect: DialectType = None) -> str:
+def table_name(table: Table | str, dialect: DialectType = None, identify: bool = False) -> str:
     """Get the full name of a table as a string.
 
     Args:
         table: Table expression node or string.
         dialect: The dialect to generate the table name for.
+        identify: Determines when an identifier should be quoted. Possible values are:
+            False (default): Never quote, except in cases where it's mandatory by the dialect.
+            True: Always quote.
 
     Examples:
         >>> from sqlglot import exp, parse_one
@@ -6452,7 +6455,7 @@ def table_name(table: Table | str, dialect: DialectType = None) -> str:
 
     return ".".join(
         part.sql(dialect=dialect, identify=True)
-        if not SAFE_IDENTIFIER_RE.match(part.name)
+        if identify or not SAFE_IDENTIFIER_RE.match(part.name)
         else part.name
         for part in table.parts
     )

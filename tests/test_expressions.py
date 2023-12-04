@@ -217,6 +217,8 @@ class TestExpressions(unittest.TestCase):
             "foo.`{bar,er}`",
         )
 
+        self.assertEqual(exp.table_name(bq_dashed_table, identify=True), '"a-1"."b"."c"')
+
     def test_table(self):
         self.assertEqual(exp.table_("a", alias="b"), parse_one("select * from a b").find(exp.Table))
         self.assertEqual(exp.table_("a", "").sql(), "a")

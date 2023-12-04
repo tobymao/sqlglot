@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v19.8.3] - 2023-12-04
+### :sparkles: New Features
+- [`05b41e8`](https://github.com/tobymao/sqlglot/commit/05b41e81639eabe6f2c4116fb7c14ea99da8b655) - add identify to table_name *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`6351007`](https://github.com/tobymao/sqlglot/commit/6351007e36bf7af9dfdb0b797bed4834fa394de1) - tokenize CRLF sequence correctly *(PR [#2623](https://github.com/tobymao/sqlglot/pull/2623) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`f9a43a1`](https://github.com/tobymao/sqlglot/commit/f9a43a176fcd6ab952bfd8bca21473d541423156) - don't patch loggers at method level to silence warnings *(PR [#2620](https://github.com/tobymao/sqlglot/pull/2620) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v19.8.2] - 2023-12-01
 ### :bug: Bug Fixes
 - [`5657a60`](https://github.com/tobymao/sqlglot/commit/5657a60169680c45feb67fe7a1da16b4c9ee22b6) - **tsql, teradata**: Distinct goes before top *(PR [#2618](https://github.com/tobymao/sqlglot/pull/2618) by [@treysp](https://github.com/treysp))*
@@ -2134,3 +2145,4 @@ Changelog
 [v19.8.0]: https://github.com/tobymao/sqlglot/compare/v19.7.0...v19.8.0
 [v19.8.1]: https://github.com/tobymao/sqlglot/compare/v19.8.0...v19.8.1
 [v19.8.2]: https://github.com/tobymao/sqlglot/compare/v19.8.1...v19.8.2
+[v19.8.3]: https://github.com/tobymao/sqlglot/compare/v19.8.2...v19.8.3

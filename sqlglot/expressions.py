@@ -6584,7 +6584,7 @@ def expand(
     return expression.transform(_expand, copy=copy)
 
 
-def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
+def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwargs) -> Func:
     """
     Returns a Func expression.
 
@@ -6598,6 +6598,7 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
     Args:
         name: the name of the function to build.
         args: the args used to instantiate the function of interest.
+        copy: whether or not to copy the argument expressions.
         dialect: the source dialect.
         kwargs: the kwargs used to instantiate the function of interest.
 
@@ -6613,8 +6614,8 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
 
     from sqlglot.dialects.dialect import Dialect
 
-    converted: t.List[Expression] = [maybe_parse(arg, dialect=dialect) for arg in args]
-    kwargs = {key: maybe_parse(value, dialect=dialect) for key, value in kwargs.items()}
+    converted: t.List[Expression] = [maybe_parse(arg, dialect=dialect, copy=copy) for arg in args]
+    kwargs = {key: maybe_parse(value, dialect=dialect, copy=copy) for key, value in kwargs.items()}
 
     parser = Dialect.get_or_raise(dialect).parser()
     from_args_list = parser.FUNCTIONS.get(name.upper())

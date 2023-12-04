@@ -314,6 +314,10 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(
             exp.func("locate", "'x'", "'xo'", dialect="hive").sql("hive"), "LOCATE('x', 'xo')"
         )
+        self.assertEqual(
+            exp.func("log", exp.to_identifier("x"), 2, dialect="bigquery").sql("bigquery"),
+            "LOG(x, 2)",
+        )
 
         self.assertIsInstance(exp.func("instr", "x", "b", dialect="mysql"), exp.StrPosition)
         self.assertIsInstance(exp.func("bla", 1, "foo"), exp.Anonymous)

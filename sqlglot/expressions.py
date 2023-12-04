@@ -6620,7 +6620,13 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
     from_args_list = parser.FUNCTIONS.get(name.upper())
 
     if from_args_list:
-        function = from_args_list(converted) if converted else from_args_list.__self__(**kwargs)  # type: ignore
+        if converted:
+            function: Func = maybe_parse(
+                f"{name}({', '.join(arg.sql(dialect=dialect) for arg in converted)})",
+                dialect=dialect,
+            )
+        else:
+            function = from_args_list.__self__(**kwargs)  # type: ignore
     else:
         kwargs = kwargs or {"expressions": converted}
         function = Anonymous(this=name, **kwargs)

@@ -2681,10 +2681,13 @@ class Generator:
         return self.cast_sql(expression, safe_prefix="TRY_")
 
     def log_sql(self, expression: exp.Log) -> str:
-        args = list(expression.args.values())
+        this = expression.this
+        expr = expression.expression
+
         if not self.dialect.LOG_BASE_FIRST:
-            args.reverse()
-        return self.func("LOG", *args)
+            this, expr = expr, this
+
+        return self.func("LOG", this, expr)
 
     def use_sql(self, expression: exp.Use) -> str:
         kind = self.sql(expression, "kind")

@@ -318,6 +318,10 @@ class TestExpressions(unittest.TestCase):
             exp.func("log", exp.to_identifier("x"), 2, dialect="bigquery").sql("bigquery"),
             "LOG(x, 2)",
         )
+        self.assertEqual(
+            exp.func("log", expression="x", this=2, dialect="bigquery").sql("bigquery"),
+            "LOG(x, 2)",
+        )
 
         self.assertIsInstance(exp.func("instr", "x", "b", dialect="mysql"), exp.StrPosition)
         self.assertIsInstance(exp.func("bla", 1, "foo"), exp.Anonymous)

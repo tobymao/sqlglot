@@ -4560,14 +4560,15 @@ class Parser(metaclass=_Parser):
         # Default argument order is base, expression
         args = self._parse_csv(self._parse_range)
 
-        if len(args) > 1:
-            if not self.dialect.LOG_BASE_FIRST:
-                args.reverse()
-            return exp.Log.from_arg_list(args)
+        this = seq_get(args, 0)
+        expression = seq_get(args, 1)
 
-        return self.expression(
-            exp.Ln if self.LOG_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)
-        )
+        if expression:
+            if not self.dialect.LOG_BASE_FIRST:
+                this, expression = expression, this
+            return self.expression(exp.Log, this=this, expression=expression)
+
+        return self.expression(exp.Ln if self.LOG_DEFAULTS_TO_LN else exp.Log, this=this)
 
     def _parse_match_against(self) -> exp.MatchAgainst:
         expressions = self._parse_csv(self._parse_column)

@@ -256,9 +256,8 @@ class Dialect(metaclass=_Dialect):
         if isinstance(dialect, Dialect):
             return dialect
         if isinstance(dialect, str):
-            dialect_name, *kv_pairs = dialect.split(",")
-
             try:
+                dialect_name, *kv_pairs = dialect.split(",")
                 kwargs = {k.strip(): v.strip() for k, v in (kv.split("=") for kv in kv_pairs)}
             except ValueError:
                 raise ValueError(

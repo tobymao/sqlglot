@@ -323,8 +323,8 @@ class TestOptimizer(unittest.TestCase):
         safe_concat = parse_one("CONCAT('a', x, 'b', 'c')")
         simplified_safe_concat = optimizer.simplify.simplify(safe_concat)
 
-        self.assertIs(type(simplified_concat), exp.Concat)
-        self.assertIs(type(simplified_safe_concat), exp.SafeConcat)
+        self.assertEqual(simplified_concat.args["safe"], False)
+        self.assertEqual(simplified_safe_concat.args["safe"], True)
 
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_concat.sql(dialect="presto"))
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_safe_concat.sql())

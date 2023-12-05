@@ -458,15 +458,17 @@ class ClickHouse(Dialect):
 
             return super().datatype_sql(expression)
 
-        def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
+        def concat_sql(self, expression: exp.Concat) -> str:
             # Clickhouse errors out if we try to cast a NULL value to TEXT
-            return self.func(
-                "CONCAT",
-                *[
-                    exp.func("if", e.is_(exp.null()), e, exp.cast(e, "text"))
-                    for e in t.cast(t.List[exp.Condition], expression.expressions)
-                ],
-            )
+            if expression.args.get("safe"):
+                return self.func(
+                    "CONCAT",
+                    *[
+                        exp.func("if", e.is_(exp.null()), e, exp.cast(e, "text"))
+                        for e in expression.expressions
+                    ],
+                )
+            return super().concat_sql(expression)
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if expression.args.get("scalar"):

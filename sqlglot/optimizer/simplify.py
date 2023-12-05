@@ -678,7 +678,6 @@ def simplify_coalesce(expression):
 
 
 CONCATS = (exp.Concat, exp.DPipe)
-SAFE_CONCATS = (exp.SafeConcat, exp.SafeDPipe)
 
 
 def simplify_concat(expression):
@@ -694,10 +693,12 @@ def simplify_concat(expression):
         sep_expr, *expressions = expression.expressions
         sep = sep_expr.name
         concat_type = exp.ConcatWs
+        args = {}
     else:
         expressions = expression.expressions
         sep = ""
-        concat_type = exp.SafeConcat if isinstance(expression, SAFE_CONCATS) else exp.Concat
+        concat_type = exp.Concat
+        args = {"safe": expression.args.get("safe")}
 
     new_args = []
     for is_string_group, group in itertools.groupby(
@@ -714,7 +715,7 @@ def simplify_concat(expression):
     if concat_type is exp.ConcatWs:
         new_args = [sep_expr] + new_args
 
-    return concat_type(expressions=new_args)
+    return concat_type(expressions=new_args, **args)
 
 
 def simplify_conditionals(expression):
@@ -1120,8 +1121,6 @@ GEN_MAP = {
     exp.DataType: lambda e: f"{e.this.name} {gen(tuple(e.args.values())[1:])}",
     exp.Div: lambda e: _binary(e, "/"),
     exp.Dot: lambda e: _binary(e, "."),
-    exp.DPipe: lambda e: _binary(e, "||"),
-    exp.SafeDPipe: lambda e: _binary(e, "||"),
     exp.EQ: lambda e: _binary(e, "="),
     exp.GT: lambda e: _binary(e, ">"),
     exp.GTE: lambda e: _binary(e, ">="),

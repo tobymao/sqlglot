@@ -427,6 +427,9 @@ class Python(Dialect):
             exp.Boolean: lambda self, e: "True" if e.this else "False",
             exp.Cast: lambda self, e: f"CAST({self.sql(e.this)}, exp.DataType.Type.{e.args['to']})",
             exp.Column: lambda self, e: f"scope[{self.sql(e, 'table') or None}][{self.sql(e.this)}]",
+            exp.Concat: lambda self, e: self.func(
+                "SAFECONCAT" if e.args.get("safe") else "CONCAT", *e.expressions
+            ),
             exp.Distinct: lambda self, e: f"set({self.sql(e, 'this')})",
             exp.Div: _div_sql,
             exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",

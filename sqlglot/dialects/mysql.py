@@ -265,11 +265,6 @@ class MySQL(Dialect):
             TokenType.DPIPE: exp.Or,
         }
 
-        # MySQL uses || as a synonym to the logical OR operator
-        # https://dev.mysql.com/doc/refman/8.0/en/logical-operators.html#operator_or
-        BITWISE = parser.Parser.BITWISE.copy()
-        BITWISE.pop(TokenType.DPIPE)
-
         TABLE_ALIAS_TOKENS = (
             parser.Parser.TABLE_ALIAS_TOKENS - parser.Parser.TABLE_INDEX_HINT_TOKENS
         )

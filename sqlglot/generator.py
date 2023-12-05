@@ -2200,9 +2200,9 @@ class Generator:
         else:
             return self.func("TRIM", expression.this, expression.expression)
 
-    def safeconcat_sql(self, expression: exp.SafeConcat) -> str:
+    def concat_sql(self, expression: exp.Concat) -> str:
         expressions = expression.expressions
-        if self.STRICT_STRING_CONCAT:
+        if self.STRICT_STRING_CONCAT and expression.args.get("safe"):
             expressions = [exp.cast(e, "text") for e in expressions]
         return self.func("CONCAT", *expressions)
 
@@ -2608,12 +2608,9 @@ class Generator:
         )
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
-        return self.binary(expression, "||")
-
-    def safedpipe_sql(self, expression: exp.SafeDPipe) -> str:
-        if self.STRICT_STRING_CONCAT:
+        if self.STRICT_STRING_CONCAT and expression.args.get("safe"):
             return self.func("CONCAT", *(exp.cast(e, "text") for e in expression.flatten()))
-        return self.dpipe_sql(expression)
+        return self.binary(expression, "||")
 
     def div_sql(self, expression: exp.Div) -> str:
         l, r = expression.left, expression.right

@@ -152,7 +152,7 @@ class MySQL(Dialect):
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
 
     # We default to treating all identifiers as case-sensitive, since it matches MySQL's
-    # behavior for Linux systems. For MacOS and Windows systems, one can override this
+    # behavior on Linux systems. For MacOS and Windows systems, one can override this
     # setting by specifying `dialect="mysql, normalization_strategy = lowercase"`.
     #
     # See also https://dev.mysql.com/doc/refman/8.2/en/identifier-case-sensitivity.html

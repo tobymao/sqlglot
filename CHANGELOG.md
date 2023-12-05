@@ -1,6 +1,22 @@
 Changelog
 =========
 
+## [v19.9.0] - 2023-12-05
+### :boom: BREAKING CHANGES
+- due to [`6e71c34`](https://github.com/tobymao/sqlglot/commit/6e71c348eab63125e412382381acbcbd79efac43) - remove safe versions and use a flag instead *(PR [#2629](https://github.com/tobymao/sqlglot/pull/2629) by [@tobymao](https://github.com/tobymao))*:
+
+  remove safe versions and use a flag instead (#2629)
+
+
+### :bug: Bug Fixes
+- [`4755293`](https://github.com/tobymao/sqlglot/commit/4755293dba1a82df7d6a520056ecb81c6a5117ea) - attach function comments to the AST *(PR [#2628](https://github.com/tobymao/sqlglot/pull/2628) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2626](undefined) opened by [@aersam](https://github.com/aersam)*
+- [`160f06d`](https://github.com/tobymao/sqlglot/commit/160f06dc902cc9c666093c47a811d7bd18c91a30) - **snowflake**: allow rename/replace identifier *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`6e71c34`](https://github.com/tobymao/sqlglot/commit/6e71c348eab63125e412382381acbcbd79efac43) - remove safe versions and use a flag instead *(PR [#2629](https://github.com/tobymao/sqlglot/pull/2629) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v19.8.3] - 2023-12-04
 ### :sparkles: New Features
 - [`05b41e8`](https://github.com/tobymao/sqlglot/commit/05b41e81639eabe6f2c4116fb7c14ea99da8b655) - add identify to table_name *(commit by [@tobymao](https://github.com/tobymao))*
@@ -2146,3 +2162,4 @@ Changelog
 [v19.8.1]: https://github.com/tobymao/sqlglot/compare/v19.8.0...v19.8.1
 [v19.8.2]: https://github.com/tobymao/sqlglot/compare/v19.8.1...v19.8.2
 [v19.8.3]: https://github.com/tobymao/sqlglot/compare/v19.8.2...v19.8.3
+[v19.9.0]: https://github.com/tobymao/sqlglot/compare/v19.8.3...v19.9.0

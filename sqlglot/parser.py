@@ -412,7 +412,6 @@ class Parser(metaclass=_Parser):
         TokenType.AMP: exp.BitwiseAnd,
         TokenType.CARET: exp.BitwiseXor,
         TokenType.PIPE: exp.BitwiseOr,
-        TokenType.DPIPE: exp.DPipe,
     }
 
     TERM = {
@@ -959,6 +958,7 @@ class Parser(metaclass=_Parser):
     UNNEST_COLUMN_ONLY: bool = False
     ALIAS_POST_TABLESAMPLE: bool = False
     STRICT_STRING_CONCAT = False
+    DPIPE_IS_STRING_CONCAT = True
     SUPPORTS_USER_DEFINED_TYPES = True
     NORMALIZE_FUNCTIONS = "upper"
     NULL_ORDERING: str = "nulls_are_small"
@@ -3393,6 +3393,13 @@ class Parser(metaclass=_Parser):
                     this=this,
                     expression=self._parse_term(),
                 )
+            elif self.DPIPE_IS_STRING_CONCAT and self._match(TokenType.DPIPE):
+                this = self.expression(
+                    exp.DPipe,
+                    this=this,
+                    expression=self._parse_term(),
+                    safe=not self.STRICT_STRING_CONCAT,
+                )
             elif self._match(TokenType.DQMARK):
                 this = self.expression(exp.Coalesce, this=this, expressions=self._parse_term())
             elif self._match_pair(TokenType.LT, TokenType.LT):
@@ -4362,9 +4369,7 @@ class Parser(metaclass=_Parser):
         if len(args) == 1:
             return args[0]
 
-        return self.expression(
-            exp.Concat if self.STRICT_STRING_CONCAT else exp.SafeConcat, expressions=args
-        )
+        return self.expression(exp.Concat, expressions=args, safe=not self.STRICT_STRING_CONCAT)
 
     def _parse_concat_ws(self) -> t.Optional[exp.Expression]:
         args = self._parse_csv(self._parse_conjunction)

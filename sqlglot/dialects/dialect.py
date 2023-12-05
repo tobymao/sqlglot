@@ -127,9 +127,6 @@ class _Dialect(type):
                 if hasattr(subclass, name):
                     setattr(subclass, name, value)
 
-        if not klass.STRICT_STRING_CONCAT and klass.DPIPE_IS_STRING_CONCAT:
-            klass.parser_class.BITWISE[TokenType.DPIPE] = exp.SafeDPipe
-
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
             klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.ANTI,
@@ -725,7 +722,7 @@ def ts_or_ds_to_date_sql(dialect: str) -> t.Callable:
     return _ts_or_ds_to_date_sql
 
 
-def concat_to_dpipe_sql(self: Generator, expression: exp.Concat | exp.SafeConcat) -> str:
+def concat_to_dpipe_sql(self: Generator, expression: exp.Concat) -> str:
     return self.sql(reduce(lambda x, y: exp.DPipe(this=x, expression=y), expression.expressions))
 
 

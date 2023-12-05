@@ -3944,11 +3944,7 @@ class Dot(Binary):
 
 
 class DPipe(Binary):
-    pass
-
-
-class SafeDPipe(DPipe):
-    pass
+    arg_types = {"this": True, "expression": True, "safe": False}
 
 
 class EQ(Binary, Predicate):
@@ -4470,12 +4466,8 @@ class Chr(Func):
 
 
 class Concat(Func):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "safe": False}
     is_var_len_args = True
-
-
-class SafeConcat(Concat):
-    pass
 
 
 class ConcatWs(Concat):

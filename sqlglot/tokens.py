@@ -1239,7 +1239,11 @@ class Tokenizer(metaclass=_Tokenizer):
                 if self._end:
                     raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
-                if self.dialect.ESCAPE_SEQUENCES and self._peek and self._char in self.STRING_ESCAPES:
+                if (
+                    self.dialect.ESCAPE_SEQUENCES
+                    and self._peek
+                    and self._char in self.STRING_ESCAPES
+                ):
                     escaped_sequence = self.dialect.ESCAPE_SEQUENCES.get(self._char + self._peek)
                     if escaped_sequence:
                         self._advance(2)

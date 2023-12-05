@@ -3376,12 +3376,12 @@ class Parser(metaclass=_Parser):
                     this=this,
                     expression=self._parse_term(),
                 )
-            elif self.DPIPE_IS_STRING_CONCAT and self._match(TokenType.DPIPE):
+            elif self.dialect.DPIPE_IS_STRING_CONCAT and self._match(TokenType.DPIPE):
                 this = self.expression(
                     exp.DPipe,
                     this=this,
                     expression=self._parse_term(),
-                    safe=not self.STRICT_STRING_CONCAT,
+                    safe=not self.dialect.STRICT_STRING_CONCAT,
                 )
             elif self._match(TokenType.DQMARK):
                 this = self.expression(exp.Coalesce, this=this, expressions=self._parse_term())

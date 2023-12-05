@@ -428,7 +428,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         """
         if schema_type not in self._type_mapping_cache:
             dialect = dialect or self.dialect
-            udt = Dialect.get_or_raise(dialect, instance=False).SUPPORTS_USER_DEFINED_TYPES
+            udt = Dialect.get_or_raise(dialect).SUPPORTS_USER_DEFINED_TYPES
 
             try:
                 expression = exp.DataType.build(schema_type, dialect=dialect, udt=udt)

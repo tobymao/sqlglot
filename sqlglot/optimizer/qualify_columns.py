@@ -40,7 +40,7 @@ def qualify_columns(
     """
     schema = ensure_schema(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
-    pseudocolumns = Dialect.get_or_raise(schema.dialect, instance=False).PSEUDOCOLUMNS
+    pseudocolumns = Dialect.get_or_raise(schema.dialect).PSEUDOCOLUMNS
 
     for scope in traverse_scope(expression):
         resolver = Resolver(scope, schema, infer_schema=infer_schema)

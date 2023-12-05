@@ -79,9 +79,6 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect[dialect.value])
 
     def test_get_or_raise(self):
-        self.assertEqual(Dialect.get_or_raise(Hive, instance=False), Hive)
-        self.assertEqual(Dialect.get_or_raise(Hive(), instance=False), Hive)
-        self.assertEqual(Dialect.get_or_raise("hive", instance=False), Hive)
         self.assertIsInstance(Dialect.get_or_raise(Hive), Hive)
         self.assertIsInstance(Dialect.get_or_raise(Hive()), Hive)
         self.assertIsInstance(Dialect.get_or_raise("hive"), Hive)

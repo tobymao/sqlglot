@@ -3759,6 +3759,7 @@ class Parser(metaclass=_Parser):
         if not self._curr:
             return None
 
+        comments = self._curr.comments
         token_type = self._curr.token_type
         this = self._curr.text
         upper = this.upper()
@@ -3806,6 +3807,9 @@ class Parser(metaclass=_Parser):
                 this = func
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
+
+        if isinstance(this, exp.Expression):
+            this.add_comments(comments)
 
         self._match_r_paren(this)
         return self._parse_window(this)
@@ -4823,6 +4827,7 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression], explicit: bool = False
     ) -> t.Optional[exp.Expression]:
         any_token = self._match(TokenType.ALIAS)
+        comments = self._prev_comments
 
         if explicit and not any_token:
             return this
@@ -4830,6 +4835,7 @@ class Parser(metaclass=_Parser):
         if self._match(TokenType.L_PAREN):
             aliases = self.expression(
                 exp.Aliases,
+                comments=comments,
                 this=this,
                 expressions=self._parse_csv(lambda: self._parse_id_var(any_token)),
             )
@@ -4839,7 +4845,7 @@ class Parser(metaclass=_Parser):
         alias = self._parse_id_var(any_token)
 
         if alias:
-            return self.expression(exp.Alias, this=this, alias=alias)
+            return self.expression(exp.Alias, comments=comments, this=this, alias=alias)
 
         return this
 

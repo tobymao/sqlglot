@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
+    NormalizationStrategy,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
     create_with_partitions_sql,
@@ -196,7 +197,7 @@ class Hive(Dialect):
     SAFE_DIVISION = True
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_INSENSITIVE
 
     TIME_MAPPING = {
         "y": "%Y",

@@ -7,6 +7,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     any_value_to_max_sql,
     date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
@@ -236,7 +237,7 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
 
 
 class TSQL(Dialect):
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_INSENSITIVE
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False

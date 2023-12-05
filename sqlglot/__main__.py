@@ -81,7 +81,7 @@ if args.parse:
         )
     ]
 elif args.tokenize:
-    objs = sqlglot.Dialect.get_or_raise(args.read)().tokenize(sql)
+    objs = sqlglot.Dialect.get_or_raise(args.read).tokenize(sql)
 else:
     objs = sqlglot.transpile(
         sql,

@@ -395,6 +395,7 @@ class Generator:
     NULL_ORDERING = "nulls_are_small"
 
     can_identify: t.Callable[[str, str | bool], bool]
+    normalize_identifier: t.Callable[[E], E]
 
     # Delimiters for quotes, identifiers and the corresponding escape characters
     QUOTE_START = "'"

@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     arrow_json_extract_scalar_sql,
     date_add_interval_sql,
     datestrtodate_sql,
@@ -149,6 +150,13 @@ def _remove_ts_or_ds_to_date(
 class MySQL(Dialect):
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
+
+    # We default to treating all identifiers as case-sensitive, since it matches MySQL's
+    # behavior for Linux systems. For MacOS and Windows systems, one can override this
+    # setting by specifying `dialect="mysql, normalization_strategy = lowercase"`.
+    #
+    # See also https://dev.mysql.com/doc/refman/8.2/en/identifier-case-sensitivity.html
+    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_SENSITIVE
 
     TIME_FORMAT = "'%Y-%m-%d %T'"
     DPIPE_IS_STRING_CONCAT = False

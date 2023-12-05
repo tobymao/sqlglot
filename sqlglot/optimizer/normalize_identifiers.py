@@ -48,10 +48,10 @@ def normalize_identifiers(expression, dialect=None):
     Returns:
         The transformed expression.
     """
+    dialect = Dialect.get_or_raise(dialect)
+
     if isinstance(expression, str):
         expression = exp.parse_identifier(expression, dialect=dialect)
-
-    dialect = Dialect.get_or_raise(dialect)
 
     def _normalize(node: E) -> E:
         if not node.meta.get("case_sensitive"):

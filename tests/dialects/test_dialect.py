@@ -79,9 +79,33 @@ class TestDialect(Validator):
             self.assertIsNotNone(Dialect[dialect.value])
 
     def test_get_or_raise(self):
-        self.assertEqual(Dialect.get_or_raise(Hive), Hive)
-        self.assertEqual(Dialect.get_or_raise(Hive()), Hive)
-        self.assertEqual(Dialect.get_or_raise("hive"), Hive)
+        self.assertEqual(Dialect.get_or_raise(Hive, instance=False), Hive)
+        self.assertEqual(Dialect.get_or_raise(Hive(), instance=False), Hive)
+        self.assertEqual(Dialect.get_or_raise("hive", instance=False), Hive)
+        self.assertIsInstance(Dialect.get_or_raise(Hive), Hive)
+        self.assertIsInstance(Dialect.get_or_raise(Hive()), Hive)
+        self.assertIsInstance(Dialect.get_or_raise("hive"), Hive)
+
+        with self.assertRaises(ValueError):
+            Dialect.get_or_raise(1)
+
+        default_mysql = Dialect.get_or_raise("mysql")
+        self.assertEqual(default_mysql.normalization_strategy.value, "case_sensitive")
+
+        lowercase_mysql = Dialect.get_or_raise("mysql,normalization_strategy=lowercase")
+        self.assertEqual(lowercase_mysql.normalization_strategy.value, "lowercase")
+
+        lowercase_mysql = Dialect.get_or_raise("mysql, normalization_strategy = lowercase")
+        self.assertEqual(lowercase_mysql.normalization_strategy.value, "lowercase")
+
+        with self.assertRaises(ValueError) as cm:
+            Dialect.get_or_raise("mysql, normalization_strategy")
+
+        self.assertEqual(
+            str(cm.exception),
+            "Invalid dialect format: 'mysql, normalization_strategy'. "
+            "Please use the correct format: 'dialect [, k1 = v2 [, ...]]'.",
+        )
 
     def test_cast(self):
         self.validate_all(

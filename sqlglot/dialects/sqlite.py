@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     any_value_to_max_sql,
     arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
@@ -63,7 +64,7 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
 
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_INSENSITIVE
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     SAFE_DIVISION = True

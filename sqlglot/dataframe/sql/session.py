@@ -28,7 +28,7 @@ class SparkSession:
             self.known_sequence_ids = set()
             self.name_to_sequence_id_mapping = defaultdict(list)
             self.incrementing_id = 1
-            self.dialect = Dialect.get_or_raise(self.DEFAULT_DIALECT)()
+            self.dialect = Dialect.get_or_raise(self.DEFAULT_DIALECT)
 
     def __new__(cls, *args, **kwargs) -> SparkSession:
         if cls._instance is None:
@@ -182,7 +182,7 @@ class SparkSession:
 
         def getOrCreate(self) -> SparkSession:
             spark = SparkSession()
-            spark.dialect = Dialect.get_or_raise(self.dialect)()
+            spark.dialect = Dialect.get_or_raise(self.dialect)
             return spark
 
     @classproperty

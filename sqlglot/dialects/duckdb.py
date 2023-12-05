@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
     arrow_json_extract_scalar_sql,
@@ -130,7 +131,7 @@ class DuckDB(Dialect):
     INDEX_OFFSET = 1
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_INSENSITIVE
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {

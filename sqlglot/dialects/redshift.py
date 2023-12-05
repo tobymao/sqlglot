@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
+    NormalizationStrategy,
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
     date_delta_sql,
@@ -36,7 +37,7 @@ def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
 
 class Redshift(Postgres):
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_INSENSITIVE
 
     SUPPORTS_USER_DEFINED_TYPES = False
     INDEX_OFFSET = 0

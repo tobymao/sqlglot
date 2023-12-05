@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     format_time_lambda,
     no_ilike_sql,
     rename_func,
@@ -54,7 +55,7 @@ class Oracle(Dialect):
     LOCKING_READS_SUPPORTED = True
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
+    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.UPPERCASE
     ALTER_TABLE_ADD_COLUMN_KEYWORD = False
 
     # https://docs.oracle.com/database/121/SQLRF/sql_elements004.htm#SQLRF00212

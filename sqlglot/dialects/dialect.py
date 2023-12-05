@@ -14,6 +14,9 @@ from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
+if t.TYPE_CHECKING:
+    from typing_extensions import Literal
+
 B = t.TypeVar("B", bound=exp.Binary)
 
 DATE_ADD_OR_DIFF = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateDiff, exp.TsOrDsDiff]
@@ -254,12 +257,12 @@ class Dialect(metaclass=_Dialect):
 
     @t.overload
     @classmethod
-    def get_or_raise(cls, dialect: DialectType, instance: t.Literal[True]) -> Dialect:
+    def get_or_raise(cls, dialect: DialectType, instance: Literal[True]) -> Dialect:
         ...
 
     @t.overload
     @classmethod
-    def get_or_raise(cls, dialect: DialectType, instance: t.Literal[False]) -> t.Type[Dialect]:
+    def get_or_raise(cls, dialect: DialectType, instance: Literal[False]) -> t.Type[Dialect]:
         ...
 
     @classmethod

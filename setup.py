@@ -31,6 +31,7 @@ setup(
             "pdoc",
             "pre-commit",
             "types-python-dateutil",
+            "typing-extensions",
         ],
     },
     classifiers=[

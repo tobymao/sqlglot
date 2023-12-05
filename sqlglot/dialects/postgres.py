@@ -195,7 +195,7 @@ def _merge_sql(self: Postgres.Generator, expression: exp.Merge) -> str:
             alias = expression.this.args.get("alias")
 
             normalize = (
-                lambda identifier: self.normalize_identifier(identifier).name
+                lambda identifier: self.dialect.normalize_identifier(identifier).name
                 if identifier
                 else None
             )

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import typing as t
-from enum import Enum
+from enum import Enum, auto
 from functools import reduce
 
 from sqlglot import exp
 from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
-from sqlglot.helper import flatten, seq_get
+from sqlglot.helper import AutoName, flatten, seq_get
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -46,13 +46,13 @@ class Dialects(str, Enum):
     Doris = "doris"
 
 
-class NormalizationStrategy(str, Enum):
+class NormalizationStrategy(AutoName):
     """Specifies the strategy according to which identifiers should be normalized."""
 
-    LOWERCASE = "lowercase"  # Unquoted identifiers are lowercased
-    UPPERCASE = "uppercase"  # Unquoted identifiers are uppercased
-    CASE_SENSITIVE = "case_sensitive"  # Always case-sensitive, regardless of quotes
-    CASE_INSENSITIVE = "case_insensitive"  # Always case-insensitive, regardless of quotes
+    LOWERCASE = auto()  # Unquoted identifiers are lowercased
+    UPPERCASE = auto()  # Unquoted identifiers are uppercased
+    CASE_SENSITIVE = auto()  # Always case-sensitive, regardless of quotes
+    CASE_INSENSITIVE = auto()  # Always case-insensitive, regardless of quotes
 
 
 class _Dialect(type):
@@ -118,34 +118,14 @@ class _Dialect(type):
         klass.HEX_START, klass.HEX_END = get_start_end(TokenType.HEX_STRING)
         klass.BYTE_START, klass.BYTE_END = get_start_end(TokenType.BYTE_STRING)
 
-        dialect_properties = {
-            **{
-                k: v
-                for k, v in vars(klass).items()
-                if not callable(v) and not isinstance(v, classmethod) and not k.startswith("__")
-            },
-            "TOKENIZER_CLASS": klass.tokenizer_class,
-        }
-
         if enum not in ("", "bigquery"):
-            dialect_properties["SELECT_KINDS"] = ()
-
-        # Pass required dialect properties to the tokenizer, parser and generator classes
-        for subclass in (klass.tokenizer_class, klass.parser_class, klass.generator_class):
-            for name, value in dialect_properties.items():
-                if hasattr(subclass, name):
-                    setattr(subclass, name, value)
+            klass.generator_class.SELECT_KINDS = ()
 
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
             klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.ANTI,
                 TokenType.SEMI,
             }
-
-        # These may be reset at runtime if a dialect is instantiated with additional settings
-        klass_obj = klass()
-        klass.generator_class.can_identify = klass_obj.can_identify
-        klass.generator_class.normalize_identifier = klass_obj.normalize_identifier
 
         return klass
 
@@ -217,7 +197,8 @@ class Dialect(metaclass=_Dialect):
     # Such columns may be excluded from SELECT * queries, for example
     PSEUDOCOLUMNS: t.Set[str] = set()
 
-    # Autofilled
+    # --- Autofilled ---
+
     tokenizer_class = Tokenizer
     parser_class = Parser
     generator_class = Generator
@@ -230,6 +211,21 @@ class Dialect(metaclass=_Dialect):
     INVERSE_TIME_TRIE: t.Dict = {}
 
     INVERSE_ESCAPE_SEQUENCES: t.Dict[str, str] = {}
+
+    # Delimiters for quotes, identifiers and the corresponding escape characters
+    QUOTE_START = "'"
+    QUOTE_END = "'"
+    IDENTIFIER_START = '"'
+    IDENTIFIER_END = '"'
+    TOKENIZER_CLASS = Tokenizer
+
+    # Delimiters for bit, hex, byte and raw literals
+    BIT_START: t.Optional[str] = None
+    BIT_END: t.Optional[str] = None
+    HEX_START: t.Optional[str] = None
+    HEX_END: t.Optional[str] = None
+    BYTE_START: t.Optional[str] = None
+    BYTE_END: t.Optional[str] = None
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:
@@ -294,11 +290,7 @@ class Dialect(metaclass=_Dialect):
         if normalization_strategy is None:
             self.normalization_strategy = self.NORMALIZATION_STRATEGY
         else:
-            self.normalization_strategy = NormalizationStrategy(normalization_strategy)
-
-            # These are updated to reflect the new normalization strategy settings in the Generator
-            self.generator_class.can_identify = self.can_identify
-            self.generator_class.normalize_identifier = self.normalize_identifier
+            self.normalization_strategy = NormalizationStrategy(normalization_strategy.upper())
 
     def __eq__(self, other: t.Any) -> bool:
         return type(self) == other
@@ -407,14 +399,14 @@ class Dialect(metaclass=_Dialect):
     @property
     def tokenizer(self) -> Tokenizer:
         if not hasattr(self, "_tokenizer"):
-            self._tokenizer = self.tokenizer_class()
+            self._tokenizer = self.tokenizer_class(dialect=self)
         return self._tokenizer
 
     def parser(self, **opts) -> Parser:
-        return self.parser_class(**opts)
+        return self.parser_class(dialect=self, **opts)
 
     def generator(self, **opts) -> Generator:
-        return self.generator_class(**opts)
+        return self.generator_class(dialect=self, **opts)
 
 
 DialectType = t.Union[str, Dialect, t.Type[Dialect], None]

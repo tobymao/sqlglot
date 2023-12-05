@@ -437,7 +437,7 @@ class TSQL(Dialect):
 
         CONCAT_NULL_OUTPUTS_STRING = True
 
-        ALTER_TABLE_ADD_COLUMN_KEYWORD = False
+        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
@@ -623,7 +623,7 @@ class TSQL(Dialect):
         QUERY_HINTS = False
         RETURNING_END = False
         NVL2_SUPPORTED = False
-        ALTER_TABLE_ADD_COLUMN_KEYWORD = False
+        ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
         COMPUTED_COLUMN_WITH_TYPE = False
         CTE_RECURSIVE_KEYWORD_REQUIRED = False

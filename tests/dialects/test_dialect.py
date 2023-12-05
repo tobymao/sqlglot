@@ -87,13 +87,13 @@ class TestDialect(Validator):
             Dialect.get_or_raise(1)
 
         default_mysql = Dialect.get_or_raise("mysql")
-        self.assertEqual(default_mysql.normalization_strategy.value, "case_sensitive")
+        self.assertEqual(default_mysql.normalization_strategy.value, "CASE_SENSITIVE")
 
         lowercase_mysql = Dialect.get_or_raise("mysql,normalization_strategy=lowercase")
-        self.assertEqual(lowercase_mysql.normalization_strategy.value, "lowercase")
+        self.assertEqual(lowercase_mysql.normalization_strategy.value, "LOWERCASE")
 
         lowercase_mysql = Dialect.get_or_raise("mysql, normalization_strategy = lowercase")
-        self.assertEqual(lowercase_mysql.normalization_strategy.value, "lowercase")
+        self.assertEqual(lowercase_mysql.normalization_strategy.value, "LOWERCASE")
 
         with self.assertRaises(ValueError) as cm:
             Dialect.get_or_raise("mysql, normalization_strategy")

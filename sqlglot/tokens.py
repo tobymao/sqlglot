@@ -1254,3 +1254,45 @@ class Tokenizer(metaclass=_Tokenizer):
                 text += self.sql[current : self._current - 1]
 
         return text
+
+    @classmethod
+    def tokenize_native(cls, sql: str) -> t.List[Token]:
+        from sqlglotrs import (  # type: ignore
+            Tokenizer as RsTokenizer,
+            TokenizerSettings as RsTokenizerSettings,
+        )
+
+        settings = RsTokenizerSettings(
+            white_space={k: v.name for k, v in cls.WHITE_SPACE.items()},
+            single_tokens={k: v.name for k, v in cls.SINGLE_TOKENS.items()},
+            keywords={k: v.name for k, v in cls.KEYWORDS.items()},
+            numeric_literals=cls.NUMERIC_LITERALS,
+            identifiers=cls._IDENTIFIERS,
+            identifier_escapes=cls._IDENTIFIER_ESCAPES,
+            string_escapes=cls._STRING_ESCAPES,
+            escape_sequences=cls.ESCAPE_SEQUENCES,
+            quotes=cls._QUOTES,
+            format_strings={k: (v1, v2.name) for k, (v1, v2) in cls._FORMAT_STRINGS.items()},
+            has_bit_strings=bool(cls.BIT_STRINGS),
+            has_hex_strings=bool(cls.HEX_STRINGS),
+            comments=cls._COMMENTS,
+            var_single_tokens=cls.VAR_SINGLE_TOKENS,
+            commands={v.name for v in cls.COMMANDS},
+            command_prefix_tokens={v.name for v in cls.COMMAND_PREFIX_TOKENS},
+            identifiers_can_start_with_digit=cls.IDENTIFIERS_CAN_START_WITH_DIGIT,
+        )
+
+        native_tokens = RsTokenizer(settings).tokenize(sql)
+
+        return [
+            Token(
+                token_type=TokenType[str(token.token_type)],
+                text=token.text,
+                line=token.line,
+                col=token.column,
+                start=token.start,
+                end=token.end,
+                comments=list(token.comments),
+            )
+            for token in native_tokens
+        ]

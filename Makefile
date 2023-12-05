@@ -3,8 +3,13 @@
 install:
 	pip install -e .
 
-install-dev:
+install-dev-rs:
+	cd sqlglotrs/ && python -m maturin develop
+
+install-dev-core:
 	pip install -e ".[dev]"
+
+install-dev: install-dev-core install-dev-rs
 
 install-pre-commit:
 	pre-commit install

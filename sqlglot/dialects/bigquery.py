@@ -411,6 +411,13 @@ class BigQuery(Dialect):
             TokenType.FOR: lambda self: self._parse_for_in(),
         }
 
+        BRACKET_OFFSETS = {
+            "OFFSET": (0, False),
+            "ORDINAL": (1, False),
+            "SAFE_OFFSET": (0, True),
+            "SAFE_ORDINAL": (1, True),
+        }
+
         def _parse_for_in(self) -> exp.ForIn:
             this = self._parse_range()
             self._match_text_seq("DO")
@@ -476,6 +483,26 @@ class BigQuery(Dialect):
                 )
 
             return json_object
+
+        def _parse_bracket(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            bracket = super()._parse_bracket(this)
+
+            if this is bracket:
+                return bracket
+
+            if isinstance(bracket, exp.Bracket):
+                for expression in bracket.expressions:
+                    name = expression.name.upper()
+
+                    if name not in self.BRACKET_OFFSETS:
+                        break
+
+                    offset, safe = self.BRACKET_OFFSETS[name]
+                    bracket.set("offset", offset)
+                    bracket.set("safe", safe)
+                    expression.replace(expression.expressions[0])
+
+            return bracket
 
     class Generator(generator.Generator):
         EXPLICIT_UNION = True
@@ -733,6 +760,23 @@ class BigQuery(Dialect):
                 return f"ARRAY{self.wrap(self.sql(first_arg))}"
 
             return inline_array_sql(self, expression)
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            expressions = expression.expressions
+            expressions_sql = ", ".join(self.sql(e) for e in expressions)
+            offset = expression.args.get("offset")
+
+            if offset == 0:
+                expressions_sql = f"OFFSET({expressions_sql})"
+            elif offset == 1:
+                expressions_sql = f"ORDINAL({expressions_sql})"
+            else:
+                self.unsupported(f"Unsupported array offset: {offset}")
+
+            if expression.args.get("safe"):
+                expressions_sql = f"SAFE_{expressions_sql}"
+
+            return f"{self.sql(expression, 'this')}[{expressions_sql}]"
 
         def transaction_sql(self, *_) -> str:
             return "BEGIN TRANSACTION"

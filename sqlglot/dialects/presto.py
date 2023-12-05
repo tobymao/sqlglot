@@ -137,11 +137,11 @@ def _from_unixtime(args: t.List) -> exp.Expression:
     return exp.UnixToTime.from_arg_list(args)
 
 
-def _parse_element_at(args: t.List) -> exp.SafeBracket:
+def _parse_element_at(args: t.List) -> exp.Bracket:
     this = seq_get(args, 0)
     index = seq_get(args, 1)
     assert isinstance(this, exp.Expression) and isinstance(index, exp.Expression)
-    return exp.SafeBracket(this=this, expressions=apply_index_offset(this, [index], -1))
+    return exp.Bracket(this=this, expressions=[index], offset=1, safe=True)
 
 
 def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
@@ -350,9 +350,6 @@ class Presto(Dialect):
             exp.Quantile: _quantile_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.Right: right_to_substring_sql,
-            exp.SafeBracket: lambda self, e: self.func(
-                "ELEMENT_AT", e.this, seq_get(apply_index_offset(e.this, e.expressions, 1), 0)
-            ),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
             exp.Select: transforms.preprocess(
@@ -394,6 +391,22 @@ class Presto(Dialect):
             ),
             exp.Xor: bool_xor_sql,
         }
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            if expression.args.get("safe"):
+                return self.func(
+                    "ELEMENT_AT",
+                    expression.this,
+                    seq_get(
+                        apply_index_offset(
+                            expression.this,
+                            expression.expressions,
+                            1 - expression.args.get("offset", 0),
+                        ),
+                        0,
+                    ),
+                )
+            return super().bracket_sql(expression)
 
         def struct_sql(self, expression: exp.Struct) -> str:
             if any(isinstance(arg, self.KEY_VALUE_DEFINITONS) for arg in expression.expressions):

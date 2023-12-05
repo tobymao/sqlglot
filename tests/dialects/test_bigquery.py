@@ -8,6 +8,7 @@ from sqlglot import (
     parse,
     transpile,
 )
+from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -16,6 +17,24 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_all(
+                "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
+                write={
+                    "duckdb": "SELECT a[2], b[2], c[1], d[2], e[1]",
+                    "bigquery": "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
+                    "presto": "SELECT a[2], b[2], c[1], ELEMENT_AT(d, 2), ELEMENT_AT(e, 1)",
+                },
+            )
+
+            self.validate_all(
+                "a[0]",
+                read={
+                    "duckdb": "a[1]",
+                    "presto": "a[1]",
+                },
+            )
+
         self.validate_identity(
             "select array_contains([1, 2, 3], 1)",
             "SELECT EXISTS(SELECT 1 FROM UNNEST([1, 2, 3]) AS _col WHERE _col = 1)",

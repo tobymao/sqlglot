@@ -4108,7 +4108,8 @@ class Between(Predicate):
 
 
 class Bracket(Condition):
-    arg_types = {"this": True, "expressions": True}
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
+    arg_types = {"this": True, "expressions": True, "offset": False, "safe": False}
 
     @property
     def output_name(self) -> str:
@@ -4116,10 +4117,6 @@ class Bracket(Condition):
             return self.expressions[0].output_name
 
         return super().output_name
-
-
-class SafeBracket(Bracket):
-    """Represents array lookup where OOB index yields NULL instead of causing a failure."""
 
 
 class Distinct(Expression):

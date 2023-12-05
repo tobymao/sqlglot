@@ -566,18 +566,10 @@ class TestPresto(Validator):
                 "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
                 write={
                     "": "SELECT ARRAY(1, 2, 3)[3]",
+                    "bigquery": "SELECT [1, 2, 3][SAFE_ORDINAL(4)]",
                     "postgres": "SELECT (ARRAY[1, 2, 3])[4]",
                     "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
                 },
-            )
-
-            self.assertEqual(
-                cm.output,
-                [
-                    "WARNING:sqlglot:Applying array index offset (-1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                ],
             )
 
         self.validate_all(

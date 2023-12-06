@@ -504,7 +504,6 @@ class Tokenizer(metaclass=_Tokenizer):
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
     STRING_ESCAPES = ["'"]
     VAR_SINGLE_TOKENS: t.Set[str] = set()
-    ESCAPE_SEQUENCES: t.Dict[str, str] = {}
 
     # Autofilled
     _COMMENTS: t.Dict[str, str] = {}

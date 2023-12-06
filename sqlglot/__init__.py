@@ -83,8 +83,7 @@ def parse(
     Returns:
         The resulting syntax tree collection.
     """
-    dialect = Dialect.get_or_raise(read or dialect)()
-    return dialect.parse(sql, **opts)
+    return Dialect.get_or_raise(read or dialect).parse(sql, **opts)
 
 
 @t.overload
@@ -118,7 +117,7 @@ def parse_one(
         The syntax tree for the first parsed statement.
     """
 
-    dialect = Dialect.get_or_raise(read or dialect)()
+    dialect = Dialect.get_or_raise(read or dialect)
 
     if into:
         result = dialect.parse_into(into, sql, **opts)
@@ -158,7 +157,8 @@ def transpile(
         The list of transpiled SQL statements.
     """
     write = (read if write is None else write) if identity else write
+    write = Dialect.get_or_raise(write)
     return [
-        Dialect.get_or_raise(write)().generate(expression, copy=False, **opts) if expression else ""
+        write.generate(expression, copy=False, **opts) if expression else ""
         for expression in parse(sql, read, error_level=error_level)
     ]

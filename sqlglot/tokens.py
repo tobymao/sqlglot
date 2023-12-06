@@ -7,6 +7,9 @@ from sqlglot.errors import TokenError
 from sqlglot.helper import AutoName
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
 
 class TokenType(AutoName):
     L_PAREN = auto()
@@ -501,11 +504,8 @@ class Tokenizer(metaclass=_Tokenizer):
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]
     STRING_ESCAPES = ["'"]
     VAR_SINGLE_TOKENS: t.Set[str] = set()
-    ESCAPE_SEQUENCES: t.Dict[str, str] = {}
 
     # Autofilled
-    IDENTIFIERS_CAN_START_WITH_DIGIT: bool = False
-
     _COMMENTS: t.Dict[str, str] = {}
     _FORMAT_STRINGS: t.Dict[str, t.Tuple[str, TokenType]] = {}
     _IDENTIFIERS: t.Dict[str, str] = {}
@@ -812,6 +812,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "sql",
         "size",
         "tokens",
+        "dialect",
         "_start",
         "_current",
         "_line",
@@ -823,7 +824,10 @@ class Tokenizer(metaclass=_Tokenizer):
         "_prev_token_line",
     )
 
-    def __init__(self) -> None:
+    def __init__(self, dialect: DialectType = None) -> None:
+        from sqlglot.dialects import Dialect
+
+        self.dialect = Dialect.get_or_raise(dialect)
         self.reset()
 
     def reset(self) -> None:
@@ -1112,7 +1116,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     self._add(TokenType.NUMBER, number_text)
                     self._add(TokenType.DCOLON, "::")
                     return self._add(token_type, literal)
-                elif self.IDENTIFIERS_CAN_START_WITH_DIGIT:
+                elif self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT:
                     return self._add(TokenType.VAR)
 
                 self._advance(-len(literal))
@@ -1234,8 +1238,12 @@ class Tokenizer(metaclass=_Tokenizer):
                 if self._end:
                     raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
-                if self.ESCAPE_SEQUENCES and self._peek and self._char in self.STRING_ESCAPES:
-                    escaped_sequence = self.ESCAPE_SEQUENCES.get(self._char + self._peek)
+                if (
+                    self.dialect.ESCAPE_SEQUENCES
+                    and self._peek
+                    and self._char in self.STRING_ESCAPES
+                ):
+                    escaped_sequence = self.dialect.ESCAPE_SEQUENCES.get(self._char + self._peek)
                     if escaped_sequence:
                         self._advance(2)
                         text += escaped_sequence

@@ -9,10 +9,11 @@ from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.helper import apply_index_offset, csv, seq_get
 from sqlglot.time import format_time
-from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from sqlglot.dialects.dialect import DialectType
 
 logger = logging.getLogger("sqlglot")
 
@@ -105,9 +106,6 @@ class Generator:
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
     }
 
-    # Whether the base comes first
-    LOG_BASE_FIRST = True
-
     # Whether or not null ordering is supported in order by
     NULL_ORDERING_SUPPORTED = True
 
@@ -198,7 +196,7 @@ class Generator:
     VALUES_AS_TABLE = True
 
     # Whether or not the word COLUMN is included when adding a column with ALTER TABLE
-    ALTER_TABLE_ADD_COLUMN_KEYWORD = True
+    ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = True
 
     # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
     UNNEST_WITH_ORDINALITY = True
@@ -208,9 +206,6 @@ class Generator:
 
     # Whether or not JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
     SEMI_ANTI_JOIN_WITH_SIDE = True
-
-    # Whether or not session variables / parameters are supported, e.g. @x in T-SQL
-    SUPPORTS_PARAMETERS = True
 
     # Whether or not to include the type of a computed column in the CREATE DDL
     COMPUTED_COLUMN_WITH_TYPE = True
@@ -232,15 +227,6 @@ class Generator:
 
     # Whether or not the "RECURSIVE" keyword is required when defining recursive CTEs
     CTE_RECURSIVE_KEYWORD_REQUIRED = True
-
-    # Whether the behavior of a / b depends on the types of a and b.
-    # False means a / b is always float division.
-    # True means a / b is integer division if both a and b are integers.
-    TYPED_DIVISION = False
-
-    # False means 1 / 0 throws an error.
-    # True means 1 / 0 returns null.
-    SAFE_DIVISION = False
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -382,35 +368,6 @@ class Generator:
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
-    # Autofilled
-    INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
-    INVERSE_TIME_TRIE: t.Dict = {}
-    INVERSE_ESCAPE_SEQUENCES: t.Dict[str, str] = {}
-    INDEX_OFFSET = 0
-    UNNEST_COLUMN_ONLY = False
-    ALIAS_POST_TABLESAMPLE = False
-    IDENTIFIERS_CAN_START_WITH_DIGIT = False
-    STRICT_STRING_CONCAT = False
-    NORMALIZE_FUNCTIONS: bool | str = "upper"
-    NULL_ORDERING = "nulls_are_small"
-
-    can_identify: t.Callable[[str, str | bool], bool]
-
-    # Delimiters for quotes, identifiers and the corresponding escape characters
-    QUOTE_START = "'"
-    QUOTE_END = "'"
-    IDENTIFIER_START = '"'
-    IDENTIFIER_END = '"'
-    TOKENIZER_CLASS = Tokenizer
-
-    # Delimiters for bit, hex, byte and raw literals
-    BIT_START: t.Optional[str] = None
-    BIT_END: t.Optional[str] = None
-    HEX_START: t.Optional[str] = None
-    HEX_END: t.Optional[str] = None
-    BYTE_START: t.Optional[str] = None
-    BYTE_END: t.Optional[str] = None
-
     __slots__ = (
         "pretty",
         "identify",
@@ -423,6 +380,7 @@ class Generator:
         "leading_comma",
         "max_text_width",
         "comments",
+        "dialect",
         "unsupported_messages",
         "_escaped_quote_end",
         "_escaped_identifier_end",
@@ -441,8 +399,10 @@ class Generator:
         leading_comma: bool = False,
         max_text_width: int = 80,
         comments: bool = True,
+        dialect: DialectType = None,
     ):
         import sqlglot
+        from sqlglot.dialects import Dialect
 
         self.pretty = pretty if pretty is not None else sqlglot.pretty
         self.identify = identify
@@ -454,16 +414,19 @@ class Generator:
         self.leading_comma = leading_comma
         self.max_text_width = max_text_width
         self.comments = comments
+        self.dialect = Dialect.get_or_raise(dialect)
 
         # This is both a Dialect property and a Generator argument, so we prioritize the latter
         self.normalize_functions = (
-            self.NORMALIZE_FUNCTIONS if normalize_functions is None else normalize_functions
+            self.dialect.NORMALIZE_FUNCTIONS if normalize_functions is None else normalize_functions
         )
 
         self.unsupported_messages: t.List[str] = []
-        self._escaped_quote_end: str = self.TOKENIZER_CLASS.STRING_ESCAPES[0] + self.QUOTE_END
+        self._escaped_quote_end: str = (
+            self.dialect.tokenizer_class.STRING_ESCAPES[0] + self.dialect.QUOTE_END
+        )
         self._escaped_identifier_end: str = (
-            self.TOKENIZER_CLASS.IDENTIFIER_ESCAPES[0] + self.IDENTIFIER_END
+            self.dialect.tokenizer_class.IDENTIFIER_ESCAPES[0] + self.dialect.IDENTIFIER_END
         )
 
     def generate(self, expression: exp.Expression, copy: bool = True) -> str:
@@ -931,32 +894,32 @@ class Generator:
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
 
-        if not alias and not self.UNNEST_COLUMN_ONLY:
+        if not alias and not self.dialect.UNNEST_COLUMN_ONLY:
             alias = "_t"
 
         return f"{alias}{columns}"
 
     def bitstring_sql(self, expression: exp.BitString) -> str:
         this = self.sql(expression, "this")
-        if self.BIT_START:
-            return f"{self.BIT_START}{this}{self.BIT_END}"
+        if self.dialect.BIT_START:
+            return f"{self.dialect.BIT_START}{this}{self.dialect.BIT_END}"
         return f"{int(this, 2)}"
 
     def hexstring_sql(self, expression: exp.HexString) -> str:
         this = self.sql(expression, "this")
-        if self.HEX_START:
-            return f"{self.HEX_START}{this}{self.HEX_END}"
+        if self.dialect.HEX_START:
+            return f"{self.dialect.HEX_START}{this}{self.dialect.HEX_END}"
         return f"{int(this, 16)}"
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")
-        if self.BYTE_START:
-            return f"{self.BYTE_START}{this}{self.BYTE_END}"
+        if self.dialect.BYTE_START:
+            return f"{self.dialect.BYTE_START}{this}{self.dialect.BYTE_END}"
         return this
 
     def rawstring_sql(self, expression: exp.RawString) -> str:
         string = self.escape_str(expression.this.replace("\\", "\\\\"))
-        return f"{self.QUOTE_START}{string}{self.QUOTE_END}"
+        return f"{self.dialect.QUOTE_START}{string}{self.dialect.QUOTE_END}"
 
     def datatypeparam_sql(self, expression: exp.DataTypeParam) -> str:
         this = self.sql(expression, "this")
@@ -1096,14 +1059,14 @@ class Generator:
         text = expression.name
         lower = text.lower()
         text = lower if self.normalize and not expression.quoted else text
-        text = text.replace(self.IDENTIFIER_END, self._escaped_identifier_end)
+        text = text.replace(self.dialect.IDENTIFIER_END, self._escaped_identifier_end)
         if (
             expression.quoted
-            or self.can_identify(text, self.identify)
+            or self.dialect.can_identify(text, self.identify)
             or lower in self.RESERVED_KEYWORDS
-            or (not self.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
+            or (not self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT and text[:1].isdigit())
         ):
-            text = f"{self.IDENTIFIER_START}{text}{self.IDENTIFIER_END}"
+            text = f"{self.dialect.IDENTIFIER_START}{text}{self.dialect.IDENTIFIER_END}"
         return text
 
     def inputoutputformat_sql(self, expression: exp.InputOutputFormat) -> str:
@@ -1472,7 +1435,7 @@ class Generator:
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
     ) -> str:
-        if self.ALIAS_POST_TABLESAMPLE and expression.this and expression.this.alias:
+        if self.dialect.ALIAS_POST_TABLESAMPLE and expression.this and expression.this.alias:
             table = expression.this.copy()
             table.set("alias", None)
             this = self.sql(table)
@@ -1782,13 +1745,13 @@ class Generator:
     def literal_sql(self, expression: exp.Literal) -> str:
         text = expression.this or ""
         if expression.is_string:
-            text = f"{self.QUOTE_START}{self.escape_str(text)}{self.QUOTE_END}"
+            text = f"{self.dialect.QUOTE_START}{self.escape_str(text)}{self.dialect.QUOTE_END}"
         return text
 
     def escape_str(self, text: str) -> str:
-        text = text.replace(self.QUOTE_END, self._escaped_quote_end)
-        if self.INVERSE_ESCAPE_SEQUENCES:
-            text = "".join(self.INVERSE_ESCAPE_SEQUENCES.get(ch, ch) for ch in text)
+        text = text.replace(self.dialect.QUOTE_END, self._escaped_quote_end)
+        if self.dialect.INVERSE_ESCAPE_SEQUENCES:
+            text = "".join(self.dialect.INVERSE_ESCAPE_SEQUENCES.get(ch, ch) for ch in text)
         elif self.pretty:
             text = text.replace("\n", self.SENTINEL_LINE_BREAK)
         return text
@@ -1832,9 +1795,9 @@ class Generator:
 
         nulls_first = expression.args.get("nulls_first")
         nulls_last = not nulls_first
-        nulls_are_large = self.NULL_ORDERING == "nulls_are_large"
-        nulls_are_small = self.NULL_ORDERING == "nulls_are_small"
-        nulls_are_last = self.NULL_ORDERING == "nulls_are_last"
+        nulls_are_large = self.dialect.NULL_ORDERING == "nulls_are_large"
+        nulls_are_small = self.dialect.NULL_ORDERING == "nulls_are_small"
+        nulls_are_last = self.dialect.NULL_ORDERING == "nulls_are_last"
 
         this = self.sql(expression, "this")
 
@@ -2016,7 +1979,7 @@ class Generator:
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
         this = self.sql(expression, "this")
-        return f"{self.PARAMETER_TOKEN}{this}" if self.SUPPORTS_PARAMETERS else this
+        return f"{self.PARAMETER_TOKEN}{this}"
 
     def sessionparameter_sql(self, expression: exp.SessionParameter) -> str:
         this = self.sql(expression, "this")
@@ -2064,7 +2027,7 @@ class Generator:
             if alias and isinstance(offset, exp.Expression):
                 alias.append("columns", offset)
 
-        if alias and self.UNNEST_COLUMN_ONLY:
+        if alias and self.dialect.UNNEST_COLUMN_ONLY:
             columns = alias.columns
             alias = self.sql(columns[0]) if columns else ""
         else:
@@ -2138,7 +2101,7 @@ class Generator:
         expressions = apply_index_offset(
             expression.this,
             expression.expressions,
-            self.INDEX_OFFSET - expression.args.get("offset", 0),
+            self.dialect.INDEX_OFFSET - expression.args.get("offset", 0),
         )
         expressions_sql = ", ".join(self.sql(e) for e in expressions)
         return f"{self.sql(expression, 'this')}[{expressions_sql}]"
@@ -2202,7 +2165,7 @@ class Generator:
 
     def concat_sql(self, expression: exp.Concat) -> str:
         expressions = expression.expressions
-        if self.STRICT_STRING_CONCAT and expression.args.get("safe"):
+        if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
             expressions = [exp.cast(e, "text") for e in expressions]
         return self.func("CONCAT", *expressions)
 
@@ -2561,7 +2524,7 @@ class Generator:
         return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')} {actions}"
 
     def add_column_sql(self, expression: exp.AlterTable) -> str:
-        if self.ALTER_TABLE_ADD_COLUMN_KEYWORD:
+        if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
             return self.expressions(
                 expression,
                 key="actions",
@@ -2608,23 +2571,23 @@ class Generator:
         )
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
-        if self.STRICT_STRING_CONCAT and expression.args.get("safe"):
+        if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
             return self.func("CONCAT", *(exp.cast(e, "text") for e in expression.flatten()))
         return self.binary(expression, "||")
 
     def div_sql(self, expression: exp.Div) -> str:
         l, r = expression.left, expression.right
 
-        if not self.SAFE_DIVISION and expression.args.get("safe"):
+        if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
             r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
 
-        if self.TYPED_DIVISION and not expression.args.get("typed"):
+        if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
             if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(
                 *exp.DataType.FLOAT_TYPES
             ):
                 l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
 
-        elif not self.TYPED_DIVISION and expression.args.get("typed"):
+        elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
             if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
                 return self.sql(
                     exp.cast(
@@ -2719,7 +2682,7 @@ class Generator:
 
     def log_sql(self, expression: exp.Log) -> str:
         args = list(expression.args.values())
-        if not self.LOG_BASE_FIRST:
+        if not self.dialect.LOG_BASE_FIRST:
             args.reverse()
         return self.func("LOG", *args)
 
@@ -2773,7 +2736,9 @@ class Generator:
 
     def format_time(self, expression: exp.Expression) -> t.Optional[str]:
         return format_time(
-            self.sql(expression, "format"), self.INVERSE_TIME_MAPPING, self.INVERSE_TIME_TRIE
+            self.sql(expression, "format"),
+            self.dialect.INVERSE_TIME_MAPPING,
+            self.dialect.INVERSE_TIME_TRIE,
         )
 
     def expressions(

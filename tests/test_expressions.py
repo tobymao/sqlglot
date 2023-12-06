@@ -311,8 +311,17 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(exp.func("bla", 1, "foo").sql(), "BLA(1, foo)")
         self.assertEqual(exp.func("COUNT", exp.Star()).sql(), "COUNT(*)")
         self.assertEqual(exp.func("bloo").sql(), "BLOO()")
+        self.assertEqual(exp.func("concat", exp.convert("a")).sql("duckdb"), "'a'")
         self.assertEqual(
             exp.func("locate", "'x'", "'xo'", dialect="hive").sql("hive"), "LOCATE('x', 'xo')"
+        )
+        self.assertEqual(
+            exp.func("log", exp.to_identifier("x"), 2, dialect="bigquery").sql("bigquery"),
+            "LOG(x, 2)",
+        )
+        self.assertEqual(
+            exp.func("log", dialect="bigquery", expression="x", this=2).sql("bigquery"),
+            "LOG(x, 2)",
         )
 
         self.assertIsInstance(exp.func("instr", "x", "b", dialect="mysql"), exp.StrPosition)
@@ -327,6 +336,15 @@ class TestExpressions(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             exp.func("abs")
+
+        with self.assertRaises(ValueError) as cm:
+            exp.func("to_hex", dialect="bigquery", this=5)
+
+        self.assertEqual(
+            str(cm.exception),
+            "Unable to convert 'to_hex' into a Func. Either manually construct the Func "
+            "expression of interest or parse the function call.",
+        )
 
     def test_named_selects(self):
         expression = parse_one(

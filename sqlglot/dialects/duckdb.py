@@ -176,6 +176,12 @@ class DuckDB(Dialect):
             "DATE_DIFF": _parse_date_diff,
             "DATE_TRUNC": date_trunc_to_time,
             "DATETRUNC": date_trunc_to_time,
+            "DECODE": lambda args: exp.Decode(
+                this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
+            ),
+            "ENCODE": lambda args: exp.Encode(
+                this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
+            ),
             "EPOCH": exp.TimeToUnix.from_arg_list,
             "EPOCH_MS": lambda args: exp.UnixToTime(
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
@@ -215,15 +221,8 @@ class DuckDB(Dialect):
             "XOR": binary_from_function(exp.BitwiseXor),
         }
 
-        FUNCTION_PARSERS = {
-            **parser.Parser.FUNCTION_PARSERS,
-            "DECODE": lambda self: self.expression(
-                exp.Decode, this=self._parse_conjunction(), charset=exp.Literal.string("utf-8")
-            ),
-            "ENCODE": lambda self: self.expression(
-                exp.Encode, this=self._parse_conjunction(), charset=exp.Literal.string("utf-8")
-            ),
-        }
+        FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
+        FUNCTION_PARSERS.pop("DECODE", None)
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,

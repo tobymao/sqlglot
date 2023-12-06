@@ -109,7 +109,7 @@ class Parser(metaclass=_Parser):
     """
 
     FUNCTIONS: t.Dict[str, t.Callable] = {
-        **{name: func.from_arg_list for name, func in exp.NAME_TO_FUNC.items()},
+        **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
         "CONCAT": parse_concat,
         "CONCAT_WS": parse_concat_ws,
         "DATE_TO_DATE_STR": lambda args: exp.Cast(

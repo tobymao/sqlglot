@@ -5275,7 +5275,7 @@ def _norm_arg(arg):
 
 
 ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
-NAME_TO_FUNC = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
+FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
 
 
 # Helpers
@@ -6630,7 +6630,7 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
         elif constructor.__name__ == "from_arg_list":
             function = constructor.__self__(**kwargs)  # type: ignore
         else:
-            constructor = NAME_TO_FUNC.get(name.upper())
+            constructor = FUNCTION_BY_NAME.get(name.upper())
             if constructor:
                 function = constructor(**kwargs)
             else:

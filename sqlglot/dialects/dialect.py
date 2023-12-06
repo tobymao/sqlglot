@@ -217,7 +217,6 @@ class Dialect(metaclass=_Dialect):
     QUOTE_END = "'"
     IDENTIFIER_START = '"'
     IDENTIFIER_END = '"'
-    TOKENIZER_CLASS = Tokenizer
 
     # Delimiters for bit, hex, byte and raw literals
     BIT_START: t.Optional[str] = None

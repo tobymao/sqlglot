@@ -3461,7 +3461,7 @@ class Parser(metaclass=_Parser):
             )
 
             if identifier:
-                tokens = self.dialect.tokenizer_class.tokenize(identifier.name)
+                tokens = self.dialect.tokenize(identifier.name)
 
                 if len(tokens) != 1:
                     self.raise_error("Unexpected identifier", self._prev)

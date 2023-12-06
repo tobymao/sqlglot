@@ -5275,6 +5275,7 @@ def _norm_arg(arg):
 
 
 ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
+FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
 
 
 # Helpers
@@ -6584,7 +6585,7 @@ def expand(
     return expression.transform(_expand, copy=copy)
 
 
-def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
+def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwargs) -> Func:
     """
     Returns a Func expression.
 
@@ -6598,6 +6599,7 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
     Args:
         name: the name of the function to build.
         args: the args used to instantiate the function of interest.
+        copy: whether or not to copy the argument expressions.
         dialect: the source dialect.
         kwargs: the kwargs used to instantiate the function of interest.
 
@@ -6613,14 +6615,29 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
 
     from sqlglot.dialects.dialect import Dialect
 
-    converted: t.List[Expression] = [maybe_parse(arg, dialect=dialect) for arg in args]
-    kwargs = {key: maybe_parse(value, dialect=dialect) for key, value in kwargs.items()}
+    dialect = Dialect.get_or_raise(dialect)
 
-    parser = Dialect.get_or_raise(dialect).parser()
-    from_args_list = parser.FUNCTIONS.get(name.upper())
+    converted: t.List[Expression] = [maybe_parse(arg, dialect=dialect, copy=copy) for arg in args]
+    kwargs = {key: maybe_parse(value, dialect=dialect, copy=copy) for key, value in kwargs.items()}
 
-    if from_args_list:
-        function = from_args_list(converted) if converted else from_args_list.__self__(**kwargs)  # type: ignore
+    constructor = dialect.parser_class.FUNCTIONS.get(name.upper())
+    if constructor:
+        if converted:
+            if "dialect" in constructor.__code__.co_varnames:
+                function = constructor(converted, dialect=dialect)
+            else:
+                function = constructor(converted)
+        elif constructor.__name__ == "from_arg_list":
+            function = constructor.__self__(**kwargs)  # type: ignore
+        else:
+            constructor = FUNCTION_BY_NAME.get(name.upper())
+            if constructor:
+                function = constructor(**kwargs)
+            else:
+                raise ValueError(
+                    f"Unable to convert '{name}' into a Func. Either manually construct "
+                    "the Func expression of interest or parse the function call."
+                )
     else:
         kwargs = kwargs or {"expressions": converted}
         function = Anonymous(this=name, **kwargs)

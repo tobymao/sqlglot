@@ -13,7 +13,7 @@ from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-    from sqlglot.dialects.dialect import DialectType
+    from sqlglot.dialects.dialect import Dialect, DialectType
 
 logger = logging.getLogger("sqlglot")
 
@@ -47,6 +47,42 @@ def binary_range_parser(
     )
 
 
+def parse_concat(args: t.List, dialect: Dialect) -> t.Optional[exp.Expression]:
+    if dialect.parser_class.CONCAT_NULL_OUTPUTS_STRING:
+        args = _ensure_string_if_null(args)
+
+    # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call, so when
+    # we find such a call we replace it with its argument.
+    if len(args) == 1:
+        return args[0]
+
+    return exp.Concat(expressions=args, safe=not dialect.STRICT_STRING_CONCAT)
+
+
+def parse_concat_ws(args: t.List, dialect: Dialect) -> t.Optional[exp.Expression]:
+    if len(args) < 2:
+        return exp.ConcatWs(expressions=args)
+
+    delim, *values = args
+    if dialect.parser_class.CONCAT_NULL_OUTPUTS_STRING:
+        values = _ensure_string_if_null(values)
+
+    return exp.ConcatWs(expressions=[delim] + values)
+
+
+def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
+    # Default argument order is base, expression
+    this = seq_get(args, 0)
+    expression = seq_get(args, 1)
+
+    if expression:
+        if not dialect.LOG_BASE_FIRST:
+            this, expression = expression, this
+        return exp.Log(this=this, expression=expression)
+
+    return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -73,13 +109,16 @@ class Parser(metaclass=_Parser):
     """
 
     FUNCTIONS: t.Dict[str, t.Callable] = {
-        **{name: f.from_arg_list for f in exp.ALL_FUNCTIONS for name in f.sql_names()},
+        **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
+        "CONCAT": parse_concat,
+        "CONCAT_WS": parse_concat_ws,
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "LIKE": parse_like,
+        "LOG": parse_logarithm,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
@@ -806,14 +845,11 @@ class Parser(metaclass=_Parser):
     FUNCTION_PARSERS = {
         "ANY_VALUE": lambda self: self._parse_any_value(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
-        "CONCAT": lambda self: self._parse_concat(),
-        "CONCAT_WS": lambda self: self._parse_concat_ws(),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
         "JSON_TABLE": lambda self: self._parse_json_table(),
-        "LOG": lambda self: self._parse_logarithm(),
         "MATCH": lambda self: self._parse_match_against(),
         "OPENJSON": lambda self: self._parse_open_json(),
         "POSITION": lambda self: self._parse_position(),
@@ -3790,9 +3826,15 @@ class Parser(metaclass=_Parser):
             args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
             if function and not anonymous:
-                func = self.validate_expression(function(args), args)
+                if "dialect" in function.__code__.co_varnames:
+                    func = function(args, dialect=self.dialect)
+                else:
+                    func = function(args)
+
+                func = self.validate_expression(func, args)
                 if not self.dialect.NORMALIZE_FUNCTIONS:
                     func.meta["name"] = this
+
                 this = func
             else:
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
@@ -4341,30 +4383,6 @@ class Parser(metaclass=_Parser):
             exp.Cast if strict else exp.TryCast, this=this, to=to, format=fmt, safe=safe
         )
 
-    def _parse_concat(self) -> t.Optional[exp.Expression]:
-        args = self._parse_csv(self._parse_conjunction)
-        if self.CONCAT_NULL_OUTPUTS_STRING:
-            args = self._ensure_string_if_null(args)
-
-        # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call, so when
-        # we find such a call we replace it with its argument.
-        if len(args) == 1:
-            return args[0]
-
-        return self.expression(
-            exp.Concat, expressions=args, safe=not self.dialect.STRICT_STRING_CONCAT
-        )
-
-    def _parse_concat_ws(self) -> t.Optional[exp.Expression]:
-        args = self._parse_csv(self._parse_conjunction)
-        if len(args) < 2:
-            return self.expression(exp.ConcatWs, expressions=args)
-        delim, *values = args
-        if self.CONCAT_NULL_OUTPUTS_STRING:
-            values = self._ensure_string_if_null(values)
-
-        return self.expression(exp.ConcatWs, expressions=[delim] + values)
-
     def _parse_string_agg(self) -> exp.Expression:
         if self._match(TokenType.DISTINCT):
             args: t.List[t.Optional[exp.Expression]] = [
@@ -4554,19 +4572,6 @@ class Parser(metaclass=_Parser):
             path=path,
             error_handling=error_handling,
             empty_handling=empty_handling,
-        )
-
-    def _parse_logarithm(self) -> exp.Func:
-        # Default argument order is base, expression
-        args = self._parse_csv(self._parse_range)
-
-        if len(args) > 1:
-            if not self.dialect.LOG_BASE_FIRST:
-                args.reverse()
-            return exp.Log.from_arg_list(args)
-
-        return self.expression(
-            exp.Ln if self.LOG_DEFAULTS_TO_LN else exp.Log, this=seq_get(args, 0)
         )
 
     def _parse_match_against(self) -> exp.MatchAgainst:
@@ -5510,9 +5515,10 @@ class Parser(metaclass=_Parser):
                         column.replace(dot_or_id)
         return node
 
-    def _ensure_string_if_null(self, values: t.List[exp.Expression]) -> t.List[exp.Expression]:
-        return [
-            exp.func("COALESCE", exp.cast(value, "text"), exp.Literal.string(""))
-            for value in values
-            if value
-        ]
+
+def _ensure_string_if_null(values: t.List[exp.Expression]) -> t.List[exp.Expression]:
+    return [
+        exp.func("COALESCE", exp.cast(value, "text"), exp.Literal.string(""))
+        for value in values
+        if value
+    ]

@@ -360,8 +360,8 @@ class TestHive(Validator):
             write={
                 "duckdb": "DATE_DIFF('day', CAST(x AS DATE), CAST(CAST(y AS DATE) AS DATE))",
                 "presto": "DATE_DIFF('day', CAST(CAST(x AS TIMESTAMP) AS DATE), CAST(CAST(CAST(CAST(y AS TIMESTAMP) AS DATE) AS TIMESTAMP) AS DATE))",
-                "hive": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
-                "spark": "DATEDIFF(TO_DATE(TO_DATE(y)), TO_DATE(x))",
+                "hive": "DATEDIFF(TO_DATE(y), TO_DATE(x))",
+                "spark": "DATEDIFF(TO_DATE(y), TO_DATE(x))",
                 "": "DATEDIFF(TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE(y)), TS_OR_DS_TO_DATE(x))",
             },
         )

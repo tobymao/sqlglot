@@ -364,9 +364,7 @@ class DataFrame:
 
             output_expressions.append(expression)
 
-        return [
-            expression.sql(**{"dialect": dialect, **kwargs}) for expression in output_expressions
-        ]
+        return [expression.sql(dialect=dialect, **kwargs) for expression in output_expressions]
 
     def copy(self, **kwargs) -> DataFrame:
         return DataFrame(**object_to_dict(self, **kwargs))

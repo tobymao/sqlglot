@@ -300,19 +300,7 @@ class DataFrame:
     def sql(self, dialect: DialectType = None, optimize: bool = True, **kwargs) -> t.List[str]:
         from sqlglot.dataframe.sql.session import SparkSession
 
-        fetched_dialect = Dialect.get_or_raise(dialect)
-        session_dialect = SparkSession().dialect
-
-        if dialect and fetched_dialect != session_dialect:
-            logger.warning(
-                "The recommended way of defining a dialect is by doing "
-                f"`SparkSession.builder.config('sqlframe.dialect', '{dialect}').getOrCreate()`. "
-                "The dialect argument is no longer needed when calling `sql`. If you run into "
-                "issues try updating your query to use this pattern."
-            )
-            dialect = fetched_dialect
-        else:
-            dialect = session_dialect
+        dialect = Dialect.get_or_raise(dialect or SparkSession().dialect)
 
         df = self._resolve_pending_hints()
         select_expressions = df._get_select_expressions()

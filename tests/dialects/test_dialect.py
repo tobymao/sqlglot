@@ -10,7 +10,7 @@ from sqlglot import (
     exp,
     parse_one,
 )
-from sqlglot.dialects import Hive
+from sqlglot.dialects import BigQuery, Hive, Snowflake
 
 
 class Validator(unittest.TestCase):
@@ -103,6 +103,32 @@ class TestDialect(Validator):
             "Invalid dialect format: 'mysql, normalization_strategy'. "
             "Please use the correct format: 'dialect [, k1 = v2 [, ...]]'.",
         )
+
+    def test_compare_dialects(self):
+        bigquery_class = Dialect["bigquery"]
+        bigquery_object = BigQuery()
+        bigquery_string = "bigquery"
+
+        snowflake_class = Dialect["snowflake"]
+        snowflake_object = Snowflake()
+        snowflake_string = "snowflake"
+
+        self.assertEqual(snowflake_class, snowflake_class)
+        self.assertEqual(snowflake_class, snowflake_object)
+        self.assertEqual(snowflake_class, snowflake_string)
+        self.assertEqual(snowflake_object, snowflake_object)
+        self.assertEqual(snowflake_object, snowflake_string)
+
+        self.assertNotEqual(snowflake_class, bigquery_class)
+        self.assertNotEqual(snowflake_class, bigquery_object)
+        self.assertNotEqual(snowflake_class, bigquery_string)
+        self.assertNotEqual(snowflake_object, bigquery_object)
+        self.assertNotEqual(snowflake_object, bigquery_string)
+
+        self.assertTrue(snowflake_class in {"snowflake", "bigquery"})
+        self.assertTrue(snowflake_object in {"snowflake", "bigquery"})
+        self.assertFalse(snowflake_class in {"bigquery", "redshift"})
+        self.assertFalse(snowflake_object in {"bigquery", "redshift"})
 
     def test_cast(self):
         self.validate_all(

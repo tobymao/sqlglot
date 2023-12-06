@@ -293,9 +293,11 @@ class Dialect(metaclass=_Dialect):
             self.normalization_strategy = NormalizationStrategy(normalization_strategy.upper())
 
     def __eq__(self, other: t.Any) -> bool:
+        # Does not currently take dialect state into account
         return type(self) == other
 
     def __hash__(self) -> int:
+        # Does not currently take dialect state into account
         return hash(type(self))
 
     def normalize_identifier(self, expression: E) -> E:

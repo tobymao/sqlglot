@@ -941,7 +941,6 @@ class Parser(metaclass=_Parser):
         "_next",
         "_prev",
         "_prev_comments",
-        "_tokenizer",
     )
 
     # Autofilled
@@ -961,7 +960,6 @@ class Parser(metaclass=_Parser):
         self.error_message_context = error_message_context
         self.max_errors = max_errors
         self.dialect = Dialect.get_or_raise(dialect)
-        self._tokenizer = self.dialect.TOKENIZER_CLASS()
         self.reset()
 
     def reset(self):
@@ -3463,7 +3461,7 @@ class Parser(metaclass=_Parser):
             )
 
             if identifier:
-                tokens = self._tokenizer.tokenize(identifier.name)
+                tokens = self.dialect.tokenizer_class.tokenize(identifier.name)
 
                 if len(tokens) != 1:
                     self.raise_error("Unexpected identifier", self._prev)

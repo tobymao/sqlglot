@@ -5275,6 +5275,7 @@ def _norm_arg(arg):
 
 
 ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
+NAME_TO_FUNC = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
 
 
 # Helpers
@@ -6629,10 +6630,14 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
         elif constructor.__name__ == "from_arg_list":
             function = constructor.__self__(**kwargs)  # type: ignore
         else:
-            raise ValueError(
-                f"Unable to convert '{name}' into a Func. Either manually construct "
-                "the Func expression of interest or parse the function call."
-            )
+            constructor = NAME_TO_FUNC.get(name.upper())
+            if constructor:
+                function = constructor(**kwargs)
+            else:
+                raise ValueError(
+                    f"Unable to convert '{name}' into a Func. Either manually construct "
+                    "the Func expression of interest or parse the function call."
+                )
     else:
         kwargs = kwargs or {"expressions": converted}
         function = Anonymous(this=name, **kwargs)

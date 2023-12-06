@@ -319,6 +319,10 @@ class TestExpressions(unittest.TestCase):
             exp.func("log", exp.to_identifier("x"), 2, dialect="bigquery").sql("bigquery"),
             "LOG(x, 2)",
         )
+        self.assertEqual(
+            exp.func("log", dialect="bigquery", expression="x", this=2).sql("bigquery"),
+            "LOG(x, 2)",
+        )
 
         self.assertIsInstance(exp.func("instr", "x", "b", dialect="mysql"), exp.StrPosition)
         self.assertIsInstance(exp.func("bla", 1, "foo"), exp.Anonymous)
@@ -334,11 +338,11 @@ class TestExpressions(unittest.TestCase):
             exp.func("abs")
 
         with self.assertRaises(ValueError) as cm:
-            exp.func("log", dialect="bigquery", expression="x", this=2)
+            exp.func("to_hex", dialect="bigquery", this=5)
 
         self.assertEqual(
             str(cm.exception),
-            "Unable to convert 'log' into a Func. Either manually construct the Func "
+            "Unable to convert 'to_hex' into a Func. Either manually construct the Func "
             "expression of interest or parse the function call.",
         )
 

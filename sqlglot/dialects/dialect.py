@@ -141,7 +141,7 @@ class Dialect(metaclass=_Dialect):
     ALIAS_POST_TABLESAMPLE = False
 
     # Specifies the strategy according to which identifiers should be normalized.
-    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.LOWERCASE
+    NORMALIZATION_STRATEGY = NormalizationStrategy.LOWERCASE
 
     # Determines whether or not an unquoted identifier can start with a digit
     IDENTIFIERS_CAN_START_WITH_DIGIT = False

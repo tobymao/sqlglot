@@ -131,7 +131,7 @@ class DuckDB(Dialect):
     INDEX_OFFSET = 1
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
-    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_INSENSITIVE
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {

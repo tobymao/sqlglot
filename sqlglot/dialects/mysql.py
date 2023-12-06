@@ -156,7 +156,7 @@ class MySQL(Dialect):
     # setting by specifying `dialect="mysql, normalization_strategy = lowercase"`.
     #
     # See also https://dev.mysql.com/doc/refman/8.2/en/identifier-case-sensitivity.html
-    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_SENSITIVE
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
 
     TIME_FORMAT = "'%Y-%m-%d %T'"
     DPIPE_IS_STRING_CONCAT = False

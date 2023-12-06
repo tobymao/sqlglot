@@ -221,7 +221,7 @@ class BigQuery(Dialect):
     LOG_BASE_FIRST = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
-    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.CASE_INSENSITIVE
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
     # bigquery udfs are case sensitive
     NORMALIZE_FUNCTIONS = False

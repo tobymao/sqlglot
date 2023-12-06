@@ -207,7 +207,7 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
 
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
-    NORMALIZATION_STRATEGY: NormalizationStrategy = NormalizationStrategy.UPPERCASE
+    NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False

@@ -136,6 +136,9 @@ def _parse_hashbytes(args: t.List) -> exp.Expression:
     return exp.func("HASHBYTES", *args)
 
 
+DATEPART_ONLY_FORMATS = {"dw", "hour", "quarter"}
+
+
 def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
     fmt = (
         expression.args["format"]
@@ -149,8 +152,8 @@ def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToSt
     )
 
     # There is no format for "quarter"
-    if fmt.name.lower() == "quarter":
-        return self.func("DATEPART", "QUARTER", expression.this)
+    if fmt.name.lower() in DATEPART_ONLY_FORMATS:
+        return self.func("DATEPART", fmt.name, expression.this)
 
     return self.func("FORMAT", expression.this, fmt, expression.args.get("culture"))
 

@@ -541,9 +541,7 @@ def _simplify_binary(expression, a, b):
         if isinstance(expression, exp.Mul):
             return exp.Literal.number(num_a * num_b)
 
-        # Note: we only simplify a - b and a / b if a and b have the same parent, otherwise
-        # the precedence of operations can be incorrect because Sub, Div are not assocative
-
+        # We only simplify Sub, Div if a and b have the same parent because they're not associative
         if isinstance(expression, exp.Sub):
             return exp.Literal.number(num_a - num_b) if a.parent is b.parent else None
         if isinstance(expression, exp.Div):

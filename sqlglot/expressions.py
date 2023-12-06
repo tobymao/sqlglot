@@ -512,7 +512,7 @@ class Expression(metaclass=_Expression):
         """
         from sqlglot.dialects import Dialect
 
-        return Dialect.get_or_raise(dialect)().generate(self, **opts)
+        return Dialect.get_or_raise(dialect).generate(self, **opts)
 
     def _to_s(self, hide_missing: bool = True, level: int = 0) -> str:
         indent = "" if not level else "\n"
@@ -6616,7 +6616,7 @@ def func(name: str, *args, dialect: DialectType = None, **kwargs) -> Func:
     converted: t.List[Expression] = [maybe_parse(arg, dialect=dialect) for arg in args]
     kwargs = {key: maybe_parse(value, dialect=dialect) for key, value in kwargs.items()}
 
-    parser = Dialect.get_or_raise(dialect)().parser()
+    parser = Dialect.get_or_raise(dialect).parser()
     from_args_list = parser.FUNCTIONS.get(name.upper())
 
     if from_args_list:

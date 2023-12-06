@@ -1091,3 +1091,27 @@ SELECT
   `_q_0`.`fruitstruct`.`$id` AS `$id`,
   `_q_0`.`fruitstruct`.`value` AS `value`
 FROM `_q_0` AS `_q_0`;
+
+# title: mysql is case-sensitive by default
+# dialect: mysql
+# execute: false
+WITH T AS (SELECT 1 AS CoL) SELECT * FROM `T`;
+WITH `T` AS (
+  SELECT
+    1 AS `CoL`
+)
+SELECT
+  `T`.`CoL` AS `CoL`
+FROM `T`;
+
+# title: override mysql's settings so it normalizes to lowercase
+# dialect: mysql, normalization_strategy = lowercase
+# execute: false
+WITH T AS (SELECT 1 AS `CoL`) SELECT * FROM T;
+WITH `t` AS (
+  SELECT
+    1 AS `CoL`
+)
+SELECT
+  `t`.`CoL` AS `CoL`
+FROM `t`;

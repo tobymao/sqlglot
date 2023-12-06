@@ -8,6 +8,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     arg_max_or_min_no_count,
     binary_from_function,
     date_add_interval_sql,
@@ -220,7 +221,7 @@ class BigQuery(Dialect):
     LOG_BASE_FIRST = False
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = None
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
     # bigquery udfs are case sensitive
     NORMALIZE_FUNCTIONS = False
@@ -259,8 +260,7 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
 
-    @classmethod
-    def normalize_identifier(cls, expression: E) -> E:
+    def normalize_identifier(self, expression: E) -> E:
         if isinstance(expression, exp.Identifier):
             parent = expression.parent
             while isinstance(parent, exp.Dot):

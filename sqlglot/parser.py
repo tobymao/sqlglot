@@ -13,6 +13,7 @@ from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+    from sqlglot.dialects.dialect import DialectType
 
 logger = logging.getLogger("sqlglot")
 
@@ -229,7 +230,7 @@ class Parser(metaclass=_Parser):
         TokenType.SOME: exp.Any,
     }
 
-    RESERVED_KEYWORDS = {
+    RESERVED_TOKENS = {
         *Tokenizer.SINGLE_TOKENS.values(),
         TokenType.SELECT,
     }
@@ -914,11 +915,10 @@ class Parser(metaclass=_Parser):
     PREFIXED_PIVOT_COLUMNS = False
     IDENTIFY_PIVOT_STRINGS = False
 
-    LOG_BASE_FIRST = True
     LOG_DEFAULTS_TO_LN = False
 
     # Whether or not ADD is present for each column added by ALTER TABLE
-    ALTER_TABLE_ADD_COLUMN_KEYWORD = True
+    ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
     # Whether or not the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
@@ -929,19 +929,11 @@ class Parser(metaclass=_Parser):
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
-    # Whether the behavior of a / b depends on the types of a and b.
-    # False means a / b is always float division.
-    # True means a / b is integer division if both a and b are integers.
-    TYPED_DIVISION = False
-
-    # False means 1 / 0 throws an error.
-    # True means 1 / 0 returns null.
-    SAFE_DIVISION = False
-
     __slots__ = (
         "error_level",
         "error_message_context",
         "max_errors",
+        "dialect",
         "sql",
         "errors",
         "_tokens",
@@ -950,36 +942,25 @@ class Parser(metaclass=_Parser):
         "_next",
         "_prev",
         "_prev_comments",
-        "_tokenizer",
     )
 
     # Autofilled
-    TOKENIZER_CLASS: t.Type[Tokenizer] = Tokenizer
-    INDEX_OFFSET: int = 0
-    UNNEST_COLUMN_ONLY: bool = False
-    ALIAS_POST_TABLESAMPLE: bool = False
-    STRICT_STRING_CONCAT = False
-    DPIPE_IS_STRING_CONCAT = True
-    SUPPORTS_USER_DEFINED_TYPES = True
-    NORMALIZE_FUNCTIONS = "upper"
-    NULL_ORDERING: str = "nulls_are_small"
     SHOW_TRIE: t.Dict = {}
     SET_TRIE: t.Dict = {}
-    FORMAT_MAPPING: t.Dict[str, str] = {}
-    FORMAT_TRIE: t.Dict = {}
-    TIME_MAPPING: t.Dict[str, str] = {}
-    TIME_TRIE: t.Dict = {}
 
     def __init__(
         self,
         error_level: t.Optional[ErrorLevel] = None,
         error_message_context: int = 100,
         max_errors: int = 3,
+        dialect: DialectType = None,
     ):
+        from sqlglot.dialects import Dialect
+
         self.error_level = error_level or ErrorLevel.IMMEDIATE
         self.error_message_context = error_message_context
         self.max_errors = max_errors
-        self._tokenizer = self.TOKENIZER_CLASS()
+        self.dialect = Dialect.get_or_raise(dialect)
         self.reset()
 
     def reset(self):
@@ -2746,7 +2727,7 @@ class Parser(metaclass=_Parser):
         if version:
             this.set("version", version)
 
-        if self.ALIAS_POST_TABLESAMPLE:
+        if self.dialect.ALIAS_POST_TABLESAMPLE:
             table_sample = self._parse_table_sample()
 
         alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
@@ -2761,7 +2742,7 @@ class Parser(metaclass=_Parser):
         if not this.args.get("pivots"):
             this.set("pivots", self._parse_pivots())
 
-        if not self.ALIAS_POST_TABLESAMPLE:
+        if not self.dialect.ALIAS_POST_TABLESAMPLE:
             table_sample = self._parse_table_sample()
 
         if table_sample:
@@ -2819,7 +2800,7 @@ class Parser(metaclass=_Parser):
         alias = self._parse_table_alias() if with_alias else None
 
         if alias:
-            if self.UNNEST_COLUMN_ONLY:
+            if self.dialect.UNNEST_COLUMN_ONLY:
                 if alias.args.get("columns"):
                     self.raise_error("Unexpected extra column alias in unnest.")
 
@@ -3145,10 +3126,10 @@ class Parser(metaclass=_Parser):
         if (
             not explicitly_null_ordered
             and (
-                (not desc and self.NULL_ORDERING == "nulls_are_small")
-                or (desc and self.NULL_ORDERING != "nulls_are_small")
+                (not desc and self.dialect.NULL_ORDERING == "nulls_are_small")
+                or (desc and self.dialect.NULL_ORDERING != "nulls_are_small")
             )
-            and self.NULL_ORDERING != "nulls_are_last"
+            and self.dialect.NULL_ORDERING != "nulls_are_last"
         ):
             nulls_first = True
 
@@ -3394,12 +3375,12 @@ class Parser(metaclass=_Parser):
                     this=this,
                     expression=self._parse_term(),
                 )
-            elif self.DPIPE_IS_STRING_CONCAT and self._match(TokenType.DPIPE):
+            elif self.dialect.DPIPE_IS_STRING_CONCAT and self._match(TokenType.DPIPE):
                 this = self.expression(
                     exp.DPipe,
                     this=this,
                     expression=self._parse_term(),
-                    safe=not self.STRICT_STRING_CONCAT,
+                    safe=not self.dialect.STRICT_STRING_CONCAT,
                 )
             elif self._match(TokenType.DQMARK):
                 this = self.expression(exp.Coalesce, this=this, expressions=self._parse_term())
@@ -3425,8 +3406,8 @@ class Parser(metaclass=_Parser):
         else:
             factor = self._parse_tokens(self._parse_unary, self.FACTOR)
         if isinstance(factor, exp.Div):
-            factor.args["typed"] = self.TYPED_DIVISION
-            factor.args["safe"] = self.SAFE_DIVISION
+            factor.args["typed"] = self.dialect.TYPED_DIVISION
+            factor.args["safe"] = self.dialect.SAFE_DIVISION
         return factor
 
     def _parse_exponent(self) -> t.Optional[exp.Expression]:
@@ -3481,14 +3462,14 @@ class Parser(metaclass=_Parser):
             )
 
             if identifier:
-                tokens = self._tokenizer.tokenize(identifier.name)
+                tokens = self.dialect.tokenize(identifier.name)
 
                 if len(tokens) != 1:
                     self.raise_error("Unexpected identifier", self._prev)
 
                 if tokens[0].token_type in self.TYPE_TOKENS:
                     self._prev = tokens[0]
-                elif self.SUPPORTS_USER_DEFINED_TYPES:
+                elif self.dialect.SUPPORTS_USER_DEFINED_TYPES:
                     type_name = identifier.name
 
                     while self._match(TokenType.DOT):
@@ -3810,7 +3791,7 @@ class Parser(metaclass=_Parser):
 
             if function and not anonymous:
                 func = self.validate_expression(function(args), args)
-                if not self.NORMALIZE_FUNCTIONS:
+                if not self.dialect.NORMALIZE_FUNCTIONS:
                     func.meta["name"] = this
                 this = func
             else:
@@ -4225,7 +4206,7 @@ class Parser(metaclass=_Parser):
         elif not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:
-            expressions = apply_index_offset(this, expressions, -self.INDEX_OFFSET)
+            expressions = apply_index_offset(this, expressions, -self.dialect.INDEX_OFFSET)
             this = self.expression(exp.Bracket, this=this, expressions=expressions)
 
         self._add_comments(this)
@@ -4339,8 +4320,8 @@ class Parser(metaclass=_Parser):
                     format=exp.Literal.string(
                         format_time(
                             fmt_string.this if fmt_string else "",
-                            self.FORMAT_MAPPING or self.TIME_MAPPING,
-                            self.FORMAT_TRIE or self.TIME_TRIE,
+                            self.dialect.FORMAT_MAPPING or self.dialect.TIME_MAPPING,
+                            self.dialect.FORMAT_TRIE or self.dialect.TIME_TRIE,
                         )
                     ),
                 )
@@ -4370,7 +4351,9 @@ class Parser(metaclass=_Parser):
         if len(args) == 1:
             return args[0]
 
-        return self.expression(exp.Concat, expressions=args, safe=not self.STRICT_STRING_CONCAT)
+        return self.expression(
+            exp.Concat, expressions=args, safe=not self.dialect.STRICT_STRING_CONCAT
+        )
 
     def _parse_concat_ws(self) -> t.Optional[exp.Expression]:
         args = self._parse_csv(self._parse_conjunction)
@@ -4578,7 +4561,7 @@ class Parser(metaclass=_Parser):
         args = self._parse_csv(self._parse_range)
 
         if len(args) > 1:
-            if not self.LOG_BASE_FIRST:
+            if not self.dialect.LOG_BASE_FIRST:
                 args.reverse()
             return exp.Log.from_arg_list(args)
 
@@ -4901,7 +4884,7 @@ class Parser(metaclass=_Parser):
         return self._parse_placeholder()
 
     def _advance_any(self) -> t.Optional[Token]:
-        if self._curr and self._curr.token_type not in self.RESERVED_KEYWORDS:
+        if self._curr and self._curr.token_type not in self.RESERVED_TOKENS:
             self._advance()
             return self._prev
         return None
@@ -5134,7 +5117,7 @@ class Parser(metaclass=_Parser):
             return self._parse_csv(self._parse_add_constraint)
 
         self._retreat(index)
-        if not self.ALTER_TABLE_ADD_COLUMN_KEYWORD and self._match_text_seq("ADD"):
+        if not self.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN and self._match_text_seq("ADD"):
             return self._parse_wrapped_csv(self._parse_field_def, optional=True)
         return self._parse_wrapped_csv(self._parse_add_column, optional=True)
 

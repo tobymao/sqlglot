@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
+    NormalizationStrategy,
     binary_from_function,
     date_delta_sql,
     date_trunc_to_time,
@@ -206,7 +207,7 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
 
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
-    RESOLVES_IDENTIFIERS_AS_UPPERCASE = True
+    NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -241,8 +242,7 @@ class Snowflake(Dialect):
         "ff6": "%f",
     }
 
-    @classmethod
-    def quote_identifier(cls, expression: E, identify: bool = True) -> E:
+    def quote_identifier(self, expression: E, identify: bool = True) -> E:
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table
         if (

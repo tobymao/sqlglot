@@ -533,22 +533,26 @@ def _simplify_binary(expression, a, b):
         return exp.null()
 
     if a.is_number and b.is_number:
-        a = int(a.name) if a.is_int else Decimal(a.name)
-        b = int(b.name) if b.is_int else Decimal(b.name)
+        num_a = int(a.name) if a.is_int else Decimal(a.name)
+        num_b = int(b.name) if b.is_int else Decimal(b.name)
 
         if isinstance(expression, exp.Add):
-            return exp.Literal.number(a + b)
-        if isinstance(expression, exp.Sub):
-            return exp.Literal.number(a - b)
+            return exp.Literal.number(num_a + num_b)
         if isinstance(expression, exp.Mul):
-            return exp.Literal.number(a * b)
+            return exp.Literal.number(num_a * num_b)
+
+        # Note: we only simplify a - b and a / b if a and b have the same parent, otherwise
+        # the precedence of operations can be incorrect because Sub, Div are not assocative
+
+        if isinstance(expression, exp.Sub):
+            return exp.Literal.number(num_a - num_b) if a.parent is b.parent else None
         if isinstance(expression, exp.Div):
             # engines have differing int div behavior so intdiv is not safe
-            if isinstance(a, int) and isinstance(b, int):
+            if (isinstance(num_a, int) and isinstance(num_b, int)) or a.parent is not b.parent:
                 return None
-            return exp.Literal.number(a / b)
+            return exp.Literal.number(num_a / num_b)
 
-        boolean = eval_boolean(expression, a, b)
+        boolean = eval_boolean(expression, num_a, num_b)
 
         if boolean:
             return boolean

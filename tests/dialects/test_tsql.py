@@ -891,16 +891,25 @@ WHERE
         )
 
     def test_datepart(self):
-        self.validate_identity("DATEPART(QUARTER, x)", "DATEPART(quarter, CAST(x AS DATETIME2))")
-        self.validate_identity("DATEPART(YEAR, x)", "FORMAT(CAST(x AS DATETIME2), 'yyyy')")
         self.validate_identity(
-            "DATEPART(HOUR, date_and_time)", "DATEPART(hour, CAST(date_and_time AS DATETIME2))"
+            "DATEPART(QUARTER, x)",
+            "DATEPART(quarter, CAST(x AS DATETIME2))",
         )
         self.validate_identity(
-            "DATEPART(WEEKDAY, date_and_time)", "DATEPART(dw, CAST(date_and_time AS DATETIME2))"
+            "DATEPART(YEAR, x)",
+            "FORMAT(CAST(x AS DATETIME2), 'yyyy')",
         )
         self.validate_identity(
-            "DATEPART(DW, date_and_time)", "DATEPART(dw, CAST(date_and_time AS DATETIME2))"
+            "DATEPART(HOUR, date_and_time)",
+            "DATEPART(hour, CAST(date_and_time AS DATETIME2))",
+        )
+        self.validate_identity(
+            "DATEPART(WEEKDAY, date_and_time)",
+            "DATEPART(dw, CAST(date_and_time AS DATETIME2))",
+        )
+        self.validate_identity(
+            "DATEPART(DW, date_and_time)",
+            "DATEPART(dw, CAST(date_and_time AS DATETIME2))",
         )
 
         self.validate_all(

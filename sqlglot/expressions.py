@@ -485,7 +485,7 @@ class Expression(metaclass=_Expression):
 
     def flatten(self, unnest=True):
         """
-        Returns a generator which yields child nodes who's parents are the same class.
+        Returns a generator which yields child nodes whose parents are the same class.
 
         A AND B AND C -> [A, B, C]
         """

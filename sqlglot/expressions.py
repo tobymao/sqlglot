@@ -6614,20 +6614,25 @@ def func(name: str, *args, copy: bool = True, dialect: DialectType = None, **kwa
 
     from sqlglot.dialects.dialect import Dialect
 
+    dialect = Dialect.get_or_raise(dialect)
+
     converted: t.List[Expression] = [maybe_parse(arg, dialect=dialect, copy=copy) for arg in args]
     kwargs = {key: maybe_parse(value, dialect=dialect, copy=copy) for key, value in kwargs.items()}
 
-    parser = Dialect.get_or_raise(dialect).parser()
-    from_args_list = parser.FUNCTIONS.get(name.upper())
-
-    if from_args_list:
+    constructor = dialect.parser_class.FUNCTIONS.get(name.upper())
+    if constructor:
         if converted:
-            function: Func = maybe_parse(
-                f"{name}({', '.join(arg.sql(dialect=dialect) for arg in converted)})",
-                dialect=dialect,
-            )
+            if "dialect" in constructor.__code__.co_varnames:
+                function = constructor(converted, dialect=dialect)
+            else:
+                function = constructor(converted)
+        elif constructor.__name__ == "from_arg_list":
+            function = constructor.__self__(**kwargs)  # type: ignore
         else:
-            function = from_args_list.__self__(**kwargs)  # type: ignore
+            raise ValueError(
+                f"Unable to convert '{name}' into a Func. Either manually construct "
+                "the Func expression of interest or parse the function call."
+            )
     else:
         kwargs = kwargs or {"expressions": converted}
         function = Anonymous(this=name, **kwargs)

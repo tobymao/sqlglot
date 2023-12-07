@@ -2169,7 +2169,7 @@ class Generator:
         else:
             return self.func("TRIM", expression.this, expression.expression)
 
-    def prepare_concat_args(self, expression: exp.Concat | exp.ConcatWs) -> t.List[exp.Expression]:
+    def convert_concat_args(self, expression: exp.Concat | exp.ConcatWs) -> t.List[exp.Expression]:
         args = expression.expressions
         if isinstance(expression, exp.ConcatWs):
             args = args[1:]  # Skip the delimiter
@@ -2185,10 +2185,9 @@ class Generator:
         return args
 
     def concat_sql(self, expression: exp.Concat) -> str:
-        expressions = self.prepare_concat_args(expression)
+        expressions = self.convert_concat_args(expression)
 
-        # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call,
-        # so when we find such a call we replace it with its argument.
+        # Some dialects don't allow a single-argument CONCAT call
         if not self.SUPPORTS_SINGLE_ARG_CONCAT and len(expressions) == 1:
             return self.sql(expressions[0])
 
@@ -2196,7 +2195,7 @@ class Generator:
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
         return self.func(
-            "CONCAT_WS", seq_get(expression.expressions, 0), *self.prepare_concat_args(expression)
+            "CONCAT_WS", seq_get(expression.expressions, 0), *self.convert_concat_args(expression)
         )
 
     def check_sql(self, expression: exp.Check) -> str:

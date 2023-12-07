@@ -3324,7 +3324,7 @@ class Parser(metaclass=_Parser):
         if unnest:
             this = self.expression(exp.In, this=this, unnest=unnest)
         elif self._match_set((TokenType.L_PAREN, TokenType.L_BRACKET)):
-            bracket_kind = self._prev.token_type
+            matched_l_paren = self._prev.token_type == TokenType.L_PAREN
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
 
             if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
@@ -3332,7 +3332,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
 
-            if bracket_kind == TokenType.L_PAREN:
+            if matched_l_paren:
                 self._match_r_paren(this)
             elif not self._match(TokenType.R_BRACKET, expression=this):
                 self.raise_error("Expecting ]")

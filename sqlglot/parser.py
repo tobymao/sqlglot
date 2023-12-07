@@ -3956,6 +3956,11 @@ class Parser(metaclass=_Parser):
                     not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
                 )
             )
+        elif kind and self._match_pair(TokenType.ALIAS, TokenType.L_PAREN, advance=False):
+            self._match(TokenType.ALIAS)
+            constraints.append(
+                self.expression(exp.TransformColumnConstraint, this=self._parse_field())
+            )
 
         while True:
             constraint = self._parse_column_constraint()

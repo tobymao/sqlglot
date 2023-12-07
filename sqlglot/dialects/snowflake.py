@@ -337,6 +337,11 @@ class Snowflake(Dialect):
             TokenType.SHOW: lambda self: self._parse_show(),
         }
 
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "LOCATION": lambda self: self._parse_location(),
+        }
+
         SHOW_PARSERS = {
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
@@ -430,6 +435,20 @@ class Snowflake(Dialect):
         def _parse_alter_table_swap(self) -> exp.SwapTable:
             self._match_text_seq("WITH")
             return self.expression(exp.SwapTable, this=self._parse_table(schema=True))
+
+        def _parse_location(self) -> exp.LocationProperty:
+            self._match(TokenType.EQ)
+
+            parts = [self._parse_var(any_token=True)]
+
+            while self._match(TokenType.SLASH):
+                if self._curr and self._prev.end + 1 == self._curr.start:
+                    parts.append(self._parse_var(any_token=True))
+                else:
+                    parts.append(exp.Var(this=""))
+            return self.expression(
+                exp.LocationProperty, this=exp.var("/".join(str(p) for p in parts))
+            )
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
@@ -673,3 +692,6 @@ class Snowflake(Dialect):
         def swaptable_sql(self, expression: exp.SwapTable) -> str:
             this = self.sql(expression, "this")
             return f"SWAP WITH {this}"
+
+        def with_properties(self, properties: exp.Properties) -> str:
+            return self.properties(properties, wrapped=False, prefix=self.seg(""), sep=" ")

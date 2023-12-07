@@ -46,7 +46,7 @@ class Dialects(str, Enum):
     Doris = "doris"
 
 
-class NormalizationStrategy(AutoName):
+class NormalizationStrategy(str, AutoName):
     """Specifies the strategy according to which identifiers should be normalized."""
 
     LOWERCASE = auto()  # Unquoted identifiers are lowercased

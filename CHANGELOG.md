@@ -1,6 +1,26 @@
 Changelog
 =========
 
+## [v20.1.0] - 2023-12-07
+### :boom: BREAKING CHANGES
+- due to [`96f9b0e`](https://github.com/tobymao/sqlglot/commit/96f9b0e096d5b4505f92c70d8a3733b141205c1b) - make generation of CONCAT less verbose *(PR [#2639](https://github.com/tobymao/sqlglot/pull/2639) by [@georgesittas](https://github.com/georgesittas))*:
+
+  make generation of CONCAT less verbose (#2639)
+
+
+### :sparkles: New Features
+- [`7a505f0`](https://github.com/tobymao/sqlglot/commit/7a505f04f4e0ed72b6f8f3ea6560d613dbc40726) - **clickhouse**: add support for arrayJoin *(PR [#2640](https://github.com/tobymao/sqlglot/pull/2640) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2638](undefined) opened by [@pkit](https://github.com/pkit)*
+- [`2062553`](https://github.com/tobymao/sqlglot/commit/20625539c62bba4b9ece401086182f4ae0d1be4d) - add comments to replace table *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`4f07aaa`](https://github.com/tobymao/sqlglot/commit/4f07aaaefa92b7bc2ca0b1c56b442e257c67dd8b) - from_utc double cast *(commit by [@tobymao](https://github.com/tobymao))*
+- [`96f9b0e`](https://github.com/tobymao/sqlglot/commit/96f9b0e096d5b4505f92c70d8a3733b141205c1b) - make generation of CONCAT less verbose *(PR [#2639](https://github.com/tobymao/sqlglot/pull/2639) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#91](undefined) opened by [@vegarsti](https://github.com/vegarsti)*
+  - :arrow_lower_right: *fixes issue [#1815](undefined) opened by [@jonaswvd](https://github.com/jonaswvd)*
+- [`1a231f7`](https://github.com/tobymao/sqlglot/commit/1a231f7d83da43b66517359f0c13883f829dd2d5) - avoid recursive set op calls *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v20.0.0] - 2023-12-07
 ### :boom: BREAKING CHANGES
 - due to [`be89da3`](https://github.com/tobymao/sqlglot/commit/be89da3747fa95d98e0d5a28d19d98f5822a8979) - introduce Dialect settings, make MySQL case-sensitive by default *(PR [#2627](https://github.com/tobymao/sqlglot/pull/2627) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2208,3 +2228,4 @@ Changelog
 [v19.8.3]: https://github.com/tobymao/sqlglot/compare/v19.8.2...v19.8.3
 [v19.9.0]: https://github.com/tobymao/sqlglot/compare/v19.8.3...v19.9.0
 [v20.0.0]: https://github.com/tobymao/sqlglot/compare/v19.9.0...v20.0.0
+[v20.1.0]: https://github.com/tobymao/sqlglot/compare/v20.0.0...v20.1.0

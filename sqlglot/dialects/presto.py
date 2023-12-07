@@ -273,6 +273,7 @@ class Presto(Dialect):
         NVL2_SUPPORTED = False
         STRUCT_DELIMITER = ("(", ")")
         LIMIT_ONLY_LITERALS = True
+        SUPPORTS_SINGLE_ARG_CONCAT = False
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

@@ -44,6 +44,7 @@ class Drill(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
+    CONCAT_COALESCE = True
 
     TIME_MAPPING = {
         "y": "%Y",
@@ -84,7 +85,6 @@ class Drill(Dialect):
 
     class Parser(parser.Parser):
         STRICT_CAST = False
-        CONCAT_NULL_OUTPUTS_STRING = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

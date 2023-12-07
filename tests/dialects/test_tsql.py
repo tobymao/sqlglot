@@ -9,6 +9,8 @@ class TestTSQL(Validator):
         # https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2008-r2/ms187879(v=sql.105)?redirectedfrom=MSDN
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
+
+        self.validate_identity("SELECT CONCAT(column1, column2)")
         self.validate_identity("SELECT TestSpecialChar.Test# FROM TestSpecialChar")
         self.validate_identity("SELECT TestSpecialChar.Test@ FROM TestSpecialChar")
         self.validate_identity("SELECT TestSpecialChar.Test$ FROM TestSpecialChar")

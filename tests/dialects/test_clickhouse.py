@@ -197,12 +197,15 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "CONCAT(CASE WHEN COALESCE(CAST(a AS String), '') IS NULL THEN COALESCE(CAST(a AS String), '') ELSE CAST(COALESCE(CAST(a AS String), '') AS String) END, CASE WHEN COALESCE(CAST(b AS String), '') IS NULL THEN COALESCE(CAST(b AS String), '') ELSE CAST(COALESCE(CAST(b AS String), '') AS String) END)",
-            read={"postgres": "CONCAT(a, b)"},
-        )
-        self.validate_all(
-            "CONCAT(CASE WHEN a IS NULL THEN a ELSE CAST(a AS String) END, CASE WHEN b IS NULL THEN b ELSE CAST(b AS String) END)",
-            read={"mysql": "CONCAT(a, b)"},
+            "CONCAT(a, b)",
+            read={
+                "clickhouse": "CONCAT(a, b)",
+                "mysql": "CONCAT(a, b)",
+            },
+            write={
+                "mysql": "CONCAT(a, b)",
+                "postgres": "CONCAT(a, b)",
+            },
         )
         self.validate_all(
             r"'Enum8(\'Sunday\' = 0)'", write={"clickhouse": "'Enum8(''Sunday'' = 0)'"}

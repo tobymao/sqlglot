@@ -35,7 +35,6 @@ def _quantile_sql(self, e):
 class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
-    STRICT_STRING_CONCAT = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
 
@@ -457,18 +456,6 @@ class ClickHouse(Dialect):
                 return "String"
 
             return super().datatype_sql(expression)
-
-        def concat_sql(self, expression: exp.Concat) -> str:
-            # Clickhouse errors out if we try to cast a NULL value to TEXT
-            if expression.args.get("safe"):
-                return self.func(
-                    "CONCAT",
-                    *[
-                        exp.func("if", e.is_(exp.null()), e, exp.cast(e, "text"))
-                        for e in expression.expressions
-                    ],
-                )
-            return super().concat_sql(expression)
 
         def cte_sql(self, expression: exp.CTE) -> str:
             if expression.args.get("scalar"):

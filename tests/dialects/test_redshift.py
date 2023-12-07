@@ -282,6 +282,14 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
         self.validate_identity(
+            "SELECT CONCAT('abc', 'def')",
+            "SELECT 'abc' || 'def'",
+        )
+        self.validate_identity(
+            "SELECT CONCAT_WS('DELIM', 'abc', 'def', 'ghi')",
+            "SELECT 'abc' || 'DELIM' || 'def' || 'DELIM' || 'ghi'",
+        )
+        self.validate_identity(
             "SELECT TOP 1 x FROM y",
             "SELECT x FROM y LIMIT 1",
         )
@@ -480,19 +488,5 @@ FROM (
             "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
             write={
                 "redshift": "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
-            },
-        )
-
-    def test_concat(self):
-        self.validate_all(
-            "SELECT CONCAT('abc', 'def')",
-            write={
-                "redshift": "SELECT COALESCE(CAST('abc' AS VARCHAR(MAX)), '') || COALESCE(CAST('def' AS VARCHAR(MAX)), '')",
-            },
-        )
-        self.validate_all(
-            "SELECT CONCAT_WS('DELIM', 'abc', 'def', 'ghi')",
-            write={
-                "redshift": "SELECT COALESCE(CAST('abc' AS VARCHAR(MAX)), '') || 'DELIM' || COALESCE(CAST('def' AS VARCHAR(MAX)), '') || 'DELIM' || COALESCE(CAST('ghi' AS VARCHAR(MAX)), '')",
             },
         )

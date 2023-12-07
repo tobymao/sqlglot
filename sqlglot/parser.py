@@ -3335,7 +3335,8 @@ class Parser(metaclass=_Parser):
         unnest = self._parse_unnest(with_alias=False)
         if unnest:
             this = self.expression(exp.In, this=this, unnest=unnest)
-        elif self._match(TokenType.L_PAREN):
+        elif self._match_set((TokenType.L_PAREN, TokenType.L_BRACKET)):
+            matched_l_paren = self._prev.token_type == TokenType.L_PAREN
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
 
             if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
@@ -3343,7 +3344,10 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
 
-            self._match_r_paren(this)
+            if matched_l_paren:
+                self._match_r_paren(this)
+            elif not self._match(TokenType.R_BRACKET, expression=this):
+                self.raise_error("Expecting ]")
         else:
             this = self.expression(exp.In, this=this, field=self._parse_field())
 

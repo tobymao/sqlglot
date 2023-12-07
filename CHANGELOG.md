@@ -1,6 +1,50 @@
 Changelog
 =========
 
+## [v20.0.0] - 2023-12-07
+### :boom: BREAKING CHANGES
+- due to [`be89da3`](https://github.com/tobymao/sqlglot/commit/be89da3747fa95d98e0d5a28d19d98f5822a8979) - introduce Dialect settings, make MySQL case-sensitive by default *(PR [#2627](https://github.com/tobymao/sqlglot/pull/2627) by [@georgesittas](https://github.com/georgesittas))*:
+
+  introduce Dialect settings, make MySQL case-sensitive by default (#2627)
+
+- due to [`4d68e39`](https://github.com/tobymao/sqlglot/commit/4d68e39a3aadc9b07d3f96c51fc46fd407486d86) - remove redundant todate closes [#2636](https://github.com/tobymao/sqlglot/pull/2636) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  remove redundant todate closes #2636
+
+- due to [`1e387f6`](https://github.com/tobymao/sqlglot/commit/1e387f63853efbcc4da7ce8d822fe8975ffe52f3) - parse functions with positional args in exp.func *(PR [#2622](https://github.com/tobymao/sqlglot/pull/2622) by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse functions with positional args in exp.func (#2622)
+
+- due to [`ee2e7f0`](https://github.com/tobymao/sqlglot/commit/ee2e7f099b46d2c8548ab34784d19b77fe838ce7) - snowflake column transform constraints closes [#2634](https://github.com/tobymao/sqlglot/pull/2634) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  snowflake column transform constraints closes #2634
+
+- due to [`656d54c`](https://github.com/tobymao/sqlglot/commit/656d54c808d65a2ec1443719e3f35dc651ed98ab) - make lineage html more reusable *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  make lineage html more reusable
+
+
+### :sparkles: New Features
+- [`be89da3`](https://github.com/tobymao/sqlglot/commit/be89da3747fa95d98e0d5a28d19d98f5822a8979) - introduce Dialect settings, make MySQL case-sensitive by default *(PR [#2627](https://github.com/tobymao/sqlglot/pull/2627) by [@georgesittas](https://github.com/georgesittas))*
+- [`ee2e7f0`](https://github.com/tobymao/sqlglot/commit/ee2e7f099b46d2c8548ab34784d19b77fe838ce7) - snowflake column transform constraints closes [#2634](https://github.com/tobymao/sqlglot/pull/2634) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`b0c5375`](https://github.com/tobymao/sqlglot/commit/b0c5375be98ac7e74870ea69d58c211cf9c73dea) - **tsql**: add dw, hour to the DATEPART-only formats *(PR [#2632](https://github.com/tobymao/sqlglot/pull/2632) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2630](undefined) opened by [@abadugu13](https://github.com/abadugu13)*
+- [`4d68e39`](https://github.com/tobymao/sqlglot/commit/4d68e39a3aadc9b07d3f96c51fc46fd407486d86) - remove redundant todate closes [#2636](https://github.com/tobymao/sqlglot/pull/2636) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`1e387f6`](https://github.com/tobymao/sqlglot/commit/1e387f63853efbcc4da7ce8d822fe8975ffe52f3) - parse functions with positional args in exp.func *(PR [#2622](https://github.com/tobymao/sqlglot/pull/2622) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2621](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+  - :arrow_lower_right: *fixes issue [#2631](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`78697b4`](https://github.com/tobymao/sqlglot/commit/78697b48d9cf310b9098aa48c5180acf279d9945) - **optimizer**: simplify Sub/Div more conservatively, they're not associative *(PR [#2635](https://github.com/tobymao/sqlglot/pull/2635) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2633](undefined) opened by [@jamespan](https://github.com/jamespan)*
+
+### :recycle: Refactors
+- [`656d54c`](https://github.com/tobymao/sqlglot/commit/656d54c808d65a2ec1443719e3f35dc651ed98ab) - make lineage html more reusable *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`12a00e9`](https://github.com/tobymao/sqlglot/commit/12a00e985dacf508f8268b2bb209156f748e197c) - make normalization strategy str enum *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v19.9.0] - 2023-12-05
 ### :boom: BREAKING CHANGES
 - due to [`6e71c34`](https://github.com/tobymao/sqlglot/commit/6e71c348eab63125e412382381acbcbd79efac43) - remove safe versions and use a flag instead *(PR [#2629](https://github.com/tobymao/sqlglot/pull/2629) by [@tobymao](https://github.com/tobymao))*:
@@ -2163,3 +2207,4 @@ Changelog
 [v19.8.2]: https://github.com/tobymao/sqlglot/compare/v19.8.1...v19.8.2
 [v19.8.3]: https://github.com/tobymao/sqlglot/compare/v19.8.2...v19.8.3
 [v19.9.0]: https://github.com/tobymao/sqlglot/compare/v19.8.3...v19.9.0
+[v20.0.0]: https://github.com/tobymao/sqlglot/compare/v19.9.0...v20.0.0

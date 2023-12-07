@@ -3323,7 +3323,7 @@ class Parser(metaclass=_Parser):
         unnest = self._parse_unnest(with_alias=False)
         if unnest:
             this = self.expression(exp.In, this=this, unnest=unnest)
-        elif self._match(TokenType.L_PAREN):
+        elif self._match_set((TokenType.L_PAREN, TokenType.L_BRACKET)):
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
 
             if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
@@ -3331,7 +3331,7 @@ class Parser(metaclass=_Parser):
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
 
-            self._match_r_paren(this)
+            self._match_set((TokenType.R_PAREN, TokenType.R_BRACKET), expression=this)
         else:
             this = self.expression(exp.In, this=this, field=self._parse_field())
 
@@ -5406,13 +5406,14 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _match_set(self, types, advance=True):
+    def _match_set(self, types, advance=True, expression=None):
         if not self._curr:
             return None
 
         if self._curr.token_type in types:
             if advance:
                 self._advance()
+            self._add_comments(expression)
             return True
 
         return None

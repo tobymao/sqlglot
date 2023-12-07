@@ -6,22 +6,6 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
-        self.validate_identity("x <> y")
-
-        self.validate_all(
-            "has([1], x)",
-            read={
-                "postgres": "x = any(array[1])",
-            },
-        )
-        self.validate_all(
-            "NOT has([1], x)",
-            read={
-                "postgres": "any(array[1]) <> x",
-            },
-        )
-        self.validate_identity("x = y")
-
         string_types = [
             "BLOB",
             "LONGBLOB",
@@ -40,6 +24,8 @@ class TestClickhouse(Validator):
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
         self.assertIsNone(expr._meta)
 
+        self.validate_identity("x = y")
+        self.validate_identity("x <> y")
         self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 0.01)")
         self.validate_identity("SELECT * FROM (SELECT a FROM b SAMPLE 1 / 10 OFFSET 1 / 2)")
         self.validate_identity("SELECT sum(foo * bar) FROM bla SAMPLE 10000000")
@@ -81,7 +67,17 @@ class TestClickhouse(Validator):
         self.validate_identity("position(haystack, needle, position)")
         self.validate_identity("CAST(x AS DATETIME)")
         self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
-
+        self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
+        self.validate_identity(
+            "SELECT SUM(1) AS impressions, arrayJoin(cities) AS city, arrayJoin(browsers) AS browser FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities, ['Firefox', 'Chrome', 'Chrome'] AS browsers) GROUP BY 2, 3"
+        )
+        self.validate_identity(
+            "SELECT sum(1) AS impressions, (arrayJoin(arrayZip(cities, browsers)) AS t).1 AS city, t.2 AS browser FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities, ['Firefox', 'Chrome', 'Chrome'] AS browsers) GROUP BY 2, 3"
+        )
+        self.validate_identity(
+            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ['Istanbul', 'Berlin']",
+            "SELECT SUM(1) AS impressions FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities) WHERE arrayJoin(cities) IN ('Istanbul', 'Berlin')",
+        )
         self.validate_identity(
             'SELECT CAST(tuple(1 AS "a", 2 AS "b", 3.0 AS "c").2 AS Nullable(String))'
         )
@@ -101,6 +97,18 @@ class TestClickhouse(Validator):
             "CREATE MATERIALIZED VIEW test_view (id UInt8) TO db.table1 AS SELECT * FROM test_data"
         )
 
+        self.validate_all(
+            "has([1], x)",
+            read={
+                "postgres": "x = any(array[1])",
+            },
+        )
+        self.validate_all(
+            "NOT has([1], x)",
+            read={
+                "postgres": "any(array[1]) <> x",
+            },
+        )
         self.validate_all(
             "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' microsecond",
             read={

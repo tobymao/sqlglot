@@ -6,6 +6,7 @@ from tests.dialects.test_dialect import Validator
 
 
 class TestSnowflake(Validator):
+    maxDiff = None
     dialect = "snowflake"
 
     def test_snowflake(self):
@@ -775,6 +776,17 @@ WHERE
         )
 
     def test_ddl(self):
+        self.validate_identity(
+            """create external table et2(
+  col1 date as (parse_json(metadata$external_table_partition):COL1::date),
+  col2 varchar as (parse_json(metadata$external_table_partition):COL2::varchar),
+  col3 number as (parse_json(metadata$external_table_partition):COL3::number))
+  partition by (col1,col2,col3)
+  location=@s2/logs/
+  partition_type = user_specified
+  file_format = (type = parquet)""",
+            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(PARSE_JSON(metadata$external_table_partition)['COL1'] AS DATE)), col2 VARCHAR AS (CAST(PARSE_JSON(metadata$external_table_partition)['COL2'] AS VARCHAR)), col3 DECIMAL AS (CAST(PARSE_JSON(metadata$external_table_partition)['COL3'] AS DECIMAL))) LOCATION @s2/logs/ PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
+        )
         self.validate_identity("CREATE OR REPLACE VIEW foo (uid) COPY GRANTS AS (SELECT 1)")
         self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
@@ -789,7 +801,7 @@ WHERE
             "CREATE TABLE orders_clone_restore CLONE orders BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"
         )
         self.validate_identity(
-            "CREATE TABLE a (x DATE, y BIGINT) WITH (PARTITION BY (x), integration='q', auto_refresh=TRUE, file_format=(type = parquet))"
+            "CREATE TABLE a (x DATE, y BIGINT) PARTITION BY (x) integration='q' auto_refresh=TRUE file_format=(type = parquet)"
         )
         self.validate_identity(
             "CREATE SCHEMA mytestschema_clone_restore CLONE testschema BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400))"

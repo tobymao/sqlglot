@@ -749,6 +749,9 @@ class Generator:
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
         return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"
 
+    def transformcolumnconstraint_sql(self, expression: exp.TransformColumnConstraint) -> str:
+        return f"AS {self.sql(expression, 'this')}"
+
     def primarykeycolumnconstraint_sql(self, expression: exp.PrimaryKeyColumnConstraint) -> str:
         desc = expression.args.get("desc")
         if desc is not None:
@@ -1115,7 +1118,7 @@ class Generator:
             expressions = self.expressions(properties, sep=sep, indent=False)
             if expressions:
                 expressions = self.wrap(expressions) if wrapped else expressions
-                return f"{prefix}{' ' if prefix and prefix != ' ' else ''}{expressions}{suffix}"
+                return f"{prefix}{' ' if prefix.strip() else ''}{expressions}{suffix}"
         return ""
 
     def with_properties(self, properties: exp.Properties) -> str:

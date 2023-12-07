@@ -240,7 +240,7 @@ class TestExpressions(unittest.TestCase):
                 },
                 dialect="bigquery",
             ).sql(),
-            'SELECT * FROM a1 AS a, b.a, c.a2, d2 CROSS JOIN e.a CROSS JOIN "F" CROSS JOIN g1.a',
+            'SELECT * FROM a1 AS a /* a */, b.a /* b */, c.a2 /* c.a */, d2 /* d.a */ CROSS JOIN e.a CROSS JOIN "F" /* f-F.A */ CROSS JOIN g1.a /* g */',
         )
 
     def test_expand(self):

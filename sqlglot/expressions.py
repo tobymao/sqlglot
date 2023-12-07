@@ -6492,7 +6492,7 @@ def replace_tables(
     Examples:
         >>> from sqlglot import exp, parse_one
         >>> replace_tables(parse_one("select * from a.b"), {"a.b": "c"}).sql()
-        'SELECT * FROM c'
+        'SELECT * FROM c /* a.b */'
 
     Returns:
         The mapped expression.
@@ -6502,13 +6502,16 @@ def replace_tables(
 
     def _replace_tables(node: Expression) -> Expression:
         if isinstance(node, Table):
-            new_name = mapping.get(normalize_table_name(node, dialect=dialect))
+            original = normalize_table_name(node, dialect=dialect)
+            new_name = mapping.get(original)
 
             if new_name:
-                return to_table(
+                table = to_table(
                     new_name,
                     **{k: v for k, v in node.args.items() if k not in TABLE_PARTS},
                 )
+                table.add_comments([original])
+                return table
         return node
 
     return expression.transform(_replace_tables, copy=copy)

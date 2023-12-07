@@ -230,7 +230,9 @@ class GraphHTML:
     https://visjs.github.io/vis-network/docs/network/
     """
 
-    def __init__(self, nodes: t.Dict, edges: t.List, imports: bool = True, **opts: t.Any):
+    def __init__(
+        self, nodes: t.Dict, edges: t.List, imports: bool = True, options: t.Optional[t.Dict] = None
+    ):
         self.imports = imports
 
         self.options = {
@@ -260,7 +262,7 @@ class GraphHTML:
                     "maximum": 300,
                 },
             },
-            **opts,
+            **(options or {}),
         }
 
         self.nodes = nodes

@@ -6674,6 +6674,27 @@ def case(
     return Case(this=this, ifs=[])
 
 
+def cast_unless(
+    expression: ExpOrStr,
+    to: DATA_TYPE,
+    *types: DATA_TYPE,
+    **opts: t.Any,
+) -> Expression | Cast:
+    """
+    Cast an expression to a data type unless it is a specified type.
+
+    Args:
+        expression: The expression to cast.
+        to: The data type to cast to.
+        **types: The types to exclude from casting.
+        **opts: Extra keyword arguments for parsing `expression`
+    """
+    expr = maybe_parse(expression, **opts)
+    if expr.is_type(*types):
+        return expr
+    return cast(expr, to, **opts)
+
+
 def true() -> Boolean:
     """
     Returns a true Boolean expression.

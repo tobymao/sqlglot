@@ -639,6 +639,14 @@ class TestBuild(unittest.TestCase):
                 "(x, y) IN ((1, 2), (3, 4))",
                 "postgres",
             ),
+            (
+                lambda: exp.cast_unless("CAST(x AS INT)", "int", "int"),
+                "CAST(x AS INT)",
+            ),
+            (
+                lambda: exp.cast_unless("CAST(x AS TEXT)", "int", "int"),
+                "CAST(CAST(x AS TEXT) AS INT)",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

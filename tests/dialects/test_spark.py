@@ -227,6 +227,7 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
+        self.validate_identity("FROM_UTC_TIMESTAMP(CAST(x AS TIMESTAMP), 'utc')")
         expr = parse_one("any_value(col, true)", read="spark")
         self.assertIsInstance(expr.args.get("ignore_nulls"), exp.Boolean)
         self.assertEqual(expr.sql(dialect="spark"), "ANY_VALUE(col, TRUE)")

@@ -122,7 +122,11 @@ class Spark2(Hive):
             "DOUBLE": _parse_as_cast("double"),
             "FLOAT": _parse_as_cast("float"),
             "FROM_UTC_TIMESTAMP": lambda args: exp.AtTimeZone(
-                this=exp.Cast(this=seq_get(args, 0), to=exp.DataType.build("timestamp")),
+                this=exp.cast_unless(
+                    seq_get(args, 0) or exp.Var(this=""),
+                    exp.DataType.build("timestamp"),
+                    exp.DataType.build("timestamp"),
+                ),
                 zone=seq_get(args, 1),
             ),
             "IIF": exp.If.from_arg_list,

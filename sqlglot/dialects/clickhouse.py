@@ -108,6 +108,7 @@ class ClickHouse(Dialect):
 
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
+            "ARRAYJOIN": lambda self: self.expression(exp.Explode, this=self._parse_expression()),
             "QUANTILE": lambda self: self._parse_quantile(),
         }
 
@@ -382,6 +383,7 @@ class ClickHouse(Dialect):
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
             ),
+            exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),

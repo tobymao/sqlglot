@@ -245,7 +245,7 @@ class TSQL(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
     TYPED_DIVISION = True
-    CONCAT_NULL_OUTPUTS_STRING = True
+    CONCAT_COALESCE = True
 
     TIME_MAPPING = {
         "year": "%Y",

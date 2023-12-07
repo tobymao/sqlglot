@@ -129,7 +129,7 @@ class DuckDB(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
     INDEX_OFFSET = 1
-    CONCAT_NULL_OUTPUTS_STRING = True
+    CONCAT_COALESCE = True
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

@@ -90,12 +90,12 @@ class Parser(metaclass=_Parser):
         "CONCAT": lambda args, dialect: exp.Concat(
             expressions=args,
             safe=not dialect.STRICT_STRING_CONCAT,
-            null_outputs_string=dialect.CONCAT_NULL_OUTPUTS_STRING,
+            coalesce=dialect.CONCAT_COALESCE,
         ),
         "CONCAT_WS": lambda args, dialect: exp.ConcatWs(
             expressions=args,
             safe=not dialect.STRICT_STRING_CONCAT,
-            null_outputs_string=dialect.CONCAT_NULL_OUTPUTS_STRING,
+            coalesce=dialect.CONCAT_COALESCE,
         ),
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),

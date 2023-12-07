@@ -221,7 +221,7 @@ def _merge_sql(self: Postgres.Generator, expression: exp.Merge) -> str:
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
-    CONCAT_NULL_OUTPUTS_STRING = True
+    CONCAT_COALESCE = True
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
 

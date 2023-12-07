@@ -2177,9 +2177,7 @@ class Generator:
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
             args = [exp.cast(e, "text") for e in args]
 
-        if not self.dialect.CONCAT_NULL_OUTPUTS_STRING and expression.args.get(
-            "null_outputs_string"
-        ):
+        if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
             args = [exp.func("coalesce", e, exp.Literal.string("")) for e in args]
 
         return args

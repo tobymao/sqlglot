@@ -2177,7 +2177,11 @@ class Parser(metaclass=_Parser):
         return self._parse_expressions()
 
     def _parse_select(
-        self, nested: bool = False, table: bool = False, parse_subquery_alias: bool = True
+        self,
+        nested: bool = False,
+        table: bool = False,
+        parse_subquery_alias: bool = True,
+        parse_set_operation: bool = True,
     ) -> t.Optional[exp.Expression]:
         cte = self._parse_with()
 
@@ -2253,7 +2257,11 @@ class Parser(metaclass=_Parser):
                     t.cast(exp.From, self._parse_from(skip_from_token=True))
                 )
             else:
-                this = self._parse_table() if table else self._parse_select(nested=True)
+                this = (
+                    self._parse_table()
+                    if table
+                    else self._parse_select(nested=True, parse_set_operation=False)
+                )
                 this = self._parse_set_operations(self._parse_query_modifiers(this))
 
             self._match_r_paren()
@@ -2272,7 +2280,9 @@ class Parser(metaclass=_Parser):
         else:
             this = None
 
-        return self._parse_set_operations(this)
+        if parse_set_operation:
+            return self._parse_set_operations(this)
+        return this
 
     def _parse_with(self, skip_with_token: bool = False) -> t.Optional[exp.With]:
         if not skip_with_token and not self._match(TokenType.WITH):
@@ -3261,7 +3271,9 @@ class Parser(metaclass=_Parser):
             this=this,
             distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
             by_name=self._match_text_seq("BY", "NAME"),
-            expression=self._parse_set_operations(self._parse_select(nested=True)),
+            expression=self._parse_set_operations(
+                self._parse_select(nested=True, parse_set_operation=False)
+            ),
         )
 
     def _parse_expression(self) -> t.Optional[exp.Expression]:

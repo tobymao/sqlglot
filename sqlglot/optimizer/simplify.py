@@ -700,7 +700,10 @@ def simplify_concat(expression):
         expressions = expression.expressions
         sep = ""
         concat_type = exp.Concat
-        args = {"safe": expression.args.get("safe")}
+        args = {
+            "safe": expression.args.get("safe"),
+            "null_outputs_string": expression.args.get("null_outputs_string"),
+        }
 
     new_args = []
     for is_string_group, group in itertools.groupby(

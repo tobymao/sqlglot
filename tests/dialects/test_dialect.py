@@ -1357,35 +1357,37 @@ class TestDialect(Validator):
         self.validate_all(
             "CONCAT_WS('-', 'a', 'b')",
             write={
+                "clickhouse": "CONCAT_WS('-', 'a', 'b')",
                 "duckdb": "CONCAT_WS('-', 'a', 'b')",
-                "presto": "CONCAT_WS('-', 'a', 'b')",
+                "presto": "CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR))",
                 "hive": "CONCAT_WS('-', 'a', 'b')",
                 "spark": "CONCAT_WS('-', 'a', 'b')",
-                "trino": "CONCAT_WS('-', 'a', 'b')",
+                "trino": "CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR))",
             },
         )
 
         self.validate_all(
             "CONCAT_WS('-', x)",
             write={
+                "clickhouse": "CONCAT_WS('-', x)",
                 "duckdb": "CONCAT_WS('-', x)",
                 "hive": "CONCAT_WS('-', x)",
-                "presto": "CONCAT_WS('-', x)",
+                "presto": "CONCAT_WS('-', CAST(x AS VARCHAR))",
                 "spark": "CONCAT_WS('-', x)",
-                "trino": "CONCAT_WS('-', x)",
+                "trino": "CONCAT_WS('-', CAST(x AS VARCHAR))",
             },
         )
         self.validate_all(
             "CONCAT(a)",
             write={
-                "clickhouse": "a",
-                "presto": "a",
-                "trino": "a",
+                "clickhouse": "CONCAT(a)",
+                "presto": "CAST(a AS VARCHAR)",
+                "trino": "CAST(a AS VARCHAR)",
                 "tsql": "a",
             },
         )
         self.validate_all(
-            "COALESCE(CAST(a AS TEXT), '')",
+            "CONCAT(COALESCE(a, ''))",
             read={
                 "drill": "CONCAT(a)",
                 "duckdb": "CONCAT(a)",

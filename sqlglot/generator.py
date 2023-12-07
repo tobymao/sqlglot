@@ -228,6 +228,9 @@ class Generator:
     # Whether or not the "RECURSIVE" keyword is required when defining recursive CTEs
     CTE_RECURSIVE_KEYWORD_REQUIRED = True
 
+    # Whether or not CONCAT requires >1 arguments
+    SUPPORTS_SINGLE_ARG_CONCAT = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2166,11 +2169,35 @@ class Generator:
         else:
             return self.func("TRIM", expression.this, expression.expression)
 
-    def concat_sql(self, expression: exp.Concat) -> str:
-        expressions = expression.expressions
+    def prepare_concat_args(self, expression: exp.Concat | exp.ConcatWs) -> t.List[exp.Expression]:
+        args = expression.expressions
+        if isinstance(expression, exp.ConcatWs):
+            args = args[1:]  # Skip the delimiter
+
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
-            expressions = [exp.cast(e, "text") for e in expressions]
+            args = [exp.cast(e, "text") for e in args]
+
+        if not self.dialect.CONCAT_NULL_OUTPUTS_STRING and expression.args.get(
+            "null_outputs_string"
+        ):
+            args = [exp.func("coalesce", e, exp.Literal.string("")) for e in args]
+
+        return args
+
+    def concat_sql(self, expression: exp.Concat) -> str:
+        expressions = self.prepare_concat_args(expression)
+
+        # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call,
+        # so when we find such a call we replace it with its argument.
+        if not self.SUPPORTS_SINGLE_ARG_CONCAT and len(expressions) == 1:
+            return self.sql(expressions[0])
+
         return self.func("CONCAT", *expressions)
+
+    def concatws_sql(self, expression: exp.ConcatWs) -> str:
+        return self.func(
+            "CONCAT_WS", seq_get(expression.expressions, 0), *self.prepare_concat_args(expression)
+        )
 
     def check_sql(self, expression: exp.Check) -> str:
         this = self.sql(expression, key="this")
@@ -3031,3 +3058,10 @@ class Generator:
             expression = simplify(expression)
 
         return expression
+
+    def _ensure_string_if_null(self, values: t.List[exp.Expression]) -> t.List[exp.Expression]:
+        return [
+            exp.func("COALESCE", exp.cast(value, "text"), exp.Literal.string(""))
+            for value in values
+            if value
+        ]

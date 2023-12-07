@@ -129,6 +129,7 @@ class DuckDB(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
     INDEX_OFFSET = 1
+    CONCAT_NULL_OUTPUTS_STRING = True
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -159,8 +160,6 @@ class DuckDB(Dialect):
         }
 
     class Parser(parser.Parser):
-        CONCAT_NULL_OUTPUTS_STRING = True
-
         BITWISE = {
             **parser.Parser.BITWISE,
             TokenType.TILDA: exp.RegexpLike,

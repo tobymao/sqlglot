@@ -177,6 +177,9 @@ class Dialect(metaclass=_Dialect):
     # True means 1 / 0 returns null.
     SAFE_DIVISION = False
 
+    # A NULL arg in CONCAT yields NULL by default
+    CONCAT_NULL_OUTPUTS_STRING = False
+
     DATE_FORMAT = "'%Y-%m-%d'"
     DATEINT_FORMAT = "'%Y%m%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"

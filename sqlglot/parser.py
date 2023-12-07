@@ -47,29 +47,6 @@ def binary_range_parser(
     )
 
 
-def parse_concat(args: t.List, dialect: Dialect) -> t.Optional[exp.Expression]:
-    if dialect.parser_class.CONCAT_NULL_OUTPUTS_STRING:
-        args = _ensure_string_if_null(args)
-
-    # Some dialects (e.g. Trino) don't allow a single-argument CONCAT call, so when
-    # we find such a call we replace it with its argument.
-    if len(args) == 1:
-        return args[0]
-
-    return exp.Concat(expressions=args, safe=not dialect.STRICT_STRING_CONCAT)
-
-
-def parse_concat_ws(args: t.List, dialect: Dialect) -> t.Optional[exp.Expression]:
-    if len(args) < 2:
-        return exp.ConcatWs(expressions=args)
-
-    delim, *values = args
-    if dialect.parser_class.CONCAT_NULL_OUTPUTS_STRING:
-        values = _ensure_string_if_null(values)
-
-    return exp.ConcatWs(expressions=[delim] + values)
-
-
 def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     # Default argument order is base, expression
     this = seq_get(args, 0)
@@ -110,8 +87,16 @@ class Parser(metaclass=_Parser):
 
     FUNCTIONS: t.Dict[str, t.Callable] = {
         **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
-        "CONCAT": parse_concat,
-        "CONCAT_WS": parse_concat_ws,
+        "CONCAT": lambda args, dialect: exp.Concat(
+            expressions=args,
+            safe=not dialect.STRICT_STRING_CONCAT,
+            null_outputs_string=dialect.CONCAT_NULL_OUTPUTS_STRING,
+        ),
+        "CONCAT_WS": lambda args, dialect: exp.ConcatWs(
+            expressions=args,
+            safe=not dialect.STRICT_STRING_CONCAT,
+            null_outputs_string=dialect.CONCAT_NULL_OUTPUTS_STRING,
+        ),
         "DATE_TO_DATE_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
@@ -944,9 +929,6 @@ class Parser(metaclass=_Parser):
     UNNEST_OFFSET_ALIAS_TOKENS = ID_VAR_TOKENS - SET_OPERATIONS
 
     STRICT_CAST = True
-
-    # A NULL arg in CONCAT yields NULL by default
-    CONCAT_NULL_OUTPUTS_STRING = False
 
     PREFIXED_PIVOT_COLUMNS = False
     IDENTIFY_PIVOT_STRINGS = False
@@ -5519,11 +5501,3 @@ class Parser(metaclass=_Parser):
                     else:
                         column.replace(dot_or_id)
         return node
-
-
-def _ensure_string_if_null(values: t.List[exp.Expression]) -> t.List[exp.Expression]:
-    return [
-        exp.func("COALESCE", exp.cast(value, "text"), exp.Literal.string(""))
-        for value in values
-        if value
-    ]

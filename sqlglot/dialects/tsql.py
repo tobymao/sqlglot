@@ -245,6 +245,7 @@ class TSQL(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     LOG_BASE_FIRST = False
     TYPED_DIVISION = True
+    CONCAT_COALESCE = True
 
     TIME_MAPPING = {
         "year": "%Y",
@@ -438,8 +439,6 @@ class TSQL(Dialect):
 
         LOG_DEFAULTS_TO_LN = True
 
-        CONCAT_NULL_OUTPUTS_STRING = True
-
         ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
 
         def _parse_projections(self) -> t.List[exp.Expression]:
@@ -632,6 +631,7 @@ class TSQL(Dialect):
         CTE_RECURSIVE_KEYWORD_REQUIRED = False
         ENSURE_BOOLS = True
         NULL_ORDERING_SUPPORTED = False
+        SUPPORTS_SINGLE_ARG_CONCAT = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,

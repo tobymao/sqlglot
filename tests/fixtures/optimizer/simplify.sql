@@ -715,7 +715,7 @@ CONCAT_WS(sep, x, y);
 CONCAT_WS(sep, x, y);
 
 CONCAT(x);
-x;
+CONCAT(x);
 
 CONCAT('a', 'b', 'c');
 'abc';

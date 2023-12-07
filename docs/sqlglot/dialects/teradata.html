@@ -79,25 +79,10 @@
                                             <a class="variable" href="#Teradata.Parser.TABLE_ALIAS_TOKENS">TABLE_ALIAS_TOKENS</a>
                                     </li>
                                     <li>
-                                            <a class="variable" href="#Teradata.Parser.TYPED_DIVISION">TYPED_DIVISION</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Parser.TOKENIZER_CLASS">TOKENIZER_CLASS</a>
-                                    </li>
-                                    <li>
                                             <a class="variable" href="#Teradata.Parser.SHOW_TRIE">SHOW_TRIE</a>
                                     </li>
                                     <li>
                                             <a class="variable" href="#Teradata.Parser.SET_TRIE">SET_TRIE</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Parser.FORMAT_TRIE">FORMAT_TRIE</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Parser.TIME_MAPPING">TIME_MAPPING</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Parser.TIME_TRIE">TIME_TRIE</a>
                                     </li>
                             </ul>
 
@@ -155,54 +140,6 @@
                                     </li>
                                     <li>
                                             <a class="variable" href="#Teradata.Generator.SELECT_KINDS">SELECT_KINDS</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.TYPED_DIVISION">TYPED_DIVISION</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.INVERSE_TIME_MAPPING">INVERSE_TIME_MAPPING</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.INVERSE_ESCAPE_SEQUENCES">INVERSE_ESCAPE_SEQUENCES</a>
-                                    </li>
-                                    <li>
-                                            <a class="function" href="#Teradata.Generator.can_identify">can_identify</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.QUOTE_START">QUOTE_START</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.QUOTE_END">QUOTE_END</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.IDENTIFIER_START">IDENTIFIER_START</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.IDENTIFIER_END">IDENTIFIER_END</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.TOKENIZER_CLASS">TOKENIZER_CLASS</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.BIT_START">BIT_START</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.BIT_END">BIT_END</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.HEX_START">HEX_START</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.HEX_END">HEX_END</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.BYTE_START">BYTE_START</a>
-                                    </li>
-                                    <li>
-                                            <a class="variable" href="#Teradata.Generator.BYTE_END">BYTE_END</a>
                                     </li>
                             </ul>
 
@@ -993,7 +930,7 @@
                             </div>
                             <div id="Teradata.BIT_START" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BIT_START</span>        =
+            <span class="name">BIT_START</span><span class="annotation">: Optional[str]</span>        =
 <span class="default_value">None</span>
 
         
@@ -1005,7 +942,7 @@
                             </div>
                             <div id="Teradata.BIT_END" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BIT_END</span>        =
+            <span class="name">BIT_END</span><span class="annotation">: Optional[str]</span>        =
 <span class="default_value">None</span>
 
         
@@ -1017,7 +954,7 @@
                             </div>
                             <div id="Teradata.HEX_START" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HEX_START</span>        =
+            <span class="name">HEX_START</span><span class="annotation">: Optional[str]</span>        =
 <span class="default_value">None</span>
 
         
@@ -1029,7 +966,7 @@
                             </div>
                             <div id="Teradata.HEX_END" class="classattr">
                                 <div class="attr variable">
-            <span class="name">HEX_END</span>        =
+            <span class="name">HEX_END</span><span class="annotation">: Optional[str]</span>        =
 <span class="default_value">None</span>
 
         
@@ -1041,7 +978,7 @@
                             </div>
                             <div id="Teradata.BYTE_START" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BYTE_START</span>        =
+            <span class="name">BYTE_START</span><span class="annotation">: Optional[str]</span>        =
 <span class="default_value">None</span>
 
         
@@ -1053,7 +990,7 @@
                             </div>
                             <div id="Teradata.BYTE_END" class="classattr">
                                 <div class="attr variable">
-            <span class="name">BYTE_END</span>        =
+            <span class="name">BYTE_END</span><span class="annotation">: Optional[str]</span>        =
 <span class="default_value">None</span>
 
         
@@ -1067,10 +1004,11 @@
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></dt>
-                                <dd id="Teradata.INDEX_OFFSET" class="variable"><a href="dialect.html#Dialect.INDEX_OFFSET">INDEX_OFFSET</a></dd>
+                                <dd id="Teradata.__init__" class="function"><a href="dialect.html#Dialect.__init__">Dialect</a></dd>
+                <dd id="Teradata.INDEX_OFFSET" class="variable"><a href="dialect.html#Dialect.INDEX_OFFSET">INDEX_OFFSET</a></dd>
                 <dd id="Teradata.UNNEST_COLUMN_ONLY" class="variable"><a href="dialect.html#Dialect.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
                 <dd id="Teradata.ALIAS_POST_TABLESAMPLE" class="variable"><a href="dialect.html#Dialect.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
-                <dd id="Teradata.RESOLVES_IDENTIFIERS_AS_UPPERCASE" class="variable"><a href="dialect.html#Dialect.RESOLVES_IDENTIFIERS_AS_UPPERCASE">RESOLVES_IDENTIFIERS_AS_UPPERCASE</a></dd>
+                <dd id="Teradata.NORMALIZATION_STRATEGY" class="variable"><a href="dialect.html#Dialect.NORMALIZATION_STRATEGY">NORMALIZATION_STRATEGY</a></dd>
                 <dd id="Teradata.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="dialect.html#Dialect.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
                 <dd id="Teradata.DPIPE_IS_STRING_CONCAT" class="variable"><a href="dialect.html#Dialect.DPIPE_IS_STRING_CONCAT">DPIPE_IS_STRING_CONCAT</a></dd>
                 <dd id="Teradata.STRICT_STRING_CONCAT" class="variable"><a href="dialect.html#Dialect.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
@@ -1181,7 +1119,8 @@
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a></dt>
-                                <dd id="Teradata.Tokenizer.BIT_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BIT_STRINGS">BIT_STRINGS</a></dd>
+                                <dd id="Teradata.Tokenizer.__init__" class="function"><a href="../tokens.html#Tokenizer.__init__">Tokenizer</a></dd>
+                <dd id="Teradata.Tokenizer.BIT_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BIT_STRINGS">BIT_STRINGS</a></dd>
                 <dd id="Teradata.Tokenizer.BYTE_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.BYTE_STRINGS">BYTE_STRINGS</a></dd>
                 <dd id="Teradata.Tokenizer.HEX_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.HEX_STRINGS">HEX_STRINGS</a></dd>
                 <dd id="Teradata.Tokenizer.RAW_STRINGS" class="variable"><a href="../tokens.html#Tokenizer.RAW_STRINGS">RAW_STRINGS</a></dd>
@@ -1191,14 +1130,13 @@
                 <dd id="Teradata.Tokenizer.QUOTES" class="variable"><a href="../tokens.html#Tokenizer.QUOTES">QUOTES</a></dd>
                 <dd id="Teradata.Tokenizer.STRING_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.STRING_ESCAPES">STRING_ESCAPES</a></dd>
                 <dd id="Teradata.Tokenizer.VAR_SINGLE_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.VAR_SINGLE_TOKENS">VAR_SINGLE_TOKENS</a></dd>
-                <dd id="Teradata.Tokenizer.ESCAPE_SEQUENCES" class="variable"><a href="../tokens.html#Tokenizer.ESCAPE_SEQUENCES">ESCAPE_SEQUENCES</a></dd>
-                <dd id="Teradata.Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
                 <dd id="Teradata.Tokenizer.WHITE_SPACE" class="variable"><a href="../tokens.html#Tokenizer.WHITE_SPACE">WHITE_SPACE</a></dd>
                 <dd id="Teradata.Tokenizer.COMMANDS" class="variable"><a href="../tokens.html#Tokenizer.COMMANDS">COMMANDS</a></dd>
                 <dd id="Teradata.Tokenizer.COMMAND_PREFIX_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.COMMAND_PREFIX_TOKENS">COMMAND_PREFIX_TOKENS</a></dd>
                 <dd id="Teradata.Tokenizer.NUMERIC_LITERALS" class="variable"><a href="../tokens.html#Tokenizer.NUMERIC_LITERALS">NUMERIC_LITERALS</a></dd>
                 <dd id="Teradata.Tokenizer.ENCODE" class="variable"><a href="../tokens.html#Tokenizer.ENCODE">ENCODE</a></dd>
                 <dd id="Teradata.Tokenizer.COMMENTS" class="variable"><a href="../tokens.html#Tokenizer.COMMENTS">COMMENTS</a></dd>
+                <dd id="Teradata.Tokenizer.dialect" class="variable"><a href="../tokens.html#Tokenizer.dialect">dialect</a></dd>
                 <dd id="Teradata.Tokenizer.reset" class="function"><a href="../tokens.html#Tokenizer.reset">reset</a></dd>
                 <dd id="Teradata.Tokenizer.tokenize" class="function"><a href="../tokens.html#Tokenizer.tokenize">tokenize</a></dd>
                 <dd id="Teradata.Tokenizer.peek" class="function"><a href="../tokens.html#Tokenizer.peek">peek</a></dd>
@@ -1354,7 +1292,7 @@ Default: 3</li>
                                 <div class="attr variable">
             <span class="name">CHARSET_TRANSLATORS</span>        =
 <input id="Teradata.Parser.CHARSET_TRANSLATORS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Parser.CHARSET_TRANSLATORS-view-value"></label><span class="default_value">{&#39;GRAPHIC_TO_UNICODE_PadSpace&#39;, &#39;KANJI1_SBC_TO_UNICODE&#39;, &#39;LATIN_TO_GRAPHIC&#39;, &#39;UNICODE_TO_KANJISJIS&#39;, &#39;UNICODE_TO_KANJI1_KANJISJIS&#39;, &#39;UNICODE_TO_UNICODE_NFKC&#39;, &#39;GRAPHIC_TO_LATIN&#39;, &#39;LATIN_TO_UNICODE&#39;, &#39;UNICODE_TO_UNICODE_Fullwidth&#39;, &#39;UNICODE_TO_LATIN&#39;, &#39;KANJISJIS_TO_GRAPHIC&#39;, &#39;LATIN_TO_KANJISJIS&#39;, &#39;GRAPHIC_TO_KANJISJIS&#39;, &#39;GRAPHIC_TO_UNICODE&#39;, &#39;UNICODE_TO_GRAPHIC&#39;, &#39;UNICODE_TO_UNICODE_NFD&#39;, &#39;UNICODE_TO_GRAPHIC_VarGraphic&#39;, &#39;KANJISJIS_TO_LATIN&#39;, &#39;UNICODE_TO_KANJI1_KanjiEUC&#39;, &#39;UNICODE_TO_UNICODE_FoldSpace&#39;, &#39;UNICODE_TO_UNICODE_NFKD&#39;, &#39;UNICODE_TO_GRAPHIC_PadGraphic&#39;, &#39;KANJI1_KanjiEBCDIC_TO_UNICODE&#39;, &#39;UNICODE_TO_LOCALE&#39;, &#39;UNICODE_TO_KANJI1_SBC&#39;, &#39;KANJI1_KanjiEUC_TO_UNICODE&#39;, &#39;UNICODE_TO_UNICODE_Halfwidth&#39;, &#39;KANJISJIS_TO_UNICODE&#39;, &#39;KANJI1_KANJISJIS_TO_UNICODE&#39;, &#39;UNICODE_TO_KANJI1_KanjiEBCDIC&#39;, &#39;UNICODE_TO_UNICODE_NFC&#39;, &#39;LOCALE_TO_UNICODE&#39;}</span>
+            <label class="view-value-button pdoc-button" for="Teradata.Parser.CHARSET_TRANSLATORS-view-value"></label><span class="default_value">{&#39;UNICODE_TO_UNICODE_NFD&#39;, &#39;UNICODE_TO_KANJI1_KanjiEBCDIC&#39;, &#39;LATIN_TO_GRAPHIC&#39;, &#39;UNICODE_TO_GRAPHIC_PadGraphic&#39;, &#39;UNICODE_TO_GRAPHIC&#39;, &#39;LATIN_TO_UNICODE&#39;, &#39;UNICODE_TO_KANJI1_SBC&#39;, &#39;LOCALE_TO_UNICODE&#39;, &#39;UNICODE_TO_KANJI1_KanjiEUC&#39;, &#39;UNICODE_TO_KANJI1_KANJISJIS&#39;, &#39;GRAPHIC_TO_KANJISJIS&#39;, &#39;UNICODE_TO_UNICODE_NFKD&#39;, &#39;UNICODE_TO_UNICODE_NFC&#39;, &#39;KANJISJIS_TO_UNICODE&#39;, &#39;KANJISJIS_TO_GRAPHIC&#39;, &#39;KANJI1_SBC_TO_UNICODE&#39;, &#39;UNICODE_TO_UNICODE_Halfwidth&#39;, &#39;GRAPHIC_TO_UNICODE_PadSpace&#39;, &#39;GRAPHIC_TO_UNICODE&#39;, &#39;LATIN_TO_KANJISJIS&#39;, &#39;KANJISJIS_TO_LATIN&#39;, &#39;UNICODE_TO_LATIN&#39;, &#39;UNICODE_TO_LOCALE&#39;, &#39;UNICODE_TO_GRAPHIC_VarGraphic&#39;, &#39;UNICODE_TO_UNICODE_NFKC&#39;, &#39;KANJI1_KanjiEUC_TO_UNICODE&#39;, &#39;UNICODE_TO_UNICODE_FoldSpace&#39;, &#39;UNICODE_TO_KANJISJIS&#39;, &#39;KANJI1_KanjiEBCDIC_TO_UNICODE&#39;, &#39;KANJI1_KANJISJIS_TO_UNICODE&#39;, &#39;UNICODE_TO_UNICODE_Fullwidth&#39;, &#39;GRAPHIC_TO_LATIN&#39;}</span>
 
         
     </div>
@@ -1367,7 +1305,7 @@ Default: 3</li>
                                 <div class="attr variable">
             <span class="name">FUNC_TOKENS</span>        =
 <input id="Teradata.Parser.FUNC_TOKENS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Parser.FUNC_TOKENS-view-value"></label><span class="default_value">{&lt;TokenType.LIKE: &#39;LIKE&#39;&gt;, &lt;TokenType.JSONB: &#39;JSONB&#39;&gt;, &lt;TokenType.IPADDRESS: &#39;IPADDRESS&#39;&gt;, &lt;TokenType.TSMULTIRANGE: &#39;TSMULTIRANGE&#39;&gt;, &lt;TokenType.COLLATE: &#39;COLLATE&#39;&gt;, &lt;TokenType.OFFSET: &#39;OFFSET&#39;&gt;, &lt;TokenType.BOOLEAN: &#39;BOOLEAN&#39;&gt;, &lt;TokenType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;, &lt;TokenType.JSON: &#39;JSON&#39;&gt;, &lt;TokenType.FIXEDSTRING: &#39;FIXEDSTRING&#39;&gt;, &lt;TokenType.OBJECT_IDENTIFIER: &#39;OBJECT_IDENTIFIER&#39;&gt;, &lt;TokenType.WINDOW: &#39;WINDOW&#39;&gt;, &lt;TokenType.TABLE: &#39;TABLE&#39;&gt;, &lt;TokenType.YEAR: &#39;YEAR&#39;&gt;, &lt;TokenType.NVARCHAR: &#39;NVARCHAR&#39;&gt;, &lt;TokenType.LEFT: &#39;LEFT&#39;&gt;, &lt;TokenType.NESTED: &#39;NESTED&#39;&gt;, &lt;TokenType.CURRENT_DATE: &#39;CURRENT_DATE&#39;&gt;, &lt;TokenType.UUID: &#39;UUID&#39;&gt;, &lt;TokenType.IMAGE: &#39;IMAGE&#39;&gt;, &lt;TokenType.RANGE: &#39;RANGE&#39;&gt;, &lt;TokenType.UNKNOWN: &#39;UNKNOWN&#39;&gt;, &lt;TokenType.DATE: &#39;DATE&#39;&gt;, &lt;TokenType.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;, &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &lt;TokenType.EXISTS: &#39;EXISTS&#39;&gt;, &lt;TokenType.NULLABLE: &#39;NULLABLE&#39;&gt;, &lt;TokenType.ILIKE: &#39;ILIKE&#39;&gt;, &lt;TokenType.TSTZRANGE: &#39;TSTZRANGE&#39;&gt;, &lt;TokenType.RIGHT: &#39;RIGHT&#39;&gt;, &lt;TokenType.ALL: &#39;ALL&#39;&gt;, &lt;TokenType.NULL: &#39;NULL&#39;&gt;, &lt;TokenType.BIGSERIAL: &#39;BIGSERIAL&#39;&gt;, &lt;TokenType.TSTZMULTIRANGE: &#39;TSTZMULTIRANGE&#39;&gt;, &lt;TokenType.CURRENT_TIMESTAMP: &#39;CURRENT_TIMESTAMP&#39;&gt;, &lt;TokenType.XML: &#39;XML&#39;&gt;, &lt;TokenType.SUPER: &#39;SUPER&#39;&gt;, &lt;TokenType.CHAR: &#39;CHAR&#39;&gt;, &lt;TokenType.TINYBLOB: &#39;TINYBLOB&#39;&gt;, &lt;TokenType.FLOAT: &#39;FLOAT&#39;&gt;, &lt;TokenType.USMALLINT: &#39;USMALLINT&#39;&gt;, &lt;TokenType.DATERANGE: &#39;DATERANGE&#39;&gt;, &lt;TokenType.ISNULL: &#39;ISNULL&#39;&gt;, &lt;TokenType.NCHAR: &#39;NCHAR&#39;&gt;, &lt;TokenType.INDEX: &#39;INDEX&#39;&gt;, &lt;TokenType.UDECIMAL: &#39;UDECIMAL&#39;&gt;, &lt;TokenType.TIMESTAMP_MS: &#39;TIMESTAMP_MS&#39;&gt;, &lt;TokenType.USERDEFINED: &#39;USERDEFINED&#39;&gt;, &lt;TokenType.INSERT: &#39;INSERT&#39;&gt;, &lt;TokenType.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;, &lt;TokenType.STRUCT: &#39;STRUCT&#39;&gt;, &lt;TokenType.GEOMETRY: &#39;GEOMETRY&#39;&gt;, &lt;TokenType.UINT128: &#39;UINT128&#39;&gt;, &lt;TokenType.SMALLSERIAL: &#39;SMALLSERIAL&#39;&gt;, &lt;TokenType.FIRST: &#39;FIRST&#39;&gt;, &lt;TokenType.HSTORE: &#39;HSTORE&#39;&gt;, &lt;TokenType.UBIGINT: &#39;UBIGINT&#39;&gt;, &lt;TokenType.CURRENT_TIME: &#39;CURRENT_TIME&#39;&gt;, &lt;TokenType.TIMESTAMP_S: &#39;TIMESTAMP_S&#39;&gt;, &lt;TokenType.UMEDIUMINT: &#39;UMEDIUMINT&#39;&gt;, &lt;TokenType.MERGE: &#39;MERGE&#39;&gt;, &lt;TokenType.SMALLMONEY: &#39;SMALLMONEY&#39;&gt;, &lt;TokenType.INT4MULTIRANGE: &#39;INT4MULTIRANGE&#39;&gt;, &lt;TokenType.ARRAY: &#39;ARRAY&#39;&gt;, &lt;TokenType.ENUM8: &#39;ENUM8&#39;&gt;, &lt;TokenType.MEDIUMINT: &#39;MEDIUMINT&#39;&gt;, &lt;TokenType.PRIMARY_KEY: &#39;PRIMARY_KEY&#39;&gt;, &lt;TokenType.VARBINARY: &#39;VARBINARY&#39;&gt;, &lt;TokenType.LOWCARDINALITY: &#39;LOWCARDINALITY&#39;&gt;, &lt;TokenType.HLLSKETCH: &#39;HLLSKETCH&#39;&gt;, &lt;TokenType.IDENTIFIER: &#39;IDENTIFIER&#39;&gt;, &lt;TokenType.INT: &#39;INT&#39;&gt;, &lt;TokenType.FILTER: &#39;FILTER&#39;&gt;, &lt;TokenType.RLIKE: &#39;RLIKE&#39;&gt;, &lt;TokenType.BIGDECIMAL: &#39;BIGDECIMAL&#39;&gt;, &lt;TokenType.ENUM: &#39;ENUM&#39;&gt;, &lt;TokenType.UNNEST: &#39;UNNEST&#39;&gt;, &lt;TokenType.TSRANGE: &#39;TSRANGE&#39;&gt;, &lt;TokenType.UINT256: &#39;UINT256&#39;&gt;, &lt;TokenType.BIGINT: &#39;BIGINT&#39;&gt;, &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &lt;TokenType.LONGBLOB: &#39;LONGBLOB&#39;&gt;, &lt;TokenType.VARIANT: &#39;VARIANT&#39;&gt;, &lt;TokenType.UNIQUEIDENTIFIER: &#39;UNIQUEIDENTIFIER&#39;&gt;, &lt;TokenType.INT128: &#39;INT128&#39;&gt;, &lt;TokenType.FORMAT: &#39;FORMAT&#39;&gt;, &lt;TokenType.GLOB: &#39;GLOB&#39;&gt;, &lt;TokenType.MAP: &#39;MAP&#39;&gt;, &lt;TokenType.VAR: &#39;VAR&#39;&gt;, &lt;TokenType.BINARY: &#39;BINARY&#39;&gt;, &lt;TokenType.CURRENT_USER: &#39;CURRENT_USER&#39;&gt;, &lt;TokenType.SERIAL: &#39;SERIAL&#39;&gt;, &lt;TokenType.DATETIME64: &#39;DATETIME64&#39;&gt;, &lt;TokenType.SOME: &#39;SOME&#39;&gt;, &lt;TokenType.CURRENT_DATETIME: &#39;CURRENT_DATETIME&#39;&gt;, &lt;TokenType.NUMMULTIRANGE: &#39;NUMMULTIRANGE&#39;&gt;, &lt;TokenType.OBJECT: &#39;OBJECT&#39;&gt;, &lt;TokenType.TIME: &#39;TIME&#39;&gt;, &lt;TokenType.PSEUDO_TYPE: &#39;PSEUDO_TYPE&#39;&gt;, &lt;TokenType.INT256: &#39;INT256&#39;&gt;, &lt;TokenType.DOUBLE: &#39;DOUBLE&#39;&gt;, &lt;TokenType.INET: &#39;INET&#39;&gt;, &lt;TokenType.XOR: &#39;XOR&#39;&gt;, &lt;TokenType.INT8RANGE: &#39;INT8RANGE&#39;&gt;, &lt;TokenType.INT4RANGE: &#39;INT4RANGE&#39;&gt;, &lt;TokenType.TIMETZ: &#39;TIMETZ&#39;&gt;, &lt;TokenType.DATETIME: &#39;DATETIME&#39;&gt;, &lt;TokenType.VARCHAR: &#39;VARCHAR&#39;&gt;, &lt;TokenType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;, &lt;TokenType.ENUM16: &#39;ENUM16&#39;&gt;, &lt;TokenType.ROW: &#39;ROW&#39;&gt;, &lt;TokenType.INT8MULTIRANGE: &#39;INT8MULTIRANGE&#39;&gt;, &lt;TokenType.MONEY: &#39;MONEY&#39;&gt;, &lt;TokenType.UTINYINT: &#39;UTINYINT&#39;&gt;, &lt;TokenType.TIMESTAMP_NS: &#39;TIMESTAMP_NS&#39;&gt;, &lt;TokenType.LONGTEXT: &#39;LONGTEXT&#39;&gt;, &lt;TokenType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;, &lt;TokenType.NUMRANGE: &#39;NUMRANGE&#39;&gt;, &lt;TokenType.TINYINT: &#39;TINYINT&#39;&gt;, &lt;TokenType.IPPREFIX: &#39;IPPREFIX&#39;&gt;, &lt;TokenType.GEOGRAPHY: &#39;GEOGRAPHY&#39;&gt;, &lt;TokenType.BIT: &#39;BIT&#39;&gt;, &lt;TokenType.INTERVAL: &#39;INTERVAL&#39;&gt;, &lt;TokenType.DATEMULTIRANGE: &#39;DATEMULTIRANGE&#39;&gt;, &lt;TokenType.ROWVERSION: &#39;ROWVERSION&#39;&gt;, &lt;TokenType.SMALLINT: &#39;SMALLINT&#39;&gt;, &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &lt;TokenType.ANY: &#39;ANY&#39;&gt;, &lt;TokenType.TINYTEXT: &#39;TINYTEXT&#39;&gt;, &lt;TokenType.UINT: &#39;UINT&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Teradata.Parser.FUNC_TOKENS-view-value"></label><span class="default_value">{&lt;TokenType.VARCHAR: &#39;VARCHAR&#39;&gt;, &lt;TokenType.UNNEST: &#39;UNNEST&#39;&gt;, &lt;TokenType.LIKE: &#39;LIKE&#39;&gt;, &lt;TokenType.MERGE: &#39;MERGE&#39;&gt;, &lt;TokenType.CURRENT_DATETIME: &#39;CURRENT_DATETIME&#39;&gt;, &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &lt;TokenType.FILTER: &#39;FILTER&#39;&gt;, &lt;TokenType.INT8MULTIRANGE: &#39;INT8MULTIRANGE&#39;&gt;, &lt;TokenType.ENUM16: &#39;ENUM16&#39;&gt;, &lt;TokenType.FLOAT: &#39;FLOAT&#39;&gt;, &lt;TokenType.TABLE: &#39;TABLE&#39;&gt;, &lt;TokenType.ENUM8: &#39;ENUM8&#39;&gt;, &lt;TokenType.EXISTS: &#39;EXISTS&#39;&gt;, &lt;TokenType.SOME: &#39;SOME&#39;&gt;, &lt;TokenType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;, &lt;TokenType.YEAR: &#39;YEAR&#39;&gt;, &lt;TokenType.ENUM: &#39;ENUM&#39;&gt;, &lt;TokenType.HSTORE: &#39;HSTORE&#39;&gt;, &lt;TokenType.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;, &lt;TokenType.FORMAT: &#39;FORMAT&#39;&gt;, &lt;TokenType.ANY: &#39;ANY&#39;&gt;, &lt;TokenType.IPADDRESS: &#39;IPADDRESS&#39;&gt;, &lt;TokenType.RIGHT: &#39;RIGHT&#39;&gt;, &lt;TokenType.CURRENT_TIMESTAMP: &#39;CURRENT_TIMESTAMP&#39;&gt;, &lt;TokenType.ILIKE: &#39;ILIKE&#39;&gt;, &lt;TokenType.TINYBLOB: &#39;TINYBLOB&#39;&gt;, &lt;TokenType.NUMRANGE: &#39;NUMRANGE&#39;&gt;, &lt;TokenType.DATEMULTIRANGE: &#39;DATEMULTIRANGE&#39;&gt;, &lt;TokenType.JSONB: &#39;JSONB&#39;&gt;, &lt;TokenType.INT128: &#39;INT128&#39;&gt;, &lt;TokenType.PRIMARY_KEY: &#39;PRIMARY_KEY&#39;&gt;, &lt;TokenType.SMALLSERIAL: &#39;SMALLSERIAL&#39;&gt;, &lt;TokenType.RLIKE: &#39;RLIKE&#39;&gt;, &lt;TokenType.UUID: &#39;UUID&#39;&gt;, &lt;TokenType.USERDEFINED: &#39;USERDEFINED&#39;&gt;, &lt;TokenType.VARBINARY: &#39;VARBINARY&#39;&gt;, &lt;TokenType.SMALLMONEY: &#39;SMALLMONEY&#39;&gt;, &lt;TokenType.BIGSERIAL: &#39;BIGSERIAL&#39;&gt;, &lt;TokenType.INT: &#39;INT&#39;&gt;, &lt;TokenType.INDEX: &#39;INDEX&#39;&gt;, &lt;TokenType.BIGINT: &#39;BIGINT&#39;&gt;, &lt;TokenType.NCHAR: &#39;NCHAR&#39;&gt;, &lt;TokenType.ROW: &#39;ROW&#39;&gt;, &lt;TokenType.LEFT: &#39;LEFT&#39;&gt;, &lt;TokenType.OFFSET: &#39;OFFSET&#39;&gt;, &lt;TokenType.GLOB: &#39;GLOB&#39;&gt;, &lt;TokenType.NESTED: &#39;NESTED&#39;&gt;, &lt;TokenType.NULLABLE: &#39;NULLABLE&#39;&gt;, &lt;TokenType.GEOGRAPHY: &#39;GEOGRAPHY&#39;&gt;, &lt;TokenType.UNKNOWN: &#39;UNKNOWN&#39;&gt;, &lt;TokenType.TSTZMULTIRANGE: &#39;TSTZMULTIRANGE&#39;&gt;, &lt;TokenType.CURRENT_DATE: &#39;CURRENT_DATE&#39;&gt;, &lt;TokenType.OBJECT_IDENTIFIER: &#39;OBJECT_IDENTIFIER&#39;&gt;, &lt;TokenType.INT8RANGE: &#39;INT8RANGE&#39;&gt;, &lt;TokenType.ARRAY: &#39;ARRAY&#39;&gt;, &lt;TokenType.LOWCARDINALITY: &#39;LOWCARDINALITY&#39;&gt;, &lt;TokenType.PSEUDO_TYPE: &#39;PSEUDO_TYPE&#39;&gt;, &lt;TokenType.UMEDIUMINT: &#39;UMEDIUMINT&#39;&gt;, &lt;TokenType.TIME: &#39;TIME&#39;&gt;, &lt;TokenType.TINYINT: &#39;TINYINT&#39;&gt;, &lt;TokenType.STRUCT: &#39;STRUCT&#39;&gt;, &lt;TokenType.BOOLEAN: &#39;BOOLEAN&#39;&gt;, &lt;TokenType.CHAR: &#39;CHAR&#39;&gt;, &lt;TokenType.HLLSKETCH: &#39;HLLSKETCH&#39;&gt;, &lt;TokenType.VARIANT: &#39;VARIANT&#39;&gt;, &lt;TokenType.UINT128: &#39;UINT128&#39;&gt;, &lt;TokenType.LONGTEXT: &#39;LONGTEXT&#39;&gt;, &lt;TokenType.JSON: &#39;JSON&#39;&gt;, &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &lt;TokenType.INTERVAL: &#39;INTERVAL&#39;&gt;, &lt;TokenType.INT256: &#39;INT256&#39;&gt;, &lt;TokenType.ALL: &#39;ALL&#39;&gt;, &lt;TokenType.DATERANGE: &#39;DATERANGE&#39;&gt;, &lt;TokenType.OBJECT: &#39;OBJECT&#39;&gt;, &lt;TokenType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;, &lt;TokenType.MONEY: &#39;MONEY&#39;&gt;, &lt;TokenType.COLLATE: &#39;COLLATE&#39;&gt;, &lt;TokenType.DATE: &#39;DATE&#39;&gt;, &lt;TokenType.SERIAL: &#39;SERIAL&#39;&gt;, &lt;TokenType.MAP: &#39;MAP&#39;&gt;, &lt;TokenType.NUMMULTIRANGE: &#39;NUMMULTIRANGE&#39;&gt;, &lt;TokenType.BINARY: &#39;BINARY&#39;&gt;, &lt;TokenType.IPPREFIX: &#39;IPPREFIX&#39;&gt;, &lt;TokenType.WINDOW: &#39;WINDOW&#39;&gt;, &lt;TokenType.INET: &#39;INET&#39;&gt;, &lt;TokenType.TIMESTAMP_NS: &#39;TIMESTAMP_NS&#39;&gt;, &lt;TokenType.UTINYINT: &#39;UTINYINT&#39;&gt;, &lt;TokenType.CURRENT_USER: &#39;CURRENT_USER&#39;&gt;, &lt;TokenType.SMALLINT: &#39;SMALLINT&#39;&gt;, &lt;TokenType.UDECIMAL: &#39;UDECIMAL&#39;&gt;, &lt;TokenType.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;, &lt;TokenType.DOUBLE: &#39;DOUBLE&#39;&gt;, &lt;TokenType.FIXEDSTRING: &#39;FIXEDSTRING&#39;&gt;, &lt;TokenType.NVARCHAR: &#39;NVARCHAR&#39;&gt;, &lt;TokenType.XML: &#39;XML&#39;&gt;, &lt;TokenType.ISNULL: &#39;ISNULL&#39;&gt;, &lt;TokenType.DATETIME: &#39;DATETIME&#39;&gt;, &lt;TokenType.IMAGE: &#39;IMAGE&#39;&gt;, &lt;TokenType.TIMETZ: &#39;TIMETZ&#39;&gt;, &lt;TokenType.LONGBLOB: &#39;LONGBLOB&#39;&gt;, &lt;TokenType.UNIQUEIDENTIFIER: &#39;UNIQUEIDENTIFIER&#39;&gt;, &lt;TokenType.IDENTIFIER: &#39;IDENTIFIER&#39;&gt;, &lt;TokenType.TSTZRANGE: &#39;TSTZRANGE&#39;&gt;, &lt;TokenType.USMALLINT: &#39;USMALLINT&#39;&gt;, &lt;TokenType.VAR: &#39;VAR&#39;&gt;, &lt;TokenType.NULL: &#39;NULL&#39;&gt;, &lt;TokenType.UINT: &#39;UINT&#39;&gt;, &lt;TokenType.CURRENT_TIME: &#39;CURRENT_TIME&#39;&gt;, &lt;TokenType.INSERT: &#39;INSERT&#39;&gt;, &lt;TokenType.TSRANGE: &#39;TSRANGE&#39;&gt;, &lt;TokenType.TINYTEXT: &#39;TINYTEXT&#39;&gt;, &lt;TokenType.MEDIUMINT: &#39;MEDIUMINT&#39;&gt;, &lt;TokenType.TIMESTAMP_S: &#39;TIMESTAMP_S&#39;&gt;, &lt;TokenType.GEOMETRY: &#39;GEOMETRY&#39;&gt;, &lt;TokenType.RANGE: &#39;RANGE&#39;&gt;, &lt;TokenType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;, &lt;TokenType.ROWVERSION: &#39;ROWVERSION&#39;&gt;, &lt;TokenType.TIMESTAMP_MS: &#39;TIMESTAMP_MS&#39;&gt;, &lt;TokenType.BIT: &#39;BIT&#39;&gt;, &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &lt;TokenType.TSMULTIRANGE: &#39;TSMULTIRANGE&#39;&gt;, &lt;TokenType.FIRST: &#39;FIRST&#39;&gt;, &lt;TokenType.BIGDECIMAL: &#39;BIGDECIMAL&#39;&gt;, &lt;TokenType.SUPER: &#39;SUPER&#39;&gt;, &lt;TokenType.XOR: &#39;XOR&#39;&gt;, &lt;TokenType.UBIGINT: &#39;UBIGINT&#39;&gt;, &lt;TokenType.DATETIME64: &#39;DATETIME64&#39;&gt;, &lt;TokenType.UINT256: &#39;UINT256&#39;&gt;, &lt;TokenType.INT4MULTIRANGE: &#39;INT4MULTIRANGE&#39;&gt;, &lt;TokenType.INT4RANGE: &#39;INT4RANGE&#39;&gt;}</span>
 
         
     </div>
@@ -1393,7 +1331,7 @@ Default: 3</li>
                                 <div class="attr variable">
             <span class="name">FUNCTION_PARSERS</span>        =
 <input id="Teradata.Parser.FUNCTION_PARSERS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Parser.FUNCTION_PARSERS-view-value"></label><span class="default_value">{&#39;ANY_VALUE&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CONCAT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CONCAT_WS&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CONVERT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;DECODE&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;EXTRACT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;JSON_OBJECT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;JSON_TABLE&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;LOG&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;MATCH&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;OPENJSON&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;POSITION&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;PREDICT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;SAFE_CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;STRING_AGG&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;SUBSTRING&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRIM&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRY_CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRY_CONVERT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRYCAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;RANGE_N&#39;: &lt;function <a href="#Teradata.Parser">Teradata.Parser</a>.&lt;lambda&gt;&gt;, &#39;TRANSLATE&#39;: &lt;function <a href="#Teradata.Parser">Teradata.Parser</a>.&lt;lambda&gt;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Teradata.Parser.FUNCTION_PARSERS-view-value"></label><span class="default_value">{&#39;ANY_VALUE&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;CONVERT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;DECODE&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;EXTRACT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;JSON_OBJECT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;JSON_TABLE&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;MATCH&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;OPENJSON&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;POSITION&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;PREDICT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;SAFE_CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;STRING_AGG&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;SUBSTRING&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRIM&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRY_CAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRY_CONVERT&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;TRYCAST&#39;: &lt;function Parser.&lt;lambda&gt;&gt;, &#39;RANGE_N&#39;: &lt;function <a href="#Teradata.Parser">Teradata.Parser</a>.&lt;lambda&gt;&gt;, &#39;TRANSLATE&#39;: &lt;function <a href="#Teradata.Parser">Teradata.Parser</a>.&lt;lambda&gt;&gt;}</span>
 
         
     </div>
@@ -1418,35 +1356,11 @@ Default: 3</li>
                                 <div class="attr variable">
             <span class="name">TABLE_ALIAS_TOKENS</span>        =
 <input id="Teradata.Parser.TABLE_ALIAS_TOKENS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Parser.TABLE_ALIAS_TOKENS-view-value"></label><span class="default_value">{&lt;TokenType.JSONB: &#39;JSONB&#39;&gt;, &lt;TokenType.PROCEDURE: &#39;PROCEDURE&#39;&gt;, &lt;TokenType.IPADDRESS: &#39;IPADDRESS&#39;&gt;, &lt;TokenType.CONSTRAINT: &#39;CONSTRAINT&#39;&gt;, &lt;TokenType.TSMULTIRANGE: &#39;TSMULTIRANGE&#39;&gt;, &lt;TokenType.COLLATE: &#39;COLLATE&#39;&gt;, &lt;TokenType.BOOLEAN: &#39;BOOLEAN&#39;&gt;, &lt;TokenType.CASE: &#39;CASE&#39;&gt;, &lt;TokenType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;, &lt;TokenType.JSON: &#39;JSON&#39;&gt;, &lt;TokenType.FIXEDSTRING: &#39;FIXEDSTRING&#39;&gt;, &lt;TokenType.OBJECT_IDENTIFIER: &#39;OBJECT_IDENTIFIER&#39;&gt;, &lt;TokenType.SETTINGS: &#39;SETTINGS&#39;&gt;, &lt;TokenType.EXECUTE: &#39;EXECUTE&#39;&gt;, &lt;TokenType.TABLE: &#39;TABLE&#39;&gt;, &lt;TokenType.YEAR: &#39;YEAR&#39;&gt;, &lt;TokenType.DESCRIBE: &#39;DESCRIBE&#39;&gt;, &lt;TokenType.NVARCHAR: &#39;NVARCHAR&#39;&gt;, &lt;TokenType.TRUE: &#39;TRUE&#39;&gt;, &lt;TokenType.NESTED: &#39;NESTED&#39;&gt;, &lt;TokenType.FALSE: &#39;FALSE&#39;&gt;, &lt;TokenType.CURRENT_DATE: &#39;CURRENT_DATE&#39;&gt;, &lt;TokenType.DEFAULT: &#39;DEFAULT&#39;&gt;, &lt;TokenType.UUID: &#39;UUID&#39;&gt;, &lt;TokenType.IMAGE: &#39;IMAGE&#39;&gt;, &lt;TokenType.RANGE: &#39;RANGE&#39;&gt;, &lt;TokenType.UNKNOWN: &#39;UNKNOWN&#39;&gt;, &lt;TokenType.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;, &lt;TokenType.DATE: &#39;DATE&#39;&gt;, &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &lt;TokenType.EXISTS: &#39;EXISTS&#39;&gt;, &lt;TokenType.NULLABLE: &#39;NULLABLE&#39;&gt;, &lt;TokenType.TSTZRANGE: &#39;TSTZRANGE&#39;&gt;, &lt;TokenType.SET: &#39;SET&#39;&gt;, &lt;TokenType.OVERWRITE: &#39;OVERWRITE&#39;&gt;, &lt;TokenType.DESC: &#39;DESC&#39;&gt;, &lt;TokenType.ALL: &#39;ALL&#39;&gt;, &lt;TokenType.NULL: &#39;NULL&#39;&gt;, &lt;TokenType.BEGIN: &#39;BEGIN&#39;&gt;, &lt;TokenType.BIGSERIAL: &#39;BIGSERIAL&#39;&gt;, &lt;TokenType.TSTZMULTIRANGE: &#39;TSTZMULTIRANGE&#39;&gt;, &lt;TokenType.XML: &#39;XML&#39;&gt;, &lt;TokenType.CURRENT_TIMESTAMP: &#39;CURRENT_TIMESTAMP&#39;&gt;, &lt;TokenType.SUPER: &#39;SUPER&#39;&gt;, &lt;TokenType.CHAR: &#39;CHAR&#39;&gt;, &lt;TokenType.CACHE: &#39;CACHE&#39;&gt;, &lt;TokenType.TINYBLOB: &#39;TINYBLOB&#39;&gt;, &lt;TokenType.FLOAT: &#39;FLOAT&#39;&gt;, &lt;TokenType.USMALLINT: &#39;USMALLINT&#39;&gt;, &lt;TokenType.DATERANGE: &#39;DATERANGE&#39;&gt;, &lt;TokenType.ROWS: &#39;ROWS&#39;&gt;, &lt;TokenType.ISNULL: &#39;ISNULL&#39;&gt;, &lt;TokenType.ASC: &#39;ASC&#39;&gt;, &lt;TokenType.NCHAR: &#39;NCHAR&#39;&gt;, &lt;TokenType.ESCAPE: &#39;ESCAPE&#39;&gt;, &lt;TokenType.INDEX: &#39;INDEX&#39;&gt;, &lt;TokenType.UNIQUE: &#39;UNIQUE&#39;&gt;, &lt;TokenType.UDECIMAL: &#39;UDECIMAL&#39;&gt;, &lt;TokenType.PARTITION: &#39;PARTITION&#39;&gt;, &lt;TokenType.TIMESTAMP_MS: &#39;TIMESTAMP_MS&#39;&gt;, &lt;TokenType.END: &#39;END&#39;&gt;, &lt;TokenType.USERDEFINED: &#39;USERDEFINED&#39;&gt;, &lt;TokenType.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;, &lt;TokenType.UNPIVOT: &#39;UNPIVOT&#39;&gt;, &lt;TokenType.STRUCT: &#39;STRUCT&#39;&gt;, &lt;TokenType.KILL: &#39;KILL&#39;&gt;, &lt;TokenType.GEOMETRY: &#39;GEOMETRY&#39;&gt;, &lt;TokenType.UINT128: &#39;UINT128&#39;&gt;, &lt;TokenType.VIEW: &#39;VIEW&#39;&gt;, &lt;TokenType.SMALLSERIAL: &#39;SMALLSERIAL&#39;&gt;, &lt;TokenType.FIRST: &#39;FIRST&#39;&gt;, &lt;TokenType.AUTO_INCREMENT: &#39;AUTO_INCREMENT&#39;&gt;, &lt;TokenType.HSTORE: &#39;HSTORE&#39;&gt;, &lt;TokenType.UBIGINT: &#39;UBIGINT&#39;&gt;, &lt;TokenType.CURRENT_TIME: &#39;CURRENT_TIME&#39;&gt;, &lt;TokenType.TIMESTAMP_S: &#39;TIMESTAMP_S&#39;&gt;, &lt;TokenType.DIV: &#39;DIV&#39;&gt;, &lt;TokenType.MODEL: &#39;MODEL&#39;&gt;, &lt;TokenType.OVERLAPS: &#39;OVERLAPS&#39;&gt;, &lt;TokenType.UMEDIUMINT: &#39;UMEDIUMINT&#39;&gt;, &lt;TokenType.MERGE: &#39;MERGE&#39;&gt;, &lt;TokenType.SMALLMONEY: &#39;SMALLMONEY&#39;&gt;, &lt;TokenType.INT4MULTIRANGE: &#39;INT4MULTIRANGE&#39;&gt;, &lt;TokenType.ARRAY: &#39;ARRAY&#39;&gt;, &lt;TokenType.ENUM8: &#39;ENUM8&#39;&gt;, &lt;TokenType.MEDIUMINT: &#39;MEDIUMINT&#39;&gt;, &lt;TokenType.VARBINARY: &#39;VARBINARY&#39;&gt;, &lt;TokenType.LOWCARDINALITY: &#39;LOWCARDINALITY&#39;&gt;, &lt;TokenType.REPLACE: &#39;REPLACE&#39;&gt;, &lt;TokenType.HLLSKETCH: &#39;HLLSKETCH&#39;&gt;, &lt;TokenType.IS: &#39;IS&#39;&gt;, &lt;TokenType.INT: &#39;INT&#39;&gt;, &lt;TokenType.FILTER: &#39;FILTER&#39;&gt;, &lt;TokenType.BIGDECIMAL: &#39;BIGDECIMAL&#39;&gt;, &lt;TokenType.ENUM: &#39;ENUM&#39;&gt;, &lt;TokenType.TSRANGE: &#39;TSRANGE&#39;&gt;, &lt;TokenType.COMMIT: &#39;COMMIT&#39;&gt;, &lt;TokenType.UINT256: &#39;UINT256&#39;&gt;, &lt;TokenType.BIGINT: &#39;BIGINT&#39;&gt;, &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &lt;TokenType.DICTIONARY: &#39;DICTIONARY&#39;&gt;, &lt;TokenType.LONGBLOB: &#39;LONGBLOB&#39;&gt;, &lt;TokenType.VARIANT: &#39;VARIANT&#39;&gt;, &lt;TokenType.UNIQUEIDENTIFIER: &#39;UNIQUEIDENTIFIER&#39;&gt;, &lt;TokenType.PERCENT: &#39;PERCENT&#39;&gt;, &lt;TokenType.INT128: &#39;INT128&#39;&gt;, &lt;TokenType.FORMAT: &#39;FORMAT&#39;&gt;, &lt;TokenType.TEMPORARY: &#39;TEMPORARY&#39;&gt;, &lt;TokenType.PRAGMA: &#39;PRAGMA&#39;&gt;, &lt;TokenType.MAP: &#39;MAP&#39;&gt;, &lt;TokenType.KEEP: &#39;KEEP&#39;&gt;, &lt;TokenType.VAR: &#39;VAR&#39;&gt;, &lt;TokenType.SCHEMA: &#39;SCHEMA&#39;&gt;, &lt;TokenType.REFERENCES: &#39;REFERENCES&#39;&gt;, &lt;TokenType.BINARY: &#39;BINARY&#39;&gt;, &lt;TokenType.DATABASE: &#39;DATABASE&#39;&gt;, &lt;TokenType.CURRENT_USER: &#39;CURRENT_USER&#39;&gt;, &lt;TokenType.REFRESH: &#39;REFRESH&#39;&gt;, &lt;TokenType.OPERATOR: &#39;OPERATOR&#39;&gt;, &lt;TokenType.SERIAL: &#39;SERIAL&#39;&gt;, &lt;TokenType.DATETIME64: &#39;DATETIME64&#39;&gt;, &lt;TokenType.USE: &#39;USE&#39;&gt;, &lt;TokenType.SOME: &#39;SOME&#39;&gt;, &lt;TokenType.CURRENT_DATETIME: &#39;CURRENT_DATETIME&#39;&gt;, &lt;TokenType.SHOW: &#39;SHOW&#39;&gt;, &lt;TokenType.NUMMULTIRANGE: &#39;NUMMULTIRANGE&#39;&gt;, &lt;TokenType.OBJECT: &#39;OBJECT&#39;&gt;, &lt;TokenType.TIME: &#39;TIME&#39;&gt;, &lt;TokenType.PSEUDO_TYPE: &#39;PSEUDO_TYPE&#39;&gt;, &lt;TokenType.INT256: &#39;INT256&#39;&gt;, &lt;TokenType.DELETE: &#39;DELETE&#39;&gt;, &lt;TokenType.DOUBLE: &#39;DOUBLE&#39;&gt;, &lt;TokenType.INET: &#39;INET&#39;&gt;, &lt;TokenType.VOLATILE: &#39;VOLATILE&#39;&gt;, &lt;TokenType.UPDATE: &#39;UPDATE&#39;&gt;, &lt;TokenType.PIVOT: &#39;PIVOT&#39;&gt;, &lt;TokenType.INT8RANGE: &#39;INT8RANGE&#39;&gt;, &lt;TokenType.INT4RANGE: &#39;INT4RANGE&#39;&gt;, &lt;TokenType.NEXT: &#39;NEXT&#39;&gt;, &lt;TokenType.TIMETZ: &#39;TIMETZ&#39;&gt;, &lt;TokenType.DATETIME: &#39;DATETIME&#39;&gt;, &lt;TokenType.VARCHAR: &#39;VARCHAR&#39;&gt;, &lt;TokenType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;, &lt;TokenType.FUNCTION: &#39;FUNCTION&#39;&gt;, &lt;TokenType.LOAD: &#39;LOAD&#39;&gt;, &lt;TokenType.ENUM16: &#39;ENUM16&#39;&gt;, &lt;TokenType.RECURSIVE: &#39;RECURSIVE&#39;&gt;, &lt;TokenType.SEMI: &#39;SEMI&#39;&gt;, &lt;TokenType.ROW: &#39;ROW&#39;&gt;, &lt;TokenType.ANTI: &#39;ANTI&#39;&gt;, &lt;TokenType.INT8MULTIRANGE: &#39;INT8MULTIRANGE&#39;&gt;, &lt;TokenType.COMMENT: &#39;COMMENT&#39;&gt;, &lt;TokenType.MONEY: &#39;MONEY&#39;&gt;, &lt;TokenType.COLUMN: &#39;COLUMN&#39;&gt;, &lt;TokenType.UTINYINT: &#39;UTINYINT&#39;&gt;, &lt;TokenType.TIMESTAMP_NS: &#39;TIMESTAMP_NS&#39;&gt;, &lt;TokenType.LONGTEXT: &#39;LONGTEXT&#39;&gt;, &lt;TokenType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;, &lt;TokenType.ORDINALITY: &#39;ORDINALITY&#39;&gt;, &lt;TokenType.NUMRANGE: &#39;NUMRANGE&#39;&gt;, &lt;TokenType.TOP: &#39;TOP&#39;&gt;, &lt;TokenType.TINYINT: &#39;TINYINT&#39;&gt;, &lt;TokenType.IPPREFIX: &#39;IPPREFIX&#39;&gt;, &lt;TokenType.GEOGRAPHY: &#39;GEOGRAPHY&#39;&gt;, &lt;TokenType.INTERVAL: &#39;INTERVAL&#39;&gt;, &lt;TokenType.BIT: &#39;BIT&#39;&gt;, &lt;TokenType.FOREIGN_KEY: &#39;FOREIGN_KEY&#39;&gt;, &lt;TokenType.DATEMULTIRANGE: &#39;DATEMULTIRANGE&#39;&gt;, &lt;TokenType.ROWVERSION: &#39;ROWVERSION&#39;&gt;, &lt;TokenType.SMALLINT: &#39;SMALLINT&#39;&gt;, &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &lt;TokenType.ANY: &#39;ANY&#39;&gt;, &lt;TokenType.TINYTEXT: &#39;TINYTEXT&#39;&gt;, &lt;TokenType.UINT: &#39;UINT&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Teradata.Parser.TABLE_ALIAS_TOKENS-view-value"></label><span class="default_value">{&lt;TokenType.VARCHAR: &#39;VARCHAR&#39;&gt;, &lt;TokenType.OVERLAPS: &#39;OVERLAPS&#39;&gt;, &lt;TokenType.MERGE: &#39;MERGE&#39;&gt;, &lt;TokenType.TEXT: &#39;TEXT&#39;&gt;, &lt;TokenType.CURRENT_DATETIME: &#39;CURRENT_DATETIME&#39;&gt;, &lt;TokenType.DESC: &#39;DESC&#39;&gt;, &lt;TokenType.FILTER: &#39;FILTER&#39;&gt;, &lt;TokenType.END: &#39;END&#39;&gt;, &lt;TokenType.ASC: &#39;ASC&#39;&gt;, &lt;TokenType.SOME: &#39;SOME&#39;&gt;, &lt;TokenType.INT8MULTIRANGE: &#39;INT8MULTIRANGE&#39;&gt;, &lt;TokenType.ENUM16: &#39;ENUM16&#39;&gt;, &lt;TokenType.TABLE: &#39;TABLE&#39;&gt;, &lt;TokenType.FLOAT: &#39;FLOAT&#39;&gt;, &lt;TokenType.EXISTS: &#39;EXISTS&#39;&gt;, &lt;TokenType.ENUM8: &#39;ENUM8&#39;&gt;, &lt;TokenType.TIMESTAMPLTZ: &#39;TIMESTAMPLTZ&#39;&gt;, &lt;TokenType.YEAR: &#39;YEAR&#39;&gt;, &lt;TokenType.ENUM: &#39;ENUM&#39;&gt;, &lt;TokenType.HSTORE: &#39;HSTORE&#39;&gt;, &lt;TokenType.DIV: &#39;DIV&#39;&gt;, &lt;TokenType.FALSE: &#39;FALSE&#39;&gt;, &lt;TokenType.FORMAT: &#39;FORMAT&#39;&gt;, &lt;TokenType.MEDIUMBLOB: &#39;MEDIUMBLOB&#39;&gt;, &lt;TokenType.ANY: &#39;ANY&#39;&gt;, &lt;TokenType.IPADDRESS: &#39;IPADDRESS&#39;&gt;, &lt;TokenType.CURRENT_TIMESTAMP: &#39;CURRENT_TIMESTAMP&#39;&gt;, &lt;TokenType.KEEP: &#39;KEEP&#39;&gt;, &lt;TokenType.KILL: &#39;KILL&#39;&gt;, &lt;TokenType.TINYBLOB: &#39;TINYBLOB&#39;&gt;, &lt;TokenType.NUMRANGE: &#39;NUMRANGE&#39;&gt;, &lt;TokenType.UNIQUE: &#39;UNIQUE&#39;&gt;, &lt;TokenType.REPLACE: &#39;REPLACE&#39;&gt;, &lt;TokenType.DATEMULTIRANGE: &#39;DATEMULTIRANGE&#39;&gt;, &lt;TokenType.USE: &#39;USE&#39;&gt;, &lt;TokenType.AUTO_INCREMENT: &#39;AUTO_INCREMENT&#39;&gt;, &lt;TokenType.JSONB: &#39;JSONB&#39;&gt;, &lt;TokenType.TOP: &#39;TOP&#39;&gt;, &lt;TokenType.RECURSIVE: &#39;RECURSIVE&#39;&gt;, &lt;TokenType.INT128: &#39;INT128&#39;&gt;, &lt;TokenType.OPERATOR: &#39;OPERATOR&#39;&gt;, &lt;TokenType.OVERWRITE: &#39;OVERWRITE&#39;&gt;, &lt;TokenType.SMALLSERIAL: &#39;SMALLSERIAL&#39;&gt;, &lt;TokenType.UUID: &#39;UUID&#39;&gt;, &lt;TokenType.SET: &#39;SET&#39;&gt;, &lt;TokenType.USERDEFINED: &#39;USERDEFINED&#39;&gt;, &lt;TokenType.VARBINARY: &#39;VARBINARY&#39;&gt;, &lt;TokenType.SMALLMONEY: &#39;SMALLMONEY&#39;&gt;, &lt;TokenType.BIGSERIAL: &#39;BIGSERIAL&#39;&gt;, &lt;TokenType.CONSTRAINT: &#39;CONSTRAINT&#39;&gt;, &lt;TokenType.DICTIONARY: &#39;DICTIONARY&#39;&gt;, &lt;TokenType.INT: &#39;INT&#39;&gt;, &lt;TokenType.INDEX: &#39;INDEX&#39;&gt;, &lt;TokenType.BIGINT: &#39;BIGINT&#39;&gt;, &lt;TokenType.NCHAR: &#39;NCHAR&#39;&gt;, &lt;TokenType.ROW: &#39;ROW&#39;&gt;, &lt;TokenType.DEFAULT: &#39;DEFAULT&#39;&gt;, &lt;TokenType.REFERENCES: &#39;REFERENCES&#39;&gt;, &lt;TokenType.UNPIVOT: &#39;UNPIVOT&#39;&gt;, &lt;TokenType.LOAD: &#39;LOAD&#39;&gt;, &lt;TokenType.NESTED: &#39;NESTED&#39;&gt;, &lt;TokenType.NULLABLE: &#39;NULLABLE&#39;&gt;, &lt;TokenType.BEGIN: &#39;BEGIN&#39;&gt;, &lt;TokenType.GEOGRAPHY: &#39;GEOGRAPHY&#39;&gt;, &lt;TokenType.UNKNOWN: &#39;UNKNOWN&#39;&gt;, &lt;TokenType.ESCAPE: &#39;ESCAPE&#39;&gt;, &lt;TokenType.SEMI: &#39;SEMI&#39;&gt;, &lt;TokenType.FUNCTION: &#39;FUNCTION&#39;&gt;, &lt;TokenType.TSTZMULTIRANGE: &#39;TSTZMULTIRANGE&#39;&gt;, &lt;TokenType.CURRENT_DATE: &#39;CURRENT_DATE&#39;&gt;, &lt;TokenType.SETTINGS: &#39;SETTINGS&#39;&gt;, &lt;TokenType.OBJECT_IDENTIFIER: &#39;OBJECT_IDENTIFIER&#39;&gt;, &lt;TokenType.INT8RANGE: &#39;INT8RANGE&#39;&gt;, &lt;TokenType.ARRAY: &#39;ARRAY&#39;&gt;, &lt;TokenType.LOWCARDINALITY: &#39;LOWCARDINALITY&#39;&gt;, &lt;TokenType.PSEUDO_TYPE: &#39;PSEUDO_TYPE&#39;&gt;, &lt;TokenType.UMEDIUMINT: &#39;UMEDIUMINT&#39;&gt;, &lt;TokenType.TIME: &#39;TIME&#39;&gt;, &lt;TokenType.TINYINT: &#39;TINYINT&#39;&gt;, &lt;TokenType.PERCENT: &#39;PERCENT&#39;&gt;, &lt;TokenType.STRUCT: &#39;STRUCT&#39;&gt;, &lt;TokenType.BOOLEAN: &#39;BOOLEAN&#39;&gt;, &lt;TokenType.CHAR: &#39;CHAR&#39;&gt;, &lt;TokenType.HLLSKETCH: &#39;HLLSKETCH&#39;&gt;, &lt;TokenType.VARIANT: &#39;VARIANT&#39;&gt;, &lt;TokenType.UINT128: &#39;UINT128&#39;&gt;, &lt;TokenType.LONGTEXT: &#39;LONGTEXT&#39;&gt;, &lt;TokenType.JSON: &#39;JSON&#39;&gt;, &lt;TokenType.DECIMAL: &#39;DECIMAL&#39;&gt;, &lt;TokenType.INTERVAL: &#39;INTERVAL&#39;&gt;, &lt;TokenType.INT256: &#39;INT256&#39;&gt;, &lt;TokenType.DATABASE: &#39;DATABASE&#39;&gt;, &lt;TokenType.ALL: &#39;ALL&#39;&gt;, &lt;TokenType.DATERANGE: &#39;DATERANGE&#39;&gt;, &lt;TokenType.DESCRIBE: &#39;DESCRIBE&#39;&gt;, &lt;TokenType.PIVOT: &#39;PIVOT&#39;&gt;, &lt;TokenType.OBJECT: &#39;OBJECT&#39;&gt;, &lt;TokenType.SCHEMA: &#39;SCHEMA&#39;&gt;, &lt;TokenType.TIMESTAMPTZ: &#39;TIMESTAMPTZ&#39;&gt;, &lt;TokenType.MONEY: &#39;MONEY&#39;&gt;, &lt;TokenType.PARTITION: &#39;PARTITION&#39;&gt;, &lt;TokenType.ROWS: &#39;ROWS&#39;&gt;, &lt;TokenType.COLLATE: &#39;COLLATE&#39;&gt;, &lt;TokenType.DATE: &#39;DATE&#39;&gt;, &lt;TokenType.SERIAL: &#39;SERIAL&#39;&gt;, &lt;TokenType.MAP: &#39;MAP&#39;&gt;, &lt;TokenType.NEXT: &#39;NEXT&#39;&gt;, &lt;TokenType.NUMMULTIRANGE: &#39;NUMMULTIRANGE&#39;&gt;, &lt;TokenType.COMMIT: &#39;COMMIT&#39;&gt;, &lt;TokenType.BINARY: &#39;BINARY&#39;&gt;, &lt;TokenType.IPPREFIX: &#39;IPPREFIX&#39;&gt;, &lt;TokenType.INET: &#39;INET&#39;&gt;, &lt;TokenType.IS: &#39;IS&#39;&gt;, &lt;TokenType.MODEL: &#39;MODEL&#39;&gt;, &lt;TokenType.TIMESTAMP_NS: &#39;TIMESTAMP_NS&#39;&gt;, &lt;TokenType.UTINYINT: &#39;UTINYINT&#39;&gt;, &lt;TokenType.SMALLINT: &#39;SMALLINT&#39;&gt;, &lt;TokenType.UDECIMAL: &#39;UDECIMAL&#39;&gt;, &lt;TokenType.CURRENT_USER: &#39;CURRENT_USER&#39;&gt;, &lt;TokenType.FOREIGN_KEY: &#39;FOREIGN_KEY&#39;&gt;, &lt;TokenType.MEDIUMTEXT: &#39;MEDIUMTEXT&#39;&gt;, &lt;TokenType.DOUBLE: &#39;DOUBLE&#39;&gt;, &lt;TokenType.FIXEDSTRING: &#39;FIXEDSTRING&#39;&gt;, &lt;TokenType.SHOW: &#39;SHOW&#39;&gt;, &lt;TokenType.TEMPORARY: &#39;TEMPORARY&#39;&gt;, &lt;TokenType.NVARCHAR: &#39;NVARCHAR&#39;&gt;, &lt;TokenType.COMMENT: &#39;COMMENT&#39;&gt;, &lt;TokenType.XML: &#39;XML&#39;&gt;, &lt;TokenType.ISNULL: &#39;ISNULL&#39;&gt;, &lt;TokenType.DATETIME: &#39;DATETIME&#39;&gt;, &lt;TokenType.IMAGE: &#39;IMAGE&#39;&gt;, &lt;TokenType.TIMETZ: &#39;TIMETZ&#39;&gt;, &lt;TokenType.LONGBLOB: &#39;LONGBLOB&#39;&gt;, &lt;TokenType.UNIQUEIDENTIFIER: &#39;UNIQUEIDENTIFIER&#39;&gt;, &lt;TokenType.ORDINALITY: &#39;ORDINALITY&#39;&gt;, &lt;TokenType.REFRESH: &#39;REFRESH&#39;&gt;, &lt;TokenType.TSTZRANGE: &#39;TSTZRANGE&#39;&gt;, &lt;TokenType.COLUMN: &#39;COLUMN&#39;&gt;, &lt;TokenType.USMALLINT: &#39;USMALLINT&#39;&gt;, &lt;TokenType.VAR: &#39;VAR&#39;&gt;, &lt;TokenType.NULL: &#39;NULL&#39;&gt;, &lt;TokenType.CASE: &#39;CASE&#39;&gt;, &lt;TokenType.PROCEDURE: &#39;PROCEDURE&#39;&gt;, &lt;TokenType.UINT: &#39;UINT&#39;&gt;, &lt;TokenType.CURRENT_TIME: &#39;CURRENT_TIME&#39;&gt;, &lt;TokenType.TSRANGE: &#39;TSRANGE&#39;&gt;, &lt;TokenType.TINYTEXT: &#39;TINYTEXT&#39;&gt;, &lt;TokenType.DELETE: &#39;DELETE&#39;&gt;, &lt;TokenType.MEDIUMINT: &#39;MEDIUMINT&#39;&gt;, &lt;TokenType.EXECUTE: &#39;EXECUTE&#39;&gt;, &lt;TokenType.TIMESTAMP_S: &#39;TIMESTAMP_S&#39;&gt;, &lt;TokenType.ANTI: &#39;ANTI&#39;&gt;, &lt;TokenType.GEOMETRY: &#39;GEOMETRY&#39;&gt;, &lt;TokenType.RANGE: &#39;RANGE&#39;&gt;, &lt;TokenType.TIMESTAMP: &#39;TIMESTAMP&#39;&gt;, &lt;TokenType.CACHE: &#39;CACHE&#39;&gt;, &lt;TokenType.VIEW: &#39;VIEW&#39;&gt;, &lt;TokenType.UPDATE: &#39;UPDATE&#39;&gt;, &lt;TokenType.VOLATILE: &#39;VOLATILE&#39;&gt;, &lt;TokenType.ROWVERSION: &#39;ROWVERSION&#39;&gt;, &lt;TokenType.TIMESTAMP_MS: &#39;TIMESTAMP_MS&#39;&gt;, &lt;TokenType.BIT: &#39;BIT&#39;&gt;, &lt;TokenType.COMMAND: &#39;COMMAND&#39;&gt;, &lt;TokenType.TSMULTIRANGE: &#39;TSMULTIRANGE&#39;&gt;, &lt;TokenType.FIRST: &#39;FIRST&#39;&gt;, &lt;TokenType.BIGDECIMAL: &#39;BIGDECIMAL&#39;&gt;, &lt;TokenType.SUPER: &#39;SUPER&#39;&gt;, &lt;TokenType.UBIGINT: &#39;UBIGINT&#39;&gt;, &lt;TokenType.TRUE: &#39;TRUE&#39;&gt;, &lt;TokenType.PRAGMA: &#39;PRAGMA&#39;&gt;, &lt;TokenType.DATETIME64: &#39;DATETIME64&#39;&gt;, &lt;TokenType.UINT256: &#39;UINT256&#39;&gt;, &lt;TokenType.INT4MULTIRANGE: &#39;INT4MULTIRANGE&#39;&gt;, &lt;TokenType.INT4RANGE: &#39;INT4RANGE&#39;&gt;}</span>
 
         
     </div>
     <a class="headerlink" href="#Teradata.Parser.TABLE_ALIAS_TOKENS"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Parser.TYPED_DIVISION" class="classattr">
-                                <div class="attr variable">
-            <span class="name">TYPED_DIVISION</span>        =
-<span class="default_value">True</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Parser.TYPED_DIVISION"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Parser.TOKENIZER_CLASS" class="classattr">
-                                <div class="attr variable">
-            <span class="name">TOKENIZER_CLASS</span><span class="annotation">: Type[<a href="../tokens.html#Tokenizer">sqlglot.tokens.Tokenizer</a>]</span>        =
-<span class="default_value">&lt;class &#39;<a href="#Teradata.Tokenizer">Teradata.Tokenizer</a>&#39;&gt;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Parser.TOKENIZER_CLASS"></a>
     
     
 
@@ -1475,45 +1389,6 @@ Default: 3</li>
     
 
                             </div>
-                            <div id="Teradata.Parser.FORMAT_TRIE" class="classattr">
-                                <div class="attr variable">
-            <span class="name">FORMAT_TRIE</span><span class="annotation">: Dict</span>        =
-<input id="Teradata.Parser.FORMAT_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Parser.FORMAT_TRIE-view-value"></label><span class="default_value">{&#39;Y&#39;: {0: True, &#39;Y&#39;: {&#39;Y&#39;: {&#39;Y&#39;: {0: True}}, 0: True}}, &#39;M&#39;: {&#39;M&#39;: {&#39;M&#39;: {&#39;M&#39;: {0: True}, 0: True}, 0: True}, 0: True}, &#39;D&#39;: {&#39;D&#39;: {0: True}, 0: True}, &#39;H&#39;: {&#39;H&#39;: {0: True}, 0: True}, &#39;S&#39;: {&#39;S&#39;: {0: True, &#39;S&#39;: {&#39;S&#39;: {&#39;S&#39;: {&#39;S&#39;: {0: True}}}}}, 0: True}, &#39;E&#39;: {0: True, &#39;E&#39;: {0: True, &#39;E&#39;: {0: True, &#39;E&#39;: {0: True}}}}}</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Parser.FORMAT_TRIE"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Parser.TIME_MAPPING" class="classattr">
-                                <div class="attr variable">
-            <span class="name">TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
-<input id="Teradata.Parser.TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Parser.TIME_MAPPING-view-value"></label><span class="default_value">{&#39;Y&#39;: &#39;%Y&#39;, &#39;YYYY&#39;: &#39;%Y&#39;, &#39;YY&#39;: &#39;%y&#39;, &#39;MMMM&#39;: &#39;%B&#39;, &#39;MMM&#39;: &#39;%b&#39;, &#39;DD&#39;: &#39;%d&#39;, &#39;D&#39;: &#39;%-d&#39;, &#39;HH&#39;: &#39;%H&#39;, &#39;H&#39;: &#39;%-H&#39;, &#39;MM&#39;: &#39;%M&#39;, &#39;M&#39;: &#39;%-M&#39;, &#39;SS&#39;: &#39;%S&#39;, &#39;S&#39;: &#39;%-S&#39;, &#39;SSSSSS&#39;: &#39;%f&#39;, &#39;E&#39;: &#39;%a&#39;, &#39;EE&#39;: &#39;%a&#39;, &#39;EEE&#39;: &#39;%a&#39;, &#39;EEEE&#39;: &#39;%A&#39;}</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Parser.TIME_MAPPING"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Parser.TIME_TRIE" class="classattr">
-                                <div class="attr variable">
-            <span class="name">TIME_TRIE</span><span class="annotation">: Dict</span>        =
-<input id="Teradata.Parser.TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Parser.TIME_TRIE-view-value"></label><span class="default_value">{&#39;Y&#39;: {0: True, &#39;Y&#39;: {&#39;Y&#39;: {&#39;Y&#39;: {0: True}}, 0: True}}, &#39;M&#39;: {&#39;M&#39;: {&#39;M&#39;: {&#39;M&#39;: {0: True}, 0: True}, 0: True}, 0: True}, &#39;D&#39;: {&#39;D&#39;: {0: True}, 0: True}, &#39;H&#39;: {&#39;H&#39;: {0: True}, 0: True}, &#39;S&#39;: {&#39;S&#39;: {0: True, &#39;S&#39;: {&#39;S&#39;: {&#39;S&#39;: {&#39;S&#39;: {0: True}}}}}, 0: True}, &#39;E&#39;: {0: True, &#39;E&#39;: {0: True, &#39;E&#39;: {0: True, &#39;E&#39;: {0: True}}}}}</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Parser.TIME_TRIE"></a>
-    
-    
-
-                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
@@ -1527,7 +1402,7 @@ Default: 3</li>
                 <dd id="Teradata.Parser.TYPE_TOKENS" class="variable"><a href="../parser.html#Parser.TYPE_TOKENS">TYPE_TOKENS</a></dd>
                 <dd id="Teradata.Parser.SIGNED_TO_UNSIGNED_TYPE_TOKEN" class="variable"><a href="../parser.html#Parser.SIGNED_TO_UNSIGNED_TYPE_TOKEN">SIGNED_TO_UNSIGNED_TYPE_TOKEN</a></dd>
                 <dd id="Teradata.Parser.SUBQUERY_PREDICATES" class="variable"><a href="../parser.html#Parser.SUBQUERY_PREDICATES">SUBQUERY_PREDICATES</a></dd>
-                <dd id="Teradata.Parser.RESERVED_KEYWORDS" class="variable"><a href="../parser.html#Parser.RESERVED_KEYWORDS">RESERVED_KEYWORDS</a></dd>
+                <dd id="Teradata.Parser.RESERVED_TOKENS" class="variable"><a href="../parser.html#Parser.RESERVED_TOKENS">RESERVED_TOKENS</a></dd>
                 <dd id="Teradata.Parser.DB_CREATABLES" class="variable"><a href="../parser.html#Parser.DB_CREATABLES">DB_CREATABLES</a></dd>
                 <dd id="Teradata.Parser.CREATABLES" class="variable"><a href="../parser.html#Parser.CREATABLES">CREATABLES</a></dd>
                 <dd id="Teradata.Parser.ID_VAR_TOKENS" class="variable"><a href="../parser.html#Parser.ID_VAR_TOKENS">ID_VAR_TOKENS</a></dd>
@@ -1589,24 +1464,14 @@ Default: 3</li>
                 <dd id="Teradata.Parser.CONCAT_NULL_OUTPUTS_STRING" class="variable"><a href="../parser.html#Parser.CONCAT_NULL_OUTPUTS_STRING">CONCAT_NULL_OUTPUTS_STRING</a></dd>
                 <dd id="Teradata.Parser.PREFIXED_PIVOT_COLUMNS" class="variable"><a href="../parser.html#Parser.PREFIXED_PIVOT_COLUMNS">PREFIXED_PIVOT_COLUMNS</a></dd>
                 <dd id="Teradata.Parser.IDENTIFY_PIVOT_STRINGS" class="variable"><a href="../parser.html#Parser.IDENTIFY_PIVOT_STRINGS">IDENTIFY_PIVOT_STRINGS</a></dd>
-                <dd id="Teradata.Parser.LOG_BASE_FIRST" class="variable"><a href="../parser.html#Parser.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
                 <dd id="Teradata.Parser.LOG_DEFAULTS_TO_LN" class="variable"><a href="../parser.html#Parser.LOG_DEFAULTS_TO_LN">LOG_DEFAULTS_TO_LN</a></dd>
-                <dd id="Teradata.Parser.ALTER_TABLE_ADD_COLUMN_KEYWORD" class="variable"><a href="../parser.html#Parser.ALTER_TABLE_ADD_COLUMN_KEYWORD">ALTER_TABLE_ADD_COLUMN_KEYWORD</a></dd>
+                <dd id="Teradata.Parser.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN" class="variable"><a href="../parser.html#Parser.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN">ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN</a></dd>
                 <dd id="Teradata.Parser.SET_REQUIRES_ASSIGNMENT_DELIMITER" class="variable"><a href="../parser.html#Parser.SET_REQUIRES_ASSIGNMENT_DELIMITER">SET_REQUIRES_ASSIGNMENT_DELIMITER</a></dd>
                 <dd id="Teradata.Parser.TRIM_PATTERN_FIRST" class="variable"><a href="../parser.html#Parser.TRIM_PATTERN_FIRST">TRIM_PATTERN_FIRST</a></dd>
-                <dd id="Teradata.Parser.SAFE_DIVISION" class="variable"><a href="../parser.html#Parser.SAFE_DIVISION">SAFE_DIVISION</a></dd>
-                <dd id="Teradata.Parser.INDEX_OFFSET" class="variable"><a href="../parser.html#Parser.INDEX_OFFSET">INDEX_OFFSET</a></dd>
-                <dd id="Teradata.Parser.UNNEST_COLUMN_ONLY" class="variable"><a href="../parser.html#Parser.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
-                <dd id="Teradata.Parser.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../parser.html#Parser.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
-                <dd id="Teradata.Parser.STRICT_STRING_CONCAT" class="variable"><a href="../parser.html#Parser.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
-                <dd id="Teradata.Parser.DPIPE_IS_STRING_CONCAT" class="variable"><a href="../parser.html#Parser.DPIPE_IS_STRING_CONCAT">DPIPE_IS_STRING_CONCAT</a></dd>
-                <dd id="Teradata.Parser.SUPPORTS_USER_DEFINED_TYPES" class="variable"><a href="../parser.html#Parser.SUPPORTS_USER_DEFINED_TYPES">SUPPORTS_USER_DEFINED_TYPES</a></dd>
-                <dd id="Teradata.Parser.NORMALIZE_FUNCTIONS" class="variable"><a href="../parser.html#Parser.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
-                <dd id="Teradata.Parser.NULL_ORDERING" class="variable"><a href="../parser.html#Parser.NULL_ORDERING">NULL_ORDERING</a></dd>
-                <dd id="Teradata.Parser.FORMAT_MAPPING" class="variable"><a href="../parser.html#Parser.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
                 <dd id="Teradata.Parser.error_level" class="variable"><a href="../parser.html#Parser.error_level">error_level</a></dd>
                 <dd id="Teradata.Parser.error_message_context" class="variable"><a href="../parser.html#Parser.error_message_context">error_message_context</a></dd>
                 <dd id="Teradata.Parser.max_errors" class="variable"><a href="../parser.html#Parser.max_errors">max_errors</a></dd>
+                <dd id="Teradata.Parser.dialect" class="variable"><a href="../parser.html#Parser.dialect">dialect</a></dd>
                 <dd id="Teradata.Parser.reset" class="function"><a href="../parser.html#Parser.reset">reset</a></dd>
                 <dd id="Teradata.Parser.parse" class="function"><a href="../parser.html#Parser.parse">parse</a></dd>
                 <dd id="Teradata.Parser.parse_into" class="function"><a href="../parser.html#Parser.parse_into">parse_into</a></dd>
@@ -2063,248 +1928,11 @@ Default: True</li>
     
 
                             </div>
-                            <div id="Teradata.Generator.TYPED_DIVISION" class="classattr">
-                                <div class="attr variable">
-            <span class="name">TYPED_DIVISION</span>        =
-<span class="default_value">True</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.TYPED_DIVISION"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.INVERSE_TIME_MAPPING" class="classattr">
-                                <div class="attr variable">
-            <span class="name">INVERSE_TIME_MAPPING</span><span class="annotation">: Dict[str, str]</span>        =
-<input id="Teradata.Generator.INVERSE_TIME_MAPPING-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Generator.INVERSE_TIME_MAPPING-view-value"></label><span class="default_value">{&#39;%Y&#39;: &#39;YYYY&#39;, &#39;%y&#39;: &#39;YY&#39;, &#39;%B&#39;: &#39;MMMM&#39;, &#39;%b&#39;: &#39;MMM&#39;, &#39;%d&#39;: &#39;DD&#39;, &#39;%-d&#39;: &#39;D&#39;, &#39;%H&#39;: &#39;HH&#39;, &#39;%-H&#39;: &#39;H&#39;, &#39;%M&#39;: &#39;MM&#39;, &#39;%-M&#39;: &#39;M&#39;, &#39;%S&#39;: &#39;SS&#39;, &#39;%-S&#39;: &#39;S&#39;, &#39;%f&#39;: &#39;SSSSSS&#39;, &#39;%a&#39;: &#39;EEE&#39;, &#39;%A&#39;: &#39;EEEE&#39;}</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.INVERSE_TIME_MAPPING"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.INVERSE_TIME_TRIE" class="classattr">
-                                <div class="attr variable">
-            <span class="name">INVERSE_TIME_TRIE</span><span class="annotation">: Dict</span>        =
-<input id="Teradata.Generator.INVERSE_TIME_TRIE-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Teradata.Generator.INVERSE_TIME_TRIE-view-value"></label><span class="default_value">{&#39;%&#39;: {&#39;Y&#39;: {0: True}, &#39;y&#39;: {0: True}, &#39;B&#39;: {0: True}, &#39;b&#39;: {0: True}, &#39;d&#39;: {0: True}, &#39;-&#39;: {&#39;d&#39;: {0: True}, &#39;H&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;S&#39;: {0: True}}, &#39;H&#39;: {0: True}, &#39;M&#39;: {0: True}, &#39;S&#39;: {0: True}, &#39;f&#39;: {0: True}, &#39;a&#39;: {0: True}, &#39;A&#39;: {0: True}}}</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.INVERSE_TIME_TRIE"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.INVERSE_ESCAPE_SEQUENCES" class="classattr">
-                                <div class="attr variable">
-            <span class="name">INVERSE_ESCAPE_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
-<span class="default_value">{}</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.INVERSE_ESCAPE_SEQUENCES"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.can_identify" class="classattr">
-                                        <input id="Teradata.Generator.can_identify-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-<div class="attr function">
-                    <div class="decorator">@classmethod</div>
-
-        <span class="def">def</span>
-        <span class="name">can_identify</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">text</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s1">&#39;safe&#39;</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
-
-                <label class="view-source-button" for="Teradata.Generator.can_identify-view-source"><span>View Source</span></label>
-
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.can_identify"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Teradata.Generator.can_identify-288"><a href="#Teradata.Generator.can_identify-288"><span class="linenos">288</span></a>    <span class="nd">@classmethod</span>
-</span><span id="Teradata.Generator.can_identify-289"><a href="#Teradata.Generator.can_identify-289"><span class="linenos">289</span></a>    <span class="k">def</span> <span class="nf">can_identify</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identify</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">=</span> <span class="s2">&quot;safe&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Teradata.Generator.can_identify-290"><a href="#Teradata.Generator.can_identify-290"><span class="linenos">290</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if text can be identified given an identify option.</span>
-</span><span id="Teradata.Generator.can_identify-291"><a href="#Teradata.Generator.can_identify-291"><span class="linenos">291</span></a>
-</span><span id="Teradata.Generator.can_identify-292"><a href="#Teradata.Generator.can_identify-292"><span class="linenos">292</span></a><span class="sd">        Args:</span>
-</span><span id="Teradata.Generator.can_identify-293"><a href="#Teradata.Generator.can_identify-293"><span class="linenos">293</span></a><span class="sd">            text: The text to check.</span>
-</span><span id="Teradata.Generator.can_identify-294"><a href="#Teradata.Generator.can_identify-294"><span class="linenos">294</span></a><span class="sd">            identify:</span>
-</span><span id="Teradata.Generator.can_identify-295"><a href="#Teradata.Generator.can_identify-295"><span class="linenos">295</span></a><span class="sd">                &quot;always&quot; or `True`: Always returns true.</span>
-</span><span id="Teradata.Generator.can_identify-296"><a href="#Teradata.Generator.can_identify-296"><span class="linenos">296</span></a><span class="sd">                &quot;safe&quot;: True if the identifier is case-insensitive.</span>
-</span><span id="Teradata.Generator.can_identify-297"><a href="#Teradata.Generator.can_identify-297"><span class="linenos">297</span></a>
-</span><span id="Teradata.Generator.can_identify-298"><a href="#Teradata.Generator.can_identify-298"><span class="linenos">298</span></a><span class="sd">        Returns:</span>
-</span><span id="Teradata.Generator.can_identify-299"><a href="#Teradata.Generator.can_identify-299"><span class="linenos">299</span></a><span class="sd">            Whether or not the given text can be identified.</span>
-</span><span id="Teradata.Generator.can_identify-300"><a href="#Teradata.Generator.can_identify-300"><span class="linenos">300</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="Teradata.Generator.can_identify-301"><a href="#Teradata.Generator.can_identify-301"><span class="linenos">301</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;always&quot;</span><span class="p">:</span>
-</span><span id="Teradata.Generator.can_identify-302"><a href="#Teradata.Generator.can_identify-302"><span class="linenos">302</span></a>            <span class="k">return</span> <span class="kc">True</span>
-</span><span id="Teradata.Generator.can_identify-303"><a href="#Teradata.Generator.can_identify-303"><span class="linenos">303</span></a>
-</span><span id="Teradata.Generator.can_identify-304"><a href="#Teradata.Generator.can_identify-304"><span class="linenos">304</span></a>        <span class="k">if</span> <span class="n">identify</span> <span class="o">==</span> <span class="s2">&quot;safe&quot;</span><span class="p">:</span>
-</span><span id="Teradata.Generator.can_identify-305"><a href="#Teradata.Generator.can_identify-305"><span class="linenos">305</span></a>            <span class="k">return</span> <span class="ow">not</span> <span class="bp">cls</span><span class="o">.</span><span class="n">case_sensitive</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="Teradata.Generator.can_identify-306"><a href="#Teradata.Generator.can_identify-306"><span class="linenos">306</span></a>
-</span><span id="Teradata.Generator.can_identify-307"><a href="#Teradata.Generator.can_identify-307"><span class="linenos">307</span></a>        <span class="k">return</span> <span class="kc">False</span>
-</span></pre></div>
-
-
-            <div class="docstring"><p>Checks if text can be identified given an identify option.</p>
-
-<h6 id="arguments">Arguments:</h6>
-
-<ul>
-<li><strong>text:</strong>  The text to check.</li>
-<li><strong>identify:</strong>  "always" or <code>True</code>: Always returns true.
-"safe": True if the identifier is case-insensitive.</li>
-</ul>
-
-<h6 id="returns">Returns:</h6>
-
-<blockquote>
-  <p>Whether or not the given text can be identified.</p>
-</blockquote>
-</div>
-
-
-                            </div>
-                            <div id="Teradata.Generator.QUOTE_START" class="classattr">
-                                <div class="attr variable">
-            <span class="name">QUOTE_START</span>        =
-<span class="default_value">&#34;&#39;&#34;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.QUOTE_START"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.QUOTE_END" class="classattr">
-                                <div class="attr variable">
-            <span class="name">QUOTE_END</span>        =
-<span class="default_value">&#34;&#39;&#34;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.QUOTE_END"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.IDENTIFIER_START" class="classattr">
-                                <div class="attr variable">
-            <span class="name">IDENTIFIER_START</span>        =
-<span class="default_value">&#39;&#34;&#39;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.IDENTIFIER_START"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.IDENTIFIER_END" class="classattr">
-                                <div class="attr variable">
-            <span class="name">IDENTIFIER_END</span>        =
-<span class="default_value">&#39;&#34;&#39;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.IDENTIFIER_END"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.TOKENIZER_CLASS" class="classattr">
-                                <div class="attr variable">
-            <span class="name">TOKENIZER_CLASS</span>        =
-<span class="default_value">&lt;class &#39;<a href="#Teradata.Tokenizer">Teradata.Tokenizer</a>&#39;&gt;</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.TOKENIZER_CLASS"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.BIT_START" class="classattr">
-                                <div class="attr variable">
-            <span class="name">BIT_START</span><span class="annotation">: Optional[str]</span>        =
-<span class="default_value">None</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.BIT_START"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.BIT_END" class="classattr">
-                                <div class="attr variable">
-            <span class="name">BIT_END</span><span class="annotation">: Optional[str]</span>        =
-<span class="default_value">None</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.BIT_END"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.HEX_START" class="classattr">
-                                <div class="attr variable">
-            <span class="name">HEX_START</span><span class="annotation">: Optional[str]</span>        =
-<span class="default_value">None</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.HEX_START"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.HEX_END" class="classattr">
-                                <div class="attr variable">
-            <span class="name">HEX_END</span><span class="annotation">: Optional[str]</span>        =
-<span class="default_value">None</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.HEX_END"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.BYTE_START" class="classattr">
-                                <div class="attr variable">
-            <span class="name">BYTE_START</span><span class="annotation">: Optional[str]</span>        =
-<span class="default_value">None</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.BYTE_START"></a>
-    
-    
-
-                            </div>
-                            <div id="Teradata.Generator.BYTE_END" class="classattr">
-                                <div class="attr variable">
-            <span class="name">BYTE_END</span><span class="annotation">: Optional[str]</span>        =
-<span class="default_value">None</span>
-
-        
-    </div>
-    <a class="headerlink" href="#Teradata.Generator.BYTE_END"></a>
-    
-    
-
-                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
                                     <div><dt><a href="../generator.html#Generator">sqlglot.generator.Generator</a></dt>
                                 <dd id="Teradata.Generator.__init__" class="function"><a href="../generator.html#Generator.__init__">Generator</a></dd>
-                <dd id="Teradata.Generator.LOG_BASE_FIRST" class="variable"><a href="../generator.html#Generator.LOG_BASE_FIRST">LOG_BASE_FIRST</a></dd>
                 <dd id="Teradata.Generator.NULL_ORDERING_SUPPORTED" class="variable"><a href="../generator.html#Generator.NULL_ORDERING_SUPPORTED">NULL_ORDERING_SUPPORTED</a></dd>
                 <dd id="Teradata.Generator.LOCKING_READS_SUPPORTED" class="variable"><a href="../generator.html#Generator.LOCKING_READS_SUPPORTED">LOCKING_READS_SUPPORTED</a></dd>
                 <dd id="Teradata.Generator.EXPLICIT_UNION" class="variable"><a href="../generator.html#Generator.EXPLICIT_UNION">EXPLICIT_UNION</a></dd>
@@ -2329,11 +1957,10 @@ Default: True</li>
                 <dd id="Teradata.Generator.TZ_TO_WITH_TIME_ZONE" class="variable"><a href="../generator.html#Generator.TZ_TO_WITH_TIME_ZONE">TZ_TO_WITH_TIME_ZONE</a></dd>
                 <dd id="Teradata.Generator.NVL2_SUPPORTED" class="variable"><a href="../generator.html#Generator.NVL2_SUPPORTED">NVL2_SUPPORTED</a></dd>
                 <dd id="Teradata.Generator.VALUES_AS_TABLE" class="variable"><a href="../generator.html#Generator.VALUES_AS_TABLE">VALUES_AS_TABLE</a></dd>
-                <dd id="Teradata.Generator.ALTER_TABLE_ADD_COLUMN_KEYWORD" class="variable"><a href="../generator.html#Generator.ALTER_TABLE_ADD_COLUMN_KEYWORD">ALTER_TABLE_ADD_COLUMN_KEYWORD</a></dd>
+                <dd id="Teradata.Generator.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD" class="variable"><a href="../generator.html#Generator.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD">ALTER_TABLE_INCLUDE_COLUMN_KEYWORD</a></dd>
                 <dd id="Teradata.Generator.UNNEST_WITH_ORDINALITY" class="variable"><a href="../generator.html#Generator.UNNEST_WITH_ORDINALITY">UNNEST_WITH_ORDINALITY</a></dd>
                 <dd id="Teradata.Generator.AGGREGATE_FILTER_SUPPORTED" class="variable"><a href="../generator.html#Generator.AGGREGATE_FILTER_SUPPORTED">AGGREGATE_FILTER_SUPPORTED</a></dd>
                 <dd id="Teradata.Generator.SEMI_ANTI_JOIN_WITH_SIDE" class="variable"><a href="../generator.html#Generator.SEMI_ANTI_JOIN_WITH_SIDE">SEMI_ANTI_JOIN_WITH_SIDE</a></dd>
-                <dd id="Teradata.Generator.SUPPORTS_PARAMETERS" class="variable"><a href="../generator.html#Generator.SUPPORTS_PARAMETERS">SUPPORTS_PARAMETERS</a></dd>
                 <dd id="Teradata.Generator.COMPUTED_COLUMN_WITH_TYPE" class="variable"><a href="../generator.html#Generator.COMPUTED_COLUMN_WITH_TYPE">COMPUTED_COLUMN_WITH_TYPE</a></dd>
                 <dd id="Teradata.Generator.SUPPORTS_TABLE_COPY" class="variable"><a href="../generator.html#Generator.SUPPORTS_TABLE_COPY">SUPPORTS_TABLE_COPY</a></dd>
                 <dd id="Teradata.Generator.TABLESAMPLE_REQUIRES_PARENS" class="variable"><a href="../generator.html#Generator.TABLESAMPLE_REQUIRES_PARENS">TABLESAMPLE_REQUIRES_PARENS</a></dd>
@@ -2341,7 +1968,6 @@ Default: True</li>
                 <dd id="Teradata.Generator.DATA_TYPE_SPECIFIERS_ALLOWED" class="variable"><a href="../generator.html#Generator.DATA_TYPE_SPECIFIERS_ALLOWED">DATA_TYPE_SPECIFIERS_ALLOWED</a></dd>
                 <dd id="Teradata.Generator.ENSURE_BOOLS" class="variable"><a href="../generator.html#Generator.ENSURE_BOOLS">ENSURE_BOOLS</a></dd>
                 <dd id="Teradata.Generator.CTE_RECURSIVE_KEYWORD_REQUIRED" class="variable"><a href="../generator.html#Generator.CTE_RECURSIVE_KEYWORD_REQUIRED">CTE_RECURSIVE_KEYWORD_REQUIRED</a></dd>
-                <dd id="Teradata.Generator.SAFE_DIVISION" class="variable"><a href="../generator.html#Generator.SAFE_DIVISION">SAFE_DIVISION</a></dd>
                 <dd id="Teradata.Generator.STAR_MAPPING" class="variable"><a href="../generator.html#Generator.STAR_MAPPING">STAR_MAPPING</a></dd>
                 <dd id="Teradata.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
                 <dd id="Teradata.Generator.TOKEN_MAPPING" class="variable"><a href="../generator.html#Generator.TOKEN_MAPPING">TOKEN_MAPPING</a></dd>
@@ -2354,13 +1980,6 @@ Default: True</li>
                 <dd id="Teradata.Generator.EXPRESSIONS_WITHOUT_NESTED_CTES" class="variable"><a href="../generator.html#Generator.EXPRESSIONS_WITHOUT_NESTED_CTES">EXPRESSIONS_WITHOUT_NESTED_CTES</a></dd>
                 <dd id="Teradata.Generator.KEY_VALUE_DEFINITONS" class="variable"><a href="../generator.html#Generator.KEY_VALUE_DEFINITONS">KEY_VALUE_DEFINITONS</a></dd>
                 <dd id="Teradata.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
-                <dd id="Teradata.Generator.INDEX_OFFSET" class="variable"><a href="../generator.html#Generator.INDEX_OFFSET">INDEX_OFFSET</a></dd>
-                <dd id="Teradata.Generator.UNNEST_COLUMN_ONLY" class="variable"><a href="../generator.html#Generator.UNNEST_COLUMN_ONLY">UNNEST_COLUMN_ONLY</a></dd>
-                <dd id="Teradata.Generator.ALIAS_POST_TABLESAMPLE" class="variable"><a href="../generator.html#Generator.ALIAS_POST_TABLESAMPLE">ALIAS_POST_TABLESAMPLE</a></dd>
-                <dd id="Teradata.Generator.IDENTIFIERS_CAN_START_WITH_DIGIT" class="variable"><a href="../generator.html#Generator.IDENTIFIERS_CAN_START_WITH_DIGIT">IDENTIFIERS_CAN_START_WITH_DIGIT</a></dd>
-                <dd id="Teradata.Generator.STRICT_STRING_CONCAT" class="variable"><a href="../generator.html#Generator.STRICT_STRING_CONCAT">STRICT_STRING_CONCAT</a></dd>
-                <dd id="Teradata.Generator.NORMALIZE_FUNCTIONS" class="variable"><a href="../generator.html#Generator.NORMALIZE_FUNCTIONS">NORMALIZE_FUNCTIONS</a></dd>
-                <dd id="Teradata.Generator.NULL_ORDERING" class="variable"><a href="../generator.html#Generator.NULL_ORDERING">NULL_ORDERING</a></dd>
                 <dd id="Teradata.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
                 <dd id="Teradata.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
                 <dd id="Teradata.Generator.normalize" class="variable"><a href="../generator.html#Generator.normalize">normalize</a></dd>
@@ -2370,6 +1989,7 @@ Default: True</li>
                 <dd id="Teradata.Generator.leading_comma" class="variable"><a href="../generator.html#Generator.leading_comma">leading_comma</a></dd>
                 <dd id="Teradata.Generator.max_text_width" class="variable"><a href="../generator.html#Generator.max_text_width">max_text_width</a></dd>
                 <dd id="Teradata.Generator.comments" class="variable"><a href="../generator.html#Generator.comments">comments</a></dd>
+                <dd id="Teradata.Generator.dialect" class="variable"><a href="../generator.html#Generator.dialect">dialect</a></dd>
                 <dd id="Teradata.Generator.normalize_functions" class="variable"><a href="../generator.html#Generator.normalize_functions">normalize_functions</a></dd>
                 <dd id="Teradata.Generator.unsupported_messages" class="variable"><a href="../generator.html#Generator.unsupported_messages">unsupported_messages</a></dd>
                 <dd id="Teradata.Generator.generate" class="function"><a href="../generator.html#Generator.generate">generate</a></dd>
@@ -2398,6 +2018,7 @@ Default: True</li>
                 <dd id="Teradata.Generator.generatedasrowcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.generatedasrowcolumnconstraint_sql">generatedasrowcolumnconstraint_sql</a></dd>
                 <dd id="Teradata.Generator.periodforsystemtimeconstraint_sql" class="function"><a href="../generator.html#Generator.periodforsystemtimeconstraint_sql">periodforsystemtimeconstraint_sql</a></dd>
                 <dd id="Teradata.Generator.notnullcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.notnullcolumnconstraint_sql">notnullcolumnconstraint_sql</a></dd>
+                <dd id="Teradata.Generator.transformcolumnconstraint_sql" class="function"><a href="../generator.html#Generator.transformcolumnconstraint_sql">transformcolumnconstraint_sql</a></dd>
                 <dd id="Teradata.Generator.primarykeycolumnconstraint_sql" class="function"><a href="../generator.html#Generator.primarykeycolumnconstraint_sql">primarykeycolumnconstraint_sql</a></dd>
                 <dd id="Teradata.Generator.uniquecolumnconstraint_sql" class="function"><a href="../generator.html#Generator.uniquecolumnconstraint_sql">uniquecolumnconstraint_sql</a></dd>
                 <dd id="Teradata.Generator.create_sql" class="function"><a href="../generator.html#Generator.create_sql">create_sql</a></dd>

@@ -100,8 +100,8 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT arrayJoin([1,2,3])",
             write={
-                "clickhouse": "SELECT arrayJoin([1,2,3])",
-                "postgres": "SELECT UNNEST([1,2,3])",
+                "clickhouse": "SELECT arrayJoin([1, 2, 3])",
+                "postgres": "SELECT UNNEST(ARRAY[1, 2, 3])",
             },
         )
         self.validate_all(

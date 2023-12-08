@@ -1270,7 +1270,7 @@ class Tokenizer(metaclass=_Tokenizer):
             identifiers=cls._IDENTIFIERS,
             identifier_escapes=cls._IDENTIFIER_ESCAPES,
             string_escapes=cls._STRING_ESCAPES,
-            escape_sequences=cls.ESCAPE_SEQUENCES,
+            escape_sequences=cls.ESCAPE_SEQUENCES,  # type: ignore
             quotes=cls._QUOTES,
             format_strings={k: (v1, v2.name) for k, (v1, v2) in cls._FORMAT_STRINGS.items()},
             has_bit_strings=bool(cls.BIT_STRINGS),
@@ -1279,7 +1279,7 @@ class Tokenizer(metaclass=_Tokenizer):
             var_single_tokens=cls.VAR_SINGLE_TOKENS,
             commands={v.name for v in cls.COMMANDS},
             command_prefix_tokens={v.name for v in cls.COMMAND_PREFIX_TOKENS},
-            identifiers_can_start_with_digit=cls.IDENTIFIERS_CAN_START_WITH_DIGIT,
+            identifiers_can_start_with_digit=cls.IDENTIFIERS_CAN_START_WITH_DIGIT,  # type: ignore
         )
 
         native_tokens = RsTokenizer(settings).tokenize(sql)

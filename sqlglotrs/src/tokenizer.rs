@@ -13,9 +13,7 @@ pub struct Tokenizer {
 #[pymethods]
 impl Tokenizer {
     #[new]
-    #[pyo3(signature = (settings=None))]
-    pub fn new(settings: Option<TokenizerSettings>) -> Tokenizer {
-        let settings = settings.unwrap_or(TokenizerSettings::default());
+    pub fn new(settings: TokenizerSettings) -> Tokenizer {
         let mut keyword_trie = Trie::new();
         let single_token_strs: Vec<String> = settings
             .single_tokens

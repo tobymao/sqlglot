@@ -1,4 +1,4 @@
-use crate::token::TokenType;
+use crate::TokenType;
 use pyo3::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::str::FromStr;

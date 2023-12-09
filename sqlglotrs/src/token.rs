@@ -386,34 +386,6 @@ impl Token {
         }
     }
 
-    pub fn number(num: u32) -> Token {
-        Token::from_text(TokenType::NUMBER, num.to_string())
-    }
-
-    pub fn string(s: &str) -> Token {
-        Token::from_text(TokenType::STRING, s.to_string())
-    }
-
-    pub fn identifier(id: &str) -> Token {
-        Token::from_text(TokenType::IDENTIFIER, id.to_string())
-    }
-
-    pub fn var(var: &str) -> Token {
-        Token::from_text(TokenType::VAR, var.to_string())
-    }
-
-    fn from_text(token_type: TokenType, text: String) -> Token {
-        Token {
-            token_type,
-            text,
-            line: 1,
-            column: 1,
-            start: 0,
-            end: 0,
-            comments: Vec::new(),
-        }
-    }
-
     pub fn append_comments(&mut self, comments: &mut Vec<String>) {
         self.comments.append(comments);
     }

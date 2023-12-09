@@ -1,0 +1,13 @@
+[package]
+name = "sqlglotrs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "sqlglotrs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = "0.19.0"
+strum = "0.25"
+strum_macros = "0.25"

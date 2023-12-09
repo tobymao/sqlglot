@@ -1,6 +1,5 @@
-use crate::settings::TokenizerSettings;
-use crate::token::{Token, TokenType};
 use crate::trie::{Trie, TrieResult};
+use crate::{Token, TokenType, TokenizerSettings};
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use std::panic::catch_unwind;

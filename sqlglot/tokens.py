@@ -822,6 +822,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "_end",
         "_peek",
         "_prev_token_line",
+        "_native_tokenizer",
     )
 
     def __init__(self, dialect: DialectType = None) -> None:
@@ -1254,3 +1255,49 @@ class Tokenizer(metaclass=_Tokenizer):
                 text += self.sql[current : self._current - 1]
 
         return text
+
+    def tokenize_native(self, sql: str) -> t.List[Token]:
+        from sqlglotrs import (  # type: ignore
+            Tokenizer as RsTokenizer,
+            TokenizerSettings as RsTokenizerSettings,
+        )
+
+        if getattr(self, "_native_tokenizer", None) is None:
+            settings = RsTokenizerSettings(
+                white_space={k: v.name for k, v in self.WHITE_SPACE.items()},
+                single_tokens={k: v.name for k, v in self.SINGLE_TOKENS.items()},
+                keywords={k: v.name for k, v in self.KEYWORDS.items()},
+                numeric_literals=self.NUMERIC_LITERALS,
+                identifiers=self._IDENTIFIERS,
+                identifier_escapes=self._IDENTIFIER_ESCAPES,
+                string_escapes=self._STRING_ESCAPES,
+                escape_sequences=self.dialect.ESCAPE_SEQUENCES,
+                quotes=self._QUOTES,
+                format_strings={k: (v1, v2.name) for k, (v1, v2) in self._FORMAT_STRINGS.items()},
+                has_bit_strings=bool(self.BIT_STRINGS),
+                has_hex_strings=bool(self.HEX_STRINGS),
+                comments=self._COMMENTS,
+                var_single_tokens=self.VAR_SINGLE_TOKENS,
+                commands={v.name for v in self.COMMANDS},
+                command_prefix_tokens={v.name for v in self.COMMAND_PREFIX_TOKENS},
+                identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
+            )
+            self._native_tokenizer = RsTokenizer(settings)
+
+        try:
+            native_tokens = self._native_tokenizer.tokenize(sql)
+        except Exception as e:
+            raise TokenError(str(e))
+
+        return [
+            Token(
+                token_type=TokenType[str(token.token_type)],
+                text=token.text,
+                line=token.line,
+                col=token.column,
+                start=token.start,
+                end=token.end,
+                comments=token.comments,
+            )
+            for token in native_tokens
+        ]

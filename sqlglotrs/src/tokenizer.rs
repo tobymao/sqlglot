@@ -1,7 +1,9 @@
 use crate::settings::TokenizerSettings;
 use crate::token::{Token, TokenType};
 use crate::trie::{Trie, TrieResult};
+use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
+use std::panic::catch_unwind;
 
 #[derive(Debug)]
 #[pyclass]
@@ -34,9 +36,12 @@ impl Tokenizer {
         }
     }
 
-    pub fn tokenize(&self, sql: &str) -> Vec<Token> {
-        let mut state = TokenizerState::new(sql, &self.settings, &self.keyword_trie);
-        state.tokenize()
+    pub fn tokenize(&self, sql: &str) -> Result<Vec<Token>, PyErr> {
+        catch_unwind(|| {
+            let mut state = TokenizerState::new(sql, &self.settings, &self.keyword_trie);
+            state.tokenize()
+        })
+        .map_err(|e| PyException::new_err(e.downcast_ref::<&str>().unwrap_or(&"").to_string()))
     }
 }
 
@@ -450,6 +455,7 @@ impl<'a> TokenizerState<'a> {
                 let mut literal = String::from("");
 
                 while !self.peek_char.is_whitespace()
+                    && !self.is_end
                     && !self.settings.white_space.contains_key(&self.peek_char)
                 {
                     literal.push(self.peek_char);

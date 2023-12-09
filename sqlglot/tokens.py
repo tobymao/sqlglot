@@ -1284,7 +1284,11 @@ class Tokenizer(metaclass=_Tokenizer):
             )
             self._native_tokenizer = RsTokenizer(settings)
 
-        native_tokens = self._native_tokenizer.tokenize(sql)
+        try:
+            native_tokens = self._native_tokenizer.tokenize(sql)
+        except Exception as e:
+            raise TokenError(str(e))
+
         return [
             Token(
                 token_type=TokenType[str(token.token_type)],

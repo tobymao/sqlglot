@@ -69,9 +69,11 @@ impl<'a> TokenizerState<'a> {
         settings: &'a TokenizerSettings,
         keyword_trie: &'a Trie,
     ) -> TokenizerState<'a> {
+        let sql_vec = sql.chars().collect::<Vec<char>>();
+        let sql_vec_len = sql_vec.len();
         TokenizerState {
-            sql: sql.chars().collect(),
-            size: sql.len(),
+            sql: sql_vec,
+            size: sql_vec_len,
             tokens: Vec::new(),
             start: 0,
             current: 0,
@@ -394,7 +396,7 @@ impl<'a> TokenizerState<'a> {
         let text = self.extract_string(&end, false);
 
         if let Some(b) = base {
-            if u32::from_str_radix(&text, b).is_err() {
+            if u64::from_str_radix(&text, b).is_err() {
                 // FIXME: return Result instead.
                 panic!(
                     "Numeric string contains invalid characters from {}:{}",
@@ -615,6 +617,7 @@ impl<'a> TokenizerState<'a> {
     fn extract_value(&mut self) -> String {
         loop {
             if !self.peek_char.is_whitespace()
+                && !self.is_end
                 && !self.settings.single_tokens.contains_key(&self.peek_char)
             {
                 self.advance(1, true);

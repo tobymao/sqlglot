@@ -2,7 +2,8 @@ use crate::trie::{Trie, TrieResult};
 use crate::{Token, TokenType, TokenizerSettings};
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use std::panic::catch_unwind;
+use std::cmp::{max, min};
+use std::panic;
 
 #[derive(Debug)]
 #[pyclass]
@@ -36,11 +37,14 @@ impl Tokenizer {
     }
 
     pub fn tokenize(&self, sql: &str) -> Result<Vec<Token>, PyErr> {
-        catch_unwind(|| {
-            let mut state = TokenizerState::new(sql, &self.settings, &self.keyword_trie);
-            state.tokenize()
+        let mut state = TokenizerState::new(sql, &self.settings, &self.keyword_trie);
+        panic::catch_unwind(panic::AssertUnwindSafe(|| state.tokenize())).map_err(|e| {
+            let start = max((state.current as isize) - 50, 0);
+            let end = min(state.current + 50, state.size - 1);
+            let context = state.sql[start as usize..end].iter().collect::<String>();
+            let original_msg = e.downcast_ref::<&str>().unwrap_or(&"");
+            PyException::new_err(format!("Error tokenizing '{}': {}", context, original_msg))
         })
-        .map_err(|e| PyException::new_err(e.downcast_ref::<&str>().unwrap_or(&"").to_string()))
     }
 }
 
@@ -247,7 +251,7 @@ impl<'a> TokenizerState<'a> {
         let mut chars = self.text();
         let mut current_char = '\0';
         let mut prev_space = false;
-        let mut skip = false;
+        let mut skip;
         let mut is_single_token = chars.len() == 1
             && self
                 .settings
@@ -258,10 +262,10 @@ impl<'a> TokenizerState<'a> {
             self.keyword_trie.root.contains(&chars.to_uppercase());
 
         while !chars.is_empty() {
-            match trie_result {
-                TrieResult::Failed => break,
-                TrieResult::Exists => word = Some(chars.clone()),
-                _ => {}
+            if let TrieResult::Failed = trie_result {
+                break;
+            } else if let TrieResult::Exists = trie_result {
+                word = Some(chars.clone());
             }
 
             let end = self.current + size;
@@ -271,7 +275,7 @@ impl<'a> TokenizerState<'a> {
                 current_char = self.char_at(end);
                 is_single_token =
                     is_single_token || self.settings.single_tokens.contains_key(&current_char);
-                let is_space = self.settings.white_space.contains_key(&current_char);
+                let is_space = current_char.is_whitespace();
 
                 if !is_space || !prev_space {
                     if is_space {
@@ -285,7 +289,7 @@ impl<'a> TokenizerState<'a> {
                 }
             } else {
                 current_char = '\0';
-                chars = String::from(" ");
+                break;
             }
 
             if skip {
@@ -296,8 +300,7 @@ impl<'a> TokenizerState<'a> {
             }
         }
 
-        if word.is_some() {
-            let unwrapped_word = word.unwrap();
+        if let Some(unwrapped_word) = word {
             if self.scan_string(&unwrapped_word) {
                 return;
             }
@@ -457,7 +460,7 @@ impl<'a> TokenizerState<'a> {
 
                 while !self.peek_char.is_whitespace()
                     && !self.is_end
-                    && !self.settings.white_space.contains_key(&self.peek_char)
+                    && !self.settings.single_tokens.contains_key(&self.peek_char)
                 {
                     literal.push(self.peek_char);
                     self.advance(1, false);
@@ -481,7 +484,7 @@ impl<'a> TokenizerState<'a> {
                 } else if self.settings.identifiers_can_start_with_digit {
                     self.add(TokenType::VAR, None);
                 } else {
-                    self.advance(-(literal.len() as isize), false);
+                    self.advance(-(literal.chars().count() as isize), false);
                     self.add(TokenType::NUMBER, Some(number_text));
                 }
                 return;

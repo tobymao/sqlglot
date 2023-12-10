@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import typing as t
 from enum import auto
 
@@ -9,6 +10,14 @@ from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
+
+
+try:
+    import sqlglotrs  # noqa
+
+    USE_NATIVE_TOKENIZER = os.environ.get("SQLGLOT_NATIVE_TOKENIZER", "1") == "1"
+except ImportError:
+    USE_NATIVE_TOKENIZER = False
 
 
 class TokenType(AutoName):
@@ -848,6 +857,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def tokenize(self, sql: str) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
+        if USE_NATIVE_TOKENIZER:
+            return self.tokenize_native(sql)
+
         self.reset()
         self.sql = sql
         self.size = len(sql)

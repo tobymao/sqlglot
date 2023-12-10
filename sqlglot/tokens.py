@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
 
 
 try:
-    import sqlglotrs  # noqa
+    import sqlglotrs  # type: ignore
 
     USE_NATIVE_TOKENIZER = os.environ.get("SQLGLOT_NATIVE_TOKENIZER", "1") == "1"
 except ImportError:

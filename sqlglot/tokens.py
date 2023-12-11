@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import os
 import typing as t
-from enum import auto
 
 from sqlglot.errors import TokenError
-from sqlglot.helper import AutoName
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
@@ -13,347 +11,13 @@ if t.TYPE_CHECKING:
 
 
 try:
-    import sqlglotrs  # type: ignore
+    from sqlglotrs import TokenType  # type: ignore
 
     USE_NATIVE_TOKENIZER = os.environ.get("SQLGLOT_NATIVE_TOKENIZER", "1") == "1"
 except ImportError:
+    from sqlglot.token_type import TokenType  # type: ignore
+
     USE_NATIVE_TOKENIZER = False
-
-
-class TokenType(AutoName):
-    L_PAREN = auto()
-    R_PAREN = auto()
-    L_BRACKET = auto()
-    R_BRACKET = auto()
-    L_BRACE = auto()
-    R_BRACE = auto()
-    COMMA = auto()
-    DOT = auto()
-    DASH = auto()
-    PLUS = auto()
-    COLON = auto()
-    DCOLON = auto()
-    DQMARK = auto()
-    SEMICOLON = auto()
-    STAR = auto()
-    BACKSLASH = auto()
-    SLASH = auto()
-    LT = auto()
-    LTE = auto()
-    GT = auto()
-    GTE = auto()
-    NOT = auto()
-    EQ = auto()
-    NEQ = auto()
-    NULLSAFE_EQ = auto()
-    COLON_EQ = auto()
-    AND = auto()
-    OR = auto()
-    AMP = auto()
-    DPIPE = auto()
-    PIPE = auto()
-    CARET = auto()
-    TILDA = auto()
-    ARROW = auto()
-    DARROW = auto()
-    FARROW = auto()
-    HASH = auto()
-    HASH_ARROW = auto()
-    DHASH_ARROW = auto()
-    LR_ARROW = auto()
-    DAT = auto()
-    LT_AT = auto()
-    AT_GT = auto()
-    DOLLAR = auto()
-    PARAMETER = auto()
-    SESSION_PARAMETER = auto()
-    DAMP = auto()
-    XOR = auto()
-    DSTAR = auto()
-
-    BLOCK_START = auto()
-    BLOCK_END = auto()
-
-    SPACE = auto()
-    BREAK = auto()
-
-    STRING = auto()
-    NUMBER = auto()
-    IDENTIFIER = auto()
-    DATABASE = auto()
-    COLUMN = auto()
-    COLUMN_DEF = auto()
-    SCHEMA = auto()
-    TABLE = auto()
-    VAR = auto()
-    BIT_STRING = auto()
-    HEX_STRING = auto()
-    BYTE_STRING = auto()
-    NATIONAL_STRING = auto()
-    RAW_STRING = auto()
-    HEREDOC_STRING = auto()
-
-    # types
-    BIT = auto()
-    BOOLEAN = auto()
-    TINYINT = auto()
-    UTINYINT = auto()
-    SMALLINT = auto()
-    USMALLINT = auto()
-    MEDIUMINT = auto()
-    UMEDIUMINT = auto()
-    INT = auto()
-    UINT = auto()
-    BIGINT = auto()
-    UBIGINT = auto()
-    INT128 = auto()
-    UINT128 = auto()
-    INT256 = auto()
-    UINT256 = auto()
-    FLOAT = auto()
-    DOUBLE = auto()
-    DECIMAL = auto()
-    UDECIMAL = auto()
-    BIGDECIMAL = auto()
-    CHAR = auto()
-    NCHAR = auto()
-    VARCHAR = auto()
-    NVARCHAR = auto()
-    TEXT = auto()
-    MEDIUMTEXT = auto()
-    LONGTEXT = auto()
-    MEDIUMBLOB = auto()
-    LONGBLOB = auto()
-    TINYBLOB = auto()
-    TINYTEXT = auto()
-    BINARY = auto()
-    VARBINARY = auto()
-    JSON = auto()
-    JSONB = auto()
-    TIME = auto()
-    TIMETZ = auto()
-    TIMESTAMP = auto()
-    TIMESTAMPTZ = auto()
-    TIMESTAMPLTZ = auto()
-    TIMESTAMP_S = auto()
-    TIMESTAMP_MS = auto()
-    TIMESTAMP_NS = auto()
-    DATETIME = auto()
-    DATETIME64 = auto()
-    DATE = auto()
-    INT4RANGE = auto()
-    INT4MULTIRANGE = auto()
-    INT8RANGE = auto()
-    INT8MULTIRANGE = auto()
-    NUMRANGE = auto()
-    NUMMULTIRANGE = auto()
-    TSRANGE = auto()
-    TSMULTIRANGE = auto()
-    TSTZRANGE = auto()
-    TSTZMULTIRANGE = auto()
-    DATERANGE = auto()
-    DATEMULTIRANGE = auto()
-    UUID = auto()
-    GEOGRAPHY = auto()
-    NULLABLE = auto()
-    GEOMETRY = auto()
-    HLLSKETCH = auto()
-    HSTORE = auto()
-    SUPER = auto()
-    SERIAL = auto()
-    SMALLSERIAL = auto()
-    BIGSERIAL = auto()
-    XML = auto()
-    YEAR = auto()
-    UNIQUEIDENTIFIER = auto()
-    USERDEFINED = auto()
-    MONEY = auto()
-    SMALLMONEY = auto()
-    ROWVERSION = auto()
-    IMAGE = auto()
-    VARIANT = auto()
-    OBJECT = auto()
-    INET = auto()
-    IPADDRESS = auto()
-    IPPREFIX = auto()
-    ENUM = auto()
-    ENUM8 = auto()
-    ENUM16 = auto()
-    FIXEDSTRING = auto()
-    LOWCARDINALITY = auto()
-    NESTED = auto()
-    UNKNOWN = auto()
-
-    # keywords
-    ALIAS = auto()
-    ALTER = auto()
-    ALWAYS = auto()
-    ALL = auto()
-    ANTI = auto()
-    ANY = auto()
-    APPLY = auto()
-    ARRAY = auto()
-    ASC = auto()
-    ASOF = auto()
-    AUTO_INCREMENT = auto()
-    BEGIN = auto()
-    BETWEEN = auto()
-    CACHE = auto()
-    CASE = auto()
-    CHARACTER_SET = auto()
-    CLUSTER_BY = auto()
-    COLLATE = auto()
-    COMMAND = auto()
-    COMMENT = auto()
-    COMMIT = auto()
-    CONNECT_BY = auto()
-    CONSTRAINT = auto()
-    CREATE = auto()
-    CROSS = auto()
-    CUBE = auto()
-    CURRENT_DATE = auto()
-    CURRENT_DATETIME = auto()
-    CURRENT_TIME = auto()
-    CURRENT_TIMESTAMP = auto()
-    CURRENT_USER = auto()
-    DEFAULT = auto()
-    DELETE = auto()
-    DESC = auto()
-    DESCRIBE = auto()
-    DICTIONARY = auto()
-    DISTINCT = auto()
-    DISTRIBUTE_BY = auto()
-    DIV = auto()
-    DROP = auto()
-    ELSE = auto()
-    END = auto()
-    ESCAPE = auto()
-    EXCEPT = auto()
-    EXECUTE = auto()
-    EXISTS = auto()
-    FALSE = auto()
-    FETCH = auto()
-    FILTER = auto()
-    FINAL = auto()
-    FIRST = auto()
-    FOR = auto()
-    FORCE = auto()
-    FOREIGN_KEY = auto()
-    FORMAT = auto()
-    FROM = auto()
-    FULL = auto()
-    FUNCTION = auto()
-    GLOB = auto()
-    GLOBAL = auto()
-    GROUP_BY = auto()
-    GROUPING_SETS = auto()
-    HAVING = auto()
-    HINT = auto()
-    IGNORE = auto()
-    ILIKE = auto()
-    ILIKE_ANY = auto()
-    IN = auto()
-    INDEX = auto()
-    INNER = auto()
-    INSERT = auto()
-    INTERSECT = auto()
-    INTERVAL = auto()
-    INTO = auto()
-    INTRODUCER = auto()
-    IRLIKE = auto()
-    IS = auto()
-    ISNULL = auto()
-    JOIN = auto()
-    JOIN_MARKER = auto()
-    KEEP = auto()
-    KILL = auto()
-    LANGUAGE = auto()
-    LATERAL = auto()
-    LEFT = auto()
-    LIKE = auto()
-    LIKE_ANY = auto()
-    LIMIT = auto()
-    LOAD = auto()
-    LOCK = auto()
-    MAP = auto()
-    MATCH_RECOGNIZE = auto()
-    MEMBER_OF = auto()
-    MERGE = auto()
-    MOD = auto()
-    MODEL = auto()
-    NATURAL = auto()
-    NEXT = auto()
-    NOTNULL = auto()
-    NULL = auto()
-    OBJECT_IDENTIFIER = auto()
-    OFFSET = auto()
-    ON = auto()
-    OPERATOR = auto()
-    ORDER_BY = auto()
-    ORDERED = auto()
-    ORDINALITY = auto()
-    OUTER = auto()
-    OVER = auto()
-    OVERLAPS = auto()
-    OVERWRITE = auto()
-    PARTITION = auto()
-    PARTITION_BY = auto()
-    PERCENT = auto()
-    PIVOT = auto()
-    PLACEHOLDER = auto()
-    PRAGMA = auto()
-    PRIMARY_KEY = auto()
-    PROCEDURE = auto()
-    PROPERTIES = auto()
-    PSEUDO_TYPE = auto()
-    QUALIFY = auto()
-    QUOTE = auto()
-    RANGE = auto()
-    RECURSIVE = auto()
-    REFRESH = auto()
-    REPLACE = auto()
-    RETURNING = auto()
-    REFERENCES = auto()
-    RIGHT = auto()
-    RLIKE = auto()
-    ROLLBACK = auto()
-    ROLLUP = auto()
-    ROW = auto()
-    ROWS = auto()
-    SELECT = auto()
-    SEMI = auto()
-    SEPARATOR = auto()
-    SERDE_PROPERTIES = auto()
-    SET = auto()
-    SETTINGS = auto()
-    SHOW = auto()
-    SIMILAR_TO = auto()
-    SOME = auto()
-    SORT_BY = auto()
-    START_WITH = auto()
-    STRUCT = auto()
-    TABLE_SAMPLE = auto()
-    TEMPORARY = auto()
-    TOP = auto()
-    THEN = auto()
-    TRUE = auto()
-    UNCACHE = auto()
-    UNION = auto()
-    UNNEST = auto()
-    UNPIVOT = auto()
-    UPDATE = auto()
-    USE = auto()
-    USING = auto()
-    VALUES = auto()
-    VIEW = auto()
-    VOLATILE = auto()
-    WHEN = auto()
-    WHERE = auto()
-    WINDOW = auto()
-    WITH = auto()
-    UNIQUE = auto()
-    VERSION_SNAPSHOT = auto()
-    TIMESTAMP_SNAPSHOT = auto()
 
 
 class Token:
@@ -1270,46 +934,34 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def tokenize_native(self, sql: str) -> t.List[Token]:
         from sqlglotrs import (  # type: ignore
+            Token as RsToken,
             Tokenizer as RsTokenizer,
             TokenizerSettings as RsTokenizerSettings,
         )
 
         if getattr(self, "_native_tokenizer", None) is None:
             settings = RsTokenizerSettings(
-                white_space={k: v.name for k, v in self.WHITE_SPACE.items()},
-                single_tokens={k: v.name for k, v in self.SINGLE_TOKENS.items()},
-                keywords={k: v.name for k, v in self.KEYWORDS.items()},
+                white_space=self.WHITE_SPACE,
+                single_tokens=self.SINGLE_TOKENS,
+                keywords=self.KEYWORDS,
                 numeric_literals=self.NUMERIC_LITERALS,
                 identifiers=self._IDENTIFIERS,
                 identifier_escapes=self._IDENTIFIER_ESCAPES,
                 string_escapes=self._STRING_ESCAPES,
                 escape_sequences=self.dialect.ESCAPE_SEQUENCES,
                 quotes=self._QUOTES,
-                format_strings={k: (v1, v2.name) for k, (v1, v2) in self._FORMAT_STRINGS.items()},
+                format_strings=self._FORMAT_STRINGS,
                 has_bit_strings=bool(self.BIT_STRINGS),
                 has_hex_strings=bool(self.HEX_STRINGS),
                 comments=self._COMMENTS,
                 var_single_tokens=self.VAR_SINGLE_TOKENS,
-                commands={v.name for v in self.COMMANDS},
-                command_prefix_tokens={v.name for v in self.COMMAND_PREFIX_TOKENS},
+                commands=self.COMMANDS,
+                command_prefix_tokens=self.COMMAND_PREFIX_TOKENS,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             )
             self._native_tokenizer = RsTokenizer(settings)
 
         try:
-            native_tokens = self._native_tokenizer.tokenize(sql)
+            return self._native_tokenizer.tokenize(sql)
         except Exception as e:
             raise TokenError(str(e))
-
-        return [
-            Token(
-                token_type=TokenType[str(token.token_type)],
-                text=token.text,
-                line=token.line,
-                col=token.column,
-                start=token.start,
-                end=token.end,
-                comments=token.comments,
-            )
-            for token in native_tokens
-        ]

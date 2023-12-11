@@ -379,6 +379,16 @@ class TestPresto(Validator):
                 "presto": "TIMESTAMP(x, '12:00:00')",
             },
         )
+        self.validate_all(
+            "DATE_ADD('DAY', CAST(x AS BIGINT), y)",
+            write={
+                "presto": "DATE_ADD('DAY', CAST(x AS BIGINT), y)",
+            },
+            read={
+                "presto": "DATE_ADD('DAY', x, y)",
+            },
+        )
+        self.validate_identity("DATE_ADD('DAY', 1, y)")
 
     def test_ddl(self):
         self.validate_all(
@@ -1044,11 +1054,3 @@ MATCH_RECOGNIZE (
 )""",
             pretty=True,
         )
-
-    def test_date_add(self):
-        expression = parse_one("DATE_ADD(x, y, DAY)")
-        self.assertEqual("DATE_ADD('DAY', y, x)", expression.sql(dialect="presto"))
-        expression.expression.type = exp.DataType.Type.DECIMAL
-        self.assertEqual("DATE_ADD('DAY', CAST(y AS BIGINT), x)", expression.sql(dialect="presto"))
-        expression.expression.type = exp.DataType.Type.BIGINT
-        self.assertEqual("DATE_ADD('DAY', y, x)", expression.sql(dialect="presto"))

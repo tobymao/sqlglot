@@ -187,6 +187,10 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
 
 
 def _to_int(expression: exp.Expression) -> exp.Expression:
+    if not expression.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        annotate_types(expression)
     if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
         return exp.cast(expression, to=exp.DataType.Type.BIGINT)
     return expression

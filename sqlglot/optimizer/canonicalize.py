@@ -65,7 +65,10 @@ def coerce_type(node: exp.Expression) -> exp.Expression:
         *exp.DataType.TEMPORAL_TYPES
     ):
         _replace_cast(node.expression, exp.DataType.Type.DATETIME)
-    elif isinstance(node, (exp.DateAdd, exp.DateSub, exp.DateTrunc)):
+    elif isinstance(node, (exp.DateAdd, exp.DateSub)):
+        _coerce_timeunit_arg(node.this, node.unit)
+        _coerce_int(node.expression)
+    elif isinstance(node, exp.DateTrunc):
         _coerce_timeunit_arg(node.this, node.unit)
     elif isinstance(node, exp.DateDiff):
         _coerce_datediff_args(node)
@@ -154,6 +157,10 @@ def _coerce_datediff_args(node: exp.DateDiff) -> None:
         if e.type.this not in exp.DataType.TEMPORAL_TYPES:
             e.replace(exp.cast(e.copy(), to=exp.DataType.Type.DATETIME))
 
+
+def _coerce_int(node: exp.Expression) -> None:
+    if node.type.this not in exp.DataType.INTEGER_TYPES:
+        node.replace(exp.cast(node.copy(), to=exp.DataType.Type.INT))
 
 def _replace_cast(node: exp.Expression, to: exp.DataType.Type) -> None:
     node.replace(exp.cast(node.copy(), to=to))

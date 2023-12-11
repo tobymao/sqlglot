@@ -1044,3 +1044,11 @@ MATCH_RECOGNIZE (
 )""",
             pretty=True,
         )
+
+    def test_date_add(self):
+        expression = parse_one("DATE_ADD(x, y, DAY)")
+        self.assertEqual("DATE_ADD('DAY', y, x)", expression.sql(dialect="presto"))
+        expression.expression.type = exp.DataType.Type.DECIMAL
+        self.assertEqual("DATE_ADD('DAY', CAST(y AS BIGINT), x)", expression.sql(dialect="presto"))
+        expression.expression.type = exp.DataType.Type.BIGINT
+        self.assertEqual("DATE_ADD('DAY', y, x)", expression.sql(dialect="presto"))

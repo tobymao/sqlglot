@@ -188,7 +188,7 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
 
 def _to_int(expression: exp.Expression) -> exp.Expression:
     if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
-        return exp.cast(expression.copy(), to=exp.DataType.Type.BIGINT)
+        return exp.cast(expression, to=exp.DataType.Type.BIGINT)
     return expression
 
 

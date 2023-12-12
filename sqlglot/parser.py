@@ -3260,41 +3260,40 @@ class Parser(metaclass=_Parser):
         return locks
 
     def _parse_set_operations(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-        if not self._match_set(self.SET_OPERATIONS):
-            return this
+        while this and self._match_set(self.SET_OPERATIONS):
+            token_type = self._prev.token_type
 
-        token_type = self._prev.token_type
+            if token_type == TokenType.UNION:
+                operation = exp.Union
+            elif token_type == TokenType.EXCEPT:
+                operation = exp.Except
+            else:
+                operation = exp.Intersect
 
-        if token_type == TokenType.UNION:
-            operation = exp.Union
-        elif token_type == TokenType.EXCEPT:
-            operation = exp.Except
-        else:
-            operation = exp.Intersect
+            comments = self._prev.comments
+            distinct = self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL)
+            by_name = self._match_text_seq("BY", "NAME")
+            expression = self._parse_select(nested=True, parse_set_operation=False)
 
-        comments = self._prev.comments
-        distinct = self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL)
-        by_name = self._match_text_seq("BY", "NAME")
-        expression = self._parse_set_operations(
-            self._parse_select(nested=True, parse_set_operation=False)
-        )
+            this = self.expression(
+                operation,
+                comments=comments,
+                this=this,
+                distinct=distinct,
+                by_name=by_name,
+                expression=expression,
+            )
 
-        set_operation_modifiers: t.Dict[str, t.Any] = {}
-        if self.MODIFIERS_ATTACHED_TO_UNION and isinstance(expression, exp.Expression):
-            for arg in self.UNION_MODIFIERS:
-                expr = expression.args.get(arg)
-                if expr:
-                    set_operation_modifiers[arg] = expr.pop()
+        if this and self.MODIFIERS_ATTACHED_TO_UNION:
+            expression = this.expression
 
-        return self.expression(
-            operation,
-            comments=comments,
-            this=this,
-            distinct=distinct,
-            by_name=by_name,
-            expression=expression,
-            **set_operation_modifiers,
-        )
+            if expression:
+                for arg in self.UNION_MODIFIERS:
+                    expr = expression.args.get(arg)
+                    if expr:
+                        this.set(arg, expr.pop())
+
+        return this
 
     def _parse_expression(self) -> t.Optional[exp.Expression]:
         return self._parse_alias(self._parse_conjunction())

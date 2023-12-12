@@ -6,6 +6,8 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
+
         string_types = [
             "BLOB",
             "LONGBLOB",

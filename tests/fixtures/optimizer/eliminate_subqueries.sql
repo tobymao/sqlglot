@@ -52,7 +52,7 @@ WITH cte AS (SELECT b FROM x), cte_2 AS (SELECT a FROM cte AS cte), cte_3 AS (SE
 
 -- Three unions
 SELECT a FROM x UNION ALL SELECT a FROM y UNION ALL SELECT a FROM z;
-WITH cte AS (SELECT a FROM x), cte_2 AS (SELECT a FROM y), cte_3 AS (SELECT a FROM z), cte_4 AS (SELECT cte_2.a AS a FROM cte_2 AS cte_2 UNION ALL SELECT cte_3.a AS a FROM cte_3 AS cte_3) SELECT cte.a AS a FROM cte AS cte UNION ALL SELECT cte_4.a AS a FROM cte_4 AS cte_4;
+WITH cte AS (SELECT a FROM x), cte_2 AS (SELECT a FROM y), cte_3 AS (SELECT cte.a AS a FROM cte AS cte UNION ALL SELECT cte_2.a AS a FROM cte_2 AS cte_2), cte_4 AS (SELECT a FROM z) SELECT cte_3.a AS a FROM cte_3 AS cte_3 UNION ALL SELECT cte_4.a AS a FROM cte_4 AS cte_4;
 
 -- Subquery
 SELECT a FROM x WHERE b = (SELECT y.c FROM y);

@@ -6009,7 +6009,17 @@ WITH "date_dim_2" AS (
     RANK() OVER (ORDER BY "in_store"."return_ratio") AS "return_rank",
     RANK() OVER (ORDER BY "in_store"."currency_ratio") AS "currency_rank"
   FROM "in_store" AS "in_store"
-), "cte_3" AS (
+), "cte_4" AS (
+  SELECT
+    'catalog' AS "channel",
+    "catalog"."item" AS "item",
+    "catalog"."return_ratio" AS "return_ratio",
+    "catalog"."return_rank" AS "return_rank",
+    "catalog"."currency_rank" AS "currency_rank"
+  FROM "catalog" AS "catalog"
+  WHERE
+    "catalog"."currency_rank" <= 10 OR "catalog"."return_rank" <= 10
+  UNION
   SELECT
     'store' AS "channel",
     "store"."item" AS "item",
@@ -6024,24 +6034,6 @@ WITH "date_dim_2" AS (
     "return_rank",
     "currency_rank"
   LIMIT 100
-), "cte_4" AS (
-  SELECT
-    'catalog' AS "channel",
-    "catalog"."item" AS "item",
-    "catalog"."return_ratio" AS "return_ratio",
-    "catalog"."return_rank" AS "return_rank",
-    "catalog"."currency_rank" AS "currency_rank"
-  FROM "catalog" AS "catalog"
-  WHERE
-    "catalog"."currency_rank" <= 10 OR "catalog"."return_rank" <= 10
-  UNION
-  SELECT
-    "cte_3"."channel" AS "channel",
-    "cte_3"."item" AS "item",
-    "cte_3"."return_ratio" AS "return_ratio",
-    "cte_3"."return_rank" AS "return_rank",
-    "cte_3"."currency_rank" AS "currency_rank"
-  FROM "cte_3" AS "cte_3"
 )
 SELECT
   'web' AS "channel",

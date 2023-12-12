@@ -3259,21 +3259,35 @@ class Parser(metaclass=_Parser):
         token_type = self._prev.token_type
 
         if token_type == TokenType.UNION:
-            expression = exp.Union
+            operation = exp.Union
         elif token_type == TokenType.EXCEPT:
-            expression = exp.Except
+            operation = exp.Except
         else:
-            expression = exp.Intersect
+            operation = exp.Intersect
+
+        comments = self._prev.comments
+        distinct = self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL)
+        by_name = self._match_text_seq("BY", "NAME")
+        expression = self._parse_set_operations(
+            self._parse_select(nested=True, parse_set_operation=False)
+        )
+
+        set_operation_modifiers: t.Dict[str, t.Any] = {}
+        if isinstance(expression, exp.Expression) and not isinstance(expression, exp.Union):
+            # These should be attached to the set operation itself instead of its rhs query
+            for arg in ("order", "limit", "offset"):
+                expr = expression.args.get(arg)
+                if expr:
+                    set_operation_modifiers[arg] = expr.pop()
 
         return self.expression(
-            expression,
-            comments=self._prev.comments,
+            operation,
+            comments=comments,
             this=this,
-            distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
-            by_name=self._match_text_seq("BY", "NAME"),
-            expression=self._parse_set_operations(
-                self._parse_select(nested=True, parse_set_operation=False)
-            ),
+            distinct=distinct,
+            by_name=by_name,
+            expression=expression,
+            **set_operation_modifiers,
         )
 
     def _parse_expression(self) -> t.Optional[exp.Expression]:

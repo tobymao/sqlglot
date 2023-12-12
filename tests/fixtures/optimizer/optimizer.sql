@@ -1128,24 +1128,19 @@ WITH x AS (
   LIMIT 10
 )
 LIMIT 10;
-WITH "x" AS (
-  SELECT
-    "t"."a" AS "a"
-  FROM "t" AS "t"
-)
 (
-  WITH "cte_2" AS (
+  WITH "cte" AS (
     SELECT
-      "x"."a" AS "a"
-    FROM "x"
-    LIMIT 10
+      "t"."a" AS "a"
+    FROM "t" AS "t"
   )
   SELECT
-    "x"."a" AS "a"
-  FROM "x"
+    "cte"."a" AS "a"
+  FROM "cte" AS "cte"
   UNION ALL
   SELECT
-    "cte_2"."a" AS "a"
-  FROM "cte_2" AS "cte_2"
+    "cte"."a" AS "a"
+  FROM "cte" AS "cte"
+  LIMIT 10
 )
 LIMIT 10;

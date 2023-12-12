@@ -55,10 +55,10 @@ class TestDuckDB(Validator):
             )
 
         self.validate_all(
-            "SELECT {'column1': column1, 'column2': column2, 'column3': column3} AS data FROM source_table",
+            "SELECT {'bla': column1, 'foo': column2, 'bar': column3} AS data FROM source_table",
             read={
-                "bigquery": "SELECT STRUCT(column1 AS column1, column2 AS column2, column3 AS column3) AS data FROM source_table",
-                "duckdb": "SELECT {'column1': column1, 'column2': column2, 'column3': column3} AS data FROM source_table",
+                "bigquery": "SELECT STRUCT(column1 AS bla, column2 AS foo, column3 AS bar) AS data FROM source_table",
+                "duckdb": "SELECT {'bla': column1, 'foo': column2, 'bar': column3} AS data FROM source_table",
             },
         )
         self.validate_all(

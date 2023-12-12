@@ -87,16 +87,17 @@ def _parse_date_diff(args: t.List) -> exp.Expression:
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args: t.List[str] = []
     for expr in expression.expressions:
-        key = f"'{expr.name or expr.this.name}'"
-
-        if isinstance(expr, exp.Bracket):
-            value = self.sql(expr.expressions[0])
-        elif isinstance(expr, exp.Alias):
-            value = self.sql(expr.this)
+        if isinstance(expr, exp.Alias):
+            key = expr.alias
+            value = expr.this
         else:
-            value = self.sql(expr, "expression")
+            key = expr.name or expr.this.name
+            if isinstance(expr, exp.Bracket):
+                value = expr.expressions[0]
+            else:
+                value = expr.expression
 
-        args.append(f"{key}: {value}")
+        args.append(f"{self.sql(exp.Literal.string(key))}: {self.sql(value)}")
 
     return f"{{{', '.join(args)}}}"
 

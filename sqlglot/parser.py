@@ -947,6 +947,9 @@ class Parser(metaclass=_Parser):
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
+    # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
+    MODIFIERS_ATTACHED_TO_UNION = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3273,7 +3276,7 @@ class Parser(metaclass=_Parser):
         )
 
         set_operation_modifiers: t.Dict[str, t.Any] = {}
-        if isinstance(expression, exp.Expression) and not isinstance(expression, exp.Union):
+        if self.MODIFIERS_ATTACHED_TO_UNION and isinstance(expression, exp.Expression):
             # These should be attached to the set operation itself instead of its rhs query
             for arg in ("order", "limit", "offset"):
                 expr = expression.args.get(arg)

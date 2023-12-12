@@ -6029,11 +6029,6 @@ WITH "date_dim_2" AS (
   FROM "store" AS "store"
   WHERE
     "store"."currency_rank" <= 10 OR "store"."return_rank" <= 10
-  ORDER BY
-    "channel",
-    "return_rank",
-    "currency_rank"
-  LIMIT 100
 )
 SELECT
   'web' AS "channel",
@@ -6051,7 +6046,12 @@ SELECT
   "cte_4"."return_ratio" AS "return_ratio",
   "cte_4"."return_rank" AS "return_rank",
   "cte_4"."currency_rank" AS "currency_rank"
-FROM "cte_4" AS "cte_4";
+FROM "cte_4" AS "cte_4"
+ORDER BY
+  "channel",
+  "return_rank",
+  "currency_rank"
+LIMIT 100;
 
 --------------------------------------
 -- TPC-DS 50

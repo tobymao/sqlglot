@@ -6,7 +6,7 @@ mod token_type;
 mod tokenizer;
 mod trie;
 
-pub use self::settings::TokenizerSettings;
+pub use self::settings::{TokenizerDialectSettings, TokenizerSettings};
 pub use self::token_type::TokenType;
 pub use self::tokenizer::Tokenizer;
 
@@ -93,6 +93,7 @@ fn sqlglotrs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<Token>()?;
     m.add_class::<TokenType>()?;
     m.add_class::<TokenizerSettings>()?;
+    m.add_class::<TokenizerDialectSettings>()?;
     m.add_class::<Tokenizer>()?;
     Ok(())
 }

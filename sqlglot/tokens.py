@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import typing as t
 
-from sqlglot.errors import TokenError
+from sqlglot.errors import SqlglotError, TokenError
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
@@ -128,6 +128,33 @@ class _Tokenizer(type):
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
+        if USE_NATIVE_TOKENIZER:
+            from sqlglotrs import (  # type: ignore
+                Tokenizer as RsTokenizer,
+                TokenizerSettings as RsTokenizerSettings,
+            )
+
+            settings = RsTokenizerSettings(
+                white_space=klass.WHITE_SPACE,
+                single_tokens=klass.SINGLE_TOKENS,
+                keywords=klass.KEYWORDS,
+                numeric_literals=klass.NUMERIC_LITERALS,
+                identifiers=klass._IDENTIFIERS,
+                identifier_escapes=klass._IDENTIFIER_ESCAPES,
+                string_escapes=klass._STRING_ESCAPES,
+                quotes=klass._QUOTES,
+                format_strings=klass._FORMAT_STRINGS,
+                has_bit_strings=bool(klass.BIT_STRINGS),
+                has_hex_strings=bool(klass.HEX_STRINGS),
+                comments=klass._COMMENTS,
+                var_single_tokens=klass.VAR_SINGLE_TOKENS,
+                commands=klass.COMMANDS,
+                command_prefix_tokens=klass.COMMAND_PREFIX_TOKENS,
+            )
+            klass._NATIVE_TOKENIZER = RsTokenizer(settings)
+        else:
+            klass._NATIVE_TOKENIZER = None
+
         return klass
 
 
@@ -186,6 +213,7 @@ class Tokenizer(metaclass=_Tokenizer):
     _QUOTES: t.Dict[str, str] = {}
     _STRING_ESCAPES: t.Set[str] = set()
     _KEYWORD_TRIE: t.Dict = {}
+    _NATIVE_TOKENIZER: t.Optional[t.Any] = None
 
     KEYWORDS: t.Dict[str, TokenType] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
@@ -494,13 +522,24 @@ class Tokenizer(metaclass=_Tokenizer):
         "_end",
         "_peek",
         "_prev_token_line",
-        "_native_tokenizer",
+        "_native_dialect_settings",
     )
 
     def __init__(self, dialect: DialectType = None) -> None:
         from sqlglot.dialects import Dialect
 
         self.dialect = Dialect.get_or_raise(dialect)
+
+        if USE_NATIVE_TOKENIZER:
+            from sqlglotrs import (  # type: ignore
+                TokenizerDialectSettings as RsTokenizerDialectSettings,
+            )
+
+            self._native_dialect_settings = RsTokenizerDialectSettings(
+                escape_sequences=self.dialect.ESCAPE_SEQUENCES,
+                identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
+            )
+
         self.reset()
 
     def reset(self) -> None:
@@ -931,35 +970,10 @@ class Tokenizer(metaclass=_Tokenizer):
         return text
 
     def tokenize_native(self, sql: str) -> t.List[Token]:
-        from sqlglotrs import (  # type: ignore
-            Token as RsToken,
-            Tokenizer as RsTokenizer,
-            TokenizerSettings as RsTokenizerSettings,
-        )
-
-        if getattr(self, "_native_tokenizer", None) is None:
-            settings = RsTokenizerSettings(
-                white_space=self.WHITE_SPACE,
-                single_tokens=self.SINGLE_TOKENS,
-                keywords=self.KEYWORDS,
-                numeric_literals=self.NUMERIC_LITERALS,
-                identifiers=self._IDENTIFIERS,
-                identifier_escapes=self._IDENTIFIER_ESCAPES,
-                string_escapes=self._STRING_ESCAPES,
-                escape_sequences=self.dialect.ESCAPE_SEQUENCES,
-                quotes=self._QUOTES,
-                format_strings=self._FORMAT_STRINGS,
-                has_bit_strings=bool(self.BIT_STRINGS),
-                has_hex_strings=bool(self.HEX_STRINGS),
-                comments=self._COMMENTS,
-                var_single_tokens=self.VAR_SINGLE_TOKENS,
-                commands=self.COMMANDS,
-                command_prefix_tokens=self.COMMAND_PREFIX_TOKENS,
-                identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
-            )
-            self._native_tokenizer = RsTokenizer(settings)
+        if not self._NATIVE_TOKENIZER:
+            raise SqlglotError("Native tokenizer is not available")
 
         try:
-            return self._native_tokenizer.tokenize(sql)
+            return self._NATIVE_TOKENIZER.tokenize(sql, self._native_dialect_settings)
         except Exception as e:
             raise TokenError(str(e))

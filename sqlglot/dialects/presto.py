@@ -186,6 +186,16 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     return ""
 
 
+def _to_int(expression: exp.Expression) -> exp.Expression:
+    if not expression.type:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        annotate_types(expression)
+    if expression.type and expression.type.this not in exp.DataType.INTEGER_TYPES:
+        return exp.cast(expression, to=exp.DataType.Type.BIGINT)
+    return expression
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
@@ -315,7 +325,12 @@ class Presto(Dialect):
             exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: lambda self, e: self.func(
-                "DATE_ADD", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+                "DATE_ADD",
+                exp.Literal.string(e.text("unit") or "day"),
+                _to_int(
+                    e.expression,
+                ),
+                e.this,
             ),
             exp.DateDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
@@ -325,7 +340,7 @@ class Presto(Dialect):
             exp.DateSub: lambda self, e: self.func(
                 "DATE_ADD",
                 exp.Literal.string(e.text("unit") or "day"),
-                e.expression * -1,
+                _to_int(e.expression * -1),
                 e.this,
             ),
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),

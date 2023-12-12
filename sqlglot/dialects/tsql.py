@@ -701,6 +701,13 @@ class TSQL(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def set_operation(self, expression: exp.Union, op: str) -> str:
+            limit = expression.args.get("limit")
+            if limit:
+                return self.sql(expression.limit(limit.pop(), copy=False))
+
+            return super().set_operation(expression, op)
+
         def setitem_sql(self, expression: exp.SetItem) -> str:
             this = expression.this
             if isinstance(this, exp.EQ) and not isinstance(this.left, exp.Parameter):

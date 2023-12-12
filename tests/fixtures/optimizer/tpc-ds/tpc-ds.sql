@@ -6009,21 +6009,6 @@ WITH "date_dim_2" AS (
     RANK() OVER (ORDER BY "in_store"."return_ratio") AS "return_rank",
     RANK() OVER (ORDER BY "in_store"."currency_ratio") AS "currency_rank"
   FROM "in_store" AS "in_store"
-), "cte_3" AS (
-  SELECT
-    'store' AS "channel",
-    "store"."item" AS "item",
-    "store"."return_ratio" AS "return_ratio",
-    "store"."return_rank" AS "return_rank",
-    "store"."currency_rank" AS "currency_rank"
-  FROM "store" AS "store"
-  WHERE
-    "store"."currency_rank" <= 10 OR "store"."return_rank" <= 10
-  ORDER BY
-    "channel",
-    "return_rank",
-    "currency_rank"
-  LIMIT 100
 ), "cte_4" AS (
   SELECT
     'catalog' AS "channel",
@@ -6036,12 +6021,14 @@ WITH "date_dim_2" AS (
     "catalog"."currency_rank" <= 10 OR "catalog"."return_rank" <= 10
   UNION
   SELECT
-    "cte_3"."channel" AS "channel",
-    "cte_3"."item" AS "item",
-    "cte_3"."return_ratio" AS "return_ratio",
-    "cte_3"."return_rank" AS "return_rank",
-    "cte_3"."currency_rank" AS "currency_rank"
-  FROM "cte_3" AS "cte_3"
+    'store' AS "channel",
+    "store"."item" AS "item",
+    "store"."return_ratio" AS "return_ratio",
+    "store"."return_rank" AS "return_rank",
+    "store"."currency_rank" AS "currency_rank"
+  FROM "store" AS "store"
+  WHERE
+    "store"."currency_rank" <= 10 OR "store"."return_rank" <= 10
 )
 SELECT
   'web' AS "channel",
@@ -6059,7 +6046,12 @@ SELECT
   "cte_4"."return_ratio" AS "return_ratio",
   "cte_4"."return_rank" AS "return_rank",
   "cte_4"."currency_rank" AS "currency_rank"
-FROM "cte_4" AS "cte_4";
+FROM "cte_4" AS "cte_4"
+ORDER BY
+  "channel",
+  "return_rank",
+  "currency_rank"
+LIMIT 100;
 
 --------------------------------------
 -- TPC-DS 50

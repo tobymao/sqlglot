@@ -240,7 +240,6 @@ class Hive(Dialect):
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
-        ENCODE = "utf-8"
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

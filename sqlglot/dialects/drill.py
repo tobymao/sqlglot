@@ -81,7 +81,6 @@ class Drill(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]
-        ENCODE = "utf-8"
 
     class Parser(parser.Parser):
         STRICT_CAST = False

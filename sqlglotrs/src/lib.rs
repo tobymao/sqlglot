@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use std::hash::{Hash, Hasher};
 
 mod settings;
 mod token_type;
@@ -19,7 +20,7 @@ pub struct Token {
     #[pyo3(get)]
     pub line: usize,
     #[pyo3(get)]
-    pub column: usize,
+    pub col: usize,
     #[pyo3(get)]
     pub start: usize,
     #[pyo3(get)]
@@ -33,7 +34,7 @@ impl Token {
         token_type: TokenType,
         text: String,
         line: usize,
-        column: usize,
+        col: usize,
         start: usize,
         end: usize,
         comments: Vec<String>,
@@ -42,7 +43,7 @@ impl Token {
             token_type,
             text,
             line,
-            column,
+            col,
             start,
             end,
             comments,
@@ -65,8 +66,25 @@ impl Token {
 #[pymethods]
 impl TokenType {
     #[pyo3(name = "__repr__")]
-    fn python_repr(&self) -> PyResult<String> {
-        Ok(format!("{:?}", self))
+    fn python_repr(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    #[pyo3(name = "__hash__")]
+    fn python_hash(&self) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    #[getter]
+    fn name(&self) -> String {
+        self.python_repr()
+    }
+
+    #[getter]
+    fn value(&self) -> String {
+        self.name()
     }
 }
 

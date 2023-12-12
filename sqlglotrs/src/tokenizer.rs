@@ -418,8 +418,6 @@ impl<'a> TokenizerState<'a> {
                     self.line, self.start
                 ));
             }
-        } else {
-            // FIXME: Encode / decode
         }
 
         self.add(token_type, Some(text))?;
@@ -521,7 +519,7 @@ impl<'a> TokenizerState<'a> {
     ) -> Result<(), TokenizerError> {
         self.advance(1, false)?;
         let value = self.extract_value()?[2..].to_string();
-        match u32::from_str_radix(&value, radix) {
+        match u64::from_str_radix(&value, radix) {
             Ok(_) => self.add(radix_token_type, Some(value)),
             Err(_) => self.add(TokenType::IDENTIFIER, None),
         }

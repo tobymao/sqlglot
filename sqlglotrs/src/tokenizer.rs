@@ -140,6 +140,7 @@ impl<'a> TokenizerState<'a> {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
             if self.current_char == '\r' && self.peek_char == '\n' {
                 i = 2;
+                self.start += 1;
             }
 
             self.column = 1;

@@ -442,7 +442,7 @@ class Snowflake(Dialect):
             parts = [self._parse_var(any_token=True)]
 
             while self._match(TokenType.SLASH):
-                if self._curr and self._prev.end + 1 == self._curr.start:
+                if self._is_connected():
                     parts.append(self._parse_var(any_token=True))
                 else:
                     parts.append(exp.Var(this=""))

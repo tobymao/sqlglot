@@ -437,11 +437,7 @@ class BigQuery(Dialect):
             elif isinstance(this, exp.Literal):
                 table_name = this.name
 
-                if (
-                    self._curr
-                    and self._prev.end == self._curr.start - 1
-                    and self._parse_var(any_token=True)
-                ):
+                if self._is_connected() and self._parse_var(any_token=True):
                     table_name += self._prev.text
 
                 this = exp.Identifier(this=table_name, quoted=True)

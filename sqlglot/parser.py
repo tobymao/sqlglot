@@ -1162,6 +1162,9 @@ class Parser(metaclass=_Parser):
     def _find_sql(self, start: Token, end: Token) -> str:
         return self.sql[start.start : end.end + 1]
 
+    def _is_connected(self) -> bool:
+        return self._prev and self._curr and self._prev.end + 1 == self._curr.start
+
     def _advance(self, times: int = 1) -> None:
         self._index += times
         self._curr = seq_get(self._tokens, self._index)

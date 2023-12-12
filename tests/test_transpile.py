@@ -89,6 +89,7 @@ class TestTranspile(unittest.TestCase):
         self.validate("SELECT MIN(3)>=MIN(2)", "SELECT MIN(3) >= MIN(2)")
         self.validate("SELECT 1>0", "SELECT 1 > 0")
         self.validate("SELECT 3>=3", "SELECT 3 >= 3")
+        self.validate("SELECT a\r\nFROM b", "SELECT a FROM b")
 
     def test_comments(self):
         self.validate(

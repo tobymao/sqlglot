@@ -84,6 +84,20 @@ def _parse_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
+def _parse_make_timestamp(args: t.List) -> exp.Expression:
+    if len(args) == 1:
+        return exp.UnixToTime(this=seq_get(args, 0), scale=exp.UnixToTime.MICROS)
+
+    return exp.TimestampFromParts(
+        year=seq_get(args, 0),
+        month=seq_get(args, 1),
+        day=seq_get(args, 2),
+        hour=seq_get(args, 3),
+        min=seq_get(args, 4),
+        sec=seq_get(args, 5),
+    )
+
+
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args: t.List[str] = []
     for expr in expression.expressions:
@@ -199,9 +213,7 @@ class DuckDB(Dialect):
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_VALUE": exp.Array.from_arg_list,
-            "MAKE_TIMESTAMP": lambda args: exp.UnixToTime(
-                this=seq_get(args, 0), scale=exp.UnixToTime.MICROS
-            ),
+            "MAKE_TIMESTAMP": _parse_make_timestamp,
             "MEDIAN": lambda args: exp.PercentileCont(
                 this=seq_get(args, 0), expression=exp.Literal.number(0.5)
             ),
@@ -349,6 +361,7 @@ class DuckDB(Dialect):
             exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.Struct: _struct_sql,
             exp.Timestamp: no_timestamp_sql,
+            exp.TimestampFromParts: rename_func("MAKE_TIMESTAMP"),
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,

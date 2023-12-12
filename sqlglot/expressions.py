@@ -5233,6 +5233,19 @@ class UnixToTimeStr(Func):
     pass
 
 
+class TimestampFromParts(Func):
+    """Constructs a timestamp given its constituent parts."""
+
+    arg_types = {
+        "year": True,
+        "month": True,
+        "day": True,
+        "hour": True,
+        "min": True,
+        "sec": True,
+    }
+
+
 class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 

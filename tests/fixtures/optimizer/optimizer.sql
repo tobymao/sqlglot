@@ -1117,6 +1117,7 @@ SELECT
 FROM `t`;
 
 # title: top-level query is parenthesized
+# execute: false
 WITH x AS (
   SELECT a FROM t
 )

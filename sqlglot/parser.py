@@ -947,6 +947,10 @@ class Parser(metaclass=_Parser):
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
+    # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
+    MODIFIERS_ATTACHED_TO_UNION = True
+    UNION_MODIFIERS = {"order", "limit", "offset"}
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3262,21 +3266,34 @@ class Parser(metaclass=_Parser):
         token_type = self._prev.token_type
 
         if token_type == TokenType.UNION:
-            expression = exp.Union
+            operation = exp.Union
         elif token_type == TokenType.EXCEPT:
-            expression = exp.Except
+            operation = exp.Except
         else:
-            expression = exp.Intersect
+            operation = exp.Intersect
+
+        comments = self._prev.comments
+        distinct = self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL)
+        by_name = self._match_text_seq("BY", "NAME")
+        expression = self._parse_set_operations(
+            self._parse_select(nested=True, parse_set_operation=False)
+        )
+
+        set_operation_modifiers: t.Dict[str, t.Any] = {}
+        if self.MODIFIERS_ATTACHED_TO_UNION and isinstance(expression, exp.Expression):
+            for arg in self.UNION_MODIFIERS:
+                expr = expression.args.get(arg)
+                if expr:
+                    set_operation_modifiers[arg] = expr.pop()
 
         return self.expression(
-            expression,
-            comments=self._prev.comments,
+            operation,
+            comments=comments,
             this=this,
-            distinct=self._match(TokenType.DISTINCT) or not self._match(TokenType.ALL),
-            by_name=self._match_text_seq("BY", "NAME"),
-            expression=self._parse_set_operations(
-                self._parse_select(nested=True, parse_set_operation=False)
-            ),
+            distinct=distinct,
+            by_name=by_name,
+            expression=expression,
+            **set_operation_modifiers,
         )
 
     def _parse_expression(self) -> t.Optional[exp.Expression]:

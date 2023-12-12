@@ -21,6 +21,12 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
 
         self.validate_all(
+            "SELECT TOP 1 * FROM (SELECT x FROM t1 UNION ALL SELECT x FROM t2) AS _l_0",
+            read={
+                "": "SELECT x FROM t1 UNION ALL SELECT x FROM t2 LIMIT 1",
+            },
+        )
+        self.validate_all(
             "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c AS c FROM t) AS temp",
             read={
                 "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT c FROM t",

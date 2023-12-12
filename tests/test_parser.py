@@ -94,11 +94,30 @@ class TestParser(unittest.TestCase):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
         self.assertEqual(set(tables), {"a", "b.c", "d"})
 
-    def test_union_order(self):
+    def test_union(self):
         self.assertIsInstance(parse_one("SELECT * FROM (SELECT 1) UNION SELECT 2"), exp.Union)
         self.assertIsInstance(
             parse_one("SELECT x FROM y HAVING x > (SELECT 1) UNION SELECT 2"), exp.Union
         )
+
+        # Check that modifiers are attached to the topmost union node and not the rightmost query
+        single_union = "SELECT x FROM t1 UNION ALL SELECT x FROM t2 LIMIT 1"
+        expr = parse_one(single_union)
+        limit = expr.assert_is(exp.Union).args.get("limit")
+        self.assertIsInstance(limit, exp.Limit)
+        self.assertEqual(expr.sql(), single_union)
+
+        two_unions = (
+            "SELECT x FROM t1 UNION ALL SELECT x FROM t2 UNION ALL SELECT x FROM t3 LIMIT 1"
+        )
+        expr = parse_one(two_unions)
+        limit = expr.assert_is(exp.Union).args.get("limit")
+        self.assertIsInstance(limit, exp.Limit)
+        self.assertEqual(expr.sql(), two_unions)
+
+        expr = parse_one(single_union, read="clickhouse")
+        self.assertIsNone(expr.args.get("limit"))
+        self.assertEqual(expr.sql(dialect="clickhouse"), single_union)
 
     def test_select(self):
         self.assertIsNotNone(parse_one("select 1 natural"))

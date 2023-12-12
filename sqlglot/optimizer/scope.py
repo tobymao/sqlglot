@@ -515,7 +515,10 @@ def _traverse_scope(scope):
     elif isinstance(scope.expression, exp.Union):
         yield from _traverse_union(scope)
     elif isinstance(scope.expression, exp.Subquery):
-        yield from _traverse_subqueries(scope)
+        if scope.is_root:
+            yield from _traverse_select(scope)
+        else:
+            yield from _traverse_subqueries(scope)
     elif isinstance(scope.expression, exp.Table):
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):

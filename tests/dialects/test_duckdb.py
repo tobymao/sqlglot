@@ -55,6 +55,13 @@ class TestDuckDB(Validator):
             )
 
         self.validate_all(
+            "SELECT {'bla': column1, 'foo': column2, 'bar': column3} AS data FROM source_table",
+            read={
+                "bigquery": "SELECT STRUCT(column1 AS bla, column2 AS foo, column3 AS bar) AS data FROM source_table",
+                "duckdb": "SELECT {'bla': column1, 'foo': column2, 'bar': column3} AS data FROM source_table",
+            },
+        )
+        self.validate_all(
             "WITH cte(x) AS (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) SELECT AVG(x) FILTER (WHERE x > 1) FROM cte",
             write={
                 "duckdb": "WITH cte(x) AS (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) SELECT AVG(x) FILTER(WHERE x > 1) FROM cte",

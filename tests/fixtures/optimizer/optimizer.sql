@@ -1115,3 +1115,32 @@ WITH `t` AS (
 SELECT
   `t`.`CoL` AS `CoL`
 FROM `t`;
+
+# title: top-level query is parenthesized
+# execute: false
+WITH x AS (
+  SELECT a FROM t
+)
+(
+  SELECT * FROM x
+  UNION ALL
+  SELECT * FROM x
+  LIMIT 10
+)
+LIMIT 10;
+(
+  WITH "cte" AS (
+    SELECT
+      "t"."a" AS "a"
+    FROM "t" AS "t"
+  )
+  SELECT
+    "cte"."a" AS "a"
+  FROM "cte" AS "cte"
+  UNION ALL
+  SELECT
+    "cte"."a" AS "a"
+  FROM "cte" AS "cte"
+  LIMIT 10
+)
+LIMIT 10;

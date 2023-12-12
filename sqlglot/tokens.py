@@ -477,7 +477,6 @@ class Tokenizer(metaclass=_Tokenizer):
 
     # handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
-    ENCODE: t.Optional[str] = None
 
     COMMENTS = ["--", ("/*", "*/")]
 
@@ -862,8 +861,6 @@ class Tokenizer(metaclass=_Tokenizer):
                 raise TokenError(
                     f"Numeric string contains invalid characters from {self._line}:{self._start}"
                 )
-        else:
-            text = text.encode(self.ENCODE).decode(self.ENCODE) if self.ENCODE else text
 
         self._add(token_type, text)
         return True

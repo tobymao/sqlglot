@@ -949,6 +949,7 @@ class Parser(metaclass=_Parser):
 
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_UNION = True
+    UNION_MODIFIERS = {"order", "limit", "offset"}
 
     __slots__ = (
         "error_level",
@@ -3277,8 +3278,7 @@ class Parser(metaclass=_Parser):
 
         set_operation_modifiers: t.Dict[str, t.Any] = {}
         if self.MODIFIERS_ATTACHED_TO_UNION and isinstance(expression, exp.Expression):
-            # These should be attached to the set operation itself instead of its rhs query
-            for arg in ("order", "limit", "offset"):
+            for arg in self.UNION_MODIFIERS:
                 expr = expression.args.get(arg)
                 if expr:
                     set_operation_modifiers[arg] = expr.pop()

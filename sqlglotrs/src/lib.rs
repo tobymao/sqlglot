@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use pyo3::types::{PyList, PyString};
 use std::hash::{Hash, Hasher};
 
 mod settings;
@@ -16,7 +17,7 @@ pub struct Token {
     #[pyo3(get)]
     pub token_type: TokenType,
     #[pyo3(get)]
-    pub text: String,
+    pub text: Py<PyString>,
     #[pyo3(get)]
     pub line: usize,
     #[pyo3(get)]
@@ -26,7 +27,7 @@ pub struct Token {
     #[pyo3(get)]
     pub end: usize,
     #[pyo3(get)]
-    pub comments: Vec<String>,
+    pub comments: Py<PyList>,
 }
 
 impl Token {
@@ -39,19 +40,28 @@ impl Token {
         end: usize,
         comments: Vec<String>,
     ) -> Token {
-        Token {
+        Python::with_gil(|py| Token {
             token_type,
-            text,
+            text: PyString::new(py, &text).into(),
             line,
             col,
             start,
             end,
-            comments,
-        }
+            comments: PyList::new(py, &comments).into(),
+        })
     }
 
-    pub fn append_comments(&mut self, comments: &mut Vec<String>) {
-        self.comments.append(comments);
+    pub fn append_comments(&self, comments: &mut Vec<String>) {
+        Python::with_gil(|py| {
+            let pylist = self.comments.as_ref(py);
+            for comment in comments.iter() {
+                if let Err(_) = pylist.append(comment) {
+                    panic!("Failed to append comments to the Python list");
+                }
+            }
+        });
+        // Simulate `Vec::append`.
+        let _ = std::mem::replace(comments, Vec::new());
     }
 }
 
@@ -85,6 +95,11 @@ impl TokenType {
     #[getter]
     fn value(&self) -> String {
         self.name()
+    }
+
+    #[getter]
+    fn index(&self) -> u16 {
+        *self as u16
     }
 }
 

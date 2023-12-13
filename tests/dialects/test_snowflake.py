@@ -626,6 +626,10 @@ WHERE
             "SELECT * FROM @mystage t (c1)",
             "SELECT * FROM @mystage AS t(c1)",
         )
+        self.validate_identity(
+            "SELECT * FROM @foo/bar (PATTERN => 'test', FILE_FORMAT => ds_sandbox.test.my_csv_format) AS bla",
+            "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
+        )
 
     def test_sample(self):
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")

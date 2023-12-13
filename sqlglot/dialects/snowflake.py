@@ -372,17 +372,8 @@ class Snowflake(Dialect):
         def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             # https://docs.snowflake.com/en/user-guide/querying-stage
             table: t.Optional[exp.Expression] = None
-            if self._match_text_seq("@"):
-                table_name = "@"
-                while self._curr:
-                    self._advance()
-                    table_name += self._prev.text
-                    if not self._match_set(self.STAGED_FILE_SINGLE_TOKENS, advance=False):
-                        break
-                    while self._match_set(self.STAGED_FILE_SINGLE_TOKENS):
-                        table_name += self._prev.text
-
-                table = exp.var(table_name)
+            if self._match_text_seq("@", advance=False):
+                table = self._parse_location_path()
             elif self._match(TokenType.STRING, advance=False):
                 table = self._parse_string()
 
@@ -390,11 +381,16 @@ class Snowflake(Dialect):
                 file_format = None
                 pattern = None
 
-                if self._match_text_seq("(", "FILE_FORMAT", "=>"):
-                    file_format = self._parse_string() or super()._parse_table_parts()
-                    if self._match_text_seq(",", "PATTERN", "=>"):
+                self._match(TokenType.L_PAREN)
+                while self._curr and not self._match(TokenType.R_PAREN):
+                    if self._match_text_seq("FILE_FORMAT", "=>"):
+                        file_format = self._parse_string() or super()._parse_table_parts()
+                    elif self._match_text_seq("PATTERN", "=>"):
                         pattern = self._parse_string()
-                    self._match_r_paren()
+                    else:
+                        break
+
+                    self._match(TokenType.COMMA)
 
                 return self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
 
@@ -438,17 +434,13 @@ class Snowflake(Dialect):
 
         def _parse_location(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
+            return self.expression(exp.LocationProperty, this=self._parse_location_path())
 
-            parts = [self._parse_var(any_token=True)]
-
-            while self._match(TokenType.SLASH):
-                if self._is_connected():
-                    parts.append(self._parse_var(any_token=True))
-                else:
-                    parts.append(exp.Var(this=""))
-            return self.expression(
-                exp.LocationProperty, this=exp.var("/".join(str(p) for p in parts))
-            )
+        def _parse_location_path(self) -> exp.Var:
+            parts = [self._advance_any(ignore_reserved=True)]
+            while self._is_connected():
+                parts.append(self._advance_any(ignore_reserved=True))
+            return exp.var("".join(part.text for part in parts if part))
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]

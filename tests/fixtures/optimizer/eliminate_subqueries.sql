@@ -42,17 +42,9 @@ WITH y AS (SELECT a FROM x), z AS (SELECT a FROM y AS y) SELECT a FROM z AS z CR
 WITH y AS (SELECT a FROM (SELECT a FROM x) AS y) SELECT a FROM y;
 WITH y_2 AS (SELECT a FROM x), y AS (SELECT a FROM y_2 AS y) SELECT a FROM y;
 
--- Union
-SELECT 1 AS x, 2 AS y UNION ALL SELECT 1 AS x, 2 AS y;
-WITH cte AS (SELECT 1 AS x, 2 AS y) SELECT cte.x AS x, cte.y AS y FROM cte AS cte UNION ALL SELECT cte.x AS x, cte.y AS y FROM cte AS cte;
-
 -- Union of selects with derived tables
 (SELECT a FROM (SELECT b FROM x)) UNION (SELECT a FROM (SELECT b FROM y));
-WITH cte AS (SELECT b FROM x), cte_2 AS (SELECT a FROM cte AS cte), cte_3 AS (SELECT b FROM y), cte_4 AS (SELECT a FROM cte_3 AS cte_3) (SELECT cte_2.a AS a FROM cte_2 AS cte_2) UNION (SELECT cte_4.a AS a FROM cte_4 AS cte_4);
-
--- Three unions
-SELECT a FROM x UNION ALL SELECT a FROM y UNION ALL SELECT a FROM z;
-WITH cte AS (SELECT a FROM x), cte_2 AS (SELECT a FROM y), cte_3 AS (SELECT cte.a AS a FROM cte AS cte UNION ALL SELECT cte_2.a AS a FROM cte_2 AS cte_2), cte_4 AS (SELECT a FROM z) SELECT cte_3.a AS a FROM cte_3 AS cte_3 UNION ALL SELECT cte_4.a AS a FROM cte_4 AS cte_4;
+WITH cte AS (SELECT b FROM x), cte_2 AS (SELECT b FROM y) (SELECT a FROM cte AS cte) UNION (SELECT a FROM cte_2 AS cte_2);
 
 -- Subquery
 SELECT a FROM x WHERE b = (SELECT y.c FROM y);

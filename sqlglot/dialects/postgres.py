@@ -277,6 +277,7 @@ class Postgres(Dialect):
             "CONSTRAINT TRIGGER": TokenType.COMMAND,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
+            "EXEC": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
             "JSONB": TokenType.JSONB,
             "MONEY": TokenType.MONEY,

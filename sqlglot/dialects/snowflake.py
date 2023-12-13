@@ -436,6 +436,12 @@ class Snowflake(Dialect):
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_connected_tokens())
 
+        def _parse_connected_tokens(self) -> exp.Var:
+            parts = [self._advance_any(ignore_reserved=True)]
+            while self._is_connected() and not self._match(TokenType.COMMA, advance=False):
+                parts.append(self._advance_any(ignore_reserved=True))
+            return exp.var("".join(part.text for part in parts if part))
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]

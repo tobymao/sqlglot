@@ -12,7 +12,6 @@ pub struct TokenizerSettings {
     pub identifiers: HashMap<char, char>,
     pub identifier_escapes: HashSet<char>,
     pub string_escapes: HashSet<char>,
-    pub escape_sequences: HashMap<String, String>,
     pub quotes: HashMap<String, String>,
     pub format_strings: HashMap<String, (String, TokenType)>,
     pub has_bit_strings: bool,
@@ -21,7 +20,6 @@ pub struct TokenizerSettings {
     pub var_single_tokens: HashSet<char>,
     pub commands: HashSet<TokenType>,
     pub command_prefix_tokens: HashSet<TokenType>,
-    pub identifiers_can_start_with_digit: bool,
 }
 
 #[pymethods]
@@ -35,7 +33,6 @@ impl TokenizerSettings {
         identifiers: HashMap<String, String>,
         identifier_escapes: HashSet<String>,
         string_escapes: HashSet<String>,
-        escape_sequences: HashMap<String, String>,
         quotes: HashMap<String, String>,
         format_strings: HashMap<String, (String, TokenType)>,
         has_bit_strings: bool,
@@ -44,7 +41,6 @@ impl TokenizerSettings {
         var_single_tokens: HashSet<String>,
         commands: HashSet<TokenType>,
         command_prefix_tokens: HashSet<TokenType>,
-        identifiers_can_start_with_digit: bool,
     ) -> Self {
         let to_char = |v: &String| {
             if v.len() == 1 {
@@ -83,7 +79,6 @@ impl TokenizerSettings {
             identifiers: identifiers_native,
             identifier_escapes: identifier_escapes_native,
             string_escapes: string_escapes_native,
-            escape_sequences,
             quotes,
             format_strings,
             has_bit_strings,
@@ -92,6 +87,26 @@ impl TokenizerSettings {
             var_single_tokens: var_single_tokens_native,
             commands,
             command_prefix_tokens,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+#[pyclass]
+pub struct TokenizerDialectSettings {
+    pub escape_sequences: HashMap<String, String>,
+    pub identifiers_can_start_with_digit: bool,
+}
+
+#[pymethods]
+impl TokenizerDialectSettings {
+    #[new]
+    pub fn new(
+        escape_sequences: HashMap<String, String>,
+        identifiers_can_start_with_digit: bool,
+    ) -> Self {
+        TokenizerDialectSettings {
+            escape_sequences,
             identifiers_can_start_with_digit,
         }
     }

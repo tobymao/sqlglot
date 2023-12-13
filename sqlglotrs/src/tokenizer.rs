@@ -1,5 +1,5 @@
 use crate::trie::{Trie, TrieResult};
-use crate::{Token, TokenType, TokenizerSettings};
+use crate::{Token, TokenType, TokenizerDialectSettings, TokenizerSettings};
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use std::cmp::{max, min};
@@ -41,8 +41,13 @@ impl Tokenizer {
         }
     }
 
-    pub fn tokenize(&self, sql: &str) -> Result<Vec<Token>, PyErr> {
-        let mut state = TokenizerState::new(sql, &self.settings, &self.keyword_trie);
+    pub fn tokenize(
+        &self,
+        sql: &str,
+        dialect_settings: &TokenizerDialectSettings,
+    ) -> Result<Vec<Token>, PyErr> {
+        let mut state =
+            TokenizerState::new(sql, &self.settings, &self.keyword_trie, dialect_settings);
         state.tokenize().map_err(|e| {
             PyException::new_err(format!("Error tokenizing '{}': {}", e.context, e.message))
         })
@@ -65,6 +70,7 @@ struct TokenizerState<'a> {
     previous_token_line: Option<usize>,
     keyword_trie: &'a Trie,
     settings: &'a TokenizerSettings,
+    dialect_settings: &'a TokenizerDialectSettings,
 }
 
 impl<'a> TokenizerState<'a> {
@@ -72,6 +78,7 @@ impl<'a> TokenizerState<'a> {
         sql: &str,
         settings: &'a TokenizerSettings,
         keyword_trie: &'a Trie,
+        dialect_settings: &'a TokenizerDialectSettings,
     ) -> TokenizerState<'a> {
         let sql_vec = sql.chars().collect::<Vec<char>>();
         let sql_vec_len = sql_vec.len();
@@ -90,6 +97,7 @@ impl<'a> TokenizerState<'a> {
             previous_token_line: None,
             keyword_trie,
             settings,
+            dialect_settings,
         }
     }
 
@@ -492,7 +500,7 @@ impl<'a> TokenizerState<'a> {
                     self.add(TokenType::NUMBER, Some(number_text))?;
                     self.add(TokenType::DCOLON, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
-                } else if self.settings.identifiers_can_start_with_digit {
+                } else if self.dialect_settings.identifiers_can_start_with_digit {
                     self.add(TokenType::VAR, None)?;
                 } else {
                     self.advance(-(literal.chars().count() as isize), false)?;
@@ -612,13 +620,13 @@ impl<'a> TokenizerState<'a> {
                     ));
                 }
 
-                if !self.settings.escape_sequences.is_empty()
+                if !self.dialect_settings.escape_sequences.is_empty()
                     && !self.peek_char.is_whitespace()
                     && self.settings.string_escapes.contains(&self.current_char)
                 {
                     let sequence_key = format!("{}{}", self.current_char, self.peek_char);
                     if let Some(escaped_sequence) =
-                        self.settings.escape_sequences.get(&sequence_key)
+                        self.dialect_settings.escape_sequences.get(&sequence_key)
                     {
                         self.advance(2, false)?;
                         text.push_str(escaped_sequence);

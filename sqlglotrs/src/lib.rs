@@ -86,6 +86,11 @@ impl TokenType {
     fn value(&self) -> String {
         self.name()
     }
+
+    #[getter]
+    fn index(&self) -> u16 {
+        *self as u16
+    }
 }
 
 #[pymodule]

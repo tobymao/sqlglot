@@ -320,6 +320,11 @@ class TestExecutor(unittest.TestCase):
                     (None,),
                 ],
             ),
+            (
+                "SELECT a FROM x UNION ALL SELECT a FROM x LIMIT 1",
+                ["a"],
+                [("a",)],
+            ),
         ]:
             with self.subTest(sql):
                 if isinstance(rows, list):

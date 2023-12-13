@@ -343,6 +343,9 @@ class PythonExecutor:
         else:
             sink.rows = left.rows + right.rows
 
+        if not math.isinf(step.limit):
+            sink.rows = sink.rows[0 : step.limit]
+
         return self.context({step.name: sink})
 
 

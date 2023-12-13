@@ -373,7 +373,7 @@ class Snowflake(Dialect):
             # https://docs.snowflake.com/en/user-guide/querying-stage
             table: t.Optional[exp.Expression] = None
             if self._match_text_seq("@", advance=False):
-                table = self._parse_location_path()
+                table = self._parse_connected_tokens()
             elif self._match(TokenType.STRING, advance=False):
                 table = self._parse_string()
 
@@ -434,13 +434,7 @@ class Snowflake(Dialect):
 
         def _parse_location(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
-            return self.expression(exp.LocationProperty, this=self._parse_location_path())
-
-        def _parse_location_path(self) -> exp.Var:
-            parts = [self._advance_any(ignore_reserved=True)]
-            while self._is_connected():
-                parts.append(self._advance_any(ignore_reserved=True))
-            return exp.var("".join(part.text for part in parts if part))
+            return self.expression(exp.LocationProperty, this=self._parse_connected_tokens())
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]

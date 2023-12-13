@@ -4910,6 +4910,12 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()
 
+    def _parse_connected_tokens(self) -> exp.Var:
+        parts = [self._advance_any(ignore_reserved=True)]
+        while self._is_connected():
+            parts.append(self._advance_any(ignore_reserved=True))
+        return exp.var("".join(part.text for part in parts if part))
+
     def _advance_any(self, ignore_reserved: bool = False) -> t.Optional[Token]:
         if self._curr and (ignore_reserved or self._curr.token_type not in self.RESERVED_TOKENS):
             self._advance()

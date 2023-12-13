@@ -967,11 +967,10 @@ class Tokenizer(metaclass=_Tokenizer):
         if not self._NATIVE_TOKENIZER:
             raise SqlglotError("Native tokenizer is not available")
 
-        all_token_types = list(TokenType)
         try:
             return [
                 Token(
-                    token_type=all_token_types[token.token_type.index],
+                    token_type=_ALL_TOKEN_TYPES[token.token_type.index],
                     text=token.text,
                     line=token.line,
                     col=token.col,
@@ -983,3 +982,6 @@ class Tokenizer(metaclass=_Tokenizer):
             ]
         except Exception as e:
             raise TokenError(str(e))
+
+
+_ALL_TOKEN_TYPES = list(TokenType)

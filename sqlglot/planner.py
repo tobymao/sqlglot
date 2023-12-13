@@ -427,8 +427,10 @@ class SetOperation(Step):
         assert isinstance(expression, exp.Union)
 
         left = Step.from_expression(expression.left, ctes)
+        # SELECT 1 UNION SELECT 2  <-- these subqueries don't have names
+        left.name = left.name or "left"
         right = Step.from_expression(expression.right, ctes)
-
+        right.name = right.name or "right"
         step = cls(
             op=expression.__class__,
             left=left.name,

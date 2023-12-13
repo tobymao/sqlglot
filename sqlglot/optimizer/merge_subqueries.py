@@ -174,6 +174,22 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
             for col in inner_projections[selection].find_all(exp.Column)
         )
 
+    def _is_recursive():
+        # Recursive CTEs look like this:
+        #     WITH RECURSIVE cte AS (
+        #       SELECT * FROM x  <-- inner scope
+        #       UNION ALL
+        #       SELECT * FROM cte  <-- outer scope
+        #     )
+        cte = inner_scope.expression.parent
+        node = outer_scope.expression.parent
+
+        while node:
+            if node is cte:
+                return True
+            node = node.parent
+        return False
+
     return (
         isinstance(outer_scope.expression, exp.Select)
         and not outer_scope.expression.is_star
@@ -197,6 +213,7 @@ def _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
         )
         and not _outer_select_joins_on_inner_select_join()
         and not _is_a_window_expression_in_unmergable_operation()
+        and not _is_recursive()
     )
 
 

@@ -203,6 +203,8 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
 
     def test_postgres(self):
+        self.validate_identity("EXEC AS myfunc @id = 123")
+
         expr = parse_one(
             "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)", read="postgres"
         )

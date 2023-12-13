@@ -18,16 +18,16 @@ install-pre-commit:
 	pre-commit install
 
 test:
-	SQLGLOT_NATIVE_TOKENIZER=0 python -m unittest
+	SQLGLOTRS_TOKENIZER=0 python -m unittest
 
 test-rs:
-	python -m unittest
+	RUST_BACKTRACE=1 python -m unittest
 
 unit:
-	SKIP_INTEGRATION=1 SQLGLOT_NATIVE_TOKENIZER=0 python -m unittest
+	SKIP_INTEGRATION=1 SQLGLOTRS_TOKENIZER=0 python -m unittest
 
 unit-rs:
-	SKIP_INTEGRATION=1 python -m unittest
+	SKIP_INTEGRATION=1 RUST_BACKTRACE=1 python -m unittest
 
 style:
 	pre-commit run --all-files

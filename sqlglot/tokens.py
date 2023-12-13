@@ -18,9 +18,9 @@ try:
         TokenizerSettings as RsTokenizerSettings,
     )
 
-    USE_NATIVE_TOKENIZER = os.environ.get("SQLGLOT_NATIVE_TOKENIZER", "1") == "1"
+    USE_RS_TOKENIZER = os.environ.get("SQLGLOTRS_TOKENIZER", "1") == "1"
 except ImportError:
-    USE_NATIVE_TOKENIZER = False
+    USE_RS_TOKENIZER = False
 
 
 class Token:
@@ -131,7 +131,7 @@ class _Tokenizer(type):
             if " " in key or any(single in key for single in klass.SINGLE_TOKENS)
         )
 
-        if USE_NATIVE_TOKENIZER:
+        if USE_RS_TOKENIZER:
             settings = RsTokenizerSettings(
                 white_space={k: v.name for k, v in klass.WHITE_SPACE.items()},
                 single_tokens={k: v.name for k, v in klass.SINGLE_TOKENS.items()},
@@ -149,9 +149,9 @@ class _Tokenizer(type):
                 commands={v.name for v in klass.COMMANDS},
                 command_prefix_tokens={v.name for v in klass.COMMAND_PREFIX_TOKENS},
             )
-            klass._NATIVE_TOKENIZER = RsTokenizer(settings)
+            klass._RS_TOKENIZER = RsTokenizer(settings)
         else:
-            klass._NATIVE_TOKENIZER = None
+            klass._RS_TOKENIZER = None
 
         return klass
 
@@ -211,7 +211,7 @@ class Tokenizer(metaclass=_Tokenizer):
     _QUOTES: t.Dict[str, str] = {}
     _STRING_ESCAPES: t.Set[str] = set()
     _KEYWORD_TRIE: t.Dict = {}
-    _NATIVE_TOKENIZER: t.Optional[t.Any] = None
+    _RS_TOKENIZER: t.Optional[t.Any] = None
 
     KEYWORDS: t.Dict[str, TokenType] = {
         **{f"{{%{postfix}": TokenType.BLOCK_START for postfix in ("", "+", "-")},
@@ -520,7 +520,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "_end",
         "_peek",
         "_prev_token_line",
-        "_native_dialect_settings",
+        "_rs_dialect_settings",
     )
 
     def __init__(self, dialect: DialectType = None) -> None:
@@ -528,8 +528,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
         self.dialect = Dialect.get_or_raise(dialect)
 
-        if USE_NATIVE_TOKENIZER:
-            self._native_dialect_settings = RsTokenizerDialectSettings(
+        if USE_RS_TOKENIZER:
+            self._rs_dialect_settings = RsTokenizerDialectSettings(
                 escape_sequences=self.dialect.ESCAPE_SEQUENCES,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             )
@@ -553,8 +553,8 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def tokenize(self, sql: str) -> t.List[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
-        if USE_NATIVE_TOKENIZER:
-            return self.tokenize_native(sql)
+        if USE_RS_TOKENIZER:
+            return self.tokenize_rs(sql)
 
         self.reset()
         self.sql = sql
@@ -963,9 +963,9 @@ class Tokenizer(metaclass=_Tokenizer):
 
         return text
 
-    def tokenize_native(self, sql: str) -> t.List[Token]:
-        if not self._NATIVE_TOKENIZER:
-            raise SqlglotError("Native tokenizer is not available")
+    def tokenize_rs(self, sql: str) -> t.List[Token]:
+        if not self._RS_TOKENIZER:
+            raise SqlglotError("Rust tokenizer is not available")
 
         try:
             return [
@@ -978,7 +978,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     end=token.end,
                     comments=token.comments,
                 )
-                for token in self._NATIVE_TOKENIZER.tokenize(sql, self._native_dialect_settings)
+                for token in self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
             ]
         except Exception as e:
             raise TokenError(str(e))

@@ -109,7 +109,9 @@ class TestOptimizer(unittest.TestCase):
             },
         }
 
-    def check_file(self, file, func, pretty=False, execute=False, set_dialect=False, **kwargs):
+    def check_file(
+        self, file, func, pretty=False, execute=False, set_dialect=False, only=None, **kwargs
+    ):
         with ProcessPoolExecutor() as pool:
             results = {}
 
@@ -117,6 +119,8 @@ class TestOptimizer(unittest.TestCase):
                 load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1
             ):
                 title = meta.get("title") or f"{i}, {sql}"
+                if only and title != only:
+                    continue
                 dialect = meta.get("dialect")
                 leave_tables_isolated = meta.get("leave_tables_isolated")
 
@@ -137,10 +141,10 @@ class TestOptimizer(unittest.TestCase):
                 )
 
         for future in as_completed(results):
-            optimized = future.result()
             sql, title, expected, dialect, execute = results[future]
 
             with self.subTest(title):
+                optimized = future.result()
                 self.assertEqual(
                     expected,
                     optimized.sql(pretty=pretty, dialect=dialect),

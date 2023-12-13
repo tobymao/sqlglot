@@ -95,44 +95,11 @@ def eliminate_subqueries(expression):
 
 
 def _eliminate(scope, existing_ctes, taken):
-    if scope.is_union:
-        return _eliminate_union(scope, existing_ctes, taken)
-
     if scope.is_derived_table:
         return _eliminate_derived_table(scope, existing_ctes, taken)
 
     if scope.is_cte:
         return _eliminate_cte(scope, existing_ctes, taken)
-
-
-def _eliminate_union(scope, existing_ctes, taken):
-    duplicate_cte_alias = existing_ctes.get(scope.expression)
-
-    alias = duplicate_cte_alias or find_new_name(taken=taken, base="cte")
-
-    taken[alias] = scope
-
-    # Try to maintain the selections
-    expressions = scope.expression.selects
-    selects = [
-        exp.alias_(exp.column(e.alias_or_name, table=alias), alias=e.alias_or_name, copy=False)
-        for e in expressions
-        if e.alias_or_name
-    ]
-    # If not all selections have an alias, just select *
-    if len(selects) != len(expressions):
-        selects = ["*"]
-
-    scope.expression.replace(
-        exp.select(*selects).from_(exp.alias_(exp.table_(alias), alias=alias, copy=False))
-    )
-
-    if not duplicate_cte_alias:
-        existing_ctes[scope.expression] = alias
-        return exp.CTE(
-            this=scope.expression,
-            alias=exp.TableAlias(this=exp.to_identifier(alias)),
-        )
 
 
 def _eliminate_derived_table(scope, existing_ctes, taken):

@@ -373,7 +373,7 @@ class Snowflake(Dialect):
             # https://docs.snowflake.com/en/user-guide/querying-stage
             table: t.Optional[exp.Expression] = None
             if self._match_text_seq("@", advance=False):
-                table = self._parse_connected_tokens()
+                table = self._parse_location_path()
             elif self._match(TokenType.STRING, advance=False):
                 table = self._parse_string()
 
@@ -434,12 +434,16 @@ class Snowflake(Dialect):
 
         def _parse_location(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
-            return self.expression(exp.LocationProperty, this=self._parse_connected_tokens())
+            return self.expression(exp.LocationProperty, this=self._parse_location_path())
 
-        def _parse_connected_tokens(self) -> exp.Var:
+        def _parse_location_path(self) -> exp.Var:
             parts = [self._advance_any(ignore_reserved=True)]
+
+            # We avoid consuming a comma token because external tables like @foo and @bar
+            # can be joined in a query with a comma separator.
             while self._is_connected() and not self._match(TokenType.COMMA, advance=False):
                 parts.append(self._advance_any(ignore_reserved=True))
+
             return exp.var("".join(part.text for part in parts if part))
 
     class Tokenizer(tokens.Tokenizer):

@@ -371,11 +371,12 @@ class Snowflake(Dialect):
 
         def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             # https://docs.snowflake.com/en/user-guide/querying-stage
-            table: t.Optional[exp.Expression] = None
             if self._match_text_seq("@", advance=False):
-                table = self._parse_location_path()
+                table: t.Optional[exp.Expression] = self._parse_location_path()
             elif self._match(TokenType.STRING, advance=False):
                 table = self._parse_string()
+            else:
+                table = None
 
             if table:
                 file_format = None

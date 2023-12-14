@@ -1,6 +1,32 @@
 Changelog
 =========
 
+## [v20.2.0] - 2023-12-14
+### :bug: Bug Fixes
+- [`1a484b3`](https://github.com/tobymao/sqlglot/commit/1a484b3db939dff5aeeddb5145ce9a24ea3163bd) - **presto**: coerce DATEADD expression to BIGINT *(PR [#2648](https://github.com/tobymao/sqlglot/pull/2648) by [@barakalon](https://github.com/barakalon))*
+- [`3cdb81a`](https://github.com/tobymao/sqlglot/commit/3cdb81ac82be73b4b72ebac016bbe892d6337cad) - **duckdb**: transpile bigquery structs w/ aliases correctly *(PR [#2650](https://github.com/tobymao/sqlglot/pull/2650) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2649](undefined) opened by [@nakalamvokis](https://github.com/nakalamvokis)*
+- [`49dc0da`](https://github.com/tobymao/sqlglot/commit/49dc0daf0a51f9e4920e27712ff91da90e01a5ce) - **tokenizer**: advance self._start by a character when we encounter CRLF *(PR [#2658](https://github.com/tobymao/sqlglot/pull/2658) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2656](undefined) opened by [@charsmith](https://github.com/charsmith)*
+- [`8ee5492`](https://github.com/tobymao/sqlglot/commit/8ee54923ba04e6ec69136b7810d5c87866692a79) - **duckdb**: support the 6 arg. variant of make_timestamp *(PR [#2659](https://github.com/tobymao/sqlglot/pull/2659) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2655](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`9cf71ff`](https://github.com/tobymao/sqlglot/commit/9cf71ffe96288ed347ecf6724d1ef8b92cb77938) - Get rid of the custom text encoding in the tokenizer *(PR [#2660](https://github.com/tobymao/sqlglot/pull/2660) by [@izeigerman](https://github.com/izeigerman))*
+- [`462c970`](https://github.com/tobymao/sqlglot/commit/462c970e26c174dbb03a9f50764315bde568e6c4) - make union parsing non-recursive, allowing to parse infinite large unions and lhs binding *(PR [#2662](https://github.com/tobymao/sqlglot/pull/2662) by [@tobymao](https://github.com/tobymao))*
+- [`8860521`](https://github.com/tobymao/sqlglot/commit/8860521bb48260fb0ab94f6e831b523b35c40b62) - **optimizer**: handle case where top-level query is a Subquery in scope *(PR [#2661](https://github.com/tobymao/sqlglot/pull/2661) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2654](undefined) opened by [@J000Z](https://github.com/J000Z)*
+- [`4617ac3`](https://github.com/tobymao/sqlglot/commit/4617ac39fcd520bd25cb4a03013a354bfc2fc769) - **executor**: respect LIMIT in set operations *(PR [#2665](https://github.com/tobymao/sqlglot/pull/2665) by [@georgesittas](https://github.com/georgesittas))*
+- [`a8d4b05`](https://github.com/tobymao/sqlglot/commit/a8d4b0516e9282acdf4791060c4d539e2303cc12) - postgres exec as command closes [#2666](https://github.com/tobymao/sqlglot/pull/2666) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`bf6d3e4`](https://github.com/tobymao/sqlglot/commit/bf6d3e4bbf25c47a77a75229143a8bb19d4ec6f5) - **optimizer**: eliminate eliminate_unions *(PR [#2663](https://github.com/tobymao/sqlglot/pull/2663) by [@barakalon](https://github.com/barakalon))*
+- [`2ae0deb`](https://github.com/tobymao/sqlglot/commit/2ae0debec0b945b0ece250d8e1e29b072b05602a) - **snowflake**: refactor location paths *(PR [#2668](https://github.com/tobymao/sqlglot/pull/2668) by [@georgesittas](https://github.com/georgesittas))*
+- [`9177c6a`](https://github.com/tobymao/sqlglot/commit/9177c6a2b3cfcab3901df7227da333ca965626f6) - **snowflake**: time travel syntax can be used in queries as well *(PR [#2674](https://github.com/tobymao/sqlglot/pull/2674) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2670](undefined) opened by [@sfc-gh-jlambert](https://github.com/sfc-gh-jlambert)*
+- [`7188431`](https://github.com/tobymao/sqlglot/commit/7188431dab000fceac55f6852b76a7da4394df65) - ignore unnesting non subqueries closes [#2676](https://github.com/tobymao/sqlglot/pull/2676) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`9e7112b`](https://github.com/tobymao/sqlglot/commit/9e7112b67f90cc269982c5b7e29ea296d1b19d9f) - create .venv when publishing so that maturin doesn't crash  *(PR [#2675](https://github.com/tobymao/sqlglot/pull/2675) by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`2383003`](https://github.com/tobymao/sqlglot/commit/238300381b53c232a7ad0fd9e5b8b2ceaf563f08) - add is_connected helper to see if tokens have no white space *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v20.1.0] - 2023-12-07
 ### :boom: BREAKING CHANGES
 - due to [`96f9b0e`](https://github.com/tobymao/sqlglot/commit/96f9b0e096d5b4505f92c70d8a3733b141205c1b) - make generation of CONCAT less verbose *(PR [#2639](https://github.com/tobymao/sqlglot/pull/2639) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2229,3 +2255,4 @@ Changelog
 [v19.9.0]: https://github.com/tobymao/sqlglot/compare/v19.8.3...v19.9.0
 [v20.0.0]: https://github.com/tobymao/sqlglot/compare/v19.9.0...v20.0.0
 [v20.1.0]: https://github.com/tobymao/sqlglot/compare/v20.0.0...v20.1.0
+[v20.2.0]: https://github.com/tobymao/sqlglot/compare/v20.1.0...v20.2.0

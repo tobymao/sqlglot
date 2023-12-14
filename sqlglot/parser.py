@@ -2739,20 +2739,6 @@ class Parser(metaclass=_Parser):
             exp.Expression, bracket or self._parse_bracket(self._parse_table_parts(schema=schema))
         )
 
-        if self._match_texts(("AT", "BEFORE")):
-            when = self._prev.text.upper()
-            kind = (
-                self._match(TokenType.L_PAREN)
-                and self._match_texts(self.HISTORICAL_DATA_KIND)
-                and self._prev.text.upper()
-            )
-            expression = self._match(TokenType.FARROW) and self._parse_bitwise()
-            self._match(TokenType.R_PAREN)
-            this.set(
-                "when",
-                self.expression(exp.HistoricalData, this=when, kind=kind, expression=expression),
-            )
-
         if schema:
             return self._parse_schema(this=this)
 

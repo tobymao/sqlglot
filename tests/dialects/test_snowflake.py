@@ -73,6 +73,18 @@ WHERE
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
         self.validate_identity(
+            "SELECT * FROM foo at",
+            "SELECT * FROM foo AS at",
+        )
+        self.validate_identity(
+            "SELECT * FROM foo before",
+            "SELECT * FROM foo AS before",
+        )
+        self.validate_identity(
+            "SELECT * FROM foo at (col)",
+            "SELECT * FROM foo AS at(col)",
+        )
+        self.validate_identity(
             "SELECT * FROM unnest(x) with ordinality",
             "SELECT * FROM TABLE(FLATTEN(INPUT => x)) AS _u(seq, key, path, index, value, this)",
         )

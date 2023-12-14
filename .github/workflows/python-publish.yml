@@ -19,6 +19,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install setuptools wheel twine
         python -m venv .venv
+        source ./.venv/bin/activate
         make install-dev
     - name: Build and publish
       env:

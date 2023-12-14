@@ -33,6 +33,7 @@ setup(
             "types-python-dateutil",
             "maturin>=1.4,<2.0",
         ],
+        "rs": ["sqlglotrs==0.1.0"],
     },
     classifiers=[
         "Development Status :: 5 - Production/Stable",

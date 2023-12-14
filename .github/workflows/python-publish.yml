@@ -30,7 +30,9 @@ jobs:
         python setup.py sdist bdist_wheel
         twine upload dist/*
     - name: Update API docs
-      run: make docs
+      run: |
+        source ./.venv/bin/activate
+        make docs
     - name: Update CHANGELOG
       id: changelog
       uses: requarks/changelog-action@v1

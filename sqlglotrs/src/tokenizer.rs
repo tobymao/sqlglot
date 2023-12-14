@@ -109,7 +109,7 @@ impl<'a> TokenizerState<'a> {
     fn scan(&mut self, until_peek_char: Option<char>) -> Result<(), TokenizerError> {
         while self.size > 0 && !self.is_end {
             self.start = self.current;
-            self.advance(1, false)?;
+            self.advance(1)?;
 
             if self.current_char == '\0' {
                 break;
@@ -142,7 +142,7 @@ impl<'a> TokenizerState<'a> {
         Ok(())
     }
 
-    fn advance(&mut self, i: isize, alnum: bool) -> Result<(), TokenizerError> {
+    fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
         let mut i = i;
         if let Some(TokenType::BREAK) = self.settings.white_space.get(&self.current_char) {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
@@ -165,20 +165,6 @@ impl<'a> TokenizerState<'a> {
         } else {
             self.char_at(self.current)?
         };
-
-        if alnum && self.current_char.is_alphanumeric() {
-            while self.peek_char.is_alphanumeric() {
-                self.column += 1;
-                self.current += 1;
-                self.is_end = self.current >= self.size;
-                self.peek_char = if self.is_end {
-                    '\0'
-                } else {
-                    self.char_at(self.current)?
-                };
-            }
-            self.current_char = self.char_at(self.current - 1)?;
-        }
         Ok(())
     }
 
@@ -326,7 +312,7 @@ impl<'a> TokenizerState<'a> {
                 return Ok(());
             }
             if prev_space || is_single_token || current_char == '\0' {
-                self.advance((size - 1) as isize, false)?;
+                self.advance((size - 1) as isize)?;
                 let normalized_word = unwrapped_word.to_uppercase();
                 let keyword_token =
                     *self
@@ -357,23 +343,23 @@ impl<'a> TokenizerState<'a> {
 
         if let Some(comment_end) = self.settings.comments.get(comment_start).unwrap() {
             // Skip the comment's start delimiter.
-            self.advance(comment_start_size as isize, false)?;
+            self.advance(comment_start_size as isize)?;
 
             let comment_end_size = comment_end.len();
 
             while !self.is_end && self.chars(comment_end_size) != *comment_end {
-                self.advance(1, true)?;
+                self.advance(1)?;
             }
 
             let text = self.text();
             self.comments
                 .push(text[comment_start_size..text.len() - comment_end_size + 1].to_string());
-            self.advance((comment_end_size - 1) as isize, false)?;
+            self.advance((comment_end_size - 1) as isize)?;
         } else {
             while !self.is_end
                 && self.settings.white_space.get(&self.peek_char) != Some(&TokenType::BREAK)
             {
-                self.advance(1, true)?;
+                self.advance(1)?;
             }
             self.comments
                 .push(self.text()[comment_start_size..].to_string());
@@ -403,7 +389,7 @@ impl<'a> TokenizerState<'a> {
             } else if *token_type == TokenType::BIT_STRING {
                 (Some(2), *token_type, end.clone())
             } else if *token_type == TokenType::HEREDOC_STRING {
-                self.advance(1, false)?;
+                self.advance(1)?;
                 let tag = if self.current_char.to_string() == *end {
                     String::from("")
                 } else {
@@ -417,7 +403,7 @@ impl<'a> TokenizerState<'a> {
             return Ok(false);
         };
 
-        self.advance(start.len() as isize, false)?;
+        self.advance(start.len() as isize)?;
         let text = self.extract_string(&end, false)?;
 
         if let Some(b) = base {
@@ -458,21 +444,21 @@ impl<'a> TokenizerState<'a> {
 
         loop {
             if self.peek_char.is_digit(10) {
-                self.advance(1, false)?;
+                self.advance(1)?;
             } else if self.peek_char == '.' && !decimal {
                 let after = self.peek(1)?;
                 if after.is_digit(10) || !after.is_alphabetic() {
                     decimal = true;
-                    self.advance(1, false)?;
+                    self.advance(1)?;
                 } else {
                     return self.add(TokenType::VAR, None);
                 }
             } else if (self.peek_char == '-' || self.peek_char == '+') && scientific == 1 {
                 scientific += 1;
-                self.advance(1, false)?;
+                self.advance(1)?;
             } else if self.peek_char.to_ascii_uppercase() == 'E' && scientific == 0 {
                 scientific += 1;
-                self.advance(1, false)?;
+                self.advance(1)?;
             } else if self.peek_char.is_alphabetic() || self.peek_char == '_' {
                 let number_text = self.text();
                 let mut literal = String::from("");
@@ -482,7 +468,7 @@ impl<'a> TokenizerState<'a> {
                     && !self.settings.single_tokens.contains_key(&self.peek_char)
                 {
                     literal.push(self.peek_char);
-                    self.advance(1, false)?;
+                    self.advance(1)?;
                 }
 
                 let token_type = self
@@ -503,7 +489,7 @@ impl<'a> TokenizerState<'a> {
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
                     self.add(TokenType::VAR, None)?;
                 } else {
-                    self.advance(-(literal.chars().count() as isize), false)?;
+                    self.advance(-(literal.chars().count() as isize))?;
                     self.add(TokenType::NUMBER, Some(number_text))?;
                 }
                 return Ok(());
@@ -526,7 +512,7 @@ impl<'a> TokenizerState<'a> {
         radix: u32,
         radix_token_type: TokenType,
     ) -> Result<(), TokenizerError> {
-        self.advance(1, false)?;
+        self.advance(1)?;
         let value = self.extract_value()?[2..].to_string();
         match u64::from_str_radix(&value, radix) {
             Ok(_) => self.add(radix_token_type, Some(value)),
@@ -545,7 +531,7 @@ impl<'a> TokenizerState<'a> {
                 && (self.settings.var_single_tokens.contains(&peek_char)
                     || !self.settings.single_tokens.contains_key(&peek_char))
             {
-                self.advance(1, true)?;
+                self.advance(1)?;
             } else {
                 break;
             }
@@ -564,7 +550,7 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn scan_identifier(&mut self, identifier_end: &str) -> Result<(), TokenizerError> {
-        self.advance(1, false)?;
+        self.advance(1)?;
         let text = self.extract_string(identifier_end, true)?;
         self.add(TokenType::IDENTIFIER, Some(text))
     }
@@ -599,7 +585,7 @@ impl<'a> TokenizerState<'a> {
                     text.push(self.peek_char);
                 }
                 if self.current + 1 < self.size {
-                    self.advance(2, false)?;
+                    self.advance(2)?;
                 } else {
                     return self.error_result(format!(
                         "Missing {} from {}:{}",
@@ -609,7 +595,7 @@ impl<'a> TokenizerState<'a> {
             } else {
                 if self.chars(delimiter.len()) == delimiter {
                     if delimiter.len() > 1 {
-                        self.advance((delimiter.len() - 1) as isize, false)?;
+                        self.advance((delimiter.len() - 1) as isize)?;
                     }
                     break;
                 }
@@ -628,14 +614,14 @@ impl<'a> TokenizerState<'a> {
                     if let Some(escaped_sequence) =
                         self.dialect_settings.escape_sequences.get(&sequence_key)
                     {
-                        self.advance(2, false)?;
+                        self.advance(2)?;
                         text.push_str(escaped_sequence);
                         continue;
                     }
                 }
 
                 let current = self.current - 1;
-                self.advance(1, true)?;
+                self.advance(1)?;
                 text.push_str(
                     &self.sql[current..self.current - 1]
                         .iter()
@@ -652,7 +638,7 @@ impl<'a> TokenizerState<'a> {
                 && !self.is_end
                 && !self.settings.single_tokens.contains_key(&self.peek_char)
             {
-                self.advance(1, true)?;
+                self.advance(1)?;
             } else {
                 break;
             }

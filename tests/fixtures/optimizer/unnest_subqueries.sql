@@ -24,6 +24,7 @@ WHERE
   AND x.a = (SELECT SUM(y.c) AS c FROM y WHERE y.a = x.a OFFSET 10)
   AND x.a > ALL (SELECT y.c FROM y WHERE y.a = x.a)
   AND x.a > (SELECT COUNT(*) as d FROM y WHERE y.a = x.a)
+  AND x.a = SUM(SELECT 1)  -- invalid statement left alone
 ;
 SELECT
   *
@@ -208,7 +209,10 @@ WHERE
     OFFSET 10
   )
   AND ARRAY_ALL(_u_19."", _x -> _x = x.a)
-  AND x.a > COALESCE(_u_21.d, 0);
+  AND x.a > COALESCE(_u_21.d, 0)
+  AND x.a = SUM(SELECT
+    1) /* invalid statement left alone */
+;
 SELECT
   CAST((
     SELECT

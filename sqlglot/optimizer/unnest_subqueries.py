@@ -65,6 +65,8 @@ def unnest(select, parent_select, next_alias_name):
             )
         ):
             column = exp.Max(this=column)
+        elif not isinstance(select.parent, exp.Subquery):
+            return
 
         _replace(select.parent, column)
         parent_select.join(select, join_type="CROSS", join_alias=alias, copy=False)

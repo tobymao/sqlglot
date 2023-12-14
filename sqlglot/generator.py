@@ -862,15 +862,7 @@ class Generator:
         this = self.sql(expression, "this")
         shallow = "SHALLOW " if expression.args.get("shallow") else ""
         keyword = "COPY" if expression.args.get("copy") and self.SUPPORTS_TABLE_COPY else "CLONE"
-        this = f"{shallow}{keyword} {this}"
-        when = self.sql(expression, "when")
-
-        if when:
-            kind = self.sql(expression, "kind")
-            expr = self.sql(expression, "expression")
-            return f"{this} {when} ({kind} => {expr})"
-
-        return this
+        return f"{shallow}{keyword} {this}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
         return f"DESCRIBE {self.sql(expression, 'this')}"
@@ -1400,6 +1392,12 @@ class Generator:
         target = f" FOR {target}" if target else ""
         return f"{this}{target} ({self.expressions(expression, flat=True)})"
 
+    def historicaldata_sql(self, expression: exp.HistoricalData) -> str:
+        this = self.sql(expression, "this")
+        kind = self.sql(expression, "kind")
+        expr = self.sql(expression, "expression")
+        return f"{this} ({kind} => {expr})"
+
     def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
         table = ".".join(
             self.sql(part)
@@ -1435,6 +1433,10 @@ class Generator:
         if ordinality:
             ordinality = f" WITH ORDINALITY{alias}"
             alias = ""
+
+        when = self.sql(expression, "when")
+        if when:
+            table = f"{table} {when}"
 
         return f"{table}{version}{file_format}{alias}{index}{hints}{pivots}{joins}{laterals}{ordinality}"
 

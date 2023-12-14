@@ -1105,14 +1105,7 @@ class Create(DDL):
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_clone_statement
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_copy
 class Clone(Expression):
-    arg_types = {
-        "this": True,
-        "when": False,
-        "kind": False,
-        "shallow": False,
-        "expression": False,
-        "copy": False,
-    }
+    arg_types = {"this": True, "shallow": False, "copy": False}
 
 
 class Describe(Expression):
@@ -2522,6 +2515,11 @@ class IndexTableHint(Expression):
     arg_types = {"this": True, "expressions": False, "target": False}
 
 
+# https://docs.snowflake.com/en/sql-reference/constructs/at-before
+class HistoricalData(Expression):
+    arg_types = {"this": True, "kind": True, "expression": True}
+
+
 class Table(Expression):
     arg_types = {
         "this": True,
@@ -2538,6 +2536,7 @@ class Table(Expression):
         "pattern": False,
         "index": False,
         "ordinality": False,
+        "when": False,
     }
 
     @property

@@ -369,12 +369,35 @@ class Snowflake(Dialect):
 
             return lateral
 
+        def _parse_at_before(self, table: exp.Table) -> exp.Table:
+            # https://docs.snowflake.com/en/sql-reference/constructs/at-before
+            index = self._index
+            if self._match_texts(("AT", "BEFORE")):
+                this = self._prev.text.upper()
+                kind = (
+                    self._match(TokenType.L_PAREN)
+                    and self._match_texts(self.HISTORICAL_DATA_KIND)
+                    and self._prev.text.upper()
+                )
+                expression = self._match(TokenType.FARROW) and self._parse_bitwise()
+
+                if expression:
+                    self._match_r_paren()
+                    when = self.expression(
+                        exp.HistoricalData, this=this, kind=kind, expression=expression
+                    )
+                    table.set("when", when)
+                else:
+                    self._retreat(index)
+
+            return table
+
         def _parse_table_parts(self, schema: bool = False) -> exp.Table:
             # https://docs.snowflake.com/en/user-guide/querying-stage
-            if self._match_text_seq("@", advance=False):
-                table: t.Optional[exp.Expression] = self._parse_location_path()
-            elif self._match(TokenType.STRING, advance=False):
+            if self._match(TokenType.STRING, advance=False):
                 table = self._parse_string()
+            elif self._match_text_seq("@", advance=False):
+                table = self._parse_location_path()
             else:
                 table = None
 
@@ -393,9 +416,11 @@ class Snowflake(Dialect):
 
                     self._match(TokenType.COMMA)
 
-                return self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
+                table = self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
+            else:
+                table = super()._parse_table_parts(schema=schema)
 
-            return super()._parse_table_parts(schema=schema)
+            return self._parse_at_before(table)
 
         def _parse_id_var(
             self,

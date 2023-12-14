@@ -779,6 +779,53 @@ WHERE
             },
         )
 
+    def test_historical_data(self):
+        self.validate_identity("SELECT * FROM my_table AT (STATEMENT => $query_id_var)")
+        self.validate_identity("SELECT * FROM my_table AT (OFFSET => -60 * 5)")
+        self.validate_identity("SELECT * FROM my_table BEFORE (STATEMENT => $query_id_var)")
+        self.validate_identity("SELECT * FROM my_table BEFORE (OFFSET => -60 * 5)")
+        self.validate_identity("CREATE SCHEMA restored_schema CLONE my_schema AT (OFFSET => -3600)")
+        self.validate_identity(
+            "CREATE TABLE restored_table CLONE my_table AT (TIMESTAMP => CAST('Sat, 09 May 2015 01:01:00 +0300' AS TIMESTAMPTZ))",
+        )
+        self.validate_identity(
+            "CREATE DATABASE restored_db CLONE my_db BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table AT (TIMESTAMP => TO_TIMESTAMP(1432669154242, 3))"
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table AT (OFFSET => -60 * 5) AS T WHERE T.flag = 'valid'"
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table AT (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table AT (TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp)",
+            "SELECT * FROM my_table AT (TIMESTAMP => CAST('Fri, 01 May 2015 16:20:00 -0700' AS TIMESTAMPNTZ))",
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table AT(TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp_tz)",
+            "SELECT * FROM my_table AT (TIMESTAMP => CAST('Fri, 01 May 2015 16:20:00 -0700' AS TIMESTAMPTZ))",
+        )
+        self.validate_identity(
+            "SELECT * FROM my_table BEFORE (TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp_tz);",
+            "SELECT * FROM my_table BEFORE (TIMESTAMP => CAST('Fri, 01 May 2015 16:20:00 -0700' AS TIMESTAMPTZ))",
+        )
+        self.validate_identity(
+            """
+            SELECT oldt.* , newt.*
+            FROM my_table BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS oldt
+            FULL OUTER JOIN my_table AT(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS newt
+            ON oldt.id = newt.id
+            WHERE oldt.id IS NULL OR newt.id IS NULL;
+            """,
+            "SELECT oldt.*, newt.* FROM my_table BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS oldt FULL OUTER JOIN my_table AT (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS newt ON oldt.id = newt.id WHERE oldt.id IS NULL OR newt.id IS NULL",
+        )
+
     def test_ddl(self):
         self.validate_identity(
             """create external table et2(

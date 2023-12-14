@@ -907,7 +907,7 @@ class Parser(metaclass=_Parser):
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     CLONE_KEYWORDS = {"CLONE", "COPY"}
-    CLONE_KINDS = {"TIMESTAMP", "OFFSET", "STATEMENT"}
+    HISTORICAL_DATA_KIND = {"TIMESTAMP", "OFFSET", "STATEMENT", "STREAM"}
 
     OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS"}
     OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
@@ -1411,23 +1411,8 @@ class Parser(metaclass=_Parser):
 
             if self._match_texts(self.CLONE_KEYWORDS):
                 copy = self._prev.text.lower() == "copy"
-                clone = self._parse_table(schema=True)
-                when = self._match_texts(("AT", "BEFORE")) and self._prev.text.upper()
-                clone_kind = (
-                    self._match(TokenType.L_PAREN)
-                    and self._match_texts(self.CLONE_KINDS)
-                    and self._prev.text.upper()
-                )
-                clone_expression = self._match(TokenType.FARROW) and self._parse_bitwise()
-                self._match(TokenType.R_PAREN)
                 clone = self.expression(
-                    exp.Clone,
-                    this=clone,
-                    when=when,
-                    kind=clone_kind,
-                    shallow=shallow,
-                    expression=clone_expression,
-                    copy=copy,
+                    exp.Clone, this=self._parse_table(schema=True), shallow=shallow, copy=copy
                 )
 
         return self.expression(
@@ -2753,6 +2738,20 @@ class Parser(metaclass=_Parser):
         this = t.cast(
             exp.Expression, bracket or self._parse_bracket(self._parse_table_parts(schema=schema))
         )
+
+        if self._match_texts(("AT", "BEFORE")):
+            when = self._prev.text.upper()
+            kind = (
+                self._match(TokenType.L_PAREN)
+                and self._match_texts(self.HISTORICAL_DATA_KIND)
+                and self._prev.text.upper()
+            )
+            expression = self._match(TokenType.FARROW) and self._parse_bitwise()
+            self._match(TokenType.R_PAREN)
+            this.set(
+                "when",
+                self.expression(exp.HistoricalData, this=when, kind=kind, expression=expression),
+            )
 
         if schema:
             return self._parse_schema(this=this)

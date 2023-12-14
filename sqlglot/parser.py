@@ -4910,8 +4910,8 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Var, this=self._prev.text)
         return self._parse_placeholder()
 
-    def _advance_any(self) -> t.Optional[Token]:
-        if self._curr and self._curr.token_type not in self.RESERVED_TOKENS:
+    def _advance_any(self, ignore_reserved: bool = False) -> t.Optional[Token]:
+        if self._curr and (ignore_reserved or self._curr.token_type not in self.RESERVED_TOKENS):
             self._advance()
             return self._prev
         return None

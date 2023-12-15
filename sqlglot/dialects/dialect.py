@@ -393,7 +393,7 @@ class Dialect(metaclass=_Dialect):
 
         Args:
             expression: The expression of interest. If it's not an `Identifier`, this method is a no-op.
-            identify: If set to `False`, the quotes will only be added if the identifiers is deemed
+            identify: If set to `False`, the quotes will only be added if the identifier is deemed
                 "unsafe", with respect to its characters and this dialect's normalization strategy.
         """
         if isinstance(expression, exp.Identifier):

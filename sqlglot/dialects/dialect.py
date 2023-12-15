@@ -21,11 +21,14 @@ DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
 
 
 class Dialects(str, Enum):
+    """Dialects supported by SQLGLot."""
+
     DIALECT = ""
 
     BIGQUERY = "bigquery"
     CLICKHOUSE = "clickhouse"
     DATABRICKS = "databricks"
+    DORIS = "doris"
     DRILL = "drill"
     DUCKDB = "duckdb"
     HIVE = "hive"
@@ -43,16 +46,22 @@ class Dialects(str, Enum):
     TERADATA = "teradata"
     TRINO = "trino"
     TSQL = "tsql"
-    Doris = "doris"
 
 
 class NormalizationStrategy(str, AutoName):
     """Specifies the strategy according to which identifiers should be normalized."""
 
-    LOWERCASE = auto()  # Unquoted identifiers are lowercased
-    UPPERCASE = auto()  # Unquoted identifiers are uppercased
-    CASE_SENSITIVE = auto()  # Always case-sensitive, regardless of quotes
-    CASE_INSENSITIVE = auto()  # Always case-insensitive, regardless of quotes
+    LOWERCASE = auto()
+    """Unquoted identifiers are lowercased."""
+
+    UPPERCASE = auto()
+    """Unquoted identifiers are uppercased."""
+
+    CASE_SENSITIVE = auto()
+    """Always case-sensitive, regardless of quotes."""
+
+    CASE_INSENSITIVE = auto()
+    """Always case-insensitive, regardless of quotes."""
 
 
 class _Dialect(type):
@@ -131,74 +140,81 @@ class _Dialect(type):
 
 
 class Dialect(metaclass=_Dialect):
-    # Determines the base index offset for arrays
     INDEX_OFFSET = 0
+    """Determines the base index offset for arrays."""
 
-    # If true unnest table aliases are considered only as column aliases
     UNNEST_COLUMN_ONLY = False
+    """Determines whether or not `UNNEST` table aliases are treated as column aliases."""
 
-    # Determines whether or not the table alias comes after tablesample
     ALIAS_POST_TABLESAMPLE = False
+    """Determines whether or not the table alias comes after tablesample."""
 
-    # Specifies the strategy according to which identifiers should be normalized.
     NORMALIZATION_STRATEGY = NormalizationStrategy.LOWERCASE
+    """Specifies the strategy according to which identifiers should be normalized."""
 
-    # Determines whether or not an unquoted identifier can start with a digit
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
+    """Determines whether or not an unquoted identifier can start with a digit."""
 
-    # Determines whether or not the DPIPE token ('||') is a string concatenation operator
     DPIPE_IS_STRING_CONCAT = True
+    """Determines whether or not the DPIPE token (`||`) is a string concatenation operator."""
 
-    # Determines whether or not CONCAT's arguments must be strings
     STRICT_STRING_CONCAT = False
+    """Determines whether or not `CONCAT`'s arguments must be strings."""
 
-    # Determines whether or not user-defined data types are supported
     SUPPORTS_USER_DEFINED_TYPES = True
+    """Determines whether or not user-defined data types are supported."""
 
-    # Determines whether or not SEMI/ANTI JOINs are supported
     SUPPORTS_SEMI_ANTI_JOIN = True
+    """Determines whether or not `SEMI` or `ANTI` joins are supported."""
 
-    # Determines how function names are going to be normalized
     NORMALIZE_FUNCTIONS: bool | str = "upper"
+    """Determines how function names are going to be normalized."""
 
-    # Determines whether the base comes first in the LOG function
     LOG_BASE_FIRST = True
+    """Determines whether the base comes first in the LOG function."""
 
-    # Indicates the default null ordering method to use if not explicitly set
-    # Options are: "nulls_are_small", "nulls_are_large", "nulls_are_last"
     NULL_ORDERING = "nulls_are_small"
+    """
+    Indicates the default null ordering method to use if not explicitly set.
+    Possible values: `"nulls_are_small"`, `"nulls_are_large"`, `"nulls_are_last"`
+    """
 
-    # Whether the behavior of a / b depends on the types of a and b.
-    # False means a / b is always float division.
-    # True means a / b is integer division if both a and b are integers.
     TYPED_DIVISION = False
+    """
+    Whether the behavior of `a / b` depends on the types of `a` and `b`.
+    False means `a / b` is always float division.
+    True means `a / b` is integer division if both `a` and `b` are integers.
+    """
 
-    # False means 1 / 0 throws an error.
-    # True means 1 / 0 returns null.
     SAFE_DIVISION = False
+    """Determines whether division by zero throws an error (`False`) or returns NULL (`True`)."""
 
-    # A NULL arg in CONCAT yields NULL by default, but in some dialects it yields an empty string
     CONCAT_COALESCE = False
+    """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
 
     DATE_FORMAT = "'%Y-%m-%d'"
     DATEINT_FORMAT = "'%Y%m%d'"
     TIME_FORMAT = "'%Y-%m-%d %H:%M:%S'"
 
-    # Custom time mappings in which the key represents dialect time format
-    # and the value represents a python time format
     TIME_MAPPING: t.Dict[str, str] = {}
+    """Associates this dialect's time formats with their equivalent Python `strftime` format."""
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_model_rules_date_time
     # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Expressions-and-Predicates/March-2017/Data-Type-Conversions/Character-to-DATE-Conversion/Forcing-a-FORMAT-on-CAST-for-Converting-Character-to-DATE
-    # special syntax cast(x as date format 'yyyy') defaults to time_mapping
     FORMAT_MAPPING: t.Dict[str, str] = {}
+    """
+    Helper which is used for parsing the special syntax `CAST(x AS DATE FORMAT 'yyyy')`.
+    If empty, the corresponding trie will be constructed off of `TIME_MAPPING`.
+    """
 
-    # Mapping of an unescaped escape sequence to the corresponding character
     ESCAPE_SEQUENCES: t.Dict[str, str] = {}
+    """Mapping of an unescaped escape sequence to the corresponding character."""
 
-    # Columns that are auto-generated by the engine corresponding to this dialect
-    # Such columns may be excluded from SELECT * queries, for example
     PSEUDOCOLUMNS: t.Set[str] = set()
+    """
+    Columns that are auto-generated by the engine corresponding to this dialect.
+    For example, such columns may be excluded from `SELECT *` queries.
+    """
 
     # --- Autofilled ---
 
@@ -275,6 +291,7 @@ class Dialect(metaclass=_Dialect):
     def format_time(
         cls, expression: t.Optional[str | exp.Expression]
     ) -> t.Optional[exp.Expression]:
+        """Converts a time format in this dialect to its equivalent Python `strftime` format."""
         if isinstance(expression, str):
             return exp.Literal.string(
                 # the time formats are quoted
@@ -306,9 +323,9 @@ class Dialect(metaclass=_Dialect):
         """
         Transforms an identifier in a way that resembles how it'd be resolved by this dialect.
 
-        For example, an identifier like FoO would be resolved as foo in Postgres, because it
+        For example, an identifier like `FoO` would be resolved as `foo` in Postgres, because it
         lowercases all unquoted identifiers. On the other hand, Snowflake uppercases them, so
-        it would resolve it as FOO. If it was quoted, it'd need to be treated as case-sensitive,
+        it would resolve it as `FOO`. If it was quoted, it'd need to be treated as case-sensitive,
         and so any normalization would be prohibited in order to avoid "breaking" the identifier.
 
         There are also dialects like Spark, which are case-insensitive even when quotes are
@@ -356,8 +373,8 @@ class Dialect(metaclass=_Dialect):
         Args:
             text: The text to check.
             identify:
-                "always" or `True`: Always returns true.
-                "safe": True if the identifier is case-insensitive.
+                `"always"` or `True`: Always returns `True`.
+                `"safe"`: Only returns `True` if the identifier is case-insensitive.
 
         Returns:
             Whether or not the given text can be identified.
@@ -371,6 +388,14 @@ class Dialect(metaclass=_Dialect):
         return False
 
     def quote_identifier(self, expression: E, identify: bool = True) -> E:
+        """
+        Adds quotes to a given identifier.
+
+        Args:
+            expression: The expression of interest. If it's not an `Identifier`, this method is a no-op.
+            identify: If set to `False`, the quotes will only be added if the identifiers is deemed
+                "unsafe", with respect to its characters and this dialect's normalization strategy.
+        """
         if isinstance(expression, exp.Identifier):
             name = expression.this
             expression.set(

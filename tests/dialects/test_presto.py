@@ -1054,3 +1054,61 @@ MATCH_RECOGNIZE (
 )""",
             pretty=True,
         )
+
+    def test_to_char(self):
+        self.validate_all(
+            "TO_CHAR(ts, 'dd')",
+            write={
+                "bigquery": "FORMAT_DATE('%d', ts)",
+                "presto": "DATE_FORMAT(ts, '%d')",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(ts, 'hh')",
+            write={
+                "bigquery": "FORMAT_DATE('%H', ts)",
+                "presto": "DATE_FORMAT(ts, '%H')",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(ts, 'hh24')",
+            write={
+                "bigquery": "FORMAT_DATE('%H', ts)",
+                "presto": "DATE_FORMAT(ts, '%H')",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(ts, 'mi')",
+            write={
+                "bigquery": "FORMAT_DATE('%M', ts)",
+                "presto": "DATE_FORMAT(ts, '%i')",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(ts, 'mm')",
+            write={
+                "bigquery": "FORMAT_DATE('%m', ts)",
+                "presto": "DATE_FORMAT(ts, '%m')",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(ts, 'ss')",
+            write={
+                "bigquery": "FORMAT_DATE('%S', ts)",
+                "presto": "DATE_FORMAT(ts, '%s')",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(ts, 'yyyy')",
+            write={
+                "bigquery": "FORMAT_DATE('%Y', ts)",
+                "presto": "DATE_FORMAT(ts, '%Y')",
+            },
+        )
+        self.validate_all(
+            "TO_CHAR(ts, 'yy')",
+            write={
+                "bigquery": "FORMAT_DATE('%y', ts)",
+                "presto": "DATE_FORMAT(ts, '%y')",
+            },
+        )

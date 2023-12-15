@@ -36,13 +36,6 @@ jobs:
       with:
         python-version: '3.10'
         architecture: ${{ matrix.python-architecture || 'x64' }}
-    - name: Install dependencies
-      run: |
-        python -m venv .venv
-        source ./.venv/bin/activate
-        python -m pip install --upgrade pip
-        pip install setuptools
-        make install-dev
     - name: Build wheels
       working-directory: ./sqlglotrs
       uses: PyO3/maturin-action@v1
@@ -62,13 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Install dependencies
-      run: |
-        python -m venv .venv
-        source ./.venv/bin/activate
-        python -m pip install --upgrade pip
-        pip install setuptools
-        make install-dev
     - name: Build sdist
       working-directory: ./sqlglotrs
       uses: PyO3/maturin-action@v1

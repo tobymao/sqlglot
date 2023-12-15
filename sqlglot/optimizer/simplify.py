@@ -482,11 +482,7 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, COMPARISONS):
         l, r = expression.left, expression.right
 
-        if l.__class__ in INVERSE_OPS:
-            pass
-        elif r.__class__ in INVERSE_OPS:
-            l, r = r, l
-        else:
+        if not l.__class__ in INVERSE_OPS:
             return expression
 
         if r.is_number:
@@ -828,7 +824,8 @@ def _datetrunc_neq(
 
 
 DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTransform] = {
-    exp.LT: lambda l, dt, u, d: l < date_literal(date_floor(dt, u, d)),
+    exp.LT: lambda l, dt, u, d: l
+    < date_literal(dt if dt == date_floor(dt, u, d) else date_floor(dt, u, d) + interval(u)),
     exp.GT: lambda l, dt, u, d: l >= date_literal(date_floor(dt, u, d) + interval(u)),
     exp.LTE: lambda l, dt, u, d: l < date_literal(date_floor(dt, u, d) + interval(u)),
     exp.GTE: lambda l, dt, u, d: l >= date_literal(date_ceil(dt, u, d)),
@@ -858,12 +855,7 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
     if isinstance(expression, exp.Binary):
         l, r = expression.left, expression.right
 
-        if _is_datetrunc_predicate(l, r):
-            pass
-        elif _is_datetrunc_predicate(r, l):
-            comparison = INVERSE_COMPARISONS.get(comparison, comparison)
-            l, r = r, l
-        else:
+        if not _is_datetrunc_predicate(l, r):
             return expression
 
         l = t.cast(exp.DateTrunc, l)
@@ -906,12 +898,12 @@ def sort_comparison(expression: exp.Expression) -> exp.Expression:
         l, r = expression.this, expression.expression
         l_column = isinstance(l, exp.Column)
         r_column = isinstance(r, exp.Column)
-        l_literal = isinstance(l, (exp.Literal, exp.Boolean))
-        r_literal = isinstance(r, (exp.Literal, exp.Boolean))
+        l_const = _is_constant(l)
+        r_const = _is_constant(r)
 
-        if (l_column and not r_column) or (r_literal and not l_literal):
+        if (l_column and not r_column) or (r_const and not l_const):
             return expression
-        if (r_column and not l_column) or (l_literal and not r_literal) or (gen(l) > gen(r)):
+        if (r_column and not l_column) or (l_const and not r_const) or (gen(l) > gen(r)):
             return INVERSE_COMPARISONS.get(expression.__class__, expression.__class__)(
                 this=r, expression=l
             )

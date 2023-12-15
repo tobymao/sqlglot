@@ -117,11 +117,17 @@ def rewrite_between(expression: exp.Expression) -> exp.Expression:
     This is done because comparison simplification is only done on lt/lte/gt/gte.
     """
     if isinstance(expression, exp.Between):
-        return exp.and_(
+        negate = isinstance(expression.parent, exp.Not)
+
+        expression = exp.and_(
             exp.GTE(this=expression.this.copy(), expression=expression.args["low"]),
             exp.LTE(this=expression.this.copy(), expression=expression.args["high"]),
             copy=False,
         )
+
+        if negate:
+            expression = exp.paren(expression, copy=False)
+
     return expression
 
 

@@ -645,6 +645,9 @@ x < 5 AND x > 3;
 x > 3 AND 5 < x AND x BETWEEN 9 AND 10;
 x <= 10 AND x >= 9;
 
+NOT x BETWEEN 0 AND 1;
+NOT x <= 1 OR NOT x >= 0;
+
 1 < x AND 3 < x;
 x > 3;
 

@@ -650,7 +650,7 @@ class MySQL(Dialect):
             exp.Min: min_or_least,
             exp.Month: _remove_ts_or_ds_to_date(),
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
-            exp.NullSafeNEQ: lambda self, e: self.not_sql(self.binary(e, "<=>")),
+            exp.NullSafeNEQ: lambda self, e: f"NOT {self.binary(e, '<=>')}",
             exp.Pivot: no_pivot_sql,
             exp.Select: transforms.preprocess(
                 [

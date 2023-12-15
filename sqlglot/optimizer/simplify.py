@@ -85,6 +85,7 @@ def simplify(expression, constant_propagation=False):
         node = simplify_equality(node)
         node = simplify_parens(node)
         node = simplify_datetrunc_predicate(node)
+        node = sort_comparison(node)
 
         if root:
             expression.replace(node)
@@ -131,6 +132,16 @@ def rewrite_between(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+COMPLEMENT_COMPARISONS = {
+    exp.LT: exp.GTE,
+    exp.GT: exp.LTE,
+    exp.LTE: exp.GT,
+    exp.GTE: exp.LT,
+    exp.EQ: exp.NEQ,
+    exp.NEQ: exp.EQ,
+}
+
+
 def simplify_not(expression):
     """
     Demorgan's Law
@@ -138,10 +149,15 @@ def simplify_not(expression):
     NOT (x AND y) -> NOT x OR NOT y
     """
     if isinstance(expression, exp.Not):
-        if is_null(expression.this):
+        this = expression.this
+        if is_null(this):
             return exp.null()
-        if isinstance(expression.this, exp.Paren):
-            condition = expression.this.unnest()
+        if this.__class__ in COMPLEMENT_COMPARISONS:
+            return COMPLEMENT_COMPARISONS[this.__class__](
+                this=this.this, expression=this.expression
+            )
+        if isinstance(this, exp.Paren):
+            condition = this.unnest()
             if isinstance(condition, exp.And):
                 return exp.or_(
                     exp.not_(condition.left, copy=False),
@@ -156,14 +172,14 @@ def simplify_not(expression):
                 )
             if is_null(condition):
                 return exp.null()
-        if always_true(expression.this):
+        if always_true(this):
             return exp.false()
-        if is_false(expression.this):
+        if is_false(this):
             return exp.true()
-        if isinstance(expression.this, exp.Not):
+        if isinstance(this, exp.Not):
             # double negation
             # NOT NOT x -> x
-            return expression.this.this
+            return this.this
     return expression
 
 
@@ -254,12 +270,6 @@ def _simplify_comparison(expression, left, right, or_=False):
                 r = first(rargs - columns)
             except StopIteration:
                 return expression
-
-            # make sure the comparison is always of the form x > 1 instead of 1 < x
-            if left.__class__ in INVERSE_COMPARISONS and l == ll:
-                left = INVERSE_COMPARISONS[left.__class__](this=lr, expression=ll)
-            if right.__class__ in INVERSE_COMPARISONS and r == rl:
-                right = INVERSE_COMPARISONS[right.__class__](this=rr, expression=rl)
 
             if l.is_number and r.is_number:
                 l = float(l.name)
@@ -403,13 +413,7 @@ def propagate_constants(expression, root=True):
                 # TODO: create a helper that can be used to detect nested literal expressions such
                 # as CAST(123456 AS BIGINT), since we usually want to treat those as literals too
                 if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
-                    pass
-                elif isinstance(r, exp.Column) and isinstance(l, exp.Literal):
-                    l, r = r, l
-                else:
-                    continue
-
-                constant_mapping[l] = (id(l), r)
+                    constant_mapping[l] = (id(l), r)
 
         if constant_mapping:
             for column in find_all_in_scope(expression, exp.Column):
@@ -656,7 +660,7 @@ def simplify_coalesce(expression):
 
     # Find the first constant arg
     for arg_index, arg in enumerate(coalesce.expressions):
-        if _is_constant(other):
+        if _is_constant(arg):
             break
     else:
         return expression
@@ -878,6 +882,23 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
 
             return exp.or_(*[_datetrunc_eq_expression(l, drange) for drange in ranges], copy=False)
 
+    return expression
+
+
+def sort_comparison(expression: exp.Expression) -> exp.Expression:
+    if expression.__class__ in COMPLEMENT_COMPARISONS:
+        l, r = expression.this, expression.expression
+        l_column = isinstance(l, exp.Column)
+        r_column = isinstance(r, exp.Column)
+        l_literal = isinstance(l, (exp.Literal, exp.Boolean))
+        r_literal = isinstance(r, (exp.Literal, exp.Boolean))
+
+        if (l_column and not r_column) or (r_literal and not l_literal):
+            return expression
+        if (r_column and not l_column) or (l_literal and not r_literal) or (gen(l) > gen(r)):
+            return INVERSE_COMPARISONS.get(expression.__class__, expression.__class__)(
+                this=r, expression=l
+            )
     return expression
 
 

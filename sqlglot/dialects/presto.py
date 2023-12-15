@@ -196,6 +196,17 @@ def _to_int(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _parse_to_char(args: t.List) -> exp.TimeToStr:
+    fmt = seq_get(args, 1)
+    if isinstance(fmt, exp.Literal):
+        # We uppercase this to match Teradata's format mapping keys
+        fmt.set("this", fmt.this.upper())
+
+    # We use "teradata" on purpose here, because the time formats are different in Presto.
+    # See https://prestodb.io/docs/current/functions/teradata.html?highlight=to_char#to_char
+    return format_time_lambda(exp.TimeToStr, "teradata")(args)
+
+
 class Presto(Dialect):
     INDEX_OFFSET = 1
     NULL_ORDERING = "nulls_are_last"
@@ -263,8 +274,9 @@ class Presto(Dialect):
             "STRPOS": lambda args: exp.StrPosition(
                 this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
             ),
-            "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
+            "TO_CHAR": _parse_to_char,
             "TO_HEX": exp.Hex.from_arg_list,
+            "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
@@ -392,6 +404,7 @@ class Presto(Dialect):
             exp.TimeStrToUnix: lambda self, e: f"TO_UNIXTIME(DATE_PARSE({self.sql(e, 'this')}, {Presto.TIME_FORMAT}))",
             exp.TimeToStr: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("TO_UNIXTIME"),
+            exp.ToChar: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
             exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,

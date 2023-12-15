@@ -171,7 +171,7 @@ class Dialect(metaclass=_Dialect):
     """Determines how function names are going to be normalized."""
 
     LOG_BASE_FIRST = True
-    """Determines whether the base comes first in the LOG function."""
+    """Determines whether the base comes first in the `LOG` function."""
 
     NULL_ORDERING = "nulls_are_small"
     """

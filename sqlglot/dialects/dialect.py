@@ -175,7 +175,7 @@ class Dialect(metaclass=_Dialect):
 
     NULL_ORDERING = "nulls_are_small"
     """
-    Indicates the default null ordering method to use if not explicitly set.
+    Indicates the default `NULL` ordering method to use if not explicitly set.
     Possible values: `"nulls_are_small"`, `"nulls_are_large"`, `"nulls_are_last"`
     """
 

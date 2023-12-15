@@ -143,6 +143,3 @@ sqlglot/_version.py
 
 # Emacs files
 *~
-
-# Auto-generated files
-sqlglotrs/src/token_type.rs

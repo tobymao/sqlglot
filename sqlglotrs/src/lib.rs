@@ -1,14 +1,13 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};
-use std::hash::{Hash, Hasher};
 
 mod settings;
-mod token_type;
 mod tokenizer;
 mod trie;
 
-pub use self::settings::{TokenizerDialectSettings, TokenizerSettings};
-pub use self::token_type::TokenType;
+pub use self::settings::{
+    TokenType, TokenTypeSettings, TokenizerDialectSettings, TokenizerSettings,
+};
 pub use self::tokenizer::Tokenizer;
 
 #[derive(Debug)]
@@ -73,40 +72,10 @@ impl Token {
     }
 }
 
-#[pymethods]
-impl TokenType {
-    #[pyo3(name = "__repr__")]
-    fn python_repr(&self) -> String {
-        format!("{:?}", self)
-    }
-
-    #[pyo3(name = "__hash__")]
-    fn python_hash(&self) -> u64 {
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        self.hash(&mut hasher);
-        hasher.finish()
-    }
-
-    #[getter]
-    fn name(&self) -> String {
-        self.python_repr()
-    }
-
-    #[getter]
-    fn value(&self) -> String {
-        self.name()
-    }
-
-    #[getter]
-    fn index(&self) -> u16 {
-        *self as u16
-    }
-}
-
 #[pymodule]
 fn sqlglotrs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_class::<Token>()?;
-    m.add_class::<TokenType>()?;
+    m.add_class::<TokenTypeSettings>()?;
     m.add_class::<TokenizerSettings>()?;
     m.add_class::<TokenizerDialectSettings>()?;
     m.add_class::<Tokenizer>()?;

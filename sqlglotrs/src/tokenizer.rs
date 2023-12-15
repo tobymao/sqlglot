@@ -1,5 +1,5 @@
 use crate::trie::{Trie, TrieResult};
-use crate::{Token, TokenType, TokenizerDialectSettings, TokenizerSettings};
+use crate::{Token, TokenType, TokenTypeSettings, TokenizerDialectSettings, TokenizerSettings};
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use std::cmp::{max, min};
@@ -14,13 +14,14 @@ pub struct TokenizerError {
 #[pyclass]
 pub struct Tokenizer {
     settings: TokenizerSettings,
+    token_types: TokenTypeSettings,
     keyword_trie: Trie,
 }
 
 #[pymethods]
 impl Tokenizer {
     #[new]
-    pub fn new(settings: TokenizerSettings) -> Tokenizer {
+    pub fn new(settings: TokenizerSettings, token_types: TokenTypeSettings) -> Tokenizer {
         let mut keyword_trie = Trie::new();
         let single_token_strs: Vec<String> = settings
             .single_tokens
@@ -37,6 +38,7 @@ impl Tokenizer {
 
         Tokenizer {
             settings,
+            token_types,
             keyword_trie,
         }
     }
@@ -46,8 +48,13 @@ impl Tokenizer {
         sql: &str,
         dialect_settings: &TokenizerDialectSettings,
     ) -> Result<Vec<Token>, PyErr> {
-        let mut state =
-            TokenizerState::new(sql, &self.settings, &self.keyword_trie, dialect_settings);
+        let mut state = TokenizerState::new(
+            sql,
+            &self.settings,
+            &self.token_types,
+            dialect_settings,
+            &self.keyword_trie,
+        );
         state.tokenize().map_err(|e| {
             PyException::new_err(format!("Error tokenizing '{}': {}", e.context, e.message))
         })
@@ -71,14 +78,16 @@ struct TokenizerState<'a> {
     keyword_trie: &'a Trie,
     settings: &'a TokenizerSettings,
     dialect_settings: &'a TokenizerDialectSettings,
+    token_types: &'a TokenTypeSettings,
 }
 
 impl<'a> TokenizerState<'a> {
     fn new(
         sql: &str,
         settings: &'a TokenizerSettings,
-        keyword_trie: &'a Trie,
+        token_types: &'a TokenTypeSettings,
         dialect_settings: &'a TokenizerDialectSettings,
+        keyword_trie: &'a Trie,
     ) -> TokenizerState<'a> {
         let sql_vec = sql.chars().collect::<Vec<char>>();
         let sql_vec_len = sql_vec.len();
@@ -98,6 +107,7 @@ impl<'a> TokenizerState<'a> {
             keyword_trie,
             settings,
             dialect_settings,
+            token_types,
         }
     }
 
@@ -144,7 +154,7 @@ impl<'a> TokenizerState<'a> {
 
     fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
         let mut i = i;
-        if let Some(TokenType::BREAK) = self.settings.white_space.get(&self.current_char) {
+        if Some(&self.token_types.break_) == self.settings.white_space.get(&self.current_char) {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
             if self.current_char == '\r' && self.peek_char == '\n' {
                 i = 2;
@@ -205,7 +215,7 @@ impl<'a> TokenizerState<'a> {
 
         if !self.comments.is_empty()
             && !self.tokens.is_empty()
-            && token_type == TokenType::SEMICOLON
+            && token_type == self.token_types.semicolon
         {
             self.tokens
                 .last_mut()
@@ -243,7 +253,7 @@ impl<'a> TokenizerState<'a> {
                 .trim()
                 .to_string();
             if !text.is_empty() {
-                self.add(TokenType::STRING, Some(text))?;
+                self.add(self.token_types.string, Some(text))?;
             }
         }
         Ok(())
@@ -357,7 +367,7 @@ impl<'a> TokenizerState<'a> {
             self.advance((comment_end_size - 1) as isize)?;
         } else {
             while !self.is_end
-                && self.settings.white_space.get(&self.peek_char) != Some(&TokenType::BREAK)
+                && self.settings.white_space.get(&self.peek_char) != Some(&self.token_types.break_)
             {
                 self.advance(1)?;
             }
@@ -380,15 +390,15 @@ impl<'a> TokenizerState<'a> {
 
     fn scan_string(&mut self, start: &String) -> Result<bool, TokenizerError> {
         let (base, token_type, end) = if let Some(end) = self.settings.quotes.get(start) {
-            (None, TokenType::STRING, end.clone())
+            (None, self.token_types.string, end.clone())
         } else if self.settings.format_strings.contains_key(start) {
             let (ref end, token_type) = self.settings.format_strings.get(start).unwrap();
 
-            if *token_type == TokenType::HEX_STRING {
+            if *token_type == self.token_types.hex_string {
                 (Some(16), *token_type, end.clone())
-            } else if *token_type == TokenType::BIT_STRING {
+            } else if *token_type == self.token_types.bit_string {
                 (Some(2), *token_type, end.clone())
-            } else if *token_type == TokenType::HEREDOC_STRING {
+            } else if *token_type == self.token_types.heredoc_string {
                 self.advance(1)?;
                 let tag = if self.current_char.to_string() == *end {
                     String::from("")
@@ -426,14 +436,14 @@ impl<'a> TokenizerState<'a> {
                 if self.settings.has_bit_strings {
                     self.scan_bits()?;
                 } else {
-                    self.add(TokenType::NUMBER, None)?;
+                    self.add(self.token_types.number, None)?;
                 }
                 return Ok(());
             } else if peek_char == 'X' {
                 if self.settings.has_hex_strings {
                     self.scan_hex()?;
                 } else {
-                    self.add(TokenType::NUMBER, None)?;
+                    self.add(self.token_types.number, None)?;
                 }
                 return Ok(());
             }
@@ -451,7 +461,7 @@ impl<'a> TokenizerState<'a> {
                     decimal = true;
                     self.advance(1)?;
                 } else {
-                    return self.add(TokenType::VAR, None);
+                    return self.add(self.token_types.var, None);
                 }
             } else if (self.peek_char == '-' || self.peek_char == '+') && scientific == 1 {
                 scientific += 1;
@@ -483,28 +493,28 @@ impl<'a> TokenizerState<'a> {
                     .map(|x| *x);
 
                 if let Some(unwrapped_token_type) = token_type {
-                    self.add(TokenType::NUMBER, Some(number_text))?;
-                    self.add(TokenType::DCOLON, Some("::".to_string()))?;
+                    self.add(self.token_types.number, Some(number_text))?;
+                    self.add(self.token_types.dcolon, Some("::".to_string()))?;
                     self.add(unwrapped_token_type, Some(literal))?;
                 } else if self.dialect_settings.identifiers_can_start_with_digit {
-                    self.add(TokenType::VAR, None)?;
+                    self.add(self.token_types.var, None)?;
                 } else {
                     self.advance(-(literal.chars().count() as isize))?;
-                    self.add(TokenType::NUMBER, Some(number_text))?;
+                    self.add(self.token_types.number, Some(number_text))?;
                 }
                 return Ok(());
             } else {
-                return self.add(TokenType::NUMBER, None);
+                return self.add(self.token_types.number, None);
             }
         }
     }
 
     fn scan_bits(&mut self) -> Result<(), TokenizerError> {
-        self.scan_radix_string(2, TokenType::BIT_STRING)
+        self.scan_radix_string(2, self.token_types.bit_string)
     }
 
     fn scan_hex(&mut self) -> Result<(), TokenizerError> {
-        self.scan_radix_string(16, TokenType::HEX_STRING)
+        self.scan_radix_string(16, self.token_types.hex_string)
     }
 
     fn scan_radix_string(
@@ -516,7 +526,7 @@ impl<'a> TokenizerState<'a> {
         let value = self.extract_value()?[2..].to_string();
         match u64::from_str_radix(&value, radix) {
             Ok(_) => self.add(radix_token_type, Some(value)),
-            Err(_) => self.add(TokenType::IDENTIFIER, None),
+            Err(_) => self.add(self.token_types.identifier, None),
         }
     }
 
@@ -537,22 +547,23 @@ impl<'a> TokenizerState<'a> {
             }
         }
 
-        let token_type = if self.tokens.last().map(|t| t.token_type) == Some(TokenType::PARAMETER) {
-            TokenType::VAR
-        } else {
-            self.settings
-                .keywords
-                .get(&self.text().to_uppercase())
-                .map(|x| *x)
-                .unwrap_or(TokenType::VAR)
-        };
+        let token_type =
+            if self.tokens.last().map(|t| t.token_type) == Some(self.token_types.parameter) {
+                self.token_types.var
+            } else {
+                self.settings
+                    .keywords
+                    .get(&self.text().to_uppercase())
+                    .map(|x| *x)
+                    .unwrap_or(self.token_types.var)
+            };
         self.add(token_type, None)
     }
 
     fn scan_identifier(&mut self, identifier_end: &str) -> Result<(), TokenizerError> {
         self.advance(1)?;
         let text = self.extract_string(identifier_end, true)?;
-        self.add(TokenType::IDENTIFIER, Some(text))
+        self.add(self.token_types.identifier, Some(text))
     }
 
     fn extract_string(

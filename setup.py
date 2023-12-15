@@ -1,5 +1,14 @@
 from setuptools import find_packages, setup
 
+
+def sqlglotrs_version():
+    with open("sqlglotrs/Cargo.toml") as fd:
+        for line in fd.readlines():
+            if line.strip().startswith("version"):
+                return line.split("=")[1].strip().strip('"')
+    raise ValueError("Could not find version in Cargo.toml")
+
+
 setup(
     name="sqlglot",
     description="An easily customizable SQL parser and transpiler",
@@ -33,7 +42,7 @@ setup(
             "types-python-dateutil",
             "maturin>=1.4,<2.0",
         ],
-        "rs": ["sqlglotrs==0.1.0"],
+        "rs": [f"sqlglotrs=={sqlglotrs_version()}"],
     },
     classifiers=[
         "Development Status :: 5 - Production/Stable",

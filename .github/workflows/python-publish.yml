@@ -41,7 +41,7 @@ jobs:
         python -m venv .venv
         source ./.venv/bin/activate
         python -m pip install --upgrade pip
-        pip install setuptools wheel twine
+        pip install setuptools
         make install-dev
     - name: Build wheels
       working-directory: ./sqlglotrs
@@ -67,7 +67,7 @@ jobs:
         python -m venv .venv
         source ./.venv/bin/activate
         python -m pip install --upgrade pip
-        pip install setuptools wheel twine
+        pip install setuptools
         make install-dev
     - name: Build sdist
       working-directory: ./sqlglotrs

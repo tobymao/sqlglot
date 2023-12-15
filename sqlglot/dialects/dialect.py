@@ -143,6 +143,9 @@ class Dialect(metaclass=_Dialect):
     INDEX_OFFSET = 0
     """Determines the base index offset for arrays."""
 
+    WEEK_OFFSET = 0
+    """Determines the day of week of DATE_TRUNC(week). Defaults to 0 (Monday). -1 would be Sunday."""
+
     UNNEST_COLUMN_ONLY = False
     """Determines whether or not `UNNEST` table aliases are treated as column aliases."""
 

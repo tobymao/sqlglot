@@ -215,6 +215,7 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
 
 
 class BigQuery(Dialect):
+    WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False

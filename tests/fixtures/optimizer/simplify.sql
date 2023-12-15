@@ -798,6 +798,20 @@ CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
 --------------------------------------
 -- DATE_TRUNC
 --------------------------------------
+DATE_TRUNC('week', CAST('2023-12-15' AS DATE));
+CAST('2023-12-11' AS DATE);
+
+DATE_TRUNC('week', CAST('2023-12-16' AS DATE));
+CAST('2023-12-11' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(CAST('2023-12-15' AS DATE), WEEK);
+CAST('2023-12-10' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(CAST('2023-12-16' AS DATE), WEEK);
+CAST('2023-12-10' AS DATE);
+
 DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 

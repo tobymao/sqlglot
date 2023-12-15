@@ -3054,7 +3054,7 @@ class Generator:
         if not isinstance(expression, exp.Literal):
             from sqlglot.optimizer.simplify import simplify
 
-            expression = simplify(expression)
+            expression = simplify(expression, dialect=self.dialect)
 
         return expression
 

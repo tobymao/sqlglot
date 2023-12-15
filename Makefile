@@ -3,10 +3,10 @@
 install:
 	pip install -e .
 
-gen-rs-token-type:
-	python gen_rs_token_type.py sqlglotrs/src/token_type.rs
+install-dev-rs-release:
+	cd sqlglotrs/ && python -m maturin develop -r
 
-install-dev-rs: gen-rs-token-type
+install-dev-rs:
 	cd sqlglotrs/ && python -m maturin develop
 
 install-dev-core:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import functools
 import itertools
@@ -6,9 +8,16 @@ from collections import deque
 from decimal import Decimal
 
 import sqlglot
-from sqlglot import exp
+from sqlglot import Dialect, exp
 from sqlglot.helper import first, is_iterable, merge_ranges, while_changing
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
+
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
+
+    DateTruncBinaryTransform = t.Callable[
+        [exp.Expression, datetime.date, str, Dialect], t.Optional[exp.Expression]
+    ]
 
 # Final means that an expression should not be simplified
 FINAL = "final"
@@ -18,7 +27,9 @@ class UnsupportedUnit(Exception):
     pass
 
 
-def simplify(expression, constant_propagation=False):
+def simplify(
+    expression: exp.Expression, constant_propagation: bool = False, dialect: DialectType = None
+):
     """
     Rewrite sqlglot AST to simplify expressions.
 
@@ -36,15 +47,18 @@ def simplify(expression, constant_propagation=False):
         sqlglot.Expression: simplified expression
     """
 
+    dialect = Dialect.get_or_raise(dialect)
+
     # group by expressions cannot be simplified, for example
     # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
     # the projection must exactly match the group by key
     for group in expression.find_all(exp.Group):
         select = group.parent
+        assert select
         groups = set(group.expressions)
         group.meta[FINAL] = True
 
-        for e in select.selects:
+        for e in select.expressions:
             for node, *_ in e.walk():
                 if node in groups:
                     e.meta[FINAL] = True
@@ -84,7 +98,7 @@ def simplify(expression, constant_propagation=False):
         node = simplify_literals(node, root)
         node = simplify_equality(node)
         node = simplify_parens(node)
-        node = simplify_datetrunc_predicate(node)
+        node = simplify_datetrunc(node, dialect)
         node = sort_comparison(node)
 
         if root:
@@ -762,7 +776,7 @@ def simplify_conditionals(expression):
 DateRange = t.Tuple[datetime.date, datetime.date]
 
 
-def _datetrunc_range(date: datetime.date, unit: str) -> t.Optional[DateRange]:
+def _datetrunc_range(date: datetime.date, unit: str, dialect: Dialect) -> t.Optional[DateRange]:
     """
     Get the date range for a DATE_TRUNC equality comparison:
 
@@ -771,7 +785,7 @@ def _datetrunc_range(date: datetime.date, unit: str) -> t.Optional[DateRange]:
     Returns:
         tuple of [min, max) or None if a value can never be equal to `date` for `unit`
     """
-    floor = date_floor(date, unit)
+    floor = date_floor(date, unit, dialect)
 
     if date != floor:
         # This will always be False, except for NULL values.
@@ -790,9 +804,9 @@ def _datetrunc_eq_expression(left: exp.Expression, drange: DateRange) -> exp.Exp
 
 
 def _datetrunc_eq(
-    left: exp.Expression, date: datetime.date, unit: str
+    left: exp.Expression, date: datetime.date, unit: str, dialect: Dialect
 ) -> t.Optional[exp.Expression]:
-    drange = _datetrunc_range(date, unit)
+    drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
 
@@ -800,9 +814,9 @@ def _datetrunc_eq(
 
 
 def _datetrunc_neq(
-    left: exp.Expression, date: datetime.date, unit: str
+    left: exp.Expression, date: datetime.date, unit: str, dialect: Dialect
 ) -> t.Optional[exp.Expression]:
-    drange = _datetrunc_range(date, unit)
+    drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
 
@@ -813,30 +827,32 @@ def _datetrunc_neq(
     )
 
 
-DateTruncBinaryTransform = t.Callable[
-    [exp.Expression, datetime.date, str], t.Optional[exp.Expression]
-]
 DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTransform] = {
-    exp.LT: lambda l, d, u: l < date_literal(date_floor(d, u)),
-    exp.GT: lambda l, d, u: l >= date_literal(date_floor(d, u) + interval(u)),
-    exp.LTE: lambda l, d, u: l < date_literal(date_floor(d, u) + interval(u)),
-    exp.GTE: lambda l, d, u: l >= date_literal(date_ceil(d, u)),
+    exp.LT: lambda l, dt, u, d: l < date_literal(date_floor(dt, u, d)),
+    exp.GT: lambda l, dt, u, d: l >= date_literal(date_floor(dt, u, d) + interval(u)),
+    exp.LTE: lambda l, dt, u, d: l < date_literal(date_floor(dt, u, d) + interval(u)),
+    exp.GTE: lambda l, dt, u, d: l >= date_literal(date_ceil(dt, u, d)),
     exp.EQ: _datetrunc_eq,
     exp.NEQ: _datetrunc_neq,
 }
 DATETRUNC_COMPARISONS = {exp.In, *DATETRUNC_BINARY_COMPARISONS}
+DATETRUNCS = (exp.DateTrunc, exp.TimestampTrunc)
 
 
 def _is_datetrunc_predicate(left: exp.Expression, right: exp.Expression) -> bool:
-    return isinstance(left, (exp.DateTrunc, exp.TimestampTrunc)) and _is_date_literal(right)
+    return isinstance(left, DATETRUNCS) and _is_date_literal(right)
 
 
 @catch(ModuleNotFoundError, UnsupportedUnit)
-def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
+def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expression:
     """Simplify expressions like `DATE_TRUNC('year', x) >= CAST('2021-01-01' AS DATE)`"""
     comparison = expression.__class__
 
-    if comparison not in DATETRUNC_COMPARISONS:
+    if isinstance(expression, DATETRUNCS):
+        date = extract_date(expression.this)
+        if date and expression.unit:
+            return date_literal(date_floor(date, expression.unit.name.lower(), dialect))
+    elif comparison not in DATETRUNC_COMPARISONS:
         return expression
 
     if isinstance(expression, exp.Binary):
@@ -857,7 +873,7 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
         if not date:
             return expression
 
-        return DATETRUNC_BINARY_COMPARISONS[comparison](l.this, date, unit) or expression
+        return DATETRUNC_BINARY_COMPARISONS[comparison](l.this, date, unit, dialect) or expression
     elif isinstance(expression, exp.In):
         l = expression.this
         rs = expression.expressions
@@ -871,7 +887,7 @@ def simplify_datetrunc_predicate(expression: exp.Expression) -> exp.Expression:
                 date = extract_date(r)
                 if not date:
                     return expression
-                drange = _datetrunc_range(date, unit)
+                drange = _datetrunc_range(date, unit, dialect)
                 if drange:
                     ranges.append(drange)
 
@@ -1061,7 +1077,7 @@ def interval(unit: str, n: int = 1):
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 
 
-def date_floor(d: datetime.date, unit: str) -> datetime.date:
+def date_floor(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
     if unit == "year":
         return d.replace(month=1, day=1)
     if unit == "quarter":
@@ -1077,15 +1093,15 @@ def date_floor(d: datetime.date, unit: str) -> datetime.date:
         return d.replace(month=d.month, day=1)
     if unit == "week":
         # Assuming week starts on Monday (0) and ends on Sunday (6)
-        return d - datetime.timedelta(days=d.weekday())
+        return d - datetime.timedelta(days=d.weekday() - dialect.WEEK_OFFSET)
     if unit == "day":
         return d
 
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 
 
-def date_ceil(d: datetime.date, unit: str) -> datetime.date:
-    floor = date_floor(d, unit)
+def date_ceil(d: datetime.date, unit: str, dialect: Dialect) -> datetime.date:
+    floor = date_floor(d, unit, dialect)
 
     if floor == d:
         return d

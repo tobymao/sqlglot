@@ -313,7 +313,7 @@ class TestOptimizer(unittest.TestCase):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
     def test_simplify(self):
-        self.check_file("simplify", simplify)
+        self.check_file("simplify", simplify, set_dialect=True)
 
         expression = parse_one("TRUE AND TRUE AND TRUE")
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression))

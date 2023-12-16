@@ -832,14 +832,14 @@ x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
 -- Always false, except for nulls
 DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
-CAST('2021-01-02' AS DATE) = DATE_TRUNC('quarter', x);
+DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
 
 DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
 x < CAST('2021-01-01' AS DATE) AND x >= CAST('2022-01-01' AS DATE);
 
 -- Always true, except for nulls
 DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
-CAST('2021-01-02' AS DATE) <> DATE_TRUNC('year', x);
+DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
 
 DATE_TRUNC('year', x) <= CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE);
@@ -854,7 +854,7 @@ DATE_TRUNC('year', x) < CAST('2021-01-01' AS DATE);
 x < CAST('2021-01-01' AS DATE);
 
 DATE_TRUNC('year', x) < CAST('2021-01-02' AS DATE);
-x < CAST('2021-01-01' AS DATE);
+x < CAST('2022-01-01' AS DATE);
 
 DATE_TRUNC('year', x) >= CAST('2021-01-01' AS DATE);
 x >= CAST('2021-01-01' AS DATE);
@@ -958,7 +958,7 @@ DATE_SUB(x, 1, DAY) <> CAST('2021-01-01' AS DATE);
 x <> CAST('2021-01-02' AS DATE);
 
 DATE_ADD(DATE_ADD(DATE_TRUNC('week', DATE_SUB(x, 1, DAY)), 1, DAY), 1, YEAR) < CAST('2021-01-08' AS DATE);
-x <= CAST('2020-01-14' AS DATE);
+x < CAST('2020-01-14' AS DATE);
 
 x - INTERVAL '1' day = CAST(y AS DATE);
 CAST(y AS DATE) = x - INTERVAL '1' day;

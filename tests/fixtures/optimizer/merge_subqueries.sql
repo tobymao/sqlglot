@@ -411,3 +411,20 @@ FROM (
       ON _q_0.a = y.b
 );
 SELECT y.b AS b FROM (x AS x JOIN y AS y ON x.a = y.b);
+
+# title: merge cte into subquery with overlapping alias
+WITH q AS (
+  SELECT
+    y.b AS a
+  FROM y AS y
+)
+SELECT
+  q.a AS a
+FROM x AS q
+WHERE
+  q.a IN (
+    SELECT
+      q.a AS a
+    FROM q AS q
+  );
+SELECT q.a AS a FROM x AS q WHERE q.a IN (SELECT y.b AS a FROM y AS y);

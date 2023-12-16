@@ -145,9 +145,10 @@ class TestOptimizer(unittest.TestCase):
 
             with self.subTest(title):
                 optimized = future.result()
+                actual = optimized.sql(pretty=pretty, dialect=dialect)
                 self.assertEqual(
                     expected,
-                    optimized.sql(pretty=pretty, dialect=dialect),
+                    actual,
                 )
 
             if string_to_bool(execute):

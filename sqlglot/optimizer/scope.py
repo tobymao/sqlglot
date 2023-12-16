@@ -102,11 +102,11 @@ class Scope:
         """Branch from the current scope to a new, inner scope"""
         return Scope(
             expression=expression.unnest(),
-            sources=sources.copy() if sources else {},
+            sources=sources.copy() if sources else None,
             parent=self,
             scope_type=scope_type,
             cte_sources={**self.cte_sources, **(cte_sources or {})},
-            lateral_sources=lateral_sources.copy() if lateral_sources else {},
+            lateral_sources=lateral_sources.copy() if lateral_sources else None,
             **kwargs,
         )
 

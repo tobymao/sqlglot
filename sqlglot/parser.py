@@ -3269,7 +3269,7 @@ class Parser(metaclass=_Parser):
                 expression=expression,
             )
 
-        if this and self.MODIFIERS_ATTACHED_TO_UNION:
+        if isinstance(this, exp.Union) and self.MODIFIERS_ATTACHED_TO_UNION:
             expression = this.expression
 
             if expression:

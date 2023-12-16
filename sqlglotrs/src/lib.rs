@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyList, PyString};
+use pyo3::types::{PyList, PyNone, PyString};
 
 mod settings;
 mod tokenizer;
@@ -13,8 +13,10 @@ pub use self::tokenizer::Tokenizer;
 #[derive(Debug)]
 #[pyclass]
 pub struct Token {
-    #[pyo3(get)]
+    #[pyo3(get, name = "token_type_index")]
     pub token_type: TokenType,
+    #[pyo3(get, set, name = "token_type")]
+    pub token_type_py: PyObject,
     #[pyo3(get)]
     pub text: Py<PyString>,
     #[pyo3(get)]
@@ -41,6 +43,7 @@ impl Token {
     ) -> Token {
         Python::with_gil(|py| Token {
             token_type,
+            token_type_py: PyNone::get(py).into(),
             text: PyString::new(py, &text).into(),
             line,
             col,

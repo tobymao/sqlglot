@@ -1328,17 +1328,9 @@ class Tokenizer(metaclass=_Tokenizer):
             raise SqlglotError("Rust tokenizer is not available")
 
         try:
-            return [
-                Token(
-                    token_type=_ALL_TOKEN_TYPES[token.token_type],
-                    text=token.text,
-                    line=token.line,
-                    col=token.col,
-                    start=token.start,
-                    end=token.end,
-                    comments=token.comments,
-                )
-                for token in self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
-            ]
+            tokens = self._RS_TOKENIZER.tokenize(sql, self._rs_dialect_settings)
+            for token in tokens:
+                token.token_type = _ALL_TOKEN_TYPES[token.token_type_index]
+            return tokens
         except Exception as e:
             raise TokenError(str(e))

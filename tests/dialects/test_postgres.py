@@ -8,6 +8,11 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_ddl(self):
+        expr = parse_one("CREATE TABLE t (x INTERVAL day)", read="postgres")
+        cdef = expr.find(exp.ColumnDef)
+        cdef.args["kind"].assert_is(exp.DataType)
+        self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL day)")
+
         self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
         self.validate_identity("CREATE TABLE test (elems JSONB[])")
         self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")

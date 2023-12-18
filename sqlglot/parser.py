@@ -3599,7 +3599,7 @@ class Parser(metaclass=_Parser):
                     exp.DataType, this=exp.DataType.Type.INTERVAL, expressions=span
                 )
             else:
-                this = self.expression(exp.Interval, unit=unit)
+                this = self.expression(exp.DataType, this=self.expression(exp.Interval, unit=unit))
 
         if maybe_func and check_func:
             index2 = self._index

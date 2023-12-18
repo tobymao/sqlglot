@@ -75,7 +75,7 @@ class TestSpark(Validator):
   col_a INTEGER,
   date VARCHAR
 )
-COMMENT='Test comment: blah'
+COMMENT 'Test comment: blah'
 WITH (
   PARTITIONED_BY=ARRAY['date'],
   FORMAT='ICEBERG',

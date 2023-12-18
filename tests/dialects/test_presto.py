@@ -472,10 +472,10 @@ class TestPresto(Validator):
         )
 
         self.validate_all(
-            'CREATE TABLE IF NOT EXISTS x ("cola" INTEGER, "ds" TEXT) WITH (PARTITIONED BY=("ds"))',
+            """CREATE TABLE IF NOT EXISTS x ("cola" INTEGER, "ds" TEXT) COMMENT 'comment' WITH (PARTITIONED BY=("ds"))""",
             write={
-                "spark": "CREATE TABLE IF NOT EXISTS x (`cola` INT, `ds` STRING) PARTITIONED BY (`ds`)",
-                "presto": """CREATE TABLE IF NOT EXISTS x ("cola" INTEGER, "ds" VARCHAR) WITH (PARTITIONED_BY=ARRAY['ds'])""",
+                "spark": "CREATE TABLE IF NOT EXISTS x (`cola` INT, `ds` STRING) COMMENT 'comment' PARTITIONED BY (`ds`)",
+                "presto": """CREATE TABLE IF NOT EXISTS x ("cola" INTEGER, "ds" VARCHAR) COMMENT 'comment' WITH (PARTITIONED_BY=ARRAY['ds'])""",
             },
         )
 

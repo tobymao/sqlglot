@@ -387,6 +387,7 @@ class Presto(Dialect):
             exp.Right: right_to_substring_sql,
             exp.SafeDivide: no_safe_divide_sql,
             exp.Schema: _schema_sql,
+            exp.SchemaCommentProperty: lambda self, e: f"COMMENT {e.this}",
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_qualify,

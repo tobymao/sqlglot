@@ -126,6 +126,7 @@ class _Dialect(type):
         klass.BIT_START, klass.BIT_END = get_start_end(TokenType.BIT_STRING)
         klass.HEX_START, klass.HEX_END = get_start_end(TokenType.HEX_STRING)
         klass.BYTE_START, klass.BYTE_END = get_start_end(TokenType.BYTE_STRING)
+        klass.UNICODE_START, klass.UNICODE_END = get_start_end(TokenType.UNICODE_STRING)
 
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
@@ -240,13 +241,15 @@ class Dialect(metaclass=_Dialect):
     IDENTIFIER_START = '"'
     IDENTIFIER_END = '"'
 
-    # Delimiters for bit, hex and byte literals
+    # Delimiters for bit, hex, byte and unicode literals
     BIT_START: t.Optional[str] = None
     BIT_END: t.Optional[str] = None
     HEX_START: t.Optional[str] = None
     HEX_END: t.Optional[str] = None
     BYTE_START: t.Optional[str] = None
     BYTE_END: t.Optional[str] = None
+    UNICODE_START: t.Optional[str] = None
+    UNICODE_END: t.Optional[str] = None
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:

@@ -635,6 +635,11 @@ class Parser(metaclass=_Parser):
         TokenType.HEREDOC_STRING: lambda self, token: self.expression(
             exp.RawString, this=token.text
         ),
+        TokenType.UNICODE_STRING: lambda self, token: self.expression(
+            exp.UnicodeString,
+            this=token.text,
+            escape=self._match_text_seq("UESCAPE") and self._parse_string(),
+        ),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
     }
 

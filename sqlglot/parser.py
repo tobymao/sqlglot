@@ -2463,13 +2463,7 @@ class Parser(metaclass=_Parser):
             pattern = None
 
         define = (
-            self._parse_csv(
-                lambda: self.expression(
-                    exp.Alias,
-                    alias=self._parse_id_var(any_token=True),
-                    this=self._match(TokenType.ALIAS) and self._parse_conjunction(),
-                )
-            )
+            self._parse_csv(self._parse_name_as_expression)
             if self._match_text_seq("DEFINE")
             else None
         )
@@ -3116,6 +3110,18 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Connect, start=start, connect=connect)
 
+    def _parse_name_as_expression(self) -> exp.Alias:
+        return self.expression(
+            exp.Alias,
+            alias=self._parse_id_var(any_token=True),
+            this=self._match(TokenType.ALIAS) and self._parse_conjunction(),
+        )
+
+    def _parse_interpolate(self) -> t.Optional[t.List[exp.Expression]]:
+        if self._match_text_seq("INTERPOLATE"):
+            return self._parse_wrapped_csv(self._parse_name_as_expression)
+        return None
+
     def _parse_order(
         self, this: t.Optional[exp.Expression] = None, skip_order_token: bool = False
     ) -> t.Optional[exp.Expression]:
@@ -3123,7 +3129,10 @@ class Parser(metaclass=_Parser):
             return this
 
         return self.expression(
-            exp.Order, this=this, expressions=self._parse_csv(self._parse_ordered)
+            exp.Order,
+            this=this,
+            expressions=self._parse_csv(self._parse_ordered),
+            interpolate=self._parse_interpolate(),
         )
 
     def _parse_sort(self, exp_class: t.Type[E], token: TokenType) -> t.Optional[E]:
@@ -3153,7 +3162,20 @@ class Parser(metaclass=_Parser):
         ):
             nulls_first = True
 
-        return self.expression(exp.Ordered, this=this, desc=desc, nulls_first=nulls_first)
+        with_fill = None
+        if self._match_text_seq("WITH", "FILL"):
+            with_fill = self.expression(exp.WithFill)
+
+            if self._match(TokenType.FROM):
+                with_fill.set("from", self._parse_bitwise())
+            if self._match_text_seq("TO"):
+                with_fill.set("to", self._parse_bitwise())
+            if self._match_text_seq("STEP"):
+                with_fill.set("step", self._parse_bitwise())
+
+        return self.expression(
+            exp.Ordered, this=this, desc=desc, nulls_first=nulls_first, with_fill=with_fill
+        )
 
     def _parse_limit(
         self, this: t.Optional[exp.Expression] = None, top: bool = False

@@ -208,11 +208,6 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
 
     return _parse
 
-def break_point(*args, **kwargs):
-    import pdb
-    pdb.set_trace()
-    print("yay")
-
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE

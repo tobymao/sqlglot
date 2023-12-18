@@ -3078,6 +3078,16 @@ class Generator:
     def operator_sql(self, expression: exp.Operator) -> str:
         return self.binary(expression, f"OPERATOR({self.sql(expression, 'operator')})")
 
+    def toarray_sql(self, expression: exp.ToArray) -> str:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        arg = annotate_types(expression.this)
+        if arg.is_type(exp.DataType.Type.ARRAY):
+            return self.sql(arg)
+
+        cond_for_null = arg.is_(exp.null())
+        return self.sql(exp.func("IF", cond_for_null, exp.null(), exp.Array(expressions=[arg])))
+
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):
             from sqlglot.optimizer.simplify import simplify

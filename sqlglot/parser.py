@@ -3162,7 +3162,6 @@ class Parser(metaclass=_Parser):
         ):
             nulls_first = True
 
-        with_fill = None
         if self._match_text_seq("WITH", "FILL"):
             with_fill = self.expression(exp.WithFill)
 
@@ -3172,6 +3171,8 @@ class Parser(metaclass=_Parser):
                 with_fill.set("to", self._parse_bitwise())
             if self._match_text_seq("STEP"):
                 with_fill.set("step", self._parse_bitwise())
+        else:
+            with_fill = None
 
         return self.expression(
             exp.Ordered, this=this, desc=desc, nulls_first=nulls_first, with_fill=with_fill

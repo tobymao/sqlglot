@@ -1964,7 +1964,12 @@ class Offset(Expression):
 
 
 class Order(Expression):
-    arg_types = {"this": False, "expressions": True}
+    arg_types = {"this": False, "expressions": True, "interpolate": False}
+
+
+# https://clickhouse.com/docs/en/sql-reference/statements/select/order-by#order-by-expr-with-fill-modifier
+class WithFill(Expression):
+    arg_types = {"from": False, "to": False, "step": False}
 
 
 # hive specific sorts
@@ -1982,7 +1987,7 @@ class Sort(Order):
 
 
 class Ordered(Expression):
-    arg_types = {"this": True, "desc": False, "nulls_first": True}
+    arg_types = {"this": True, "desc": False, "nulls_first": True, "with_fill": False}
 
 
 class Property(Expression):

@@ -4318,6 +4318,11 @@ class Array(Func):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/to_array
+class ToArray(Func):
+    pass
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/to_char
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):

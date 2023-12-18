@@ -511,6 +511,13 @@ WHERE
                 "spark": "ARRAY(x)",
                 "snowflake": "[x]",
             },
+        ),
+        self.validate_all(
+            "TO_ARRAY(['test']::variant)",
+            write={
+                "spark": "ARRAY(x)",
+                "snowflake": "[x]",
+            },
         )
         self.validate_all(
             "SELECT * FROM a INTERSECT ALL SELECT * FROM b",

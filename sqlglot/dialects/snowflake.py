@@ -162,7 +162,7 @@ def _nullifzero_to_if(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
-def _array_if_not_array_or_struct(args: t.List) -> exp.Array:
+def _array_if_not_array_or_variant_array(args: t.List) -> exp.Array:
     if isinstance(seq_get(args, 0), exp.Array):
         return seq_get(args, 0)
     else: 
@@ -297,7 +297,7 @@ class Snowflake(Dialect):
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TIMEDIFF": _parse_datediff,
             "TIMESTAMPDIFF": _parse_datediff,
-            "TO_ARRAY": _array_if_not_array_or_struct,
+            "TO_ARRAY": _array_if_not_array_or_variant_array,
             "TO_TIMESTAMP": _parse_to_timestamp,
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _zeroifnull_to_if,

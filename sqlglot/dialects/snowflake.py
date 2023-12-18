@@ -33,6 +33,19 @@ def _check_int(s: str) -> bool:
     return s.isdigit()
 
 
+def _parse_to_array(args: t.List) -> exp.Expression:
+    arg = seq_get(args, 0)
+    if isinstance(arg, exp.Expression):
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        # https://docs.snowflake.com/en/sql-reference/functions/to_array
+        arg = annotate_types(arg)
+        if arg.is_type(exp.DataType.Type.ARRAY):
+            return arg
+
+    return exp.Array.from_arg_list(args)
+
+
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
 def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, exp.TimeStrToTime]:
     if len(args) == 2:
@@ -293,7 +306,7 @@ class Snowflake(Dialect):
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TIMEDIFF": _parse_datediff,
             "TIMESTAMPDIFF": _parse_datediff,
-            "TO_ARRAY": exp.Array.from_arg_list,
+            "TO_ARRAY": _parse_to_array,
             "TO_TIMESTAMP": _parse_to_timestamp,
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _zeroifnull_to_if,

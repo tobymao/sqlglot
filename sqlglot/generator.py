@@ -915,6 +915,14 @@ class Generator:
             return f"{self.dialect.BYTE_START}{this}{self.dialect.BYTE_END}"
         return this
 
+    def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
+        this = self.sql(expression, "this")
+        if self.dialect.UNICODE_START:
+            escape = self.sql(expression, "escape")
+            escape = f" UESCAPE {escape}" if escape else ""
+            return f"{self.dialect.UNICODE_START}{this}{self.dialect.UNICODE_END}{escape}"
+        return this
+
     def rawstring_sql(self, expression: exp.RawString) -> str:
         string = self.escape_str(expression.this.replace("\\", "\\\\"))
         return f"{self.dialect.QUOTE_START}{string}{self.dialect.QUOTE_END}"

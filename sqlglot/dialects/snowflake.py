@@ -42,6 +42,8 @@ def _parse_to_array(args: t.List) -> exp.Expression:
         arg = annotate_types(arg)
         if arg.is_type(exp.DataType.Type.ARRAY):
             return arg
+        elif arg.is_type(exp.DataType.Type.VARIANT):
+            return exp.Anonymous(this="TO_ARRAY", expressions=[arg])
 
     return exp.Array.from_arg_list(args)
 

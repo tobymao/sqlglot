@@ -147,6 +147,10 @@ WHERE
             "SELECT TO_ARRAY(x::ARRAY)",
             "SELECT CAST(x AS ARRAY)",
         )
+        self.validate_identity(
+            "SELECT TO_ARRAY(['test']::VARIANT)",
+            "SELECT TO_ARRAY(CAST(['test'] AS VARIANT))",
+        )
 
         self.validate_all(
             "SELECT TO_ARRAY(['test'])",

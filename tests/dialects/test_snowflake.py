@@ -36,6 +36,8 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")
+        self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
         self.validate_identity("SELECT user_id, value FROM table_name sample ($s) SEED (0)")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
         self.validate_identity("SELECT OBJECT_CONSTRUCT()")
@@ -143,26 +145,18 @@ WHERE
             "CAST(x AS NCHAR VARYING)",
             "CAST(x AS VARCHAR)",
         )
-        self.validate_identity(
-            "SELECT TO_ARRAY(x::ARRAY)",
-            "SELECT CAST(x AS ARRAY)",
-        )
-        self.validate_identity(
-            "SELECT TO_ARRAY(['test']::VARIANT)",
-            "SELECT TO_ARRAY(CAST(['test'] AS VARIANT))",
-        )
 
         self.validate_all(
             "SELECT TO_ARRAY(['test'])",
             write={
-                "snowflake": "SELECT ['test']",
+                "snowflake": "SELECT TO_ARRAY(['test'])",
                 "spark": "SELECT ARRAY('test')",
             },
         )
         self.validate_all(
             "SELECT TO_ARRAY(['test'])",
             write={
-                "snowflake": "SELECT ['test']",
+                "snowflake": "SELECT TO_ARRAY(['test'])",
                 "spark": "SELECT ARRAY('test')",
             },
         )
@@ -535,8 +529,8 @@ WHERE
         self.validate_all(
             "TO_ARRAY(x)",
             write={
-                "spark": "ARRAY(x)",
-                "snowflake": "[x]",
+                "spark": "IF(x IS NULL, NULL, ARRAY(x))",
+                "snowflake": "TO_ARRAY(x)",
             },
         )
         self.validate_all(

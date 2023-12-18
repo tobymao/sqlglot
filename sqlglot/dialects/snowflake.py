@@ -162,7 +162,7 @@ def _nullifzero_to_if(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
-def _toarray_no_modify_on_array_or_struct(args: t.List) -> exp.If:
+def _toarray_no_modify_on_array_or_struct(args: t.List) -> exp.Array:
     if isinstance(seq_get(args, 0), exp.Array) or isinstance(seq_get(args, 0), exp.Struct):
         return seq_get(args, 0)
     else: 

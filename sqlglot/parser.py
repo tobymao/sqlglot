@@ -3163,20 +3163,13 @@ class Parser(metaclass=_Parser):
             nulls_first = True
 
         if self._match_text_seq("WITH", "FILL"):
-            from_ = None
-            to = None
-            step = None
-
-            if self._match(TokenType.FROM):
-                from_ = self._parse_bitwise()
-            if self._match_text_seq("TO"):
-                to = self._parse_bitwise()
-            if self._match_text_seq("STEP"):
-                step = self._parse_bitwise()
-
             with_fill = self.expression(
                 exp.WithFill,
-                **{"from": from_, "to": to, "step": step},  # type: ignore
+                **{  # type: ignore
+                    "from": self._match(TokenType.FROM) and self._parse_bitwise(),
+                    "to": self._match_text_seq("TO") and self._parse_bitwise(),
+                    "step": self._match_text_seq("STEP") and self._parse_bitwise(),
+                },
             )
         else:
             with_fill = None

@@ -162,6 +162,11 @@ def _nullifzero_to_if(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
+def _toarray_no_modify_on_array_or_struct(args: t.List) -> exp.If:
+    if isinstance(seq_get(args, 0), exp.Array) or isinstance(seq_get(args, 0), exp.Struct):
+        return seq_get(args, 0)
+    else: 
+        return exp.Array.from_arg_list(args)
 
 def _datatype_sql(self: Snowflake.Generator, expression: exp.DataType) -> str:
     if expression.is_type("array"):
@@ -203,6 +208,10 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
 
     return _parse
 
+def break_point(*args, **kwargs):
+    import pdb
+    pdb.set_trace()
+    print("yay")
 
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
@@ -293,7 +302,7 @@ class Snowflake(Dialect):
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TIMEDIFF": _parse_datediff,
             "TIMESTAMPDIFF": _parse_datediff,
-            "TO_ARRAY": exp.Array.from_arg_list,
+            "TO_ARRAY": _toarray_no_modify_on_array_or_struct,
             "TO_TIMESTAMP": _parse_to_timestamp,
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _zeroifnull_to_if,

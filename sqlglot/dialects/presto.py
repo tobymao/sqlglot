@@ -222,6 +222,12 @@ class Presto(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
     class Tokenizer(tokens.Tokenizer):
+        UNICODE_STRINGS = [
+            (prefix + q, q)
+            for q in t.cast(t.List[str], tokens.Tokenizer.QUOTES)
+            for prefix in ("U&", "u&")
+        ]
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "START": TokenType.BEGIN,

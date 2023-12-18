@@ -1206,6 +1206,10 @@ class RawString(Condition):
     pass
 
 
+class UnicodeString(Condition):
+    arg_types = {"this": True, "escape": False}
+
+
 class Column(Condition):
     arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
 

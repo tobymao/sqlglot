@@ -97,6 +97,7 @@ class TokenType(AutoName):
     NATIONAL_STRING = auto()
     RAW_STRING = auto()
     HEREDOC_STRING = auto()
+    UNICODE_STRING = auto()
 
     # types
     BIT = auto()
@@ -450,6 +451,7 @@ class _Tokenizer(type):
             **_quotes_to_format(TokenType.HEX_STRING, klass.HEX_STRINGS),
             **_quotes_to_format(TokenType.RAW_STRING, klass.RAW_STRINGS),
             **_quotes_to_format(TokenType.HEREDOC_STRING, klass.HEREDOC_STRINGS),
+            **_quotes_to_format(TokenType.UNICODE_STRING, klass.UNICODE_STRINGS),
         }
 
         klass._STRING_ESCAPES = set(klass.STRING_ESCAPES)
@@ -557,6 +559,7 @@ class Tokenizer(metaclass=_Tokenizer):
     HEX_STRINGS: t.List[str | t.Tuple[str, str]] = []
     RAW_STRINGS: t.List[str | t.Tuple[str, str]] = []
     HEREDOC_STRINGS: t.List[str | t.Tuple[str, str]] = []
+    UNICODE_STRINGS: t.List[str | t.Tuple[str, str]] = []
     IDENTIFIERS: t.List[str | t.Tuple[str, str]] = ['"']
     IDENTIFIER_ESCAPES = ['"']
     QUOTES: t.List[t.Tuple[str, str] | str] = ["'"]

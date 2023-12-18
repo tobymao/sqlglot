@@ -544,26 +544,18 @@ class TestPresto(Validator):
             },
         )
 
+    def test_unicode_string(self):
+        for prefix in ("u&", "U&"):
+            self.validate_identity(
+                f"{prefix}'Hello winter \\2603 !'",
+                "U&'Hello winter \\2603 !'",
+            )
+            self.validate_identity(
+                f"{prefix}'Hello winter #2603 !' UESCAPE '#'",
+                "U&'Hello winter #2603 !' UESCAPE '#'",
+            )
+
     def test_presto(self):
-        self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
-        self.validate_identity(
-            "SELECT * FROM example.testdb.customer_orders FOR VERSION AS OF 8954597067493422955"
-        )
-        self.validate_identity(
-            "SELECT * FROM example.testdb.customer_orders FOR TIMESTAMP AS OF CAST('2022-03-23 09:59:29.803 Europe/Vienna' AS TIMESTAMP)"
-        )
-
-        self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
-        self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
-        self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
-        self.validate_identity("SELECT * FROM (VALUES (1))")
-        self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
-        self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-        self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
-        self.validate_identity(
-            "SELECT SPLIT_TO_MAP('a:1;b:2;a:3', ';', ':', (k, v1, v2) -> CONCAT(v1, v2))"
-        )
-
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(
                 "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
@@ -581,6 +573,24 @@ class TestPresto(Validator):
                     "presto": "SELECT ELEMENT_AT(ARRAY[1, 2, 3], 4)",
                 },
             )
+
+        self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
+        self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
+        self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")
+        self.validate_identity("SELECT BOOL_OR(a > 10) FROM asd AS T(a)")
+        self.validate_identity("SELECT * FROM (VALUES (1))")
+        self.validate_identity("START TRANSACTION READ WRITE, ISOLATION LEVEL SERIALIZABLE")
+        self.validate_identity("START TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        self.validate_identity("APPROX_PERCENTILE(a, b, c, d)")
+        self.validate_identity(
+            "SELECT SPLIT_TO_MAP('a:1;b:2;a:3', ';', ':', (k, v1, v2) -> CONCAT(v1, v2))"
+        )
+        self.validate_identity(
+            "SELECT * FROM example.testdb.customer_orders FOR VERSION AS OF 8954597067493422955"
+        )
+        self.validate_identity(
+            "SELECT * FROM example.testdb.customer_orders FOR TIMESTAMP AS OF CAST('2022-03-23 09:59:29.803 Europe/Vienna' AS TIMESTAMP)"
+        )
 
         self.validate_all(
             "SELECT MAX_BY(a.id, a.timestamp) FROM a",

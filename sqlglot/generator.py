@@ -3081,7 +3081,10 @@ class Generator:
     def toarray_sql(self, expression: exp.ToArray) -> str:
         from sqlglot.optimizer.annotate_types import annotate_types
 
-        arg = annotate_types(expression.this)
+        arg = expression.this
+        if not arg.type:
+            arg = annotate_types(arg)
+
         if arg.is_type(exp.DataType.Type.ARRAY):
             return self.sql(arg)
 

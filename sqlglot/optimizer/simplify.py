@@ -49,31 +49,31 @@ def simplify(
 
     dialect = Dialect.get_or_raise(dialect)
 
-    # group by expressions cannot be simplified, for example
-    # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
-    # the projection must exactly match the group by key
-    for group in expression.find_all(exp.Group):
-        select = group.parent
-        assert select
-        groups = set(group.expressions)
-        group.meta[FINAL] = True
-
-        for e in select.expressions:
-            for node, *_ in e.walk():
-                if node in groups:
-                    e.meta[FINAL] = True
-                    break
-
-        having = select.args.get("having")
-        if having:
-            for node, *_ in having.walk():
-                if node in groups:
-                    having.meta[FINAL] = True
-                    break
-
     def _simplify(expression, root=True):
         if expression.meta.get(FINAL):
             return expression
+
+        # group by expressions cannot be simplified, for example
+        # select x + 1 + 1 FROM y GROUP BY x + 1 + 1
+        # the projection must exactly match the group by key
+        group = expression.args.get("group")
+
+        if group and hasattr(expression, "selects"):
+            groups = set(group.expressions)
+            group.meta[FINAL] = True
+
+            for e in expression.selects:
+                for node, *_ in e.walk():
+                    if node in groups:
+                        e.meta[FINAL] = True
+                        break
+
+            having = expression.args.get("having")
+            if having:
+                for node, *_ in having.walk():
+                    if node in groups:
+                        having.meta[FINAL] = True
+                        break
 
         # Pre-order transformations
         node = expression

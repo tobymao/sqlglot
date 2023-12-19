@@ -3079,10 +3079,10 @@ class Generator:
         return self.binary(expression, f"OPERATOR({self.sql(expression, 'operator')})")
 
     def toarray_sql(self, expression: exp.ToArray) -> str:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
         arg = expression.this
         if not arg.type:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
             arg = annotate_types(arg)
 
         if arg.is_type(exp.DataType.Type.ARRAY):

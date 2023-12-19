@@ -176,6 +176,8 @@ for table in parse_one("SELECT * FROM x JOIN y JOIN z").find_all(exp.Table):
     print(table.name)
 ```
 
+Read the [ast primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md) to learn more about SQLGlot's internals.
+
 ### Parser Errors
 
 When the parser detects an error in the syntax, it raises a ParseError:

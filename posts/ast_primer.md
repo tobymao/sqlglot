@@ -32,7 +32,7 @@ repr(ast)
 #         (IDENTIFIER this: x, quoted: False)))))
 ```
 
-This is a textual representation of the internal data structure. Here's a breakdown of some its components:
+This is a textual representation of the internal data structure. Here's a breakdown of some of its components:
 ```
 Expression type    child key
   |               /
@@ -83,10 +83,10 @@ class Column(Expression):
 
 `Column` subclasses `Expression`.
 
-`arg_types` is a class attribute that specifies the possible children. The `args` keys of an Expression instance correspond to the `arg_types` keys of its class. The values of the `arg_types` dict are `True` if the key is required, meaning it is guaranteed to be present in `args`.
+`arg_types` is a class attribute that specifies the possible children. The `args` keys of an Expression instance correspond to the `arg_types` keys of its class. The values of the `arg_types` dict are `True` if the key is required.
 
 There are some common `arg_types` keys:
-- "this": This is typically used for the primary child. In `Column`, "this" is this the identifier for the name of the column.
+- "this": This is typically used for the primary child. In `Column`, "this" is the identifier for the column's name.
 - "expression": This is typically used for the secondary child
 - "expressions": This is typically used for a primary list of children
 
@@ -94,7 +94,7 @@ There aren't strict rules for when these keys are used, but they help with some 
 - `Expression.this`: shorthand for `self.args.get("this")`
 - `Expression.expression`: similarly, shorthand for the expression arg
 - `Expression.expressions`: similarly, shorthand for the expressions list arg
-- `Expression.name`: text  name for whatever `this` is
+- `Expression.name`: text name for whatever `this` is
 
 `arg_types` don't specify the possible Expression types of children. This can be a challenge when you are writing code to traverse a particular AST and you don't know what to expect. A common trick is to parse an example query and print out the `repr`.
 
@@ -318,7 +318,7 @@ ast = (
 ```
 
 > [!WARNING]
-> High-level builder methods will attempt to parse string arguments into Expressions. This can be very convenient, but make sure to keep in mind dialect of the string. If its written in a specific dialect, you need to set the `dialect` argument.
+> High-level builder methods will attempt to parse string arguments into Expressions. This can be very convenient, but make sure to keep in mind the dialect of the string. If its written in a specific dialect, you need to set the `dialect` argument.
 > 
 > You can avoid parsing by passing Expressions as arguments, e.g. `.where(exp.column("b") < 4)` instead of `.where("b < 4")`
 

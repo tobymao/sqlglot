@@ -71,7 +71,18 @@ impl Token {
 impl Token {
     #[pyo3(name = "__repr__")]
     fn python_repr(&self) -> PyResult<String> {
-        Ok(format!("{:?}", self))
+        Python::with_gil(|py| {
+            Ok(format!(
+                "<Token token_type: {}, text: {}, line: {}, col: {}, start: {}, end: {}, comments: {}>",
+                self.token_type_py.as_ref(py).repr()?,
+                self.text.as_ref(py).repr()?,
+                self.line,
+                self.col,
+                self.start,
+                self.end,
+                self.comments.as_ref(py).repr()?,
+            ))
+        })
     }
 }
 

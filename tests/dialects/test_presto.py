@@ -546,13 +546,21 @@ class TestPresto(Validator):
 
     def test_unicode_string(self):
         for prefix in ("u&", "U&"):
-            self.validate_identity(
+            self.validate_all(
                 f"{prefix}'Hello winter \\2603 !'",
-                "U&'Hello winter \\2603 !'",
+                write={
+                    "presto": "U&'Hello winter \\2603 !'",
+                    "snowflake": "'Hello winter \\u2603 !'",
+                    "spark": "'Hello winter \\u2603 !'",
+                },
             )
-            self.validate_identity(
+            self.validate_all(
                 f"{prefix}'Hello winter #2603 !' UESCAPE '#'",
-                "U&'Hello winter #2603 !' UESCAPE '#'",
+                write={
+                    "presto": "U&'Hello winter #2603 !' UESCAPE '#'",
+                    "snowflake": "'Hello winter \\u2603 !'",
+                    "spark": "'Hello winter \\u2603 !'",
+                },
             )
 
     def test_presto(self):

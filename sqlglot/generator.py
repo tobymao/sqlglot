@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import typing as t
 from collections import defaultdict
 from functools import reduce
@@ -16,6 +17,8 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
 logger = logging.getLogger("sqlglot")
+
+UNICODE_CODE_POINT_RE = re.compile(r"\\(\d+)")
 
 
 class Generator:
@@ -917,11 +920,19 @@ class Generator:
 
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
         this = self.sql(expression, "this")
+        escape = expression.args.get("escape")
+
         if self.dialect.UNICODE_START:
-            escape = self.sql(expression, "escape")
-            escape = f" UESCAPE {escape}" if escape else ""
+            escape = f" UESCAPE {self.sql(escape)}" if escape else ""
             return f"{self.dialect.UNICODE_START}{this}{self.dialect.UNICODE_END}{escape}"
-        return this
+
+        if escape:
+            pattern = re.compile(fr"{escape.name}(\d+)")
+        else:
+            pattern = UNICODE_CODE_POINT_RE
+
+        this = pattern.sub(r'\\u\1', this)
+        return f"{self.dialect.QUOTE_START}{this}{self.dialect.QUOTE_END}"
 
     def rawstring_sql(self, expression: exp.RawString) -> str:
         string = self.escape_str(expression.this.replace("\\", "\\\\"))

@@ -17,6 +17,13 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("int", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("array<int>", into=exp.DataType), exp.DataType)
         self.assertIsInstance(parse_one("foo", into=exp.Table), exp.Table)
+        self.assertIsInstance(
+            parse_one(
+                "WHEN MATCHED THEN UPDATE SET target.salary = COALESCE(source.salary, target.salary)",
+                into=exp.When,
+            ),
+            exp.When,
+        )
 
         with self.assertRaises(ParseError) as ctx:
             parse_one("SELECT * FROM tbl", into=exp.Table)

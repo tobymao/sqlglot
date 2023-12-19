@@ -80,7 +80,6 @@ jobs:
       with:
         command: upload
         args: --non-interactive --skip-existing *
-        working-directory: ./sqlglot/sqlglotrs
 
   deploy:
     runs-on: ubuntu-latest

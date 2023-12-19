@@ -37,36 +37,34 @@ jobs:
         python-version: '3.10'
         architecture: ${{ matrix.python-architecture || 'x64' }}
     - name: Build wheels
-      working-directory: ./sqlglotrs
       uses: PyO3/maturin-action@v1
       with:
         target: ${{ matrix.target }}
         args: --release --out dist --interpreter $python_interpreters
         sccache: 'true'
         manylinux: auto
+        working-directory: ./sqlglotrs
     - name: Upload wheels
-      working-directory: ./sqlglotrs
       uses: actions/upload-artifact@v3
       with:
         name: wheels
-        path: dist
+        path: sqlglotrs/dist
 
   sdist-rs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Build sdist
-      working-directory: ./sqlglotrs
       uses: PyO3/maturin-action@v1
       with:
         command: sdist
         args: --out dist
+        working-directory: ./sqlglotrs
     - name: Upload sdist
-      working-directory: ./sqlglotrs
       uses: actions/upload-artifact@v3
       with:
         name: wheels
-        path: dist
+        path: sqlglotrs/dist
 
   deploy-rs:
     runs-on: ubuntu-latest
@@ -76,13 +74,13 @@ jobs:
       with:
         name: wheels
     - name: Publish to PyPI
-      working-directory: ./sqlglotrs
       uses: PyO3/maturin-action@v1
       env:
         MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
       with:
         command: upload
         args: --non-interactive --skip-existing *
+        working-directory: ./sqlglotrs
 
   deploy:
     runs-on: ubuntu-latest

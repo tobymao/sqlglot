@@ -40,7 +40,7 @@ jobs:
       uses: PyO3/maturin-action@v1
       with:
         target: ${{ matrix.target }}
-        args: --release --out dist --interpreter $python_interpreters
+        args: --release --out dist --interpreter ${{ env.python_interpreters }}
         sccache: 'true'
         manylinux: auto
         working-directory: ./sqlglotrs

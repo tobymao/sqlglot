@@ -8,9 +8,6 @@ on:
 permissions:
   contents: read
 
-env:
-  python_interpreters: 3.7 3.8 3.9 3.10 3.11
-
 jobs:
   build-rs:
     strategy:
@@ -29,6 +26,9 @@ jobs:
         - os: windows
           target: i686
           python-architecture: x86
+        - os: windows
+          target: aarch64
+          python_interpreters: 3.11 3.12
     runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
     steps:
     - uses: actions/checkout@v3
@@ -40,7 +40,7 @@ jobs:
       uses: PyO3/maturin-action@v1
       with:
         target: ${{ matrix.target }}
-        args: --release --out dist --interpreter ${{ env.python_interpreters }}
+        args: --release --out dist --interpreter ${{ matrix.python_interpreters || '3.7 3.8 3.9 3.10 3.11 3.12' }}
         sccache: 'true'
         manylinux: auto
         working-directory: ./sqlglotrs

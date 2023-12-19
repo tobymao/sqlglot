@@ -6475,7 +6475,7 @@ def table_name(table: Table | str, dialect: DialectType = None, identify: bool =
         raise ValueError(f"Cannot parse {table}")
 
     return ".".join(
-        part.sql(dialect=dialect, identify=True)
+        part.sql(dialect=dialect, identify=True, copy=False)
         if identify or not SAFE_IDENTIFIER_RE.match(part.name)
         else part.name
         for part in table.parts

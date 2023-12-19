@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
-UNICODE_CODE_POINT_RE = re.compile(r"\\(\d+)")
+ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 
 
 class Generator:
@@ -927,11 +927,11 @@ class Generator:
             return f"{self.dialect.UNICODE_START}{this}{self.dialect.UNICODE_END}{escape}"
 
         if escape:
-            pattern = re.compile(fr"{escape.name}(\d+)")
+            pattern = re.compile(rf"{escape.name}(\d+)")
         else:
-            pattern = UNICODE_CODE_POINT_RE
+            pattern = ESCAPED_UNICODE_RE
 
-        this = pattern.sub(r'\\u\1', this)
+        this = pattern.sub(r"\\u\1", this)
         return f"{self.dialect.QUOTE_START}{this}{self.dialect.QUOTE_END}"
 
     def rawstring_sql(self, expression: exp.RawString) -> str:

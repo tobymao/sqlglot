@@ -142,9 +142,10 @@ class ClickHouse(Dialect):
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.ANY,
-            TokenType.SETTINGS,
-            TokenType.FORMAT,
             TokenType.ARRAY,
+            TokenType.FINAL,
+            TokenType.FORMAT,
+            TokenType.SETTINGS,
         }
 
         LOG_DEFAULTS_TO_LN = True

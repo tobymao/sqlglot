@@ -305,6 +305,7 @@ class Parser(metaclass=_Parser):
         TokenType.FALSE,
         TokenType.FIRST,
         TokenType.FILTER,
+        TokenType.FINAL,
         TokenType.FORMAT,
         TokenType.FULL,
         TokenType.IS,

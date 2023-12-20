@@ -47,6 +47,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT INTERVAL t.days day")
         self.validate_identity("SELECT match('abc', '([a-z]+)')")
         self.validate_identity("dictGet(x, 'y')")
+        self.validate_identity("SELECT * FROM final")
         self.validate_identity("SELECT * FROM x FINAL")
         self.validate_identity("SELECT * FROM x AS y FINAL")
         self.validate_identity("'a' IN mapKeys(map('a', 1, 'b', 2))")

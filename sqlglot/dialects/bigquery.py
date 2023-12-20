@@ -727,7 +727,8 @@ class BigQuery(Dialect):
         def eq_sql(self, expression: exp.EQ) -> str:
             # Operands of = cannot be NULL in BigQuery
             if isinstance(expression.left, exp.Null) or isinstance(expression.right, exp.Null):
-                return "NULL"
+                if not isinstance(expression.parent, exp.Update):
+                    return "NULL"
 
             return self.binary(expression, "=")
 

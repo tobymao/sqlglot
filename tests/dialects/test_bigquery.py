@@ -206,6 +206,7 @@ class TestBigQuery(Validator):
                 "duckdb": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS _t(x) WHERE x > 1)",
             },
         )
+        self.validate_identity("UPDATE x SET y = NULL")
         self.validate_all(
             "NULL",
             read={

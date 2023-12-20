@@ -696,6 +696,18 @@ x <> 1;
 NOT 1 <> x;
 x = 1;
 
+x > CAST('2024-01-01' AS DATE) OR x > CAST('2023-12-31' AS DATE);
+x > CAST('2023-12-31' AS DATE);
+
+CAST(x AS DATE) > CAST('2024-01-01' AS DATE) OR CAST(x AS DATE) > CAST('2023-12-31' AS DATE);
+CAST(x AS DATE) > CAST('2023-12-31' AS DATE);
+
+FUN() > 0 OR FUN() > 1;
+FUN() > 0;
+
+RAND() > 0 OR RAND() > 1;
+RAND() > 0 OR RAND() > 1;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------
@@ -835,7 +847,7 @@ DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
 DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
 
 DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
-x < CAST('2021-01-01' AS DATE) AND x >= CAST('2022-01-01' AS DATE);
+FALSE;
 
 -- Always true, except for nulls
 DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);

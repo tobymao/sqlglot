@@ -352,6 +352,7 @@ class DuckDB(Dialect):
             ),
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
             exp.RegexpSplit: rename_func("STR_SPLIT_REGEX"),
+            exp.Rand: rename_func("RANDOM"),
             exp.SafeDivide: no_safe_divide_sql,
             exp.Split: rename_func("STR_SPLIT"),
             exp.SortArray: _sort_array_sql,

@@ -418,11 +418,11 @@ def percentile_approx(
 
 
 def rand(seed: t.Optional[ColumnOrLiteral] = None) -> Column:
-    return Column.invoke_anonymous_function(seed, "RAND")
+    return Column.invoke_expression_over_column(seed, expression.Rand)
 
 
 def randn(seed: t.Optional[ColumnOrLiteral] = None) -> Column:
-    return Column.invoke_anonymous_function(seed, "RANDN")
+    return Column.invoke_expression_over_column(seed, expression.Randn)
 
 
 def round(col: ColumnOrName, scale: t.Optional[int] = None) -> Column:

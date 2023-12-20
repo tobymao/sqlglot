@@ -445,6 +445,7 @@ class Postgres(Dialect):
             ),
             exp.Pivot: no_pivot_sql,
             exp.Pow: lambda self, e: self.binary(e, "^"),
+            exp.Rand: rename_func("RANDOM"),
             exp.RegexpLike: lambda self, e: self.binary(e, "~"),
             exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
             exp.Select: transforms.preprocess(

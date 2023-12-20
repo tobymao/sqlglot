@@ -2056,3 +2056,40 @@ SELECT
 
                 self.assertEqual(expression.sql(dialect="mysql"), expected_sql)
                 self.assertEqual(expression.sql(dialect="tsql"), expected_sql)
+
+    def test_random(self):
+        self.validate_all(
+            "RAND()",
+            write={
+                "bigquery": "RAND()",
+                "clickhouse": "randCanonical()",
+                "databricks": "RAND()",
+                "doris": "RAND()",
+                "drill": "RAND()",
+                "duckdb": "RANDOM()",
+                "hive": "RAND()",
+                "mysql": "RAND()",
+                "oracle": "RAND()",
+                "postgres": "RANDOM()",
+                "presto": "RAND()",
+                "spark": "RAND()",
+                "sqlite": "RANDOM()",
+                "tsql": "RAND()",
+            },
+            read={
+                "bigquery": "RAND()",
+                "clickhouse": "randCanonical()",
+                "databricks": "RAND()",
+                "doris": "RAND()",
+                "drill": "RAND()",
+                "duckdb": "RANDOM()",
+                "hive": "RAND()",
+                "mysql": "RAND()",
+                "oracle": "RAND()",
+                "postgres": "RANDOM()",
+                "presto": "RAND()",
+                "spark": "RAND()",
+                "sqlite": "RANDOM()",
+                "tsql": "RAND()",
+            },
+        )

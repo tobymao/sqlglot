@@ -127,6 +127,7 @@ class SQLite(Dialect):
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),
             exp.Pivot: no_pivot_sql,
+            exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

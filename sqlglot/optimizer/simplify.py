@@ -276,9 +276,7 @@ def _simplify_comparison(expression, left, right, or_=False):
         rargs = {rl, rr}
 
         matching = largs & rargs
-        columns = {
-            m for m in matching if not isinstance(m, exp.Literal) and not _is_date_literal(m)
-        }
+        columns = {m for m in matching if _is_columnlike(m)}
 
         if matching and columns:
             try:
@@ -646,6 +644,12 @@ def _is_nonnull_constant(expression: exp.Expression) -> bool:
 
 def _is_constant(expression: exp.Expression) -> bool:
     return isinstance(expression, CONSTANTS) or _is_date_literal(expression)
+
+
+def _is_columnlike(expression: exp.Expression) -> bool:
+    while isinstance(expression, exp.Cast):
+        expression = expression.this
+    return isinstance(expression, exp.Column)
 
 
 def simplify_coalesce(expression):

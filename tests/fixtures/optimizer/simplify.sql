@@ -702,9 +702,6 @@ x > CAST('2023-12-31' AS DATE);
 CAST(x AS DATE) > CAST('2024-01-01' AS DATE) OR CAST(x AS DATE) > CAST('2023-12-31' AS DATE);
 CAST(x AS DATE) > CAST('2023-12-31' AS DATE);
 
-FUN(x) <= 1 AND FUN(x) <= 0;
-FUN(x) <= 0;
-
 --------------------------------------
 -- COALESCE
 --------------------------------------

@@ -266,6 +266,8 @@ INVERSE_COMPARISONS: t.Dict[t.Type[exp.Expression], t.Type[exp.Expression]] = {
     exp.GTE: exp.LTE,
 }
 
+NONDETERMINISTIC = (exp.Rand, exp.Randn)
+
 
 def _simplify_comparison(expression, left, right, or_=False):
     if isinstance(left, COMPARISONS) and isinstance(right, COMPARISONS):
@@ -276,7 +278,7 @@ def _simplify_comparison(expression, left, right, or_=False):
         rargs = {rl, rr}
 
         matching = largs & rargs
-        columns = {m for m in matching if _is_columnlike(m)}
+        columns = {m for m in matching if not _is_constant(m) and not m.find(*NONDETERMINISTIC)}
 
         if matching and columns:
             try:
@@ -644,12 +646,6 @@ def _is_nonnull_constant(expression: exp.Expression) -> bool:
 
 def _is_constant(expression: exp.Expression) -> bool:
     return isinstance(expression, CONSTANTS) or _is_date_literal(expression)
-
-
-def _is_columnlike(expression: exp.Expression) -> bool:
-    while isinstance(expression, exp.Cast):
-        expression = expression.this
-    return isinstance(expression, exp.Column)
 
 
 def simplify_coalesce(expression):

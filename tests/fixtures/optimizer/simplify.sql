@@ -702,6 +702,12 @@ x > CAST('2023-12-31' AS DATE);
 CAST(x AS DATE) > CAST('2024-01-01' AS DATE) OR CAST(x AS DATE) > CAST('2023-12-31' AS DATE);
 CAST(x AS DATE) > CAST('2023-12-31' AS DATE);
 
+FUN() > 0 OR FUN() > 1;
+FUN() > 0;
+
+RAND() > 0 OR RAND() > 1;
+RAND() > 0 OR RAND() > 1;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------

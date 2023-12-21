@@ -351,6 +351,9 @@ class TestRedshift(Validator):
             "SELECT DATE_ADD('day', 1, DATE('2023-01-01'))",
             "SELECT DATEADD(day, 1, DATE('2023-01-01'))",
         )
+
+        self.validate_identity("SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l")
+
         self.validate_identity(
             """SELECT
   c_name,

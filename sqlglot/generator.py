@@ -1445,9 +1445,6 @@ class Generator:
             pattern = f", PATTERN => {pattern}" if pattern else ""
             file_format = f" (FILE_FORMAT => {file_format}{pattern})"
 
-        index = self.sql(expression, "index")
-        index = f" AT {index}" if index else ""
-
         ordinality = expression.args.get("ordinality") or ""
         if ordinality:
             ordinality = f" WITH ORDINALITY{alias}"
@@ -1457,7 +1454,7 @@ class Generator:
         if when:
             table = f"{table} {when}"
 
-        return f"{table}{version}{file_format}{alias}{index}{hints}{pivots}{joins}{laterals}{ordinality}"
+        return f"{table}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
         self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
@@ -2438,6 +2435,11 @@ class Generator:
 
     def aliases_sql(self, expression: exp.Aliases) -> str:
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"
+
+    def atindex_sql(self, expression: exp.AtTimeZone) -> str:
+        this = self.sql(expression, "this")
+        index = self.sql(expression, "expression")
+        return f"{this} AT {index}"
 
     def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
         this = self.sql(expression, "this")

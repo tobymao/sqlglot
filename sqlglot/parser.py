@@ -2755,8 +2755,10 @@ class Parser(metaclass=_Parser):
         if alias:
             this.set("alias", alias)
 
-        if self._match_text_seq("AT"):
-            this.set("index", self._parse_id_var())
+        if isinstance(this, exp.Table) and self._match_text_seq("AT"):
+            return self.expression(
+                exp.AtIndex, this=this.to_column(copy=False), expression=self._parse_id_var()
+            )
 
         this.set("hints", self._parse_table_hints())
 

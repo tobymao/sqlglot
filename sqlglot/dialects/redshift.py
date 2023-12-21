@@ -123,6 +123,27 @@ class Redshift(Postgres):
             self._retreat(index)
             return None
 
+        def _parse_query_modifiers(
+            self, this: t.Optional[exp.Expression]
+        ) -> t.Optional[exp.Expression]:
+            this = super()._parse_query_modifiers(this)
+
+            if this:
+                refs = set()
+
+                for i, join in enumerate(this.args.get("joins", [])):
+                    refs.add(
+                        (
+                            this.args["from"] if i == 0 else this.args["joins"][i - 1]
+                        ).alias_or_name.lower()
+                    )
+                    table = join.this
+
+                    if isinstance(table, exp.Table):
+                        if table.parts[0].name.lower() in refs:
+                            table.replace(table.to_column())
+            return this
+
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []
         HEX_STRINGS = []

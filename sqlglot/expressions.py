@@ -2543,7 +2543,6 @@ class Table(Expression):
         "version": False,
         "format": False,
         "pattern": False,
-        "index": False,
         "ordinality": False,
         "when": False,
     }
@@ -2584,6 +2583,14 @@ class Table(Expression):
                 parts.append(part)
 
         return parts
+
+    def to_column(self, copy: bool = True) -> Alias | Column | Dot:
+        parts = self.parts
+        col = column(*reversed(parts[0:4]), *parts[4:], copy=copy)  # type: ignore
+        alias = self.args.get("alias")
+        if alias:
+            col = alias_(col, alias.this, copy=copy)
+        return col
 
 
 class Union(Subqueryable):
@@ -4106,6 +4113,11 @@ class Aliases(Expression):
     @property
     def aliases(self):
         return self.expressions
+
+
+# https://docs.aws.amazon.com/redshift/latest/dg/query-super.html
+class AtIndex(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 class AtTimeZone(Expression):
@@ -6224,8 +6236,10 @@ def column(
     table: t.Optional[str | Identifier] = None,
     db: t.Optional[str | Identifier] = None,
     catalog: t.Optional[str | Identifier] = None,
+    *fields: t.Union[str, Identifier],
     quoted: t.Optional[bool] = None,
-) -> Column:
+    copy: bool = True,
+) -> Column | Dot:
     """
     Build a Column.
 
@@ -6234,17 +6248,23 @@ def column(
         table: Table name.
         db: Database name.
         catalog: Catalog name.
+        fields: Additional fields using dots.
         quoted: Whether to force quotes on the column's identifiers.
+        copy: Whether or not to copy identifiers if passed in.
 
     Returns:
         The new Column instance.
     """
-    return Column(
-        this=to_identifier(col, quoted=quoted),
-        table=to_identifier(table, quoted=quoted),
-        db=to_identifier(db, quoted=quoted),
-        catalog=to_identifier(catalog, quoted=quoted),
+    this: t.Union[Column, Dot] = Column(
+        this=to_identifier(col, quoted=quoted, copy=copy),
+        table=to_identifier(table, quoted=quoted, copy=copy),
+        db=to_identifier(db, quoted=quoted, copy=copy),
+        catalog=to_identifier(catalog, quoted=quoted, copy=copy),
     )
+
+    if fields:
+        this = Dot.build((this, *(to_identifier(field, copy=copy) for field in fields)))
+    return this
 
 
 def cast(expression: ExpOrStr, to: DATA_TYPE, **opts) -> Cast:

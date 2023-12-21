@@ -6,6 +6,7 @@ class TestRedshift(Validator):
     dialect = "redshift"
 
     def test_redshift(self):
+        self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")
         self.validate_all(
             "LISTAGG(sellerid, ', ')",
             read={

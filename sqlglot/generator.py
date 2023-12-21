@@ -68,6 +68,7 @@ class Generator:
         exp.CheckColumnConstraint: lambda self, e: f"CHECK ({self.sql(e, 'this')})",
         exp.ClusteredColumnConstraint: lambda self, e: f"CLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
+        exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this').upper()}",
         exp.CopyGrantsProperty: lambda self, e: "COPY GRANTS",
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
@@ -272,6 +273,7 @@ class Generator:
     PROPERTIES_LOCATION = {
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
         exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.AutoRefreshProperty: exp.Properties.Location.POST_SCHEMA,
         exp.BlockCompressionProperty: exp.Properties.Location.POST_NAME,
         exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ChecksumProperty: exp.Properties.Location.POST_NAME,

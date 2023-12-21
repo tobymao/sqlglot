@@ -2002,6 +2002,11 @@ class AutoIncrementProperty(Property):
     arg_types = {"this": True}
 
 
+# https://docs.aws.amazon.com/prescriptive-guidance/latest/materialized-views-redshift/refreshing-materialized-views.html
+class AutoRefreshProperty(Property):
+    arg_types = {"this": True}
+
+
 class BlockCompressionProperty(Property):
     arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
 

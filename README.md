@@ -58,13 +58,16 @@ make install-dev
 ## FAQ
 
 * I tried to parse SQL that should be valid but it failed, why did that happen?
+  
 You need to specify the dialect to read the SQL properly, by default it is SQLGlot's dialect which is designed to be a superset of all dialects. `parse_one(sql, dialect="spark")`. If you tried specifying the dialect and it still doesn't work, please file an issue.
 
 * I tried to output SQL but it's not in the correct dialect!
+  
 You need to specify the dialect to write the sql properly, by default it is in SQLGlot's dialect.
 `parse_one(sql, dialect="spark").sql(dialect="spark").
 
 * I tried to parse invalid SQL and it should raise an error but it worked! Why didn't it validate my SQL.
+  
 SQLGlot is not a validator and designed to be very forgiven, handling things like trailing commas.
 
 ## Versioning

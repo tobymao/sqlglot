@@ -669,6 +669,7 @@ class Parser(metaclass=_Parser):
 
     PROPERTY_PARSERS: t.Dict[str, t.Callable] = {
         "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
+        "AUTO": lambda self: self._parse_auto_property(),
         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
         "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
@@ -4026,6 +4027,12 @@ class Parser(metaclass=_Parser):
             return exp.GeneratedAsIdentityColumnConstraint(start=start, increment=increment)
 
         return exp.AutoIncrementColumnConstraint()
+
+    def _parse_auto_property(self) -> t.Optional[exp.AutoRefreshProperty]:
+        if not self._match_text_seq("REFRESH"):
+            self._retreat(self._index - 1)
+            return None
+        return self.expression(exp.AutoRefreshProperty, this=self._parse_var())
 
     def _parse_compress(self) -> exp.CompressColumnConstraint:
         if self._match(TokenType.L_PAREN, advance=False):

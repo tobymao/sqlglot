@@ -2304,7 +2304,7 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_cte(self) -> exp.CTE:
-        alias = self._parse_table_alias()
+        alias = self._parse_table_alias(self.ID_VAR_TOKENS)
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
 

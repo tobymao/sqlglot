@@ -4,7 +4,7 @@ SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can
 
 It is a very comprehensive generic SQL parser with a robust [test suite](https://github.com/tobymao/sqlglot/blob/main/tests/). It is also quite [performant](#benchmarks), while being written purely in Python.
 
-You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL. 
+You can easily [customize](#custom-dialects) the parser, [analyze](#metadata) queries, traverse expression trees, and programmatically [build](#build-and-modify-sql) SQL.
 
 Syntax [errors](#parser-errors) are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, it should be noted that SQL validation is not SQLGlot’s goal, so some syntax errors may go unnoticed.
 
@@ -17,6 +17,7 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 * [Install](#install)
 * [Versioning](#versioning)
 * [Get in Touch](#get-in-touch)
+* [FAQ](#faq)
 * [Examples](#examples)
    * [Formatting and Transpiling](#formatting-and-transpiling)
    * [Metadata](#metadata)
@@ -53,6 +54,18 @@ Requirements for development (optional):
 ```
 make install-dev
 ```
+
+## FAQ
+
+* I tried to parse SQL that should be valid but it failed, why did that happen?
+You need to specify the dialect to read the SQL properly, by default it is SQLGlot's dialect which is designed to be a superset of all dialects. `parse_one(sql, dialect="spark")`. If you tried specifying the dialect and it still doesn't work, please file an issue.
+
+* I tried to output SQL but it's not in the correct dialect!
+You need to specify the dialect to write the sql properly, by default it is in SQLGlot's dialect.
+`parse_one(sql, dialect="spark").sql(dialect="spark").
+
+* I tried to parse invalid SQL and it should raise an error but it worked! Why didn't it validate my SQL.
+SQLGlot is not a validator and designed to be very forgiven, handling things like trailing commas.
 
 ## Versioning
 

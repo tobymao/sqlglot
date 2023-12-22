@@ -574,13 +574,13 @@ def make_date(year: ColumnOrName, month: ColumnOrName, day: ColumnOrName) -> Col
 
 def date_add(col: ColumnOrName, days: t.Union[ColumnOrName, int]) -> Column:
     return Column.invoke_expression_over_column(
-        col, expression.DateAdd, expression=days, unit=expression.Var(this="day")
+        col, expression.DateAdd, expression=days, unit=expression.Var(this="DAY")
     )
 
 
 def date_sub(col: ColumnOrName, days: t.Union[ColumnOrName, int]) -> Column:
     return Column.invoke_expression_over_column(
-        col, expression.DateSub, expression=days, unit=expression.Var(this="day")
+        col, expression.DateSub, expression=days, unit=expression.Var(this="DAY")
     )
 
 

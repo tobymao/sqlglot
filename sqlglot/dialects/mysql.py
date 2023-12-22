@@ -37,21 +37,21 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQL.Parser], ex
 
 def _date_trunc_sql(self: MySQL.Generator, expression: exp.DateTrunc) -> str:
     expr = self.sql(expression, "this")
-    unit = expression.text("unit")
+    unit = expression.text("unit").upper()
 
-    if unit == "day":
+    if unit == "DAY":
         return f"DATE({expr})"
 
-    if unit == "week":
+    if unit == "WEEK":
         concat = f"CONCAT(YEAR({expr}), ' ', WEEK({expr}, 1), ' 1')"
         date_format = "%Y %u %w"
-    elif unit == "month":
+    elif unit == "MONTH":
         concat = f"CONCAT(YEAR({expr}), ' ', MONTH({expr}), ' 1')"
         date_format = "%Y %c %e"
-    elif unit == "quarter":
+    elif unit == "QUARTER":
         concat = f"CONCAT(YEAR({expr}), ' ', QUARTER({expr}) * 3 - 2, ' 1')"
         date_format = "%Y %c %e"
-    elif unit == "year":
+    elif unit == "YEAR":
         concat = f"CONCAT(YEAR({expr}), ' 1 1')"
         date_format = "%Y %c %e"
     else:

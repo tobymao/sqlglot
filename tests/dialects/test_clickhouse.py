@@ -44,7 +44,7 @@ class TestClickhouse(Validator):
         self.validate_identity("ATTACH DATABASE DEFAULT ENGINE = ORDINARY")
         self.validate_identity("CAST(['hello'], 'Array(Enum8(''hello'' = 1))')")
         self.validate_identity("SELECT x, COUNT() FROM y GROUP BY x WITH TOTALS")
-        self.validate_identity("SELECT INTERVAL t.days day")
+        self.validate_identity("SELECT INTERVAL t.days DAY")
         self.validate_identity("SELECT match('abc', '([a-z]+)')")
         self.validate_identity("dictGet(x, 'y')")
         self.validate_identity("WITH final AS (SELECT 1) SELECT * FROM final")
@@ -132,7 +132,7 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' microsecond",
+            "SELECT CAST('2020-01-01' AS TIMESTAMP) + INTERVAL '500' MICROSECOND",
             read={
                 "duckdb": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
                 "postgres": "SELECT TIMESTAMP '2020-01-01' + INTERVAL '500 us'",
@@ -175,27 +175,27 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "DATE_ADD('day', 1, x)",
+            "DATE_ADD('DAY', 1, x)",
             read={
-                "clickhouse": "dateAdd(day, 1, x)",
-                "presto": "DATE_ADD('day', 1, x)",
+                "clickhouse": "dateAdd(DAY, 1, x)",
+                "presto": "DATE_ADD('DAY', 1, x)",
             },
             write={
-                "clickhouse": "DATE_ADD('day', 1, x)",
-                "presto": "DATE_ADD('day', 1, x)",
-                "": "DATE_ADD(x, 1, 'day')",
+                "clickhouse": "DATE_ADD('DAY', 1, x)",
+                "presto": "DATE_ADD('DAY', 1, x)",
+                "": "DATE_ADD(x, 1, 'DAY')",
             },
         )
         self.validate_all(
-            "DATE_DIFF('day', a, b)",
+            "DATE_DIFF('DAY', a, b)",
             read={
-                "clickhouse": "dateDiff('day', a, b)",
-                "presto": "DATE_DIFF('day', a, b)",
+                "clickhouse": "dateDiff('DAY', a, b)",
+                "presto": "DATE_DIFF('DAY', a, b)",
             },
             write={
-                "clickhouse": "DATE_DIFF('day', a, b)",
-                "presto": "DATE_DIFF('day', a, b)",
-                "": "DATEDIFF(b, a, day)",
+                "clickhouse": "DATE_DIFF('DAY', a, b)",
+                "presto": "DATE_DIFF('DAY', a, b)",
+                "": "DATEDIFF(b, a, DAY)",
             },
         )
         self.validate_all(

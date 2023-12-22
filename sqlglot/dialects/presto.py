@@ -99,14 +99,14 @@ def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
     expression = ts_or_ds_add_cast(expression)
-    unit = exp.Literal.string(expression.text("unit") or "day")
+    unit = exp.Literal.string(expression.text("unit") or "DAY")
     return self.func("DATE_ADD", unit, expression.expression, expression.this)
 
 
 def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
     this = exp.cast(expression.this, "TIMESTAMP")
     expr = exp.cast(expression.expression, "TIMESTAMP")
-    unit = exp.Literal.string(expression.text("unit") or "day")
+    unit = exp.Literal.string(expression.text("unit") or "DAY")
     return self.func("DATE_DIFF", unit, expr, this)
 
 
@@ -344,20 +344,20 @@ class Presto(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: lambda self, e: self.func(
                 "DATE_ADD",
-                exp.Literal.string(e.text("unit") or "day"),
+                exp.Literal.string(e.text("unit") or "DAY"),
                 _to_int(
                     e.expression,
                 ),
                 e.this,
             ),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+                "DATE_DIFF", exp.Literal.string(e.text("unit") or "DAY"), e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
             exp.DateSub: lambda self, e: self.func(
                 "DATE_ADD",
-                exp.Literal.string(e.text("unit") or "day"),
+                exp.Literal.string(e.text("unit") or "DAY"),
                 _to_int(e.expression * -1),
                 e.this,
             ),
@@ -454,8 +454,8 @@ class Presto(Dialect):
 
         def interval_sql(self, expression: exp.Interval) -> str:
             unit = self.sql(expression, "unit")
-            if expression.this and unit.lower().startswith("week"):
-                return f"({expression.this.name} * INTERVAL '7' day)"
+            if expression.this and unit.startswith("WEEK"):
+                return f"({expression.this.name} * INTERVAL '7' DAY)"
             return super().interval_sql(expression)
 
         def transaction_sql(self, expression: exp.Transaction) -> str:

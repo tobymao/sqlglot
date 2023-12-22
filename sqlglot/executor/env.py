@@ -132,11 +132,10 @@ def ordered(this, desc, nulls_first):
 
 @null_if_any
 def interval(this, unit):
-    unit = unit.lower()
-    plural = unit + "s"
+    plural = unit + "S"
     if plural in Generator.TIME_PART_SINGULARS:
         unit = plural
-    return datetime.timedelta(**{unit: float(this)})
+    return datetime.timedelta(**{unit.lower(): float(this)})
 
 
 @null_if_any("this", "expression")

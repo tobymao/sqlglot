@@ -767,32 +767,32 @@ class TestDialect(Validator):
                 "duckdb": "x + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(x, 1)",
                 "mysql": "DATE_ADD(x, INTERVAL 1 DAY)",
-                "presto": "DATE_ADD('day', 1, x)",
+                "presto": "DATE_ADD('DAY', 1, x)",
                 "spark": "DATE_ADD(x, 1)",
                 "starrocks": "DATE_ADD(x, INTERVAL 1 DAY)",
                 "doris": "DATE_ADD(x, INTERVAL 1 DAY)",
             },
         )
         self.validate_all(
-            "DATE_TRUNC('day', x)",
+            "DATE_TRUNC('DAY', x)",
             read={
                 "bigquery": "DATE_TRUNC(x, day)",
                 "spark": "TRUNC(x, 'day')",
             },
             write={
-                "bigquery": "DATE_TRUNC(x, day)",
-                "duckdb": "DATE_TRUNC('day', x)",
+                "bigquery": "DATE_TRUNC(x, DAY)",
+                "duckdb": "DATE_TRUNC('DAY', x)",
                 "mysql": "DATE(x)",
-                "presto": "DATE_TRUNC('day', x)",
-                "postgres": "DATE_TRUNC('day', x)",
-                "snowflake": "DATE_TRUNC('day', x)",
-                "starrocks": "DATE_TRUNC('day', x)",
-                "spark": "TRUNC(x, 'day')",
-                "doris": "DATE_TRUNC(x, 'day')",
+                "presto": "DATE_TRUNC('DAY', x)",
+                "postgres": "DATE_TRUNC('DAY', x)",
+                "snowflake": "DATE_TRUNC('DAY', x)",
+                "starrocks": "DATE_TRUNC('DAY', x)",
+                "spark": "TRUNC(x, 'DAY')",
+                "doris": "DATE_TRUNC(x, 'DAY')",
             },
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(x, day)",
+            "TIMESTAMP_TRUNC(x, DAY)",
             read={
                 "bigquery": "TIMESTAMP_TRUNC(x, day)",
                 "duckdb": "DATE_TRUNC('day', x)",
@@ -805,18 +805,18 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "DATE_TRUNC('day', CAST(x AS DATE))",
+            "DATE_TRUNC('DAY', CAST(x AS DATE))",
             read={
-                "presto": "DATE_TRUNC('day', x::DATE)",
-                "snowflake": "DATE_TRUNC('day', x::DATE)",
+                "presto": "DATE_TRUNC('DAY', x::DATE)",
+                "snowflake": "DATE_TRUNC('DAY', x::DATE)",
             },
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
+            "TIMESTAMP_TRUNC(CAST(x AS DATE), DAY)",
             read={"postgres": "DATE_TRUNC('day', x::DATE)"},
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(CAST(x AS DATE), day)",
+            "TIMESTAMP_TRUNC(CAST(x AS DATE), DAY)",
             read={"starrocks": "DATE_TRUNC('day', x::DATE)"},
         )
         self.validate_all(
@@ -850,23 +850,23 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "DATE_TRUNC('year', x)",
+            "DATE_TRUNC('YEAR', x)",
             read={
                 "bigquery": "DATE_TRUNC(x, year)",
                 "spark": "TRUNC(x, 'year')",
             },
             write={
-                "bigquery": "DATE_TRUNC(x, year)",
+                "bigquery": "DATE_TRUNC(x, YEAR)",
                 "mysql": "STR_TO_DATE(CONCAT(YEAR(x), ' 1 1'), '%Y %c %e')",
-                "postgres": "DATE_TRUNC('year', x)",
-                "snowflake": "DATE_TRUNC('year', x)",
-                "starrocks": "DATE_TRUNC('year', x)",
-                "spark": "TRUNC(x, 'year')",
-                "doris": "DATE_TRUNC(x, 'year')",
+                "postgres": "DATE_TRUNC('YEAR', x)",
+                "snowflake": "DATE_TRUNC('YEAR', x)",
+                "starrocks": "DATE_TRUNC('YEAR', x)",
+                "spark": "TRUNC(x, 'YEAR')",
+                "doris": "DATE_TRUNC(x, 'YEAR')",
             },
         )
         self.validate_all(
-            "TIMESTAMP_TRUNC(x, year)",
+            "TIMESTAMP_TRUNC(x, YEAR)",
             read={
                 "bigquery": "TIMESTAMP_TRUNC(x, year)",
                 "postgres": "DATE_TRUNC(year, x)",
@@ -875,9 +875,9 @@ class TestDialect(Validator):
                 "starrocks": "DATE_TRUNC('year', x)",
             },
             write={
-                "bigquery": "TIMESTAMP_TRUNC(x, year)",
-                "spark": "DATE_TRUNC('year', x)",
-                "doris": "DATE_TRUNC(x, 'year')",
+                "bigquery": "TIMESTAMP_TRUNC(x, YEAR)",
+                "spark": "DATE_TRUNC('YEAR', x)",
+                "doris": "DATE_TRUNC(x, 'YEAR')",
             },
         )
         self.validate_all(
@@ -952,7 +952,7 @@ class TestDialect(Validator):
                 "drill": "DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL 1 DAY)",
                 "duckdb": "CAST('2020-01-01' AS DATE) + INTERVAL 1 DAY",
                 "hive": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
-                "presto": "DATE_ADD('day', 1, CAST('2020-01-01' AS DATE))",
+                "presto": "DATE_ADD('DAY', 1, CAST('2020-01-01' AS DATE))",
                 "spark": "DATE_ADD(CAST('2020-01-01' AS DATE), 1)",
             },
         )

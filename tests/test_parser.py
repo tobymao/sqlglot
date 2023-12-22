@@ -772,7 +772,7 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(ast.find(exp.Interval).this.sql(), "'71'")
-        self.assertEqual(ast.find(exp.Interval).unit.assert_is(exp.Var).sql(), "days")
+        self.assertEqual(ast.find(exp.Interval).unit.assert_is(exp.Var).sql(), "DAYS")
 
     def test_parse_concat_ws(self):
         ast = parse_one("CONCAT_WS(' ', 'John', 'Doe')")

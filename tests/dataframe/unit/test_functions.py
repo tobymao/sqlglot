@@ -809,7 +809,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("DATE_ADD(cola, colb)", col_col_for_add.sql())
         current_date_add = SF.date_add(SF.current_date(), 5)
         self.assertEqual("DATE_ADD(CURRENT_DATE, 5)", current_date_add.sql())
-        self.assertEqual("DATEADD(day, 5, CURRENT_DATE)", current_date_add.sql(dialect="snowflake"))
+        self.assertEqual("DATEADD(DAY, 5, CURRENT_DATE)", current_date_add.sql(dialect="snowflake"))
 
     def test_date_sub(self):
         col_str = SF.date_sub("cola", 2)
@@ -859,15 +859,15 @@ class TestFunctions(unittest.TestCase):
 
     def test_trunc(self):
         col_str = SF.trunc("cola", "year")
-        self.assertEqual("TRUNC(cola, 'year')", col_str.sql())
+        self.assertEqual("TRUNC(cola, 'YEAR')", col_str.sql())
         col = SF.trunc(SF.col("cola"), "year")
-        self.assertEqual("TRUNC(cola, 'year')", col.sql())
+        self.assertEqual("TRUNC(cola, 'YEAR')", col.sql())
 
     def test_date_trunc(self):
         col_str = SF.date_trunc("year", "cola")
-        self.assertEqual("DATE_TRUNC('year', cola)", col_str.sql())
-        col = SF.date_trunc("year", SF.col("cola"))
-        self.assertEqual("DATE_TRUNC('year', cola)", col.sql())
+        self.assertEqual("DATE_TRUNC('YEAR', cola)", col_str.sql())
+        col = SF.date_trunc("YEAR", SF.col("cola"))
+        self.assertEqual("DATE_TRUNC('YEAR', cola)", col.sql())
 
     def test_next_day(self):
         col_str = SF.next_day("cola", "Mon")

@@ -32,7 +32,7 @@ class TestGenerator(unittest.TestCase):
 
         self.assertEqual(
             exp.DateTrunc(this=exp.to_column("event_date"), unit=exp.var("MONTH")).sql(),
-            "DATE_TRUNC(MONTH, event_date)",
+            "DATE_TRUNC('MONTH', event_date)",
         )
 
     def test_identify(self):

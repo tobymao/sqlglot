@@ -1194,7 +1194,9 @@ class Parser(metaclass=_Parser):
             self._advance(index - self._index)
 
     def _parse_command(self) -> exp.Command:
-        return self.expression(exp.Command, this=self._prev.text, expression=self._parse_string())
+        return self.expression(
+            exp.Command, this=self._prev.text.upper(), expression=self._parse_string()
+        )
 
     def _parse_comment(self, allow_exists: bool = True) -> exp.Expression:
         start = self._prev
@@ -1427,7 +1429,7 @@ class Parser(metaclass=_Parser):
             exp.Create,
             comments=comments,
             this=this,
-            kind=create_token.text,
+            kind=create_token.text.upper(),
             replace=replace,
             unique=unique,
             expression=expression,
@@ -2213,7 +2215,7 @@ class Parser(metaclass=_Parser):
             kind = (
                 self._match(TokenType.ALIAS)
                 and self._match_texts(("STRUCT", "VALUE"))
-                and self._prev.text
+                and self._prev.text.upper()
             )
 
             if distinct:
@@ -2875,7 +2877,7 @@ class Parser(metaclass=_Parser):
         kind = (
             self._prev.text if self._prev.token_type == TokenType.TABLE_SAMPLE else "USING SAMPLE"
         )
-        method = self._parse_var(tokens=(TokenType.ROW,))
+        method = self._parse_var(tokens=(TokenType.ROW,), upper=True)
 
         matched_l_paren = self._match(TokenType.L_PAREN)
 
@@ -2907,7 +2909,7 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
 
         if self._match(TokenType.L_PAREN):
-            method = self._parse_var()
+            method = self._parse_var(upper=True)
             seed = self._match(TokenType.COMMA) and self._parse_number()
             self._match_r_paren()
         elif self._match_texts(("SEED", "REPEATABLE")):
@@ -3216,7 +3218,7 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.FETCH):
             direction = self._match_set((TokenType.FIRST, TokenType.NEXT))
-            direction = self._prev.text if direction else "FIRST"
+            direction = self._prev.text.upper() if direction else "FIRST"
 
             count = self._parse_field(tokens=self.FETCH_TOKENS)
             percent = self._match(TokenType.PERCENT)
@@ -3416,7 +3418,7 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return None
 
-        unit = self._parse_function() or self._parse_var(any_token=True)
+        unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
@@ -3432,7 +3434,7 @@ class Parser(metaclass=_Parser):
                     self._retreat(self._index - 1)
 
                 this = exp.Literal.string(parts[0])
-                unit = self.expression(exp.Var, this=parts[1])
+                unit = self.expression(exp.Var, this=parts[1].upper())
 
         return self.expression(exp.Interval, this=this, unit=unit)
 
@@ -3555,10 +3557,10 @@ class Parser(metaclass=_Parser):
         type_token = self._prev.token_type
 
         if type_token == TokenType.PSEUDO_TYPE:
-            return self.expression(exp.PseudoType, this=self._prev.text)
+            return self.expression(exp.PseudoType, this=self._prev.text.upper())
 
         if type_token == TokenType.OBJECT_IDENTIFIER:
-            return self.expression(exp.ObjectIdentifier, this=self._prev.text)
+            return self.expression(exp.ObjectIdentifier, this=self._prev.text.upper())
 
         nested = type_token in self.NESTED_TYPE_TOKENS
         is_struct = type_token in self.STRUCT_TYPE_TOKENS
@@ -4032,7 +4034,7 @@ class Parser(metaclass=_Parser):
         if not self._match_text_seq("REFRESH"):
             self._retreat(self._index - 1)
             return None
-        return self.expression(exp.AutoRefreshProperty, this=self._parse_var())
+        return self.expression(exp.AutoRefreshProperty, this=self._parse_var(upper=True))
 
     def _parse_compress(self) -> exp.CompressColumnConstraint:
         if self._match(TokenType.L_PAREN, advance=False):
@@ -4924,14 +4926,19 @@ class Parser(metaclass=_Parser):
         return self._parse_placeholder()
 
     def _parse_var(
-        self, any_token: bool = False, tokens: t.Optional[t.Collection[TokenType]] = None
+        self,
+        any_token: bool = False,
+        tokens: t.Optional[t.Collection[TokenType]] = None,
+        upper: bool = False,
     ) -> t.Optional[exp.Expression]:
         if (
             (any_token and self._advance_any())
             or self._match(TokenType.VAR)
             or (self._match_set(tokens) if tokens else False)
         ):
-            return self.expression(exp.Var, this=self._prev.text)
+            return self.expression(
+                exp.Var, this=self._prev.text.upper() if upper else self._prev.text
+            )
         return self._parse_placeholder()
 
     def _advance_any(self, ignore_reserved: bool = False) -> t.Optional[Token]:

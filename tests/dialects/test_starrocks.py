@@ -11,10 +11,10 @@ class TestStarrocks(Validator):
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
         self.validate_identity(
-            "SELECT DATE_DIFF('second', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
+            "SELECT DATE_DIFF('SECOND', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
         )
         self.validate_identity(
-            "SELECT DATE_DIFF('minute', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
+            "SELECT DATE_DIFF('MINUTE', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
         )
 
     def test_regex(self):

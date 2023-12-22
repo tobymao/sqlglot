@@ -427,7 +427,7 @@ FALSE;
 TRUE;
 
 date '1998-12-01' - interval x day;
-CAST('1998-12-01' AS DATE) - INTERVAL x day;
+CAST('1998-12-01' AS DATE) - INTERVAL x DAY;
 
 date '1998-12-01' - interval '90' day;
 CAST('1998-09-02' AS DATE);
@@ -442,13 +442,13 @@ interval '1' year + date '1998-01-01' + 3 * 7 * 4;
 CAST('1999-01-01' AS DATE) + 84;
 
 date '1998-12-01' - interval '90' foo;
-CAST('1998-12-01' AS DATE) - INTERVAL '90' foo;
+CAST('1998-12-01' AS DATE) - INTERVAL '90' FOO;
 
 date '1998-12-01' + interval '90' foo;
-CAST('1998-12-01' AS DATE) + INTERVAL '90' foo;
+CAST('1998-12-01' AS DATE) + INTERVAL '90' FOO;
 
 CAST(x AS DATE) + interval '1' week;
-CAST(x AS DATE) + INTERVAL '1' week;
+CAST(x AS DATE) + INTERVAL '1' WEEK;
 
 CAST('2008-11-11' AS DATETIME) + INTERVAL '5' MONTH;
 CAST('2009-04-11 00:00:00' AS DATETIME);
@@ -456,8 +456,8 @@ CAST('2009-04-11 00:00:00' AS DATETIME);
 datetime '1998-12-01' - interval '90' day;
 CAST('1998-09-02 00:00:00' AS DATETIME);
 
-CAST(x AS DATETIME) + interval '1' week;
-CAST(x AS DATETIME) + INTERVAL '1' week;
+CAST(x AS DATETIME) + interval '1' WEEK;
+CAST(x AS DATETIME) + INTERVAL '1' WEEK;
 
 TS_OR_DS_TO_DATE('1998-12-01 00:00:01') - interval '90' day;
 CAST('1998-09-02' AS DATE);
@@ -844,14 +844,14 @@ x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
 -- Always false, except for nulls
 DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
-DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
+DATE_TRUNC('QUARTER', x) = CAST('2021-01-02' AS DATE);
 
 DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
 FALSE;
 
 -- Always true, except for nulls
 DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
-DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
+DATE_TRUNC('YEAR', x) <> CAST('2021-01-02' AS DATE);
 
 DATE_TRUNC('year', x) <= CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE);
@@ -884,11 +884,11 @@ DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02'));
 x >= CAST('2022-01-01' AS DATE);
 
 DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02', '%Y'));
-DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02', '%Y'));
+DATE_TRUNC('YEAR', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02', '%Y'));
 
 -- right is not a date
 DATE_TRUNC('year', x) <> '2021-01-02';
-DATE_TRUNC('year', x) <> '2021-01-02';
+DATE_TRUNC('YEAR', x) <> '2021-01-02';
 
 DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2023-01-01' AS DATE));
 (x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE)) OR (x < CAST('2024-01-01' AS DATE) AND x >= CAST('2023-01-01' AS DATE));
@@ -906,7 +906,7 @@ x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' 
 
 -- right side is not a date literal
 DATE_TRUNC('day', x) = CAST(y AS DATE);
-CAST(y AS DATE) = DATE_TRUNC('day', x);
+CAST(y AS DATE) = DATE_TRUNC('DAY', x);
 
 -- nested cast
 DATE_TRUNC('day', x) = CAST(CAST('2021-01-01 01:02:03' AS DATETIME) AS DATE);
@@ -973,7 +973,7 @@ DATE_ADD(DATE_ADD(DATE_TRUNC('week', DATE_SUB(x, 1, DAY)), 1, DAY), 1, YEAR) < C
 x < CAST('2020-01-14' AS DATE);
 
 x - INTERVAL '1' day = CAST(y AS DATE);
-CAST(y AS DATE) = x - INTERVAL '1' day;
+CAST(y AS DATE) = x - INTERVAL '1' DAY;
 
 --------------------------------------
 -- Constant Propagation

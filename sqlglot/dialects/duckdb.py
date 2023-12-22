@@ -311,7 +311,7 @@ class DuckDB(Dialect):
             exp.DateFromParts: rename_func("MAKE_DATE"),
             exp.DateSub: _date_delta_sql,
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", f"'{e.args.get('unit') or 'day'}'", e.expression, e.this
+                "DATE_DIFF", f"'{e.args.get('unit') or 'DAY'}'", e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
@@ -373,7 +373,7 @@ class DuckDB(Dialect):
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
-                f"'{e.args.get('unit') or 'day'}'",
+                f"'{e.args.get('unit') or 'DAY'}'",
                 exp.cast(e.expression, "TIMESTAMP"),
                 exp.cast(e.this, "TIMESTAMP"),
             ),
@@ -420,7 +420,7 @@ class DuckDB(Dialect):
                 multiplier = 90
 
             if multiplier:
-                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('day')))})"
+                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('DAY')))})"
 
             return super().interval_sql(expression)
 

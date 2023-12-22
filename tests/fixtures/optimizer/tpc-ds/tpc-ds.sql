@@ -2428,7 +2428,7 @@ JOIN "date_dim" AS "date_dim"
   ON "cs1"."cs_ship_date_sk" = "date_dim"."d_date_sk"
   AND "date_dim"."d_date" >= '2002-3-01'
   AND (
-    CAST('2002-3-01' AS DATE) + INTERVAL '60' day
+    CAST('2002-3-01' AS DATE) + INTERVAL '60' DAY
   ) >= CAST("date_dim"."d_date" AS DATE)
 WHERE
   "_u_3"."_u_4" IS NULL
@@ -9543,7 +9543,7 @@ JOIN "date_dim" AS "d1"
   ON "catalog_sales"."cs_sold_date_sk" = "d1"."d_date_sk"
   AND "d1"."d_week_seq" = "d2"."d_week_seq"
   AND "d1"."d_year" = 2002
-  AND "d3"."d_date" > "d1"."d_date" + INTERVAL '5' day
+  AND "d3"."d_date" > "d1"."d_date" + INTERVAL '5' DAY
 GROUP BY
   "item"."i_item_desc",
   "warehouse"."w_warehouse_name",
@@ -12249,7 +12249,7 @@ JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date" >= '2000-3-01'
   AND "date_dim"."d_date_sk" = "ws1"."ws_ship_date_sk"
   AND (
-    CAST('2000-3-01' AS DATE) + INTERVAL '60' day
+    CAST('2000-3-01' AS DATE) + INTERVAL '60' DAY
   ) >= CAST("date_dim"."d_date" AS DATE)
 JOIN "web_site" AS "web_site"
   ON "web_site"."web_company_name" = 'pri'
@@ -12339,7 +12339,7 @@ JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date" >= '2000-4-01'
   AND "date_dim"."d_date_sk" = "ws1"."ws_ship_date_sk"
   AND (
-    CAST('2000-4-01' AS DATE) + INTERVAL '60' day
+    CAST('2000-4-01' AS DATE) + INTERVAL '60' DAY
   ) >= CAST("date_dim"."d_date" AS DATE)
 JOIN "web_site" AS "web_site"
   ON "web_site"."web_company_name" = 'pri'

@@ -178,6 +178,11 @@ class TestBigQuery(Validator):
             "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
             "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
         )
+        self.validate_identity("""SELECT JSON_EXTRACT_SCALAR('{"a": 5}', '$.a')""")
+        self.validate_identity(
+            """SELECT JSON_EXTRACT_SCALAR('5')""",
+            """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
+        )
 
         self.validate_all("SELECT SPLIT(foo)", write={"bigquery": "SELECT SPLIT(foo, ',')"})
         self.validate_all("SELECT 1 AS hash", write={"bigquery": "SELECT 1 AS `hash`"})

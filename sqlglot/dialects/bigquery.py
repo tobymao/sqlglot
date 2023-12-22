@@ -331,8 +331,7 @@ class BigQuery(Dialect):
             "DIV": binary_from_function(exp.IntDiv),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "JSON_EXTRACT_SCALAR": lambda args: exp.JSONExtractScalar(
-                this=seq_get(args, 0),
-                expression=seq_get(args, 1) or exp.Literal.string('$')
+                this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string("$")
             ),
             "MD5": exp.MD5Digest.from_arg_list,
             "TO_HEX": _parse_to_hex,

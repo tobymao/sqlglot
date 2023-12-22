@@ -180,8 +180,7 @@ class TestBigQuery(Validator):
         )
         self.validate_identity("""SELECT JSON_EXTRACT_SCALAR('{"a": 5}', '$.a')""")
         self.validate_identity(
-            """SELECT JSON_EXTRACT_SCALAR('5')""",
-            """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
+            """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
         )
 
         self.validate_all("SELECT SPLIT(foo)", write={"bigquery": "SELECT SPLIT(foo, ',')"})

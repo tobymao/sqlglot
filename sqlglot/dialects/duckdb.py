@@ -428,3 +428,8 @@ class DuckDB(Dialect):
             self, expression: exp.TableSample, seed_prefix: str = "SEED", sep: str = " AS "
         ) -> str:
             return super().tablesample_sql(expression, seed_prefix="REPEATABLE", sep=sep)
+
+        def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
+            if isinstance(expression.parent, exp.UserDefinedFunction):
+                return self.sql(expression, "this")
+            return super().columndef_sql(expression, sep)

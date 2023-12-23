@@ -399,6 +399,7 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("(VALUES (1 AS a, 2 AS b, 3))")
         self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")
         self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
 

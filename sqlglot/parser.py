@@ -2165,13 +2165,13 @@ class Parser(metaclass=_Parser):
 
     def _parse_value(self) -> exp.Tuple:
         if self._match(TokenType.L_PAREN):
-            expressions = self._parse_csv(self._parse_conjunction)
+            expressions = self._parse_csv(self._parse_expression)
             self._match_r_paren()
             return self.expression(exp.Tuple, expressions=expressions)
 
         # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
         # https://prestodb.io/docs/current/sql/values.html
-        return self.expression(exp.Tuple, expressions=[self._parse_conjunction()])
+        return self.expression(exp.Tuple, expressions=[self._parse_expression()])
 
     def _parse_projections(self) -> t.List[exp.Expression]:
         return self._parse_expressions()

@@ -5282,6 +5282,8 @@ class TimestampFromParts(Func):
         "hour": True,
         "min": True,
         "sec": True,
+        "nano": False,
+        "zone": False,
     }
 
 

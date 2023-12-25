@@ -11,7 +11,7 @@ SELECT x.a FROM (SELECT * FROM x) AS x JOIN y WHERE (x.a = y.a AND x.a = 1 AND x
 SELECT x.a FROM (SELECT * FROM x) AS x JOIN y ON x.a = y.a WHERE TRUE;
 
 SELECT x.a FROM (SELECT * FROM x) AS x JOIN y WHERE (x.a = y.a AND x.a = 1 AND x.b = 1) OR x.a = y.b;
-SELECT x.a FROM (SELECT * FROM x) AS x JOIN y ON x.a = y.a OR x.a = y.b WHERE (x.a = 1 AND x.a = y.a AND x.b = 1) OR x.a = y.b;
+SELECT x.a FROM (SELECT * FROM x) AS x JOIN y ON (x.a = 1 AND x.a = y.a AND x.b = 1) OR x.a = y.b WHERE (x.a = 1 AND x.a = y.a AND x.b = 1) OR x.a = y.b;
 
 SELECT x.a FROM (SELECT x.a AS a, x.b * 1 AS c FROM x) AS x WHERE x.c = 1;
 SELECT x.a FROM (SELECT x.a AS a, x.b * 1 AS c FROM x WHERE x.b * 1 = 1) AS x WHERE TRUE;

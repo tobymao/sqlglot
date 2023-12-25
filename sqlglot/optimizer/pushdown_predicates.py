@@ -112,9 +112,7 @@ def pushdown_dnf(predicates, scope, scope_ref_count):
 
     conditions = {}
 
-    # for every pushdown table, find all related conditions in all predicates
-    # combine them with ORS
-    # (a.x AND and a.y AND b.x) OR (a.z AND c.y) -> (a.x AND a.y) OR (a.z)
+    # pushdown all predicates to their respective nodes
     for table in sorted(pushdown_tables):
         for predicate in predicates:
             nodes = nodes_for_predicate(predicate, scope, scope_ref_count)
@@ -122,23 +120,9 @@ def pushdown_dnf(predicates, scope, scope_ref_count):
             if table not in nodes:
                 continue
 
-            predicate_condition = None
-
-            for column in predicate.find_all(exp.Column):
-                if column.table == table:
-                    condition = column.find_ancestor(exp.Condition)
-                    predicate_condition = (
-                        exp.and_(predicate_condition, condition)
-                        if predicate_condition
-                        else condition
-                    )
-
-            if predicate_condition:
-                conditions[table] = (
-                    exp.or_(conditions[table], predicate_condition)
-                    if table in conditions
-                    else predicate_condition
-                )
+            conditions[table] = (
+                exp.or_(conditions[table], predicate) if table in conditions else predicate
+            )
 
         for name, node in nodes.items():
             if name not in conditions:

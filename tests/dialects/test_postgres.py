@@ -11,7 +11,7 @@ class TestPostgres(Validator):
         expr = parse_one("CREATE TABLE t (x INTERVAL day)", read="postgres")
         cdef = expr.find(exp.ColumnDef)
         cdef.args["kind"].assert_is(exp.DataType)
-        self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL day)")
+        self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
 
         self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
         self.validate_identity("CREATE TABLE test (elems JSONB[])")
@@ -277,7 +277,7 @@ class TestPostgres(Validator):
         self.validate_identity("CAST(x AS DATERANGE)")
         self.validate_identity("CAST(x AS DATEMULTIRANGE)")
         self.validate_identity(
-            """LAST_VALUE("col1") OVER (ORDER BY "col2" RANGE BETWEEN INTERVAL '1 day' PRECEDING AND '1 month' FOLLOWING)"""
+            """LAST_VALUE("col1") OVER (ORDER BY "col2" RANGE BETWEEN INTERVAL '1 DAY' PRECEDING AND '1 month' FOLLOWING)"""
         )
         self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
         self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
@@ -387,17 +387,17 @@ class TestPostgres(Validator):
         self.validate_all(
             "GENERATE_SERIES(a, b, '  2   days  ')",
             write={
-                "postgres": "GENERATE_SERIES(a, b, INTERVAL '2 days')",
-                "presto": "SEQUENCE(a, b, INTERVAL '2' day)",
-                "trino": "SEQUENCE(a, b, INTERVAL '2' day)",
+                "postgres": "GENERATE_SERIES(a, b, INTERVAL '2 DAYS')",
+                "presto": "SEQUENCE(a, b, INTERVAL '2' DAY)",
+                "trino": "SEQUENCE(a, b, INTERVAL '2' DAY)",
             },
         )
         self.validate_all(
             "GENERATE_SERIES('2019-01-01'::TIMESTAMP, NOW(), '1day')",
             write={
-                "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1 day')",
-                "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
-                "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' day)",
+                "postgres": "GENERATE_SERIES(CAST('2019-01-01' AS TIMESTAMP), CURRENT_TIMESTAMP, INTERVAL '1 DAY')",
+                "presto": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY)",
+                "trino": "SEQUENCE(CAST('2019-01-01' AS TIMESTAMP), CAST(CURRENT_TIMESTAMP AS TIMESTAMP), INTERVAL '1' DAY)",
             },
         )
         self.validate_all(
@@ -657,7 +657,7 @@ class TestPostgres(Validator):
         )
         self.validate_all(
             "'45 days'::interval day",
-            write={"postgres": "CAST('45 days' AS INTERVAL day)"},
+            write={"postgres": "CAST('45 days' AS INTERVAL DAY)"},
         )
         self.validate_all(
             "'x' 'y' 'z'",

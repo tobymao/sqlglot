@@ -695,7 +695,7 @@ def date_add_interval_sql(
 
 def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
     return self.func(
-        "DATE_TRUNC", exp.Literal.string(expression.text("unit") or "day"), expression.this
+        "DATE_TRUNC", exp.Literal.string(expression.text("unit").upper() or "DAY"), expression.this
     )
 
 
@@ -946,7 +946,10 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
             expression = ts_or_ds_add_cast(expression)
 
         return self.func(
-            name, exp.var(expression.text("unit") or "day"), expression.expression, expression.this
+            name,
+            exp.var(expression.text("unit").upper() or "DAY"),
+            expression.expression,
+            expression.this,
         )
 
     return _delta_sql

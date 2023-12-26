@@ -571,11 +571,11 @@ FROM base""",
         )
 
     def test_time(self):
-        self.validate("INTERVAL '1 day'", "INTERVAL '1' day")
-        self.validate("INTERVAL '1 days' * 5", "INTERVAL '1' days * 5")
-        self.validate("5 * INTERVAL '1 day'", "5 * INTERVAL '1' day")
-        self.validate("INTERVAL 1 day", "INTERVAL '1' day")
-        self.validate("INTERVAL 2 months", "INTERVAL '2' months")
+        self.validate("INTERVAL '1 day'", "INTERVAL '1' DAY")
+        self.validate("INTERVAL '1 days' * 5", "INTERVAL '1' DAYS * 5")
+        self.validate("5 * INTERVAL '1 day'", "5 * INTERVAL '1' DAY")
+        self.validate("INTERVAL 1 day", "INTERVAL '1' DAY")
+        self.validate("INTERVAL 2 months", "INTERVAL '2' MONTHS")
         self.validate("TIMESTAMP '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMP)")
         self.validate("TIMESTAMP WITH TIME ZONE '2020-01-01'", "CAST('2020-01-01' AS TIMESTAMPTZ)")
         self.validate(

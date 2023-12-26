@@ -153,7 +153,7 @@ SELECT AGGREGATE(ARRAY(x.a, x.b), 0, (x, acc) -> x + acc + x.a) AS sum_agg FROM 
 # dialect: starrocks
 # execute: false
 SELECT DATE_TRUNC('week', a) AS a FROM x;
-SELECT DATE_TRUNC('week', x.a) AS a FROM x AS x;
+SELECT DATE_TRUNC('WEEK', x.a) AS a FROM x AS x;
 
 # dialect: bigquery
 # execute: false

@@ -68,7 +68,7 @@ class Generator:
         exp.CheckColumnConstraint: lambda self, e: f"CHECK ({self.sql(e, 'this')})",
         exp.ClusteredColumnConstraint: lambda self, e: f"CLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
-        exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this').upper()}",
+        exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.CopyGrantsProperty: lambda self, e: "COPY GRANTS",
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
@@ -253,15 +253,15 @@ class Generator:
     }
 
     TIME_PART_SINGULARS = {
-        "microseconds": "microsecond",
-        "seconds": "second",
-        "minutes": "minute",
-        "hours": "hour",
-        "days": "day",
-        "weeks": "week",
-        "months": "month",
-        "quarters": "quarter",
-        "years": "year",
+        "MICROSECONDS": "MICROSECOND",
+        "SECONDS": "SECOND",
+        "MINUTES": "MINUTE",
+        "HOURS": "HOUR",
+        "DAYS": "DAY",
+        "WEEKS": "WEEK",
+        "MONTHS": "MONTH",
+        "QUARTERS": "QUARTER",
+        "YEARS": "YEAR",
     }
 
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}
@@ -777,7 +777,7 @@ class Generator:
         return self.sql(expression, "this")
 
     def create_sql(self, expression: exp.Create) -> str:
-        kind = self.sql(expression, "kind").upper()
+        kind = self.sql(expression, "kind")
         properties = expression.args.get("properties")
         properties_locs = self.locate_properties(properties) if properties else defaultdict()
 
@@ -1029,7 +1029,7 @@ class Generator:
 
     def fetch_sql(self, expression: exp.Fetch) -> str:
         direction = expression.args.get("direction")
-        direction = f" {direction.upper()}" if direction else ""
+        direction = f" {direction}" if direction else ""
         count = expression.args.get("count")
         count = f" {count}" if count else ""
         if expression.args.get("percent"):
@@ -1367,10 +1367,10 @@ class Generator:
         return f"KILL{kind}{this}"
 
     def pseudotype_sql(self, expression: exp.PseudoType) -> str:
-        return expression.name.upper()
+        return expression.name
 
     def objectidentifier_sql(self, expression: exp.ObjectIdentifier) -> str:
-        return expression.name.upper()
+        return expression.name
 
     def onconflict_sql(self, expression: exp.OnConflict) -> str:
         conflict = "ON DUPLICATE KEY" if expression.args.get("duplicate") else "ON CONFLICT"
@@ -1471,7 +1471,7 @@ class Generator:
             alias = ""
 
         method = self.sql(expression, "method")
-        method = f"{method.upper()} " if method and self.TABLESAMPLE_WITH_METHOD else ""
+        method = f"{method} " if method and self.TABLESAMPLE_WITH_METHOD else ""
         numerator = self.sql(expression, "bucket_numerator")
         denominator = self.sql(expression, "bucket_denominator")
         field = self.sql(expression, "bucket_field")
@@ -1963,7 +1963,7 @@ class Generator:
         hint = self.sql(expression, "hint")
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
-        kind = self.sql(expression, "kind").upper()
+        kind = self.sql(expression, "kind")
         limit = expression.args.get("limit")
         top = (
             self.limit_sql(limit, top=True)
@@ -2384,7 +2384,7 @@ class Generator:
     def interval_sql(self, expression: exp.Interval) -> str:
         unit = self.sql(expression, "unit")
         if not self.INTERVAL_ALLOWS_PLURAL_FORM:
-            unit = self.TIME_PART_SINGULARS.get(unit.lower(), unit)
+            unit = self.TIME_PART_SINGULARS.get(unit, unit)
         unit = f" {unit}" if unit else ""
 
         if self.SINGLE_STRING_INTERVAL:
@@ -2504,7 +2504,7 @@ class Generator:
         return self.binary(expression, "COLLATE")
 
     def command_sql(self, expression: exp.Command) -> str:
-        return f"{self.sql(expression, 'this').upper()} {expression.text('expression').strip()}"
+        return f"{self.sql(expression, 'this')} {expression.text('expression').strip()}"
 
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")

@@ -3380,7 +3380,7 @@ class Select(Subqueryable):
 
         return Create(
             this=table_expression,
-            kind="table",
+            kind="TABLE",
             expression=instance,
             properties=properties_expression,
         )
@@ -4171,16 +4171,16 @@ class TimeUnit(Expression):
     arg_types = {"unit": False}
 
     UNABBREVIATED_UNIT_NAME = {
-        "d": "day",
-        "h": "hour",
-        "m": "minute",
-        "ms": "millisecond",
-        "ns": "nanosecond",
-        "q": "quarter",
-        "s": "second",
-        "us": "microsecond",
-        "w": "week",
-        "y": "year",
+        "D": "DAY",
+        "H": "HOUR",
+        "M": "MINUTE",
+        "MS": "MILLISECOND",
+        "NS": "NANOSECOND",
+        "Q": "QUARTER",
+        "S": "SECOND",
+        "US": "MICROSECOND",
+        "W": "WEEK",
+        "Y": "YEAR",
     }
 
     VAR_LIKE = (Column, Literal, Var)
@@ -4188,9 +4188,11 @@ class TimeUnit(Expression):
     def __init__(self, **args):
         unit = args.get("unit")
         if isinstance(unit, self.VAR_LIKE):
-            args["unit"] = Var(this=self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name)
+            args["unit"] = Var(
+                this=(self.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name).upper()
+            )
         elif isinstance(unit, Week):
-            unit.set("this", Var(this=unit.this.name))
+            unit.set("this", Var(this=unit.this.name.upper()))
 
         super().__init__(**args)
 
@@ -4553,6 +4555,17 @@ class DateDiff(Func, TimeUnit):
 
 class DateTrunc(Func):
     arg_types = {"unit": True, "this": True, "zone": False}
+
+    def __init__(self, **args):
+        unit = args.get("unit")
+        if isinstance(unit, TimeUnit.VAR_LIKE):
+            args["unit"] = Literal.string(
+                (TimeUnit.UNABBREVIATED_UNIT_NAME.get(unit.name) or unit.name).upper()
+            )
+        elif isinstance(unit, Week):
+            unit.set("this", Literal.string(unit.this.name.upper()))
+
+        super().__init__(**args)
 
     @property
     def unit(self) -> Expression:
@@ -6092,7 +6105,7 @@ def to_interval(interval: str | Literal) -> Interval:
 
     return Interval(
         this=Literal.string(interval_parts.group(1)),
-        unit=Var(this=interval_parts.group(2)),
+        unit=Var(this=interval_parts.group(2).upper()),
     )
 
 

@@ -385,10 +385,10 @@ class ClickHouse(Dialect):
             exp.CastToStrType: rename_func("CAST"),
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: lambda self, e: self.func(
-                "DATE_ADD", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+                "DATE_ADD", exp.Literal.string(e.text("unit") or "DAY"), e.expression, e.this
             ),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", exp.Literal.string(e.text("unit") or "day"), e.expression, e.this
+                "DATE_DIFF", exp.Literal.string(e.text("unit") or "DAY"), e.expression, e.this
             ),
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",

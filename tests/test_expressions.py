@@ -815,14 +815,14 @@ FROM foo""",
         )
 
     def test_to_interval(self):
-        self.assertEqual(exp.to_interval("1day").sql(), "INTERVAL '1' day")
-        self.assertEqual(exp.to_interval("  5     months").sql(), "INTERVAL '5' months")
+        self.assertEqual(exp.to_interval("1day").sql(), "INTERVAL '1' DAY")
+        self.assertEqual(exp.to_interval("  5     months").sql(), "INTERVAL '5' MONTHS")
         with self.assertRaises(ValueError):
             exp.to_interval("bla")
 
-        self.assertEqual(exp.to_interval(exp.Literal.string("1day")).sql(), "INTERVAL '1' day")
+        self.assertEqual(exp.to_interval(exp.Literal.string("1day")).sql(), "INTERVAL '1' DAY")
         self.assertEqual(
-            exp.to_interval(exp.Literal.string("  5   months")).sql(), "INTERVAL '5' months"
+            exp.to_interval(exp.Literal.string("  5   months")).sql(), "INTERVAL '5' MONTHS"
         )
         with self.assertRaises(ValueError):
             exp.to_interval(exp.Literal.string("bla"))

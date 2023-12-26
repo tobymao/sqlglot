@@ -1160,7 +1160,7 @@ def gen(expression: t.Any) -> str:
 GEN_MAP = {
     exp.Add: lambda e: _binary(e, "+"),
     exp.And: lambda e: _binary(e, "AND"),
-    exp.Anonymous: lambda e: f"{e.this} {','.join(gen(e) for e in e.expressions)}",
+    exp.Anonymous: lambda e: f"{e.this.upper()} {','.join(gen(e) for e in e.expressions)}",
     exp.Between: lambda e: f"{gen(e.this)} BETWEEN {gen(e.args.get('low'))} AND {gen(e.args.get('high'))}",
     exp.Boolean: lambda e: "TRUE" if e.this else "FALSE",
     exp.Bracket: lambda e: f"{gen(e.this)}[{gen(e.expressions)}]",

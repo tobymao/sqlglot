@@ -182,12 +182,12 @@ class TestPresto(Validator):
     def test_interval_plural_to_singular(self):
         # Microseconds, weeks and quarters are not supported in Presto/Trino INTERVAL literals
         unit_to_expected = {
-            "SeCoNds": "second",
-            "minutes": "minute",
-            "hours": "hour",
-            "days": "day",
-            "months": "month",
-            "years": "year",
+            "SeCoNds": "SECOND",
+            "minutes": "MINUTE",
+            "hours": "HOUR",
+            "days": "DAY",
+            "months": "MONTH",
+            "years": "YEAR",
         }
 
         for unit, expected in unit_to_expected.items():
@@ -279,10 +279,10 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
-            "DATE_ADD('day', 1, x)",
+            "DATE_ADD('DAY', 1, x)",
             write={
-                "duckdb": "x + INTERVAL 1 day",
-                "presto": "DATE_ADD('day', 1, x)",
+                "duckdb": "x + INTERVAL 1 DAY",
+                "presto": "DATE_ADD('DAY', 1, x)",
                 "hive": "DATE_ADD(x, 1)",
                 "spark": "DATE_ADD(x, 1)",
             },
@@ -707,9 +707,9 @@ class TestPresto(Validator):
             },
         )
         self.validate_all("VALUES 1, 2, 3", write={"presto": "VALUES (1), (2), (3)"})
-        self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' day"})
-        self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' week"})
-        self.validate_all("(5 * INTERVAL '7' day)", read={"": "INTERVAL '5' WEEKS"})
+        self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' DAY"})
+        self.validate_all("(5 * INTERVAL '7' DAY)", read={"": "INTERVAL '5' WEEK"})
+        self.validate_all("(5 * INTERVAL '7' DAY)", read={"": "INTERVAL '5' WEEKS"})
         self.validate_all(
             "SELECT SUBSTRING(a, 1, 3), SUBSTRING(a, LENGTH(a) - (3 - 1))",
             read={

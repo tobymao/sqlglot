@@ -192,7 +192,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "DATE_DIFF('day', CAST(b AS DATE), CAST(a AS DATE))",
+            "DATE_DIFF('DAY', CAST(b AS DATE), CAST(a AS DATE))",
             read={
                 "duckdb": "DATE_DIFF('day', CAST(b AS DATE), CAST(a AS DATE))",
                 "hive": "DATEDIFF(a, b)",
@@ -230,15 +230,15 @@ class TestDuckDB(Validator):
         self.validate_all(
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             write={
-                "duckdb": """SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1""",
-                "trino": """SELECT DATE_DIFF('day', t1."A", t1."B") FROM "table" AS t1""",
+                "duckdb": """SELECT DATE_DIFF('DAY', t1."A", t1."B") FROM "table" AS t1""",
+                "trino": """SELECT DATE_DIFF('DAY', t1."A", t1."B") FROM "table" AS t1""",
             },
         )
         self.validate_all(
             "SELECT DATE_DIFF('day', DATE '2020-01-01', DATE '2020-01-05')",
             write={
-                "duckdb": "SELECT DATE_DIFF('day', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
-                "trino": "SELECT DATE_DIFF('day', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
+                "duckdb": "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
+                "trino": "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
             },
         )
         self.validate_all(
@@ -573,10 +573,10 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "SELECT INTERVAL '1 quarter'",
-            write={"duckdb": "SELECT (90 * INTERVAL '1' day)"},
+            write={"duckdb": "SELECT (90 * INTERVAL '1' DAY)"},
         )
         self.validate_all(
-            "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - MOD((DAYOFWEEK(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)) day) + (7 * INTERVAL (-5) day))) AS t1",
+            "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - MOD((DAYOFWEEK(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)) DAY) + (7 * INTERVAL (-5) DAY))) AS t1",
             read={
                 "presto": "SELECT ((DATE_ADD('week', -5, DATE_TRUNC('DAY', DATE_ADD('day', (0 - MOD((DAY_OF_WEEK(CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7, 7)), CAST(CAST(DATE_TRUNC('DAY', NOW()) AS DATE) AS TIMESTAMP)))))) AS t1",
             },

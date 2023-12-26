@@ -901,7 +901,7 @@ WHERE
     def test_datepart(self):
         self.validate_identity(
             "DATEPART(QUARTER, x)",
-            "DATEPART(quarter, CAST(x AS DATETIME2))",
+            "DATEPART(QUARTER, CAST(x AS DATETIME2))",
         )
         self.validate_identity(
             "DATEPART(YEAR, x)",
@@ -909,15 +909,15 @@ WHERE
         )
         self.validate_identity(
             "DATEPART(HOUR, date_and_time)",
-            "DATEPART(hour, CAST(date_and_time AS DATETIME2))",
+            "DATEPART(HOUR, CAST(date_and_time AS DATETIME2))",
         )
         self.validate_identity(
             "DATEPART(WEEKDAY, date_and_time)",
-            "DATEPART(dw, CAST(date_and_time AS DATETIME2))",
+            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
         )
         self.validate_identity(
             "DATEPART(DW, date_and_time)",
-            "DATEPART(dw, CAST(date_and_time AS DATETIME2))",
+            "DATEPART(DW, CAST(date_and_time AS DATETIME2))",
         )
 
         self.validate_all(
@@ -929,9 +929,9 @@ WHERE
             },
         )
         self.validate_all(
-            "SELECT DATEPART(year, CAST('2017-01-01' AS DATE))",
+            "SELECT DATEPART(YEAR, CAST('2017-01-01' AS DATE))",
             read={
-                "postgres": "SELECT DATE_PART('year', '2017-01-01'::DATE)",
+                "postgres": "SELECT DATE_PART('YEAR', '2017-01-01'::DATE)",
             },
             write={
                 "postgres": "SELECT TO_CHAR(CAST(CAST('2017-01-01' AS DATE) AS TIMESTAMP), 'YYYY')",
@@ -1135,7 +1135,7 @@ WHERE
         )
 
     def test_add_date(self):
-        self.validate_identity("SELECT DATEADD(year, 1, '2017/08/25')")
+        self.validate_identity("SELECT DATEADD(YEAR, 1, '2017/08/25')")
 
         self.validate_all(
             "DATEADD(year, 50, '2006-07-31')",
@@ -1153,52 +1153,52 @@ WHERE
             "SELECT DATEADD(wk, 1, '2017/08/25')",
             write={
                 "spark": "SELECT DATE_ADD('2017/08/25', 7)",
-                "databricks": "SELECT DATEADD(week, 1, '2017/08/25')",
+                "databricks": "SELECT DATEADD(WEEK, 1, '2017/08/25')",
             },
         )
 
     def test_date_diff(self):
-        self.validate_identity("SELECT DATEDIFF(hour, 1.5, '2021-01-01')")
+        self.validate_identity("SELECT DATEDIFF(HOUR, 1.5, '2021-01-01')")
 
         self.validate_all(
             "SELECT DATEDIFF(quarter, 0, '2021-01-01')",
             write={
-                "tsql": "SELECT DATEDIFF(quarter, CAST('1900-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
-                "spark": "SELECT DATEDIFF(quarter, CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-                "duckdb": "SELECT DATE_DIFF('quarter', CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                "tsql": "SELECT DATEDIFF(QUARTER, CAST('1900-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                "spark": "SELECT DATEDIFF(QUARTER, CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                "duckdb": "SELECT DATE_DIFF('QUARTER', CAST('1900-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(day, 1, '2021-01-01')",
             write={
-                "tsql": "SELECT DATEDIFF(day, CAST('1900-01-02' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
-                "spark": "SELECT DATEDIFF(day, CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
-                "duckdb": "SELECT DATE_DIFF('day', CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                "tsql": "SELECT DATEDIFF(DAY, CAST('1900-01-02' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                "spark": "SELECT DATEDIFF(DAY, CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                "duckdb": "SELECT DATE_DIFF('DAY', CAST('1900-01-02' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(year, '2020-01-01', '2021-01-01')",
             write={
-                "tsql": "SELECT DATEDIFF(year, CAST('2020-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
-                "spark": "SELECT DATEDIFF(year, CAST('2020-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
+                "tsql": "SELECT DATEDIFF(YEAR, CAST('2020-01-01' AS DATETIME2), CAST('2021-01-01' AS DATETIME2))",
+                "spark": "SELECT DATEDIFF(YEAR, CAST('2020-01-01' AS TIMESTAMP), CAST('2021-01-01' AS TIMESTAMP))",
                 "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('2021-01-01' AS TIMESTAMP), CAST('2020-01-01' AS TIMESTAMP)) / 12 AS INT)",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(mm, 'start', 'end')",
             write={
-                "databricks": "SELECT DATEDIFF(month, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                "databricks": "SELECT DATEDIFF(MONTH, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
                 "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) AS INT)",
-                "tsql": "SELECT DATEDIFF(month, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
+                "tsql": "SELECT DATEDIFF(MONTH, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
             },
         )
         self.validate_all(
             "SELECT DATEDIFF(quarter, 'start', 'end')",
             write={
-                "databricks": "SELECT DATEDIFF(quarter, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
-                "spark": "SELECT DATEDIFF(quarter, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                "databricks": "SELECT DATEDIFF(QUARTER, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
+                "spark": "SELECT DATEDIFF(QUARTER, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
                 "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) / 3 AS INT)",
-                "tsql": "SELECT DATEDIFF(quarter, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
+                "tsql": "SELECT DATEDIFF(QUARTER, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
             },
         )
 

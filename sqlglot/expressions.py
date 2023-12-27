@@ -497,7 +497,7 @@ class Expression(metaclass=_Expression):
         return self.sql()
 
     def __repr__(self) -> str:
-        return self._to_s()
+        return _to_s(self)
 
     def sql(self, dialect: DialectType = None, **opts) -> str:
         """
@@ -513,30 +513,6 @@ class Expression(metaclass=_Expression):
         from sqlglot.dialects import Dialect
 
         return Dialect.get_or_raise(dialect).generate(self, **opts)
-
-    def _to_s(self, hide_missing: bool = True, level: int = 0) -> str:
-        indent = "" if not level else "\n"
-        indent += "".join(["  "] * level)
-        left = f"({self.key.upper()} "
-
-        args: t.Dict[str, t.Any] = {
-            k: ", ".join(
-                v._to_s(hide_missing=hide_missing, level=level + 1)
-                if hasattr(v, "_to_s")
-                else str(v)
-                for v in ensure_list(vs)
-                if v is not None
-            )
-            for k, vs in self.args.items()
-        }
-        args["comments"] = self.comments
-        args["type"] = self.type
-        args = {k: v for k, v in args.items() if v or not hide_missing}
-
-        right = ", ".join(f"{k}: {v}" for k, v in args.items())
-        right += ")"
-
-        return indent + left + right
 
     def transform(self, fun, *args, copy=True, **kwargs):
         """
@@ -580,8 +556,9 @@ class Expression(metaclass=_Expression):
         For example::
 
             >>> tree = Select().select("x").from_("tbl")
-            >>> tree.find(Column).replace(Column(this="y"))
-            (COLUMN this: y)
+            >>> tree.find(Column).replace(column("y"))
+            Column(
+              this=Identifier(this=y, quoted=False))
             >>> tree.sql()
             'SELECT y FROM tbl'
 
@@ -5390,9 +5367,9 @@ def maybe_parse(
 
     Example:
         >>> maybe_parse("1")
-        (LITERAL this: 1, is_string: False)
+        Literal(this=1, is_string=False)
         >>> maybe_parse(to_identifier("x"))
-        (IDENTIFIER this: x, quoted: False)
+        Identifier(this=x, quoted=False)
 
     Args:
         sql_or_expression: the SQL code string or an expression
@@ -5437,6 +5414,34 @@ def maybe_copy(instance: E, copy: bool = True) -> E:
 
 def maybe_copy(instance, copy=True):
     return instance.copy() if copy and instance else instance
+
+
+def _to_s(node: t.Any, hide_missing: bool = True, level: int = 0) -> str:
+    """Generate a textual representation of an Expression tree"""
+    if isinstance(node, Expression):
+        args = {k: v for k, v in node.args.items() if v is not None or not hide_missing}
+        if node.comments or not hide_missing:
+            args["comments"] = node.comments
+        if node.type or not hide_missing:
+            args["type"] = node.type
+
+        # Inline Expressions that don't have any child Expressions.
+        # This helps make expressions like Identifier more compact.
+        if any(isinstance(v, (Expression, list, tuple)) for v in args.values()):
+            indent = "\n" + ("  " * (level + 1))
+            delim = f",{indent}"
+        else:
+            indent = ""
+            delim = ", "
+
+        items = delim.join([f"{k}={_to_s(v, hide_missing, level + 1)}" for k, v in args.items()])
+        return f"{node.__class__.__name__}({indent}{items})"
+    if isinstance(node, (list, tuple)):
+        indent = "\n" + ("  " * (level + 1))
+        delim = f",{indent}"
+        items = delim.join(_to_s(i, hide_missing, level + 1) for i in node)
+        return f"[{indent}{items}]"
+    return str(node)
 
 
 def _is_wrong_expression(expression, into):
@@ -6373,10 +6378,10 @@ def var(name: t.Optional[ExpOrStr]) -> Var:
 
     Example:
         >>> repr(var('x'))
-        '(VAR this: x)'
+        'Var(this=x)'
 
         >>> repr(var(column('x', table='y')))
-        '(VAR this: x)'
+        'Var(this=x)'
 
     Args:
         name: The name of the var or an expression who's name will become the var.

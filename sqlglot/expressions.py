@@ -16,6 +16,7 @@ import datetime
 import math
 import numbers
 import re
+import textwrap
 import typing as t
 from collections import deque
 from copy import deepcopy
@@ -241,6 +242,9 @@ class Expression(metaclass=_Expression):
 
     def is_type(self, *dtypes) -> bool:
         return self.type is not None and self.type.is_type(*dtypes)
+
+    def is_leaf(self) -> bool:
+        return not any(isinstance(v, (Expression, list)) for v in self.args.values())
 
     @property
     def meta(self) -> t.Dict[str, t.Any]:
@@ -5418,30 +5422,30 @@ def maybe_copy(instance, copy=True):
 
 def _to_s(node: t.Any, hide_missing: bool = True, level: int = 0) -> str:
     """Generate a textual representation of an Expression tree"""
+    indent = "\n" + ("  " * (level + 1))
+    delim = f",{indent}"
+
     if isinstance(node, Expression):
         args = {k: v for k, v in node.args.items() if v is not None or not hide_missing}
-        if node.comments or not hide_missing:
-            args["comments"] = node.comments
-        if node.type or not hide_missing:
-            args["type"] = node.type
 
-        # Inline Expressions that don't have any child Expressions.
-        # This helps make expressions like Identifier more compact.
-        if any(isinstance(v, (Expression, list, tuple)) for v in args.values()):
-            indent = "\n" + ("  " * (level + 1))
-            delim = f",{indent}"
-        else:
+        if (node.type or not hide_missing) and not isinstance(node, DataType):
+            args["_type"] = node.type
+        if node.comments or not hide_missing:
+            args["_comments"] = node.comments
+
+        # Inline leaves for a more compact representation
+        if node.is_leaf():
             indent = ""
             delim = ", "
 
         items = delim.join([f"{k}={_to_s(v, hide_missing, level + 1)}" for k, v in args.items()])
         return f"{node.__class__.__name__}({indent}{items})"
-    if isinstance(node, (list, tuple)):
-        indent = "\n" + ("  " * (level + 1))
-        delim = f",{indent}"
+    if isinstance(node, list):
         items = delim.join(_to_s(i, hide_missing, level + 1) for i in node)
         return f"[{indent}{items}]"
-    return str(node)
+
+    # Indent multiline strings to match the current level
+    return indent.join(textwrap.dedent(str(node).strip("\n")).splitlines())
 
 
 def _is_wrong_expression(expression, into):

@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import DialectType
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import (
+    pushdown_cte_alias_columns as pushdown_cte_alias_columns_func,
     qualify_columns as qualify_columns_func,
     quote_identifiers as quote_identifiers_func,
     validate_qualify_columns as validate_qualify_columns_func,
@@ -28,6 +29,7 @@ def qualify(
     validate_qualify_columns: bool = True,
     quote_identifiers: bool = True,
     identify: bool = True,
+    pushdown_cte_alias_columns: bool = False,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have normalized and qualified tables and columns.
@@ -55,6 +57,8 @@ def qualify(
             This step is necessary to ensure correctness for case sensitive queries.
             But this flag is provided in case this step is performed at a later time.
         identify: If True, quote all identifiers, else only necessary ones.
+        pushdown_cte_alias_columns: Whether or not to qualify outputs before columns.
+            Used for dialects (Snowflake) that can reference outputs in the HAVING.
 
     Returns:
         The qualified expression.
@@ -65,6 +69,9 @@ def qualify(
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)
+
+    if pushdown_cte_alias_columns:
+        expression = pushdown_cte_alias_columns_func(expression)
 
     if qualify_columns:
         expression = qualify_columns_func(

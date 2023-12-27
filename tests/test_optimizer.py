@@ -285,6 +285,21 @@ class TestOptimizer(unittest.TestCase):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
 
+    def test_pushdown_cte_alias_columns(self):
+        # Both of these should have SUM(a) aliased to "c"
+        queries = [
+            "WITH y(c) AS (SELECT SUM(a) FROM (SELECT 1 a) AS x HAVING c > 0) SELECT c FROM y",
+            "WITH y(c) AS (SELECT SUM(a) as d FROM (SELECT 1 a) AS x HAVING c > 0) SELECT c FROM y",
+        ]
+
+        for query in queries:
+            self.assertEqual(
+                optimizer.qualify_columns.pushdown_cte_alias_columns(
+                    parse_one(query, read="snowflake"),
+                ).sql(dialect="snowflake"),
+                "WITH y(c) AS (SELECT SUM(a) AS c FROM (SELECT 1 AS a) AS x HAVING c > 0) SELECT c FROM y",
+            )
+
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
             with self.subTest(sql):

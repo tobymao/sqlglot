@@ -39,8 +39,11 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 
 From PyPI:
 
-```
-pip3 install sqlglot
+```bash
+pip3 install "sqlglot[rs]"
+
+# Without Rust tokenizer (slower):
+# pip3 install sqlglot
 ```
 
 Or with a local checkout:

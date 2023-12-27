@@ -191,6 +191,14 @@ class TestBigQuery(Validator):
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_all(
+            "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), minute)",
+            write={
+                "bigquery": "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), MINUTE)",
+                "duckdb": "SELECT DATE_DIFF('MINUTE', TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
+                "snowflake": "SELECT TIMESTAMPDIFF(MINUTE, TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
+            },
+        )
+        self.validate_all(
             "SELECT TIMESTAMP_MICROS(x)",
             read={
                 "duckdb": "SELECT MAKE_TIMESTAMP(x)",

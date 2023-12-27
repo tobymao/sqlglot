@@ -578,6 +578,9 @@ class Snowflake(Dialect):
                 *(arg for expression in e.expressions for arg in expression.flatten()),
             ),
             exp.Stuff: rename_func("INSERT"),
+            exp.TimestampDiff: lambda self, e: self.func(
+                "TIMESTAMPDIFF", e.unit, e.expression, e.this
+            ),
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func(

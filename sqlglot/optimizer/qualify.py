@@ -67,15 +67,14 @@ def qualify(
     expression = normalize_identifiers(expression, dialect=dialect)
     expression = qualify_tables(expression, db=db, catalog=catalog, schema=schema)
 
+    if isolate_tables:
+        expression = isolate_table_selects(expression, schema=schema)
+
     pushdown_cte_alias_columns = (
         Dialect.get_or_raise(dialect).PUSHDOWN_CTE_ALIAS_COLUMNS
         if pushdown_cte_alias_columns is None
         else pushdown_cte_alias_columns
     )
-
-    if isolate_tables:
-        expression = isolate_table_selects(expression, schema=schema)
-
     if pushdown_cte_alias_columns:
         expression = pushdown_cte_alias_columns_func(expression)
 

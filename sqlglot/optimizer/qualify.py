@@ -71,7 +71,7 @@ def qualify(
         expression = isolate_table_selects(expression, schema=schema)
 
     pushdown_cte_alias_columns = (
-        Dialect.get_or_raise(dialect).PUSHDOWN_CTE_ALIAS_COLUMNS
+        Dialect.get_or_raise(dialect).PREFER_CTE_ALIAS_COLUMN
         if pushdown_cte_alias_columns is None
         else pushdown_cte_alias_columns
     )

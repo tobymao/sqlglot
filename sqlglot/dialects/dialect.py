@@ -220,9 +220,22 @@ class Dialect(metaclass=_Dialect):
     For example, such columns may be excluded from `SELECT *` queries.
     """
 
-    PUSHDOWN_CTE_ALIAS_COLUMNS = False
+    PREFER_CTE_ALIAS_COLUMN = False
     """
-    Whether or not to qualify outputs before columns.
+    Some dialects, such as Snowflake, allow you to reference a CTE column alias in the
+    HAVING clause of the CTE. This flag will cause the CTE alias columns to override
+    any projection aliases in the subquery.
+
+    For example,
+        WITH y(c) AS (
+            SELECT SUM(a) FROM (SELECT 1 a) AS x HAVING c > 0
+        ) SELECT c FROM y;
+
+        will be rewritten as
+
+        WITH y(c) AS (
+            SELECT SUM(a) AS c FROM (SELECT 1 AS a) AS x HAVING c > 0
+        ) SELECT c FROM y;
     """
 
     # --- Autofilled ---

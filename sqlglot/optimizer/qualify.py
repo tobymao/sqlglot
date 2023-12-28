@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import DialectType
+from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import (
@@ -29,7 +29,7 @@ def qualify(
     validate_qualify_columns: bool = True,
     quote_identifiers: bool = True,
     identify: bool = True,
-    pushdown_cte_alias_columns: bool = False,
+    pushdown_cte_alias_columns: t.Optional[bool] = None,
 ) -> exp.Expression:
     """
     Rewrite sqlglot AST to have normalized and qualified tables and columns.
@@ -66,6 +66,12 @@ def qualify(
     schema = ensure_schema(schema, dialect=dialect)
     expression = normalize_identifiers(expression, dialect=dialect)
     expression = qualify_tables(expression, db=db, catalog=catalog, schema=schema)
+
+    pushdown_cte_alias_columns = (
+        Dialect.get_or_raise(dialect).PUSHDOWN_CTE_ALIAS_COLUMNS
+        if pushdown_cte_alias_columns is None
+        else pushdown_cte_alias_columns
+    )
 
     if isolate_tables:
         expression = isolate_table_selects(expression, schema=schema)

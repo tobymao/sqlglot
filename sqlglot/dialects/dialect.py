@@ -220,6 +220,11 @@ class Dialect(metaclass=_Dialect):
     For example, such columns may be excluded from `SELECT *` queries.
     """
 
+    PUSHDOWN_CTE_ALIAS_COLUMNS = False
+    """
+    Whether or not to qualify outputs before columns.
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer

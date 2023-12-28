@@ -211,6 +211,7 @@ class Snowflake(Dialect):
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
+    PUSHDOWN_CTE_ALIAS_COLUMNS = True
 
     TIME_MAPPING = {
         "YYYY": "%Y",

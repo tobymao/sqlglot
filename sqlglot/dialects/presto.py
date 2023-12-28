@@ -446,7 +446,7 @@ class Presto(Dialect):
             return super().bracket_sql(expression)
 
         def struct_sql(self, expression: exp.Struct) -> str:
-            if any(isinstance(arg, self.KEY_VALUE_DEFINITONS) for arg in expression.expressions):
+            if any(isinstance(arg, self.KEY_VALUE_DEFINITIONS) for arg in expression.expressions):
                 self.unsupported("Struct with key-value definitions is unsupported.")
                 return self.function_fallback_sql(expression)
 

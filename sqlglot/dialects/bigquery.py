@@ -727,6 +727,18 @@ class BigQuery(Dialect):
             "within",
         }
 
+        def struct_sql(self, expression: exp.Struct) -> str:
+            args: t.List[str] = []
+            for expr in expression.expressions:
+                if isinstance(expr, self.KEY_VALUE_DEFINITONS):
+                    arg = f"{self.sql(expr, 'expression')} AS {expr.this.name}"
+                else:
+                    arg = self.sql(expr)
+
+                args.append(arg)
+
+            return self.func("STRUCT", *args)
+
         def eq_sql(self, expression: exp.EQ) -> str:
             # Operands of = cannot be NULL in BigQuery
             if isinstance(expression.left, exp.Null) or isinstance(expression.right, exp.Null):
@@ -763,7 +775,20 @@ class BigQuery(Dialect):
             return inline_array_sql(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
+            this = self.sql(expression, "this")
             expressions = expression.expressions
+
+            if len(expressions) == 1:
+                arg = expressions[0]
+                if arg.type is None:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    arg = annotate_types(arg)
+
+                if arg.type and arg.type.this in exp.DataType.TEXT_TYPES:
+                    # BQ doesn't support bracket syntax with string values
+                    return f"{this}.{arg.name}"
+
             expressions_sql = ", ".join(self.sql(e) for e in expressions)
             offset = expression.args.get("offset")
 
@@ -771,13 +796,13 @@ class BigQuery(Dialect):
                 expressions_sql = f"OFFSET({expressions_sql})"
             elif offset == 1:
                 expressions_sql = f"ORDINAL({expressions_sql})"
-            else:
+            elif offset is not None:
                 self.unsupported(f"Unsupported array offset: {offset}")
 
             if expression.args.get("safe"):
                 expressions_sql = f"SAFE_{expressions_sql}"
 
-            return f"{self.sql(expression, 'this')}[{expressions_sql}]"
+            return f"{this}[{expressions_sql}]"
 
         def transaction_sql(self, *_) -> str:
             return "BEGIN TRANSACTION"

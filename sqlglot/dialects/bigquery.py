@@ -730,7 +730,7 @@ class BigQuery(Dialect):
         def struct_sql(self, expression: exp.Struct) -> str:
             args = []
             for expr in expression.expressions:
-                if isinstance(expr, self.KEY_VALUE_DEFINITONS):
+                if isinstance(expr, self.KEY_VALUE_DEFINITIONS):
                     arg = f"{self.sql(expr, 'expression')} AS {expr.this.name}"
                 else:
                     arg = self.sql(expr)

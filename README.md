@@ -336,13 +336,14 @@ print(repr(parse_one("SELECT a + 1 AS z")))
 ```
 
 ```python
-(SELECT expressions:
-  (ALIAS this:
-    (ADD this:
-      (COLUMN this:
-        (IDENTIFIER this: a, quoted: False)), expression:
-      (LITERAL this: 1, is_string: False)), alias:
-    (IDENTIFIER this: z, quoted: False)))
+Select(
+  expressions=[
+    Alias(
+      this=Add(
+        this=Column(
+          this=Identifier(this=a, quoted=False)),
+        expression=Literal(this=1, is_string=False)),
+      alias=Identifier(this=z, quoted=False))])
 ```
 
 ### AST Diff
@@ -356,19 +357,17 @@ diff(parse_one("SELECT a + b, c, d"), parse_one("SELECT c, a - b, d"))
 
 ```python
 [
-  Remove(expression=(ADD this:
-    (COLUMN this:
-      (IDENTIFIER this: a, quoted: False)), expression:
-    (COLUMN this:
-      (IDENTIFIER this: b, quoted: False)))),
-  Insert(expression=(SUB this:
-    (COLUMN this:
-      (IDENTIFIER this: a, quoted: False)), expression:
-    (COLUMN this:
-      (IDENTIFIER this: b, quoted: False)))),
-  Move(expression=(COLUMN this:
-    (IDENTIFIER this: c, quoted: False))),
-  Keep(source=(IDENTIFIER this: b, quoted: False), target=(IDENTIFIER this: b, quoted: False)),
+  Remove(expression=Add(
+    this=Column(
+      this=Identifier(this=a, quoted=False)),
+    expression=Column(
+      this=Identifier(this=b, quoted=False)))),
+  Insert(expression=Sub(
+    this=Column(
+      this=Identifier(this=a, quoted=False)),
+    expression=Column(
+      this=Identifier(this=b, quoted=False)))),
+  Keep(source=Identifier(this=d, quoted=False), target=Identifier(this=d, quoted=False)),
   ...
 ]
 ```

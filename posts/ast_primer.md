@@ -1,4 +1,4 @@
-# A Primer on SQLGlot's Abstract Syntax Tree
+# Primer on SQLGlot's Abstract Syntax Tree
 
 SQLGlot is a powerful tool for analyzing and transforming SQL, but the learning curve can be intimidating.
  
@@ -17,29 +17,32 @@ An AST is a data structure that represents a SQL statement. The best way to glea
 ```python
 repr(ast)
 
-# (SELECT expressions: 
-#   (COLUMN this: 
-#     (IDENTIFIER this: a, quoted: False)), from: 
-#   (FROM this: 
-#     (SUBQUERY this: 
-#       (SELECT expressions: 
-#         (COLUMN this: 
-#           (IDENTIFIER this: a, quoted: False)), from: 
-#         (FROM this: 
-#           (TABLE this: 
-#             (IDENTIFIER this: x, quoted: False)))), alias: 
-#       (TABLEALIAS this: 
-#         (IDENTIFIER this: x, quoted: False)))))
+# Select(
+#   expressions=[
+#     Column(
+#       this=Identifier(this=a, quoted=False))],
+#   from=From(
+#     this=Subquery(
+#       this=Select(
+#         expressions=[
+#           Column(
+#             this=Identifier(this=a, quoted=False))],
+#         from=From(
+#           this=Table(
+#             this=Identifier(this=x, quoted=False)))),
+#       alias=TableAlias(
+#         this=Identifier(this=x, quoted=False)))))
 ```
 
 This is a textual representation of the internal data structure. Here's a breakdown of some of its components:
 ```
-Expression type    child key
-  |               /
-(SELECT expressions:
-  (COLUMN this:  ---------------------------------- COLUMN is a child node of SELECT
-    (IDENTIFIER this: a, quoted: False)), from:  -- "from:" is another child key of SELECT
-  (FROM this: ------------------------------------- FROM is also a child node of SELECT
+`Select` is the expression type
+  |
+Select(
+  expressions=[  ------------------------------- `expressions` is a child key of `Select`
+    Column(  ----------------------------------- `Column` is the expression type of the child
+      this=Identifier(this=a, quoted=False))],
+  from=From(  ---------------------------------- `from` is another child key of `Select`
   ...
 ```
 
@@ -49,19 +52,19 @@ The nodes in this tree are instances of `sqlglot.Expression`. Nodes reference th
 ```python
 ast.args
 # {
-#    "expressions": [(COLUMN this: ...)],
-#    "from": (FROM this: ...),
+#    "expressions": [Column(this=...)],
+#    "from": From(this=...),
 #    ...
 # }
 
 ast.args["expressions"][0]
-# (COLUMN this: ...)
+# Column(this=...)
 
 ast.args["expressions"][0].args["this"]
-# (IDENTIFIER this: ...)
+# Identifier(this=...)
 
 ast.args["from"]
-# (FROM this: ...)
+# From(this=...)
 
 assert ast.args["expressions"][0].args["this"].parent.parent is ast
 ```
@@ -109,8 +112,9 @@ You can traverse an AST using just args, but there are some higher-order functio
 > ast = parse_one("SELECT NOW()", dialect="postgres")
 > 
 > repr(ast)
-> # (SELECT expressions: 
-> #   (CURRENTTIMESTAMP ))  -- CURRENTTIMESTAMP, not NOW()
+> # Select(
+> #   expressions=[
+> #     CurrentTimestamp()])
 > ```
 > 
 > This is because SQLGlot tries to converge dialects on a standard AST. This means you can often write one piece of code that handles multiple dialects.
@@ -132,15 +136,17 @@ The walk methods of `Expression` (`find`, `find_all`, and `walk`) are the simple
 from sqlglot import exp
 
 ast.find(exp.Select)
-# (SELECT expressions: 
-#   (COLUMN this: 
-#     (IDENTIFIER this: a, quoted: False)), from:
+# Select(
+#   expressions=[
+#     Column(
+#       this=Identifier(this=a, quoted=False))],
 # ...
 
 list(ast.find_all(exp.Select))
-# [(SELECT expressions: 
-#   (COLUMN this: 
-#     (IDENTIFIER this: a, quoted: False)), from:
+# [Select(
+#   expressions=[
+#     Column(
+#       this=Identifier(this=a, quoted=False))],
 # ...
 ```
 

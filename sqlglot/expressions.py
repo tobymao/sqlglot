@@ -5426,7 +5426,9 @@ def _to_s(node: t.Any, hide_missing: bool = True, level: int = 0) -> str:
     delim = f",{indent}"
 
     if isinstance(node, Expression):
-        args = {k: v for k, v in node.args.items() if v is not None or not hide_missing}
+        args = {
+            k: v for k, v in node.args.items() if (v is not None and v != []) or not hide_missing
+        }
 
         if (node.type or not hide_missing) and not isinstance(node, DataType):
             args["_type"] = node.type

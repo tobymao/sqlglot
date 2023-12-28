@@ -495,6 +495,38 @@ def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool
     )
 
 
+def pushdown_cte_alias_columns(expression: exp.Expression) -> exp.Expression:
+    """
+    Pushes down the CTE alias columns into the projection,
+
+    This step is useful in Snowflake where the CTE alias columns can be referenced in the HAVING.
+
+    Example:
+        >>> import sqlglot
+        >>> expression = sqlglot.parse_one("WITH y (c) AS (SELECT SUM(a) FROM ( SELECT 1 a ) AS x HAVING c > 0) SELECT c FROM y")
+        >>> pushdown_cte_alias_columns(expression).sql()
+        'WITH y(c) AS (SELECT SUM(a) AS c FROM (SELECT 1 AS a) AS x HAVING c > 0) SELECT c FROM y'
+
+    Args:
+        expression: Expression to pushdown.
+
+    Returns:
+        The expression with the CTE aliases pushed down into the projection.
+    """
+    for cte in expression.find_all(exp.CTE):
+        if cte.alias_column_names:
+            new_expressions = []
+            for _alias, projection in zip(cte.alias_column_names, cte.this.expressions):
+                if isinstance(projection, exp.Alias):
+                    projection.set("alias", _alias)
+                else:
+                    projection = alias(projection, alias=_alias)
+                new_expressions.append(projection)
+            cte.this.set("expressions", new_expressions)
+
+    return expression
+
+
 class Resolver:
     """
     Helper for resolving columns.

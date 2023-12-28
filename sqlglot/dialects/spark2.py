@@ -234,7 +234,7 @@ class Spark2(Hive):
         def struct_sql(self, expression: exp.Struct) -> str:
             args = []
             for arg in expression.expressions:
-                if isinstance(arg, self.KEY_VALUE_DEFINITONS):
+                if isinstance(arg, self.KEY_VALUE_DEFINITIONS):
                     if isinstance(arg, exp.Bracket):
                         args.append(exp.alias_(arg.this, arg.expressions[0].name))
                     else:

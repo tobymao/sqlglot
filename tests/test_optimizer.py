@@ -285,6 +285,11 @@ class TestOptimizer(unittest.TestCase):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
 
+    def test_pushdown_cte_alias_columns(self):
+        self.check_file(
+            "pushdown_cte_alias_columns", optimizer.qualify_columns.pushdown_cte_alias_columns
+        )
+
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
             with self.subTest(sql):

@@ -1,4 +1,4 @@
-# A Primer on SQLGlot's Abstract Syntax Tree
+# Primer on SQLGlot's Abstract Syntax Tree
 
 SQLGlot is a powerful tool for analyzing and transforming SQL, but the learning curve can be intimidating.
  

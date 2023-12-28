@@ -372,7 +372,7 @@ class Generator:
     # Expressions that need to have all CTEs under them bubbled up to them
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
 
-    KEY_VALUE_DEFINITONS = (exp.Bracket, exp.EQ, exp.PropertyEQ, exp.Slice)
+    KEY_VALUE_DEFINITIONS = (exp.Bracket, exp.EQ, exp.PropertyEQ, exp.Slice)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 

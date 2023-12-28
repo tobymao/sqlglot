@@ -59,10 +59,20 @@ class TestDuckDB(Validator):
             )
 
         self.validate_all(
+            "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT (SELECT col['b'] FROM UNNEST(col) AS t(col) WHERE col['a'] = 1) FROM _data",
+            write={
+                "bigquery": "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT (SELECT col.b FROM UNNEST(col) AS col WHERE col.a = 1) FROM _data",
+                "duckdb": "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT (SELECT col['b'] FROM UNNEST(col) AS t(col) WHERE col['a'] = 1) FROM _data",
+            },
+        )
+        self.validate_all(
             "SELECT {'bla': column1, 'foo': column2, 'bar': column3} AS data FROM source_table",
             read={
                 "bigquery": "SELECT STRUCT(column1 AS bla, column2 AS foo, column3 AS bar) AS data FROM source_table",
                 "duckdb": "SELECT {'bla': column1, 'foo': column2, 'bar': column3} AS data FROM source_table",
+            },
+            write={
+                "bigquery": "SELECT STRUCT(column1 AS bla, column2 AS foo, column3 AS bar) AS data FROM source_table",
             },
         )
         self.validate_all(
@@ -378,6 +388,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRUCT_PACK(x := 1, y := '2')",
             write={
+                "bigquery": "STRUCT(1 AS x, '2' AS y)",
                 "duckdb": "{'x': 1, 'y': '2'}",
                 "spark": "STRUCT(1 AS x, '2' AS y)",
             },
@@ -385,6 +396,7 @@ class TestDuckDB(Validator):
         self.validate_all(
             "STRUCT_PACK(key1 := 'value1', key2 := 42)",
             write={
+                "bigquery": "STRUCT('value1' AS key1, 42 AS key2)",
                 "duckdb": "{'key1': 'value1', 'key2': 42}",
                 "spark": "STRUCT('value1' AS key1, 42 AS key2)",
             },

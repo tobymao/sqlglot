@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 14.2.0"/>
+    <meta name="generator" content="pdoc 14.3.0"/>
     <title>sqlglot.schema API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -1083,26 +1083,44 @@ The added table must have the necessary number of qualifiers in its path to matc
 
                             </div>
                             <div id="Schema.supported_table_args" class="classattr">
-                                <div class="attr variable">
+                                        <input id="Schema.supported_table_args-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
             <span class="name">supported_table_args</span><span class="annotation">: Tuple[str, ...]</span>
 
-        
+                <label class="view-source-button" for="Schema.supported_table_args-view-source"><span>View Source</span></label>
+
     </div>
     <a class="headerlink" href="#Schema.supported_table_args"></a>
-    
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Schema.supported_table_args-110"><a href="#Schema.supported_table_args-110"><span class="linenos">110</span></a>    <span class="nd">@property</span>
+</span><span id="Schema.supported_table_args-111"><a href="#Schema.supported_table_args-111"><span class="linenos">111</span></a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+</span><span id="Schema.supported_table_args-112"><a href="#Schema.supported_table_args-112"><span class="linenos">112</span></a>    <span class="k">def</span> <span class="nf">supported_table_args</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+</span><span id="Schema.supported_table_args-113"><a href="#Schema.supported_table_args-113"><span class="linenos">113</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="Schema.supported_table_args-114"><a href="#Schema.supported_table_args-114"><span class="linenos">114</span></a><span class="sd">        Table arguments this schema support, e.g. `(&quot;this&quot;, &quot;db&quot;, &quot;catalog&quot;)`</span>
+</span><span id="Schema.supported_table_args-115"><a href="#Schema.supported_table_args-115"><span class="linenos">115</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span></pre></div>
+
+
             <div class="docstring"><p>Table arguments this schema support, e.g. <code>("this", "db", "catalog")</code></p>
 </div>
 
 
                             </div>
                             <div id="Schema.empty" class="classattr">
-                                <div class="attr variable">
+                                        <input id="Schema.empty-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
             <span class="name">empty</span><span class="annotation">: bool</span>
 
-        
+                <label class="view-source-button" for="Schema.empty-view-source"><span>View Source</span></label>
+
     </div>
     <a class="headerlink" href="#Schema.empty"></a>
-    
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Schema.empty-117"><a href="#Schema.empty-117"><span class="linenos">117</span></a>    <span class="nd">@property</span>
+</span><span id="Schema.empty-118"><a href="#Schema.empty-118"><span class="linenos">118</span></a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="Schema.empty-119"><a href="#Schema.empty-119"><span class="linenos">119</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether or not the schema is empty.&quot;&quot;&quot;</span>
+</span><span id="Schema.empty-120"><a href="#Schema.empty-120"><span class="linenos">120</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span></pre></div>
+
+
             <div class="docstring"><p>Returns whether or not the schema is empty.</p>
 </div>
 
@@ -1240,13 +1258,20 @@ The added table must have the necessary number of qualifiers in its path to matc
 
                             </div>
                             <div id="AbstractMappingSchema.empty" class="classattr">
-                                <div class="attr variable">
+                                        <input id="AbstractMappingSchema.empty-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
             <span class="name">empty</span><span class="annotation">: bool</span>
 
-        
+                <label class="view-source-button" for="AbstractMappingSchema.empty-view-source"><span>View Source</span></label>
+
     </div>
     <a class="headerlink" href="#AbstractMappingSchema.empty"></a>
-    
+            <div class="pdoc-code codehilite"><pre><span></span><span id="AbstractMappingSchema.empty-134"><a href="#AbstractMappingSchema.empty-134"><span class="linenos">134</span></a>    <span class="nd">@property</span>
+</span><span id="AbstractMappingSchema.empty-135"><a href="#AbstractMappingSchema.empty-135"><span class="linenos">135</span></a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema.empty-136"><a href="#AbstractMappingSchema.empty-136"><span class="linenos">136</span></a>        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span>
+</span></pre></div>
+
+
     
 
                             </div>
@@ -1270,13 +1295,30 @@ The added table must have the necessary number of qualifiers in its path to matc
 
                             </div>
                             <div id="AbstractMappingSchema.supported_table_args" class="classattr">
-                                <div class="attr variable">
+                                        <input id="AbstractMappingSchema.supported_table_args-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr variable">
             <span class="name">supported_table_args</span><span class="annotation">: Tuple[str, ...]</span>
 
-        
+                <label class="view-source-button" for="AbstractMappingSchema.supported_table_args-view-source"><span>View Source</span></label>
+
     </div>
     <a class="headerlink" href="#AbstractMappingSchema.supported_table_args"></a>
-    
+            <div class="pdoc-code codehilite"><pre><span></span><span id="AbstractMappingSchema.supported_table_args-141"><a href="#AbstractMappingSchema.supported_table_args-141"><span class="linenos">141</span></a>    <span class="nd">@property</span>
+</span><span id="AbstractMappingSchema.supported_table_args-142"><a href="#AbstractMappingSchema.supported_table_args-142"><span class="linenos">142</span></a>    <span class="k">def</span> <span class="nf">supported_table_args</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+</span><span id="AbstractMappingSchema.supported_table_args-143"><a href="#AbstractMappingSchema.supported_table_args-143"><span class="linenos">143</span></a>        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_supported_table_args</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema.supported_table_args-144"><a href="#AbstractMappingSchema.supported_table_args-144"><span class="linenos">144</span></a>            <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth</span><span class="p">()</span>
+</span><span id="AbstractMappingSchema.supported_table_args-145"><a href="#AbstractMappingSchema.supported_table_args-145"><span class="linenos">145</span></a>
+</span><span id="AbstractMappingSchema.supported_table_args-146"><a href="#AbstractMappingSchema.supported_table_args-146"><span class="linenos">146</span></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">depth</span><span class="p">:</span>  <span class="c1"># None</span>
+</span><span id="AbstractMappingSchema.supported_table_args-147"><a href="#AbstractMappingSchema.supported_table_args-147"><span class="linenos">147</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_supported_table_args</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+</span><span id="AbstractMappingSchema.supported_table_args-148"><a href="#AbstractMappingSchema.supported_table_args-148"><span class="linenos">148</span></a>            <span class="k">elif</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">depth</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema.supported_table_args-149"><a href="#AbstractMappingSchema.supported_table_args-149"><span class="linenos">149</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_supported_table_args</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">TABLE_PARTS</span><span class="p">[:</span><span class="n">depth</span><span class="p">]</span>
+</span><span id="AbstractMappingSchema.supported_table_args-150"><a href="#AbstractMappingSchema.supported_table_args-150"><span class="linenos">150</span></a>            <span class="k">else</span><span class="p">:</span>
+</span><span id="AbstractMappingSchema.supported_table_args-151"><a href="#AbstractMappingSchema.supported_table_args-151"><span class="linenos">151</span></a>                <span class="k">raise</span> <span class="n">SchemaError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid mapping shape. Depth: </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="AbstractMappingSchema.supported_table_args-152"><a href="#AbstractMappingSchema.supported_table_args-152"><span class="linenos">152</span></a>
+</span><span id="AbstractMappingSchema.supported_table_args-153"><a href="#AbstractMappingSchema.supported_table_args-153"><span class="linenos">153</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_supported_table_args</span>
+</span></pre></div>
+
+
     
 
                             </div>

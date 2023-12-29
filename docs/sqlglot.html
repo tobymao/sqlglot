@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 14.2.0"/>
+    <meta name="generator" content="pdoc 14.3.0"/>
     <title>sqlglot API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -27,6 +27,7 @@
   <li><a href="#install">Install</a></li>
   <li><a href="#versioning">Versioning</a></li>
   <li><a href="#get-in-touch">Get in Touch</a></li>
+  <li><a href="#faq">FAQ</a></li>
   <li><a href="#examples">Examples</a></li>
   <li><a href="#used-by">Used By</a></li>
   <li><a href="#documentation">Documentation</a></li>
@@ -53,7 +54,6 @@
                     <li><a href="sqlglot/schema.html">schema</a></li>
                     <li><a href="sqlglot/serde.html">serde</a></li>
                     <li><a href="sqlglot/time.html">time</a></li>
-                    <li><a href="sqlglot/token_type.html">token_type</a></li>
                     <li><a href="sqlglot/tokens.html">tokens</a></li>
                     <li><a href="sqlglot/transforms.html">transforms</a></li>
                     <li><a href="sqlglot/trie.html">trie</a></li>
@@ -105,7 +105,7 @@
 
 <p>Syntax <a href="#parser-errors">errors</a> are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, it should be noted that SQL validation is not SQLGlot’s goal, so some syntax errors may go unnoticed.</p>
 
-<p>Learn more about the SQLGlot API in the <a href="https://sqlglot.com/">documentation</a>.</p>
+<p>Learn more about SQLGlot in the API <a href="https://sqlglot.com/">documentation</a> and the expression tree <a href="https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md">primer</a>.</p>
 
 <p>Contributions are very welcome in SQLGlot; read the <a href="https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md">contribution guide</a> to get started!</p>
 
@@ -115,6 +115,7 @@
 <li><a href="#install">Install</a></li>
 <li><a href="#versioning">Versioning</a></li>
 <li><a href="#get-in-touch">Get in Touch</a></li>
+<li><a href="#faq">FAQ</a></li>
 <li><a href="#examples">Examples</a>
 <ul>
 <li><a href="#formatting-and-transpiling">Formatting and Transpiling</a></li>
@@ -139,8 +140,13 @@
 
 <p>From PyPI:</p>
 
-<pre><code>pip3 install sqlglot
+<div class="pdoc-code codehilite">
+<pre><span></span><code>pip3<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;sqlglot[rs]&quot;</span>
+
+<span class="c1"># Without Rust tokenizer (slower):</span>
+<span class="c1"># pip3 install sqlglot</span>
 </code></pre>
+</div>
 
 <p>Or with a local checkout:</p>
 
@@ -165,6 +171,26 @@
 <h2 id="get-in-touch">Get in Touch</h2>
 
 <p>We'd love to hear from you. Join our community <a href="https://tobikodata.com/slack">Slack channel</a>!</p>
+
+<h2 id="faq">FAQ</h2>
+
+<p>I tried to parse SQL that should be valid but it failed, why did that happen?</p>
+
+<ul>
+<li>You need to specify the dialect to read the SQL properly, by default it is SQLGlot's dialect which is designed to be a superset of all dialects <code>parse_one(sql, dialect="spark")</code>. If you tried specifying the dialect and it still doesn't work, please file an issue.</li>
+</ul>
+
+<p>I tried to output SQL but it's not in the correct dialect!</p>
+
+<ul>
+<li>You need to specify the dialect to write the sql properly, by default it is in SQLGlot's dialect <code>parse_one(sql, dialect="spark").sql(dialect="spark")</code>.</li>
+</ul>
+
+<p>I tried to parse invalid SQL and it should raise an error but it worked! Why didn't it validate my SQL.</p>
+
+<ul>
+<li>SQLGlot is not a validator and designed to be very forgiving, handling things like trailing commas.</li>
+</ul>
 
 <h2 id="examples">Examples</h2>
 
@@ -283,6 +309,8 @@
     <span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre>
 </div>
+
+<p>Read the <a href="https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md">ast primer</a> to learn more about SQLGlot's internals.</p>
 
 <h3 id="parser-errors">Parser Errors</h3>
 
@@ -437,13 +465,14 @@
 </div>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="p">(</span><span class="n">SELECT</span> <span class="n">expressions</span><span class="p">:</span>
-  <span class="p">(</span><span class="n">ALIAS</span> <span class="n">this</span><span class="p">:</span>
-    <span class="p">(</span><span class="n">ADD</span> <span class="n">this</span><span class="p">:</span>
-      <span class="p">(</span><span class="n">COLUMN</span> <span class="n">this</span><span class="p">:</span>
-        <span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">)),</span> <span class="n">expression</span><span class="p">:</span>
-      <span class="p">(</span><span class="n">LITERAL</span> <span class="n">this</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="n">is_string</span><span class="p">:</span> <span class="kc">False</span><span class="p">)),</span> <span class="n">alias</span><span class="p">:</span>
-    <span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">z</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">)))</span>
+<pre><span></span><code><span class="n">Select</span><span class="p">(</span>
+  <span class="n">expressions</span><span class="o">=</span><span class="p">[</span>
+    <span class="n">Alias</span><span class="p">(</span>
+      <span class="n">this</span><span class="o">=</span><span class="n">Add</span><span class="p">(</span>
+        <span class="n">this</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span>
+          <span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+        <span class="n">expression</span><span class="o">=</span><span class="n">Literal</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">is_string</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+      <span class="n">alias</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">))])</span>
 </code></pre>
 </div>
 
@@ -459,19 +488,17 @@
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="p">[</span>
-  <span class="n">Remove</span><span class="p">(</span><span class="n">expression</span><span class="o">=</span><span class="p">(</span><span class="n">ADD</span> <span class="n">this</span><span class="p">:</span>
-    <span class="p">(</span><span class="n">COLUMN</span> <span class="n">this</span><span class="p">:</span>
-      <span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">)),</span> <span class="n">expression</span><span class="p">:</span>
-    <span class="p">(</span><span class="n">COLUMN</span> <span class="n">this</span><span class="p">:</span>
-      <span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">b</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">)))),</span>
-  <span class="n">Insert</span><span class="p">(</span><span class="n">expression</span><span class="o">=</span><span class="p">(</span><span class="n">SUB</span> <span class="n">this</span><span class="p">:</span>
-    <span class="p">(</span><span class="n">COLUMN</span> <span class="n">this</span><span class="p">:</span>
-      <span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">)),</span> <span class="n">expression</span><span class="p">:</span>
-    <span class="p">(</span><span class="n">COLUMN</span> <span class="n">this</span><span class="p">:</span>
-      <span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">b</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">)))),</span>
-  <span class="n">Move</span><span class="p">(</span><span class="n">expression</span><span class="o">=</span><span class="p">(</span><span class="n">COLUMN</span> <span class="n">this</span><span class="p">:</span>
-    <span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">c</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">))),</span>
-  <span class="n">Keep</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">b</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">),</span> <span class="n">target</span><span class="o">=</span><span class="p">(</span><span class="n">IDENTIFIER</span> <span class="n">this</span><span class="p">:</span> <span class="n">b</span><span class="p">,</span> <span class="n">quoted</span><span class="p">:</span> <span class="kc">False</span><span class="p">)),</span>
+  <span class="n">Remove</span><span class="p">(</span><span class="n">expression</span><span class="o">=</span><span class="n">Add</span><span class="p">(</span>
+    <span class="n">this</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span>
+      <span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+    <span class="n">expression</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span>
+      <span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)))),</span>
+  <span class="n">Insert</span><span class="p">(</span><span class="n">expression</span><span class="o">=</span><span class="n">Sub</span><span class="p">(</span>
+    <span class="n">this</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span>
+      <span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+    <span class="n">expression</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span>
+      <span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)))),</span>
+  <span class="n">Keep</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">target</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
   <span class="o">...</span>
 <span class="p">]</span>
 </code></pre>
@@ -604,13 +631,14 @@ make check  # Full test suite &amp; linter checks
 
 <h2 id="benchmarks">Benchmarks</h2>
 
-<p><a href="https://github.com/tobymao/sqlglot/blob/main/benchmarks/bench.py">Benchmarks</a> run on Python 3.10.5 in seconds.</p>
+<p><a href="https://github.com/tobymao/sqlglot/blob/main/benchmarks/bench.py">Benchmarks</a> run on Python 3.10.12 in seconds.</p>
 
 <table>
 <thead>
 <tr>
   <th>Query</th>
   <th>sqlglot</th>
+  <th>sqlglotrs</th>
   <th>sqlfluff</th>
   <th>sqltree</th>
   <th>sqlparse</th>
@@ -621,39 +649,43 @@ make check  # Full test suite &amp; linter checks
 <tbody>
 <tr>
   <td>tpch</td>
-  <td>0.01308 (1.0)</td>
-  <td>1.60626 (122.7)</td>
-  <td>0.01168 (0.893)</td>
-  <td>0.04958 (3.791)</td>
-  <td>0.08543 (6.531)</td>
-  <td>0.00136 (0.104)</td>
+  <td>0.00944 (1.0)</td>
+  <td>0.00590 (0.625)</td>
+  <td>0.32116 (33.98)</td>
+  <td>0.00693 (0.734)</td>
+  <td>0.02858 (3.025)</td>
+  <td>0.03337 (3.532)</td>
+  <td>0.00073 (0.077)</td>
 </tr>
 <tr>
   <td>short</td>
-  <td>0.00109 (1.0)</td>
-  <td>0.14134 (129.2)</td>
-  <td>0.00099 (0.906)</td>
-  <td>0.00342 (3.131)</td>
-  <td>0.00652 (5.970)</td>
-  <td>8.76E-5 (0.080)</td>
+  <td>0.00065 (1.0)</td>
+  <td>0.00044 (0.687)</td>
+  <td>0.03511 (53.82)</td>
+  <td>0.00049 (0.759)</td>
+  <td>0.00163 (2.506)</td>
+  <td>0.00234 (3.601)</td>
+  <td>0.00005 (0.073)</td>
 </tr>
 <tr>
   <td>long</td>
-  <td>0.01399 (1.0)</td>
-  <td>2.12632 (151.9)</td>
-  <td>0.01126 (0.805)</td>
-  <td>0.04410 (3.151)</td>
-  <td>0.06671 (4.767)</td>
-  <td>0.00107 (0.076)</td>
+  <td>0.00889 (1.0)</td>
+  <td>0.00572 (0.643)</td>
+  <td>0.36982 (41.56)</td>
+  <td>0.00614 (0.690)</td>
+  <td>0.02530 (2.844)</td>
+  <td>0.02931 (3.294)</td>
+  <td>0.00059 (0.066)</td>
 </tr>
 <tr>
   <td>crazy</td>
-  <td>0.03969 (1.0)</td>
-  <td>24.3777 (614.1)</td>
-  <td>0.03917 (0.987)</td>
-  <td>11.7043 (294.8)</td>
-  <td>1.03280 (26.02)</td>
-  <td>0.00625 (0.157)</td>
+  <td>0.02918 (1.0)</td>
+  <td>0.01991 (0.682)</td>
+  <td>1.88695 (64.66)</td>
+  <td>0.02003 (0.686)</td>
+  <td>7.46894 (255.9)</td>
+  <td>0.64994 (22.27)</td>
+  <td>0.00327 (0.112)</td>
 </tr>
 </tbody>
 </table>

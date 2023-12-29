@@ -183,6 +183,11 @@ class DuckDB(Dialect):
             "TIMESTAMP_US": TokenType.TIMESTAMP,
         }
 
+        SINGLE_TOKENS = {
+            **tokens.Tokenizer.SINGLE_TOKENS,
+            "$": TokenType.PARAMETER,
+        }
+
     class Parser(parser.Parser):
         BITWISE = {
             **parser.Parser.BITWISE,
@@ -248,6 +253,13 @@ class DuckDB(Dialect):
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,
             TokenType.ANTI,
+        }
+
+        PLACEHOLDER_PARSERS = {
+            **parser.Parser.PLACEHOLDER_PARSERS,
+            TokenType.PARAMETER: lambda self: self.expression(exp.Placeholder, this=self._prev.text)
+            if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
+            else None,
         }
 
         def _parse_types(
@@ -436,3 +448,6 @@ class DuckDB(Dialect):
             if isinstance(expression.parent, exp.UserDefinedFunction):
                 return self.sql(expression, "this")
             return super().columndef_sql(expression, sep)
+
+        def placeholder_sql(self, expression: exp.Placeholder) -> str:
+            return f"${expression.name}" if expression.name else "?"

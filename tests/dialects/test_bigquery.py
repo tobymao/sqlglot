@@ -191,6 +191,13 @@ class TestBigQuery(Validator):
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
         self.validate_all(
+            "SELECT FORMAT_DATE('%Y%m%d', '2023-12-25')",
+            write={
+                "bigquery": "SELECT FORMAT_DATE('%Y%m%d', '2023-12-25')",
+                "duckdb": "SELECT STRFTIME(CAST('2023-12-25' AS DATE), '%Y%m%d')",
+            },
+        )
+        self.validate_all(
             "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), minute)",
             write={
                 "bigquery": "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), MINUTE)",

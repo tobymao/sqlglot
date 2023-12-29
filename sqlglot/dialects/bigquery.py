@@ -329,6 +329,9 @@ class BigQuery(Dialect):
             "DATETIME_ADD": parse_date_delta_with_interval(exp.DatetimeAdd),
             "DATETIME_SUB": parse_date_delta_with_interval(exp.DatetimeSub),
             "DIV": binary_from_function(exp.IntDiv),
+            "FORMAT_DATE": lambda args: exp.TimeToStr(
+                this=exp.TsOrDsToDate(this=seq_get(args, 1)), format=seq_get(args, 0)
+            ),
             "GENERATE_ARRAY": exp.GenerateSeries.from_arg_list,
             "JSON_EXTRACT_SCALAR": lambda args: exp.JSONExtractScalar(
                 this=seq_get(args, 0), expression=seq_get(args, 1) or exp.Literal.string("$")
@@ -585,7 +588,6 @@ class BigQuery(Dialect):
             exp.TimestampAdd: date_add_interval_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeToStr: lambda self, e: f"FORMAT_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,
@@ -726,6 +728,14 @@ class BigQuery(Dialect):
             "with",
             "within",
         }
+
+        def timetostr_sql(self, expression: exp.TimeToStr) -> str:
+            if isinstance(expression.this, exp.TsOrDsToDate):
+                this: exp.Expression = expression.this
+            else:
+                this = expression
+
+            return f"FORMAT_DATE({self.format_time(expression)}, {self.sql(this, 'this')})"
 
         def struct_sql(self, expression: exp.Struct) -> str:
             args = []

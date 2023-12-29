@@ -1,6 +1,47 @@
 Changelog
 =========
 
+## [v20.5.0] - 2023-12-29
+### :boom: BREAKING CHANGES
+- due to [`87498c3`](https://github.com/tobymao/sqlglot/commit/87498c37496978d9b2d42029fecb0d34bc88eef7) - redshift unnesting to column *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  redshift unnesting to column
+
+- due to [`a4e899a`](https://github.com/tobymao/sqlglot/commit/a4e899aaba317028480a440faeddb026bb464890) - normalize units to all be upper case *(PR [#2714](https://github.com/tobymao/sqlglot/pull/2714) by [@tobymao](https://github.com/tobymao))*:
+
+  normalize units to all be upper case (#2714)
+
+- due to [`92b4ec1`](https://github.com/tobymao/sqlglot/commit/92b4ec1356db2c3de29411807e1f393658ab39c7) - Change Expression.__repr__ format *(PR [#2723](https://github.com/tobymao/sqlglot/pull/2723) by [@barakalon](https://github.com/barakalon))*:
+
+  Change Expression.__repr__ format (#2723)
+
+
+### :sparkles: New Features
+- [`92b4ec1`](https://github.com/tobymao/sqlglot/commit/92b4ec1356db2c3de29411807e1f393658ab39c7) - Change Expression.__repr__ format *(PR [#2723](https://github.com/tobymao/sqlglot/pull/2723) by [@barakalon](https://github.com/barakalon))*
+
+### :bug: Bug Fixes
+- [`db9de94`](https://github.com/tobymao/sqlglot/commit/db9de94004b8cb1ee7a10d9dd63d679adff12bc8) - Grant 'contents: write' permissions to the 'deploy' job *(commit by [@izeigerman](https://github.com/izeigerman))*
+- [`1abd731`](https://github.com/tobymao/sqlglot/commit/1abd731143beb148d4759f6db721a0c429f3ec1f) - allow final in clickhouse ctes *(commit by [@tobymao](https://github.com/tobymao))*
+- [`87498c3`](https://github.com/tobymao/sqlglot/commit/87498c37496978d9b2d42029fecb0d34bc88eef7) - redshift unnesting to column *(commit by [@tobymao](https://github.com/tobymao))*
+- [`55735f5`](https://github.com/tobymao/sqlglot/commit/55735f5ec546dcf1b663058a72fbea47c280b487) - **redshift**: auto refresh closes [#2713](https://github.com/tobymao/sqlglot/pull/2713) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`b415037`](https://github.com/tobymao/sqlglot/commit/b4150373a22ecabbbe9332c90983c3be94a44137) - **hive**: parse values alias closes [#2717](https://github.com/tobymao/sqlglot/pull/2717) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`8979e51`](https://github.com/tobymao/sqlglot/commit/8979e51004962baac7cbc7d7809a22061eb374bd) - **duckdb**: udf no types closes [#2718](https://github.com/tobymao/sqlglot/pull/2718) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`2888452`](https://github.com/tobymao/sqlglot/commit/28884523e21bb5b89424700ac3c5b08ae4eecd24) - **snowflake**: timezone_from_parts nanos closes [#2720](https://github.com/tobymao/sqlglot/pull/2720) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`4fd6c90`](https://github.com/tobymao/sqlglot/commit/4fd6c90b0a97c8f6c029e3369749d49885182dc2) - predicate pushdown closes [#2721](https://github.com/tobymao/sqlglot/pull/2721) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`0ae6f6c`](https://github.com/tobymao/sqlglot/commit/0ae6f6cb728eed0b7b7cfbd52e445a32ba62069f) - **snowflake, duckdb**: generate TimestampDiff correctly *(PR [#2728](https://github.com/tobymao/sqlglot/pull/2728) by [@georgesittas](https://github.com/georgesittas))*
+- [`a8582b1`](https://github.com/tobymao/sqlglot/commit/a8582b164928263c5cf4f8415d89831d93c0e684) - include empty lists in the hide_missing repr check *(PR [#2729](https://github.com/tobymao/sqlglot/pull/2729) by [@georgesittas](https://github.com/georgesittas))*
+- [`33df497`](https://github.com/tobymao/sqlglot/commit/33df497a038ea43d2ff12da66494185e0577fe7c) - **bigquery**: improve transpilation of structs / brackets *(PR [#2730](https://github.com/tobymao/sqlglot/pull/2730) by [@georgesittas](https://github.com/georgesittas))*
+- [`af50c79`](https://github.com/tobymao/sqlglot/commit/af50c79b8e982c005bdace43e202bf5ec282b259) - **duckdb**: named and positional parameters closes [#2732](https://github.com/tobymao/sqlglot/pull/2732) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`ea43cec`](https://github.com/tobymao/sqlglot/commit/ea43cecb86cabcb9b09b93a7321c1fa379f7f42a) - **duckdb**: position and named paramaters closes [#2732](https://github.com/tobymao/sqlglot/pull/2732) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`c50b948`](https://github.com/tobymao/sqlglot/commit/c50b94823ec4a7a402eccca2ec4d56c7687751e0) - **bigquery**: add FUNCTIONS entry for FORMAT_DATE to facilitate transpilation *(PR [#2733](https://github.com/tobymao/sqlglot/pull/2733) by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`a4e899a`](https://github.com/tobymao/sqlglot/commit/a4e899aaba317028480a440faeddb026bb464890) - normalize units to all be upper case *(PR [#2714](https://github.com/tobymao/sqlglot/pull/2714) by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`c628af5`](https://github.com/tobymao/sqlglot/commit/c628af5c653d808f924bc8784989c10253b6c98b) - Update installation steps in README to include sqlglotrs *(PR [#2725](https://github.com/tobymao/sqlglot/pull/2725) by [@izeigerman](https://github.com/izeigerman))*
+
+
 ## [v20.2.0] - 2023-12-14
 ### :bug: Bug Fixes
 - [`1a484b3`](https://github.com/tobymao/sqlglot/commit/1a484b3db939dff5aeeddb5145ce9a24ea3163bd) - **presto**: coerce DATEADD expression to BIGINT *(PR [#2648](https://github.com/tobymao/sqlglot/pull/2648) by [@barakalon](https://github.com/barakalon))*
@@ -2256,3 +2297,4 @@ Changelog
 [v20.0.0]: https://github.com/tobymao/sqlglot/compare/v19.9.0...v20.0.0
 [v20.1.0]: https://github.com/tobymao/sqlglot/compare/v20.0.0...v20.1.0
 [v20.2.0]: https://github.com/tobymao/sqlglot/compare/v20.1.0...v20.2.0
+[v20.5.0]: https://github.com/tobymao/sqlglot/compare/v20.4.0...v20.5.0

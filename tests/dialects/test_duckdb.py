@@ -7,7 +7,7 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
-        self.validate_all(t
+        self.validate_all(
             "CREATE TEMPORARY FUNCTION f1(a, b) AS (a + b)",
             read={"bigquery": "CREATE TEMP FUNCTION f1(a INT64, b INT64) AS (a + b)"},
         )

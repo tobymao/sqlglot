@@ -4301,6 +4301,20 @@ class Anonymous(Func):
     is_var_len_args = True
 
 
+class AnonymousAggFunc(AggFunc):
+    arg_types = {"this": True, "expressions": False}
+    is_var_len_args = True
+
+
+# https://clickhouse.com/docs/en/sql-reference/aggregate-functions/combinators
+class CombinedAggFunc(AnonymousAggFunc):
+    arg_types = {"this": True, "expressions": False, "parts": True}
+
+
+class CombinedParameterizedAgg(ParameterizedAgg):
+    arg_types = {"this": True, "expressions": True, "params": True, "parts": True}
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/hll
 # https://docs.aws.amazon.com/redshift/latest/dg/r_HLL_function.html
 class Hll(AggFunc):

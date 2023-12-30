@@ -387,6 +387,7 @@ class Postgres(Dialect):
 
     class Generator(generator.Generator):
         SINGLE_STRING_INTERVAL = True
+        RENAME_TABLE_WITH_DB = False
         LOCKING_READS_SUPPORTED = True
         JOIN_HINTS = False
         TABLE_HINTS = False

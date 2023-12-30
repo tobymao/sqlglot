@@ -110,6 +110,142 @@ class ClickHouse(Dialect):
             "XOR": lambda args: exp.Xor(expressions=args),
         }
 
+        AGG_FUNCTIONS = {
+            "count",
+            "min",
+            "max",
+            "sum",
+            "avg",
+            "any",
+            "stddevPop",
+            "stddevSamp",
+            "varPop",
+            "varSamp",
+            "corr",
+            "covarPop",
+            "covarSamp",
+            "entropy",
+            "exponentialMovingAverage",
+            "intervalLengthSum",
+            "kolmogorovSmirnovTest",
+            "mannWhitneyUTest",
+            "median",
+            "rankCorr",
+            "sumKahan",
+            "studentTTest",
+            "welchTTest",
+            "anyHeavy",
+            "anyLast",
+            "boundingRatio",
+            "first_value",
+            "last_value",
+            "argMin",
+            "argMax",
+            "avgWeighted",
+            "topK",
+            "topKWeighted",
+            "deltaSum",
+            "deltaSumTimestamp",
+            "groupArray",
+            "groupArrayLast",
+            "groupUniqArray",
+            "groupArrayInsertAt",
+            "groupArrayMovingAvg",
+            "groupArrayMovingSum",
+            "groupArraySample",
+            "groupBitAnd",
+            "groupBitOr",
+            "groupBitXor",
+            "groupBitmap",
+            "groupBitmapAnd",
+            "groupBitmapOr",
+            "groupBitmapXor",
+            "sumWithOverflow",
+            "sumMap",
+            "minMap",
+            "maxMap",
+            "skewSamp",
+            "skewPop",
+            "kurtSamp",
+            "kurtPop",
+            "uniq",
+            "uniqExact",
+            "uniqCombined",
+            "uniqCombined64",
+            "uniqHLL12",
+            "uniqTheta",
+            "quantile",
+            "quantiles",
+            "quantileExact",
+            "quantilesExact",
+            "quantileExactLow",
+            "quantilesExactLow",
+            "quantileExactHigh",
+            "quantilesExactHigh",
+            "quantileExactWeighted",
+            "quantilesExactWeighted",
+            "quantileTiming",
+            "quantilesTiming",
+            "quantileTimingWeighted",
+            "quantilesTimingWeighted",
+            "quantileDeterministic",
+            "quantilesDeterministic",
+            "quantileTDigest",
+            "quantilesTDigest",
+            "quantileTDigestWeighted",
+            "quantilesTDigestWeighted",
+            "quantileBFloat16",
+            "quantilesBFloat16",
+            "quantileBFloat16Weighted",
+            "quantilesBFloat16Weighted",
+            "simpleLinearRegression",
+            "stochasticLinearRegression",
+            "stochasticLogisticRegression",
+            "categoricalInformationValue",
+            "contingency",
+            "cramersV",
+            "cramersVBiasCorrected",
+            "theilsU",
+            "maxIntersections",
+            "maxIntersectionsPosition",
+            "meanZTest",
+            "quantileInterpolatedWeighted",
+            "quantilesInterpolatedWeighted",
+            "quantileGK",
+            "quantilesGK",
+            "sparkBar",
+            "sumCount",
+            "largestTriangleThreeBuckets",
+        }
+
+        AGG_FUNCTIONS_SUFFIXES = [
+            "If",
+            "Array",
+            "ArrayIf",
+            "Map",
+            "SimpleState",
+            "State",
+            "Merge",
+            "MergeState",
+            "ForEach",
+            "Distinct",
+            "OrDefault",
+            "OrNull",
+            "Resample",
+            "ArgMin",
+            "ArgMax",
+        ]
+
+        _agg_func_dict = (
+            lambda agg_functions_suffixes, agg_functions: dict(
+                [
+                    (f"{f}{sfx}", [f, sfx])
+                    for sfx in agg_functions_suffixes + [""]
+                    for f in agg_functions
+                ]
+            )
+        )(AGG_FUNCTIONS_SUFFIXES, AGG_FUNCTIONS)
+
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
 
         FUNCTION_PARSERS = {
@@ -272,14 +408,37 @@ class ClickHouse(Dialect):
             )
 
             if isinstance(func, exp.Anonymous):
+                parts = self._agg_func_dict.get(func.this)
                 params = self._parse_func_params(func)
 
                 if params:
+                    if parts and parts[1]:
+                        return self.expression(
+                            exp.CombinedParameterizedAgg,
+                            this=func.this,
+                            expressions=func.expressions,
+                            params=params,
+                            parts=parts,
+                        )
                     return self.expression(
                         exp.ParameterizedAgg,
                         this=func.this,
                         expressions=func.expressions,
                         params=params,
+                    )
+
+                if parts:
+                    if parts[1]:
+                        return self.expression(
+                            exp.CombinedAggFunc,
+                            this=func.this,
+                            expressions=func.expressions,
+                            parts=parts,
+                        )
+                    return self.expression(
+                        exp.AnonymousAggFunc,
+                        this=func.this,
+                        expressions=func.expressions,
                     )
 
             return func
@@ -485,9 +644,18 @@ class ClickHouse(Dialect):
                 else "",
             ]
 
-        def parameterizedagg_sql(self, expression: exp.Anonymous) -> str:
+        def parameterizedagg_sql(self, expression: exp.ParameterizedAgg) -> str:
             params = self.expressions(expression, key="params", flat=True)
             return self.func(expression.name, *expression.expressions) + f"({params})"
+
+        def anonymousaggfunc_sql(self, expression: exp.AnonymousAggFunc) -> str:
+            return self.func(expression.name, *expression.expressions)
+
+        def combinedaggfunc_sql(self, expression: exp.CombinedAggFunc) -> str:
+            return self.anonymousaggfunc_sql(expression)
+
+        def combinedparameterizedagg_sql(self, expression: exp.CombinedParameterizedAgg) -> str:
+            return self.parameterizedagg_sql(expression)
 
         def placeholder_sql(self, expression: exp.Placeholder) -> str:
             return f"{{{expression.name}: {self.sql(expression, 'kind')}}}"

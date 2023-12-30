@@ -165,7 +165,6 @@ class Redshift(Postgres):
 
     class Generator(Postgres.Generator):
         LOCKING_READS_SUPPORTED = False
-        RENAME_TABLE_WITH_DB = False
         QUERY_HINTS = False
         VALUES_AS_TABLE = False
         TZ_TO_WITH_TIME_ZONE = True

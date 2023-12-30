@@ -236,15 +236,11 @@ class ClickHouse(Dialect):
             "ArgMax",
         ]
 
-        _agg_func_dict = (
-            lambda agg_functions_suffixes, agg_functions: dict(
-                [
-                    (f"{f}{sfx}", [f, sfx])
-                    for sfx in agg_functions_suffixes + [""]
-                    for f in agg_functions
-                ]
-            )
-        )(AGG_FUNCTIONS_SUFFIXES, AGG_FUNCTIONS)
+        AGG_FUNC_MAPPING = (
+            lambda functions, suffixes: {
+                f"{f}{sfx}": (f, sfx) for sfx in (suffixes + [""]) for f in functions
+            }
+        )(AGG_FUNCTIONS, AGG_FUNCTIONS_SUFFIXES)
 
         FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "TUPLE"}
 
@@ -408,7 +404,7 @@ class ClickHouse(Dialect):
             )
 
             if isinstance(func, exp.Anonymous):
-                parts = self._agg_func_dict.get(func.this)
+                parts = self.AGG_FUNC_MAPPING.get(func.this)
                 params = self._parse_func_params(func)
 
                 if params:

@@ -255,7 +255,7 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
 
                     if not arrays:
                         if expression.args.get("from"):
-                            expression.join(series, copy=False)
+                            expression.join(series, copy=False, join_type="CROSS")
                         else:
                             expression.from_(series, copy=False)
 

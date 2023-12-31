@@ -3414,7 +3414,12 @@ class Parser(metaclass=_Parser):
         else:
             this = self._parse_term()
 
-        if not this:
+        if not this or (
+            isinstance(this, exp.Column)
+            and not this.table
+            and not this.this.quoted
+            and this.name.upper() == "IS"
+        ):
             self._retreat(index)
             return None
 

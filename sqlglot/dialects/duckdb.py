@@ -30,7 +30,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
 )
-from sqlglot.helper import seq_get
+from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -146,6 +146,16 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
 
     self.unsupported(f"Unsupported scale for timestamp: {scale}.")
     return ""
+
+
+def _rename_unless_within_group(
+    a: str, b: str
+) -> t.Callable[[DuckDB.Generator, exp.Expression], str]:
+    return (
+        lambda self, expression: self.func(a, *flatten(expression.args.values()))
+        if isinstance(expression.find_ancestor(exp.Select, exp.WithinGroup), exp.WithinGroup)
+        else self.func(b, *flatten(expression.args.values()))
+    )
 
 
 class DuckDB(Dialect):
@@ -348,8 +358,8 @@ class DuckDB(Dialect):
                 exp.cast(e.this, "timestamp", copy=True),
             ),
             exp.ParseJSON: rename_func("JSON"),
-            exp.PercentileCont: rename_func("QUANTILE_CONT"),
-            exp.PercentileDisc: rename_func("QUANTILE_DISC"),
+            exp.PercentileCont: _rename_unless_within_group("PERCENTILE_CONT", "QUANTILE_CONT"),
+            exp.PercentileDisc: _rename_unless_within_group("PERCENTILE_DISC", "QUANTILE_DISC"),
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),

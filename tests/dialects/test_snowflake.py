@@ -791,6 +791,11 @@ WHERE
             "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))",
         )
 
+        self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
+        self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
+        self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
+        self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
+
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")
         self.validate_identity("SELECT CAST(a AS ARRAY)")

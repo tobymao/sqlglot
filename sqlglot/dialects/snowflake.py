@@ -91,7 +91,9 @@ def _parse_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
 
 
 def _parse_datediff(args: t.List) -> exp.DateDiff:
-    return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
+    return exp.DateDiff(
+        this=seq_get(args, 2), expression=seq_get(args, 1), unit=_map_date_part(seq_get(args, 0))
+    )
 
 
 def _unix_to_time_sql(self: Snowflake.Generator, expression: exp.UnixToTime) -> str:
@@ -120,14 +122,15 @@ def _parse_date_part(self: Snowflake.Parser) -> t.Optional[exp.Expression]:
 
     self._match(TokenType.COMMA)
     expression = self._parse_bitwise()
-
+    this = _map_date_part(this)
     name = this.name.upper()
+
     if name.startswith("EPOCH"):
-        if name.startswith("EPOCH_MILLISECOND"):
+        if name == "EPOCH_MILLISECOND":
             scale = 10**3
-        elif name.startswith("EPOCH_MICROSECOND"):
+        elif name == "EPOCH_MICROSECOND":
             scale = 10**6
-        elif name.startswith("EPOCH_NANOSECOND"):
+        elif name == "EPOCH_NANOSECOND":
             scale = 10**9
         else:
             scale = None
@@ -204,6 +207,101 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[Snowflake.Parser]
     return _parse
 
 
+DATE_PART_MAPPING = {
+    "Y": "YEAR",
+    "YY": "YEAR",
+    "YYY": "YEAR",
+    "YYYY": "YEAR",
+    "YR": "YEAR",
+    "YEARS": "YEAR",
+    "YRS": "YEAR",
+    "MM": "MONTH",
+    "MON": "MONTH",
+    "MONS": "MONTH",
+    "MONTHS": "MONTH",
+    "D": "DAY",
+    "DD": "DAY",
+    "DAYS": "DAY",
+    "DAYOFMONTH": "DAY",
+    "WEEKDAY": "DAYOFWEEK",
+    "DOW": "DAYOFWEEK",
+    "DW": "DAYOFWEEK",
+    "WEEKDAY_ISO": "DAYOFWEEKISO",
+    "DOW_ISO": "DAYOFWEEKISO",
+    "DW_ISO": "DAYOFWEEKISO",
+    "YEARDAY": "DAYOFYEAR",
+    "DOY": "DAYOFYEAR",
+    "DY": "DAYOFYEAR",
+    "W": "WEEK",
+    "WK": "WEEK",
+    "WEEKOFYEAR": "WEEK",
+    "WOY": "WEEK",
+    "WY": "WEEK",
+    "WEEK_ISO": "WEEKISO",
+    "WEEKOFYEARISO": "WEEKISO",
+    "WEEKOFYEAR_ISO": "WEEKISO",
+    "Q": "QUARTER",
+    "QTR": "QUARTER",
+    "QTRS": "QUARTER",
+    "QUARTERS": "QUARTER",
+    "H": "HOUR",
+    "HH": "HOUR",
+    "HR": "HOUR",
+    "HOURS": "HOUR",
+    "HRS": "HOUR",
+    "M": "MINUTE",
+    "MI": "MINUTE",
+    "MIN": "MINUTE",
+    "MINUTES": "MINUTE",
+    "MINS": "MINUTE",
+    "S": "SECOND",
+    "SEC": "SECOND",
+    "SECONDS": "SECOND",
+    "SECS": "SECOND",
+    "MS": "MILLISECOND",
+    "MSEC": "MILLISECOND",
+    "MILLISECONDS": "MILLISECOND",
+    "US": "MICROSECOND",
+    "USEC": "MICROSECOND",
+    "MICROSECONDS": "MICROSECOND",
+    "NS": "NANOSECOND",
+    "NSEC": "NANOSECOND",
+    "NANOSEC": "NANOSECOND",
+    "NSECOND": "NANOSECOND",
+    "NSECONDS": "NANOSECOND",
+    "NANOSECS": "NANOSECOND",
+    "NSECONDS": "NANOSECOND",
+    "EPOCH": "EPOCH_SECOND",
+    "EPOCH_SECONDS": "EPOCH_SECOND",
+    "EPOCH_MILLISECONDS": "EPOCH_MILLISECOND",
+    "EPOCH_MICROSECONDS": "EPOCH_MICROSECOND",
+    "EPOCH_NANOSECONDS": "EPOCH_NANOSECOND",
+    "TZH": "TIMEZONE_HOUR",
+    "TZM": "TIMEZONE_MINUTE",
+}
+
+
+@t.overload
+def _map_date_part(part: exp.Expression) -> exp.Var:
+    pass
+
+
+@t.overload
+def _map_date_part(part: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    pass
+
+
+def _map_date_part(part):
+    mapped = DATE_PART_MAPPING.get(part.name.upper()) if part else None
+    return exp.var(mapped) if mapped else part
+
+
+def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
+    trunc = date_trunc_to_time(args)
+    trunc.set("unit", _map_date_part(trunc.args["unit"]))
+    return trunc
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -277,9 +375,11 @@ class Snowflake(Dialect):
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BOOLXOR": binary_from_function(exp.Xor),
             "CONVERT_TIMEZONE": _parse_convert_timezone,
-            "DATE_TRUNC": date_trunc_to_time,
+            "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
+                this=seq_get(args, 2),
+                expression=seq_get(args, 1),
+                unit=_map_date_part(seq_get(args, 0)),
             ),
             "DATEDIFF": _parse_datediff,
             "DIV0": _div0_to_if,

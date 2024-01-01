@@ -129,12 +129,9 @@ def lineage(
             if isinstance(column, int)
             else next(
                 (select for select in scope.expression.selects if select.alias_or_name == column),
-                exp.Star() if scope.expression.is_star else None,
+                exp.Star() if scope.expression.is_star else scope.expression,
             )
         )
-
-        if not select:
-            raise ValueError(f"Could not find {column} in {scope.expression}")
 
         if isinstance(scope.expression, exp.Union):
             upstream = upstream or Node(name="UNION", source=scope.expression, expression=select)
@@ -194,6 +191,8 @@ def lineage(
         # if the select is a star add all scope sources as downstreams
         if select.is_star:
             for source in scope.sources.values():
+                if isinstance(source, Scope):
+                    source = source.expression
                 node.downstream.append(Node(name=select.sql(), source=source, expression=source))
 
         # Find all columns that went into creating this one to list their lineage nodes.

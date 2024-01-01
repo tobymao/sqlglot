@@ -296,3 +296,10 @@ class TestLineage(unittest.TestCase):
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "*")
         self.assertEqual(downstream.source.sql(), "table_a AS table_a")
+
+    def test_unnest(self) -> None:
+        node = lineage(
+            "b",
+            "with _data as (select [struct(1 as a, 2 as b)] as col) select b from _data cross join unnest(col)",
+        )
+        self.assertEqual(node.name, "b")

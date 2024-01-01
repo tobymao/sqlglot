@@ -150,6 +150,13 @@ WHERE
         )
 
         self.validate_all(
+            """SELECT PARSE_JSON('{"fruit":"banana"}'):fruit""",
+            write={
+                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
+                "snowflake": """SELECT PARSE_JSON('{"fruit":"banana"}')['fruit']""",
+            },
+        )
+        self.validate_all(
             "SELECT TO_ARRAY(['test'])",
             write={
                 "snowflake": "SELECT TO_ARRAY(['test'])",

@@ -195,6 +195,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.StrPosition,
             exp.TsOrDiToDi,
         },
+        exp.DataType.Type.JSON: {
+            exp.ParseJSON,
+        },
         exp.DataType.Type.TIMESTAMP: {
             exp.CurrentTime,
             exp.CurrentTimestamp,

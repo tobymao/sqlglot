@@ -20,7 +20,7 @@ from sqlglot.dialects.dialect import (
     no_timestamp_sql,
     regexp_extract_sql,
     rename_func,
-    rename_get_path_and_prepend_dollar,
+    path_to_jsonpath,
     right_to_substring_sql,
     struct_extract_sql,
     timestamptrunc_sql,
@@ -367,7 +367,7 @@ class Presto(Dialect):
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.First: _first_last_sql,
-            exp.GetPath: rename_get_path_and_prepend_dollar(),
+            exp.GetPath: path_to_jsonpath(),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.GroupConcat: lambda self, e: self.func(
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")

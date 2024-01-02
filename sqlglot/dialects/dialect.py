@@ -990,7 +990,7 @@ def prepend_dollar_to_path(expression: exp.GetPath) -> exp.GetPath:
     return expression
 
 
-def rename_get_path_and_prepend_dollar(
+def path_to_jsonpath(
     name: str = "JSON_EXTRACT",
 ) -> t.Callable[[Generator, exp.GetPath], str]:
     def _transform(self: Generator, expression: exp.GetPath) -> str:

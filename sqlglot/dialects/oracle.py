@@ -153,8 +153,8 @@ class Oracle(Dialect):
         COLUMN_JOIN_MARKS_SUPPORTED = True
         DATA_TYPE_SPECIFIERS_ALLOWED = True
         ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
-
         LIMIT_FETCH = "FETCH"
+        SAMPLE_CLAUSE = "SAMPLE"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

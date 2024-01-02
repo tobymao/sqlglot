@@ -235,6 +235,9 @@ class Generator:
     # Whether or not CONCAT requires >1 arguments
     SUPPORTS_SINGLE_ARG_CONCAT = True
 
+    # The keyword(s) to use when generating a sample clause
+    SAMPLE_CLAUSE = "TABLESAMPLE"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1459,7 +1462,11 @@ class Generator:
         return f"{table}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
-        self, expression: exp.TableSample, seed_prefix: str = "SEED", sep=" AS "
+        self,
+        expression: exp.TableSample,
+        seed_prefix: str = "SEED",
+        sep: str = " AS ",
+        sample_clause: t.Optional[str] = None,
     ) -> str:
         if self.dialect.ALIAS_POST_TABLESAMPLE and expression.this and expression.this.alias:
             table = expression.this.copy()
@@ -1488,13 +1495,12 @@ class Generator:
 
         seed = self.sql(expression, "seed")
         seed = f" {seed_prefix} ({seed})" if seed else ""
-        kind = expression.args.get("kind", "TABLESAMPLE")
 
         expr = f"{bucket}{percent}{rows}{size}"
         if self.TABLESAMPLE_REQUIRES_PARENS:
             expr = f"({expr})"
 
-        return f"{this} {kind} {method}{expr}{seed}{alias}"
+        return f"{this} {sample_clause or self.SAMPLE_CLAUSE} {method}{expr}{seed}{alias}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)

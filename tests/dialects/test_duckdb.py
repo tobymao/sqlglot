@@ -712,6 +712,16 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)"
             },
         )
+        self.validate_all(
+            "SELECT * FROM example TABLESAMPLE (3) REPEATABLE (82)",
+            read={
+                "snowflake": "SELECT * FROM example SAMPLE (3) SEED (82)",
+            },
+            write={
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3) REPEATABLE (82)",
+                "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
+            },
+        )
 
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")

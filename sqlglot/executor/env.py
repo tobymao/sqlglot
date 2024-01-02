@@ -175,6 +175,7 @@ ENV = {
     "DOT": null_if_any(lambda e, this: e[this]),
     "EQ": null_if_any(lambda this, e: this == e),
     "EXTRACT": null_if_any(lambda this, e: getattr(e, this)),
+    "GETPATH": null_if_any(lambda this, e: this.get(e)),
     "GT": null_if_any(lambda this, e: this > e),
     "GTE": null_if_any(lambda this, e: this >= e),
     "IF": lambda predicate, true, false: true if predicate else false,

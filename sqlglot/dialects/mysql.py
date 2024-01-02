@@ -21,8 +21,8 @@ from sqlglot.dialects.dialect import (
     no_tablesample_sql,
     no_trycast_sql,
     parse_date_delta_with_interval,
-    rename_func,
     path_to_jsonpath,
+    rename_func,
     strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get

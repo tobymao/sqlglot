@@ -14,8 +14,8 @@ from sqlglot.dialects.dialect import (
     max_or_greatest,
     min_or_least,
     parse_date_delta,
-    rename_func,
     path_to_jsonpath,
+    rename_func,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
 )

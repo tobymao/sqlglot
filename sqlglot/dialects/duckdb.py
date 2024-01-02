@@ -307,6 +307,7 @@ class DuckDB(Dialect):
         RENAME_TABLE_WITH_DB = False
         NVL2_SUPPORTED = False
         SEMI_ANTI_JOIN_WITH_SIDE = False
+        SAMPLE_CLAUSE = "USING SAMPLE"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -435,6 +436,21 @@ class DuckDB(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def tablesample_sql(
+            self,
+            expression: exp.TableSample,
+            seed_prefix: str = "SEED",
+            sep: str = " AS ",
+            sample_clause: t.Optional[str] = None,
+        ) -> str:
+            if not isinstance(expression.parent, exp.Select):
+                # This sample clause only applies to a single source, not the entire resulting relation
+                sample_clause = "TABLESAMPLE"
+
+            return super().tablesample_sql(
+                expression, seed_prefix="REPEATABLE", sep=sep, sample_clause=sample_clause
+            )
+
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier: t.Optional[int] = None
             unit = expression.text("unit").lower()
@@ -448,11 +464,6 @@ class DuckDB(Dialect):
                 return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('DAY')))})"
 
             return super().interval_sql(expression)
-
-        def tablesample_sql(
-            self, expression: exp.TableSample, seed_prefix: str = "SEED", sep: str = " AS "
-        ) -> str:
-            return super().tablesample_sql(expression, seed_prefix="REPEATABLE", sep=sep)
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             if isinstance(expression.parent, exp.UserDefinedFunction):

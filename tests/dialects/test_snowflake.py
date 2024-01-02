@@ -38,7 +38,6 @@ WHERE
 
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")
         self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
-        self.validate_identity("SELECT user_id, value FROM table_name sample ($s) SEED (0)")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
         self.validate_identity("SELECT OBJECT_CONSTRUCT()")
         self.validate_identity("SELECT DAYOFMONTH(CURRENT_TIMESTAMP())")
@@ -73,6 +72,10 @@ WHERE
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity(
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
+        )
+        self.validate_identity(
+            "SELECT user_id, value FROM table_name SAMPLE ($s) SEED (0)",
+            "SELECT user_id, value FROM table_name TABLESAMPLE ($s) SEED (0)",
         )
         self.validate_identity(
             "SELECT * FROM foo at",
@@ -676,14 +679,23 @@ WHERE
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE (100)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
-        self.validate_identity("SELECT * FROM testtable SAMPLE (10)")
-        self.validate_identity("SELECT * FROM testtable SAMPLE ROW (0)")
-        self.validate_identity("SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)")
         self.validate_identity(
             "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE (50) WHERE t2.j = t1.i"
         )
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)"
+        )
+        self.validate_identity(
+            "SELECT * FROM testtable SAMPLE (10)",
+            "SELECT * FROM testtable TABLESAMPLE (10)",
+        )
+        self.validate_identity(
+            "SELECT * FROM testtable SAMPLE ROW (0)",
+            "SELECT * FROM testtable TABLESAMPLE ROW (0)",
+        )
+        self.validate_identity(
+            "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
+            "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
         )
 
         self.validate_all(
@@ -695,20 +707,20 @@ WHERE
                      table2 AS t2 SAMPLE (50)     -- 50% of rows in table2
                 WHERE t2.j = t1.i""",
             write={
-                "snowflake": "SELECT i, j FROM table1 AS t1 SAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 SAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
+                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
             },
         )
         self.validate_all(
             "SELECT * FROM testtable SAMPLE BLOCK (0.012) REPEATABLE (99992)",
             write={
-                "snowflake": "SELECT * FROM testtable SAMPLE BLOCK (0.012) SEED (99992)",
+                "snowflake": "SELECT * FROM testtable TABLESAMPLE BLOCK (0.012) SEED (99992)",
             },
         )
         self.validate_all(
             "SELECT * FROM (SELECT * FROM t1 join t2 on t1.a = t2.c) SAMPLE (1)",
             write={
-                "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) SAMPLE (1)",
-                "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) SAMPLE (1 PERCENT)",
+                "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)",
+                "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1 PERCENT)",
             },
         )
 

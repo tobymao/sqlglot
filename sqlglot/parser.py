@@ -2874,9 +2874,6 @@ class Parser(metaclass=_Parser):
         size = None
         seed = None
 
-        kind = (
-            self._prev.text if self._prev.token_type == TokenType.TABLE_SAMPLE else "USING SAMPLE"
-        )
         method = self._parse_var(tokens=(TokenType.ROW,), upper=True)
 
         matched_l_paren = self._match(TokenType.L_PAREN)
@@ -2926,7 +2923,6 @@ class Parser(metaclass=_Parser):
             rows=rows,
             size=size,
             seed=seed,
-            kind=kind,
         )
 
     def _parse_pivots(self) -> t.Optional[t.List[exp.Pivot]]:

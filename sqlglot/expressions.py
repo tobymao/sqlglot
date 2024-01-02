@@ -4117,13 +4117,6 @@ class Bracket(Condition):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
     arg_types = {"this": True, "expressions": True, "offset": False, "safe": False}
 
-    @property
-    def output_name(self) -> str:
-        if len(self.expressions) == 1:
-            return self.expressions[0].output_name
-
-        return super().output_name
-
 
 class Distinct(Expression):
     arg_types = {"expressions": False, "on": False}
@@ -4863,6 +4856,15 @@ class ParseJSON(Func):
     _sql_names = ["PARSE_JSON", "JSON_PARSE"]
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
+
+
+# https://docs.snowflake.com/en/sql-reference/functions/get_path
+class GetPath(Func):
+    arg_types = {"this": True, "expression": True}
+
+    @property
+    def output_name(self) -> str:
+        return self.expression.output_name
 
 
 class Least(Func):

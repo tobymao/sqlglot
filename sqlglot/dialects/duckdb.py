@@ -343,6 +343,7 @@ class DuckDB(Dialect):
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.Explode: rename_func("UNNEST"),
+            exp.GetPath: lambda self, e: f"{self.sql(e, 'this')} -> {self.sql(e, 'expression')}",
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),

@@ -4280,11 +4280,16 @@ class Parser(metaclass=_Parser):
                 self.expression(exp.Slice, expression=self._parse_conjunction())
             ]
         else:
+            # Temporarily disable the colon range parser (if any) so that we will end up
+            # consuming the colon as part of the "slice" parser
+            colon_parser = self.RANGE_PARSERS.pop(TokenType.COLON, None)
             expressions = self._parse_csv(
                 lambda: self._parse_slice(
                     self._parse_alias(self._parse_conjunction(), explicit=True)
                 )
             )
+            if colon_parser is not None:
+                self.RANGE_PARSERS[TokenType.COLON] = colon_parser
 
         if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:
             self.raise_error("Expected ]")

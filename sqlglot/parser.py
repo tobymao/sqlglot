@@ -4269,27 +4269,17 @@ class Parser(metaclass=_Parser):
         options = self._parse_key_constraint_options()
         return self.expression(exp.PrimaryKey, expressions=expressions, options=options)
 
+    def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
+        return self._parse_slice(self._parse_alias(self._parse_conjunction(), explicit=True))
+
     def _parse_bracket(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match_set((TokenType.L_BRACKET, TokenType.L_BRACE)):
             return this
 
         bracket_kind = self._prev.token_type
-
-        if self._match(TokenType.COLON):
-            expressions: t.List[exp.Expression] = [
-                self.expression(exp.Slice, expression=self._parse_conjunction())
-            ]
-        else:
-            # Temporarily disable the colon range parser (if any) so that we will end up
-            # consuming the colon as part of the "slice" parser
-            colon_parser = self.RANGE_PARSERS.pop(TokenType.COLON, None)
-            expressions = self._parse_csv(
-                lambda: self._parse_slice(
-                    self._parse_alias(self._parse_conjunction(), explicit=True)
-                )
-            )
-            if colon_parser is not None:
-                self.RANGE_PARSERS[TokenType.COLON] = colon_parser
+        expressions = self._parse_csv(
+            lambda: self._parse_bracket_key_value(is_map=bracket_kind == TokenType.L_BRACE)
+        )
 
         if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:
             self.raise_error("Expected ]")

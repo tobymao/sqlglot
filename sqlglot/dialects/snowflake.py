@@ -478,6 +478,15 @@ class Snowflake(Dialect):
 
         FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
 
+        def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
+            if is_map:
+                # Keys are string in Snowflake's objects, see also:
+                # - https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+                # - https://docs.snowflake.com/en/sql-reference/functions/object_construct
+                return self._parse_slice(self._parse_string())
+
+            return self._parse_slice(self._parse_alias(self._parse_conjunction(), explicit=True))
+
         def _parse_lateral(self) -> t.Optional[exp.Lateral]:
             lateral = super()._parse_lateral()
             if not lateral:

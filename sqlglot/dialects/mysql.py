@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     parse_date_delta_with_interval,
     rename_func,
+    rename_get_path_and_prepend_dollar,
     strposition_to_locate_sql,
 )
 from sqlglot.helper import seq_get
@@ -642,6 +643,7 @@ class MySQL(Dialect):
             exp.DayOfMonth: _remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),
             exp.DayOfWeek: _remove_ts_or_ds_to_date(rename_func("DAYOFWEEK")),
             exp.DayOfYear: _remove_ts_or_ds_to_date(rename_func("DAYOFYEAR")),
+            exp.GetPath: rename_get_path_and_prepend_dollar(),
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
@@ -651,6 +653,7 @@ class MySQL(Dialect):
             exp.Month: _remove_ts_or_ds_to_date(),
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.NullSafeNEQ: lambda self, e: f"NOT {self.binary(e, '<=>')}",
+            exp.ParseJSON: lambda self, e: self.sql(e, "this"),
             exp.Pivot: no_pivot_sql,
             exp.Select: transforms.preprocess(
                 [

@@ -971,3 +971,29 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
         )
 
     return _delta_sql
+
+
+def prepend_dollar_to_path(expression: exp.GetPath) -> exp.GetPath:
+    from sqlglot.optimizer.simplify import simplify
+
+    # Makes sure the path will be evaluated correctly at runtime to include the path root.
+    # For example, `[0].foo` will become `$[0].foo`, and `foo` will become `$.foo`.
+    path = expression.expression
+    path = exp.func(
+        "if",
+        exp.StartsWith(this=path.copy(), expression=exp.Literal.string("[")),
+        exp.Concat(expressions=[exp.Literal.string("$"), path.copy()]),
+        exp.Concat(expressions=[exp.Literal.string("$."), path.copy()]),
+    )
+
+    expression.expression.replace(simplify(path))
+    return expression
+
+
+def rename_get_path_and_prepend_dollar(
+    name: str = "JSON_EXTRACT",
+) -> t.Callable[[Generator, exp.GetPath], str]:
+    def _transform(self: Generator, expression: exp.GetPath) -> str:
+        return rename_func(name)(self, prepend_dollar_to_path(expression))
+
+    return _transform

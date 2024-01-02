@@ -22,6 +22,7 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     no_timestamp_sql,
     pivot_column_names,
+    prepend_dollar_to_path,
     regexp_extract_sql,
     rename_func,
     str_position_sql,
@@ -343,7 +344,6 @@ class DuckDB(Dialect):
             exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.Explode: rename_func("UNNEST"),
-            exp.GetPath: lambda self, e: f"{self.sql(e, 'this')} -> {self.sql(e, 'expression')}",
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
@@ -452,6 +452,10 @@ class DuckDB(Dialect):
             return super().tablesample_sql(
                 expression, seed_prefix="REPEATABLE", sep=sep, sample_clause=sample_clause
             )
+
+        def getpath_sql(self, expression: exp.GetPath) -> str:
+            expression = prepend_dollar_to_path(expression)
+            return f"{self.sql(expression, 'this')} -> {self.sql(expression, 'expression')}"
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier: t.Optional[int] = None

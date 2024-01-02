@@ -792,7 +792,7 @@ def simplify_startswith(expression: exp.Expression) -> exp.Expression:
         and expression.this.is_string
         and expression.expression.is_string
     ):
-        return exp.convert(expression.this.name.startswith(expression.expression.name))
+        return exp.convert(expression.name.startswith(expression.expression.name))
 
     return expression
 

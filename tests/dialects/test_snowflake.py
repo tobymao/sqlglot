@@ -91,6 +91,10 @@ WHERE
             "GET_PATH(GET_PATH(v, 'attr[0]'), 'name')",
         )
         self.validate_identity(
+            """SELECT PARSE_JSON('{"food":{"fruit":"banana"}}'):food.fruit::VARCHAR""",
+            """SELECT CAST(GET_PATH(PARSE_JSON('{"food":{"fruit":"banana"}}'), 'food.fruit') AS VARCHAR)""",
+        )
+        self.validate_identity(
             "SELECT * FROM foo at",
             "SELECT * FROM foo AS at",
         )

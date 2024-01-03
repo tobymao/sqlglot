@@ -172,6 +172,13 @@ WHERE
         )
 
         self.validate_all(
+            "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
+            write={
+                "duckdb": "SELECT MAKE_TIME(12, 34, 56 + (987654321 / 1000000000.0))",
+                "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
+            },
+        )
+        self.validate_all(
             "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
             read={
                 "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00)",

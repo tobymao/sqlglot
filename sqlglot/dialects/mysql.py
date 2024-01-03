@@ -293,9 +293,15 @@ class MySQL(Dialect):
             "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "mysql"),
             "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),
+            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "ISNULL": isnull_to_is_null,
             "LOCATE": locate_to_strposition,
+            "MAKETIME": exp.TimeFromParts.from_arg_list,
+            "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "MONTHNAME": lambda args: exp.TimeToStr(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)),
                 format=exp.Literal.string("%B"),
@@ -309,11 +315,6 @@ class MySQL(Dialect):
                 )
                 + 1
             ),
-            "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
-            "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "WEEK": lambda args: exp.Week(
                 this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)
             ),
@@ -668,6 +669,7 @@ class MySQL(Dialect):
             exp.StrToTime: _str_to_date_sql,
             exp.Stuff: rename_func("INSERT"),
             exp.TableSample: no_tablesample_sql,
+            exp.TimeFromParts: rename_func("MAKETIME"),
             exp.TimestampAdd: date_add_interval_sql("DATE", "ADD"),
             exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),

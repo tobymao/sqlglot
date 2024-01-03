@@ -884,7 +884,7 @@ DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02'));
 x >= CAST('2022-01-01' AS DATE);
 
 DATE_TRUNC('year', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02', '%Y'));
-DATE_TRUNC('YEAR', x) > TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE('2021-01-02', '%Y'));
+DATE_TRUNC('YEAR', x) > CAST(STR_TO_TIME('2021-01-02', '%Y') AS DATE);
 
 -- right is not a date
 DATE_TRUNC('year', x) <> '2021-01-02';

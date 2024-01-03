@@ -19,7 +19,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     timestamptrunc_sql,
     timestrtotime_sql,
-    ts_or_ds_to_date_sql,
     var_map_sql,
 )
 from sqlglot.expressions import Literal
@@ -727,7 +726,6 @@ class Snowflake(Dialect):
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
-            exp.TsOrDsToDate: ts_or_ds_to_date_sql("snowflake"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),

@@ -104,6 +104,16 @@ class TestDialect(Validator):
             "Please use the correct format: 'dialect [, k1 = v2 [, ...]]'.",
         )
 
+        with self.assertRaises(ValueError) as cm:
+            Dialect.get_or_raise("myqsl")
+
+        self.assertEqual(str(cm.exception), "Unknown dialect 'myqsl'. Did you mean mysql?")
+
+        with self.assertRaises(ValueError) as cm:
+            Dialect.get_or_raise("asdfjasodiufjsd")
+
+        self.assertEqual(str(cm.exception), "Unknown dialect 'asdfjasodiufjsd'.")
+
     def test_compare_dialects(self):
         bigquery_class = Dialect["bigquery"]
         bigquery_object = BigQuery()

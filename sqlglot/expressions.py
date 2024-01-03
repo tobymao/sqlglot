@@ -4658,8 +4658,20 @@ class TimeTrunc(Func, TimeUnit):
 
 
 class DateFromParts(Func):
-    _sql_names = ["DATEFROMPARTS"]
+    _sql_names = ["DATE_FROM_PARTS", "DATEFROMPARTS"]
     arg_types = {"year": True, "month": True, "day": True}
+
+
+class TimeFromParts(Func):
+    _sql_names = ["TIME_FROM_PARTS", "TIMEFROMPARTS"]
+    arg_types = {
+        "hour": True,
+        "min": True,
+        "sec": True,
+        "nano": False,
+        "fractions": False,
+        "precision": False,
+    }
 
 
 class DateStrToDate(Func):
@@ -5300,8 +5312,7 @@ class UnixToTimeStr(Func):
 
 
 class TimestampFromParts(Func):
-    """Constructs a timestamp given its constituent parts."""
-
+    _sql_names = ["TIMESTAMP_FROM_PARTS", "TIMESTAMPFROMPARTS"]
     arg_types = {
         "year": True,
         "month": True,
@@ -5311,6 +5322,7 @@ class TimestampFromParts(Func):
         "sec": True,
         "nano": False,
         "zone": False,
+        "milli": False,
     }
 
 

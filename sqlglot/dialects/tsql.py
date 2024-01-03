@@ -240,6 +240,30 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/datetimefromparts-transact-sql?view=sql-server-ver16#syntax
+def _parse_datetimefromparts(args: t.List) -> exp.TimestampFromParts:
+    return exp.TimestampFromParts(
+        year=seq_get(args, 0),
+        month=seq_get(args, 1),
+        day=seq_get(args, 2),
+        hour=seq_get(args, 3),
+        min=seq_get(args, 4),
+        sec=seq_get(args, 5),
+        milli=seq_get(args, 6),
+    )
+
+
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/timefromparts-transact-sql?view=sql-server-ver16#syntax
+def _parse_timefromparts(args: t.List) -> exp.TimeFromParts:
+    return exp.TimeFromParts(
+        hour=seq_get(args, 0),
+        min=seq_get(args, 1),
+        sec=seq_get(args, 2),
+        fractions=seq_get(args, 3),
+        precision=seq_get(args, 4),
+    )
+
+
 class TSQL(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
@@ -398,6 +422,7 @@ class TSQL(Dialect):
             "DATEDIFF": _parse_date_delta(exp.DateDiff, unit_mapping=DATE_DELTA_INTERVAL),
             "DATENAME": _format_time_lambda(exp.TimeToStr, full_format_mapping=True),
             "DATEPART": _format_time_lambda(exp.TimeToStr),
+            "DATETIMEFROMPARTS": _parse_datetimefromparts,
             "EOMONTH": _parse_eomonth,
             "FORMAT": _parse_format,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
@@ -412,6 +437,7 @@ class TSQL(Dialect):
             "SUSER_NAME": exp.CurrentUser.from_arg_list,
             "SUSER_SNAME": exp.CurrentUser.from_arg_list,
             "SYSTEM_USER": exp.CurrentUser.from_arg_list,
+            "TIMEFROMPARTS": _parse_timefromparts,
         }
 
         JOIN_HINTS = {
@@ -702,6 +728,35 @@ class TSQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
+            nano = expression.args.get("nano")
+            if nano is not None:
+                nano.pop()
+                self.unsupported("Specifying nanoseconds is not supported in TIMEFROMPARTS.")
+
+            if expression.args.get("fractions") is None:
+                expression.set("fractions", exp.Literal.number(0))
+            if expression.args.get("precision") is None:
+                expression.set("precision", exp.Literal.number(0))
+
+            return rename_func("TIMEFROMPARTS")(self, expression)
+
+        def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
+            zone = expression.args.get("zone")
+            if zone is not None:
+                zone.pop()
+                self.unsupported("Time zone is not supported in DATETIMEFROMPARTS.")
+
+            nano = expression.args.get("nano")
+            if nano is not None:
+                nano.pop()
+                self.unsupported("Specifying nanoseconds is not supported in DATETIMEFROMPARTS.")
+
+            if expression.args.get("milli") is None:
+                expression.set("milli", exp.Literal.number(0))
+
+            return rename_func("DATETIMEFROMPARTS")(self, expression)
 
         def set_operation(self, expression: exp.Union, op: str) -> str:
             limit = expression.args.get("limit")

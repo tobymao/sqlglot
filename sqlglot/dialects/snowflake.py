@@ -759,6 +759,14 @@ class Snowflake(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
+            milli = expression.args.get("milli")
+            if milli is not None:
+                milli_to_nano = milli.pop() * exp.Literal.number(1000000)
+                expression.set("nano", milli_to_nano)
+
+            return rename_func("TIMESTAMP_FROM_PARTS")(self, expression)
+
         def trycast_sql(self, expression: exp.TryCast) -> str:
             value = expression.this
 

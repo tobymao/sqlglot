@@ -76,7 +76,6 @@ class TestBigQuery(Validator):
             ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
         )
 
-        self.validate_identity("TIME(15, 30, 00)")
         self.validate_identity("TIME('2008-12-25 15:30:00+08')")
         self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
         self.validate_identity("SELECT test.Unknown FROM test")
@@ -133,6 +132,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
         self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")
         self.validate_identity("SELECT TIMESTAMP_MILLIS(2) AS t")
+        self.validate_identity("""SELECT JSON_EXTRACT_SCALAR('{"a": 5}', '$.a')""")
         self.validate_identity(
             "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count"
         )
@@ -158,6 +158,33 @@ class TestBigQuery(Validator):
             "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
         )
         self.validate_identity(
+            """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
+        )
+        self.validate_identity(
+            "SELECT SPLIT(foo)",
+            "SELECT SPLIT(foo, ',')",
+        )
+        self.validate_identity(
+            "SELECT 1 AS hash",
+            "SELECT 1 AS `hash`",
+        )
+        self.validate_identity(
+            "SELECT 1 AS at",
+            "SELECT 1 AS `at`",
+        )
+        self.validate_identity(
+            'x <> ""',
+            "x <> ''",
+        )
+        self.validate_identity(
+            'x <> """"""',
+            "x <> ''",
+        )
+        self.validate_identity(
+            "x <> ''''''",
+            "x <> ''",
+        )
+        self.validate_identity(
             "SELECT a overlaps",
             "SELECT a AS overlaps",
         )
@@ -181,18 +208,30 @@ class TestBigQuery(Validator):
             "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
             "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
         )
-        self.validate_identity("""SELECT JSON_EXTRACT_SCALAR('{"a": 5}', '$.a')""")
-        self.validate_identity(
-            """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
-        )
 
-        self.validate_all("SELECT SPLIT(foo)", write={"bigquery": "SELECT SPLIT(foo, ',')"})
-        self.validate_all("SELECT 1 AS hash", write={"bigquery": "SELECT 1 AS `hash`"})
-        self.validate_all("SELECT 1 AS at", write={"bigquery": "SELECT 1 AS `at`"})
-        self.validate_all('x <> ""', write={"bigquery": "x <> ''"})
-        self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
-        self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
-        self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
+        self.validate_all(
+            "CAST(x AS DATETIME)",
+            read={
+                "": "x::timestamp",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME(15, 30, 00)",
+            read={
+                "duckdb": "SELECT MAKE_TIME(15, 30, 00)",
+                "mysql": "SELECT MAKETIME(15, 30, 00)",
+                "postgres": "SELECT MAKE_TIME(15, 30, 00)",
+                "snowflake": "SELECT TIME_FROM_PARTS(15, 30, 00)",
+            },
+            write={
+                "bigquery": "SELECT TIME(15, 30, 00)",
+                "duckdb": "SELECT MAKE_TIME(15, 30, 00)",
+                "mysql": "SELECT MAKETIME(15, 30, 00)",
+                "postgres": "SELECT MAKE_TIME(15, 30, 00)",
+                "snowflake": "SELECT TIME_FROM_PARTS(15, 30, 00)",
+                "tsql": "SELECT TIMEFROMPARTS(15, 30, 00, 0, 0)",
+            },
+        )
         self.validate_all(
             "SELECT TIME('2008-12-25 15:30:00')",
             write={

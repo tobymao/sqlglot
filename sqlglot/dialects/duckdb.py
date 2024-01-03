@@ -229,6 +229,7 @@ class DuckDB(Dialect):
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_VALUE": exp.Array.from_arg_list,
+            "MAKE_TIME": exp.TimeFromParts.from_arg_list,
             "MAKE_TIMESTAMP": _parse_make_timestamp,
             "MEDIAN": lambda args: exp.PercentileCont(
                 this=seq_get(args, 0), expression=exp.Literal.number(0.5)
@@ -389,7 +390,6 @@ class DuckDB(Dialect):
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
-            exp.TimestampFromParts: rename_func("MAKE_TIMESTAMP"),
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,
@@ -435,6 +435,31 @@ class DuckDB(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
+            nano = expression.args.get("nano")
+            if nano is not None:
+                expression.set(
+                    "sec", expression.args["sec"] + nano.pop() / exp.Literal.number(1000000000.0)
+                )
+
+            return rename_func("MAKE_TIME")(self, expression)
+
+        def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
+            sec = expression.args["sec"]
+
+            milli = expression.args.get("milli")
+            if milli is not None:
+                sec += milli.pop() / exp.Literal.number(1000.0)
+
+            nano = expression.args.get("nano")
+            if nano is not None:
+                sec += nano.pop() / exp.Literal.number(1000000000.0)
+
+            if milli or nano:
+                expression.set("sec", sec)
+
+            return rename_func("MAKE_TIMESTAMP")(self, expression)
 
         def tablesample_sql(
             self,

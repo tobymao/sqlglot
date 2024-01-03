@@ -252,6 +252,12 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SELECT COUNTIF(x)",
+            write={
+                'duckdb': "SELECT COUNT_IF(x)"
+            }
+        )
+        self.validate_all(
             "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), minute)",
             write={
                 "bigquery": "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), MINUTE)",

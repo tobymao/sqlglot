@@ -328,6 +328,7 @@ class BigQuery(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "COUNTIF": exp.CountIf.from_arg_list,
             "DATE": _parse_date,
             "DATE_ADD": parse_date_delta_with_interval(exp.DateAdd),
             "DATE_SUB": parse_date_delta_with_interval(exp.DateSub),

@@ -480,7 +480,7 @@ class Snowflake(Dialect):
 
         def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
             if is_map:
-                # Keys are string in Snowflake's objects, see also:
+                # Keys are strings in Snowflake's objects, see also:
                 # - https://docs.snowflake.com/en/sql-reference/data-types-semistructured
                 # - https://docs.snowflake.com/en/sql-reference/functions/object_construct
                 return self._parse_slice(self._parse_string())

@@ -503,6 +503,13 @@ class Expression(metaclass=_Expression):
     def __repr__(self) -> str:
         return _to_s(self)
 
+    def to_s(self) -> str:
+        """
+        Same as __repr__, but includes additional information which can be useful
+        for debugging, like empty or missing args and the AST nodes' object IDs.
+        """
+        return _to_s(self, verbose=True)
+
     def sql(self, dialect: DialectType = None, **opts) -> str:
         """
         Returns SQL string representation of this tree.
@@ -5446,31 +5453,34 @@ def maybe_copy(instance, copy=True):
     return instance.copy() if copy and instance else instance
 
 
-def _to_s(node: t.Any, hide_missing: bool = True, level: int = 0) -> str:
+def _to_s(node: t.Any, verbose: bool = False, level: int = 0) -> str:
     """Generate a textual representation of an Expression tree"""
     indent = "\n" + ("  " * (level + 1))
     delim = f",{indent}"
 
     if isinstance(node, Expression):
-        args = {
-            k: v for k, v in node.args.items() if (v is not None and v != []) or not hide_missing
-        }
+        args = {k: v for k, v in node.args.items() if (v is not None and v != []) or verbose}
 
-        if (node.type or not hide_missing) and not isinstance(node, DataType):
+        if (node.type or verbose) and not isinstance(node, DataType):
             args["_type"] = node.type
-        if node.comments or not hide_missing:
+        if node.comments or verbose:
             args["_comments"] = node.comments
+
+        if verbose:
+            args["_id"] = id(node)
 
         # Inline leaves for a more compact representation
         if node.is_leaf():
             indent = ""
             delim = ", "
 
-        items = delim.join([f"{k}={_to_s(v, hide_missing, level + 1)}" for k, v in args.items()])
+        items = delim.join([f"{k}={_to_s(v, verbose, level + 1)}" for k, v in args.items()])
         return f"{node.__class__.__name__}({indent}{items})"
+
     if isinstance(node, list):
-        items = delim.join(_to_s(i, hide_missing, level + 1) for i in node)
-        return f"[{indent}{items}]"
+        items = delim.join(_to_s(i, verbose, level + 1) for i in node)
+        items = f"{indent}{items}" if items else ""
+        return f"[{items}]"
 
     # Indent multiline strings to match the current level
     return indent.join(textwrap.dedent(str(node).strip("\n")).splitlines())

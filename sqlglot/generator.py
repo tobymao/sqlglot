@@ -218,12 +218,12 @@ class Generator:
     TABLESAMPLE_SIZE_IS_ROWS = True
 
     # The keyword(s) to use when generating a sample clause
-    TABLESAMPLE_CLAUSE = "TABLESAMPLE"
+    TABLESAMPLE_KEYWORDS = "TABLESAMPLE"
 
     # Whether or not the TABLESAMPLE clause supports a method name, like BERNOULLI
     TABLESAMPLE_WITH_METHOD = True
 
-    # The keyword(s) to use when specifying the seed of a sample clause
+    # The keyword to use when specifying the seed of a sample clause
     TABLESAMPLE_SEED_KEYWORD = "SEED"
 
     # Whether or not COLLATE is a function instead of a binary operator
@@ -1468,7 +1468,7 @@ class Generator:
         self,
         expression: exp.TableSample,
         sep: str = " AS ",
-        tablesample_clause: t.Optional[str] = None,
+        tablesample_keyword: t.Optional[str] = None,
     ) -> str:
         if self.dialect.ALIAS_POST_TABLESAMPLE and expression.this and expression.this.alias:
             table = expression.this.copy()
@@ -1501,7 +1501,9 @@ class Generator:
         if self.TABLESAMPLE_REQUIRES_PARENS:
             expr = f"({expr})"
 
-        return f"{this} {tablesample_clause or self.TABLESAMPLE_CLAUSE} {method}{expr}{seed}{alias}"
+        return (
+            f"{this} {tablesample_keyword or self.TABLESAMPLE_KEYWORDS} {method}{expr}{seed}{alias}"
+        )
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)

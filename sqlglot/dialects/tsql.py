@@ -17,7 +17,6 @@ from sqlglot.dialects.dialect import (
     path_to_jsonpath,
     rename_func,
     timestrtotime_sql,
-    ts_or_ds_to_date_sql,
 )
 from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
@@ -695,7 +694,6 @@ class TSQL(Dialect):
             exp.TimeToStr: _format_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
-            exp.TsOrDsToDate: ts_or_ds_to_date_sql("tsql"),
         }
 
         TRANSFORMS.pop(exp.ReturnsProperty)

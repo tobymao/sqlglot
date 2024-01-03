@@ -1003,7 +1003,7 @@ class TestDialect(Validator):
             )
             self.validate_all(
                 f"{unit}(TS_OR_DS_TO_DATE(x))",
-                read={
+                write={
                     dialect: f"{unit}(x)"
                     for dialect in (
                         "mysql",
@@ -1011,7 +1011,10 @@ class TestDialect(Validator):
                         "starrocks",
                     )
                 },
-                write={
+            )
+            self.validate_all(
+                f"{unit}(CAST(x AS DATE))",
+                read={
                     dialect: f"{unit}(x)"
                     for dialect in (
                         "mysql",

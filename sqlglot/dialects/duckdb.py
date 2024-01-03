@@ -29,7 +29,6 @@ from sqlglot.dialects.dialect import (
     str_to_time_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
-    ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
@@ -405,7 +404,6 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, "TIMESTAMP"),
                 exp.cast(e.this, "TIMESTAMP"),
             ),
-            exp.TsOrDsToDate: ts_or_ds_to_date_sql("duckdb"),
             exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",

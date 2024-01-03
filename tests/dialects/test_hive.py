@@ -300,7 +300,7 @@ class TestHive(Validator):
                 "presto": "DATE_DIFF('DAY', CAST(CAST(b AS TIMESTAMP) AS DATE), CAST(CAST(a AS TIMESTAMP) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
                 "spark": "DATEDIFF(TO_DATE(a), TO_DATE(b))",
-                "": "DATEDIFF(TS_OR_DS_TO_DATE(a), TS_OR_DS_TO_DATE(b))",
+                "": "DATEDIFF(CAST(a AS DATE), CAST(b AS DATE))",
             },
         )
         self.validate_all(
@@ -358,11 +358,11 @@ class TestHive(Validator):
         self.validate_all(
             "DATEDIFF(TO_DATE(y), x)",
             write={
-                "duckdb": "DATE_DIFF('DAY', CAST(x AS DATE), CAST(CAST(y AS DATE) AS DATE))",
+                "duckdb": "DATE_DIFF('DAY', CAST(x AS DATE), CAST(y AS DATE))",
                 "presto": "DATE_DIFF('DAY', CAST(CAST(x AS TIMESTAMP) AS DATE), CAST(CAST(CAST(CAST(y AS TIMESTAMP) AS DATE) AS TIMESTAMP) AS DATE))",
                 "hive": "DATEDIFF(TO_DATE(y), TO_DATE(x))",
                 "spark": "DATEDIFF(TO_DATE(y), TO_DATE(x))",
-                "": "DATEDIFF(TS_OR_DS_TO_DATE(TS_OR_DS_TO_DATE(y)), TS_OR_DS_TO_DATE(x))",
+                "": "DATEDIFF(CAST(y AS DATE), CAST(x AS DATE))",
             },
         )
         self.validate_all(

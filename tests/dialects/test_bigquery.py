@@ -198,6 +198,11 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "SELECT TIME('2008-12-25 15:30:00')",
                 "duckdb": "SELECT CAST('2008-12-25 15:30:00' AS TIME)",
+                "mysql": "SELECT CAST('2008-12-25 15:30:00' AS TIME)",
+                "postgres": "SELECT CAST('2008-12-25 15:30:00' AS TIME)",
+                "redshift": "SELECT CAST('2008-12-25 15:30:00' AS TIME)",
+                "spark": "SELECT CAST('2008-12-25 15:30:00' AS TIMESTAMP)",
+                "tsql": "SELECT CAST('2008-12-25 15:30:00' AS TIME)",
             },
         )
         self.validate_all(

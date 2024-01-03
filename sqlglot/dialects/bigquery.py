@@ -26,7 +26,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     timestrtotime_sql,
     ts_or_ds_add_cast,
-    ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -600,7 +599,6 @@ class BigQuery(Dialect):
             exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,
-            exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
             exp.TsOrDsToTime: rename_func("TIME"),
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixToTime: _unix_to_time_sql,

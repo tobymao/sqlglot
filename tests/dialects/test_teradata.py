@@ -233,7 +233,9 @@ class TestTeradata(Validator):
         )
         self.validate_all(
             "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')",
-            write={"teradata": "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')"},
+            write={
+                "teradata": "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')"
+            },
         )
         self.validate_all(
             "TO_TIMESTAMP('2024-01-01 01:14:15 PM', 'YYYY-MM-DDbHH:MI:SSBT')",

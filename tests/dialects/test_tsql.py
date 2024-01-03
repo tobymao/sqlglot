@@ -10,6 +10,9 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
+        self.validate_identity("SELECT * FROM t TABLESAMPLE (20 ROWS)")
+        self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT) REPEATABLE (123)")
         self.validate_identity("SELECT CONCAT(column1, column2)")
         self.validate_identity("SELECT TestSpecialChar.Test# FROM TestSpecialChar")
         self.validate_identity("SELECT TestSpecialChar.Test@ FROM TestSpecialChar")

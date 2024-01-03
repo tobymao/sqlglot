@@ -2870,12 +2870,10 @@ class Parser(metaclass=_Parser):
         bucket_denominator = None
         bucket_field = None
         percent = None
-        rows = None
         size = None
         seed = None
 
         method = self._parse_var(tokens=(TokenType.ROW,), upper=True)
-
         matched_l_paren = self._match(TokenType.L_PAREN)
 
         if self.TABLESAMPLE_CSV:
@@ -2897,10 +2895,10 @@ class Parser(metaclass=_Parser):
             bucket_field = self._parse_field()
         elif self._match_set((TokenType.PERCENT, TokenType.MOD)):
             percent = num
-        elif self._match(TokenType.ROWS):
-            rows = num
-        elif num:
+        elif self._match(TokenType.ROWS) or not self.dialect.TABLESAMPLE_SIZE_IS_PERCENT:
             size = num
+        else:
+            percent = num
 
         if matched_l_paren:
             self._match_r_paren()
@@ -2920,7 +2918,6 @@ class Parser(metaclass=_Parser):
             bucket_denominator=bucket_denominator,
             bucket_field=bucket_field,
             percent=percent,
-            rows=rows,
             size=size,
             seed=seed,
         )

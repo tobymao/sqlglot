@@ -30,6 +30,8 @@ class Databricks(Spark):
         }
 
     class Generator(Spark.Generator):
+        TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
+
         TRANSFORMS = {
             **Spark.Generator.TRANSFORMS,
             exp.DateAdd: date_delta_sql("DATEADD"),

@@ -582,6 +582,8 @@ class TestPresto(Validator):
                 },
             )
 
+        self.validate_identity("SELECT a FROM test TABLESAMPLE BERNOULLI (50)")
+        self.validate_identity("SELECT a FROM test TABLESAMPLE SYSTEM (75)")
         self.validate_identity("string_agg(x, ',')", "ARRAY_JOIN(ARRAY_AGG(x), ',')")
         self.validate_identity("SELECT * FROM x OFFSET 1 LIMIT 1")
         self.validate_identity("SELECT * FROM x OFFSET 1 FETCH FIRST 1 ROWS ONLY")

@@ -1,4 +1,4 @@
-from sqlglot import ParseError, exp, parse_one, transpile
+from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
@@ -262,6 +262,7 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT * FROM JSON_ARRAY_ELEMENTS('[1,true, [2,false]]') WITH ORDINALITY AS kv_json(a, b)"
         )
+        self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
         self.validate_identity("x @@ y")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
@@ -325,6 +326,13 @@ class TestPostgres(Validator):
             "SELECT TO_TIMESTAMP(1284352323.5), TO_TIMESTAMP('05 Dec 2000', 'DD Mon YYYY')"
         )
 
+        self.validate_all(
+            "SELECT * FROM t TABLESAMPLE SYSTEM (50)",
+            write={
+                "postgres": "SELECT * FROM t TABLESAMPLE SYSTEM (50)",
+                "redshift": UnsupportedError,
+            },
+        )
         self.validate_all(
             "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)",
             write={

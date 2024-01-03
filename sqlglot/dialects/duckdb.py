@@ -309,7 +309,8 @@ class DuckDB(Dialect):
         RENAME_TABLE_WITH_DB = False
         NVL2_SUPPORTED = False
         SEMI_ANTI_JOIN_WITH_SIDE = False
-        SAMPLE_CLAUSE = "USING SAMPLE"
+        TABLESAMPLE_KEYWORDS = "USING SAMPLE"
+        TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -464,16 +465,15 @@ class DuckDB(Dialect):
         def tablesample_sql(
             self,
             expression: exp.TableSample,
-            seed_prefix: str = "SEED",
             sep: str = " AS ",
-            sample_clause: t.Optional[str] = None,
+            tablesample_keyword: t.Optional[str] = None,
         ) -> str:
             if not isinstance(expression.parent, exp.Select):
                 # This sample clause only applies to a single source, not the entire resulting relation
-                sample_clause = "TABLESAMPLE"
+                tablesample_keyword = "TABLESAMPLE"
 
             return super().tablesample_sql(
-                expression, seed_prefix="REPEATABLE", sep=sep, sample_clause=sample_clause
+                expression, sep=sep, tablesample_keyword=tablesample_keyword
             )
 
         def getpath_sql(self, expression: exp.GetPath) -> str:

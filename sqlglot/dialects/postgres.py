@@ -17,7 +17,6 @@ from sqlglot.dialects.dialect import (
     no_map_from_entries_sql,
     no_paren_current_date_sql,
     no_pivot_sql,
-    no_tablesample_sql,
     no_trycast_sql,
     parse_timestamp_trunc,
     rename_func,
@@ -395,6 +394,8 @@ class Postgres(Dialect):
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
         PARAMETER_TOKEN = "$"
+        TABLESAMPLE_SIZE_IS_ROWS = False
+        TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -465,7 +466,6 @@ class Postgres(Dialect):
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.TableSample: no_tablesample_sql,
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.TryCast: no_trycast_sql,

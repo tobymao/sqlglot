@@ -217,6 +217,9 @@ class Generator:
     # Whether or not parentheses are required around the table sample's expression
     TABLESAMPLE_REQUIRES_PARENS = True
 
+    # Whether or not a table sample clause's size needs to be followed by the ROWS keyword
+    TABLESAMPLE_SIZE_IS_ROWS = True
+
     # Whether or not COLLATE is a function instead of a binary operator
     COLLATE_IS_FUNC = False
 
@@ -1481,17 +1484,18 @@ class Generator:
         field = self.sql(expression, "bucket_field")
         field = f" ON {field}" if field else ""
         bucket = f"BUCKET {numerator} OUT OF {denominator}{field}" if numerator else ""
-        rows = self.sql(expression, "rows")
-        rows = f"{rows} ROWS" if rows else ""
-        size = self.sql(expression, "size")
         seed = self.sql(expression, "seed")
         seed = f" {seed_prefix} ({seed})" if seed else ""
+
+        size = self.sql(expression, "size")
+        if size and self.TABLESAMPLE_SIZE_IS_ROWS:
+            size = f"{size} ROWS"
 
         percent = self.sql(expression, "percent")
         if percent and not self.dialect.TABLESAMPLE_SIZE_IS_PERCENT:
             percent = f"{percent} PERCENT"
 
-        expr = f"{bucket}{percent}{rows}{size}"
+        expr = f"{bucket}{percent}{size}"
         if self.TABLESAMPLE_REQUIRES_PARENS:
             expr = f"({expr})"
 

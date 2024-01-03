@@ -484,6 +484,7 @@ class ClickHouse(Dialect):
         STRUCT_DELIMITER = ("(", ")")
         NVL2_SUPPORTED = False
         TABLESAMPLE_REQUIRES_PARENS = False
+        TABLESAMPLE_SIZE_IS_ROWS = False
         SAMPLE_CLAUSE = "SAMPLE"
 
         STRING_TYPE_MAPPING = {

@@ -694,46 +694,44 @@ class TestDuckDB(Validator):
         )
 
     def test_sample(self):
-        self.validate_all(
+        self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 5",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (5)"},
+            "SELECT * FROM tbl USING SAMPLE (5 ROWS)",
         )
-        self.validate_all(
+        self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 10%",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE (10 PERCENT)"},
+            "SELECT * FROM tbl USING SAMPLE (10 PERCENT)",
         )
-        self.validate_all(
+        self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 10 PERCENT (bernoulli)",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE BERNOULLI (10 PERCENT)"},
+            "SELECT * FROM tbl USING SAMPLE BERNOULLI (10 PERCENT)",
         )
-        self.validate_all(
+        self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE reservoir(50 ROWS) REPEATABLE (100)",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE RESERVOIR (50 ROWS) REPEATABLE (100)"},
+            "SELECT * FROM tbl USING SAMPLE RESERVOIR (50 ROWS) REPEATABLE (100)",
         )
-        self.validate_all(
+        self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 10% (system, 377)",
-            write={"duckdb": "SELECT * FROM tbl USING SAMPLE SYSTEM (10 PERCENT) REPEATABLE (377)"},
+            "SELECT * FROM tbl USING SAMPLE SYSTEM (10 PERCENT) REPEATABLE (377)",
         )
-        self.validate_all(
+        self.validate_identity(
             "SELECT * FROM tbl TABLESAMPLE RESERVOIR(20%), tbl2 WHERE tbl.i=tbl2.i",
-            write={
-                "duckdb": "SELECT * FROM tbl TABLESAMPLE RESERVOIR (20 PERCENT), tbl2 WHERE tbl.i = tbl2.i"
-            },
+            "SELECT * FROM tbl TABLESAMPLE RESERVOIR (20 PERCENT), tbl2 WHERE tbl.i = tbl2.i",
         )
-        self.validate_all(
+        self.validate_identity(
             "SELECT * FROM tbl, tbl2 WHERE tbl.i=tbl2.i USING SAMPLE RESERVOIR(20%)",
-            write={
-                "duckdb": "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)"
-            },
+            "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)",
         )
+
         self.validate_all(
-            "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+            "SELECT * FROM example TABLESAMPLE (3 ROWS) REPEATABLE (82)",
             read={
-                "snowflake": "SELECT * FROM example SAMPLE (3) SEED (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3) REPEATABLE (82)",
+                "snowflake": "SELECT * FROM example SAMPLE (3 ROWS) SEED (82)",
             },
             write={
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-                "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3 ROWS) REPEATABLE (82)",
+                "snowflake": "SELECT * FROM example TABLESAMPLE (3 ROWS) SEED (82)",
             },
         )
 

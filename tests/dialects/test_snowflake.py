@@ -76,6 +76,9 @@ WHERE
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
         self.validate_identity(
+            "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
+        )
+        self.validate_identity(
             "SELECT TIMESTAMPFROMPARTS(d, t)",
             "SELECT TIMESTAMP_FROM_PARTS(d, t)",
         )

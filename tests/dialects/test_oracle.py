@@ -34,6 +34,7 @@ class TestOracle(Validator):
         self.validate_identity("SELECT STANDARD_HASH('hello', 'MD5')")
         self.validate_identity("SELECT * FROM table_name@dblink_name.database_link_domain")
         self.validate_identity("SELECT * FROM table_name SAMPLE (25) s")
+        self.validate_identity("SELECT COUNT(*) * 10 FROM orders SAMPLE (10) SEED (1)")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity(
             "SELECT JSON_ARRAYAGG(JSON_OBJECT('RNK': RNK, 'RATING_CODE': RATING_CODE, 'DATE_VALUE': DATE_VALUE, 'AGENT_ID': AGENT_ID RETURNING CLOB) RETURNING CLOB) AS JSON_DATA FROM tablename"

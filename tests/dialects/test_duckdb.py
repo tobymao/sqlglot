@@ -62,6 +62,20 @@ class TestDuckDB(Validator):
             )
 
         self.validate_all(
+            """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
+            write={
+                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
+                "snowflake": """SELECT PARSE_JSON('{"fruit":"banana"}')['fruit']""",
+            },
+        )
+        self.validate_all(
+            """SELECT JSON('{"fruit": {"foo": "banana"}}') -> 'fruit' -> 'foo'""",
+            write={
+                "duckdb": """SELECT JSON('{"fruit": {"foo": "banana"}}') -> 'fruit' -> 'foo'""",
+                "snowflake": """SELECT PARSE_JSON('{"fruit": {"foo": "banana"}}')['fruit']['foo']""",
+            },
+        )
+        self.validate_all(
             "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT (SELECT col['b'] FROM UNNEST(col) AS t(col) WHERE col['a'] = 1) FROM _data",
             write={
                 "bigquery": "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT (SELECT col.b FROM UNNEST(col) AS col WHERE col.a = 1) FROM _data",

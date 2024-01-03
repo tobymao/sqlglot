@@ -4865,6 +4865,15 @@ class ParseJSON(Func):
     is_var_len_args = True
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/get_path
+class GetPath(Func):
+    arg_types = {"this": True, "expression": True}
+
+    @property
+    def output_name(self) -> str:
+        return self.expression.output_name
+
+
 class Least(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

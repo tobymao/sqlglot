@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     max_or_greatest,
     min_or_least,
     parse_date_delta,
+    path_to_jsonpath,
     rename_func,
     timestrtotime_sql,
     ts_or_ds_to_date_sql,
@@ -668,6 +669,7 @@ class TSQL(Dialect):
             exp.CurrentTimestamp: rename_func("GETDATE"),
             exp.Extract: rename_func("DATEPART"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
+            exp.GetPath: path_to_jsonpath("JSON_VALUE"),
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
             exp.Length: rename_func("LEN"),
@@ -675,6 +677,7 @@ class TSQL(Dialect):
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
             exp.NumberToStr: _format_sql,
+            exp.ParseJSON: lambda self, e: self.sql(e, "this"),
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

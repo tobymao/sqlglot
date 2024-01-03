@@ -418,7 +418,6 @@ class Hive(Dialect):
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"
         TABLESAMPLE_WITH_METHOD = False
-        TABLESAMPLE_SIZE_IS_PERCENT = True
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False

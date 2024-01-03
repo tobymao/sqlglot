@@ -738,9 +738,11 @@ class TestHive(Validator):
             "SELECT * FROM x TABLESAMPLE (1 PERCENT) AS foo",
             read={
                 "presto": "SELECT * FROM x AS foo TABLESAMPLE BERNOULLI (1)",
+                "snowflake": "SELECT * FROM x AS foo TABLESAMPLE (1)",
             },
             write={
                 "hive": "SELECT * FROM x TABLESAMPLE (1 PERCENT) AS foo",
+                "snowflake": "SELECT * FROM x AS foo TABLESAMPLE (1)",
                 "spark": "SELECT * FROM x TABLESAMPLE (1 PERCENT) AS foo",
             },
         )

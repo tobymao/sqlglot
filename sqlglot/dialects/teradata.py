@@ -175,7 +175,7 @@ class Teradata(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False
-        SAMPLE_CLAUSE = "SAMPLE"
+        TABLESAMPLE_KEYWORDS = "SAMPLE"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -217,9 +217,8 @@ class Teradata(Dialect):
         def tablesample_sql(
             self,
             expression: exp.TableSample,
-            seed_prefix: str = "SEED",
             sep: str = " AS ",
-            sample_clause: t.Optional[str] = None,
+            tablesample_keyword: t.Optional[str] = None,
         ) -> str:
             return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
 

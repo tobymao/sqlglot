@@ -76,6 +76,9 @@ WHERE
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
         self.validate_identity(
+            "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
+        )
+        self.validate_identity(
             "SELECT TIMESTAMPFROMPARTS(d, t)",
             "SELECT TIMESTAMP_FROM_PARTS(d, t)",
         )
@@ -171,6 +174,18 @@ WHERE
             "CAST(x AS VARCHAR)",
         )
 
+        self.validate_all(
+            "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
+            read={
+                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+            },
+            write={
+                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+                "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
+            },
+        )
         self.validate_all(
             "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
             write={

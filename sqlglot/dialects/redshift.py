@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     concat_ws_to_dpipe_sql,
     date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
+    no_tablesample_sql,
     rename_func,
 )
 from sqlglot.dialects.postgres import Postgres
@@ -203,6 +204,7 @@ class Redshift(Postgres):
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
         }

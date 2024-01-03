@@ -153,6 +153,9 @@ class Dialect(metaclass=_Dialect):
     ALIAS_POST_TABLESAMPLE = False
     """Determines whether or not the table alias comes after tablesample."""
 
+    TABLESAMPLE_SIZE_IS_PERCENT = False
+    """Determines whether or not a size in the table sample clause represents percentage."""
+
     NORMALIZATION_STRATEGY = NormalizationStrategy.LOWERCASE
     """Specifies the strategy according to which identifiers should be normalized."""
 

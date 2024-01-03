@@ -147,10 +147,9 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT STRFTIME('%Y-%m-%d', '2022-01-01')",
             },
         )
-        self.validate_all(
-            "SELECT CAST('2022-01-01' AS DATE FORMAT '%Y-%m-%d')",
-            write={"sqlite": "SELECT STRFTIME('%Y-%m-%d', '2022-01-01')"},
-        )
+        self.validate_identity("STRFTIME('%Y-%m-%d %H:%M:%f', '2024-01-01 13:14:15.123')")
+        self.validate_identity("STRFTIME('%Y-%m-%d %I:%M:%S %p', '2024-01-01 01:14:15 PM')")
+        self.validate_identity("STRFTIME('%d-%b-%Y', '01-Jan-2024')")
 
     def test_datediff(self):
         self.validate_all(

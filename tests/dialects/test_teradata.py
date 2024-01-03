@@ -223,25 +223,10 @@ class TestTeradata(Validator):
                 "postgres": "TO_TIMESTAMP('2024-01-01 13:14:15', 'YYYY-MM-DD HH24:MI:SS')",
             },
         )
-        self.validate_all(
-            "CAST('2024-01-01' AS DATE FORMAT 'YYYY-MM-DD')",
-            write={"teradata": "CAST('2024-01-01' AS DATE FORMAT 'YYYY-MM-DD')"},
+        self.validate_identity("CAST('2024-01-01' AS DATE FORMAT 'YYYY-MM-DD')")
+        self.validate_identity("CAST('2024/01/01' AS DATE FORMAT 'YYYY/MM/DD')")
+        self.validate_identity(
+            "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')"
         )
-        self.validate_all(
-            "CAST('2024/01/01' AS DATE FORMAT 'YYYY/MM/DD')",
-            write={"teradata": "CAST('2024/01/01' AS DATE FORMAT 'YYYY/MM/DD')"},
-        )
-        self.validate_all(
-            "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')",
-            write={
-                "teradata": "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')"
-            },
-        )
-        self.validate_all(
-            "TO_TIMESTAMP('2024-01-01 01:14:15 PM', 'YYYY-MM-DDbHH:MI:SSBT')",
-            write={"teradata": "TO_TIMESTAMP('2024-01-01 01:14:15 PM', 'YYYY-MM-DDbHH:MI:SSBT')"},
-        )
-        self.validate_all(
-            "CAST('01-Jan-2024' AS DATE FORMAT 'DD-MMM-YYYY')",
-            write={"teradata": "CAST('01-Jan-2024' AS DATE FORMAT 'DD-MMM-YYYY')"},
-        )
+        self.validate_identity("TO_TIMESTAMP('2024-01-01 01:14:15 PM', 'YYYY-MM-DDbHH:MI:SSBT')")
+        self.validate_identity("CAST('01-Jan-2024' AS DATE FORMAT 'DD-MMM-YYYY')")

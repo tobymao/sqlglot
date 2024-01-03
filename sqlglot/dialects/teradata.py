@@ -7,12 +7,6 @@ from sqlglot.dialects.dialect import Dialect, max_or_greatest, min_or_least, ren
 from sqlglot.tokens import TokenType
 
 
-def str_to_date_sql(self: Teradata.Generator, expression: exp.StrToDate) -> str:
-    date_string = self.sql(expression, "this")
-    format_specifier = self.format_time(expression)
-    return f"TO_DATE({date_string}, {format_specifier})"
-
-
 def str_to_time_sql(self: Teradata.Generator, expression: exp.StrToTime) -> str:
     time_string = self.sql(expression, "this")
     format_specifier = self.format_time(expression)

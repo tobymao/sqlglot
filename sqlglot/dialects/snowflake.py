@@ -331,6 +331,15 @@ def _parse_colon_get_path(
     return this
 
 
+def _parse_timestamp_from_parts(args: t.List) -> exp.Func:
+    if len(args) == 2:
+        # Other dialects don't have the TIMESTAMP_FROM_PARTS(date, time) concept,
+        # so we parse this into Anonymous for now instead of introducing complexity
+        return exp.Anonymous(this="TIMESTAMP_FROM_PARTS", expressions=args)
+
+    return exp.TimestampFromParts.from_arg_list(args)
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -423,6 +432,8 @@ class Snowflake(Dialect):
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TIMEDIFF": _parse_datediff,
             "TIMESTAMPDIFF": _parse_datediff,
+            "TIMESTAMPFROMPARTS": _parse_timestamp_from_parts,
+            "TIMESTAMP_FROM_PARTS": _parse_timestamp_from_parts,
             "TO_TIMESTAMP": _parse_to_timestamp,
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _zeroifnull_to_if,

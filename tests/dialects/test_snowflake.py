@@ -36,6 +36,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT TIMESTAMP_FROM_PARTS(d, t)")
         self.validate_identity("SELECT GET_PATH(v, 'attr[0].name') FROM vartab")
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")
         self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
@@ -73,6 +74,10 @@ WHERE
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity(
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMPFROMPARTS(d, t)",
+            "SELECT TIMESTAMP_FROM_PARTS(d, t)",
         )
         self.validate_identity(
             "SELECT user_id, value FROM table_name SAMPLE ($s) SEED (0)",
@@ -166,6 +171,16 @@ WHERE
             "CAST(x AS VARCHAR)",
         )
 
+        self.validate_all(
+            "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
+            read={
+                "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00)",
+            },
+            write={
+                "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00)",
+                "snowflake": "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
+            },
+        )
         self.validate_all(
             """WITH vartab(v) AS (select parse_json('[{"attr": [{"name": "banana"}]}]')) SELECT GET_PATH(v, '[0].attr[0].name') FROM vartab""",
             write={

@@ -302,6 +302,35 @@ def _date_trunc_to_time(args: t.List) -> exp.DateTrunc | exp.TimestampTrunc:
     return trunc
 
 
+def _parse_colon_get_path(
+    self: parser.Parser, this: t.Optional[exp.Expression]
+) -> t.Optional[exp.Expression]:
+    while True:
+        path = self._parse_bitwise()
+
+        # The cast :: operator has a lower precedence than the extraction operator :, so
+        # we rearrange the AST appropriately to avoid casting the 2nd argument of GET_PATH
+        if isinstance(path, exp.Cast):
+            target_type = path.to
+            path = path.this
+        else:
+            target_type = None
+
+        if isinstance(path, exp.Expression):
+            path = exp.Literal.string(path.sql(dialect="snowflake"))
+
+        # The extraction operator : is left-associative
+        this = self.expression(exp.GetPath, this=this, expression=path)
+
+        if target_type:
+            this = exp.cast(this, target_type)
+
+        if not self._match(TokenType.COLON):
+            break
+
+    return this
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -405,19 +434,13 @@ class Snowflake(Dialect):
         }
         FUNCTION_PARSERS.pop("TRIM")
 
-        COLUMN_OPERATORS = {
-            **parser.Parser.COLUMN_OPERATORS,
-            TokenType.COLON: lambda self, this, path: self.expression(
-                exp.Bracket, this=this, expressions=[path]
-            ),
-        }
-
         TIMESTAMPS = parser.Parser.TIMESTAMPS - {TokenType.TIME}
 
         RANGE_PARSERS = {
             **parser.Parser.RANGE_PARSERS,
             TokenType.LIKE_ANY: parser.binary_range_parser(exp.LikeAny),
             TokenType.ILIKE_ANY: parser.binary_range_parser(exp.ILikeAny),
+            TokenType.COLON: _parse_colon_get_path,
         }
 
         ALTER_PARSERS = {
@@ -452,7 +475,17 @@ class Snowflake(Dialect):
             TokenType.MOD,
             TokenType.SLASH,
         }
+
         FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
+
+        def _parse_bracket_key_value(self, is_map: bool = False) -> t.Optional[exp.Expression]:
+            if is_map:
+                # Keys are strings in Snowflake's objects, see also:
+                # - https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+                # - https://docs.snowflake.com/en/sql-reference/functions/object_construct
+                return self._parse_slice(self._parse_string())
+
+            return self._parse_slice(self._parse_alias(self._parse_conjunction(), explicit=True))
 
         def _parse_lateral(self) -> t.Optional[exp.Lateral]:
             lateral = super()._parse_lateral()
@@ -646,6 +679,7 @@ class Snowflake(Dialect):
             ),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
+            exp.JSONExtract: lambda self, e: f"{self.sql(e, 'this')}[{self.sql(e, 'expression')}]",
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),

@@ -36,6 +36,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT GET_PATH(v, 'attr[0].name') FROM vartab")
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")
         self.validate_identity("SELECT TO_ARRAY(CAST(['test'] AS VARIANT))")
         self.validate_identity("SELECT ARRAY_UNIQUE_AGG(x)")
@@ -76,6 +77,22 @@ WHERE
         self.validate_identity(
             "SELECT user_id, value FROM table_name SAMPLE ($s) SEED (0)",
             "SELECT user_id, value FROM table_name TABLESAMPLE ($s) SEED (0)",
+        )
+        self.validate_identity(
+            "SELECT v:attr[0].name FROM vartab",
+            "SELECT GET_PATH(v, 'attr[0].name') FROM vartab",
+        )
+        self.validate_identity(
+            'SELECT v:"fruit" FROM vartab',
+            """SELECT GET_PATH(v, '"fruit"') FROM vartab""",
+        )
+        self.validate_identity(
+            "v:attr[0]:name",
+            "GET_PATH(GET_PATH(v, 'attr[0]'), 'name')",
+        )
+        self.validate_identity(
+            """SELECT PARSE_JSON('{"food":{"fruit":"banana"}}'):food.fruit::VARCHAR""",
+            """SELECT CAST(GET_PATH(PARSE_JSON('{"food":{"fruit":"banana"}}'), 'food.fruit') AS VARCHAR)""",
         )
         self.validate_identity(
             "SELECT * FROM foo at",
@@ -150,6 +167,39 @@ WHERE
         )
 
         self.validate_all(
+            """WITH vartab(v) AS (select parse_json('[{"attr": [{"name": "banana"}]}]')) SELECT GET_PATH(v, '[0].attr[0].name') FROM vartab""",
+            write={
+                "bigquery": """WITH vartab AS (SELECT PARSE_JSON('[{"attr": [{"name": "banana"}]}]') AS v) SELECT JSON_EXTRACT(v, '$[0].attr[0].name') FROM vartab""",
+                "duckdb": """WITH vartab(v) AS (SELECT JSON('[{"attr": [{"name": "banana"}]}]')) SELECT v -> '$[0].attr[0].name' FROM vartab""",
+                "mysql": """WITH vartab(v) AS (SELECT '[{"attr": [{"name": "banana"}]}]') SELECT JSON_EXTRACT(v, '$[0].attr[0].name') FROM vartab""",
+                "presto": """WITH vartab(v) AS (SELECT JSON_PARSE('[{"attr": [{"name": "banana"}]}]')) SELECT JSON_EXTRACT(v, '$[0].attr[0].name') FROM vartab""",
+                "snowflake": """WITH vartab(v) AS (SELECT PARSE_JSON('[{"attr": [{"name": "banana"}]}]')) SELECT GET_PATH(v, '[0].attr[0].name') FROM vartab""",
+                "tsql": """WITH vartab(v) AS (SELECT '[{"attr": [{"name": "banana"}]}]') SELECT JSON_VALUE(v, '$[0].attr[0].name') FROM vartab""",
+            },
+        )
+        self.validate_all(
+            """WITH vartab(v) AS (select parse_json('{"attr": [{"name": "banana"}]}')) SELECT GET_PATH(v, 'attr[0].name') FROM vartab""",
+            write={
+                "bigquery": """WITH vartab AS (SELECT PARSE_JSON('{"attr": [{"name": "banana"}]}') AS v) SELECT JSON_EXTRACT(v, '$.attr[0].name') FROM vartab""",
+                "duckdb": """WITH vartab(v) AS (SELECT JSON('{"attr": [{"name": "banana"}]}')) SELECT v -> '$.attr[0].name' FROM vartab""",
+                "mysql": """WITH vartab(v) AS (SELECT '{"attr": [{"name": "banana"}]}') SELECT JSON_EXTRACT(v, '$.attr[0].name') FROM vartab""",
+                "presto": """WITH vartab(v) AS (SELECT JSON_PARSE('{"attr": [{"name": "banana"}]}')) SELECT JSON_EXTRACT(v, '$.attr[0].name') FROM vartab""",
+                "snowflake": """WITH vartab(v) AS (SELECT PARSE_JSON('{"attr": [{"name": "banana"}]}')) SELECT GET_PATH(v, 'attr[0].name') FROM vartab""",
+                "tsql": """WITH vartab(v) AS (SELECT '{"attr": [{"name": "banana"}]}') SELECT JSON_VALUE(v, '$.attr[0].name') FROM vartab""",
+            },
+        )
+        self.validate_all(
+            """SELECT PARSE_JSON('{"fruit":"banana"}'):fruit""",
+            write={
+                "bigquery": """SELECT JSON_EXTRACT(PARSE_JSON('{"fruit":"banana"}'), '$.fruit')""",
+                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> '$.fruit'""",
+                "mysql": """SELECT JSON_EXTRACT('{"fruit":"banana"}', '$.fruit')""",
+                "presto": """SELECT JSON_EXTRACT(JSON_PARSE('{"fruit":"banana"}'), '$.fruit')""",
+                "snowflake": """SELECT GET_PATH(PARSE_JSON('{"fruit":"banana"}'), 'fruit')""",
+                "tsql": """SELECT JSON_VALUE('{"fruit":"banana"}', '$.fruit')""",
+            },
+        )
+        self.validate_all(
             "SELECT TO_ARRAY(['test'])",
             write={
                 "snowflake": "SELECT TO_ARRAY(['test'])",
@@ -175,7 +225,7 @@ WHERE
             write={
                 "duckdb": "SELECT {'Manitoba': 'Winnipeg', 'foo': 'bar'} AS province_capital",
                 "snowflake": "SELECT OBJECT_CONSTRUCT('Manitoba', 'Winnipeg', 'foo', 'bar') AS province_capital",
-                "spark": "SELECT STRUCT('Manitoba' AS Winnipeg, 'foo' AS bar) AS province_capital",
+                "spark": "SELECT STRUCT('Winnipeg' AS Manitoba, 'bar' AS foo) AS province_capital",
             },
         )
         self.validate_all(
@@ -421,13 +471,11 @@ WHERE
             },
         )
         self.validate_all(
-            'x:a:"b c"',
+            '''SELECT PARSE_JSON('{"a": {"b c": "foo"}}'):a:"b c"''',
             write={
-                "duckdb": "x['a']['b c']",
-                "hive": "x['a']['b c']",
-                "presto": "x['a']['b c']",
-                "snowflake": "x['a']['b c']",
-                "spark": "x['a']['b c']",
+                "duckdb": """SELECT JSON('{"a": {"b c": "foo"}}') -> '$.a' -> '$."b c"'""",
+                "mysql": """SELECT JSON_EXTRACT(JSON_EXTRACT('{"a": {"b c": "foo"}}', '$.a'), '$."b c"')""",
+                "snowflake": """SELECT GET_PATH(GET_PATH(PARSE_JSON('{"a": {"b c": "foo"}}'), 'a'), '"b c"')""",
             },
         )
         self.validate_all(
@@ -663,7 +711,7 @@ WHERE
         )
         self.validate_identity(
             "SELECT parse_json($1):a.b FROM @mystage2/data1.json.gz",
-            "SELECT PARSE_JSON($1)['a'].b FROM @mystage2/data1.json.gz",
+            "SELECT GET_PATH(PARSE_JSON($1), 'a.b') FROM @mystage2/data1.json.gz",
         )
         self.validate_identity(
             "SELECT * FROM @mystage t (c1)",
@@ -893,7 +941,7 @@ WHERE
   location=@s2/logs/
   partition_type = user_specified
   file_format = (type = parquet)""",
-            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(PARSE_JSON(metadata$external_table_partition)['COL1'] AS DATE)), col2 VARCHAR AS (CAST(PARSE_JSON(metadata$external_table_partition)['COL2'] AS VARCHAR)), col3 DECIMAL AS (CAST(PARSE_JSON(metadata$external_table_partition)['COL3'] AS DECIMAL))) LOCATION @s2/logs/ PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
+            "CREATE EXTERNAL TABLE et2 (col1 DATE AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL1') AS DATE)), col2 VARCHAR AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL2') AS VARCHAR)), col3 DECIMAL AS (CAST(GET_PATH(PARSE_JSON(metadata$external_table_partition), 'COL3') AS DECIMAL))) LOCATION @s2/logs/ PARTITION BY (col1, col2, col3) partition_type=user_specified file_format=(type = parquet)",
         )
         self.validate_identity("CREATE OR REPLACE VIEW foo (uid) COPY GRANTS AS (SELECT 1)")
         self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
@@ -1109,9 +1157,9 @@ FROM cs.telescope.dag_report, TABLE(FLATTEN(input => SPLIT(operators, ','))) AS 
                 "snowflake": """SELECT
   id AS "ID",
   f.value AS "Contact",
-  f1.value['type'] AS "Type",
-  f1.value['content'] AS "Details"
-FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f(SEQ, KEY, PATH, INDEX, VALUE, THIS), LATERAL FLATTEN(input => f.value['business']) AS f1(SEQ, KEY, PATH, INDEX, VALUE, THIS)""",
+  GET_PATH(f1.value, 'type') AS "Type",
+  GET_PATH(f1.value, 'content') AS "Details"
+FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS f(SEQ, KEY, PATH, INDEX, VALUE, THIS), LATERAL FLATTEN(input => GET_PATH(f.value, 'business')) AS f1(SEQ, KEY, PATH, INDEX, VALUE, THIS)""",
             },
             pretty=True,
         )

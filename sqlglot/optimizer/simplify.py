@@ -100,6 +100,7 @@ def simplify(
         node = simplify_parens(node)
         node = simplify_datetrunc(node, dialect)
         node = sort_comparison(node)
+        node = simplify_startswith(node)
 
         if root:
             expression.replace(node)
@@ -772,6 +773,26 @@ def simplify_conditionals(expression):
             return expression.args["true"]
         if always_false(expression.this):
             return expression.args.get("false") or exp.null()
+
+    return expression
+
+
+def simplify_startswith(expression: exp.Expression) -> exp.Expression:
+    """
+    Reduces a prefix check to either TRUE or FALSE if both the string and the
+    prefix are statically known.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> simplify_startswith(parse_one("STARTSWITH('foo', 'f')")).sql()
+        'TRUE'
+    """
+    if (
+        isinstance(expression, exp.StartsWith)
+        and expression.this.is_string
+        and expression.expression.is_string
+    ):
+        return exp.convert(expression.name.startswith(expression.expression.name))
 
     return expression
 

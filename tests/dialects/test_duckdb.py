@@ -548,6 +548,14 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SELECT ISNAN(x)")
 
+        self.validate_all(
+            "SELECT COUNT_IF(x)",
+            write={
+                "duckdb": "SELECT COUNT_IF(x)",
+                "bigquery": "SELECT COUNTIF(x)",
+            },
+        )
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

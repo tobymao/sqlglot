@@ -541,6 +541,7 @@ class BigQuery(Dialect):
             exp.CollateProperty: lambda self, e: f"DEFAULT COLLATE {self.sql(e, 'this')}"
             if e.args.get("default")
             else f"COLLATE {self.sql(e, 'this')}",
+            exp.CountIf: rename_func("COUNTIF"),
             exp.Create: _create_sql,
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: date_add_interval_sql("DATE", "ADD"),

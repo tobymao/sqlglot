@@ -7,6 +7,18 @@ from sqlglot.dialects.dialect import Dialect, max_or_greatest, min_or_least, ren
 from sqlglot.tokens import TokenType
 
 
+def str_to_date_sql(self: Teradata.Generator, expression: exp.StrToDate) -> str:
+    date_string = self.sql(expression, "this")
+    format_specifier = self.format_time(expression)
+    return f"TO_DATE({date_string}, {format_specifier})"
+
+
+def str_to_time_sql(self: Teradata.Generator, expression: exp.StrToTime) -> str:
+    time_string = self.sql(expression, "this")
+    format_specifier = self.format_time(expression)
+    return f"TO_TIMESTAMP({time_string}, {format_specifier})"
+
+
 class Teradata(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
@@ -202,6 +214,7 @@ class Teradata(Dialect):
             exp.StrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
+            exp.StrToTime: lambda self, e: str_to_time_sql(self, e)
         }
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:

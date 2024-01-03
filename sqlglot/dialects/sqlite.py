@@ -27,6 +27,16 @@ def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:
     modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
     return self.func("DATE", expression.this, modifier)
 
+def str_to_date_sql(self: SQLite.Generator, expression: exp.StrToDate) -> str:
+    date_string = self.sql(expression, "this")
+    format_specifier = self.format_time(expression)
+    return f"STRFTIME({format_specifier}, {date_string})"
+
+
+def str_to_time_sql(self: SQLite.Generator, expression: exp.StrToTime) -> str:
+    time_string = self.sql(expression, "this")
+    format_specifier = self.format_time(expression)
+    return f"STRFTIME({format_specifier}, {time_string})"
 
 def _transform_create(expression: exp.Expression) -> exp.Expression:
     """Move primary key to a column and enforce auto_increment on primary keys."""
@@ -138,6 +148,8 @@ class SQLite(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
             exp.TryCast: no_trycast_sql,
+            exp.StrToDate: str_to_date_sql,
+            exp.StrToTime: str_to_time_sql
         }
 
         PROPERTIES_LOCATION = {

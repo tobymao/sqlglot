@@ -205,3 +205,41 @@ class TestTeradata(Validator):
                 "teradata": "TRYCAST('-2.5' AS DECIMAL(5, 2))",
             },
         )
+
+    def test_str_to_time(self):
+        self.validate_all(
+            "TO_DATE('2024-01-01', 'YYYY-MM-DD')",
+            write={
+                "teradata": "TO_DATE('2024-01-01', 'YYYY-MM-DD')",
+                "oracle": "TO_DATE('2024-01-01', 'YYYY-MM-DD')",
+                "postgres": "TO_DATE('2024-01-01', 'YYYY-MM-DD')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-01 13:14:15', 'YYYY-MM-DD HH24:MI:SS')",
+            write={
+                "teradata": "TO_TIMESTAMP('2024-01-01 13:14:15', 'YYYY-MM-DD HH24:MI:SS')",
+                "oracle": "TO_TIMESTAMP('2024-01-01 13:14:15', 'YYYY-MM-DD HH24:MI:SS')",
+                "postgres": "TO_TIMESTAMP('2024-01-01 13:14:15', 'YYYY-MM-DD HH24:MI:SS')",
+            },
+        )
+        self.validate_all(
+            "CAST('2024-01-01' AS DATE FORMAT 'YYYY-MM-DD')",
+            write={"teradata": "CAST('2024-01-01' AS DATE FORMAT 'YYYY-MM-DD')"},
+        )
+        self.validate_all(
+            "CAST('2024/01/01' AS DATE FORMAT 'YYYY/MM/DD')",
+            write={"teradata": "CAST('2024/01/01' AS DATE FORMAT 'YYYY/MM/DD')"},
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')",
+            write={"teradata": "TO_TIMESTAMP('2024-01-01 13:14:15.123', 'YYYY-MM-DDBHH:MI:SS.S(3)')"},
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-01-01 01:14:15 PM', 'YYYY-MM-DDbHH:MI:SSBT')",
+            write={"teradata": "TO_TIMESTAMP('2024-01-01 01:14:15 PM', 'YYYY-MM-DDbHH:MI:SSBT')"},
+        )
+        self.validate_all(
+            "CAST('01-Jan-2024' AS DATE FORMAT 'DD-MMM-YYYY')",
+            write={"teradata": "CAST('01-Jan-2024' AS DATE FORMAT 'DD-MMM-YYYY')"},
+        )

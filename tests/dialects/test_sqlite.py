@@ -140,6 +140,19 @@ class TestSQLite(Validator):
             read={"snowflake": "LEAST(x, y, z)"},
             write={"snowflake": "LEAST(x, y, z)"},
         )
+        self.validate_all(
+            "SELECT STR_TO_DATE('2022-01-01', '%Y-%m-%d')",
+            write = {
+                        "mysql": "SELECT STR_TO_DATE('2022-01-01', '%Y-%m-%d')",
+                        "sqlite": "SELECT STRFTIME('%Y-%m-%d', '2022-01-01')"
+                    }
+        )
+        self.validate_all(
+            "SELECT CAST('2022-01-01' AS DATE FORMAT '%Y-%m-%d')",
+            write = {
+                "sqlite": "SELECT STRFTIME('%Y-%m-%d', '2022-01-01')"
+            }
+        )
 
     def test_datediff(self):
         self.validate_all(

@@ -10,7 +10,6 @@ from sqlglot.dialects.dialect import (
     date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
     rename_func,
-    ts_or_ds_to_date_sql,
 )
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.helper import seq_get
@@ -206,7 +205,6 @@ class Redshift(Postgres):
             exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
-            exp.TsOrDsToDate: ts_or_ds_to_date_sql("redshift"),
         }
 
         # Postgres maps exp.Pivot to no_pivot_sql, but Redshift support pivots

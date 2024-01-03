@@ -546,32 +546,32 @@ class TestMySQL(Validator):
             "DAYOFYEAR(x)",
             write={
                 "mysql": "DAYOFYEAR(x)",
-                "": "DAY_OF_YEAR(TS_OR_DS_TO_DATE(x))",
+                "": "DAY_OF_YEAR(CAST(x AS DATE))",
             },
         )
         self.validate_all(
             "DAYOFMONTH(x)",
-            write={"mysql": "DAYOFMONTH(x)", "": "DAY_OF_MONTH(TS_OR_DS_TO_DATE(x))"},
+            write={"mysql": "DAYOFMONTH(x)", "": "DAY_OF_MONTH(CAST(x AS DATE))"},
         )
         self.validate_all(
             "DAYOFWEEK(x)",
-            write={"mysql": "DAYOFWEEK(x)", "": "DAY_OF_WEEK(TS_OR_DS_TO_DATE(x))"},
+            write={"mysql": "DAYOFWEEK(x)", "": "DAY_OF_WEEK(CAST(x AS DATE))"},
         )
         self.validate_all(
             "WEEKOFYEAR(x)",
-            write={"mysql": "WEEKOFYEAR(x)", "": "WEEK_OF_YEAR(TS_OR_DS_TO_DATE(x))"},
+            write={"mysql": "WEEKOFYEAR(x)", "": "WEEK_OF_YEAR(CAST(x AS DATE))"},
         )
         self.validate_all(
             "DAY(x)",
-            write={"mysql": "DAY(x)", "": "DAY(TS_OR_DS_TO_DATE(x))"},
+            write={"mysql": "DAY(x)", "": "DAY(CAST(x AS DATE))"},
         )
         self.validate_all(
             "WEEK(x)",
-            write={"mysql": "WEEK(x)", "": "WEEK(TS_OR_DS_TO_DATE(x))"},
+            write={"mysql": "WEEK(x)", "": "WEEK(CAST(x AS DATE))"},
         )
         self.validate_all(
             "YEAR(x)",
-            write={"mysql": "YEAR(x)", "": "YEAR(TS_OR_DS_TO_DATE(x))"},
+            write={"mysql": "YEAR(x)", "": "YEAR(CAST(x AS DATE))"},
         )
         self.validate_all(
             "DATE(x)",
@@ -1005,7 +1005,7 @@ COMMENT='客户账户表'"""
         self.validate_all(
             "MONTHNAME(x)",
             write={
-                "": "TIME_TO_STR(TS_OR_DS_TO_DATE(x), '%B')",
+                "": "TIME_TO_STR(CAST(x AS DATE), '%B')",
                 "mysql": "DATE_FORMAT(x, '%M')",
             },
         )

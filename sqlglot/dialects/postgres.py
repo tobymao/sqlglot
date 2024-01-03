@@ -27,7 +27,6 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     trim_sql,
     ts_or_ds_add_cast,
-    ts_or_ds_to_date_sql,
 )
 from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
@@ -468,7 +467,6 @@ class Postgres(Dialect):
             exp.TryCast: no_trycast_sql,
             exp.TsOrDsAdd: _date_add_sql("+"),
             exp.TsOrDsDiff: _date_diff_sql,
-            exp.TsOrDsToDate: ts_or_ds_to_date_sql("postgres"),
             exp.UnixToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')})",
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Variance: rename_func("VAR_SAMP"),

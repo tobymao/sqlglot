@@ -5261,6 +5261,10 @@ class TsOrDsToDate(Func):
     arg_types = {"this": True, "format": False}
 
 
+class TsOrDsToTime(Func):
+    pass
+
+
 class TsOrDiToDi(Func):
     pass
 

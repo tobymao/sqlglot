@@ -307,7 +307,7 @@ class Dialect(metaclass=_Dialect):
             if not result:
                 from difflib import get_close_matches
 
-                similar = seq_get(get_close_matches(dialect_name, cls.classes, n=1), 0)
+                similar = seq_get(get_close_matches(dialect_name, cls.classes, n=1), 0) or ""
                 if similar:
                     similar = f" Did you mean {similar}?"
 

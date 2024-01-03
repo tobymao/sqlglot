@@ -4518,7 +4518,7 @@ class Count(AggFunc):
 
 
 class CountIf(AggFunc):
-    pass
+    _sql_names = ["COUNT_IF", "COUNTIF"]
 
 
 class CurrentDate(Func):

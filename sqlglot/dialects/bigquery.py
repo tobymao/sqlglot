@@ -215,6 +215,12 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
     return ""
 
 
+def _parse_time(args: t.List) -> exp.Func:
+    if len(args) == 1:
+        return exp.TsOrDsToTime(this=args[0])
+    return exp.Anonymous(this="TIME", expressions=args)
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -358,6 +364,7 @@ class BigQuery(Dialect):
                 this=seq_get(args, 0),
                 expression=seq_get(args, 1) or exp.Literal.string(","),
             ),
+            "TIME": _parse_time,
             "TIME_ADD": parse_date_delta_with_interval(exp.TimeAdd),
             "TIME_SUB": parse_date_delta_with_interval(exp.TimeSub),
             "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
@@ -594,6 +601,7 @@ class BigQuery(Dialect):
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToDate: ts_or_ds_to_date_sql("bigquery"),
+            exp.TsOrDsToTime: rename_func("TIME"),
             exp.Unhex: rename_func("FROM_HEX"),
             exp.UnixToTime: _unix_to_time_sql,
             exp.Values: _derived_table_values_to_unnest,

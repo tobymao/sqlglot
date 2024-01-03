@@ -76,6 +76,9 @@ class TestBigQuery(Validator):
             ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
         )
 
+        self.validate_identity("TIME(15, 30, 00)")
+        self.validate_identity("TIME('2008-12-25 15:30:00+08')")
+        self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
         self.validate_identity("SELECT test.Unknown FROM test")
         self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
         self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
@@ -190,6 +193,13 @@ class TestBigQuery(Validator):
         self.validate_all('x <> """"""', write={"bigquery": "x <> ''"})
         self.validate_all("x <> ''''''", write={"bigquery": "x <> ''"})
         self.validate_all("CAST(x AS DATETIME)", read={"": "x::timestamp"})
+        self.validate_all(
+            "SELECT TIME('2008-12-25 15:30:00')",
+            write={
+                "bigquery": "SELECT TIME('2008-12-25 15:30:00')",
+                "duckdb": "SELECT CAST('2008-12-25 15:30:00' AS TIME)",
+            },
+        )
         self.validate_all(
             "SELECT FORMAT_DATE('%Y%m%d', '2023-12-25')",
             write={

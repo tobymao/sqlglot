@@ -3112,6 +3112,9 @@ class Generator:
         cond_for_null = arg.is_(exp.null())
         return self.sql(exp.func("IF", cond_for_null, exp.null(), exp.Array(expressions=[arg])))
 
+    def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
+        return self.sql(exp.cast(expression.this, "time"))
+
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):
             from sqlglot.optimizer.simplify import simplify

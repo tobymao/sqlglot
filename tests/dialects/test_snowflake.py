@@ -172,6 +172,16 @@ WHERE
         )
 
         self.validate_all(
+            "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
+            read={
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+            },
+            write={
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+                "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
+            },
+        )
+        self.validate_all(
             "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
             write={
                 "duckdb": "SELECT MAKE_TIME(12, 34, 56 + (987654321 / 1000000000.0))",

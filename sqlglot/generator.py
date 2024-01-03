@@ -137,9 +137,6 @@ class Generator:
     # Whether or not the TABLESAMPLE clause supports a method name, like BERNOULLI
     TABLESAMPLE_WITH_METHOD = True
 
-    # Whether or not to treat the number in TABLESAMPLE (50) as a percentage
-    TABLESAMPLE_SIZE_IS_PERCENT = False
-
     # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
@@ -1484,17 +1481,15 @@ class Generator:
         field = self.sql(expression, "bucket_field")
         field = f" ON {field}" if field else ""
         bucket = f"BUCKET {numerator} OUT OF {denominator}{field}" if numerator else ""
-        percent = self.sql(expression, "percent")
-        percent = f"{percent} PERCENT" if percent else ""
         rows = self.sql(expression, "rows")
         rows = f"{rows} ROWS" if rows else ""
-
         size = self.sql(expression, "size")
-        if size and self.TABLESAMPLE_SIZE_IS_PERCENT:
-            size = f"{size} PERCENT"
-
         seed = self.sql(expression, "seed")
         seed = f" {seed_prefix} ({seed})" if seed else ""
+
+        percent = self.sql(expression, "percent")
+        if percent and not self.dialect.TABLESAMPLE_SIZE_IS_PERCENT:
+            percent = f"{percent} PERCENT"
 
         expr = f"{bucket}{percent}{rows}{size}"
         if self.TABLESAMPLE_REQUIRES_PARENS:

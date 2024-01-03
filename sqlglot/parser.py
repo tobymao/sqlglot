@@ -2900,7 +2900,10 @@ class Parser(metaclass=_Parser):
         elif self._match(TokenType.ROWS):
             rows = num
         elif num:
-            size = num
+            if self.dialect.TABLESAMPLE_SIZE_IS_PERCENT:
+                percent = num
+            else:
+                size = num
 
         if matched_l_paren:
             self._match_r_paren()

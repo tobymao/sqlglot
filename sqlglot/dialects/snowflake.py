@@ -347,6 +347,7 @@ class Snowflake(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     SUPPORTS_SEMI_ANTI_JOIN = False
     PREFER_CTE_ALIAS_COLUMN = True
+    TABLESAMPLE_SIZE_IS_PERCENT = True
 
     TIME_MAPPING = {
         "YYYY": "%Y",

@@ -727,12 +727,12 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM example TABLESAMPLE (3) REPEATABLE (82)",
+            "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
             read={
                 "snowflake": "SELECT * FROM example SAMPLE (3) SEED (82)",
             },
             write={
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3) REPEATABLE (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
                 "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
             },
         )

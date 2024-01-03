@@ -229,6 +229,15 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_columns(self, logger):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
+                parse_one("WITH x AS (SELECT a FROM db.y) SELECT * FROM db.x"),
+                schema={"db": {"x": {"z": "int"}, "y": {"a": "int"}}},
+                expand_stars=False,
+            ).sql(),
+            "WITH x AS (SELECT y.a AS a FROM db.y) SELECT * FROM db.x",
+        )
+
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
                 parse_one("WITH x AS (SELECT a FROM db.y) SELECT z FROM db.x"),
                 schema={"db": {"x": {"z": "int"}, "y": {"a": "int"}}},
                 infer_schema=False,

@@ -172,6 +172,13 @@ WHERE
         )
 
         self.validate_all(
+            "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
+            write={
+                "duckdb": "SELECT MAKE_TIME(12, 34, 56 + (987654321 / 1000000000.0))",
+                "snowflake": "SELECT TIME_FROM_PARTS(12, 34, 56, 987654321)",
+            },
+        )
+        self.validate_all(
             "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
             read={
                 "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00)",
@@ -179,7 +186,7 @@ WHERE
             write={
                 "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00)",
                 "snowflake": "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00)",
-            },
+            }
         )
         self.validate_all(
             """WITH vartab(v) AS (select parse_json('[{"attr": [{"name": "banana"}]}]')) SELECT GET_PATH(v, '[0].attr[0].name') FROM vartab""",

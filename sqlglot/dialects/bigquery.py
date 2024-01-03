@@ -217,6 +217,9 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
 def _parse_time(args: t.List) -> exp.Func:
     if len(args) == 1:
         return exp.TsOrDsToTime(this=args[0])
+    if len(args) == 3:
+        return exp.TimeFromParts.from_arg_list(args)
+
     return exp.Anonymous(this="TIME", expressions=args)
 
 
@@ -592,6 +595,7 @@ class BigQuery(Dialect):
                 "PARSE_TIMESTAMP", self.format_time(e), e.this, e.args.get("zone")
             ),
             exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
+            exp.TimeFromParts: rename_func("TIME"),
             exp.TimeSub: date_add_interval_sql("TIME", "SUB"),
             exp.TimestampAdd: date_add_interval_sql("TIMESTAMP", "ADD"),
             exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),

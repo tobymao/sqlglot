@@ -21,6 +21,30 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
 
         self.validate_all(
+            "SELECT TIMEFROMPARTS(23, 59, 59, 0, 0)",
+            read={
+                "duckdb": "SELECT MAKE_TIME(23, 59, 59)",
+                "mysql": "SELECT MAKETIME(23, 59, 59)",
+                "postgres": "SELECT MAKE_TIME(23, 59, 59)",
+                "snowflake": "SELECT TIME_FROM_PARTS(23, 59, 59)",
+            },
+            write={
+                "tsql": "SELECT TIMEFROMPARTS(23, 59, 59, 0, 0)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIMEFROMPARTS(2013, 4, 5, 12, 00, 00, 0)",
+            read={
+                # The nanoseconds are ignored since T-SQL doesn't support that precision
+                "snowflake": "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00, 987654321)"
+            },
+            write={
+                "duckdb": "SELECT MAKE_TIMESTAMP(2013, 4, 5, 12, 00, 00 + (0 / 1000.0))",
+                "snowflake": "SELECT TIMESTAMP_FROM_PARTS(2013, 4, 5, 12, 00, 00, 0 * 1000000)",
+                "tsql": "SELECT DATETIMEFROMPARTS(2013, 4, 5, 12, 00, 00, 0)",
+            },
+        )
+        self.validate_all(
             "SELECT TOP 1 * FROM (SELECT x FROM t1 UNION ALL SELECT x FROM t2) AS _l_0",
             read={
                 "": "SELECT x FROM t1 UNION ALL SELECT x FROM t2 LIMIT 1",

@@ -251,7 +251,13 @@ class TestBigQuery(Validator):
                 "duckdb": "SELECT STRFTIME(CAST('2023-12-25' AS DATE), '%Y%m%d')",
             },
         )
-        self.validate_all("SELECT COUNTIF(x)", write={"duckdb": "SELECT COUNT_IF(x)"})
+        self.validate_all(
+            "SELECT COUNTIF(x)",
+            write={
+                "bigquery": "SELECT COUNTIF(x)",
+                "duckdb": "SELECT COUNT_IF(x)",
+            },
+        )
         self.validate_all(
             "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), minute)",
             write={

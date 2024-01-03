@@ -76,6 +76,7 @@ class TestBigQuery(Validator):
             ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
         )
 
+        self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
         self.validate_identity("TIME('2008-12-25 15:30:00+08')")
         self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
         self.validate_identity("SELECT test.Unknown FROM test")

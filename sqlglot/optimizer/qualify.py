@@ -23,6 +23,7 @@ def qualify(
     catalog: t.Optional[str] = None,
     schema: t.Optional[dict | Schema] = None,
     expand_alias_refs: bool = True,
+    expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
     isolate_tables: bool = False,
     qualify_columns: bool = True,
@@ -48,6 +49,9 @@ def qualify(
         catalog: Default catalog name for tables.
         schema: Schema to infer column names and types.
         expand_alias_refs: Whether or not to expand references to aliases.
+        expand_stars: Whether or not to expand star queries. This is a necessary step
+            for most of the optimizer's rules to work; do not set to False unless you
+            know what you're doing!
         infer_schema: Whether or not to infer the schema if missing.
         isolate_tables: Whether or not to isolate table selects.
         qualify_columns: Whether or not to qualify columns.
@@ -72,7 +76,11 @@ def qualify(
 
     if qualify_columns:
         expression = qualify_columns_func(
-            expression, schema, expand_alias_refs=expand_alias_refs, infer_schema=infer_schema
+            expression,
+            schema,
+            expand_alias_refs=expand_alias_refs,
+            expand_stars=expand_stars,
+            infer_schema=infer_schema,
         )
 
     if quote_identifiers:

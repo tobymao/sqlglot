@@ -17,6 +17,7 @@ def qualify_columns(
     expression: exp.Expression,
     schema: t.Dict | Schema,
     expand_alias_refs: bool = True,
+    expand_stars: bool = True,
     infer_schema: t.Optional[bool] = None,
 ) -> exp.Expression:
     """
@@ -33,6 +34,9 @@ def qualify_columns(
         expression: Expression to qualify.
         schema: Database schema.
         expand_alias_refs: Whether or not to expand references to aliases.
+        expand_stars: Whether or not to expand star queries. This is a necessary step
+            for most of the optimizer's rules to work; do not set to False unless you
+            know what you're doing!
         infer_schema: Whether or not to infer the schema if missing.
 
     Returns:
@@ -57,7 +61,8 @@ def qualify_columns(
             _expand_alias_refs(scope, resolver)
 
         if not isinstance(scope.expression, exp.UDTF):
-            _expand_stars(scope, resolver, using_column_tables, pseudocolumns)
+            if expand_stars:
+                _expand_stars(scope, resolver, using_column_tables, pseudocolumns)
             qualify_outputs(scope)
 
         _expand_group_by(scope)

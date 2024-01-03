@@ -981,9 +981,9 @@ def prepend_dollar_to_path(expression: exp.GetPath) -> exp.GetPath:
     path = expression.expression
     path = exp.func(
         "if",
-        exp.StartsWith(this=path.copy(), expression=exp.Literal.string("[")),
-        exp.Concat(expressions=[exp.Literal.string("$"), path.copy()]),
-        exp.Concat(expressions=[exp.Literal.string("$."), path.copy()]),
+        exp.func("startswith", path, "'['"),
+        exp.func("concat", "'$'", path),
+        exp.func("concat", "'$.'", path),
     )
 
     expression.expression.replace(simplify(path))

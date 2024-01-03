@@ -237,6 +237,9 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("SELECT * FROM test TABLESAMPLE (50 PERCENT)")
+        self.validate_identity("SELECT * FROM test TABLESAMPLE (5 ROWS)")
+        self.validate_identity("SELECT * FROM test TABLESAMPLE (BUCKET 4 OUT OF 10)")
         self.validate_identity("REFRESH 'hdfs://path/to/table'")
         self.validate_identity("REFRESH TABLE tempDB.view1")
         self.validate_identity("SELECT CASE WHEN a = NULL THEN 1 ELSE 2 END")

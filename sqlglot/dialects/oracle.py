@@ -155,7 +155,7 @@ class Oracle(Dialect):
         DATA_TYPE_SPECIFIERS_ALLOWED = True
         ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
-        SAMPLE_CLAUSE = "SAMPLE"
+        TABLESAMPLE_CLAUSE = "SAMPLE"
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

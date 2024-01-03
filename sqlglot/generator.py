@@ -134,9 +134,6 @@ class Generator:
     # Whether or not the plural form of date parts like day (i.e. "days") is supported in INTERVALs
     INTERVAL_ALLOWS_PLURAL_FORM = True
 
-    # Whether or not the TABLESAMPLE clause supports a method name, like BERNOULLI
-    TABLESAMPLE_WITH_METHOD = True
-
     # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
@@ -220,6 +217,15 @@ class Generator:
     # Whether or not a table sample clause's size needs to be followed by the ROWS keyword
     TABLESAMPLE_SIZE_IS_ROWS = True
 
+    # The keyword(s) to use when generating a sample clause
+    TABLESAMPLE_CLAUSE = "TABLESAMPLE"
+
+    # Whether or not the TABLESAMPLE clause supports a method name, like BERNOULLI
+    TABLESAMPLE_WITH_METHOD = True
+
+    # The keyword(s) to use when specifying the seed of a sample clause
+    TABLESAMPLE_SEED_KEYWORD = "SEED"
+
     # Whether or not COLLATE is a function instead of a binary operator
     COLLATE_IS_FUNC = False
 
@@ -234,9 +240,6 @@ class Generator:
 
     # Whether or not CONCAT requires >1 arguments
     SUPPORTS_SINGLE_ARG_CONCAT = True
-
-    # The keyword(s) to use when generating a sample clause
-    SAMPLE_CLAUSE = "TABLESAMPLE"
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -1464,9 +1467,8 @@ class Generator:
     def tablesample_sql(
         self,
         expression: exp.TableSample,
-        seed_prefix: str = "SEED",
         sep: str = " AS ",
-        sample_clause: t.Optional[str] = None,
+        tablesample_clause: t.Optional[str] = None,
     ) -> str:
         if self.dialect.ALIAS_POST_TABLESAMPLE and expression.this and expression.this.alias:
             table = expression.this.copy()
@@ -1485,7 +1487,7 @@ class Generator:
         field = f" ON {field}" if field else ""
         bucket = f"BUCKET {numerator} OUT OF {denominator}{field}" if numerator else ""
         seed = self.sql(expression, "seed")
-        seed = f" {seed_prefix} ({seed})" if seed else ""
+        seed = f" {self.TABLESAMPLE_SEED_KEYWORD} ({seed})" if seed else ""
 
         size = self.sql(expression, "size")
         if size and self.TABLESAMPLE_SIZE_IS_ROWS:
@@ -1499,7 +1501,7 @@ class Generator:
         if self.TABLESAMPLE_REQUIRES_PARENS:
             expr = f"({expr})"
 
-        return f"{this} {sample_clause or self.SAMPLE_CLAUSE} {method}{expr}{seed}{alias}"
+        return f"{this} {tablesample_clause or self.TABLESAMPLE_CLAUSE} {method}{expr}{seed}{alias}"
 
     def pivot_sql(self, expression: exp.Pivot) -> str:
         expressions = self.expressions(expression, flat=True)

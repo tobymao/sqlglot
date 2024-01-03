@@ -177,9 +177,11 @@ WHERE
         self.validate_all(
             "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
             read={
+                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
                 "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
             },
             write={
+                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
                 "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
                 "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
             },

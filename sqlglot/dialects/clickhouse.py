@@ -485,7 +485,7 @@ class ClickHouse(Dialect):
         NVL2_SUPPORTED = False
         TABLESAMPLE_REQUIRES_PARENS = False
         TABLESAMPLE_SIZE_IS_ROWS = False
-        SAMPLE_CLAUSE = "SAMPLE"
+        TABLESAMPLE_CLAUSE = "SAMPLE"
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",

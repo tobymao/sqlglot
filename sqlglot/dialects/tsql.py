@@ -659,6 +659,7 @@ class TSQL(Dialect):
         ENSURE_BOOLS = True
         NULL_ORDERING_SUPPORTED = False
         SUPPORTS_SINGLE_ARG_CONCAT = False
+        TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,

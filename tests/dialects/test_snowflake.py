@@ -175,6 +175,16 @@ WHERE
         )
 
         self.validate_all(
+            "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
+            read={
+                "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
+            },
+            write={
+                "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
+                "snowflake": "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
             read={
                 "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",

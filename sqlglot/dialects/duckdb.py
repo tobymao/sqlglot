@@ -225,6 +225,7 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "JSON": exp.ParseJSON.from_arg_list,
+            "JSON_OBJECT": lambda args: exp.JSONObject(expressions=args),
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
@@ -261,6 +262,7 @@ class DuckDB(Dialect):
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("DECODE", None)
+        FUNCTION_PARSERS.pop("JSON_OBJECT", None)
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,
@@ -349,11 +351,12 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
+            exp.JSONBExtract: arrow_json_extract_sql,
+            exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONFormat: _json_format_sql,
-            exp.JSONBExtract: arrow_json_extract_sql,
-            exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONObject: rename_func("JSON_OBJECT"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.MonthsBetween: lambda self, e: self.func(

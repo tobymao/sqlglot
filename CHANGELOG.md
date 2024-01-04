@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v20.7.1] - 2024-01-04
+### :bug: Bug Fixes
+- [`9d94b9c`](https://github.com/tobymao/sqlglot/commit/9d94b9c77f5fbd22ad147789f23e971ec6bb3c72) - don't normalize schema if normalize is set to false *(PR [#2767](https://github.com/tobymao/sqlglot/pull/2767) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v20.6.0] - 2024-01-04
 ### :boom: BREAKING CHANGES
 - due to [`4648c6a`](https://github.com/tobymao/sqlglot/commit/4648c6acbeab8d5155be3f8e53d11d8f00c33a2e) - set sample clause keyword(s) as class constant to enable transpilation *(PR [#2750](https://github.com/tobymao/sqlglot/pull/2750) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2349,3 +2354,4 @@ Changelog
 [v20.2.0]: https://github.com/tobymao/sqlglot/compare/v20.1.0...v20.2.0
 [v20.5.0]: https://github.com/tobymao/sqlglot/compare/v20.4.0...v20.5.0
 [v20.6.0]: https://github.com/tobymao/sqlglot/compare/v20.5.0...v20.6.0
+[v20.7.1]: https://github.com/tobymao/sqlglot/compare/v20.6.0...v20.7.1

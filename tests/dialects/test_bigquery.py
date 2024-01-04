@@ -17,6 +17,14 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_all(
+            "SELECT UNIX_DATE(DATE '2008-12-25')",
+            write={
+                "bigquery": "SELECT UNIX_DATE(CAST('2008-12-25' AS DATE))",
+                "duckdb": "SELECT DATE_DIFF('DAY', CAST('1970-01-01' AS DATE), CAST('2008-12-25' AS DATE))",
+            },
+        )
+
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(
                 "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",

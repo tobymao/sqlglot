@@ -177,9 +177,11 @@ WHERE
         self.validate_all(
             "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
             read={
+                "bigquery": "JSON_OBJECT(['key_1', 'key_2'], ['one', NULL])",
                 "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
             },
             write={
+                "bigquery": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
                 "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
                 "snowflake": "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
             },

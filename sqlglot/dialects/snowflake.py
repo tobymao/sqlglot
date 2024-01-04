@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     format_time_lambda,
     if_sql,
     inline_array_sql,
+    json_keyvalue_comma_sql,
     max_or_greatest,
     min_or_least,
     rename_func,
@@ -429,7 +430,6 @@ class Snowflake(Dialect):
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
             "OBJECT_CONSTRUCT": _parse_object_construct,
-            "OBJECT_CONSTRUCT_KEEP_NULL": lambda args: exp.JSONObject(expressions=args),
             "REGEXP_REPLACE": _parse_regexp_replace,
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
@@ -446,6 +446,7 @@ class Snowflake(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "DATE_PART": _parse_date_part,
+            "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
         }
         FUNCTION_PARSERS.pop("TRIM")
 
@@ -695,7 +696,8 @@ class Snowflake(Dialect):
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
             exp.JSONExtract: lambda self, e: f"{self.sql(e, 'this')}[{self.sql(e, 'expression')}]",
-            exp.JSONObject: rename_func("OBJECT_CONSTRUCT_KEEP_NULL"),
+            exp.JSONKeyValue: json_keyvalue_comma_sql,
+            exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),

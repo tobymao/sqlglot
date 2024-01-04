@@ -737,6 +737,7 @@ class TSQL(Dialect):
             if cross_apply is False:
                 return "OUTER APPLY"
 
+            # TODO: perhaps we can check if the parent is a Join and transpile it appropriately
             self.unsupported("LATERAL clause is not supported.")
             return "LATERAL"
 

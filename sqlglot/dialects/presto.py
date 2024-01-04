@@ -379,6 +379,7 @@ class Presto(Dialect):
             exp.Initcap: _initcap_sql,
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Last: _first_last_sql,
+            exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
             exp.Lateral: _explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),

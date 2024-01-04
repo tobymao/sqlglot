@@ -241,6 +241,9 @@ class Generator:
     # Whether or not CONCAT requires >1 arguments
     SUPPORTS_SINGLE_ARG_CONCAT = True
 
+    # Whether or not LAST_DAY function supports a date part argument
+    LAST_DAY_SUPPORTS_DATE_PART = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -3145,6 +3148,16 @@ class Generator:
                 "day",
             )
         )
+
+    def lastday_sql(self, expression: exp.LastDay) -> str:
+        if self.LAST_DAY_SUPPORTS_DATE_PART:
+            return self.function_fallback_sql(expression)
+
+        unit = expression.text("unit")
+        if unit and unit != "MONTH":
+            self.unsupported("Date parts are not supported in LAST_DAY.")
+
+        return self.func("LAST_DAY", expression.this)
 
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):

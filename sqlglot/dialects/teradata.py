@@ -176,6 +176,7 @@ class Teradata(Dialect):
         TABLE_HINTS = False
         QUERY_HINTS = False
         TABLESAMPLE_KEYWORDS = "SAMPLE"
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

@@ -98,6 +98,7 @@ class Drill(Dialect):
         TABLE_HINTS = False
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

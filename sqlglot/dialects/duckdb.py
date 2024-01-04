@@ -311,6 +311,7 @@ class DuckDB(Dialect):
         SEMI_ANTI_JOIN_WITH_SIDE = False
         TABLESAMPLE_KEYWORDS = "USING SAMPLE"
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

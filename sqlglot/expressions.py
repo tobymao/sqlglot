@@ -4613,8 +4613,9 @@ class MonthsBetween(Func):
     arg_types = {"this": True, "expression": True, "roundoff": False}
 
 
-class LastDateOfMonth(Func):
-    pass
+class LastDay(Func, TimeUnit):
+    _sql_names = ["LAST_DAY", "LAST_DAY_OF_MONTH"]
+    arg_types = {"this": True, "unit": False}
 
 
 class Extract(Func):

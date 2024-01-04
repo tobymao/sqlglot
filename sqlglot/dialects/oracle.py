@@ -156,6 +156,7 @@ class Oracle(Dialect):
         ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
         LIMIT_FETCH = "FETCH"
         TABLESAMPLE_KEYWORDS = "SAMPLE"
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

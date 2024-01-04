@@ -1247,7 +1247,7 @@ WHERE
         self.validate_all(
             "SELECT x.a, x.b, t.v, t.y FROM x CROSS APPLY (SELECT v, y FROM t) t(v, y)",
             write={
-                "spark": "SELECT x.a, x.b, t.v, t.y FROM x CROSS JOIN LATERAL (SELECT v, y FROM t) AS t(v, y)",
+                "spark": "SELECT x.a, x.b, t.v, t.y FROM x INNER JOIN LATERAL (SELECT v, y FROM t) AS t(v, y)",
                 "tsql": "SELECT x.a, x.b, t.v, t.y FROM x CROSS APPLY (SELECT v, y FROM t) AS t(v, y)",
             },
         )
@@ -1270,7 +1270,7 @@ WHERE
         self.validate_all(
             "SELECT t.x, y.z FROM x CROSS APPLY tvfTest(t.x) y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x CROSS JOIN LATERAL TVFTEST(t.x) AS y(z)",
+                "spark": "SELECT t.x, y.z FROM x INNER JOIN LATERAL TVFTEST(t.x) AS y(z)",
                 "tsql": "SELECT t.x, y.z FROM x CROSS APPLY TVFTEST(t.x) AS y(z)",
             },
         )

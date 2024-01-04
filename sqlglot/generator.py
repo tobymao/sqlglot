@@ -1715,7 +1715,7 @@ class Generator:
 
         # https://www.mssqltips.com/sqlservertip/1958/sql-server-cross-apply-and-outer-apply/
         if cross_apply is True:
-            op = "CROSS JOIN "
+            op = "INNER JOIN "
         elif cross_apply is False:
             op = "LEFT JOIN "
         else:

@@ -730,6 +730,16 @@ class TSQL(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def lateral_op(self, expression: exp.Lateral) -> str:
+            cross_apply = expression.args.get("cross_apply")
+            if cross_apply is True:
+                return "CROSS APPLY"
+            if cross_apply is False:
+                return "OUTER APPLY"
+
+            self.unsupported("LATERAL clause is not supported.")
+            return "LATERAL"
+
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")
             if nano is not None:

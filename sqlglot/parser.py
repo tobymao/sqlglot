@@ -2493,13 +2493,14 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_lateral(self) -> t.Optional[exp.Lateral]:
-        outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY)
         cross_apply = self._match_pair(TokenType.CROSS, TokenType.APPLY)
+        if not cross_apply and self._match_pair(TokenType.OUTER, TokenType.APPLY):
+            cross_apply = False
 
-        if outer_apply or cross_apply:
+        if cross_apply is not None:
             this = self._parse_select(table=True)
             view = None
-            outer = not cross_apply
+            outer = None
         elif self._match(TokenType.LATERAL):
             this = self._parse_select(table=True)
             view = self._match(TokenType.VIEW)
@@ -2532,7 +2533,14 @@ class Parser(metaclass=_Parser):
         else:
             table_alias = self._parse_table_alias()
 
-        return self.expression(exp.Lateral, this=this, view=view, outer=outer, alias=table_alias)
+        return self.expression(
+            exp.Lateral,
+            this=this,
+            view=view,
+            outer=outer,
+            alias=table_alias,
+            cross_apply=cross_apply,
+        )
 
     def _parse_join_parts(
         self,
@@ -2565,9 +2573,6 @@ class Parser(metaclass=_Parser):
 
         if not skip_join_token and not join and not outer_apply and not cross_apply:
             return None
-
-        if outer_apply:
-            side = Token(TokenType.LEFT, "LEFT")
 
         kwargs: t.Dict[str, t.Any] = {"this": self._parse_table(parse_bracket=parse_bracket)}
 

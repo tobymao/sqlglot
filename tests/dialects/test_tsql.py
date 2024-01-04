@@ -1247,39 +1247,45 @@ WHERE
         self.validate_all(
             "SELECT x.a, x.b, t.v, t.y FROM x CROSS APPLY (SELECT v, y FROM t) t(v, y)",
             write={
-                "spark": "SELECT x.a, x.b, t.v, t.y FROM x, LATERAL (SELECT v, y FROM t) AS t(v, y)",
+                "spark": "SELECT x.a, x.b, t.v, t.y FROM x CROSS JOIN LATERAL (SELECT v, y FROM t) AS t(v, y)",
+                "tsql": "SELECT x.a, x.b, t.v, t.y FROM x CROSS APPLY (SELECT v, y FROM t) AS t(v, y)",
             },
         )
         self.validate_all(
             "SELECT x.a, x.b, t.v, t.y FROM x OUTER APPLY (SELECT v, y FROM t) t(v, y)",
             write={
                 "spark": "SELECT x.a, x.b, t.v, t.y FROM x LEFT JOIN LATERAL (SELECT v, y FROM t) AS t(v, y)",
+                "tsql": "SELECT x.a, x.b, t.v, t.y FROM x OUTER APPLY (SELECT v, y FROM t) AS t(v, y)",
             },
         )
         self.validate_all(
             "SELECT x.a, x.b, t.v, t.y, s.v, s.y FROM x OUTER APPLY (SELECT v, y FROM t) t(v, y) OUTER APPLY (SELECT v, y FROM t) s(v, y) LEFT JOIN z ON z.id = s.id",
             write={
                 "spark": "SELECT x.a, x.b, t.v, t.y, s.v, s.y FROM x LEFT JOIN LATERAL (SELECT v, y FROM t) AS t(v, y) LEFT JOIN LATERAL (SELECT v, y FROM t) AS s(v, y) LEFT JOIN z ON z.id = s.id",
+                "tsql": "SELECT x.a, x.b, t.v, t.y, s.v, s.y FROM x OUTER APPLY (SELECT v, y FROM t) AS t(v, y) OUTER APPLY (SELECT v, y FROM t) AS s(v, y) LEFT JOIN z ON z.id = s.id",
             },
         )
 
     def test_lateral_table_valued_function(self):
         self.validate_all(
-            "SELECT t.x, y.z FROM x CROSS APPLY tvfTest(t.x)y(z)",
+            "SELECT t.x, y.z FROM x CROSS APPLY tvfTest(t.x) y(z)",
             write={
-                "spark": "SELECT t.x, y.z FROM x, LATERAL TVFTEST(t.x) AS y(z)",
+                "spark": "SELECT t.x, y.z FROM x CROSS JOIN LATERAL TVFTEST(t.x) AS y(z)",
+                "tsql": "SELECT t.x, y.z FROM x CROSS APPLY TVFTEST(t.x) AS y(z)",
             },
         )
         self.validate_all(
             "SELECT t.x, y.z FROM x OUTER APPLY tvfTest(t.x)y(z)",
             write={
                 "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL TVFTEST(t.x) AS y(z)",
+                "tsql": "SELECT t.x, y.z FROM x OUTER APPLY TVFTEST(t.x) AS y(z)",
             },
         )
         self.validate_all(
             "SELECT t.x, y.z FROM x OUTER APPLY a.b.tvfTest(t.x)y(z)",
             write={
                 "spark": "SELECT t.x, y.z FROM x LEFT JOIN LATERAL a.b.TVFTEST(t.x) AS y(z)",
+                "tsql": "SELECT t.x, y.z FROM x OUTER APPLY a.b.TVFTEST(t.x) AS y(z)",
             },
         )
 

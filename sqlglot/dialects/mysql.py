@@ -629,6 +629,7 @@ class MySQL(Dialect):
         QUERY_HINT_SEP = " "
         VALUES_AS_TABLE = False
         NVL2_SUPPORTED = False
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

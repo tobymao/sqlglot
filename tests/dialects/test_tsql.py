@@ -1351,11 +1351,36 @@ WHERE
     def test_eomonth(self):
         self.validate_all(
             "EOMONTH(GETDATE())",
-            write={"spark": "LAST_DAY(CURRENT_TIMESTAMP())"},
+            read={
+                "spark": "LAST_DAY(CURRENT_TIMESTAMP())",
+            },
+            write={
+                "bigquery": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
+                "clickhouse": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
+                "duckdb": "LAST_DAY(CAST(CURRENT_TIMESTAMP AS DATE))",
+                "mysql": "LAST_DAY(DATE(CURRENT_TIMESTAMP()))",
+                "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE)) + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",
+                "presto": "LAST_DAY_OF_MONTH(CAST(CAST(CURRENT_TIMESTAMP AS TIMESTAMP) AS DATE))",
+                "redshift": "LAST_DAY(CAST(SYSDATE AS DATE))",
+                "snowflake": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
+                "spark": "LAST_DAY(TO_DATE(CURRENT_TIMESTAMP()))",
+                "tsql": "EOMONTH(CAST(GETDATE() AS DATE))",
+            },
         )
         self.validate_all(
             "EOMONTH(GETDATE(), -1)",
-            write={"spark": "LAST_DAY(ADD_MONTHS(CURRENT_TIMESTAMP(), -1))"},
+            write={
+                "bigquery": "LAST_DAY(DATE_ADD(CAST(CURRENT_TIMESTAMP() AS DATE), INTERVAL -1 MONTH))",
+                "clickhouse": "LAST_DAY(DATE_ADD(MONTH, -1, CAST(CURRENT_TIMESTAMP() AS DATE)))",
+                "duckdb": "LAST_DAY(CAST(CURRENT_TIMESTAMP AS DATE) + INTERVAL (-1) MONTH)",
+                "mysql": "LAST_DAY(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -1 MONTH))",
+                "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE) + INTERVAL '-1 MONTH') + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",
+                "presto": "LAST_DAY_OF_MONTH(DATE_ADD('MONTH', CAST(-1 AS BIGINT), CAST(CAST(CURRENT_TIMESTAMP AS TIMESTAMP) AS DATE)))",
+                "redshift": "LAST_DAY(DATEADD(MONTH, -1, CAST(SYSDATE AS DATE)))",
+                "snowflake": "LAST_DAY(DATEADD(MONTH, -1, CAST(CURRENT_TIMESTAMP() AS DATE)))",
+                "spark": "LAST_DAY(ADD_MONTHS(TO_DATE(CURRENT_TIMESTAMP()), -1))",
+                "tsql": "EOMONTH(DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)))",
+            },
         )
 
     def test_identifier_prefixes(self):

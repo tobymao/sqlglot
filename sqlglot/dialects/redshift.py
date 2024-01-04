@@ -169,6 +169,7 @@ class Redshift(Postgres):
         VALUES_AS_TABLE = False
         TZ_TO_WITH_TIME_ZONE = True
         NVL2_SUPPORTED = True
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
@@ -217,6 +218,9 @@ class Redshift(Postgres):
 
         # Redshift supports ANY_VALUE(..)
         TRANSFORMS.pop(exp.AnyValue)
+
+        # Redshift supports LAST_DAY(..)
+        TRANSFORMS.pop(exp.LastDay)
 
         RESERVED_KEYWORDS = {*Postgres.Generator.RESERVED_KEYWORDS, "snapshot", "type"}
 

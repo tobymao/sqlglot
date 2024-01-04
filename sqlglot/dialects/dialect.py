@@ -990,3 +990,11 @@ def path_to_jsonpath(
         return rename_func(name)(self, prepend_dollar_to_path(expression))
 
     return _transform
+
+
+def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
+    trunc_curr_date = exp.func("date_trunc", "month", expression.this)
+    plus_one_month = exp.func("date_add", trunc_curr_date, 1, "month")
+    minus_one_day = exp.func("date_sub", plus_one_month, 1, "day")
+
+    return self.sql(exp.cast(minus_one_day, "date"))

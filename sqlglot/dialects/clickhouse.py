@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arg_max_or_min_no_count,
+    date_delta_sql,
     inline_array_sql,
     no_pivot_sql,
     rename_func,
@@ -486,6 +487,7 @@ class ClickHouse(Dialect):
         TABLESAMPLE_REQUIRES_PARENS = False
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_KEYWORDS = "SAMPLE"
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",
@@ -541,12 +543,8 @@ class ClickHouse(Dialect):
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
-            exp.DateAdd: lambda self, e: self.func(
-                "DATE_ADD", exp.Literal.string(e.text("unit") or "DAY"), e.expression, e.this
-            ),
-            exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", exp.Literal.string(e.text("unit") or "DAY"), e.expression, e.this
-            ),
+            exp.DateAdd: date_delta_sql("DATE_ADD"),
+            exp.DateDiff: date_delta_sql("DATE_DIFF"),
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),

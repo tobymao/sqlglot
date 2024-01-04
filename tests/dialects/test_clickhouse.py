@@ -178,25 +178,25 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "DATE_ADD('DAY', 1, x)",
+            "DATE_ADD(DAY, 1, x)",
             read={
                 "clickhouse": "dateAdd(DAY, 1, x)",
                 "presto": "DATE_ADD('DAY', 1, x)",
             },
             write={
-                "clickhouse": "DATE_ADD('DAY', 1, x)",
+                "clickhouse": "DATE_ADD(DAY, 1, x)",
                 "presto": "DATE_ADD('DAY', 1, x)",
                 "": "DATE_ADD(x, 1, 'DAY')",
             },
         )
         self.validate_all(
-            "DATE_DIFF('DAY', a, b)",
+            "DATE_DIFF(DAY, a, b)",
             read={
-                "clickhouse": "dateDiff('DAY', a, b)",
+                "clickhouse": "dateDiff(DAY, a, b)",
                 "presto": "DATE_DIFF('DAY', a, b)",
             },
             write={
-                "clickhouse": "DATE_DIFF('DAY', a, b)",
+                "clickhouse": "DATE_DIFF(DAY, a, b)",
                 "presto": "DATE_DIFF('DAY', a, b)",
                 "": "DATEDIFF(b, a, DAY)",
             },

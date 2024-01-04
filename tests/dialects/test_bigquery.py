@@ -219,6 +219,37 @@ class TestBigQuery(Validator):
         )
 
         self.validate_all(
+            "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
+            read={
+                "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
+            },
+            write={
+                "bigquery": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
+                "duckdb": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "clickhouse": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "mysql": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "oracle": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "postgres": "SELECT CAST(DATE_TRUNC('MONTH', CAST('2008-11-25' AS DATE)) + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",
+                "presto": "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",
+                "redshift": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
+                "spark": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "tsql": "SELECT EOMONTH(CAST('2008-11-25' AS DATE))",
+
+            },
+        )
+        self.validate_all(
+            "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
+            read={
+                "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
+            },
+            write={
+                "duckdb": UnsupportedError,
+                "bigquery": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
+                "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
+            },
+        )
+        self.validate_all(
             "CAST(x AS DATETIME)",
             read={
                 "": "x::timestamp",

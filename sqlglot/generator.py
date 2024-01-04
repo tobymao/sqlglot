@@ -1712,6 +1712,8 @@ class Generator:
 
     def lateral_op(self, expression: exp.Lateral) -> str:
         cross_apply = expression.args.get("cross_apply")
+
+        # https://www.mssqltips.com/sqlservertip/1958/sql-server-cross-apply-and-outer-apply/
         if cross_apply is True:
             op = "CROSS JOIN "
         elif cross_apply is False:

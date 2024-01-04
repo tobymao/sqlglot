@@ -221,7 +221,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
             read={
-                "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
+                "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONS)",
             },
             write={
                 "bigquery": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",

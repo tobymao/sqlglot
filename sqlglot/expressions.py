@@ -1925,7 +1925,13 @@ class Join(Expression):
 
 
 class Lateral(UDTF):
-    arg_types = {"this": True, "view": False, "outer": False, "alias": False}
+    arg_types = {
+        "this": True,
+        "view": False,
+        "outer": False,
+        "alias": False,
+        "cross_apply": False,  # True -> CROSS APPLY, False -> OUTER APPLY
+    }
 
 
 class MatchRecognize(Expression):

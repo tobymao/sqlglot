@@ -635,7 +635,7 @@ def next_day(col: ColumnOrName, dayOfWeek: str) -> Column:
 
 
 def last_day(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "LAST_DAY")
+    return Column.invoke_expression_over_column(col, expression.LastDay)
 
 
 def from_unixtime(col: ColumnOrName, format: t.Optional[str] = None) -> Column:

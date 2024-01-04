@@ -105,18 +105,17 @@ def _parse_format(args: t.List) -> exp.Expression:
     return exp.TimeToStr(this=this, format=fmt, culture=culture)
 
 
-def _parse_eomonth(args: t.List) -> exp.Expression:
-    date = seq_get(args, 0)
+def _parse_eomonth(args: t.List) -> exp.LastDay:
+    date = exp.TsOrDsToDate(this=seq_get(args, 0))
     month_lag = seq_get(args, 1)
-    unit = DATE_DELTA_INTERVAL.get("month")
 
     if month_lag is None:
-        return exp.LastDateOfMonth(this=date)
+        this: exp.Expression = date
+    else:
+        unit = DATE_DELTA_INTERVAL.get("month")
+        this = exp.DateAdd(this=date, expression=month_lag, unit=unit and exp.var(unit))
 
-    # Remove month lag argument in parser as its compared with the number of arguments of the resulting class
-    args.remove(month_lag)
-
-    return exp.LastDateOfMonth(this=exp.DateAdd(this=date, expression=month_lag, unit=unit))
+    return exp.LastDay(this=this)
 
 
 def _parse_hashbytes(args: t.List) -> exp.Expression:
@@ -698,6 +697,7 @@ class TSQL(Dialect):
             exp.GetPath: path_to_jsonpath("JSON_VALUE"),
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
+            exp.LastDay: lambda self, e: self.func("EOMONTH", e.this),
             exp.Length: rename_func("LEN"),
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),

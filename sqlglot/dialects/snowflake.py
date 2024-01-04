@@ -423,6 +423,9 @@ class Snowflake(Dialect):
             "DIV0": _div0_to_if,
             "FLATTEN": exp.Explode.from_arg_list,
             "IFF": exp.If.from_arg_list,
+            "LAST_DAY": lambda args: exp.LastDay(
+                this=seq_get(args, 0), unit=_map_date_part(seq_get(args, 1))
+            ),
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "NULLIFZERO": _nullifzero_to_if,
             "OBJECT_CONSTRUCT": _parse_object_construct,

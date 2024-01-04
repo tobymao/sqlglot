@@ -603,6 +603,16 @@ class TestPresto(Validator):
         )
 
         self.validate_all(
+            "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",
+            read={
+                "duckdb": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+            },
+            write={
+                "duckdb": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "presto": "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",
+            },
+        )
+        self.validate_all(
             "SELECT MAX_BY(a.id, a.timestamp) FROM a",
             read={
                 "bigquery": "SELECT MAX_BY(a.id, a.timestamp) FROM a",

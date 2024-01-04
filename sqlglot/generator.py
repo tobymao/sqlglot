@@ -1686,7 +1686,8 @@ class Generator:
         if not on_sql and using:
             on_sql = csv(*(self.sql(column) for column in using))
 
-        this_sql = self.sql(expression, "this")
+        this = expression.this
+        this_sql = self.sql(this)
 
         if on_sql:
             on_sql = self.indent(on_sql, skip_first=True)
@@ -1696,6 +1697,9 @@ class Generator:
             else:
                 on_sql = f"{space}ON {on_sql}"
         elif not op_sql:
+            if isinstance(this, exp.Lateral) and this.args.get("cross_apply") is not None:
+                return f" {this_sql}"
+
             return f", {this_sql}"
 
         op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
@@ -1705,6 +1709,19 @@ class Generator:
         args = self.expressions(expression, flat=True)
         args = f"({args})" if len(args.split(",")) > 1 else args
         return f"{args} {arrow_sep} {self.sql(expression, 'this')}"
+
+    def lateral_op(self, expression: exp.Lateral) -> str:
+        cross_apply = expression.args.get("cross_apply")
+
+        # https://www.mssqltips.com/sqlservertip/1958/sql-server-cross-apply-and-outer-apply/
+        if cross_apply is True:
+            op = "INNER JOIN "
+        elif cross_apply is False:
+            op = "LEFT JOIN "
+        else:
+            op = ""
+
+        return f"{op}LATERAL"
 
     def lateral_sql(self, expression: exp.Lateral) -> str:
         this = self.sql(expression, "this")
@@ -1719,7 +1736,7 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        return f"LATERAL {this}{alias}"
+        return f"{self.lateral_op(expression)} {this}{alias}"
 
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")

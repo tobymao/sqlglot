@@ -3136,6 +3136,16 @@ class Generator:
 
         return self.sql(exp.cast(this, "date"))
 
+    def unixdate_sql(self, expression: exp.UnixDate) -> str:
+        return self.sql(
+            exp.func(
+                "DATEDIFF",
+                expression.this,
+                exp.cast(exp.Literal.string("1970-01-01"), "date"),
+                "day",
+            )
+        )
+
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):
             from sqlglot.optimizer.simplify import simplify

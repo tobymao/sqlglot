@@ -1485,6 +1485,7 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("SQL", "SECURITY"):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
+
         index = self._index
         key = self._parse_column()
 
@@ -3900,7 +3901,6 @@ class Parser(metaclass=_Parser):
             return this
 
         expressions = self._parse_csv(self._parse_function_parameter)
-
         self._match_r_paren()
         return self.expression(
             exp.UserDefinedFunction, this=this, expressions=expressions, wrapped=True

@@ -79,10 +79,6 @@ class Scope:
         self.cte_scopes = []
         self.union_scopes = []
         self.udtf_scopes = []
-
-        if scope_type == ScopeType.UNION and parent and not outer_column_list:
-            self.outer_column_list = parent.outer_column_list
-
         self.clear_cache()
 
     def clear_cache(self):
@@ -543,11 +539,23 @@ def _traverse_union(scope):
 
     # The last scope to be yield should be the top most scope
     left = None
-    for left in _traverse_scope(scope.branch(scope.expression.left, scope_type=ScopeType.UNION)):
+    for left in _traverse_scope(
+        scope.branch(
+            scope.expression.left,
+            outer_column_list=scope.outer_column_list,
+            scope_type=ScopeType.UNION,
+        )
+    ):
         yield left
 
     right = None
-    for right in _traverse_scope(scope.branch(scope.expression.right, scope_type=ScopeType.UNION)):
+    for right in _traverse_scope(
+        scope.branch(
+            scope.expression.right,
+            outer_column_list=scope.outer_column_list,
+            scope_type=ScopeType.UNION,
+        )
+    ):
         yield right
 
     scope.union_scopes = [left, right]

@@ -382,7 +382,6 @@ def _expand_stars(
     replace_columns: t.Dict[int, t.Dict[str, str]] = {}
     coalesced_columns = set()
 
-    pivot_columns = None
     pivot_output_columns = None
     pivot_exclude_columns = None
 
@@ -397,7 +396,7 @@ def _expand_stars(
                     c.output_name for e in field.expressions for c in e.find_all(exp.Column)
                 }
         else:
-            pivot_columns = set(c.output_name for c in pivot.find_all(exp.Column))
+            pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
 
             pivot_output_columns = [c.output_name for c in pivot.args.get("columns", [])]
             if not pivot_output_columns:
@@ -432,15 +431,8 @@ def _expand_stars(
             table_id = id(table)
             columns_to_exclude = except_columns.get(table_id) or set()
 
-            if pivot and pivot_output_columns:
-                implicit_columns = None
-
-                if pivot.unpivot:
-                    if pivot_exclude_columns:
-                        implicit_columns = [c for c in columns if c not in pivot_exclude_columns]
-                elif pivot_columns:
-                    implicit_columns = [c for c in columns if c not in pivot_columns]
-
+            if pivot and pivot_output_columns and pivot_exclude_columns:
+                implicit_columns = [c for c in columns if c not in pivot_exclude_columns]
                 if implicit_columns:
                     new_selections.extend(
                         exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)

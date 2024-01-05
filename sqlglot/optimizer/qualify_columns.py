@@ -389,6 +389,7 @@ def _expand_stars(
                 raise OptimizeError(f"Unknown table: {table}")
 
             columns = resolver.get_source_columns(table, only_visible=True)
+            columns = columns or scope.outer_column_list
 
             if pseudocolumns:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
@@ -477,6 +478,9 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
     for i, (selection, aliased_column) in enumerate(
         itertools.zip_longest(scope.expression.selects, scope.outer_column_list)
     ):
+        if selection is None:
+            break
+
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))

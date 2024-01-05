@@ -79,6 +79,10 @@ class Scope:
         self.cte_scopes = []
         self.union_scopes = []
         self.udtf_scopes = []
+
+        if scope_type == ScopeType.UNION and parent and not outer_column_list:
+            self.outer_column_list = parent.outer_column_list
+
         self.clear_cache()
 
     def clear_cache(self):

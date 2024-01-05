@@ -276,6 +276,17 @@ SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_0;
 SELECT * FROM x GROUP BY 1, 2;
 SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY x.a, x.b;
 
+SELECT * FROM (SELECT * FROM x) AS s(a, b);
+SELECT s.a AS a, s.b AS b FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS s;
+
+# execute: false
+SELECT * FROM (SELECT * FROM t) AS s(a, b);
+SELECT s.a AS a, s.b AS b FROM (SELECT t.a AS a, t.b AS b FROM t AS t) AS s;
+
+# execute: false
+SELECT * FROM (SELECT * FROM t1 UNION ALL SELECT * FROM t2) AS s(b);
+SELECT s.b AS b FROM (SELECT t1.b AS b FROM t1 AS t1 UNION ALL SELECT t2.b AS b FROM t2 AS t2) AS s;
+
 --------------------------------------
 -- CTEs
 --------------------------------------

@@ -565,7 +565,6 @@ class Parser(metaclass=_Parser):
         exp.Ordered: lambda self: self._parse_ordered(),
         exp.Properties: lambda self: self._parse_properties(),
         exp.Qualify: lambda self: self._parse_qualify(),
-        exp.Return: lambda self: self._parse_return(),
         exp.Returning: lambda self: self._parse_returning(),
         exp.Sort: lambda self: self._parse_sort(exp.Sort, TokenType.SORT_BY),
         exp.Table: lambda self: self._parse_table_parts(),
@@ -921,6 +920,8 @@ class Parser(metaclass=_Parser):
     OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS"}
     OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
 
+    SQL_READ_WRITE_CHARACTERISTICS = {("NO", "SQL"), ("CONTAINS", "SQL"), ("READS", "SQL", "DATA"), ("MODIFIES", "SQL", "DATA")}
+
     TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
@@ -1085,7 +1086,6 @@ class Parser(metaclass=_Parser):
             self._advance()
 
             expressions.append(parse_method(self))
-            print(f"Final expression: {expressions[-1]}")
 
             if self._index < len(self._tokens):
                 self.raise_error("Invalid expression / Unexpected token")
@@ -1351,26 +1351,20 @@ class Parser(metaclass=_Parser):
                 properties.expressions.extend(temp_props.expressions)
             elif temp_props:
                 properties = temp_props
-                print(f"Extended properties: {temp_props}")
 
         if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
             this = self._parse_user_defined_function(kind=create_token.token_type)
-            print(f"Parse user defined function: {this}")
 
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
 
-            print(f"Matching ALIAS type with current token {self._curr}")
             self._match(TokenType.ALIAS)
 
             if self._match(TokenType.COMMAND):
                 expression = self._parse_as_command(self._prev)
             else:
-                print(f"Before matching begin: self._curr: {self._curr} of type {self._curr.token_type}")
                 begin = self._match(TokenType.BEGIN)
-                print(f"After matching begin: self._curr: {self._curr} of type {self._curr.token_type}")
                 return_ = self._match_text_seq("RETURN")
-                print(f"After matching return: self._curr: {self._curr} of type {self._curr.token_type}")
 
                 if self._match(TokenType.STRING, advance=False):
                     # Takes care of BigQuery's JavaScript UDF definitions that end in an OPTIONS property
@@ -1379,17 +1373,11 @@ class Parser(metaclass=_Parser):
                     extend_props(self._parse_properties())
                 else:
                     expression = self._parse_statement()
-                    print(f"Parsed expression: {expression}")
 
                 end = self._match_text_seq("END")
 
                 if return_:
                     expression = self.expression(exp.Return, this=expression)
-                # elif self._match_text_seq("RETURN"):
-                #     if create_token.token_type == TokenType.FUNCTION:
-                #         expression = self.expression(exp.Return, this=self._parse_column_def(self._parse_id_var()))
-                #     else:
-                #         expression = self.expression(exp.Return)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index(index=self._parse_id_var())
         elif create_token.token_type in self.DB_CREATABLES:
@@ -1482,7 +1470,6 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_property(self) -> t.Optional[exp.Expression]:
-        # print(f"In parse_property, self._curr = {self._curr}")
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -1494,6 +1481,10 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("SQL", "SECURITY"):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
+
+        for tokens in self.SQL_READ_WRITE_CHARACTERISTICS:
+            if self._match_text_seq(*tokens):
+                return self.expression(exp.SqlReadWriteProperty, this=exp.Identifier(this=" ".join(tokens), quoted=False))
 
         index = self._index
         key = self._parse_column()
@@ -2028,11 +2019,6 @@ class Parser(metaclass=_Parser):
             key=key,
             constraint=constraint,
         )
-
-    def _parse_return(self) -> t.Optional[exp.Return]:
-        if not self._match(exp.Return):
-            return None
-        return self.expression(exp.Return, this=self._parse_column_def(self._parse_id_var()))
 
     def _parse_returning(self) -> t.Optional[exp.Returning]:
         if not self._match(TokenType.RETURNING):
@@ -3910,13 +3896,11 @@ class Parser(metaclass=_Parser):
 
         while self._match(TokenType.DOT):
             this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
-            # print(f"In parse_udf: this = {this}")
 
         if not self._match(TokenType.L_PAREN):
             return this
 
         expressions = self._parse_csv(self._parse_function_parameter)
-        # print(f"In parse_udf: expressions = {expressions}")
 
         self._match_r_paren()
         return self.expression(

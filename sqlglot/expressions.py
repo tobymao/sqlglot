@@ -2252,6 +2252,10 @@ class SortKeyProperty(Property):
     arg_types = {"this": True, "compound": False}
 
 
+class SqlReadWriteProperty(Property):
+    arg_types = {"this": True}
+
+
 class SqlSecurityProperty(Property):
     arg_types = {"definer": True}
 
@@ -2361,7 +2365,7 @@ class InputOutputFormat(Expression):
 
 # https://www.ibm.com/docs/en/ias?topic=procedures-return-statement-in-sql
 class Return(Expression):
-    arg_types = {"this": False}
+    pass
 
 
 class Reference(Expression):

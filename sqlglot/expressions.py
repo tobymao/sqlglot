@@ -821,6 +821,9 @@ class Expression(metaclass=_Expression):
         div.args["safe"] = safe
         return div
 
+    def desc(self, nulls_first: bool = False) -> Ordered:
+        return Ordered(this=self.copy(), desc=True, nulls_first=nulls_first)
+
     def __lt__(self, other: t.Any) -> LT:
         return self._binop(LT, other)
 

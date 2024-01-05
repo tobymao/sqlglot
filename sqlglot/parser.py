@@ -1485,7 +1485,6 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("SQL", "SECURITY"):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
-
         index = self._index
         key = self._parse_column()
 

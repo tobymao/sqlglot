@@ -36,6 +36,8 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
+    from typing_extensions import Literal as Lit
+
     from sqlglot.dialects.dialect import DialectType
 
 
@@ -2585,7 +2587,7 @@ class Table(Expression):
 
     def to_column(self, copy: bool = True) -> Alias | Column | Dot:
         parts = self.parts
-        col = column(*reversed(parts[0:4]), *parts[4:], copy=copy)  # type: ignore
+        col = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
         alias = self.args.get("alias")
         if alias:
             col = alias_(col, alias.this, copy=copy)
@@ -6322,15 +6324,44 @@ def subquery(
     return Select().from_(expression, dialect=dialect, **opts)
 
 
+@t.overload
 def column(
     col: str | Identifier,
     table: t.Optional[str | Identifier] = None,
     db: t.Optional[str | Identifier] = None,
     catalog: t.Optional[str | Identifier] = None,
-    *fields: t.Union[str, Identifier],
+    *,
+    fields: t.Collection[t.Union[str, Identifier]],
     quoted: t.Optional[bool] = None,
     copy: bool = True,
-) -> Column | Dot:
+) -> Column:
+    pass
+
+
+@t.overload
+def column(
+    col: str | Identifier,
+    table: t.Optional[str | Identifier] = None,
+    db: t.Optional[str | Identifier] = None,
+    catalog: t.Optional[str | Identifier] = None,
+    *,
+    fields: Lit[None] = None,
+    quoted: t.Optional[bool] = None,
+    copy: bool = True,
+) -> Dot:
+    pass
+
+
+def column(
+    col,
+    table=None,
+    db=None,
+    catalog=None,
+    *,
+    fields=None,
+    quoted=None,
+    copy=True,
+):
     """
     Build a Column.
 

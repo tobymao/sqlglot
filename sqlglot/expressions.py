@@ -2361,7 +2361,7 @@ class InputOutputFormat(Expression):
 
 # https://www.ibm.com/docs/en/ias?topic=procedures-return-statement-in-sql
 class Return(Expression):
-    pass
+    arg_types = {"this": False}
 
 
 class Reference(Expression):

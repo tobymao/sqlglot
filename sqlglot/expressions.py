@@ -6334,7 +6334,7 @@ def column(
     fields: t.Collection[t.Union[str, Identifier]],
     quoted: t.Optional[bool] = None,
     copy: bool = True,
-) -> Column:
+) -> Dot:
     pass
 
 
@@ -6348,7 +6348,7 @@ def column(
     fields: Lit[None] = None,
     quoted: t.Optional[bool] = None,
     copy: bool = True,
-) -> Dot:
+) -> Column:
     pass
 
 

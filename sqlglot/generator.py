@@ -1526,8 +1526,7 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        unpivot = expression.args.get("unpivot")
-        direction = "UNPIVOT" if unpivot else "PIVOT"
+        direction = "UNPIVOT" if expression.is_unpivot else "PIVOT"
         field = self.sql(expression, "field")
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:

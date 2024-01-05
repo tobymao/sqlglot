@@ -3531,6 +3531,10 @@ class Pivot(Expression):
         "include_nulls": False,
     }
 
+    @property
+    def is_unpivot(self) -> t.Optional[bool]:
+        return self.args.get("unpivot")
+
 
 class Window(Condition):
     arg_types = {

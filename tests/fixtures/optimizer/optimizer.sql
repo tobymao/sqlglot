@@ -626,8 +626,7 @@ SELECT
   "_q_0"."G" AS "G",
   "_q_0"."'x'" AS "'x'",
   "_q_0"."'y'" AS "'y'"
-FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0"
-;
+FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0";
 
 # title: selecting all columns from a pivoted source and generating spark
 # note: spark doesn't allow pivot aliases or qualified columns for the pivot's "field" (`h`)
@@ -643,6 +642,19 @@ FROM (
     *
   FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
 ) AS `_q_0`;
+
+# title: unpivoted source with a single value column
+# execute: false
+# dialect: snowflake
+SELECT * FROM m_sales AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
+SELECT
+  "_q_0"."EMPID" AS "EMPID",
+  "_q_0"."DEPT" AS "DEPT",
+  "_q_0"."MONTH" AS "MONTH",
+  "_q_0"."SALES" AS "SALES"
+FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB") UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+ORDER BY
+  "_q_0"."EMPID";
 
 # title: quoting is maintained
 # dialect: snowflake

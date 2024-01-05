@@ -93,12 +93,7 @@ def _unqualify_pivot_columns(expression: exp.Expression) -> exp.Expression:
         SELECT * FROM tbl PIVOT(SUM(tbl.sales) FOR quarter IN ('Q1', 'Q1'))
     """
     if isinstance(expression, exp.Pivot):
-        expression.args["field"].transform(
-            lambda node: exp.column(node.output_name, quoted=node.this.quoted)
-            if isinstance(node, exp.Column)
-            else node,
-            copy=False,
-        )
+        expression.set("field", transforms.unqualify_columns(expression.args["field"]))
 
     return expression
 

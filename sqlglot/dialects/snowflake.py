@@ -340,6 +340,23 @@ def _parse_timestamp_from_parts(args: t.List) -> exp.Func:
     return exp.TimestampFromParts.from_arg_list(args)
 
 
+def _unqualify_unpivot_columns(expression: exp.Expression) -> exp.Expression:
+    """
+    Snowflake doesn't allow columns referenced in UNPIVOT to be qualified,
+    so we need to unqualify them.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("SELECT * FROM m_sales UNPIVOT(sales FOR month IN (m_sales.jan, feb, mar, april))")
+        >>> print(_unqualify_unpivot_columns(expr).sql(dialect="snowflake"))
+        SELECT * FROM m_sales UNPIVOT(sales FOR month IN (jan, feb, mar, april))
+    """
+    if isinstance(expression, exp.Pivot) and expression.is_unpivot:
+        expression = transforms.unqualify_columns(expression)
+
+    return expression
+
+
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -717,6 +734,7 @@ class Snowflake(Dialect):
             exp.PercentileDisc: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]
             ),
+            exp.Pivot: transforms.preprocess([_unqualify_unpivot_columns]),
             exp.RegexpILike: _regexpilike_sql,
             exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(

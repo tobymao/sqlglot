@@ -386,6 +386,7 @@ class TSQL(Dialect):
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
+            "EXEC": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NTEXT": TokenType.TEXT,

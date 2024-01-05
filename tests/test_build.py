@@ -86,6 +86,8 @@ class TestBuild(unittest.TestCase):
                 "CASE x WHEN 1 THEN x ELSE bar END",
             ),
             (lambda: exp.func("COALESCE", "x", 1), "COALESCE(x, 1)"),
+            (lambda: exp.column("x").desc(), "x DESC"),
+            (lambda: exp.column("x").desc(nulls_first=True), "x DESC NULLS FIRST"),
             (lambda: select("x"), "SELECT x"),
             (lambda: select("x"), "SELECT x"),
             (lambda: select("x", "y"), "SELECT x, y"),

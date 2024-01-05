@@ -22,6 +22,7 @@ class Doris(MySQL):
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
             "DATE_TRUNC": parse_timestamp_trunc,
             "REGEXP": exp.RegexpLike.from_arg_list,
+            "TO_DATE": exp.TsOrDsToDate.from_arg_list,
         }
 
     class Generator(MySQL.Generator):
@@ -40,15 +41,16 @@ class Doris(MySQL):
             **MySQL.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
+            exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.CurrentTimestamp: lambda *_: "NOW()",
             exp.DateTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
             ),
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
+            exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
-            exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
             exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.TimeStrToDate: rename_func("TO_DATE"),
@@ -63,5 +65,4 @@ class Doris(MySQL):
                 "FROM_UNIXTIME", e.this, time_format("doris")(self, e)
             ),
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
-            exp.Map: rename_func("ARRAY_MAP"),
         }

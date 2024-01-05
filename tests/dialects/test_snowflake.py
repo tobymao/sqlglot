@@ -79,6 +79,14 @@ WHERE
             "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
         )
         self.validate_identity(
+            "SELECT SUM({ fn CONVERT(123, SQL_DOUBLE) })",
+            "SELECT SUM(CAST(123 AS DOUBLE))",
+        )
+        self.validate_identity(
+            "SELECT SUM({ fn CONVERT(123, SQL_VARCHAR) })",
+            "SELECT SUM(CAST(123 AS VARCHAR))",
+        )
+        self.validate_identity(
             "SELECT TIMESTAMPFROMPARTS(d, t)",
             "SELECT TIMESTAMP_FROM_PARTS(d, t)",
         )

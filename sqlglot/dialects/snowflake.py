@@ -641,6 +641,8 @@ class Snowflake(Dialect):
             "PUT": TokenType.COMMAND,
             "RENAME": TokenType.REPLACE,
             "SAMPLE": TokenType.TABLE_SAMPLE,
+            "SQL_DOUBLE": TokenType.DOUBLE,
+            "SQL_VARCHAR": TokenType.VARCHAR,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,

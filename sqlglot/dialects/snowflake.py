@@ -351,7 +351,7 @@ def _unqualify_unpivot_columns(expression: exp.Expression) -> exp.Expression:
         >>> print(_unqualify_unpivot_columns(expr).sql(dialect="snowflake"))
         SELECT * FROM m_sales UNPIVOT(sales FOR month IN (jan, feb, mar, april))
     """
-    if isinstance(expression, exp.Pivot) and expression.is_unpivot:
+    if isinstance(expression, exp.Pivot) and expression.unpivot:
         expression = transforms.unqualify_columns(expression)
 
     return expression

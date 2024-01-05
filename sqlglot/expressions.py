@@ -3532,8 +3532,8 @@ class Pivot(Expression):
     }
 
     @property
-    def is_unpivot(self) -> t.Optional[bool]:
-        return self.args.get("unpivot")
+    def unpivot(self) -> bool:
+        return bool(self.args.get("unpivot"))
 
 
 class Window(Condition):

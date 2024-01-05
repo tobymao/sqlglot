@@ -86,7 +86,7 @@ def validate_qualify_columns(expression: E) -> E:
                 for_table = f" for table: '{column.table}'" if column.table else ""
                 raise OptimizeError(f"Column '{column}' could not be resolved{for_table}")
 
-            if unqualified_columns and scope.pivots and scope.pivots[0].is_unpivot:
+            if unqualified_columns and scope.pivots and scope.pivots[0].unpivot:
                 # New columns produced by the UNPIVOT can't be qualified, but there may be columns
                 # under the UNPIVOT's IN clause that can and should be qualified. We recompute
                 # this list here to ensure those in the former category will be excluded.
@@ -388,7 +388,7 @@ def _expand_stars(
 
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
     if isinstance(pivot, exp.Pivot):
-        if pivot.is_unpivot:
+        if pivot.unpivot:
             pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
 
             field = pivot.args.get("field")
@@ -435,7 +435,7 @@ def _expand_stars(
             if pivot and pivot_output_columns:
                 implicit_columns = None
 
-                if pivot.is_unpivot:
+                if pivot.unpivot:
                     if pivot_exclude_columns:
                         implicit_columns = [c for c in columns if c not in pivot_exclude_columns]
                 elif pivot_columns:

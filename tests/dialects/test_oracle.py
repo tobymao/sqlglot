@@ -133,6 +133,20 @@ class TestOracle(Validator):
             },
         )
 
+        self.validate_all(
+            "DATE_TRUNC('DAY', x)",
+            read={
+                "oracle": "TRUNC(x, 'DAY')",
+            },
+        )
+
+        self.validate_all(
+            "CAST(x AS DATE)",
+            read={
+                "oracle": "TO_DATE(x)",
+            },
+        )
+
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")
 

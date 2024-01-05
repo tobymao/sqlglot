@@ -798,7 +798,7 @@ class TestDialect(Validator):
                 "snowflake": "DATE_TRUNC('DAY', x)",
                 "starrocks": "DATE_TRUNC('DAY', x)",
                 "spark": "TRUNC(x, 'DAY')",
-                "doris": "DATE_TRUNC(x, 'DAY')",
+                "doris": "DATE_TRUNC(x, 'day')",
             },
         )
         self.validate_all(
@@ -872,7 +872,7 @@ class TestDialect(Validator):
                 "snowflake": "DATE_TRUNC('YEAR', x)",
                 "starrocks": "DATE_TRUNC('YEAR', x)",
                 "spark": "TRUNC(x, 'YEAR')",
-                "doris": "DATE_TRUNC(x, 'YEAR')",
+                "doris": "DATE_TRUNC(x, 'year')",
             },
         )
         self.validate_all(

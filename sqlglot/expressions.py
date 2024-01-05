@@ -4555,7 +4555,7 @@ class DateDiff(Func, TimeUnit):
 
 
 class DateTrunc(Func):
-    arg_types = {"unit": True, "this": True, "zone": False}
+    arg_types = {"unit": True, "this": False, "zone": False}
 
     def __init__(self, **args):
         unit = args.get("unit")

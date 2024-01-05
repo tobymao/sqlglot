@@ -7,14 +7,12 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol", dialect="oracle").assert_is(
+            exp.AlterTable
+        )
+
+        self.validate_identity("CURRENT_TIMESTAMP(precision)")
         self.validate_identity("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol")
-        self.assertIsInstance(
-            parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol", dialect="oracle"),
-            exp.AlterTable,
-        )
-        self.validate_identity(
-            "ALTER TABLE Payments ADD (Stock NUMBER NOT NULL, dropid VARCHAR2(500) NOT NULL)"
-        )
         self.validate_identity("ALTER TABLE Payments ADD Stock NUMBER NOT NULL")
         self.validate_identity("SELECT x FROM t WHERE cond FOR UPDATE")
         self.validate_identity("SELECT JSON_OBJECT(k1: v1 FORMAT JSON, k2: v2 FORMAT JSON)")
@@ -37,6 +35,9 @@ class TestOracle(Validator):
         self.validate_identity("SELECT COUNT(*) * 10 FROM orders SAMPLE (10) SEED (1)")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity(
+            "ALTER TABLE Payments ADD (Stock NUMBER NOT NULL, dropid VARCHAR2(500) NOT NULL)"
+        )
+        self.validate_identity(
             "SELECT JSON_ARRAYAGG(JSON_OBJECT('RNK': RNK, 'RATING_CODE': RATING_CODE, 'DATE_VALUE': DATE_VALUE, 'AGENT_ID': AGENT_ID RETURNING CLOB) RETURNING CLOB) AS JSON_DATA FROM tablename"
         )
         self.validate_identity(
@@ -50,6 +51,10 @@ class TestOracle(Validator):
         )
         self.validate_identity(
             "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"
+        )
+        self.validate_identity(
+            "SYSDATE",
+            "CURRENT_TIMESTAMP",
         )
         self.validate_identity(
             "SELECT last_name, department_id, salary, MIN(salary) KEEP (DENSE_RANK FIRST ORDER BY commission_pct) "

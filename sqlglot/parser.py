@@ -1470,6 +1470,10 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_property(self) -> t.Optional[exp.Expression]:
+        for tokens in self.SQL_READ_WRITE_CHARACTERISTICS:
+            if self._match_text_seq(*tokens):
+                return self.expression(exp.SqlReadWriteProperty, this=exp.Identifier(this=" ".join(tokens), quoted=False))
+
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
@@ -1481,10 +1485,6 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("SQL", "SECURITY"):
             return self.expression(exp.SqlSecurityProperty, definer=self._match_text_seq("DEFINER"))
-
-        for tokens in self.SQL_READ_WRITE_CHARACTERISTICS:
-            if self._match_text_seq(*tokens):
-                return self.expression(exp.SqlReadWriteProperty, this=exp.Identifier(this=" ".join(tokens), quoted=False))
 
         index = self._index
         key = self._parse_column()

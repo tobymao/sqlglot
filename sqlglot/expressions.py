@@ -4118,6 +4118,15 @@ class Alias(Expression):
         return self.alias
 
 
+# BigQuery requires the UNPIVOT column list aliases to be either strings or ints, but
+# Spark requires identifiers. This enables us to transpile between the two easily.
+#
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator
+# https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-unpivot.html
+class PivotAlias(Alias):
+    pass
+
+
 class Aliases(Expression):
     arg_types = {"this": True, "expressions": True}
 

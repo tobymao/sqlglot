@@ -248,6 +248,9 @@ class Generator:
     # Whether or not named columns are allowed in table aliases
     SUPPORTS_TABLE_ALIAS_COLUMNS = True
 
+    # Whether or not UNPIVOT aliases are Identifiers (False means they're Literals)
+    UNPIVOT_ALIASES_ARE_IDENTIFIERS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2471,6 +2474,17 @@ class Generator:
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
         return f"{self.sql(expression, 'this')}{alias}"
+
+    def pivotalias_sql(self, expression: exp.PivotAlias) -> str:
+        alias = expression.args["alias"]
+        identifier_alias = isinstance(alias, exp.Identifier)
+
+        if identifier_alias and not self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+            alias.replace(exp.Literal.string(alias.output_name))
+        elif not identifier_alias and self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+            alias.replace(exp.to_identifier(alias.output_name))
+
+        return self.alias_sql(expression)
 
     def aliases_sql(self, expression: exp.Aliases) -> str:
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"

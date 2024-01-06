@@ -2971,9 +2971,14 @@ class Parser(metaclass=_Parser):
 
     def _parse_pivot_in(self) -> exp.In:
         def _parse_aliased_expression() -> t.Optional[exp.Expression]:
-            expr = self._parse_conjunction()
+            this = self._parse_conjunction()
+
             self._match(TokenType.ALIAS)
-            return self.expression(exp.Alias, this=expr, alias=self._parse_field())
+            alias = self._parse_field()
+            if alias:
+                return self.expression(exp.PivotAlias, this=this, alias=alias)
+
+            return this
 
         value = self._parse_column()
 

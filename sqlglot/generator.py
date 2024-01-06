@@ -97,7 +97,7 @@ class Generator:
         exp.SampleProperty: lambda self, e: f"SAMPLE BY {self.sql(e, 'this')}",
         exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
-        exp.SqlReadWriteProperty: lambda self, e: self.sql(e.this),
+        exp.SqlReadWriteProperty: lambda self, e: e.name,
         exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.StabilityProperty: lambda self, e: e.name,
         exp.TemporaryProperty: lambda self, e: f"TEMPORARY",

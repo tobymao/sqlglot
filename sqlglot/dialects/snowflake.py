@@ -484,6 +484,7 @@ class Snowflake(Dialect):
         SHOW_PARSERS = {
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+            "COLUMNS": _show_parser("COLUMNS"),
         }
 
         STAGED_FILE_SINGLE_TOKENS = {
@@ -590,6 +591,8 @@ class Snowflake(Dialect):
             scope = None
             scope_kind = None
 
+            like = self._parse_string() if self._match(TokenType.LIKE) else None
+
             if self._match(TokenType.IN):
                 if self._match_text_seq("ACCOUNT"):
                     scope_kind = "ACCOUNT"
@@ -601,7 +604,9 @@ class Snowflake(Dialect):
                     scope_kind = "TABLE"
                     scope = self._parse_table()
 
-            return self.expression(exp.Show, this=this, scope=scope, scope_kind=scope_kind)
+            return self.expression(
+                exp.Show, this=this, like=like, scope=scope, scope_kind=scope_kind
+            )
 
         def _parse_alter_table_swap(self) -> exp.SwapTable:
             self._match_text_seq("WITH")
@@ -822,6 +827,9 @@ class Snowflake(Dialect):
             return f"{explode}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
+            like = self.sql(expression, "like")
+            like = f" LIKE {like}" if like else ""
+
             scope = self.sql(expression, "scope")
             scope = f" {scope}" if scope else ""
 
@@ -829,7 +837,7 @@ class Snowflake(Dialect):
             if scope_kind:
                 scope_kind = f" IN {scope_kind}"
 
-            return f"SHOW {expression.name}{scope_kind}{scope}"
+            return f"SHOW {expression.name}{like}{scope_kind}{scope}"
 
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             # Other dialects don't support all of the following parameters, so we need to

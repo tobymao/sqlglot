@@ -17,13 +17,15 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
-        self.validate_all(
-            "SELECT UNIX_DATE(DATE '2008-12-25')",
-            write={
-                "bigquery": "SELECT UNIX_DATE(CAST('2008-12-25' AS DATE))",
-                "duckdb": "SELECT DATE_DIFF('DAY', CAST('1970-01-01' AS DATE), CAST('2008-12-25' AS DATE))",
-            },
-        )
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity(
+                "SELECT * FROM t AS t(c1, c2)",
+                "SELECT * FROM t AS t",
+            )
+
+            self.assertEqual(
+                cm.output, ["WARNING:sqlglot:Named columns are not supported in table alias."]
+            )
 
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(
@@ -218,6 +220,13 @@ class TestBigQuery(Validator):
             "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
         )
 
+        self.validate_all(
+            "SELECT UNIX_DATE(DATE '2008-12-25')",
+            write={
+                "bigquery": "SELECT UNIX_DATE(CAST('2008-12-25' AS DATE))",
+                "duckdb": "SELECT DATE_DIFF('DAY', CAST('1970-01-01' AS DATE), CAST('2008-12-25' AS DATE))",
+            },
+        )
         self.validate_all(
             "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
             read={

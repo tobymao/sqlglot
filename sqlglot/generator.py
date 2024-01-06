@@ -245,6 +245,9 @@ class Generator:
     # Whether or not LAST_DAY function supports a date part argument
     LAST_DAY_SUPPORTS_DATE_PART = True
 
+    # Whether or not named columns are allowed in table aliases
+    SUPPORTS_TABLE_ALIAS_COLUMNS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -907,6 +910,10 @@ class Generator:
         alias = self.sql(expression, "this")
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
+
+        if columns and not self.SUPPORTS_TABLE_ALIAS_COLUMNS:
+            columns = ""
+            self.unsupported("Named columns are not supported in table alias.")
 
         if not alias and not self.dialect.UNNEST_COLUMN_ONLY:
             alias = "_t"

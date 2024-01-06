@@ -643,7 +643,7 @@ FROM (
   FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
 ) AS `_q_0`;
 
-# title: unpivoted table source with a single value column
+# title: unpivoted table source with a single value column, unpivot columns can't be qualified
 # execute: false
 # dialect: snowflake
 SELECT * FROM m_sales AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
@@ -655,6 +655,17 @@ SELECT
 FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB") UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
 ORDER BY
   "_q_0"."EMPID";
+
+# title: unpivoted table source with a single value column, unpivot columns can be qualified
+# execute: false
+# dialect: bigquery
+# note: the named columns aren't supported by BQ but we add them here to avoid defining a schema
+SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT(sales FOR quarter IN (q1, q2, q3, q4));
+SELECT
+  `_q_0`.`product` AS `product`,
+  `_q_0`.`quarter` AS `quarter`,
+  `_q_0`.`sales` AS `sales`
+FROM `produce` AS `produce` UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`, `produce`.`q4`)) AS `_q_0`;
 
 # title: unpivoted derived table source with a single value column
 # execute: false

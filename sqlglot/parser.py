@@ -1864,10 +1864,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_modifies_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
         if self._match_text_seq("SQL", "DATA"):
-            return self.expression(
-                exp.SqlReadWriteProperty,
-                this="MODIFIES SQL DATA",
-            )
+            return self.expression(exp.SqlReadWriteProperty, this="MODIFIES SQL DATA")
         return None
 
     def _parse_no_property(self) -> t.Optional[exp.Expression]:

@@ -643,7 +643,7 @@ FROM (
   FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
 ) AS `_q_0`;
 
-# title: unpivoted source with a single value column
+# title: unpivoted table source with a single value column
 # execute: false
 # dialect: snowflake
 SELECT * FROM m_sales AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
@@ -653,6 +653,26 @@ SELECT
   "_q_0"."MONTH" AS "MONTH",
   "_q_0"."SALES" AS "SALES"
 FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB") UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+ORDER BY
+  "_q_0"."EMPID";
+
+# title: unpivoted subquery source with a single value column
+# execute: false
+# dialect: snowflake
+SELECT * FROM (SELECT * FROM m_sales) AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
+SELECT
+  "_q_0"."EMPID" AS "EMPID",
+  "_q_0"."DEPT" AS "DEPT",
+  "_q_0"."MONTH" AS "MONTH",
+  "_q_0"."SALES" AS "SALES"
+FROM (
+  SELECT
+    "M_SALES"."EMPID" AS "EMPID",
+    "M_SALES"."DEPT" AS "DEPT",
+    "M_SALES"."JAN" AS "JAN",
+    "M_SALES"."FEB" AS "FEB"
+  FROM "M_SALES" AS "M_SALES"
+) AS "M_SALES" UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
 ORDER BY
   "_q_0"."EMPID";
 

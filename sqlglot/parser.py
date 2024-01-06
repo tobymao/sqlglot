@@ -2969,6 +2969,22 @@ class Parser(metaclass=_Parser):
             exp.Pivot, this=this, expressions=expressions, using=using, group=group
         )
 
+    def _parse_pivot_in(self) -> exp.In:
+        def _parse_aliased_expression() -> t.Optional[exp.Expression]:
+            expr = self._parse_conjunction()
+            self._match(TokenType.ALIAS)
+            return self.expression(exp.Alias, this=expr, alias=self._parse_field())
+
+        value = self._parse_column()
+
+        if not self._match_pair(TokenType.IN, TokenType.L_PAREN):
+            self.raise_error("Expecting IN (")
+
+        aliased_expressions = self._parse_csv(_parse_aliased_expression)
+
+        self._match_r_paren()
+        return self.expression(exp.In, this=value, expressions=aliased_expressions)
+
     def _parse_pivot(self) -> t.Optional[exp.Pivot]:
         index = self._index
         include_nulls = None
@@ -2987,7 +3003,6 @@ class Parser(metaclass=_Parser):
             return None
 
         expressions = []
-        field = None
 
         if not self._match(TokenType.L_PAREN):
             self._retreat(index)
@@ -3004,12 +3019,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
 
-        value = self._parse_column()
-
-        if not self._match(TokenType.IN):
-            self.raise_error("Expecting IN")
-
-        field = self._parse_in(value, alias=True)
+        field = self._parse_pivot_in()
 
         self._match_r_paren()
 

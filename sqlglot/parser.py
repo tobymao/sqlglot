@@ -681,6 +681,7 @@ class Parser(metaclass=_Parser):
             exp.CollateProperty, **kwargs
         ),
         "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "CONTAINS": lambda self: self._parse_contains_property(),
         "COPY": lambda self: self._parse_copy_property(),
         "DATABLOCKSIZE": lambda self, **kwargs: self._parse_datablocksize(**kwargs),
         "DEFINER": lambda self: self._parse_definer(),
@@ -711,6 +712,7 @@ class Parser(metaclass=_Parser):
         "LOG": lambda self, **kwargs: self._parse_log(**kwargs),
         "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty),
         "MERGEBLOCKRATIO": lambda self, **kwargs: self._parse_mergeblockratio(**kwargs),
+        "MODIFIES": lambda self: self._parse_modifies_property(),
         "MULTISET": lambda self: self.expression(exp.SetProperty, multi=True),
         "NO": lambda self: self._parse_no_property(),
         "ON": lambda self: self._parse_on_property(),
@@ -722,6 +724,7 @@ class Parser(metaclass=_Parser):
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(in_props=True),
         "RANGE": lambda self: self._parse_dict_range(this="RANGE"),
+        "READS": lambda self: self._parse_reads_property(),
         "REMOTE": lambda self: self._parse_remote_with_connection(),
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
@@ -1852,9 +1855,21 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.WithDataProperty, no=no, statistics=statistics)
 
-    def _parse_no_property(self) -> t.Optional[exp.NoPrimaryIndexProperty]:
+    def _parse_contains_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
+        if self._match_text_seq("SQL"):
+            return self.expression(exp.SqlReadWriteProperty, this="CONTAINS SQL")
+        return None
+
+    def _parse_modifies_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
+        if self._match_text_seq("SQL", "DATA"):
+            return self.expression(exp.SqlReadWriteProperty, this="MODIFIES SQL DATA")
+        return None
+
+    def _parse_no_property(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("PRIMARY", "INDEX"):
             return exp.NoPrimaryIndexProperty()
+        if self._match_text_seq("SQL"):
+            return self.expression(exp.SqlReadWriteProperty, this="NO SQL")
         return None
 
     def _parse_on_property(self) -> t.Optional[exp.Expression]:
@@ -1863,6 +1878,11 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("COMMIT", "DELETE", "ROWS"):
             return exp.OnCommitProperty(delete=True)
         return self.expression(exp.OnProperty, this=self._parse_schema(self._parse_id_var()))
+
+    def _parse_reads_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
+        if self._match_text_seq("SQL", "DATA"):
+            return self.expression(exp.SqlReadWriteProperty, this="READS SQL DATA")
+        return None
 
     def _parse_distkey(self) -> exp.DistKeyProperty:
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))

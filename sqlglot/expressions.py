@@ -2263,6 +2263,10 @@ class SortKeyProperty(Property):
     arg_types = {"this": True, "compound": False}
 
 
+class SqlReadWriteProperty(Property):
+    arg_types = {"this": True}
+
+
 class SqlSecurityProperty(Property):
     arg_types = {"definer": True}
 

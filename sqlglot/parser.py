@@ -1857,9 +1857,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_contains_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
         if self._match_text_seq("SQL"):
-            return self.expression(
-                exp.SqlReadWriteProperty, this=exp.Identifier(this="CONTAINS SQL", quoted=False)
-            )
+            return self.expression(exp.SqlReadWriteProperty, this="CONTAINS SQL")
         return None
 
     def _parse_modifies_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
@@ -1871,9 +1869,7 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("PRIMARY", "INDEX"):
             return exp.NoPrimaryIndexProperty()
         if self._match_text_seq("SQL"):
-            return self.expression(
-                exp.SqlReadWriteProperty, this=exp.Identifier(this="NO SQL", quoted=False)
-            )
+            return self.expression(exp.SqlReadWriteProperty, this="NO SQL")
         return None
 
     def _parse_on_property(self) -> t.Optional[exp.Expression]:
@@ -1885,9 +1881,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_reads_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
         if self._match_text_seq("SQL", "DATA"):
-            return self.expression(
-                exp.SqlReadWriteProperty, this=exp.Identifier(this="READS SQL DATA", quoted=False)
-            )
+            return self.expression(exp.SqlReadWriteProperty, this="READS SQL DATA")
         return None
 
     def _parse_distkey(self) -> exp.DistKeyProperty:

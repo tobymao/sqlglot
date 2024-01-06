@@ -656,7 +656,7 @@ FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB") UNPIVOT("SALES" FOR "
 ORDER BY
   "_q_0"."EMPID";
 
-# title: unpivoted subquery source with a single value column
+# title: unpivoted derived table source with a single value column
 # execute: false
 # dialect: snowflake
 SELECT * FROM (SELECT * FROM m_sales) AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;

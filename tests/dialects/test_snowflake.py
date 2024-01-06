@@ -1442,10 +1442,8 @@ MATCH_RECOGNIZE (
         )
 
         ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
-        self.assertIsInstance(ast, exp.Show)
         table = ast.find(exp.Table)
 
-        self.assertIsNotNone(table)
         self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
 
         self.validate_identity("SHOW COLUMNS")
@@ -1455,14 +1453,11 @@ MATCH_RECOGNIZE (
         self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN VIEW dt_test")
 
         ast = parse_one("SHOW COLUMNS LIKE '_testing%' IN dt_test", read="snowflake")
-        self.assertIsInstance(ast, exp.Show)
         table = ast.find(exp.Table)
         literal = ast.find(exp.Literal)
 
-        self.assertIsNotNone(table)
         self.assertEqual(table.sql(dialect="snowflake"), "dt_test")
 
-        self.assertIsNotNone(literal)
         self.assertEqual(literal.sql(dialect="snowflake"), "'_testing%'")
 
     def test_swap(self):

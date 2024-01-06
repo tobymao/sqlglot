@@ -1428,10 +1428,9 @@ MATCH_RECOGNIZE (
 
     def test_show(self):
         # Parsed as Command
-        self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
         self.validate_identity("SHOW TABLES LIKE 'line%' IN tpch.public")
 
-        ast = parse_one("SHOW TABLES HISTORY IN tpch.public")
+        ast = parse_one("SHOW TABLES HISTORY IN tpch.public", read="snowflake")
         self.assertIsInstance(ast, exp.Command)
 
         # Parsed as Show
@@ -1453,8 +1452,21 @@ MATCH_RECOGNIZE (
         ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
         table = ast.find(exp.Table)
 
-        self.assertIsNotNone(table)
         self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
+
+        self.validate_identity("SHOW COLUMNS")
+        self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
+        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN TABLE dt_test")
+        self.validate_identity("SHOW COLUMNS IN VIEW")
+        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN VIEW dt_test")
+
+        ast = parse_one("SHOW COLUMNS LIKE '_testing%' IN dt_test", read="snowflake")
+        table = ast.find(exp.Table)
+        literal = ast.find(exp.Literal)
+
+        self.assertEqual(table.sql(dialect="snowflake"), "dt_test")
+
+        self.assertEqual(literal.sql(dialect="snowflake"), "'_testing%'")
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")

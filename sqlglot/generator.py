@@ -1890,8 +1890,13 @@ class Generator:
 
         # If the NULLS FIRST/LAST clause is unsupported, we add another sort key to simulate it
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
-            null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
-            this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+            if expression.this.is_int:
+                self.unsupported(
+                    f"'{nulls_sort_change.strip()}' not supported with positional ordering"
+                )
+            else:
+                null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+                this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
             nulls_sort_change = ""
 
         with_fill = self.sql(expression, "with_fill")

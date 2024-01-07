@@ -278,6 +278,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
+        exp.Struct: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.STRUCT),
     }
 
     NESTED_TYPES = {
@@ -389,6 +390,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             return expression  # We've already inferred the expression's type
 
         annotator = self.annotators.get(expression.__class__)
+        print("_maybe_annotate", expression.__class__, annotator)
 
         return (
             annotator(self, expression)
@@ -463,7 +465,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     @t.no_type_check
-    def _annotate_literal(self, expression: exp.Literal) -> exp.Literal:
+    def _annotate_literal(self, expression: exp.Literal) -> exp.Literal: 
+        print("_annotate_literal", expression, "\n\n")
         if expression.is_string:
             self._set_type(expression, exp.DataType.Type.VARCHAR)
         elif expression.is_int:
@@ -475,6 +478,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     @t.no_type_check
     def _annotate_with_type(self, expression: E, target_type: exp.DataType.Type) -> E:
+        print("_annotate_with_type", expression, target_type)
         self._set_type(expression, target_type)
         return self._annotate_args(expression)
 

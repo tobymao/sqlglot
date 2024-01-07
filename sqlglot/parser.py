@@ -958,6 +958,9 @@ class Parser(metaclass=_Parser):
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
+    # Whether or not string aliases are supported `SELECT COUNT(*) 'count'`
+    STRING_ALIASES = False
+
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_UNION = True
     UNION_MODIFIERS = {"order", "limit", "offset"}
@@ -4905,7 +4908,9 @@ class Parser(metaclass=_Parser):
             self._match_r_paren(aliases)
             return aliases
 
-        alias = self._parse_id_var(any_token)
+        alias = self._parse_id_var(any_token) or (
+            self.STRING_ALIASES and self._parse_string_as_identifier()
+        )
 
         if alias:
             return self.expression(exp.Alias, comments=comments, this=this, alias=alias)

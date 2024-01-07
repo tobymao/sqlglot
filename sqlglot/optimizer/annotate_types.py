@@ -278,7 +278,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
-        exp.Struct: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.STRUCT),
+        exp.Struct: lambda self, e: self._annotate_by_args(e, "expressions", struct=True),
     }
 
     NESTED_TYPES = {
@@ -390,7 +390,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             return expression  # We've already inferred the expression's type
 
         annotator = self.annotators.get(expression.__class__)
-        print("_maybe_annotate", expression.__class__, annotator)
 
         return (
             annotator(self, expression)
@@ -466,7 +465,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     @t.no_type_check
     def _annotate_literal(self, expression: exp.Literal) -> exp.Literal: 
-        print("_annotate_literal", expression, "\n\n")
         if expression.is_string:
             self._set_type(expression, exp.DataType.Type.VARCHAR)
         elif expression.is_int:
@@ -478,13 +476,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     @t.no_type_check
     def _annotate_with_type(self, expression: E, target_type: exp.DataType.Type) -> E:
-        print("_annotate_with_type", expression, target_type)
         self._set_type(expression, target_type)
         return self._annotate_args(expression)
 
     @t.no_type_check
     def _annotate_by_args(
-        self, expression: E, *args: str, promote: bool = False, array: bool = False
+        self, expression: E, *args: str, promote: bool = False, array: bool = False, struct: bool = False
     ) -> E:
         self._annotate_args(expression)
 
@@ -492,6 +489,15 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         for arg in args:
             arg_expr = expression.args.get(arg)
             expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
+
+        if struct:
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DataType.Type.STRUCT, expressions=[expr.type for expr in expressions]
+                ),
+            )
+            return expression
 
         last_datatype = None
         for expr in expressions:

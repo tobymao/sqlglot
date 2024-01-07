@@ -467,6 +467,7 @@ class TSQL(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
         ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
+        STRING_ALIASES = True
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """

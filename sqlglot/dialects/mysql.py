@@ -443,6 +443,7 @@ class MySQL(Dialect):
         }
 
         LOG_DEFAULTS_TO_LN = True
+        STRING_ALIASES = True
 
         def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
             this = self._parse_id_var()

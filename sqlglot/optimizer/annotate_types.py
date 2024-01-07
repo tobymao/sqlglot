@@ -464,7 +464,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return expression
 
     @t.no_type_check
-    def _annotate_literal(self, expression: exp.Literal) -> exp.Literal: 
+    def _annotate_literal(self, expression: exp.Literal) -> exp.Literal:
         if expression.is_string:
             self._set_type(expression, exp.DataType.Type.VARCHAR)
         elif expression.is_int:
@@ -481,7 +481,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     @t.no_type_check
     def _annotate_by_args(
-        self, expression: E, *args: str, promote: bool = False, array: bool = False, struct: bool = False
+        self,
+        expression: E,
+        *args: str,
+        promote: bool = False,
+        array: bool = False,
+        struct: bool = False,
     ) -> E:
         self._annotate_args(expression)
 
@@ -489,15 +494,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         for arg in args:
             arg_expr = expression.args.get(arg)
             expressions.extend(expr for expr in ensure_list(arg_expr) if expr)
-
-        if struct:
-            self._set_type(
-                expression,
-                exp.DataType(
-                    this=exp.DataType.Type.STRUCT, expressions=[expr.type for expr in expressions]
-                ),
-            )
-            return expression
 
         last_datatype = None
         for expr in expressions:
@@ -516,6 +512,14 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 expression,
                 exp.DataType(
                     this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
+                ),
+            )
+
+        if struct:
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DataType.Type.STRUCT, expressions=[expr.type for expr in expressions]
                 ),
             )
 

@@ -5120,8 +5120,10 @@ class Repeat(Func):
     arg_types = {"this": True, "times": True}
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/round-transact-sql?view=sql-server-ver16
+# tsql third argument function == trunctaion if not 0
 class Round(Func):
-    arg_types = {"this": True, "decimals": False}
+    arg_types = {"this": True, "decimals": False, "truncate": False}
 
 
 class RowNumber(Func):
@@ -6384,7 +6386,7 @@ def column(
     Returns:
         The new Column instance.
     """
-    this: t.Union[Column, Dot] = Column(
+    this = Column(
         this=to_identifier(col, quoted=quoted, copy=copy),
         table=to_identifier(table, quoted=quoted, copy=copy),
         db=to_identifier(db, quoted=quoted, copy=copy),

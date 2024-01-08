@@ -3531,6 +3531,10 @@ class Pivot(Expression):
         "include_nulls": False,
     }
 
+    @property
+    def unpivot(self) -> bool:
+        return bool(self.args.get("unpivot"))
+
 
 class Window(Condition):
     arg_types = {
@@ -4112,6 +4116,12 @@ class Alias(Expression):
     @property
     def output_name(self) -> str:
         return self.alias
+
+
+# BigQuery requires the UNPIVOT column list aliases to be either strings or ints, but
+# other dialects require identifiers. This enables us to transpile between them easily.
+class PivotAlias(Alias):
+    pass
 
 
 class Aliases(Expression):

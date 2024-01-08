@@ -41,6 +41,9 @@ def qualify_columns(
 
     Returns:
         The qualified expression.
+
+    Notes:
+        - Currently only handles a single PIVOT or UNPIVOT operator
     """
     schema = ensure_schema(schema)
     infer_schema = schema.empty if infer_schema is None else infer_schema
@@ -73,19 +76,39 @@ def qualify_columns(
 
 def validate_qualify_columns(expression: E) -> E:
     """Raise an `OptimizeError` if any columns aren't qualified"""
-    unqualified_columns = []
+    all_unqualified_columns = []
     for scope in traverse_scope(expression):
         if isinstance(scope.expression, exp.Select):
-            unqualified_columns.extend(scope.unqualified_columns)
+            unqualified_columns = scope.unqualified_columns
+
             if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
                 column = scope.external_columns[0]
-                raise OptimizeError(
-                    f"""Column '{column}' could not be resolved{f" for table: '{column.table}'" if column.table else ''}"""
-                )
+                for_table = f" for table: '{column.table}'" if column.table else ""
+                raise OptimizeError(f"Column '{column}' could not be resolved{for_table}")
 
-    if unqualified_columns:
-        raise OptimizeError(f"Ambiguous columns: {unqualified_columns}")
+            if unqualified_columns and scope.pivots and scope.pivots[0].unpivot:
+                # New columns produced by the UNPIVOT can't be qualified, but there may be columns
+                # under the UNPIVOT's IN clause that can and should be qualified. We recompute
+                # this list here to ensure those in the former category will be excluded.
+                unpivot_columns = set(_unpivot_columns(scope.pivots[0]))
+                unqualified_columns = [c for c in unqualified_columns if c not in unpivot_columns]
+
+            all_unqualified_columns.extend(unqualified_columns)
+
+    if all_unqualified_columns:
+        raise OptimizeError(f"Ambiguous columns: {all_unqualified_columns}")
+
     return expression
+
+
+def _unpivot_columns(unpivot: exp.Pivot) -> t.Iterator[exp.Column]:
+    name_column = []
+    field = unpivot.args.get("field")
+    if isinstance(field, exp.In) and isinstance(field.this, exp.Column):
+        name_column.append(field.this)
+
+    value_columns = (c for e in unpivot.expressions for c in e.find_all(exp.Column))
+    return itertools.chain(name_column, value_columns)
 
 
 def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) -> None:
@@ -221,6 +244,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
     replace_columns(expression.args.get("group"), literal_index=True)
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)
+
     scope.clear_cache()
 
 
@@ -358,18 +382,25 @@ def _expand_stars(
     replace_columns: t.Dict[int, t.Dict[str, str]] = {}
     coalesced_columns = set()
 
-    # TODO: handle optimization of multiple PIVOTs (and possibly UNPIVOTs) in the future
-    pivot_columns = None
     pivot_output_columns = None
+    pivot_exclude_columns = None
+
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
+    if isinstance(pivot, exp.Pivot):
+        if pivot.unpivot:
+            pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
 
-    has_pivoted_source = pivot and not pivot.args.get("unpivot")
-    if pivot and has_pivoted_source:
-        pivot_columns = set(col.output_name for col in pivot.find_all(exp.Column))
+            field = pivot.args.get("field")
+            if isinstance(field, exp.In):
+                pivot_exclude_columns = {
+                    c.output_name for e in field.expressions for c in e.find_all(exp.Column)
+                }
+        else:
+            pivot_exclude_columns = set(c.output_name for c in pivot.find_all(exp.Column))
 
-        pivot_output_columns = [col.output_name for col in pivot.args.get("columns", [])]
-        if not pivot_output_columns:
-            pivot_output_columns = [col.alias_or_name for col in pivot.expressions]
+            pivot_output_columns = [c.output_name for c in pivot.args.get("columns", [])]
+            if not pivot_output_columns:
+                pivot_output_columns = [c.alias_or_name for c in pivot.expressions]
 
     for expression in scope.expression.selects:
         if isinstance(expression, exp.Star):
@@ -394,12 +425,15 @@ def _expand_stars(
             if pseudocolumns:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
 
-            if columns and "*" not in columns:
-                table_id = id(table)
-                columns_to_exclude = except_columns.get(table_id) or set()
+            if not columns or "*" in columns:
+                return
 
-                if pivot and has_pivoted_source and pivot_columns and pivot_output_columns:
-                    implicit_columns = [col for col in columns if col not in pivot_columns]
+            table_id = id(table)
+            columns_to_exclude = except_columns.get(table_id) or set()
+
+            if pivot and pivot_output_columns and pivot_exclude_columns:
+                implicit_columns = [c for c in columns if c not in pivot_exclude_columns]
+                if implicit_columns:
                     new_selections.extend(
                         exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
                         for name in implicit_columns + pivot_output_columns
@@ -407,30 +441,28 @@ def _expand_stars(
                     )
                     continue
 
-                for name in columns:
-                    if name in using_column_tables and table in using_column_tables[name]:
-                        if name in coalesced_columns:
-                            continue
+            for name in columns:
+                if name in using_column_tables and table in using_column_tables[name]:
+                    if name in coalesced_columns:
+                        continue
 
-                        coalesced_columns.add(name)
-                        tables = using_column_tables[name]
-                        coalesce = [exp.column(name, table=table) for table in tables]
+                    coalesced_columns.add(name)
+                    tables = using_column_tables[name]
+                    coalesce = [exp.column(name, table=table) for table in tables]
 
-                        new_selections.append(
-                            alias(
-                                exp.Coalesce(this=coalesce[0], expressions=coalesce[1:]),
-                                alias=name,
-                                copy=False,
-                            )
+                    new_selections.append(
+                        alias(
+                            exp.Coalesce(this=coalesce[0], expressions=coalesce[1:]),
+                            alias=name,
+                            copy=False,
                         )
-                    elif name not in columns_to_exclude:
-                        alias_ = replace_columns.get(table_id, {}).get(name, name)
-                        column = exp.column(name, table=table)
-                        new_selections.append(
-                            alias(column, alias_, copy=False) if alias_ != name else column
-                        )
-            else:
-                return
+                    )
+                elif name not in columns_to_exclude:
+                    alias_ = replace_columns.get(table_id, {}).get(name, name)
+                    column = exp.column(name, table=table)
+                    new_selections.append(
+                        alias(column, alias_, copy=False) if alias_ != name else column
+                    )
 
     # Ensures we don't overwrite the initial selections with an empty list
     if new_selections:

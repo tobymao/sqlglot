@@ -626,8 +626,7 @@ SELECT
   "_q_0"."G" AS "G",
   "_q_0"."'x'" AS "'x'",
   "_q_0"."'y'" AS "'y'"
-FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0"
-;
+FROM "U" AS "U" PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_q_0";
 
 # title: selecting all columns from a pivoted source and generating spark
 # note: spark doesn't allow pivot aliases or qualified columns for the pivot's "field" (`h`)
@@ -643,6 +642,61 @@ FROM (
     *
   FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
 ) AS `_q_0`;
+
+# title: unpivoted table source with a single value column, unpivot columns can't be qualified
+# execute: false
+# dialect: snowflake
+SELECT * FROM m_sales AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
+SELECT
+  "_q_0"."EMPID" AS "EMPID",
+  "_q_0"."DEPT" AS "DEPT",
+  "_q_0"."MONTH" AS "MONTH",
+  "_q_0"."SALES" AS "SALES"
+FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB") UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+ORDER BY
+  "_q_0"."EMPID";
+
+# title: unpivoted derived table source with a single value column
+# execute: false
+# dialect: snowflake
+SELECT * FROM (SELECT * FROM m_sales) AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
+SELECT
+  "_q_0"."EMPID" AS "EMPID",
+  "_q_0"."DEPT" AS "DEPT",
+  "_q_0"."MONTH" AS "MONTH",
+  "_q_0"."SALES" AS "SALES"
+FROM (
+  SELECT
+    "M_SALES"."EMPID" AS "EMPID",
+    "M_SALES"."DEPT" AS "DEPT",
+    "M_SALES"."JAN" AS "JAN",
+    "M_SALES"."FEB" AS "FEB"
+  FROM "M_SALES" AS "M_SALES"
+) AS "M_SALES" UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
+ORDER BY
+  "_q_0"."EMPID";
+
+# title: unpivoted table source with a single value column, unpivot columns can be qualified
+# execute: false
+# dialect: bigquery
+# note: the named columns aren't supported by BQ but we add them here to avoid defining a schema
+SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT(sales FOR quarter IN (q1, q2, q3, q4));
+SELECT
+  `_q_0`.`product` AS `product`,
+  `_q_0`.`quarter` AS `quarter`,
+  `_q_0`.`sales` AS `sales`
+FROM `produce` AS `produce` UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`, `produce`.`q4`)) AS `_q_0`;
+
+# title: unpivoted table source with multiple value columns
+# execute: false
+# dialect: bigquery
+SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT((first_half_sales, second_half_sales) FOR semesters IN ((Q1, Q2) AS 'semester_1', (Q3, Q4) AS 'semester_2'));
+SELECT
+  `_q_0`.`product` AS `product`,
+  `_q_0`.`semesters` AS `semesters`,
+  `_q_0`.`first_half_sales` AS `first_half_sales`,
+  `_q_0`.`second_half_sales` AS `second_half_sales`
+FROM `produce` AS `produce` UNPIVOT((`first_half_sales`, `second_half_sales`) FOR `semesters` IN ((`produce`.`q1`, `produce`.`q2`) AS 'semester_1', (`produce`.`q3`, `produce`.`q4`) AS 'semester_2')) AS `_q_0`;
 
 # title: quoting is maintained
 # dialect: snowflake

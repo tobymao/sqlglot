@@ -140,23 +140,22 @@ DATEPART_ONLY_FORMATS = {"DW", "HOUR", "QUARTER"}
 
 
 def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
-    fmt = (
-        expression.args["format"]
-        if isinstance(expression, exp.NumberToStr)
-        else exp.Literal.string(
-            format_time(
-                expression.text("format"),
-                t.cast(t.Dict[str, str], TSQL.INVERSE_TIME_MAPPING),
-            )
-        )
-    )
+    fmt = expression.args["format"]
 
-    # There is no format for "quarter"
-    name = fmt.name.upper()
-    if name in DATEPART_ONLY_FORMATS:
-        return self.func("DATEPART", name, expression.this)
+    if not isinstance(expression, exp.NumberToStr):
+        if fmt.is_string:
+            mapped_fmt = format_time(fmt.name, TSQL.INVERSE_TIME_MAPPING)
+            name = (mapped_fmt or "").upper()
+            if name.upper() in DATEPART_ONLY_FORMATS:
+                return self.func("DATEPART", name.upper(), expression.this)
 
-    return self.func("FORMAT", expression.this, fmt, expression.args.get("culture"))
+            fmt_sql = self.sql(exp.Literal.string(mapped_fmt))
+        else:
+            fmt_sql = self.format_time(expression) or self.sql(fmt)
+    else:
+        fmt_sql = self.sql(fmt)
+
+    return self.func("FORMAT", expression.this, fmt_sql, expression.args.get("culture"))
 
 
 def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:

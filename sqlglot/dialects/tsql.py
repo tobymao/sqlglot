@@ -145,9 +145,10 @@ def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToSt
     if not isinstance(expression, exp.NumberToStr):
         if fmt.is_string:
             mapped_fmt = format_time(fmt.name, TSQL.INVERSE_TIME_MAPPING)
+
             name = (mapped_fmt or "").upper()
-            if name.upper() in DATEPART_ONLY_FORMATS:
-                return self.func("DATEPART", name.upper(), expression.this)
+            if name in DATEPART_ONLY_FORMATS:
+                return self.func("DATEPART", name, expression.this)
 
             fmt_sql = self.sql(exp.Literal.string(mapped_fmt))
         else:

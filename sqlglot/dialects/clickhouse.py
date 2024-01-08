@@ -23,14 +23,23 @@ def _lower_func(sql: str) -> str:
     return sql[:index].lower() + sql[index:]
 
 
-def _quantile_sql(self, e):
+def _quantile_sql(self: ClickHouse.Generator, e: exp.Quantile) -> str:
     quantile = e.args["quantile"]
     args = f"({self.sql(e, 'this')})"
+
     if isinstance(quantile, exp.Array):
         func = self.func("quantiles", *quantile)
     else:
         func = self.func("quantile", quantile)
+
     return func + args
+
+
+def _parse_count_if(args: t.List) -> exp.CountIf | exp.CombinedAggFunc:
+    if len(args) == 1:
+        return exp.CountIf(this=seq_get(args, 0))
+
+    return exp.CombinedAggFunc(this="countIf", expressions=args, parts=("count", "If"))
 
 
 class ClickHouse(Dialect):
@@ -92,6 +101,7 @@ class ClickHouse(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
+            "COUNTIF": _parse_count_if,
             "DATE_ADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
@@ -542,6 +552,7 @@ class ClickHouse(Dialect):
             exp.ArgMin: arg_max_or_min_no_count("argMin"),
             exp.Array: inline_array_sql,
             exp.CastToStrType: rename_func("CAST"),
+            exp.CountIf: rename_func("countIf"),
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: date_delta_sql("DATE_ADD"),
             exp.DateDiff: date_delta_sql("DATE_DIFF"),

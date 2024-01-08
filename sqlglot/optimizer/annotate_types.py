@@ -519,7 +519,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(
                 expression,
                 exp.DataType(
-                    this=exp.DataType.Type.STRUCT, expressions=[expr.type for expr in expressions]
+                    this=exp.DataType.Type.STRUCT,
+                    expressions=[
+                        exp.ColumnDef(this=exp.to_identifier(expr.alias), kind=expr.type)
+                        for expr in expressions
+                    ],
+                    nested=True,
                 ),
             )
 

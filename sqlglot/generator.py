@@ -245,6 +245,12 @@ class Generator:
     # Whether or not LAST_DAY function supports a date part argument
     LAST_DAY_SUPPORTS_DATE_PART = True
 
+    # Whether or not named columns are allowed in table aliases
+    SUPPORTS_TABLE_ALIAS_COLUMNS = True
+
+    # Whether or not UNPIVOT aliases are Identifiers (False means they're Literals)
+    UNPIVOT_ALIASES_ARE_IDENTIFIERS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -908,6 +914,10 @@ class Generator:
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
 
+        if columns and not self.SUPPORTS_TABLE_ALIAS_COLUMNS:
+            columns = ""
+            self.unsupported("Named columns are not supported in table alias.")
+
         if not alias and not self.dialect.UNNEST_COLUMN_ONLY:
             alias = "_t"
 
@@ -1526,8 +1536,7 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        unpivot = expression.args.get("unpivot")
-        direction = "UNPIVOT" if unpivot else "PIVOT"
+        direction = "UNPIVOT" if expression.unpivot else "PIVOT"
         field = self.sql(expression, "field")
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:
@@ -2475,6 +2484,17 @@ class Generator:
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
         return f"{self.sql(expression, 'this')}{alias}"
+
+    def pivotalias_sql(self, expression: exp.PivotAlias) -> str:
+        alias = expression.args["alias"]
+        identifier_alias = isinstance(alias, exp.Identifier)
+
+        if identifier_alias and not self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+            alias.replace(exp.Literal.string(alias.output_name))
+        elif not identifier_alias and self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+            alias.replace(exp.to_identifier(alias.output_name))
+
+        return self.alias_sql(expression)
 
     def aliases_sql(self, expression: exp.Aliases) -> str:
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"

@@ -12,6 +12,8 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("SELECT TRIM('     test    ') AS Result")
+        self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (20 ROWS)")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT) REPEATABLE (123)")
@@ -25,6 +27,16 @@ class TestTSQL(Validator):
         self.validate_identity("1 AND true", "1 <> 0 AND (1 = 1)")
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
 
+        self.validate_all(
+            "SELECT TRIM(BOTH 'a' FROM a)",
+            read={
+                "mysql": "SELECT TRIM(BOTH 'a' FROM a)",
+            },
+            write={
+                "mysql": "SELECT TRIM(BOTH 'a' FROM a)",
+                "tsql": "SELECT TRIM(BOTH 'a' FROM a)",
+            },
+        )
         self.validate_all(
             "SELECT TIMEFROMPARTS(23, 59, 59, 0, 0)",
             read={

@@ -1890,9 +1890,14 @@ class Generator:
 
         # If the NULLS FIRST/LAST clause is unsupported, we add another sort key to simulate it
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
+            window = expression.find_ancestor(exp.Window, exp.Select)
             if expression.this.is_int:
                 self.unsupported(
-                    f"'{nulls_sort_change.strip()}' not supported with positional ordering"
+                    f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
+                )
+            elif isinstance(window, exp.Window) and window.args.get("spec"):
+                self.unsupported(
+                    f"'{nulls_sort_change.strip()}' translation not supported in window functions"
                 )
             else:
                 null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""

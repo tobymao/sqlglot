@@ -8,6 +8,13 @@ class TestDuckDB(Validator):
 
     def test_duckdb(self):
         self.validate_all(
+            "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            write={
+                "duckdb": "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "mysql": "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM x ORDER BY 1 NULLS LAST",
             write={
                 "duckdb": "SELECT * FROM x ORDER BY 1",

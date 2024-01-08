@@ -145,7 +145,8 @@ class TestTSQL(Validator):
         )
 
         self.validate_identity(
-            'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)'
+            'CREATE TABLE x (CONSTRAINT "pk_mytable" UNIQUE NONCLUSTERED (a DESC)) ON b (c)',
+            "CREATE TABLE x (CONSTRAINT [pk_mytable] UNIQUE NONCLUSTERED (a DESC)) ON b (c)",
         )
 
         self.validate_all(
@@ -158,7 +159,7 @@ class TestTSQL(Validator):
             ) ON [SECONDARY]
             """,
             write={
-                "tsql": 'CREATE TABLE x ("zip_cd" VARCHAR(5) NULL NOT FOR REPLICATION, "zip_cd_mkey" VARCHAR(5) NOT NULL, CONSTRAINT "pk_mytable" PRIMARY KEY CLUSTERED ("zip_cd_mkey" ASC)  WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON "INDEX") ON "SECONDARY"',
+                "tsql": "CREATE TABLE x ([zip_cd] VARCHAR(5) NULL NOT FOR REPLICATION, [zip_cd_mkey] VARCHAR(5) NOT NULL, CONSTRAINT [pk_mytable] PRIMARY KEY CLUSTERED ([zip_cd_mkey] ASC)  WITH (PAD_INDEX=ON, STATISTICS_NORECOMPUTE=OFF) ON [INDEX]) ON [SECONDARY]",
                 "spark2": "CREATE TABLE x (`zip_cd` VARCHAR(5), `zip_cd_mkey` VARCHAR(5) NOT NULL, CONSTRAINT `pk_mytable` PRIMARY KEY (`zip_cd_mkey`))",
             },
         )
@@ -177,7 +178,8 @@ class TestTSQL(Validator):
         )
 
         self.validate_identity(
-            "CREATE TABLE [db].[tbl]([a] [int])", 'CREATE TABLE "db"."tbl" ("a" INTEGER)'
+            "CREATE TABLE [db].[tbl]([a] [int])",
+            "CREATE TABLE [db].[tbl] ([a] INTEGER)",
         )
 
         projection = parse_one("SELECT a = 1", read="tsql").selects[0]
@@ -213,7 +215,6 @@ class TestTSQL(Validator):
         self.validate_identity("PRINT @TestVariable")
         self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
         self.validate_identity("INSERT INTO @TestTable VALUES (1, 'Value1', 12, 20)")
-        self.validate_identity('SELECT "x"."y" FROM foo')
         self.validate_identity("SELECT * FROM #foo")
         self.validate_identity("SELECT * FROM ##foo")
         self.validate_identity("SELECT a = 1", "SELECT 1 AS a")
@@ -226,11 +227,15 @@ class TestTSQL(Validator):
         self.validate_identity(
             "SELECT DISTINCT DepartmentName, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY BaseRate) OVER (PARTITION BY DepartmentName) AS MedianCont FROM dbo.DimEmployee"
         )
+        self.validate_identity(
+            'SELECT "x"."y" FROM foo',
+            "SELECT [x].[y] FROM foo",
+        )
 
         self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={
-                "tsql": 'SELECT CAST("a"."b" AS SMALLINT) FROM foo',
+                "tsql": "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
                 "spark": "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
             },
         )
@@ -266,13 +271,6 @@ class TestTSQL(Validator):
                 "mysql": "GROUP_CONCAT(x SEPARATOR '|')",
                 "sqlite": "GROUP_CONCAT(x, '|')",
                 "postgres": "STRING_AGG(x, '|')",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
-            write={
-                "tsql": 'SELECT CAST("a"."b" AS SMALLINT) FROM foo',
-                "spark": "SELECT CAST(`a`.`b` AS SMALLINT) FROM foo",
             },
         )
         self.validate_all(
@@ -624,7 +622,11 @@ class TestTSQL(Validator):
                 'CREATE TABLE "dbo"."benchmark" ('
                 '"name" CHAR(7) NOT NULL, '
                 '"internal_id" VARCHAR(10) NOT NULL, '
-                f'UNIQUE {clusterd_keyword} ("internal_id" ASC))'
+                f'UNIQUE {clusterd_keyword} ("internal_id" ASC))',
+                "CREATE TABLE [dbo].[benchmark] ("
+                "[name] CHAR(7) NOT NULL, "
+                "[internal_id] VARCHAR(10) NOT NULL, "
+                f"UNIQUE {clusterd_keyword} ([internal_id] ASC))",
             )
 
         self.validate_identity(
@@ -843,13 +845,13 @@ WHERE
         """
 
         expected_sqls = [
-            'CREATE PROCEDURE "TRANSF"."SP_Merge_Sales_Real" @Loadid INTEGER, @NumberOfRows INTEGER AS BEGIN SET XACT_ABORT ON',
+            "CREATE PROCEDURE [TRANSF].[SP_Merge_Sales_Real] @Loadid INTEGER, @NumberOfRows INTEGER AS BEGIN SET XACT_ABORT ON",
             "DECLARE @DWH_DateCreated DATETIME = CONVERT(DATETIME, getdate(), 104)",
             "DECLARE @DWH_DateModified DATETIME = CONVERT(DATETIME, getdate(), 104)",
             "DECLARE @DWH_IdUserCreated INTEGER = SUSER_ID (SYSTEM_USER)",
             "DECLARE @DWH_IdUserModified INTEGER = SUSER_ID (SYSTEM_USER)",
             "DECLARE @SalesAmountBefore float",
-            'SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF."Pre_Merge_Sales_Real" AS S',
+            "SELECT @SalesAmountBefore = SUM(SalesAmount) FROM TRANSF.[Pre_Merge_Sales_Real] AS S",
             "END",
         ]
 
@@ -868,9 +870,9 @@ WHERE
         """
 
         expected_sqls = [
-            'CREATE PROC "dbo"."transform_proc" AS DECLARE @CurrentDate VARCHAR(20)',
+            "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate VARCHAR(20)",
             "SET @CurrentDate = CAST(FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss') AS VARCHAR(20))",
-            'CREATE TABLE "target_schema"."target_table" (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)',
+            "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
         ]
 
         for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
@@ -1474,61 +1476,32 @@ WHERE
 
     def test_temporal_table(self):
         self.validate_identity(
-            """CREATE TABLE test ("data" CHAR(7), "valid_from" DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, "valid_to" DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ("valid_from", "valid_to")) WITH(SYSTEM_VERSIONING=ON)"""
+            """CREATE TABLE test ("data" CHAR(7), "valid_from" DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, "valid_to" DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ("valid_from", "valid_to")) WITH(SYSTEM_VERSIONING=ON)""",
+            "CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON)",
         )
         self.validate_identity(
-            """CREATE TABLE test ("data" CHAR(7), "valid_from" DATETIME2(2) GENERATED ALWAYS AS ROW START HIDDEN NOT NULL, "valid_to" DATETIME2(2) GENERATED ALWAYS AS ROW END HIDDEN NOT NULL, PERIOD FOR SYSTEM_TIME ("valid_from", "valid_to")) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE="dbo"."benchmark_history", DATA_CONSISTENCY_CHECK=ON))"""
+            """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START HIDDEN NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END HIDDEN NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history], DATA_CONSISTENCY_CHECK=ON))"""
         )
         self.validate_identity(
-            """CREATE TABLE test ("data" CHAR(7), "valid_from" DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, "valid_to" DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ("valid_from", "valid_to")) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE="dbo"."benchmark_history", DATA_CONSISTENCY_CHECK=ON))"""
+            """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history], DATA_CONSISTENCY_CHECK=ON))"""
         )
         self.validate_identity(
-            """CREATE TABLE test ("data" CHAR(7), "valid_from" DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, "valid_to" DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ("valid_from", "valid_to")) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE="dbo"."benchmark_history", DATA_CONSISTENCY_CHECK=OFF))"""
+            """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history], DATA_CONSISTENCY_CHECK=OFF))"""
         )
         self.validate_identity(
-            """CREATE TABLE test ("data" CHAR(7), "valid_from" DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, "valid_to" DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ("valid_from", "valid_to")) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE="dbo"."benchmark_history"))"""
+            """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history]))"""
         )
         self.validate_identity(
-            """CREATE TABLE test ("data" CHAR(7), "valid_from" DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, "valid_to" DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ("valid_from", "valid_to")) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE="dbo"."benchmark_history"))"""
+            """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history]))"""
         )
 
     def test_system_time(self):
-        self.validate_all(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo'",
-            write={
-                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME AS OF 'foo'""",
-            },
-        )
-        self.validate_all(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo' AS alias",
-            write={
-                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME AS OF 'foo' AS alias""",
-            },
-        )
-        self.validate_all(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME FROM c TO d",
-            write={
-                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME FROM c TO d""",
-            },
-        )
-        self.validate_all(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME BETWEEN c AND d",
-            write={
-                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME BETWEEN c AND d""",
-            },
-        )
-        self.validate_all(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME CONTAINED IN (c, d)",
-            write={
-                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME CONTAINED IN (c, d)""",
-            },
-        )
-        self.validate_all(
-            "SELECT [x] FROM [a].[b] FOR SYSTEM_TIME ALL AS alias",
-            write={
-                "tsql": """SELECT "x" FROM "a"."b" FOR SYSTEM_TIME ALL AS alias""",
-            },
-        )
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo'")
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME AS OF 'foo' AS alias")
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME FROM c TO d")
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME BETWEEN c AND d")
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME CONTAINED IN (c, d)")
+        self.validate_identity("SELECT [x] FROM [a].[b] FOR SYSTEM_TIME ALL AS alias")
 
     def test_current_user(self):
         self.validate_all(
@@ -1581,7 +1554,7 @@ WHERE
         self.validate_all(
             """SELECT [key], value FROM OPENJSON(@json,'$.path.to."sub-object"')""",
             write={
-                "tsql": """SELECT "key", value FROM OPENJSON(@json, '$.path.to."sub-object"')""",
+                "tsql": """SELECT [key], value FROM OPENJSON(@json, '$.path.to."sub-object"')""",
             },
         )
         self.validate_all(
@@ -1610,7 +1583,7 @@ FROM OPENJSON(@json) WITH (
     Date DATETIME2 '$.Order.Date',
     Customer VARCHAR(200) '$.AccountNumber',
     Quantity INTEGER '$.Item.Quantity',
-    "Order" VARCHAR(MAX) AS JSON
+    [Order] VARCHAR(MAX) AS JSON
 )"""
             },
             pretty=True,
@@ -1637,19 +1610,19 @@ FROM OPENJSON(@json) WITH (
     def test_qualify_derived_table_outputs(self):
         self.validate_identity(
             "WITH t AS (SELECT 1) SELECT * FROM t",
-            'WITH t AS (SELECT 1 AS "1") SELECT * FROM t',
+            "WITH t AS (SELECT 1 AS [1]) SELECT * FROM t",
         )
         self.validate_identity(
             'WITH t AS (SELECT "c") SELECT * FROM t',
-            'WITH t AS (SELECT "c" AS "c") SELECT * FROM t',
+            "WITH t AS (SELECT [c] AS [c]) SELECT * FROM t",
         )
         self.validate_identity(
             "SELECT * FROM (SELECT 1) AS subq",
-            'SELECT * FROM (SELECT 1 AS "1") AS subq',
+            "SELECT * FROM (SELECT 1 AS [1]) AS subq",
         )
         self.validate_identity(
             'SELECT * FROM (SELECT "c") AS subq',
-            'SELECT * FROM (SELECT "c" AS "c") AS subq',
+            "SELECT * FROM (SELECT [c] AS [c]) AS subq",
         )
 
         self.validate_all(

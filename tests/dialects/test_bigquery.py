@@ -292,8 +292,13 @@ class TestBigQuery(Validator):
         )
         self.validate_all(
             "SELECT COUNTIF(x)",
+            read={
+                "clickhouse": "SELECT countIf(x)",
+                "duckdb": "SELECT COUNT_IF(x)",
+            },
             write={
                 "bigquery": "SELECT COUNTIF(x)",
+                "clickhouse": "SELECT countIf(x)",
                 "duckdb": "SELECT COUNT_IF(x)",
             },
         )

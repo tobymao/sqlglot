@@ -328,6 +328,10 @@ def _parse_colon_get_path(
         if not self._match(TokenType.COLON):
             break
 
+    if self._match_set(self.RANGE_PARSERS):
+        expression = self.RANGE_PARSERS[self._prev.token_type](self, this)
+        this = expression if isinstance(expression, exp.Expression) else this
+
     return this
 
 

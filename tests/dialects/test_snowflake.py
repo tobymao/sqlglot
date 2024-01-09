@@ -79,6 +79,14 @@ WHERE
             "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
         )
         self.validate_identity(
+            """SELECT PARSE_JSON('{"x": "hello"}'):x LIKE 'hello'""",
+            """SELECT GET_PATH(PARSE_JSON('{"x": "hello"}'), 'x') LIKE 'hello'""",
+        )
+        self.validate_identity(
+            """SELECT data:x LIKE 'hello' FROM some_table""",
+            """SELECT GET_PATH(data, 'x') LIKE 'hello' FROM some_table""",
+        )
+        self.validate_identity(
             "SELECT SUM({ fn CONVERT(123, SQL_DOUBLE) })",
             "SELECT SUM(CAST(123 AS DOUBLE))",
         )

@@ -78,6 +78,7 @@ class SQLite(Dialect):
             **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
         }
+        STRING_ALIASES = True
 
     class Generator(generator.Generator):
         JOIN_HINTS = False

@@ -529,6 +529,8 @@ class BigQuery(Dialect):
         UNNEST_WITH_ORDINALITY = False
         COLLATE_IS_FUNC = True
         LIMIT_ONLY_LITERALS = True
+        SUPPORTS_TABLE_ALIAS_COLUMNS = False
+        UNPIVOT_ALIASES_ARE_IDENTIFIERS = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

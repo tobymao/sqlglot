@@ -681,6 +681,7 @@ class Parser(metaclass=_Parser):
             exp.CollateProperty, **kwargs
         ),
         "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "CONTAINS": lambda self: self._parse_contains_property(),
         "COPY": lambda self: self._parse_copy_property(),
         "DATABLOCKSIZE": lambda self, **kwargs: self._parse_datablocksize(**kwargs),
         "DEFINER": lambda self: self._parse_definer(),
@@ -711,6 +712,7 @@ class Parser(metaclass=_Parser):
         "LOG": lambda self, **kwargs: self._parse_log(**kwargs),
         "MATERIALIZED": lambda self: self.expression(exp.MaterializedProperty),
         "MERGEBLOCKRATIO": lambda self, **kwargs: self._parse_mergeblockratio(**kwargs),
+        "MODIFIES": lambda self: self._parse_modifies_property(),
         "MULTISET": lambda self: self.expression(exp.SetProperty, multi=True),
         "NO": lambda self: self._parse_no_property(),
         "ON": lambda self: self._parse_on_property(),
@@ -722,6 +724,7 @@ class Parser(metaclass=_Parser):
         "PARTITIONED_BY": lambda self: self._parse_partitioned_by(),
         "PRIMARY KEY": lambda self: self._parse_primary_key(in_props=True),
         "RANGE": lambda self: self._parse_dict_range(this="RANGE"),
+        "READS": lambda self: self._parse_reads_property(),
         "REMOTE": lambda self: self._parse_remote_with_connection(),
         "RETURNS": lambda self: self._parse_returns(),
         "ROW": lambda self: self._parse_row(),
@@ -954,6 +957,9 @@ class Parser(metaclass=_Parser):
 
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
+
+    # Whether or not string aliases are supported `SELECT COUNT(*) 'count'`
+    STRING_ALIASES = False
 
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_UNION = True
@@ -1852,9 +1858,21 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.WithDataProperty, no=no, statistics=statistics)
 
-    def _parse_no_property(self) -> t.Optional[exp.NoPrimaryIndexProperty]:
+    def _parse_contains_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
+        if self._match_text_seq("SQL"):
+            return self.expression(exp.SqlReadWriteProperty, this="CONTAINS SQL")
+        return None
+
+    def _parse_modifies_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
+        if self._match_text_seq("SQL", "DATA"):
+            return self.expression(exp.SqlReadWriteProperty, this="MODIFIES SQL DATA")
+        return None
+
+    def _parse_no_property(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("PRIMARY", "INDEX"):
             return exp.NoPrimaryIndexProperty()
+        if self._match_text_seq("SQL"):
+            return self.expression(exp.SqlReadWriteProperty, this="NO SQL")
         return None
 
     def _parse_on_property(self) -> t.Optional[exp.Expression]:
@@ -1863,6 +1881,11 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("COMMIT", "DELETE", "ROWS"):
             return exp.OnCommitProperty(delete=True)
         return self.expression(exp.OnProperty, this=self._parse_schema(self._parse_id_var()))
+
+    def _parse_reads_property(self) -> t.Optional[exp.SqlReadWriteProperty]:
+        if self._match_text_seq("SQL", "DATA"):
+            return self.expression(exp.SqlReadWriteProperty, this="READS SQL DATA")
+        return None
 
     def _parse_distkey(self) -> exp.DistKeyProperty:
         return self.expression(exp.DistKeyProperty, this=self._parse_wrapped(self._parse_id_var))
@@ -2493,13 +2516,14 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_lateral(self) -> t.Optional[exp.Lateral]:
-        outer_apply = self._match_pair(TokenType.OUTER, TokenType.APPLY)
         cross_apply = self._match_pair(TokenType.CROSS, TokenType.APPLY)
+        if not cross_apply and self._match_pair(TokenType.OUTER, TokenType.APPLY):
+            cross_apply = False
 
-        if outer_apply or cross_apply:
+        if cross_apply is not None:
             this = self._parse_select(table=True)
             view = None
-            outer = not cross_apply
+            outer = None
         elif self._match(TokenType.LATERAL):
             this = self._parse_select(table=True)
             view = self._match(TokenType.VIEW)
@@ -2532,7 +2556,14 @@ class Parser(metaclass=_Parser):
         else:
             table_alias = self._parse_table_alias()
 
-        return self.expression(exp.Lateral, this=this, view=view, outer=outer, alias=table_alias)
+        return self.expression(
+            exp.Lateral,
+            this=this,
+            view=view,
+            outer=outer,
+            alias=table_alias,
+            cross_apply=cross_apply,
+        )
 
     def _parse_join_parts(
         self,
@@ -2565,9 +2596,6 @@ class Parser(metaclass=_Parser):
 
         if not skip_join_token and not join and not outer_apply and not cross_apply:
             return None
-
-        if outer_apply:
-            side = Token(TokenType.LEFT, "LEFT")
 
         kwargs: t.Dict[str, t.Any] = {"this": self._parse_table(parse_bracket=parse_bracket)}
 
@@ -2944,6 +2972,27 @@ class Parser(metaclass=_Parser):
             exp.Pivot, this=this, expressions=expressions, using=using, group=group
         )
 
+    def _parse_pivot_in(self) -> exp.In:
+        def _parse_aliased_expression() -> t.Optional[exp.Expression]:
+            this = self._parse_conjunction()
+
+            self._match(TokenType.ALIAS)
+            alias = self._parse_field()
+            if alias:
+                return self.expression(exp.PivotAlias, this=this, alias=alias)
+
+            return this
+
+        value = self._parse_column()
+
+        if not self._match_pair(TokenType.IN, TokenType.L_PAREN):
+            self.raise_error("Expecting IN (")
+
+        aliased_expressions = self._parse_csv(_parse_aliased_expression)
+
+        self._match_r_paren()
+        return self.expression(exp.In, this=value, expressions=aliased_expressions)
+
     def _parse_pivot(self) -> t.Optional[exp.Pivot]:
         index = self._index
         include_nulls = None
@@ -2962,7 +3011,6 @@ class Parser(metaclass=_Parser):
             return None
 
         expressions = []
-        field = None
 
         if not self._match(TokenType.L_PAREN):
             self._retreat(index)
@@ -2979,12 +3027,7 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.FOR):
             self.raise_error("Expecting FOR")
 
-        value = self._parse_column()
-
-        if not self._match(TokenType.IN):
-            self.raise_error("Expecting IN")
-
-        field = self._parse_in(value, alias=True)
+        field = self._parse_pivot_in()
 
         self._match_r_paren()
 
@@ -4880,7 +4923,9 @@ class Parser(metaclass=_Parser):
             self._match_r_paren(aliases)
             return aliases
 
-        alias = self._parse_id_var(any_token)
+        alias = self._parse_id_var(any_token) or (
+            self.STRING_ALIASES and self._parse_string_as_identifier()
+        )
 
         if alias:
             return self.expression(exp.Alias, comments=comments, this=this, alias=alias)

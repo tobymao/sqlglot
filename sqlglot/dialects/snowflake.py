@@ -328,6 +328,9 @@ def _parse_colon_get_path(
         if not self._match(TokenType.COLON):
             break
 
+    if self._match_set(self.RANGE_PARSERS):
+        this = self.RANGE_PARSERS[self._prev.token_type](self, this) or this
+
     return this
 
 
@@ -338,6 +341,23 @@ def _parse_timestamp_from_parts(args: t.List) -> exp.Func:
         return exp.Anonymous(this="TIMESTAMP_FROM_PARTS", expressions=args)
 
     return exp.TimestampFromParts.from_arg_list(args)
+
+
+def _unqualify_unpivot_columns(expression: exp.Expression) -> exp.Expression:
+    """
+    Snowflake doesn't allow columns referenced in UNPIVOT to be qualified,
+    so we need to unqualify them.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("SELECT * FROM m_sales UNPIVOT(sales FOR month IN (m_sales.jan, feb, mar, april))")
+        >>> print(_unqualify_unpivot_columns(expr).sql(dialect="snowflake"))
+        SELECT * FROM m_sales UNPIVOT(sales FOR month IN (jan, feb, mar, april))
+    """
+    if isinstance(expression, exp.Pivot) and expression.unpivot:
+        expression = transforms.unqualify_columns(expression)
+
+    return expression
 
 
 class Snowflake(Dialect):
@@ -484,6 +504,7 @@ class Snowflake(Dialect):
         SHOW_PARSERS = {
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
+            "COLUMNS": _show_parser("COLUMNS"),
         }
 
         STAGED_FILE_SINGLE_TOKENS = {
@@ -590,6 +611,8 @@ class Snowflake(Dialect):
             scope = None
             scope_kind = None
 
+            like = self._parse_string() if self._match(TokenType.LIKE) else None
+
             if self._match(TokenType.IN):
                 if self._match_text_seq("ACCOUNT"):
                     scope_kind = "ACCOUNT"
@@ -601,7 +624,9 @@ class Snowflake(Dialect):
                     scope_kind = "TABLE"
                     scope = self._parse_table()
 
-            return self.expression(exp.Show, this=this, scope=scope, scope_kind=scope_kind)
+            return self.expression(
+                exp.Show, this=this, like=like, scope=scope, scope_kind=scope_kind
+            )
 
         def _parse_alter_table_swap(self) -> exp.SwapTable:
             self._match_text_seq("WITH")
@@ -641,6 +666,8 @@ class Snowflake(Dialect):
             "PUT": TokenType.COMMAND,
             "RENAME": TokenType.REPLACE,
             "SAMPLE": TokenType.TABLE_SAMPLE,
+            "SQL_DOUBLE": TokenType.DOUBLE,
+            "SQL_VARCHAR": TokenType.VARCHAR,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
@@ -710,6 +737,7 @@ class Snowflake(Dialect):
             exp.PercentileDisc: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]
             ),
+            exp.Pivot: transforms.preprocess([_unqualify_unpivot_columns]),
             exp.RegexpILike: _regexpilike_sql,
             exp.Rand: rename_func("RANDOM"),
             exp.Select: transforms.preprocess(
@@ -820,6 +848,9 @@ class Snowflake(Dialect):
             return f"{explode}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
+            like = self.sql(expression, "like")
+            like = f" LIKE {like}" if like else ""
+
             scope = self.sql(expression, "scope")
             scope = f" {scope}" if scope else ""
 
@@ -827,7 +858,7 @@ class Snowflake(Dialect):
             if scope_kind:
                 scope_kind = f" IN {scope_kind}"
 
-            return f"SHOW {expression.name}{scope_kind}{scope}"
+            return f"SHOW {expression.name}{like}{scope_kind}{scope}"
 
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             # Other dialects don't support all of the following parameters, so we need to

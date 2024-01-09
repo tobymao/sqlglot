@@ -1684,6 +1684,28 @@ class TestDialect(Validator):
 
     def test_alias(self):
         self.validate_all(
+            'SELECT 1 AS "foo"',
+            read={
+                "mysql": "SELECT 1 'foo'",
+                "sqlite": "SELECT 1 'foo'",
+                "tsql": "SELECT 1 'foo'",
+            },
+        )
+
+        for dialect in (
+            "presto",
+            "hive",
+            "postgres",
+            "clickhouse",
+            "bigquery",
+            "snowflake",
+            "duckdb",
+        ):
+            with self.subTest(f"string alias: {dialect}"):
+                with self.assertRaises(ParseError):
+                    parse_one("SELECT 1 'foo'", dialect=dialect)
+
+        self.validate_all(
             "SELECT a AS b FROM x GROUP BY b",
             write={
                 "drill": "SELECT a AS b FROM x GROUP BY b",

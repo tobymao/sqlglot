@@ -203,6 +203,10 @@ class Oracle(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+            this = expression.this
+            return self.func("CURRENT_TIMESTAMP", this) if this else "CURRENT_TIMESTAMP"
+
         def offset_sql(self, expression: exp.Offset) -> str:
             return f"{super().offset_sql(expression)} ROWS"
 
@@ -237,6 +241,7 @@ class Oracle(Dialect):
             "NVARCHAR2": TokenType.NVARCHAR,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
+            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
         }

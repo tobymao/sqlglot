@@ -99,19 +99,19 @@ order by
    p_partkey
 limit
    100;
-WITH "region_2" AS (
+WITH "partsupp_2" AS (
+  SELECT
+    "partsupp"."ps_partkey" AS "ps_partkey",
+    "partsupp"."ps_suppkey" AS "ps_suppkey",
+    "partsupp"."ps_supplycost" AS "ps_supplycost"
+  FROM "partsupp" AS "partsupp"
+), "region_2" AS (
   SELECT
     "region"."r_regionkey" AS "r_regionkey",
     "region"."r_name" AS "r_name"
   FROM "region" AS "region"
   WHERE
     "region"."r_name" = 'EUROPE'
-), "partsupp_2" AS (
-  SELECT
-    "partsupp"."ps_partkey" AS "ps_partkey",
-    "partsupp"."ps_suppkey" AS "ps_suppkey",
-    "partsupp"."ps_supplycost" AS "ps_supplycost"
-  FROM "partsupp" AS "partsupp"
 ), "_u_0" AS (
   SELECT
     MIN("partsupp"."ps_supplycost") AS "_col_0",
@@ -136,16 +136,16 @@ SELECT
   "supplier"."s_phone" AS "s_phone",
   "supplier"."s_comment" AS "s_comment"
 FROM "part" AS "part"
-CROSS JOIN "region_2" AS "region"
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "part"."p_partkey"
-JOIN "nation" AS "nation"
-  ON "nation"."n_regionkey" = "region"."r_regionkey"
 JOIN "partsupp_2" AS "partsupp"
   ON "part"."p_partkey" = "partsupp"."ps_partkey"
 JOIN "supplier" AS "supplier"
+  ON "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
+JOIN "nation" AS "nation"
   ON "nation"."n_nationkey" = "supplier"."s_nationkey"
-  AND "partsupp"."ps_suppkey" = "supplier"."s_suppkey"
+JOIN "region_2" AS "region"
+  ON "nation"."n_regionkey" = "region"."r_regionkey"
 WHERE
   "_u_0"."_col_0" = "partsupp"."ps_supplycost"
   AND "part"."p_size" = 15
@@ -294,10 +294,10 @@ JOIN "orders" AS "orders"
   ON "customer"."c_custkey" = "orders"."o_custkey"
   AND CAST("orders"."o_orderdate" AS DATE) < CAST('1995-01-01' AS DATE)
   AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1994-01-01' AS DATE)
-JOIN "supplier" AS "supplier"
-  ON "customer"."c_nationkey" = "supplier"."s_nationkey"
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+JOIN "supplier" AS "supplier"
+  ON "customer"."c_nationkey" = "supplier"."s_nationkey"
   AND "lineitem"."l_suppkey" = "supplier"."s_suppkey"
 JOIN "nation" AS "nation"
   ON "nation"."n_nationkey" = "supplier"."s_nationkey"
@@ -389,8 +389,13 @@ JOIN "nation" AS "n1"
     "n1"."n_name" = 'FRANCE' OR "n1"."n_name" = 'GERMANY'
   )
   AND "n1"."n_nationkey" = "supplier"."s_nationkey"
+JOIN "orders" AS "orders"
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+JOIN "customer" AS "customer"
+  ON "customer"."c_custkey" = "orders"."o_custkey"
 JOIN "nation" AS "n2"
-  ON (
+  ON "customer"."c_nationkey" = "n2"."n_nationkey"
+  AND (
     "n1"."n_name" = 'FRANCE' OR "n2"."n_name" = 'FRANCE'
   )
   AND (
@@ -399,11 +404,6 @@ JOIN "nation" AS "n2"
   AND (
     "n2"."n_name" = 'FRANCE' OR "n2"."n_name" = 'GERMANY'
   )
-JOIN "customer" AS "customer"
-  ON "customer"."c_nationkey" = "n2"."n_nationkey"
-JOIN "orders" AS "orders"
-  ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "lineitem"."l_orderkey" = "orders"."o_orderkey"
 GROUP BY
   "n1"."n_name",
   "n2"."n_name",
@@ -467,23 +467,22 @@ SELECT
     1 - "lineitem"."l_discount"
   )) AS "mkt_share"
 FROM "part" AS "part"
-JOIN "region" AS "region"
-  ON "region"."r_name" = 'AMERICA'
 JOIN "lineitem" AS "lineitem"
   ON "lineitem"."l_partkey" = "part"."p_partkey"
-JOIN "nation" AS "n1"
-  ON "n1"."n_regionkey" = "region"."r_regionkey"
-JOIN "customer" AS "customer"
-  ON "customer"."c_nationkey" = "n1"."n_nationkey"
-JOIN "supplier" AS "supplier"
-  ON "lineitem"."l_suppkey" = "supplier"."s_suppkey"
-JOIN "nation" AS "n2"
-  ON "n2"."n_nationkey" = "supplier"."s_nationkey"
 JOIN "orders" AS "orders"
-  ON "customer"."c_custkey" = "orders"."o_custkey"
-  AND "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
   AND CAST("orders"."o_orderdate" AS DATE) <= CAST('1996-12-31' AS DATE)
   AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1995-01-01' AS DATE)
+JOIN "supplier" AS "supplier"
+  ON "lineitem"."l_suppkey" = "supplier"."s_suppkey"
+JOIN "customer" AS "customer"
+  ON "customer"."c_custkey" = "orders"."o_custkey"
+JOIN "nation" AS "n2"
+  ON "n2"."n_nationkey" = "supplier"."s_nationkey"
+JOIN "nation" AS "n1"
+  ON "customer"."c_nationkey" = "n1"."n_nationkey"
+JOIN "region" AS "region"
+  ON "n1"."n_regionkey" = "region"."r_regionkey" AND "region"."r_name" = 'AMERICA'
 WHERE
   "part"."p_type" = 'ECONOMY ANODIZED STEEL'
 GROUP BY

@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     path_to_jsonpath,
     rename_func,
     timestrtotime_sql,
+    trim_sql,
 )
 from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
@@ -140,23 +141,23 @@ DATEPART_ONLY_FORMATS = {"DW", "HOUR", "QUARTER"}
 
 
 def _format_sql(self: TSQL.Generator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
-    fmt = (
-        expression.args["format"]
-        if isinstance(expression, exp.NumberToStr)
-        else exp.Literal.string(
-            format_time(
-                expression.text("format"),
-                t.cast(t.Dict[str, str], TSQL.INVERSE_TIME_MAPPING),
-            )
-        )
-    )
+    fmt = expression.args["format"]
 
-    # There is no format for "quarter"
-    name = fmt.name.upper()
-    if name in DATEPART_ONLY_FORMATS:
-        return self.func("DATEPART", name, expression.this)
+    if not isinstance(expression, exp.NumberToStr):
+        if fmt.is_string:
+            mapped_fmt = format_time(fmt.name, TSQL.INVERSE_TIME_MAPPING)
 
-    return self.func("FORMAT", expression.this, fmt, expression.args.get("culture"))
+            name = (mapped_fmt or "").upper()
+            if name in DATEPART_ONLY_FORMATS:
+                return self.func("DATEPART", name, expression.this)
+
+            fmt_sql = self.sql(exp.Literal.string(mapped_fmt))
+        else:
+            fmt_sql = self.format_time(expression) or self.sql(fmt)
+    else:
+        fmt_sql = self.sql(fmt)
+
+    return self.func("FORMAT", expression.this, fmt_sql, expression.args.get("culture"))
 
 
 def _string_agg_sql(self: TSQL.Generator, expression: exp.GroupConcat) -> str:
@@ -376,7 +377,7 @@ class TSQL(Dialect):
     }
 
     class Tokenizer(tokens.Tokenizer):
-        IDENTIFIERS = ['"', ("[", "]")]
+        IDENTIFIERS = [("[", "]"), '"']
         QUOTES = ["'", '"']
         HEX_STRINGS = [("0x", ""), ("0X", "")]
         VAR_SINGLE_TOKENS = {"@", "$", "#"}
@@ -386,6 +387,7 @@ class TSQL(Dialect):
             "DATETIME2": TokenType.DATETIME,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.COMMAND,
+            "EXEC": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NTEXT": TokenType.TEXT,
@@ -466,6 +468,7 @@ class TSQL(Dialect):
         LOG_DEFAULTS_TO_LN = True
 
         ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
+        STRING_ALIASES = True
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
@@ -719,6 +722,7 @@ class TSQL(Dialect):
             exp.TemporaryProperty: lambda self, e: "",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: _format_sql,
+            exp.Trim: trim_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
         }
@@ -729,6 +733,17 @@ class TSQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def lateral_op(self, expression: exp.Lateral) -> str:
+            cross_apply = expression.args.get("cross_apply")
+            if cross_apply is True:
+                return "CROSS APPLY"
+            if cross_apply is False:
+                return "OUTER APPLY"
+
+            # TODO: perhaps we can check if the parent is a Join and transpile it appropriately
+            self.unsupported("LATERAL clause is not supported.")
+            return "LATERAL"
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

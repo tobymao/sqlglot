@@ -36,6 +36,8 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
+    from typing_extensions import Literal as Lit
+
     from sqlglot.dialects.dialect import DialectType
 
 
@@ -818,6 +820,9 @@ class Expression(metaclass=_Expression):
         div.args["typed"] = typed
         div.args["safe"] = safe
         return div
+
+    def desc(self, nulls_first: bool = False) -> Ordered:
+        return Ordered(this=self.copy(), desc=True, nulls_first=nulls_first)
 
     def __lt__(self, other: t.Any) -> LT:
         return self._binop(LT, other)
@@ -1925,7 +1930,13 @@ class Join(Expression):
 
 
 class Lateral(UDTF):
-    arg_types = {"this": True, "view": False, "outer": False, "alias": False}
+    arg_types = {
+        "this": True,
+        "view": False,
+        "outer": False,
+        "alias": False,
+        "cross_apply": False,  # True -> CROSS APPLY, False -> OUTER APPLY
+    }
 
 
 class MatchRecognize(Expression):
@@ -2583,7 +2594,7 @@ class Table(Expression):
 
     def to_column(self, copy: bool = True) -> Alias | Column | Dot:
         parts = self.parts
-        col = column(*reversed(parts[0:4]), *parts[4:], copy=copy)  # type: ignore
+        col = column(*reversed(parts[0:4]), fields=parts[4:], copy=copy)  # type: ignore
         alias = self.args.get("alias")
         if alias:
             col = alias_(col, alias.this, copy=copy)
@@ -3520,6 +3531,10 @@ class Pivot(Expression):
         "include_nulls": False,
     }
 
+    @property
+    def unpivot(self) -> bool:
+        return bool(self.args.get("unpivot"))
+
 
 class Window(Condition):
     arg_types = {
@@ -4101,6 +4116,12 @@ class Alias(Expression):
     @property
     def output_name(self) -> str:
         return self.alias
+
+
+# BigQuery requires the UNPIVOT column list aliases to be either strings or ints, but
+# other dialects require identifiers. This enables us to transpile between them easily.
+class PivotAlias(Alias):
+    pass
 
 
 class Aliases(Expression):
@@ -5109,8 +5130,10 @@ class Repeat(Func):
     arg_types = {"this": True, "times": True}
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/round-transact-sql?view=sql-server-ver16
+# tsql third argument function == trunctaion if not 0
 class Round(Func):
-    arg_types = {"this": True, "decimals": False}
+    arg_types = {"this": True, "decimals": False, "truncate": False}
 
 
 class RowNumber(Func):
@@ -6320,15 +6343,44 @@ def subquery(
     return Select().from_(expression, dialect=dialect, **opts)
 
 
+@t.overload
 def column(
     col: str | Identifier,
     table: t.Optional[str | Identifier] = None,
     db: t.Optional[str | Identifier] = None,
     catalog: t.Optional[str | Identifier] = None,
-    *fields: t.Union[str, Identifier],
+    *,
+    fields: t.Collection[t.Union[str, Identifier]],
     quoted: t.Optional[bool] = None,
     copy: bool = True,
-) -> Column | Dot:
+) -> Dot:
+    pass
+
+
+@t.overload
+def column(
+    col: str | Identifier,
+    table: t.Optional[str | Identifier] = None,
+    db: t.Optional[str | Identifier] = None,
+    catalog: t.Optional[str | Identifier] = None,
+    *,
+    fields: Lit[None] = None,
+    quoted: t.Optional[bool] = None,
+    copy: bool = True,
+) -> Column:
+    pass
+
+
+def column(
+    col,
+    table=None,
+    db=None,
+    catalog=None,
+    *,
+    fields=None,
+    quoted=None,
+    copy=True,
+):
     """
     Build a Column.
 
@@ -6344,7 +6396,7 @@ def column(
     Returns:
         The new Column instance.
     """
-    this: t.Union[Column, Dot] = Column(
+    this = Column(
         this=to_identifier(col, quoted=quoted, copy=copy),
         table=to_identifier(table, quoted=quoted, copy=copy),
         db=to_identifier(db, quoted=quoted, copy=copy),

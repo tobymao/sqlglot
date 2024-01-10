@@ -245,6 +245,12 @@ class Generator:
     # Whether or not LAST_DAY function supports a date part argument
     LAST_DAY_SUPPORTS_DATE_PART = True
 
+    # Whether or not named columns are allowed in table aliases
+    SUPPORTS_TABLE_ALIAS_COLUMNS = True
+
+    # Whether or not UNPIVOT aliases are Identifiers (False means they're Literals)
+    UNPIVOT_ALIASES_ARE_IDENTIFIERS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -908,6 +914,10 @@ class Generator:
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
 
+        if columns and not self.SUPPORTS_TABLE_ALIAS_COLUMNS:
+            columns = ""
+            self.unsupported("Named columns are not supported in table alias.")
+
         if not alias and not self.dialect.UNNEST_COLUMN_ONLY:
             alias = "_t"
 
@@ -1526,8 +1536,7 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        unpivot = expression.args.get("unpivot")
-        direction = "UNPIVOT" if unpivot else "PIVOT"
+        direction = "UNPIVOT" if expression.unpivot else "PIVOT"
         field = self.sql(expression, "field")
         include_nulls = expression.args.get("include_nulls")
         if include_nulls is not None:
@@ -1688,7 +1697,8 @@ class Generator:
         if not on_sql and using:
             on_sql = csv(*(self.sql(column) for column in using))
 
-        this_sql = self.sql(expression, "this")
+        this = expression.this
+        this_sql = self.sql(this)
 
         if on_sql:
             on_sql = self.indent(on_sql, skip_first=True)
@@ -1698,6 +1708,9 @@ class Generator:
             else:
                 on_sql = f"{space}ON {on_sql}"
         elif not op_sql:
+            if isinstance(this, exp.Lateral) and this.args.get("cross_apply") is not None:
+                return f" {this_sql}"
+
             return f", {this_sql}"
 
         op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
@@ -1707,6 +1720,19 @@ class Generator:
         args = self.expressions(expression, flat=True)
         args = f"({args})" if len(args.split(",")) > 1 else args
         return f"{args} {arrow_sep} {self.sql(expression, 'this')}"
+
+    def lateral_op(self, expression: exp.Lateral) -> str:
+        cross_apply = expression.args.get("cross_apply")
+
+        # https://www.mssqltips.com/sqlservertip/1958/sql-server-cross-apply-and-outer-apply/
+        if cross_apply is True:
+            op = "INNER JOIN "
+        elif cross_apply is False:
+            op = "LEFT JOIN "
+        else:
+            op = ""
+
+        return f"{op}LATERAL"
 
     def lateral_sql(self, expression: exp.Lateral) -> str:
         this = self.sql(expression, "this")
@@ -1721,7 +1747,7 @@ class Generator:
 
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
-        return f"LATERAL {this}{alias}"
+        return f"{self.lateral_op(expression)} {this}{alias}"
 
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
@@ -1873,8 +1899,18 @@ class Generator:
 
         # If the NULLS FIRST/LAST clause is unsupported, we add another sort key to simulate it
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
-            null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
-            this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+            window = expression.find_ancestor(exp.Window, exp.Select)
+            if expression.this.is_int:
+                self.unsupported(
+                    f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
+                )
+            elif isinstance(window, exp.Window) and window.args.get("spec"):
+                self.unsupported(
+                    f"'{nulls_sort_change.strip()}' translation not supported in window functions"
+                )
+            else:
+                null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+                this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
             nulls_sort_change = ""
 
         with_fill = self.sql(expression, "with_fill")
@@ -2448,6 +2484,17 @@ class Generator:
         alias = self.sql(expression, "alias")
         alias = f" AS {alias}" if alias else ""
         return f"{self.sql(expression, 'this')}{alias}"
+
+    def pivotalias_sql(self, expression: exp.PivotAlias) -> str:
+        alias = expression.args["alias"]
+        identifier_alias = isinstance(alias, exp.Identifier)
+
+        if identifier_alias and not self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+            alias.replace(exp.Literal.string(alias.output_name))
+        elif not identifier_alias and self.UNPIVOT_ALIASES_ARE_IDENTIFIERS:
+            alias.replace(exp.to_identifier(alias.output_name))
+
+        return self.alias_sql(expression)
 
     def aliases_sql(self, expression: exp.Aliases) -> str:
         return f"{self.sql(expression, 'this')} AS ({self.expressions(expression, flat=True)})"

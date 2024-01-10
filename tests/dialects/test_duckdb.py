@@ -8,6 +8,21 @@ class TestDuckDB(Validator):
 
     def test_duckdb(self):
         self.validate_all(
+            "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            write={
+                "duckdb": "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+                "mysql": "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x ORDER BY 1 NULLS LAST",
+            write={
+                "duckdb": "SELECT * FROM x ORDER BY 1",
+                "mysql": "SELECT * FROM x ORDER BY 1",
+            },
+        )
+
+        self.validate_all(
             "CREATE TEMPORARY FUNCTION f1(a, b) AS (a + b)",
             read={"bigquery": "CREATE TEMP FUNCTION f1(a INT64, b INT64) AS (a + b)"},
         )
@@ -195,6 +210,13 @@ class TestDuckDB(Validator):
         self.validate_all("0x1010", write={"": "0 AS x1010"})
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
+        self.validate_all(
+            "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
+                "tsql": "SELECT FORMAT(CAST('2020-01-01' AS DATETIME2), CONCAT('yyyy', 'MM'))",
+            },
+        )
         self.validate_all(
             "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",
             read={

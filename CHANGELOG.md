@@ -1,6 +1,92 @@
 Changelog
 =========
 
+## [v20.8.0] - 2024-01-08
+### :boom: BREAKING CHANGES
+- due to [`68e1214`](https://github.com/tobymao/sqlglot/commit/68e121462b2c3dc388f3ae0d1d392ee8afc63133) - column field typing *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  column field typing
+
+
+### :sparkles: New Features
+- [`2d822f3`](https://github.com/tobymao/sqlglot/commit/2d822f3972bf0f77baaadb135a5e19c1bc0c4040) - improve support for Doris' TO_DATE, Oracle's SYSDATE *(PR [#2775](https://github.com/tobymao/sqlglot/pull/2775) by [@georgesittas](https://github.com/georgesittas))*
+- [`7187215`](https://github.com/tobymao/sqlglot/commit/71872159114b85324d08191b854ab8462a298742) - desc builder *(commit by [@tobymao](https://github.com/tobymao))*
+- [`ba62639`](https://github.com/tobymao/sqlglot/commit/ba62639aa6d81a062c867ebe20af64446b931b7d) - add support for CREATE FUNCTION (SQL) characteristics for MySQL and Databricks *(PR [#2777](https://github.com/tobymao/sqlglot/pull/2777) by [@viethungle-vt1401](https://github.com/viethungle-vt1401))*
+  - :arrow_lower_right: *addresses issue [#1980](undefined) opened by [@xinglin-zhao](https://github.com/xinglin-zhao)*
+- [`963e2dc`](https://github.com/tobymao/sqlglot/commit/963e2dc9a4b699938d0477bc379e9d2da01818af) - **snowflake**: add support for SHOW COLUMNS  *(PR [#2778](https://github.com/tobymao/sqlglot/pull/2778) by [@andrew-sha](https://github.com/andrew-sha))*
+- [`46c9733`](https://github.com/tobymao/sqlglot/commit/46c973309850d4e32b1a0f0594d7b143eb14d059) - **tsql**: round func closes [#2790](https://github.com/tobymao/sqlglot/pull/2790) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`2dfb7e8`](https://github.com/tobymao/sqlglot/commit/2dfb7e806c52715d9e83d2201ed63974ff238ad3) - **optimizer**: add support for the UNPIVOT operator *(PR [#2771](https://github.com/tobymao/sqlglot/pull/2771) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`68e1214`](https://github.com/tobymao/sqlglot/commit/68e121462b2c3dc388f3ae0d1d392ee8afc63133) - column field typing *(commit by [@tobymao](https://github.com/tobymao))*
+- [`3f31706`](https://github.com/tobymao/sqlglot/commit/3f31706b913e53d13e45fe94b41ee115cc7bd5c5) - tsql exec command [#2772](https://github.com/tobymao/sqlglot/pull/2772) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f6cbadb`](https://github.com/tobymao/sqlglot/commit/f6cbadb7a293035720460f869dd1a6d48a707d04) - **snowflake**: add a couple of special fn types *(PR [#2774](https://github.com/tobymao/sqlglot/pull/2774) by [@georgesittas](https://github.com/georgesittas))*
+- [`0634f73`](https://github.com/tobymao/sqlglot/commit/0634f738d3a935cde3e7df1671c65e666c7a52b4) - **optimizer**: replace star with outer column list *(PR [#2776](https://github.com/tobymao/sqlglot/pull/2776) by [@georgesittas](https://github.com/georgesittas))*
+- [`d31ae0d`](https://github.com/tobymao/sqlglot/commit/d31ae0decb46678851744356c7b113f8c1c3e8c9) - allow string aliases closes [#2788](https://github.com/tobymao/sqlglot/pull/2788) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`8f8f00e`](https://github.com/tobymao/sqlglot/commit/8f8f00ec66beb6dc3d90898ead29828eee8f5e32) - don't transform null ordering with positional orders closes [#2779](https://github.com/tobymao/sqlglot/pull/2779) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f85ce3b`](https://github.com/tobymao/sqlglot/commit/f85ce3b354366b2e206e6d2815f34a8e345d10ba) - **tsql**: gracefully handle complex formats in FORMAT *(PR [#2794](https://github.com/tobymao/sqlglot/pull/2794) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2787](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`a2499f5`](https://github.com/tobymao/sqlglot/commit/a2499f591eeb7538db86abd8cc9341c8d91e325d) - **tsql**: generate correct TRIM syntax closes [#2786](https://github.com/tobymao/sqlglot/pull/2786) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`59ecd2f`](https://github.com/tobymao/sqlglot/commit/59ecd2f17cac61b1ed7d206437d2fab4497e58fa) - **clickhouse**: allow transpilation of countIf, fix 2 arg variant parsing *(PR [#2795](https://github.com/tobymao/sqlglot/pull/2795) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2792](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`3f7748b`](https://github.com/tobymao/sqlglot/commit/3f7748b08d3f6616d8ea7eac6ded4980b6507ddf) - don't transpile nulls last in window specs *(commit by [@tobymao](https://github.com/tobymao))*
+
+
+## [v20.7.1] - 2024-01-04
+### :bug: Bug Fixes
+- [`9d94b9c`](https://github.com/tobymao/sqlglot/commit/9d94b9c77f5fbd22ad147789f23e971ec6bb3c72) - don't normalize schema if normalize is set to false *(PR [#2767](https://github.com/tobymao/sqlglot/pull/2767) by [@tobymao](https://github.com/tobymao))*
+
+
+## [v20.6.0] - 2024-01-04
+### :boom: BREAKING CHANGES
+- due to [`4648c6a`](https://github.com/tobymao/sqlglot/commit/4648c6acbeab8d5155be3f8e53d11d8f00c33a2e) - set sample clause keyword(s) as class constant to enable transpilation *(PR [#2750](https://github.com/tobymao/sqlglot/pull/2750) by [@georgesittas](https://github.com/georgesittas))*:
+
+  set sample clause keyword(s) as class constant to enable transpilation (#2750)
+
+- due to [`0b6bdc4`](https://github.com/tobymao/sqlglot/commit/0b6bdc4513aa417dae0a00565b56e78b544306e7) - improve transpilation of JSON value extraction *(PR [#2744](https://github.com/tobymao/sqlglot/pull/2744) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve transpilation of JSON value extraction (#2744)
+
+- due to [`862b305`](https://github.com/tobymao/sqlglot/commit/862b305db47c0cea4a66b61211a3ed088e935ea5) - improve table sampling transpilation *(PR [#2761](https://github.com/tobymao/sqlglot/pull/2761) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve table sampling transpilation (#2761)
+
+
+### :sparkles: New Features
+- [`202f035`](https://github.com/tobymao/sqlglot/commit/202f035e88e78c15b34c9cc85c4396eab8da1d29) - clickhouse: add aggregate parsing *(PR [#2734](https://github.com/tobymao/sqlglot/pull/2734) by [@pkit](https://github.com/pkit))*
+- [`e772e26`](https://github.com/tobymao/sqlglot/commit/e772e262c551f6aa5bb726579253a55db5686da3) - guess the correct dialect in case we get an unknown one *(PR [#2753](https://github.com/tobymao/sqlglot/pull/2753) by [@georgesittas](https://github.com/georgesittas))*
+- [`7a07862`](https://github.com/tobymao/sqlglot/commit/7a07862dba744a969c98b2c1069531423673461d) - implement to_s method in Expression for verbose repr mode *(PR [#2756](https://github.com/tobymao/sqlglot/pull/2756) by [@georgesittas](https://github.com/georgesittas))*
+- [`4072184`](https://github.com/tobymao/sqlglot/commit/4072184cc498a509bceba2a3dfe12f43794273df) - improve transpilation of TIME/TIMESTAMP_FROM_PARTS *(PR [#2755](https://github.com/tobymao/sqlglot/pull/2755) by [@georgesittas](https://github.com/georgesittas))*
+- [`3bd811d`](https://github.com/tobymao/sqlglot/commit/3bd811d67e7001046812f2a8590bd07e23b81c88) - **optimizer**: allow star expansion to be turned off *(PR [#2762](https://github.com/tobymao/sqlglot/pull/2762) by [@georgesittas](https://github.com/georgesittas))*
+- [`c246285`](https://github.com/tobymao/sqlglot/commit/c24628531bbd587473e0a43ded7ba8b5e4f35cd8) - bigquery unix_date closes [#2758](https://github.com/tobymao/sqlglot/pull/2758) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`a2abbc7`](https://github.com/tobymao/sqlglot/commit/a2abbc773fb330e669c81abc115a81e1055a060f) - improve transpilation of LAST_DAY *(PR [#2766](https://github.com/tobymao/sqlglot/pull/2766) by [@georgesittas](https://github.com/georgesittas))*
+- [`7e7ac65`](https://github.com/tobymao/sqlglot/commit/7e7ac65bb67ef5a45ef487859a9cff4f2d0fc07a) - **snowflake**: add support for OBJECT_CONSTRUCT_KEEP_NULL *(PR [#2769](https://github.com/tobymao/sqlglot/pull/2769) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2768](undefined) opened by [@tekumara](https://github.com/tekumara)*
+
+### :bug: Bug Fixes
+- [`ed972f9`](https://github.com/tobymao/sqlglot/commit/ed972f9f50fcdc612b7770739a249a918c4d4011) - alter table rename should not qualify with db in postgres *(PR [#2736](https://github.com/tobymao/sqlglot/pull/2736) by [@z3z1ma](https://github.com/z3z1ma))*
+- [`1ebfb36`](https://github.com/tobymao/sqlglot/commit/1ebfb3688975e420a70bac10c49ad127446c4c65) - else interval *(commit by [@tobymao](https://github.com/tobymao))*
+- [`a43174f`](https://github.com/tobymao/sqlglot/commit/a43174f8ebdb4a51ad12d7dc9c332372a5a0bd84) - generate `CROSS JOIN` instead of comma in `explode_to_unnest` transformation *(PR [#2739](https://github.com/tobymao/sqlglot/pull/2739) by [@cpcloud](https://github.com/cpcloud))*
+  - :arrow_lower_right: *fixes issue [#2735](undefined) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`e543c55`](https://github.com/tobymao/sqlglot/commit/e543c558a3efea960028bf4c9864cad48e616e82) - interval is null *(commit by [@tobymao](https://github.com/tobymao))*
+- [`fb3188f`](https://github.com/tobymao/sqlglot/commit/fb3188f43bfdef2fb315b8b1280aaa207bd7888a) - lineage closes [#2742](https://github.com/tobymao/sqlglot/pull/2742) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`b608b2d`](https://github.com/tobymao/sqlglot/commit/b608b2d944934d9da4a2cb373bdf69322f25041a) - **duckdb**: percentile_cont closes [#2741](https://github.com/tobymao/sqlglot/pull/2741) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`0b6bdc4`](https://github.com/tobymao/sqlglot/commit/0b6bdc4513aa417dae0a00565b56e78b544306e7) - improve transpilation of JSON value extraction *(PR [#2744](https://github.com/tobymao/sqlglot/pull/2744) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2738](undefined) opened by [@tekumara](https://github.com/tekumara)*
+- [`33d6e5f`](https://github.com/tobymao/sqlglot/commit/33d6e5f2636451ffcdd914c100a446246d8031df) - **bigquery**: enable transpilation of single-argument TIME func *(PR [#2752](https://github.com/tobymao/sqlglot/pull/2752) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2749](undefined) opened by [@jherrmannNetfonds](https://github.com/jherrmannNetfonds)*
+- [`72f8cfa`](https://github.com/tobymao/sqlglot/commit/72f8cfa2c156efb586bc91d20efd8d0cf9c18735) - **snowflake**: parse two argument version of TIMESTAMP_FROM_PARTS *(PR [#2754](https://github.com/tobymao/sqlglot/pull/2754) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2751](undefined) opened by [@notgerry](https://github.com/notgerry)*
+- [`2a94f2b`](https://github.com/tobymao/sqlglot/commit/2a94f2ba0d93ee1454a2d19cc8577e211fd5cbe0) - **bigquery**: fix parsing of COUNTIF *(PR [#2765](https://github.com/tobymao/sqlglot/pull/2765) by [@giovannipcarvalho](https://github.com/giovannipcarvalho))*
+  - :arrow_lower_right: *fixes issue [#2764](undefined) opened by [@giovannipcarvalho](https://github.com/giovannipcarvalho)*
+- [`862b305`](https://github.com/tobymao/sqlglot/commit/862b305db47c0cea4a66b61211a3ed088e935ea5) - improve table sampling transpilation *(PR [#2761](https://github.com/tobymao/sqlglot/pull/2761) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2757](undefined) opened by [@tekumara](https://github.com/tekumara)*
+
+### :recycle: Refactors
+- [`4648c6a`](https://github.com/tobymao/sqlglot/commit/4648c6acbeab8d5155be3f8e53d11d8f00c33a2e) - set sample clause keyword(s) as class constant to enable transpilation *(PR [#2750](https://github.com/tobymao/sqlglot/pull/2750) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2747](undefined) opened by [@tekumara](https://github.com/tekumara)*
+
+
 ## [v20.5.0] - 2023-12-29
 ### :boom: BREAKING CHANGES
 - due to [`87498c3`](https://github.com/tobymao/sqlglot/commit/87498c37496978d9b2d42029fecb0d34bc88eef7) - redshift unnesting to column *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -2298,3 +2384,6 @@ Changelog
 [v20.1.0]: https://github.com/tobymao/sqlglot/compare/v20.0.0...v20.1.0
 [v20.2.0]: https://github.com/tobymao/sqlglot/compare/v20.1.0...v20.2.0
 [v20.5.0]: https://github.com/tobymao/sqlglot/compare/v20.4.0...v20.5.0
+[v20.6.0]: https://github.com/tobymao/sqlglot/compare/v20.5.0...v20.6.0
+[v20.7.1]: https://github.com/tobymao/sqlglot/compare/v20.6.0...v20.7.1
+[v20.8.0]: https://github.com/tobymao/sqlglot/compare/v20.7.1...v20.8.0

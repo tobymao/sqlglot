@@ -215,12 +215,13 @@ class MappingSchema(AbstractMappingSchema, Schema):
         normalize: bool = True,
     ) -> None:
         self.dialect = dialect
-        self.visible = visible or {}
+        self.visible = {} if visible is None else visible
         self.normalize = normalize
         self._type_mapping_cache: t.Dict[str, exp.DataType] = {}
         self._depth = 0
+        schema = {} if schema is None else schema
 
-        super().__init__(self._normalize(schema or {}))
+        super().__init__(self._normalize(schema) if self.normalize else schema)
 
     @classmethod
     def from_mapping_schema(cls, mapping_schema: MappingSchema) -> MappingSchema:

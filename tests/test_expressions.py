@@ -671,7 +671,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("*"), exp.Star)
         self.assertEqual(exp.column("a", table="b", db="c", catalog="d"), exp.to_column("d.c.b.a"))
 
-        dot = exp.column("d", "c", "b", "a", "e", "f")
+        dot = exp.column("d", "c", "b", "a", fields=["e", "f"])
         self.assertIsInstance(dot, exp.Dot)
         self.assertEqual(dot.sql(), "a.b.c.d.e.f")
 

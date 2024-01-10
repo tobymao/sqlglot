@@ -79,6 +79,22 @@ WHERE
             "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
         )
         self.validate_identity(
+            """SELECT PARSE_JSON('{"x": "hello"}'):x LIKE 'hello'""",
+            """SELECT GET_PATH(PARSE_JSON('{"x": "hello"}'), 'x') LIKE 'hello'""",
+        )
+        self.validate_identity(
+            """SELECT data:x LIKE 'hello' FROM some_table""",
+            """SELECT GET_PATH(data, 'x') LIKE 'hello' FROM some_table""",
+        )
+        self.validate_identity(
+            "SELECT SUM({ fn CONVERT(123, SQL_DOUBLE) })",
+            "SELECT SUM(CAST(123 AS DOUBLE))",
+        )
+        self.validate_identity(
+            "SELECT SUM({ fn CONVERT(123, SQL_VARCHAR) })",
+            "SELECT SUM(CAST(123 AS VARCHAR))",
+        )
+        self.validate_identity(
             "SELECT TIMESTAMPFROMPARTS(d, t)",
             "SELECT TIMESTAMP_FROM_PARTS(d, t)",
         )
@@ -174,6 +190,18 @@ WHERE
             "CAST(x AS VARCHAR)",
         )
 
+        self.validate_all(
+            "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
+            read={
+                "bigquery": "JSON_OBJECT(['key_1', 'key_2'], ['one', NULL])",
+                "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
+            },
+            write={
+                "bigquery": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
+                "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
+                "snowflake": "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
+            },
+        )
         self.validate_all(
             "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
             read={
@@ -1408,10 +1436,9 @@ MATCH_RECOGNIZE (
 
     def test_show(self):
         # Parsed as Command
-        self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
         self.validate_identity("SHOW TABLES LIKE 'line%' IN tpch.public")
 
-        ast = parse_one("SHOW TABLES HISTORY IN tpch.public")
+        ast = parse_one("SHOW TABLES HISTORY IN tpch.public", read="snowflake")
         self.assertIsInstance(ast, exp.Command)
 
         # Parsed as Show
@@ -1433,8 +1460,21 @@ MATCH_RECOGNIZE (
         ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
         table = ast.find(exp.Table)
 
-        self.assertIsNotNone(table)
         self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
+
+        self.validate_identity("SHOW COLUMNS")
+        self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
+        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN TABLE dt_test")
+        self.validate_identity("SHOW COLUMNS IN VIEW")
+        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN VIEW dt_test")
+
+        ast = parse_one("SHOW COLUMNS LIKE '_testing%' IN dt_test", read="snowflake")
+        table = ast.find(exp.Table)
+        literal = ast.find(exp.Literal)
+
+        self.assertEqual(table.sql(dialect="snowflake"), "dt_test")
+
+        self.assertEqual(literal.sql(dialect="snowflake"), "'_testing%'")
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")

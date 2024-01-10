@@ -29,6 +29,13 @@ class TestDatabricks(Validator):
         )
 
         self.validate_all(
+            "CREATE FUNCTION greet(name STRING) RETURNS STRING LANGUAGE PYTHON AS $$def greet(name):\n\t return f'Hello {name}!'$$",
+            write={
+                "snowflake": "CREATE FUNCTION greet(name TEXT) RETURNS TEXT LANGUAGE PYTHON AS 'def greet(name):\n\t return f\\'Hello {name}!\\''"
+            },
+        )
+
+        self.validate_all(
             "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
             write={
                 "databricks": "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(TO_DATE(y))))",

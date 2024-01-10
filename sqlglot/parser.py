@@ -1359,9 +1359,10 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
 
-            self._match(TokenType.ALIAS)
-
-            if self._match(TokenType.COMMAND):
+            if self._match(TokenType.ALIAS) and self._match(TokenType.PARAMETER, advance=False):
+                expression = self._parse_heredoc()
+                extend_props(self._parse_properties())
+            elif self._match(TokenType.COMMAND):
                 expression = self._parse_as_command(self._prev)
             else:
                 begin = self._match(TokenType.BEGIN)
@@ -5449,6 +5450,37 @@ class Parser(metaclass=_Parser):
             iterator=iterator,
             condition=condition,
         )
+
+    def _parse_heredoc(self) -> exp.RawString:
+        # Note: we've already matched a $ token before reaching here
+        self._match(TokenType.PARAMETER)
+        tag_start = self._prev
+
+        while not self._match(TokenType.PARAMETER):
+            self._advance()
+            if not self._curr:
+                self.raise_error("No closing $ found.")
+
+        tag_text = self._find_sql(tag_start, self._prev)
+        heredoc_start = self._curr
+        heredoc_end = self._prev
+
+        tag_start = None
+        while True:
+            if self._match(TokenType.PARAMETER, advance=False):
+                if tag_start and self._find_sql(tag_start, self._curr) == tag_text:
+                    this = self._find_sql(heredoc_start, heredoc_end)
+                    self._advance()
+
+                    return self.expression(exp.RawString, this=this)
+                else:
+                    tag_start = self._curr
+                    heredoc_end = self._prev
+
+            self._advance()
+
+            if not self._curr:
+                self.raise_error(f"No closing {tag_text} found")
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

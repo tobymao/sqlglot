@@ -12,6 +12,8 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
+    from typing_extensions import Literal
+
     from sqlglot._typing import E
     from sqlglot.dialects.dialect import Dialect, DialectType
 
@@ -845,6 +847,7 @@ class Parser(metaclass=_Parser):
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
+        "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
         "JSON_TABLE": lambda self: self._parse_json_table(),
         "MATCH": lambda self: self._parse_match_against(),
         "OPENJSON": lambda self: self._parse_open_json(),
@@ -928,6 +931,8 @@ class Parser(metaclass=_Parser):
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
+
+    JSON_KEY_VALUE_SEPARATOR_TOKENS = {TokenType.COLON, TokenType.COMMA, TokenType.IS}
 
     FETCH_TOKENS = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
 
@@ -4564,7 +4569,7 @@ class Parser(metaclass=_Parser):
     def _parse_json_key_value(self) -> t.Optional[exp.JSONKeyValue]:
         self._match_text_seq("KEY")
         key = self._parse_column()
-        self._match_set((TokenType.COLON, TokenType.COMMA))
+        self._match_set(self.JSON_KEY_VALUE_SEPARATOR_TOKENS)
         self._match_text_seq("VALUE")
         value = self._parse_bitwise()
 
@@ -4586,7 +4591,15 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _parse_json_object(self) -> exp.JSONObject:
+    @t.overload
+    def _parse_json_object(self, agg: Literal[False]) -> exp.JSONObject:
+        ...
+
+    @t.overload
+    def _parse_json_object(self, agg: Literal[True]) -> exp.JSONObjectAgg:
+        ...
+
+    def _parse_json_object(self, agg=False):
         star = self._parse_star()
         expressions = (
             [star]
@@ -4609,7 +4622,7 @@ class Parser(metaclass=_Parser):
         encoding = self._match_text_seq("ENCODING") and self._parse_var()
 
         return self.expression(
-            exp.JSONObject,
+            exp.JSONObjectAgg if agg else exp.JSONObject,
             expressions=expressions,
             null_handling=null_handling,
             unique_keys=unique_keys,

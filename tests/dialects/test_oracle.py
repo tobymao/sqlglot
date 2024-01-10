@@ -54,6 +54,14 @@ class TestOracle(Validator):
             "SELECT MIN(column_name) KEEP (DENSE_RANK FIRST ORDER BY column_name DESC) FROM table_name"
         )
         self.validate_identity(
+            """SELECT JSON_OBJECT(KEY 'key1' IS emp.column1, KEY 'key2' IS emp.column1) "emp_key" FROM emp""",
+            """SELECT JSON_OBJECT('key1': emp.column1, 'key2': emp.column1) AS "emp_key" FROM emp""",
+        )
+        self.validate_identity(
+            "SELECT JSON_OBJECTAGG(KEY department_name VALUE department_id) FROM dep WHERE id <= 30",
+            "SELECT JSON_OBJECTAGG(department_name: department_id) FROM dep WHERE id <= 30",
+        )
+        self.validate_identity(
             "SYSDATE",
             "CURRENT_TIMESTAMP",
         )

@@ -905,11 +905,6 @@ def bool_xor_sql(self: Generator, expression: exp.Xor) -> str:
     return f"({a} AND (NOT {b})) OR ((NOT {a}) AND {b})"
 
 
-# Used to generate JSON_OBJECT with a comma in BigQuery and MySQL instead of colon
-def json_keyvalue_comma_sql(self: Generator, expression: exp.JSONKeyValue) -> str:
-    return f"{self.sql(expression, 'this')}, {self.sql(expression, 'expression')}"
-
-
 def is_parse_json(expression: exp.Expression) -> bool:
     return isinstance(expression, exp.ParseJSON) or (
         isinstance(expression, exp.Cast) and expression.is_type("json")

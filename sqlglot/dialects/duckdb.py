@@ -158,6 +158,13 @@ def _rename_unless_within_group(
     )
 
 
+def _parse_struct_pack(args: t.List) -> exp.Struct:
+    args_with_columns_as_identifiers = [
+        exp.PropertyEQ(this=arg.this.this, expression=arg.expression) for arg in args
+    ]
+    return exp.Struct.from_arg_list(args_with_columns_as_identifiers)
+
+
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -251,7 +258,7 @@ class DuckDB(Dialect):
             "STRING_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "STRING_TO_ARRAY": exp.Split.from_arg_list,
             "STRPTIME": format_time_lambda(exp.StrToTime, "duckdb"),
-            "STRUCT_PACK": exp.Struct.from_arg_list,
+            "STRUCT_PACK": _parse_struct_pack,
             "STR_SPLIT": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,

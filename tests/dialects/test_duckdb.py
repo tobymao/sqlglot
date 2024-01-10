@@ -7,6 +7,10 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        struct_pack = parse_one('STRUCT_PACK("a b" := 1)', read="duckdb")
+        self.assertIsInstance(struct_pack.expressions[0].this, exp.Identifier)
+        self.assertEqual(struct_pack.sql(dialect="duckdb"), "{'a b': 1}")
+
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
             write={

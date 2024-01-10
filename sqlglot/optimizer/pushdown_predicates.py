@@ -88,7 +88,7 @@ def pushdown_cnf(predicates, scope, scope_ref_count, join_index=None):
                 name = node.alias_or_name
                 predicate_tables = exp.column_table_names(predicate, name)
 
-                # Don't pushdown the predicate if it references tables that appear in later joins
+                # Don't push the predicate if it references tables that appear in later joins
                 this_index = join_index[name]
                 if all(join_index.get(table, -1) < this_index for table in predicate_tables):
                     predicate.replace(exp.true())

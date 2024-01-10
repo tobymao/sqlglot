@@ -278,6 +278,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
+        exp.Struct: lambda self, e: self._annotate_by_args(e, "expressions", struct=True),
     }
 
     NESTED_TYPES = {
@@ -480,7 +481,12 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     @t.no_type_check
     def _annotate_by_args(
-        self, expression: E, *args: str, promote: bool = False, array: bool = False
+        self,
+        expression: E,
+        *args: str,
+        promote: bool = False,
+        array: bool = False,
+        struct: bool = False,
     ) -> E:
         self._annotate_args(expression)
 
@@ -506,6 +512,22 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 expression,
                 exp.DataType(
                     this=exp.DataType.Type.ARRAY, expressions=[expression.type], nested=True
+                ),
+            )
+
+        if struct:
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DataType.Type.STRUCT,
+                    expressions=[
+                        exp.ColumnDef(
+                            this=exp.to_identifier(expr.alias),
+                            kind=expr.type,
+                        )
+                        for expr in expressions
+                    ],
+                    nested=True,
                 ),
             )
 

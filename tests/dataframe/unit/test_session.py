@@ -61,7 +61,7 @@ class TestDataframeSession(DataFrameSQLValidator):
             ]
         )
         df = self.spark.createDataFrame([[{"sub_cola": 1, "sub_colb": "test"}]], schema)
-        expected = "SELECT CAST(`a2`.`cola` AS STRUCT<`sub_cola`: INT, `sub_colb`: STRING>) AS `cola` FROM VALUES (STRUCT(1 AS `sub_cola`, 'test' AS `sub_colb`)) AS `a2`(`cola`)"
+        expected = "SELECT `a2`.`cola` AS `cola` FROM VALUES (STRUCT(1 AS `sub_cola`, 'test' AS `sub_colb`)) AS `a2`(`cola`)"
 
         self.compare_sql(df, expected)
 

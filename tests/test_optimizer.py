@@ -548,6 +548,23 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             level="warning",
         )
 
+    def test_struct_type_annotation(self):
+        expression = annotate_types(parse_one("select struct(1 as col)"))
+        assert expression.expressions[0].is_type("STRUCT<col INT>")
+
+        expression = annotate_types(parse_one("select struct(1 as col, 2.5 as row)"))
+        assert expression.expressions[0].is_type("STRUCT<col INT, row DOUBLE>")
+
+        expression = annotate_types(
+            parse_one(
+                "SELECT struct(1 AS col, 2.5 AS row, struct(3.5 AS inner_col, 4 AS inner_row) AS nested_struct)",
+                read="spark",
+            )
+        )
+        assert expression.expressions[0].is_type(
+            "STRUCT<col INT, row DOUBLE, nested_struct STRUCT<inner_col DOUBLE, inner_row INT>>"
+        )
+
     def test_literal_type_annotation(self):
         tests = {
             "SELECT 5": exp.DataType.Type.INT,

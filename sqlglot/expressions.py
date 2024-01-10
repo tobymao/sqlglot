@@ -4823,6 +4823,16 @@ class JSONObject(Func):
     }
 
 
+class JSONObjectAgg(AggFunc):
+    arg_types = {
+        "expressions": False,
+        "null_handling": False,
+        "unique_keys": False,
+        "return_type": False,
+        "encoding": False,
+    }
+
+
 # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/JSON_ARRAY.html
 class JSONArray(Func):
     arg_types = {

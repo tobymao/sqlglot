@@ -14,7 +14,6 @@ from sqlglot.dialects.dialect import (
     format_time_lambda,
     if_sql,
     inline_array_sql,
-    json_keyvalue_comma_sql,
     max_or_greatest,
     min_or_least,
     rename_func,
@@ -695,6 +694,7 @@ class Snowflake(Dialect):
         SUPPORTS_TABLE_COPY = False
         COLLATE_IS_FUNC = True
         LIMIT_ONLY_LITERALS = True
+        JSON_KEY_VALUE_PAIR_SEP = ","
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -723,7 +723,6 @@ class Snowflake(Dialect):
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
             exp.JSONExtract: lambda self, e: f"{self.sql(e, 'this')}[{self.sql(e, 'expression')}]",
-            exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),

@@ -251,6 +251,9 @@ class Generator:
     # Whether or not UNPIVOT aliases are Identifiers (False means they're Literals)
     UNPIVOT_ALIASES_ARE_IDENTIFIERS = True
 
+    # What delimiter to use for separating JSON key/value pairs
+    JSON_KEY_VALUE_PAIR_SEP = ":"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2315,28 +2318,34 @@ class Generator:
         return f"{self.func('MATCH', *expression.expressions)} AGAINST({self.sql(expression, 'this')}{modifier})"
 
     def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
-        return f"{self.sql(expression, 'this')}: {self.sql(expression, 'expression')}"
+        return f"{self.sql(expression, 'this')}{self.JSON_KEY_VALUE_PAIR_SEP} {self.sql(expression, 'expression')}"
 
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
 
-    def jsonobject_sql(self, expression: exp.JSONObject) -> str:
+    def jsonobject_sql(self, expression: exp.JSONObject | exp.JSONObjectAgg) -> str:
         null_handling = expression.args.get("null_handling")
         null_handling = f" {null_handling}" if null_handling else ""
+
         unique_keys = expression.args.get("unique_keys")
         if unique_keys is not None:
             unique_keys = f" {'WITH' if unique_keys else 'WITHOUT'} UNIQUE KEYS"
         else:
             unique_keys = ""
+
         return_type = self.sql(expression, "return_type")
         return_type = f" RETURNING {return_type}" if return_type else ""
         encoding = self.sql(expression, "encoding")
         encoding = f" ENCODING {encoding}" if encoding else ""
+
         return self.func(
-            "JSON_OBJECT",
+            "JSON_OBJECT" if isinstance(expression, exp.JSONObject) else "JSON_OBJECTAGG",
             *expression.expressions,
             suffix=f"{null_handling}{unique_keys}{return_type}{encoding})",
         )
+
+    def jsonobjectagg_sql(self, expression: exp.JSONObjectAgg) -> str:
+        return self.jsonobject_sql(expression)
 
     def jsonarray_sql(self, expression: exp.JSONArray) -> str:
         null_handling = expression.args.get("null_handling")

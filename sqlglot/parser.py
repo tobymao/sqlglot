@@ -845,6 +845,7 @@ class Parser(metaclass=_Parser):
         "DECODE": lambda self: self._parse_decode(),
         "EXTRACT": lambda self: self._parse_extract(),
         "JSON_OBJECT": lambda self: self._parse_json_object(),
+        "JSON_OBJECTAGG": lambda self: self._parse_json_object(agg=True),
         "JSON_TABLE": lambda self: self._parse_json_table(),
         "MATCH": lambda self: self._parse_match_against(),
         "OPENJSON": lambda self: self._parse_open_json(),
@@ -4564,7 +4565,7 @@ class Parser(metaclass=_Parser):
     def _parse_json_key_value(self) -> t.Optional[exp.JSONKeyValue]:
         self._match_text_seq("KEY")
         key = self._parse_column()
-        self._match_set((TokenType.COLON, TokenType.COMMA))
+        self._match_set((TokenType.COLON, TokenType.COMMA, TokenType.IS))
         self._match_text_seq("VALUE")
         value = self._parse_bitwise()
 
@@ -4586,7 +4587,15 @@ class Parser(metaclass=_Parser):
 
         return None
 
-    def _parse_json_object(self) -> exp.JSONObject:
+    @t.overload
+    def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject:
+        ...
+
+    @t.overload
+    def _parse_json_object(self, agg: t.Literal[True]) -> exp.JSONObjectAgg:
+        ...
+
+    def _parse_json_object(self, agg=False):
         star = self._parse_star()
         expressions = (
             [star]
@@ -4609,7 +4618,7 @@ class Parser(metaclass=_Parser):
         encoding = self._match_text_seq("ENCODING") and self._parse_var()
 
         return self.expression(
-            exp.JSONObject,
+            exp.JSONObjectAgg if agg else exp.JSONObject,
             expressions=expressions,
             null_handling=null_handling,
             unique_keys=unique_keys,

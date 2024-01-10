@@ -16,7 +16,6 @@ from sqlglot.dialects.dialect import (
     format_time_lambda,
     if_sql,
     inline_array_sql,
-    json_keyvalue_comma_sql,
     max_or_greatest,
     min_or_least,
     no_ilike_sql,
@@ -476,7 +475,15 @@ class BigQuery(Dialect):
 
             return table
 
-        def _parse_json_object(self) -> exp.JSONObject:
+        @t.overload
+        def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject:
+            ...
+
+        @t.overload
+        def _parse_json_object(self, agg: t.Literal[True]) -> exp.JSONObjectAgg:
+            ...
+
+        def _parse_json_object(self, agg=False):
             json_object = super()._parse_json_object()
             array_kv_pair = seq_get(json_object.expressions, 0)
 
@@ -531,6 +538,7 @@ class BigQuery(Dialect):
         LIMIT_ONLY_LITERALS = True
         SUPPORTS_TABLE_ALIAS_COLUMNS = False
         UNPIVOT_ALIASES_ARE_IDENTIFIERS = False
+        JSON_KEY_VALUE_PAIR_SEP = ","
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -562,7 +570,6 @@ class BigQuery(Dialect):
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
-            exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.MD5Digest: rename_func("MD5"),

@@ -139,13 +139,6 @@ def _from_unixtime(args: t.List) -> exp.Expression:
     return exp.UnixToTime.from_arg_list(args)
 
 
-def _parse_element_at(args: t.List) -> exp.Bracket:
-    this = seq_get(args, 0)
-    index = seq_get(args, 1)
-    assert isinstance(this, exp.Expression) and isinstance(index, exp.Expression)
-    return exp.Bracket(this=this, expressions=[index], offset=1, safe=True)
-
-
 def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, exp.Table):
         if isinstance(expression.this, exp.GenerateSeries):
@@ -260,7 +253,9 @@ class Presto(Dialect):
             "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "presto"),
             "DATE_PARSE": format_time_lambda(exp.StrToTime, "presto"),
             "DATE_TRUNC": date_trunc_to_time,
-            "ELEMENT_AT": _parse_element_at,
+            "ELEMENT_AT": lambda args: exp.Bracket(
+                this=seq_get(args, 0), expressions=[seq_get(args, 1)], offset=1, safe=True
+            ),
             "FROM_HEX": exp.Unhex.from_arg_list,
             "FROM_UNIXTIME": _from_unixtime,
             "FROM_UTF8": lambda args: exp.Decode(

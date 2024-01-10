@@ -17,7 +17,6 @@ from sqlglot.dialects.dialect import (
     encode_decode_sql,
     format_time_lambda,
     inline_array_sql,
-    json_keyvalue_comma_sql,
     no_comment_column_constraint_sql,
     no_properties_sql,
     no_safe_divide_sql,
@@ -313,6 +312,7 @@ class DuckDB(Dialect):
         TABLESAMPLE_KEYWORDS = "USING SAMPLE"
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
+        JSON_KEY_VALUE_PAIR_SEP = ","
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -355,7 +355,6 @@ class DuckDB(Dialect):
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONFormat: _json_format_sql,
-            exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.MonthsBetween: lambda self, e: self.func(

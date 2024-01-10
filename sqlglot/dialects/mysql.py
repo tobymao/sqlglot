@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     isnull_to_is_null,
-    json_keyvalue_comma_sql,
     locate_to_strposition,
     max_or_greatest,
     min_or_least,
@@ -631,6 +630,7 @@ class MySQL(Dialect):
         VALUES_AS_TABLE = False
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
+        JSON_KEY_VALUE_PAIR_SEP = ","
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -650,7 +650,6 @@ class MySQL(Dialect):
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
             exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
-            exp.JSONKeyValue: json_keyvalue_comma_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Month: _remove_ts_or_ds_to_date(),

@@ -5373,8 +5373,13 @@ class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
+# https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/VARIANCE.html
+# oracle variance returns 0 if called on 1-element input set
+# var_samp returns NULL if called 1-element input set
 class Variance(AggFunc):
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
+
+    arg_types = {"this": True, "return_zero": False}
 
 
 class VariancePop(AggFunc):

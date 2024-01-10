@@ -313,3 +313,13 @@ WHERE
 
         for query in (f"{body}{start}{connect}", f"{body}{connect}{start}"):
             self.validate_identity(query, pretty, pretty=True)
+
+    def test_variance(self):
+        self.validate_identity("VAR_SAMP(x)", "VAR_SAMP(x)")
+        self.validate_identity("VAR_POP(x)", "VAR_POP(x)")
+        self.validate_identity("VARIANCE(x)", "VAR_SAMP(x)")
+        self.validate_all(
+            "VAR_POP(x)",
+            read={"": "VARIANCE_POP(x)"},
+            write={"oracle": "VAR_POP(x)"},
+        )

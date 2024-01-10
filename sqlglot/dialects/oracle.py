@@ -50,6 +50,15 @@ def to_char(args: t.List) -> exp.TimeToStr | exp.ToChar:
     return exp.ToChar.from_arg_list(args)
 
 
+def _variance_sql(self: Oracle.Generator, expression: exp.Variance) -> str:
+    this = self.sql(expression, "this")
+    return_zero = self.sql(expression, "return_zero")
+
+    func = "VARIANCE" if return_zero else "VAR_SAMP"
+
+    return f"{func}({this})"
+
+
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
@@ -196,6 +205,8 @@ class Oracle(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.UnixToTime: lambda self, e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
+            exp.VariancePop: rename_func("VAR_POP"),
+            exp.Variance: _variance_sql,
         }
 
         PROPERTIES_LOCATION = {

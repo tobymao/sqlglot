@@ -550,13 +550,10 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_struct_type_annotation(self):
         expression = annotate_types(parse_one("select struct(1 as col)"))
-        self.assertEqual(expression.expressions[0].type.this, exp.DataType.Type.STRUCT)
-        self.assertEqual(expression.expressions[0].expressions[0].type.this, exp.DataType.Type.INT)
+        assert expression.expressions[0].is_type("STRUCT<col INT>")
 
-        expression = annotate_types(parse_one("select struct(1 as col, 2 as col)"))
-        self.assertEqual(expression.expressions[0].type.this, exp.DataType.Type.STRUCT)
-        self.assertEqual(expression.expressions[0].expressions[0].type.this, exp.DataType.Type.INT)
-        self.assertEqual(expression.expressions[0].expressions[1].type.this, exp.DataType.Type.INT)
+        expression = annotate_types(parse_one("select struct(1 as col, 2.5 as row)"))
+        assert expression.expressions[0].is_type("STRUCT<col INT, row DOUBLE>")
 
         expression = annotate_types(
             parse_one(
@@ -564,21 +561,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
                 read="spark",
             )
         )
-        self.assertEqual(expression.expressions[0].type.this, exp.DataType.Type.STRUCT)
-        self.assertEqual(expression.expressions[0].expressions[0].type.this, exp.DataType.Type.INT)
-        self.assertEqual(
-            expression.expressions[0].expressions[1].type.this, exp.DataType.Type.DOUBLE
-        )
-        self.assertEqual(
-            expression.expressions[0].expressions[2].type.this, exp.DataType.Type.STRUCT
-        )
-        self.assertEqual(
-            expression.expressions[0].expressions[2].this.expressions[0].type.this,
-            exp.DataType.Type.DOUBLE,
-        )
-        self.assertEqual(
-            expression.expressions[0].expressions[2].this.expressions[1].type.this,
-            exp.DataType.Type.INT,
+        assert expression.expressions[0].is_type(
+            "STRUCT<col INT, row DOUBLE, nested_struct STRUCT<inner_col DOUBLE, inner_row INT>>"
         )
 
     def test_literal_type_annotation(self):

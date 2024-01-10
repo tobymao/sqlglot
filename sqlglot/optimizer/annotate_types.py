@@ -524,7 +524,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                         exp.ColumnDef(
                             this=exp.to_identifier(expr.alias),
                             kind=expr.type,
-                            nested=expr.args.get("nested"),
                         )
                         for expr in expressions
                     ],

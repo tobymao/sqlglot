@@ -29,6 +29,9 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from typing_extensions import Literal
+
 logger = logging.getLogger("sqlglot")
 
 
@@ -476,11 +479,11 @@ class BigQuery(Dialect):
             return table
 
         @t.overload
-        def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject:
+        def _parse_json_object(self, agg: Literal[False]) -> exp.JSONObject:
             ...
 
         @t.overload
-        def _parse_json_object(self, agg: t.Literal[True]) -> exp.JSONObjectAgg:
+        def _parse_json_object(self, agg: Literal[True]) -> exp.JSONObjectAgg:
             ...
 
         def _parse_json_object(self, agg=False):

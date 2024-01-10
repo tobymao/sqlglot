@@ -7,6 +7,7 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_identity("REGEXP_REPLACE('source', 'search')")
         parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol", dialect="oracle").assert_is(
             exp.AlterTable
         )

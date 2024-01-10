@@ -1199,7 +1199,7 @@ WITH "x" AS (
 )
 LIMIT 10;
 
-# title: avoid pushing predicate to wrong join when self-joins are involved
+# title: avoid producing DAG cycle when pushing down predicate to join
 # execute: false
 SELECT
   a.company,

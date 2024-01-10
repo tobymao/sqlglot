@@ -1198,3 +1198,29 @@ WITH "x" AS (
   LIMIT 10
 )
 LIMIT 10;
+
+# title: avoid producing DAG cycle when pushing down predicate to join
+# execute: false
+SELECT
+  a.company,
+  b.num
+FROM route AS a(num, company, pos, stop)
+JOIN route AS b(num, company, pos, stop) ON (a.num = b.num)
+JOIN stops AS c(id, name) ON (c.id = b.stop)
+JOIN stops AS d(id, name) ON (d.id = c.id)
+WHERE
+  c.name = 'Craiglockhart'
+  OR d.name = 'Tollcross';
+SELECT
+  "a"."company" AS "company",
+  "b"."num" AS "num"
+FROM "route" AS "a"("num", "company", "pos", "stop")
+JOIN "route" AS "b"("num", "company", "pos", "stop")
+  ON "a"."num" = "b"."num"
+JOIN "stops" AS "c"("id", "name")
+  ON "b"."stop" = "c"."id"
+JOIN "stops" AS "d"("id", "name")
+  ON "c"."id" = "d"."id"
+  AND (
+    "c"."name" = 'Craiglockhart' OR "d"."name" = 'Tollcross'
+  );

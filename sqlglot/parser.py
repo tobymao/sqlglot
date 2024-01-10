@@ -930,6 +930,8 @@ class Parser(metaclass=_Parser):
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
     WINDOW_SIDES = {"FOLLOWING", "PRECEDING"}
 
+    JSON_KEY_VALUE_SEPARATOR_TOKENS = {TokenType.COLON, TokenType.COMMA, TokenType.IS}
+
     FETCH_TOKENS = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
 
     ADD_CONSTRAINT_TOKENS = {TokenType.CONSTRAINT, TokenType.PRIMARY_KEY, TokenType.FOREIGN_KEY}
@@ -4565,7 +4567,7 @@ class Parser(metaclass=_Parser):
     def _parse_json_key_value(self) -> t.Optional[exp.JSONKeyValue]:
         self._match_text_seq("KEY")
         key = self._parse_column()
-        self._match_set((TokenType.COLON, TokenType.COMMA, TokenType.IS))
+        self._match_set(self.JSON_KEY_VALUE_SEPARATOR_TOKENS)
         self._match_text_seq("VALUE")
         value = self._parse_bitwise()
 

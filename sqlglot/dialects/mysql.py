@@ -622,7 +622,7 @@ class MySQL(Dialect):
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True
-        NULL_ORDERING_SUPPORTED = False
+        NULL_ORDERING_SUPPORTED = None
         JOIN_HINTS = False
         TABLE_HINTS = True
         DUPLICATE_KEY_UPDATE_WITH_SET = False

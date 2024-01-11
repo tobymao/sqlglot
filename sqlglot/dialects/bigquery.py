@@ -542,6 +542,7 @@ class BigQuery(Dialect):
         SUPPORTS_TABLE_ALIAS_COLUMNS = False
         UNPIVOT_ALIASES_ARE_IDENTIFIERS = False
         JSON_KEY_VALUE_PAIR_SEP = ","
+        NULL_ORDERING_SUPPORTED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

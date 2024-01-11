@@ -112,7 +112,8 @@ class Generator:
     }
 
     # Whether or not null ordering is supported in order by
-    NULL_ORDERING_SUPPORTED = True
+    # True: Full Support, None: No support, False: No support in window specifications
+    NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
 
     # Whether or not locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
     LOCKING_READS_SUPPORTED = False
@@ -1903,18 +1904,20 @@ class Generator:
         # If the NULLS FIRST/LAST clause is unsupported, we add another sort key to simulate it
         if nulls_sort_change and not self.NULL_ORDERING_SUPPORTED:
             window = expression.find_ancestor(exp.Window, exp.Select)
-            if expression.this.is_int:
-                self.unsupported(
-                    f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
-                )
-            elif isinstance(window, exp.Window) and window.args.get("spec"):
+            if isinstance(window, exp.Window) and window.args.get("spec"):
                 self.unsupported(
                     f"'{nulls_sort_change.strip()}' translation not supported in window functions"
                 )
-            else:
-                null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
-                this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
-            nulls_sort_change = ""
+                nulls_sort_change = ""
+            elif self.NULL_ORDERING_SUPPORTED is None:
+                if expression.this.is_int:
+                    self.unsupported(
+                        f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
+                    )
+                else:
+                    null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
+                    this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
+                nulls_sort_change = ""
 
         with_fill = self.sql(expression, "with_fill")
         with_fill = f" {with_fill}" if with_fill else ""

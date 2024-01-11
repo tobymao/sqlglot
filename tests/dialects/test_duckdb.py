@@ -12,8 +12,17 @@ class TestDuckDB(Validator):
         self.assertEqual(struct_pack.sql(dialect="duckdb"), "{'a b': 1}")
 
         self.validate_all(
+            "SELECT SUM(X) OVER (ORDER BY x)",
+            write={
+                "bigquery": "SELECT SUM(X) OVER (ORDER BY x NULLS LAST)",
+                "duckdb": "SELECT SUM(X) OVER (ORDER BY x)",
+                "mysql": "SELECT SUM(X) OVER (ORDER BY CASE WHEN x IS NULL THEN 1 ELSE 0 END, x)",
+            },
+        )
+        self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
             write={
+                "bigquery": "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
                 "duckdb": "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
                 "mysql": "SELECT SUM(X) OVER (ORDER BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
             },

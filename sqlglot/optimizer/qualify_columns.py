@@ -386,7 +386,7 @@ def _expand_stars(
     pivot_exclude_columns = None
 
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
-    if isinstance(pivot, exp.Pivot):
+    if isinstance(pivot, exp.Pivot) and not pivot.alias_column_names:
         if pivot.unpivot:
             pivot_output_columns = [c.output_name for c in _unpivot_columns(pivot)]
 
@@ -431,12 +431,17 @@ def _expand_stars(
             table_id = id(table)
             columns_to_exclude = except_columns.get(table_id) or set()
 
-            if pivot and pivot_output_columns and pivot_exclude_columns:
-                implicit_columns = [c for c in columns if c not in pivot_exclude_columns]
-                if implicit_columns:
+            if pivot:
+                if pivot_output_columns and pivot_exclude_columns:
+                    pivot_columns = [c for c in columns if c not in pivot_exclude_columns]
+                    pivot_columns.extend(pivot_output_columns)
+                else:
+                    pivot_columns = pivot.alias_column_names
+
+                if pivot_columns:
                     new_selections.extend(
                         exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
-                        for name in implicit_columns + pivot_output_columns
+                        for name in pivot_columns
                         if name not in columns_to_exclude
                     )
                     continue

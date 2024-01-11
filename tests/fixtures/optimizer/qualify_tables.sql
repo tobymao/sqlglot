@@ -31,6 +31,10 @@ SELECT (SELECT y.c FROM c.db.y AS y) FROM c.db.x AS x;
 SELECT * FROM x PIVOT (SUM(a) FOR b IN ('a', 'b'));
 SELECT * FROM c.db.x AS x PIVOT(SUM(a) FOR b IN ('a', 'b')) AS _q_0;
 
+# title: pivoted table, pivot has alias
+SELECT * FROM x PIVOT (SUM(a) FOR b IN ('a', 'b')) AS piv;
+SELECT * FROM c.db.x AS x PIVOT(SUM(a) FOR b IN ('a', 'b')) AS piv;
+
 # title: wrapped table without alias
 SELECT * FROM (tbl);
 SELECT * FROM (c.db.tbl AS tbl);

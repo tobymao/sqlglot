@@ -5587,17 +5587,10 @@ class Parser(metaclass=_Parser):
             return True
         return False
 
-    def _match_text_seq(self, *texts, advance=True, upper_case=True):
+    def _match_text_seq(self, *texts, advance=True):
         index = self._index
         for text in texts:
-            if not self._curr:
-                token_text = None
-            elif upper_case:
-                token_text = self._curr.text.upper()
-            else:
-                token_text = self._curr.text
-
-            if token_text == text:
+            if self._curr and self._curr.text.upper() == text:
                 self._advance()
             else:
                 self._retreat(index)

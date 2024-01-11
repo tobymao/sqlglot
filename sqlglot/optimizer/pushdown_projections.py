@@ -43,9 +43,8 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
         alias_count = source_column_alias_count.get(scope, 0)
 
-        if scope.expression.args.get("distinct") or (scope.parent and scope.parent.pivots):
-            # We can't remove columns SELECT DISTINCT nor UNION DISTINCT. The same holds if
-            # we select from a pivoted source in the parent scope.
+        # We can't remove columns SELECT DISTINCT nor UNION DISTINCT.
+        if scope.expression.args.get("distinct"):
             parent_selections = {SELECT_ALL}
 
         if isinstance(scope.expression, exp.Union):
@@ -78,7 +77,7 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():
                 if isinstance(source, Scope):
-                    columns = selects.get(name) or set()
+                    columns = {SELECT_ALL} if scope.pivots else selects.get(name) or set()
                     referenced_columns[source].update(columns)
 
                 column_aliases = node.alias_column_names

@@ -29,9 +29,16 @@ class TestDatabricks(Validator):
         )
 
         self.validate_all(
-            "CREATE FUNCTION greet(name STRING) RETURNS STRING LANGUAGE PYTHON AS $$def greet(name):\n\t return f'Hello {name}!'$$",
+            "CREATE FUNCTION add_one(x INTEGER) RETURNS INTEGER LANGUAGE PYTHON AS $$def add_one(x):\n\t return x+1$$",
             write={
-                "snowflake": "CREATE FUNCTION greet(name TEXT) RETURNS TEXT LANGUAGE PYTHON AS 'def greet(name):\n\t return f\\'Hello {name}!\\''"
+                "databricks": "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS 'def add_one(x):\n\t return x+1'",
+            },
+        )
+
+        self.validate_all(
+            "CREATE FUNCTION add_one(x INTEGER) RETURNS INTEGER LANGUAGE PYTHON AS $foo$def add_one(x):\n\t return x+1$foo$",
+            write={
+                "databricks": "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS 'def add_one(x):\n\t return x+1'",
             },
         )
 

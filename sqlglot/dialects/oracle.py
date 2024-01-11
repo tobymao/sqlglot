@@ -51,12 +51,9 @@ def to_char(args: t.List) -> exp.TimeToStr | exp.ToChar:
 
 
 def _variance_sql(self: Oracle.Generator, expression: exp.Variance) -> str:
-    this = self.sql(expression, "this")
-    return_zero = self.sql(expression, "return_zero")
-
-    func = "VARIANCE" if return_zero else "VAR_SAMP"
-
-    return f"{func}({this})"
+    if expression.args.get("return_zero"):
+        return rename_func("VARIANCE")(self, expression)
+    return rename_func("VAR_SAMP")(self, expression)
 
 
 class Oracle(Dialect):

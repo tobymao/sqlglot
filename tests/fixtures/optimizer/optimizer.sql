@@ -643,6 +643,38 @@ FROM (
   FROM `u` AS `u` PIVOT(SUM(`u`.`f`) FOR `h` IN ('x', 'y'))
 ) AS `_q_0`;
 
+# title: selecting all columns from a pivoted source, pivot has column aliases
+# execute: false
+# dialect: snowflake
+WITH source AS (
+  SELECT
+    id,
+    key,
+    value,
+    timestamp_1,
+    timestamp_2
+  FROM DB_NAME.SCHEMA_NAME.TABLE_NAME
+),
+enriched AS (
+  SELECT * FROM source
+  PIVOT(MAX(value) FOR key IN ('a', 'b', 'c'))
+  AS final (id, timestamp_1, timestamp_2, col_1, col_2, col_3)
+)
+SELECT id, timestamp_1 FROM enriched;
+WITH "SOURCE" AS (
+  SELECT
+    "TABLE_NAME"."ID" AS "ID",
+    "TABLE_NAME"."KEY" AS "KEY",
+    "TABLE_NAME"."VALUE" AS "VALUE",
+    "TABLE_NAME"."TIMESTAMP_1" AS "TIMESTAMP_1",
+    "TABLE_NAME"."TIMESTAMP_2" AS "TIMESTAMP_2"
+  FROM "DB_NAME"."SCHEMA_NAME"."TABLE_NAME" AS "TABLE_NAME"
+)
+SELECT
+  "FINAL"."ID" AS "ID",
+  "FINAL"."TIMESTAMP_1" AS "TIMESTAMP_1"
+FROM "SOURCE" AS "SOURCE" PIVOT(MAX("SOURCE"."VALUE") FOR "SOURCE"."KEY" IN ('a', 'b', 'c')) AS "FINAL"("ID", "TIMESTAMP_1", "TIMESTAMP_2", "COL_1", "COL_2", "COL_3");
+
 # title: unpivoted table source with a single value column, unpivot columns can't be qualified
 # execute: false
 # dialect: snowflake
@@ -655,6 +687,23 @@ SELECT
 FROM "M_SALES" AS "M_SALES"("EMPID", "DEPT", "JAN", "FEB") UNPIVOT("SALES" FOR "MONTH" IN ("JAN", "FEB")) AS "_q_0"
 ORDER BY
   "_q_0"."EMPID";
+
+# title: unpivoted table source, unpivot has column aliases
+# execute: false
+SELECT * FROM (SELECT * FROM m_sales) AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) AS unpiv(a, b, c, d);
+SELECT
+  "unpiv"."a" AS "a",
+  "unpiv"."b" AS "b",
+  "unpiv"."c" AS "c",
+  "unpiv"."d" AS "d"
+FROM (
+  SELECT
+    "m_sales"."empid" AS "empid",
+    "m_sales"."dept" AS "dept",
+    "m_sales"."jan" AS "jan",
+    "m_sales"."feb" AS "feb"
+  FROM "m_sales" AS "m_sales"
+) AS "m_sales" UNPIVOT("sales" FOR "month" IN ("m_sales"."jan", "m_sales"."feb")) AS "unpiv"("a", "b", "c", "d");
 
 # title: unpivoted derived table source with a single value column
 # execute: false

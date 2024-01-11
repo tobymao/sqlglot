@@ -1362,7 +1362,9 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
 
-            if self._match(TokenType.ALIAS) and self._match(TokenType.PARAMETER, advance=False):
+            alias_ = self._match(TokenType.ALIAS)
+
+            if alias_ and self._match_text_seq("$", advance=False):
                 expression = self._parse_heredoc()
                 extend_props(self._parse_properties())
             elif self._match(TokenType.COMMAND):
@@ -5477,35 +5479,29 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_heredoc(self) -> exp.RawString:
-        # Note: we've already matched a $ token before reaching here
-        self._match(TokenType.PARAMETER)
-        tag_start = self._prev
+        tag_texts = ["$", "$"]
 
-        while not self._match(TokenType.PARAMETER):
+        self._match_text_seq("$")
+
+        if not self._match_text_seq("$"):
+            tag_texts.insert(1, self._curr.text)
             self._advance()
-            if not self._curr:
-                self.raise_error("No closing $ found.")
 
-        tag_text = self._find_sql(tag_start, self._prev)
+        self._match_text_seq("$")
+
         heredoc_start = self._curr
-        heredoc_end = self._prev
 
-        tag_start = None
         while True:
-            if self._match(TokenType.PARAMETER, advance=False):
-                if tag_start and self._find_sql(tag_start, self._curr) == tag_text:
-                    this = self._find_sql(heredoc_start, heredoc_end)
-                    self._advance()
+            if self._match_text_seq(*tag_texts, advance=False, upper_case=False):
+                this = self._find_sql(heredoc_start, self._prev)
+                self._advance(len(tag_texts))
 
-                    return self.expression(exp.RawString, this=this)
-                else:
-                    tag_start = self._curr
-                    heredoc_end = self._prev
+                return self.expression(exp.RawString, this=this)
 
             self._advance()
 
             if not self._curr:
-                self.raise_error(f"No closing {tag_text} found")
+                self.raise_error(f"No closing {''.join(tag_texts)} found")
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict
@@ -5582,10 +5578,17 @@ class Parser(metaclass=_Parser):
             return True
         return False
 
-    def _match_text_seq(self, *texts, advance=True):
+    def _match_text_seq(self, *texts, advance=True, upper_case=True):
         index = self._index
         for text in texts:
-            if self._curr and self._curr.text.upper() == text:
+            if not self._curr:
+                token_text = None
+            elif upper_case:
+                token_text = self._curr.text.upper()
+            else:
+                token_text = self._curr.text
+
+            if token_text == text:
                 self._advance()
             else:
                 self._retreat(index)

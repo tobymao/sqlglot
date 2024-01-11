@@ -5476,7 +5476,7 @@ class Parser(metaclass=_Parser):
             condition=condition,
         )
 
-    def _parse_heredoc(self) -> exp.RawString:
+    def _parse_heredoc(self) -> t.Optional[exp.RawString]:
         tags = []
 
         if self._match_text_seq("$"):
@@ -5484,7 +5484,9 @@ class Parser(metaclass=_Parser):
         else:
             return None
 
-        tags.append(self._advance_any(ignore_reserved=True).text)
+        if self._curr:
+            tags.append(self._curr.text)
+            self._advance()
 
         if tags[-1] != "$":
             if self._match_text_seq("$"):
@@ -5496,6 +5498,7 @@ class Parser(metaclass=_Parser):
 
         while self._curr:
             index = self._index
+            heredoc_end = self._prev
             tags_matched = True
 
             for tag in tags:
@@ -5507,7 +5510,7 @@ class Parser(metaclass=_Parser):
                     break
 
             if tags_matched:
-                this = self._find_sql(heredoc_start, seq_get(self._tokens, index - 1))
+                this = self._find_sql(heredoc_start, heredoc_end)
                 return self.expression(exp.RawString, this=this)
 
         self.raise_error(f"No closing {''.join(tags)} found")

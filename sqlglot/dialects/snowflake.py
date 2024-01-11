@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
@@ -696,7 +695,7 @@ class Snowflake(Dialect):
         COLLATE_IS_FUNC = True
         LIMIT_ONLY_LITERALS = True
         JSON_KEY_VALUE_PAIR_SEP = ","
-        INSERT_OVERWRITE_RE = re.compile(r"^INSERT OVERWRITE TABLE")
+        INSERT_OVERWRITE = " OVERWRITE INTO"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -913,8 +912,3 @@ class Snowflake(Dialect):
 
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, wrapped=False, prefix=self.seg(""), sep=" ")
-
-        def insert_sql(self, expression: exp.Insert) -> str:
-            return re.sub(
-                self.INSERT_OVERWRITE_RE, "INSERT OVERWRITE INTO", super().insert_sql(expression)
-            )

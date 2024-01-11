@@ -255,6 +255,9 @@ class Generator:
     # What delimiter to use for separating JSON key/value pairs
     JSON_KEY_VALUE_PAIR_SEP = ":"
 
+    # INSERT OVERWRITE TABLE x override
+    INSERT_OVERWRITE = " OVERWRITE TABLE"
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -1345,7 +1348,7 @@ class Generator:
         if isinstance(expression.this, exp.Directory):
             this = " OVERWRITE" if overwrite else " INTO"
         else:
-            this = " OVERWRITE TABLE" if overwrite else " INTO"
+            this = self.INSERT_OVERWRITE if overwrite else " INTO"
 
         alternative = expression.args.get("alternative")
         alternative = f" OR {alternative}" if alternative else ""

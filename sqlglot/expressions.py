@@ -1117,6 +1117,10 @@ class Set(Expression):
     arg_types = {"expressions": False, "unset": False, "tag": False}
 
 
+class Heredoc(Expression):
+    arg_types = {"this": True, "tag": False}
+
+
 class SetItem(Expression):
     arg_types = {
         "this": False,

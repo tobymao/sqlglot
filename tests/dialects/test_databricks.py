@@ -28,18 +28,12 @@ class TestDatabricks(Validator):
             "SELECT * FROM sales UNPIVOT EXCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`))"
         )
 
-        self.validate_all(
-            "CREATE FUNCTION add_one(x INTEGER) RETURNS INTEGER LANGUAGE PYTHON AS $$def add_one(x):\n\t return x+1$$",
-            write={
-                "databricks": "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS 'def add_one(x):\n\t return x+1'",
-            },
+        self.validate_identity(
+            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $$\ndef add_one(x):\n  return x+1\n$$"
         )
 
-        self.validate_all(
-            "CREATE FUNCTION add_one(x INTEGER) RETURNS INTEGER LANGUAGE PYTHON AS $foo$def add_one(x):\n\t return x+1$foo$",
-            write={
-                "databricks": "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS 'def add_one(x):\n\t return x+1'",
-            },
+        self.validate_identity(
+            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $foo$\ndef add_one(x):\n  return x+1\n$foo$"
         )
 
         self.validate_all(

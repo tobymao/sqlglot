@@ -397,6 +397,7 @@ class Postgres(Dialect):
         PARAMETER_TOKEN = "$"
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
+        SUPPORT_SELECT_INTO = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

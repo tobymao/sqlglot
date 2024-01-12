@@ -258,6 +258,9 @@ class Generator:
     # INSERT OVERWRITE TABLE x override
     INSERT_OVERWRITE = " OVERWRITE TABLE"
 
+    # Dialect supports "SELECT INTO"
+    SUPPORT_SELECT_INTO = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2019,6 +2022,10 @@ class Generator:
         return [locks, self.sql(expression, "sample")]
 
     def select_sql(self, expression: exp.Select) -> str:
+        into = expression.args.get("into")
+        if self.SUPPORT_SELECT_INTO == False and into:
+            expression.args["into"].pop()
+
         hint = self.sql(expression, "hint")
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
@@ -2063,7 +2070,19 @@ class Generator:
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )
-        return self.prepend_ctes(expression, sql)
+
+        sql = self.prepend_ctes(expression, sql)
+
+        if self.SUPPORT_SELECT_INTO == False and into:
+            # Ensures that SELECT INTO TEMP UNLOGGED -> CREATE TEMPORARY TABLE
+            kind = (
+                " TEMPORARY"
+                if into.args.get("temporary")
+                else (" UNLOGGED" if into.args.get("unlogged") else "")
+            )
+            sql = f'CREATE{kind} TABLE {into.args["this"]} AS {sql}'
+
+        return sql
 
     def schema_sql(self, expression: exp.Schema) -> str:
         this = self.sql(expression, "this")

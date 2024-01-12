@@ -762,9 +762,6 @@ INSERT INTO foo SELECT * FROM bar /* comment */
 /* c */ WITH x AS (SELECT 1) SELECT * FROM x
 SELECT a FROM x WHERE a COLLATE 'utf8_general_ci' = 'b'
 SELECT x AS INTO FROM bla
-SELECT * INTO newevent FROM event
-SELECT * INTO TEMPORARY newevent FROM event
-SELECT * INTO UNLOGGED newevent FROM event
 ALTER TABLE integers ADD COLUMN k INT
 ALTER TABLE integers ADD COLUMN k INT FIRST
 ALTER TABLE integers ADD COLUMN k INT AFTER m

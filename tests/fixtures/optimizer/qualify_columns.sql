@@ -441,6 +441,16 @@ SELECT t.aa AS aa FROM x AS x, UNNEST(x.a) AS t(aa);
 SELECT aa FROM x, UNNEST(a) AS aa;
 SELECT aa AS aa FROM x AS x, UNNEST(x.a) AS aa;
 
+# dialect: bigquery
+# execute: false
+select * from unnest ([1, 2]) as x with offset;
+SELECT x AS x, offset AS offset FROM UNNEST([1, 2]) AS x WITH OFFSET AS offset;
+
+# dialect: bigquery
+# execute: false
+select * from unnest ([1, 2]) as x with offset as y;
+SELECT x AS x, y AS y FROM UNNEST([1, 2]) AS x WITH OFFSET AS y;
+
 # dialect: presto
 SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(b, ',')) AS i(b);
 SELECT x.a AS a, i.b AS b FROM x AS x CROSS JOIN UNNEST(SPLIT(x.b, ',')) AS i(b);

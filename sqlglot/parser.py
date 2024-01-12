@@ -5486,8 +5486,9 @@ class Parser(metaclass=_Parser):
 
         if self._curr and self._is_connected():
             if not self._match_text_seq("$"):
-                tag_text = self._advance_any().text
+                tag_text = self._curr.text
                 tags.append(tag_text)
+                self._advance()
             else:
                 tag_text = None
                 tags.append("$")
@@ -5520,6 +5521,7 @@ class Parser(metaclass=_Parser):
                 return self.expression(exp.Heredoc, this=this, tag=tag_text)
 
         self.raise_error(f"No closing {''.join(tags)} found")
+        return None
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

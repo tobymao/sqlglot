@@ -2709,6 +2709,14 @@ class Unnest(UDTF):
         "offset": False,
     }
 
+    @property
+    def selects(self) -> t.List[Expression]:
+        columns = super().selects
+        offset = self.args.get("offset")
+        if offset:
+            columns = columns + [to_identifier("offset") if offset is True else offset]
+        return columns
+
 
 class Update(Expression):
     arg_types = {

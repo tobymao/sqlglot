@@ -77,7 +77,7 @@ class Generator:
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.ExternalProperty: lambda self, e: "EXTERNAL",
         exp.HeapProperty: lambda self, e: "HEAP",
-        exp.Heredoc: lambda self, e: f"${e.args['tag'] or ''}$\n{e.this}\n${e.args['tag'] or ''}$",
+        exp.Heredoc: lambda self, e: self.heredoc_sql(e),
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
         exp.IntervalSpan: lambda self, e: f"{self.sql(e, 'this')} TO {self.sql(e, 'expression')}",
@@ -889,6 +889,10 @@ class Generator:
 
     def describe_sql(self, expression: exp.Describe) -> str:
         return f"DESCRIBE {self.sql(expression, 'this')}"
+
+    def heredoc_sql(self, expression: exp.Heredoc) -> str:
+        tag = expression.args.get("tag")
+        return f"${tag or ''}$\n{expression.this}\n${tag or ''}$"
 
     def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
         with_ = self.sql(expression, "with")

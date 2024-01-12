@@ -296,6 +296,7 @@ class TokenType(AutoName):
     ON = auto()
     OPERATOR = auto()
     ORDER_BY = auto()
+    ORDER_SIBLINGS_BY = auto()
     ORDERED = auto()
     ORDINALITY = auto()
     OUTER = auto()

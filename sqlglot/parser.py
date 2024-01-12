@@ -3178,14 +3178,19 @@ class Parser(metaclass=_Parser):
     def _parse_order(
         self, this: t.Optional[exp.Expression] = None, skip_order_token: bool = False
     ) -> t.Optional[exp.Expression]:
+        siblings = None
         if not skip_order_token and not self._match(TokenType.ORDER_BY):
-            return this
+            if not self._match(TokenType.ORDER_SIBLINGS_BY):
+                return this
+
+            siblings = True
 
         return self.expression(
             exp.Order,
             this=this,
             expressions=self._parse_csv(self._parse_ordered),
             interpolate=self._parse_interpolate(),
+            siblings=siblings,
         )
 
     def _parse_sort(self, exp_class: t.Type[E], token: TokenType) -> t.Optional[E]:

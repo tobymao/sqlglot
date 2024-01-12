@@ -108,6 +108,11 @@ class Oracle(Dialect):
             "XMLTABLE": _parse_xml_table,
         }
 
+        QUERY_MODIFIER_PARSERS = {
+            **parser.Parser.QUERY_MODIFIER_PARSERS,
+            TokenType.ORDER_SIBLINGS_BY: lambda self: ("order", self._parse_order()),
+        }
+
         TYPE_LITERAL_PARSERS = {
             exp.DataType.Type.DATE: lambda self, this, _: self.expression(
                 exp.DateStrToDate, this=this
@@ -239,6 +244,7 @@ class Oracle(Dialect):
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "NVARCHAR2": TokenType.NVARCHAR,
+            "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
             "SYSDATE": TokenType.CURRENT_TIMESTAMP,

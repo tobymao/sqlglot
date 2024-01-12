@@ -5496,7 +5496,7 @@ class Parser(metaclass=_Parser):
         if self._curr and self._is_connected():
             if not self._match_text_seq("$"):
                 tag_text = self._curr.text
-                tags.append(tag_text)
+                tags.append(tag_text.upper())
                 self._advance()
             else:
                 tags.append("$")
@@ -5512,21 +5512,12 @@ class Parser(metaclass=_Parser):
         heredoc_start = self._curr
 
         while self._curr:
-            index = self._index
-            heredoc_end = self._prev
-            tags_matched = True
-
-            for tag in tags:
-                if self._curr and self._curr.text == tag:
-                    self._advance()
-                else:
-                    self._retreat(index + 1)
-                    tags_matched = False
-                    break
-
-            if tags_matched:
-                this = self._find_sql(heredoc_start, heredoc_end)
+            if self._match_text_seq(*tags, advance=False):
+                this = self._find_sql(heredoc_start, self._prev)
+                self._advance(len(tags))
                 return self.expression(exp.Heredoc, this=this, tag=tag_text)
+
+            self._advance()
 
         self.raise_error(f"No closing {''.join(tags)} found")
         return None

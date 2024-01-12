@@ -1851,7 +1851,8 @@ class Generator:
     def order_sql(self, expression: exp.Order, flat: bool = False) -> str:
         this = self.sql(expression, "this")
         this = f"{this} " if this else this
-        order = self.op_expressions(f"{this}ORDER BY", expression, flat=this or flat)  # type: ignore
+        siblings = "SIBLINGS " if expression.args.get("siblings") else ""
+        order = self.op_expressions(f"{this}ORDER {siblings}BY", expression, flat=this or flat)  # type: ignore
         interpolated_values = [
             f"{self.sql(named_expression, 'alias')} AS {self.sql(named_expression, 'this')}"
             for named_expression in expression.args.get("interpolate") or []

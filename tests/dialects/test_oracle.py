@@ -36,6 +36,9 @@ class TestOracle(Validator):
         self.validate_identity("SELECT COUNT(*) * 10 FROM orders SAMPLE (10) SEED (1)")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity(
+            "SELECT last_name, employee_id, manager_id, LEVEL FROM employees START WITH employee_id = 100 CONNECT BY PRIOR employee_id = manager_id ORDER SIBLINGS BY last_name"
+        )
+        self.validate_identity(
             "ALTER TABLE Payments ADD (Stock NUMBER NOT NULL, dropid VARCHAR2(500) NOT NULL)"
         )
         self.validate_identity(

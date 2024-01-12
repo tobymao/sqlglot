@@ -1362,8 +1362,16 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
 
-            if self._match(TokenType.ALIAS) and self._match_text_seq("$", advance=False):
-                expression = self._parse_heredoc()
+            heredoc_matched = False
+            if self._match(TokenType.ALIAS):
+                if self._match_text_seq("$", advance=False):
+                    expression = self._parse_heredoc()
+                    heredoc_matched = True
+                elif self._match(TokenType.HEREDOC_STRING):
+                    expression = self.expression(exp.Heredoc, this=self._prev.text)
+                    heredoc_matched = True
+
+            if heredoc_matched:
                 extend_props(self._parse_properties())
             elif self._match(TokenType.COMMAND):
                 expression = self._parse_as_command(self._prev)
@@ -5478,6 +5486,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_heredoc(self) -> t.Optional[exp.Heredoc]:
         tags = []
+        tag_text = None
 
         if self._match_text_seq("$"):
             tags.append("$")
@@ -5490,7 +5499,6 @@ class Parser(metaclass=_Parser):
                 tags.append(tag_text)
                 self._advance()
             else:
-                tag_text = None
                 tags.append("$")
         else:
             self.raise_error("No closing $ found")

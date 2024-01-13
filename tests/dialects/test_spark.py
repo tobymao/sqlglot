@@ -237,6 +237,7 @@ TBLPROPERTIES (
             "REFRESH TABLE t",
         )
 
+        self.validate_identity("DESCRIBE EXTENDED db.table")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (50 PERCENT)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (5 ROWS)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (BUCKET 4 OUT OF 10)")

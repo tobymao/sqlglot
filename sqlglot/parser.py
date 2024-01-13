@@ -3649,7 +3649,7 @@ class Parser(metaclass=_Parser):
 
         if nested and self._match(TokenType.LT):
             if is_struct:
-                expressions = self._parse_csv(self._parse_struct_types)
+                expressions = self._parse_csv(lambda: self._parse_struct_types(type_required=True))
             else:
                 expressions = self._parse_csv(
                     lambda: self._parse_types(
@@ -3724,10 +3724,19 @@ class Parser(metaclass=_Parser):
 
         return this
 
-    def _parse_struct_types(self) -> t.Optional[exp.Expression]:
+    def _parse_struct_types(self, type_required: bool = False) -> t.Optional[exp.Expression]:
+        index = self._index
         this = self._parse_type(parse_interval=False) or self._parse_id_var()
         self._match(TokenType.COLON)
-        return self._parse_column_def(this)
+        column_def = self._parse_column_def(this)
+
+        if type_required and (
+            (isinstance(this, exp.Column) and this.this is column_def) or this is column_def
+        ):
+            self._retreat(index)
+            return self._parse_types()
+
+        return column_def
 
     def _parse_at_time_zone(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if not self._match_text_seq("AT", "TIME", "ZONE"):

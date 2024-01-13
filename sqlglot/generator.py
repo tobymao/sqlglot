@@ -894,7 +894,8 @@ class Generator:
         return f"{shallow}{keyword} {this}"
 
     def describe_sql(self, expression: exp.Describe) -> str:
-        return f"DESCRIBE {self.sql(expression, 'this')}"
+        extended = " EXTENDED" if expression.args.get("extended") else ""
+        return f"DESCRIBE{extended} {self.sql(expression, 'this')}"
 
     def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
         with_ = self.sql(expression, "with")

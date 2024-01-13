@@ -1102,7 +1102,7 @@ class Clone(Expression):
 
 
 class Describe(Expression):
-    arg_types = {"this": True, "kind": False, "expressions": False}
+    arg_types = {"this": True, "extended": False, "kind": False, "expressions": False}
 
 
 class Kill(Expression):

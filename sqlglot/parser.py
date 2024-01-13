@@ -3449,10 +3449,10 @@ class Parser(metaclass=_Parser):
             return this
         return self.expression(exp.Escape, this=this, expression=self._parse_string())
 
-    def _parse_interval(self) -> t.Optional[exp.Interval]:
+    def _parse_interval(self, match_interval: bool = True) -> t.Optional[exp.Interval]:
         index = self._index
 
-        if not self._match(TokenType.INTERVAL):
+        if not self._match(TokenType.INTERVAL) and match_interval:
             return None
 
         if self._match(TokenType.STRING, advance=False):
@@ -3545,6 +3545,12 @@ class Parser(metaclass=_Parser):
     def _parse_type(self, parse_interval: bool = True) -> t.Optional[exp.Expression]:
         interval = parse_interval and self._parse_interval()
         if interval:
+            # Convert INTERVAL 'val_1' unit_1 ... 'val_n' unit_n into a sum of intervals
+            while self._match_set((TokenType.STRING, TokenType.NUMBER), advance=False):
+                interval = self.expression(  # type: ignore
+                    exp.Add, this=interval, expression=self._parse_interval(match_interval=False)
+                )
+
             return interval
 
         index = self._index

@@ -1195,6 +1195,8 @@ class Parser(metaclass=_Parser):
             self._prev = None
             self._prev_comments = None
 
+        return None
+
     def _retreat(self, index: int) -> None:
         if index != self._index:
             self._advance(index - self._index)

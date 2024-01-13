@@ -1195,8 +1195,6 @@ class Parser(metaclass=_Parser):
             self._prev = None
             self._prev_comments = None
 
-        return None
-
     def _retreat(self, index: int) -> None:
         if index != self._index:
             self._advance(index - self._index)
@@ -5492,7 +5490,8 @@ class Parser(metaclass=_Parser):
         tag_text = None
 
         if self._is_connected():
-            tags.append(self._advance() or self._prev.text.upper())
+            self._advance()
+            tags.append(self._prev.text.upper())
         else:
             self.raise_error("No closing $ found")
 

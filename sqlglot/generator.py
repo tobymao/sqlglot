@@ -890,8 +890,8 @@ class Generator:
         return f"DESCRIBE {self.sql(expression, 'this')}"
 
     def heredoc_sql(self, expression: exp.Heredoc) -> str:
-        tag = expression.args.get("tag")
-        return f"${tag or ''}$\n{expression.this}\n${tag or ''}$"
+        tag = self.sql(expression, "tag")
+        return f"${tag}${self.sql(expression, 'this')}${tag}$"
 
     def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
         with_ = self.sql(expression, "with")

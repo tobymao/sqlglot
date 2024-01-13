@@ -86,6 +86,15 @@ class TestParser(unittest.TestCase):
 
         self.assertIsNotNone(parse_one("date").find(exp.Column))
 
+    def test_structs(self):
+        cast = parse_one("cast(x as struct<int>)")
+        self.assertIsInstance(cast.to.expressions[0], exp.DataType)
+        self.assertEqual(cast.sql(), "CAST(x AS STRUCT<INT>)")
+
+        cast = parse_one("cast(x as struct<varchar(10)>)")
+        self.assertIsInstance(cast.to.expressions[0], exp.DataType)
+        self.assertEqual(cast.sql(), "CAST(x AS STRUCT<VARCHAR(10)>)")
+
     def test_float(self):
         self.assertEqual(parse_one(".2"), parse_one("0.2"))
 

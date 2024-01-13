@@ -1938,9 +1938,7 @@ class Parser(metaclass=_Parser):
                 value = self.expression(
                     exp.Schema,
                     this="TABLE",
-                    expressions=self._parse_csv(
-                        lambda: self._parse_struct_types(type_required=True)
-                    ),
+                    expressions=self._parse_csv(self._parse_struct_types),
                 )
                 if not self._match(TokenType.GT):
                     self.raise_error("Expecting >")

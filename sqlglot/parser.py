@@ -1362,16 +1362,11 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
 
-            heredoc_matched = False
+            expression = None
             if self._match(TokenType.ALIAS):
-                if self._match_text_seq("$", advance=False):
-                    expression = self._parse_heredoc()
-                    heredoc_matched = True
-                elif self._match(TokenType.HEREDOC_STRING):
-                    expression = self.expression(exp.Heredoc, this=self._prev.text)
-                    heredoc_matched = True
+                expression = self._parse_heredoc()
 
-            if heredoc_matched:
+            if expression:
                 extend_props(self._parse_properties())
             elif self._match(TokenType.COMMAND):
                 expression = self._parse_as_command(self._prev)
@@ -5485,26 +5480,23 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_heredoc(self) -> t.Optional[exp.Heredoc]:
-        tags = []
-        tag_text = None
+        if self._match(TokenType.HEREDOC_STRING):
+            return self.expression(exp.Heredoc, this=self._prev.text)
 
-        if self._match_text_seq("$"):
-            tags.append("$")
-        else:
+        if not self._match_text_seq("$"):
             return None
 
-        if self._curr and self._is_connected():
-            if not self._match_text_seq("$"):
-                tag_text = self._curr.text
-                tags.append(tag_text.upper())
-                self._advance()
-            else:
-                tags.append("$")
+        tags = ["$"]
+        tag_text = None
+
+        if self._is_connected():
+            tags.append(self._advance() or self._prev.text.upper())
         else:
             self.raise_error("No closing $ found")
 
-        if tag_text:
+        if tags[-1] != "$":
             if self._is_connected() and self._match_text_seq("$"):
+                tag_text = tags[-1]
                 tags.append("$")
             else:
                 self.raise_error("No closing $ found")

@@ -432,7 +432,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "IF(y <> 0, x / y, NULL)",
+            "IF((y) <> 0, (x) / (y), NULL)",
             read={
                 "bigquery": "SAFE_DIVIDE(x, y)",
             },

@@ -29,11 +29,11 @@ class TestDatabricks(Validator):
         )
 
         self.validate_identity(
-            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $$\ndef add_one(x):\n  return x+1\n$$"
+            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $$def add_one(x):\n  return x+1$$"
         )
 
         self.validate_identity(
-            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $foo$\ndef add_one(x):\n  return x+1\n$foo$"
+            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $FOO$def add_one(x):\n  return x+1$FOO$"
         )
 
         self.validate_all(

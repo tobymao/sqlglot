@@ -39,6 +39,8 @@ WHERE
   )""",
         )
 
+        self.validate_identity("RM @parquet_stage")
+        self.validate_identity("REMOVE @parquet_stage")
         self.validate_identity("SELECT TIMESTAMP_FROM_PARTS(d, t)")
         self.validate_identity("SELECT GET_PATH(v, 'attr[0].name') FROM vartab")
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")

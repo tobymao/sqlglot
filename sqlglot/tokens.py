@@ -191,6 +191,8 @@ class TokenType(AutoName):
     FIXEDSTRING = auto()
     LOWCARDINALITY = auto()
     NESTED = auto()
+    AGGREGATEFUNCTION = auto()
+    SIMPLEAGGREGATEFUNCTION = auto()
     UNKNOWN = auto()
 
     # keywords

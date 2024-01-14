@@ -3635,6 +3635,7 @@ class DataType(Expression):
         BOOLEAN = auto()
         CHAR = auto()
         DATE = auto()
+        DATE32 = auto()
         DATEMULTIRANGE = auto()
         DATERANGE = auto()
         DATETIME = auto()
@@ -3762,6 +3763,7 @@ class DataType(Expression):
         Type.TIMESTAMP_MS,
         Type.TIMESTAMP_NS,
         Type.DATE,
+        Type.DATE32,
         Type.DATETIME,
         Type.DATETIME64,
     }

@@ -234,6 +234,8 @@ class Parser(metaclass=_Parser):
         TokenType.INET,
         TokenType.IPADDRESS,
         TokenType.IPPREFIX,
+        TokenType.IPV4,
+        TokenType.IPV6,
         TokenType.UNKNOWN,
         TokenType.NULL,
         *ENUM_TYPE_TOKENS,

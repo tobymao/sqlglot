@@ -3662,6 +3662,8 @@ class DataType(Expression):
         INTERVAL = auto()
         IPADDRESS = auto()
         IPPREFIX = auto()
+        IPV4 = auto()
+        IPV6 = auto()
         JSON = auto()
         JSONB = auto()
         LONGBLOB = auto()

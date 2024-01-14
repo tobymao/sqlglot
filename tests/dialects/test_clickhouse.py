@@ -726,3 +726,4 @@ LIFETIME(MIN 0 MAX 0)""",
             },
             pretty=True,
         )
+        self.validate_identity("""CREATE TABLE ip_data (ip4 IPv4, ip6 IPv6) ENGINE=TinyLog()""")

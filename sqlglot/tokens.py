@@ -182,6 +182,8 @@ class TokenType(AutoName):
     INET = auto()
     IPADDRESS = auto()
     IPPREFIX = auto()
+    IPV4 = auto()
+    IPV6 = auto()
     ENUM = auto()
     ENUM8 = auto()
     ENUM16 = auto()

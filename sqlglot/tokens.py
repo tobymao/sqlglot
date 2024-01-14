@@ -147,6 +147,7 @@ class TokenType(AutoName):
     DATETIME = auto()
     DATETIME64 = auto()
     DATE = auto()
+    DATE32 = auto()
     INT4RANGE = auto()
     INT4MULTIRANGE = auto()
     INT8RANGE = auto()

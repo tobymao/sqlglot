@@ -154,7 +154,7 @@ class TestOracle(Validator):
             write={
                 "oracle": "SELECT TO_TIMESTAMP('2024-12-12 12:12:12.000000', 'YYYY-MM-DD HH24:MI:SS.FF6')",
                 "duckdb": "SELECT STRPTIME('2024-12-12 12:12:12.000000', '%Y-%m-%d %H:%M:%S.%f')",
-            }
+            },
         )
 
     def test_join_marker(self):

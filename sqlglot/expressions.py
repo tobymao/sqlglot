@@ -5967,7 +5967,7 @@ def delete(
 def insert(
     expression: ExpOrStr,
     into: ExpOrStr,
-    columns: t.Optional[t.Sequence[ExpOrStr]] = None,
+    columns: t.Optional[t.Sequence[str | Identifier]] = None,
     overwrite: t.Optional[bool] = None,
     returning: t.Optional[ExpOrStr] = None,
     dialect: DialectType = None,
@@ -5998,15 +5998,7 @@ def insert(
     this: Table | Schema = maybe_parse(into, into=Table, dialect=dialect, copy=copy, **opts)
 
     if columns:
-        this = _apply_list_builder(
-            *columns,
-            instance=Schema(this=this),
-            arg="expressions",
-            into=Identifier,
-            copy=False,
-            dialect=dialect,
-            **opts,
-        )
+        this = Schema(this=this, expressions=[to_identifier(c, copy=copy) for c in columns])
 
     insert = Insert(this=this, expression=expr, overwrite=overwrite)
 

@@ -633,6 +633,10 @@ class TestBuild(unittest.TestCase):
                 "INSERT INTO tbl (cola, colb) VALUES (1, 2), (3, 4)",
             ),
             (
+                lambda: exp.insert("VALUES (1), (2)", "tbl", columns=["col a"]),
+                'INSERT INTO tbl ("col a") VALUES (1), (2)',
+            ),
+            (
                 lambda: exp.insert("SELECT * FROM cte", "t").with_("cte", as_="SELECT x FROM tbl"),
                 "WITH cte AS (SELECT x FROM tbl) INSERT INTO t SELECT * FROM cte",
             ),

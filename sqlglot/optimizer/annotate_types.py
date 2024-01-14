@@ -518,7 +518,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         if struct:
             expressions = [
                 expr.type
-                if expr.args.get("alias") is None
+                if not expr.alias
                 else exp.ColumnDef(this=exp.to_identifier(expr.alias), kind=expr.type)
                 for expr in expressions
             ]

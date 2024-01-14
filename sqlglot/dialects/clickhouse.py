@@ -85,6 +85,8 @@ class ClickHouse(Dialect):
             "UINT32": TokenType.UINT,
             "UINT64": TokenType.UBIGINT,
             "UINT8": TokenType.UTINYINT,
+            "IPV4": TokenType.IPV4,
+            "IPV6": TokenType.IPV6,
         }
 
         SINGLE_TOKENS = {
@@ -541,6 +543,8 @@ class ClickHouse(Dialect):
             exp.DataType.Type.UINT256: "UInt256",
             exp.DataType.Type.USMALLINT: "UInt16",
             exp.DataType.Type.UTINYINT: "UInt8",
+            exp.DataType.Type.IPV4: "IPv4",
+            exp.DataType.Type.IPV6: "IPv6",
         }
 
         TRANSFORMS = {

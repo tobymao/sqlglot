@@ -1362,9 +1362,7 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
 
-            expression = None
-            if self._match(TokenType.ALIAS):
-                expression = self._parse_heredoc()
+            expression = self._match(TokenType.ALIAS) and self._parse_heredoc()
 
             if expression:
                 extend_props(self._parse_properties())

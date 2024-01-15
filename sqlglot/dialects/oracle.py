@@ -82,6 +82,7 @@ class Oracle(Dialect):
         "WW": "%W",  # Week of year (1-53)
         "YY": "%y",  # 15
         "YYYY": "%Y",  # 2015
+        "FF6": "%f",  # only 6 digits are supported in python formats
     }
 
     class Parser(parser.Parser):
@@ -92,6 +93,8 @@ class Oracle(Dialect):
             **parser.Parser.FUNCTIONS,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "TO_CHAR": to_char,
+            "TO_TIMESTAMP": format_time_lambda(exp.StrToTime, "oracle"),
+            "TO_DATE": format_time_lambda(exp.StrToDate, "oracle"),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -193,6 +196,7 @@ class Oracle(Dialect):
                 ]
             ),
             exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
             exp.Substring: rename_func("SUBSTR"),
             exp.Table: lambda self, e: self.table_sql(e, sep=" "),

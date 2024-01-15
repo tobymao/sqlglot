@@ -556,11 +556,13 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             "SELECT STRUCT(1 AS col, 2.5 AS row, struct(3.5 AS inner_col, 4 AS inner_row) AS nested_struct)": "STRUCT<col INT, row DOUBLE, nested_struct STRUCT<inner_col DOUBLE, inner_row INT>>",
             "SELECT STRUCT(1 AS col, 2.5, ARRAY[1, 2, 3] AS nested_array, 'foo')": "STRUCT<col INT, DOUBLE, nested_array ARRAY<INT>, VARCHAR>",
             "SELECT STRUCT(1, 2.5, 'bar')": "STRUCT<INT, DOUBLE, VARCHAR>",
+            'SELECT STRUCT(1 AS "CaseSensitive")': 'STRUCT<"CaseSensitive" INT>',
         }
 
         for sql, target_type in tests.items():
-            expression = annotate_types(parse_one(sql))
-            assert expression.expressions[0].is_type(target_type)
+            with self.subTest(sql):
+                expression = annotate_types(parse_one(sql))
+                assert expression.expressions[0].is_type(target_type)
 
     def test_literal_type_annotation(self):
         tests = {

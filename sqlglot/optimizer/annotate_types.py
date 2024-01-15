@@ -516,21 +516,20 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             )
 
         if struct:
+            expressions = [
+                expr.type
+                if not expr.alias
+                else exp.ColumnDef(this=exp.to_identifier(expr.alias), kind=expr.type)
+                for expr in expressions
+            ]
             self._set_type(
                 expression,
                 exp.DataType(
                     this=exp.DataType.Type.STRUCT,
-                    expressions=[
-                        exp.ColumnDef(
-                            this=exp.to_identifier(expr.alias),
-                            kind=expr.type,
-                        )
-                        for expr in expressions
-                    ],
+                    expressions=expressions,
                     nested=True,
                 ),
             )
-
         return expression
 
     def _annotate_timeunit(

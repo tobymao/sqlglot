@@ -662,7 +662,7 @@ class TSQL(Dialect):
         NULL_ORDERING_SUPPORTED = None
         SUPPORTS_SINGLE_ARG_CONCAT = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
-        SUPPORT_SELECT_INTO = True
+        SUPPORTS_SELECT_INTO = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,

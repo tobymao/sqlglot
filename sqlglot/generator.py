@@ -258,8 +258,11 @@ class Generator:
     # INSERT OVERWRITE TABLE x override
     INSERT_OVERWRITE = " OVERWRITE TABLE"
 
-    # Dialect supports "SELECT INTO"
-    SUPPORT_SELECT_INTO = False
+    # Whether or not the SELECT .. INTO syntax is used instead of CTAS
+    SUPPORTS_SELECT_INTO = False
+
+    # Whether UNLOGGED tables are allowed
+    SUPPORTS_UNLOGGED_TABLES = False
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2023,8 +2026,8 @@ class Generator:
 
     def select_sql(self, expression: exp.Select) -> str:
         into = expression.args.get("into")
-        if self.SUPPORT_SELECT_INTO == False and into:
-            expression.args["into"].pop()
+        if not self.SUPPORTS_SELECT_INTO and into:
+            into.pop()
 
         hint = self.sql(expression, "hint")
         distinct = self.sql(expression, "distinct")
@@ -2073,14 +2076,14 @@ class Generator:
 
         sql = self.prepend_ctes(expression, sql)
 
-        if self.SUPPORT_SELECT_INTO == False and into:
-            # Ensures that SELECT INTO TEMP UNLOGGED -> CREATE TEMPORARY TABLE
-            kind = (
-                " TEMPORARY"
-                if into.args.get("temporary")
-                else (" UNLOGGED" if into.args.get("unlogged") else "")
-            )
-            sql = f'CREATE{kind} TABLE {into.args["this"]} AS {sql}'
+        if not self.SUPPORTS_SELECT_INTO and into:
+            if into.args.get("temporary"):
+                table_kind = " TEMPORARY"
+            elif self.SUPPORTS_UNLOGGED_TABLES and into.args.get("unlogged"):
+                table_kind = " UNLOGGED"
+            else:
+                table_kind = ""
+            sql = f"CREATE{table_kind} TABLE {self.sql(into.this)} AS {sql}"
 
         return sql
 

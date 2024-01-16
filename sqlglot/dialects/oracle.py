@@ -157,7 +157,7 @@ class Oracle(Dialect):
         LIMIT_FETCH = "FETCH"
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
-        SUPPORT_SELECT_INTO = True
+        SUPPORTS_SELECT_INTO = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

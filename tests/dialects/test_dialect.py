@@ -1772,7 +1772,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
             write={
-                "dameng": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
+                "dameng": "SELECT * FROM (SELECT * FROM my_table t) tbl",
                 "drill": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
                 "hive": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
                 "oracle": "SELECT * FROM (SELECT * FROM my_table t) tbl",
@@ -1783,7 +1783,7 @@ class TestDialect(Validator):
         self.validate_all(
             "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
             write={
-                "dameng": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
+                "dameng": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
                 "hive": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
                 "oracle": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
                 "postgres": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",

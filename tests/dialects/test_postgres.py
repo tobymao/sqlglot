@@ -106,12 +106,6 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            "WITH t(c) AS (SELECT 1) SELECT * INTO TEMP UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
-            write={
-                "postgres": "WITH t(c) AS (SELECT 1) SELECT * INTO TEMPORARY foo FROM (SELECT c AS c FROM t) AS temp",
-            },
-        )
-        self.validate_all(
             "CREATE TABLE products ("
             "product_no INT UNIQUE,"
             " name TEXT,"

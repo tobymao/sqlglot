@@ -503,7 +503,7 @@ class Snowflake(Dialect):
         SHOW_PARSERS = {
             "SCHEMAS": _show_parser("SCHEMAS"),
             "TERSE SCHEMAS": _show_parser("SCHEMAS"),
-            "OBJECTS": _show_parser("SCHEMAS"),
+            "OBJECTS": _show_parser("OBJECTS"),
             "TERSE OBJECTS": _show_parser("OBJECTS"),
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
@@ -624,11 +624,11 @@ class Snowflake(Dialect):
                 if self._match_text_seq("ACCOUNT"):
                     scope_kind = "ACCOUNT"
                 elif self._match_set(self.DB_CREATABLES):
-                    scope_kind = self._prev.text
+                    scope_kind = self._prev.text.upper()
                     if self._curr:
                         scope = self._parse_table()
                 elif self._curr:
-                    scope_kind = "TABLE"
+                    scope_kind = "SCHEMA" if this == "OBJECTS" else "TABLE"
                     scope = self._parse_table()
 
             starts_with = self._parse_string() if self._match(TokenType.STARTS_WITH) else None

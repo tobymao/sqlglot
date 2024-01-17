@@ -10,15 +10,12 @@ class Dameng(Oracle):
         }
 
     class Generator(Oracle.Generator):
-        CAST_MAPPING = {}
 
         TYPE_MAPPING = {
             **Oracle.Generator.TYPE_MAPPING
         }
 
         LAST_DAY_SUPPORTS_DATE_PART = False
-
-        TIMESTAMP_FUNC_TYPES = set()
 
         TRANSFORMS = {
             **Oracle.Generator.TRANSFORMS

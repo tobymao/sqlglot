@@ -1462,7 +1462,7 @@ MATCH_RECOGNIZE (
             'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."customers"',
         )
         self.validate_identity(
-            "SHOW TERSE SCHEMAS IN DATABASE db1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
+            "show terse schemas in database db1 starts with 'a' limit 10 from 'b'",
             "SHOW TERSE SCHEMAS IN DATABASE db1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
         )
         self.validate_identity(

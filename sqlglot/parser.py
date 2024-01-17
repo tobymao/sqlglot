@@ -1370,26 +1370,27 @@ class Parser(metaclass=_Parser):
             # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
             extend_props(self._parse_properties())
 
-            self._match(TokenType.ALIAS)
+            expression = self._match(TokenType.ALIAS) and self._parse_heredoc()
 
-            if self._match(TokenType.COMMAND):
-                expression = self._parse_as_command(self._prev)
-            else:
-                begin = self._match(TokenType.BEGIN)
-                return_ = self._match_text_seq("RETURN")
-
-                if self._match(TokenType.STRING, advance=False):
-                    # Takes care of BigQuery's JavaScript UDF definitions that end in an OPTIONS property
-                    # # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement
-                    expression = self._parse_string()
-                    extend_props(self._parse_properties())
+            if not expression:
+                if self._match(TokenType.COMMAND):
+                    expression = self._parse_as_command(self._prev)
                 else:
-                    expression = self._parse_statement()
+                    begin = self._match(TokenType.BEGIN)
+                    return_ = self._match_text_seq("RETURN")
 
-                end = self._match_text_seq("END")
+                    if self._match(TokenType.STRING, advance=False):
+                        # Takes care of BigQuery's JavaScript UDF definitions that end in an OPTIONS property
+                        # # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement
+                        expression = self._parse_string()
+                        extend_props(self._parse_properties())
+                    else:
+                        expression = self._parse_statement()
 
-                if return_:
-                    expression = self.expression(exp.Return, this=expression)
+                    end = self._match_text_seq("END")
+
+                    if return_:
+                        expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index(index=self._parse_id_var())
         elif create_token.token_type in self.DB_CREATABLES:
@@ -5513,6 +5514,42 @@ class Parser(metaclass=_Parser):
             iterator=iterator,
             condition=condition,
         )
+
+    def _parse_heredoc(self) -> t.Optional[exp.Heredoc]:
+        if self._match(TokenType.HEREDOC_STRING):
+            return self.expression(exp.Heredoc, this=self._prev.text)
+
+        if not self._match_text_seq("$"):
+            return None
+
+        tags = ["$"]
+        tag_text = None
+
+        if self._is_connected():
+            self._advance()
+            tags.append(self._prev.text.upper())
+        else:
+            self.raise_error("No closing $ found")
+
+        if tags[-1] != "$":
+            if self._is_connected() and self._match_text_seq("$"):
+                tag_text = tags[-1]
+                tags.append("$")
+            else:
+                self.raise_error("No closing $ found")
+
+        heredoc_start = self._curr
+
+        while self._curr:
+            if self._match_text_seq(*tags, advance=False):
+                this = self._find_sql(heredoc_start, self._prev)
+                self._advance(len(tags))
+                return self.expression(exp.Heredoc, this=this, tag=tag_text)
+
+            self._advance()
+
+        self.raise_error(f"No closing {''.join(tags)} found")
+        return None
 
     def _find_parser(
         self, parsers: t.Dict[str, t.Callable], trie: t.Dict

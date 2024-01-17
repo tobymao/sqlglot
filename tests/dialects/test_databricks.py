@@ -1,3 +1,5 @@
+from sqlglot import transpile
+from sqlglot.errors import ParseError
 from tests.dialects.test_dialect import Validator
 
 
@@ -28,6 +30,14 @@ class TestDatabricks(Validator):
             "SELECT * FROM sales UNPIVOT EXCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`))"
         )
 
+        self.validate_identity(
+            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $$def add_one(x):\n  return x+1$$"
+        )
+
+        self.validate_identity(
+            "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $FOO$def add_one(x):\n  return x+1$FOO$"
+        )
+
         self.validate_all(
             "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
             write={
@@ -41,6 +51,18 @@ class TestDatabricks(Validator):
                 "teradata": "CREATE TABLE t1 AS (SELECT c FROM t2) WITH DATA",
             },
         )
+
+        with self.assertRaises(ParseError):
+            transpile(
+                "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $foo$def add_one(x):\n  return x+1$$",
+                read="databricks",
+            )
+
+        with self.assertRaises(ParseError):
+            transpile(
+                "CREATE FUNCTION add_one(x INT) RETURNS INT LANGUAGE PYTHON AS $foo bar$def add_one(x):\n  return x+1$foo bar$",
+                read="databricks",
+            )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

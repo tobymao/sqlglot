@@ -897,6 +897,10 @@ class Generator:
         extended = " EXTENDED" if expression.args.get("extended") else ""
         return f"DESCRIBE{extended} {self.sql(expression, 'this')}"
 
+    def heredoc_sql(self, expression: exp.Heredoc) -> str:
+        tag = self.sql(expression, "tag")
+        return f"${tag}${self.sql(expression, 'this')}${tag}$"
+
     def prepend_ctes(self, expression: exp.Expression, sql: str) -> str:
         with_ = self.sql(expression, "with")
         if with_:

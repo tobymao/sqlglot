@@ -146,6 +146,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS STRING)",
                 "clickhouse": "CAST(a AS String)",
+                "dameng": "CAST(a AS CLOB)",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS CHAR)",
@@ -166,6 +167,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS BYTES)",
                 "clickhouse": "CAST(a AS BINARY(4))",
+                "dameng": "CAST(a AS BLOB(4))",
                 "drill": "CAST(a AS VARBINARY(4))",
                 "duckdb": "CAST(a AS BLOB(4))",
                 "mysql": "CAST(a AS BINARY(4))",
@@ -185,6 +187,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS BYTES)",
                 "clickhouse": "CAST(a AS String)",
+                "dameng": "CAST(a AS BLOB(4))",
                 "duckdb": "CAST(a AS BLOB(4))",
                 "mysql": "CAST(a AS VARBINARY(4))",
                 "hive": "CAST(a AS BINARY(4))",
@@ -227,6 +230,7 @@ class TestDialect(Validator):
             "CAST(a AS STRING)",
             write={
                 "bigquery": "CAST(a AS STRING)",
+                "dameng": "CAST(a AS CLOB)",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS CHAR)",
@@ -246,6 +250,7 @@ class TestDialect(Validator):
             "CAST(a AS VARCHAR)",
             write={
                 "bigquery": "CAST(a AS STRING)",
+                "dameng": "CAST(a AS VARCHAR2)",
                 "drill": "CAST(a AS VARCHAR)",
                 "duckdb": "CAST(a AS TEXT)",
                 "mysql": "CAST(a AS CHAR)",
@@ -265,6 +270,7 @@ class TestDialect(Validator):
             "CAST(a AS VARCHAR(3))",
             write={
                 "bigquery": "CAST(a AS STRING)",
+                "dameng": "CAST(a AS VARCHAR2(3))",
                 "drill": "CAST(a AS VARCHAR(3))",
                 "duckdb": "CAST(a AS TEXT(3))",
                 "mysql": "CAST(a AS CHAR(3))",
@@ -284,6 +290,7 @@ class TestDialect(Validator):
             "CAST(a AS SMALLINT)",
             write={
                 "bigquery": "CAST(a AS INT64)",
+                "dameng": "CAST(a AS NUMBER)",
                 "drill": "CAST(a AS INTEGER)",
                 "duckdb": "CAST(a AS SMALLINT)",
                 "mysql": "CAST(a AS SMALLINT)",
@@ -319,6 +326,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "CAST(a AS FLOAT64)",
                 "clickhouse": "CAST(a AS Float64)",
+                "dameng": "CAST(a AS DOUBLE PRECISION)",
                 "drill": "CAST(a AS DOUBLE)",
                 "duckdb": "CAST(a AS DOUBLE)",
                 "mysql": "CAST(a AS DOUBLE)",
@@ -357,14 +365,26 @@ class TestDialect(Validator):
                 "mysql": "TIMESTAMP(a)",
             },
         )
-        self.validate_all("CAST(a AS TINYINT)", write={"oracle": "CAST(a AS NUMBER)"})
-        self.validate_all("CAST(a AS SMALLINT)", write={"oracle": "CAST(a AS NUMBER)"})
-        self.validate_all("CAST(a AS BIGINT)", write={"oracle": "CAST(a AS NUMBER)"})
-        self.validate_all("CAST(a AS INT)", write={"oracle": "CAST(a AS NUMBER)"})
+        self.validate_all("CAST(a AS TINYINT)", write={
+            "oracle": "CAST(a AS NUMBER)",
+            "dameng": "CAST(a AS NUMBER)"
+        })
+        self.validate_all("CAST(a AS SMALLINT)", write={
+            "oracle": "CAST(a AS NUMBER)",
+            "dameng": "CAST(a AS NUMBER)"
+        })
+        self.validate_all("CAST(a AS BIGINT)", write={
+            "oracle": "CAST(a AS NUMBER)",
+            "dameng": "CAST(a AS NUMBER)"})
+        self.validate_all("CAST(a AS INT)", write={
+            "oracle": "CAST(a AS NUMBER)",
+            "dameng": "CAST(a AS NUMBER)"})
         self.validate_all(
             "CAST(a AS DECIMAL)",
-            read={"oracle": "CAST(a AS NUMBER)"},
-            write={"oracle": "CAST(a AS NUMBER)"},
+            read={"oracle": "CAST(a AS NUMBER)",
+                  "dameng": "CAST(a AS NUMBER)"},
+            write={"oracle": "CAST(a AS NUMBER)",
+                   "dameng": "CAST(a AS NUMBER)"},
         )
         self.validate_all(
             "CAST('127.0.0.1/32' AS INET)",
@@ -416,6 +436,7 @@ class TestDialect(Validator):
             "SELECT DECODE(a, 1, 'one')",
             write={
                 "": "SELECT CASE WHEN a = 1 THEN 'one' END",
+                "dameng": "SELECT CASE WHEN a = 1 THEN 'one' END",
                 "oracle": "SELECT CASE WHEN a = 1 THEN 'one' END",
                 "redshift": "SELECT CASE WHEN a = 1 THEN 'one' END",
                 "snowflake": "SELECT CASE WHEN a = 1 THEN 'one' END",
@@ -426,6 +447,7 @@ class TestDialect(Validator):
             "SELECT DECODE(a, 1, 'one', 'default')",
             write={
                 "": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
+                "dameng": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
                 "oracle": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
                 "redshift": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
                 "snowflake": "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'default' END",
@@ -436,6 +458,7 @@ class TestDialect(Validator):
             "SELECT DECODE(a, NULL, 'null')",
             write={
                 "": "SELECT CASE WHEN a IS NULL THEN 'null' END",
+                "dameng": "SELECT CASE WHEN a IS NULL THEN 'null' END",
                 "oracle": "SELECT CASE WHEN a IS NULL THEN 'null' END",
                 "redshift": "SELECT CASE WHEN a IS NULL THEN 'null' END",
                 "snowflake": "SELECT CASE WHEN a IS NULL THEN 'null' END",
@@ -446,6 +469,7 @@ class TestDialect(Validator):
             "SELECT DECODE(a, b, c)",
             write={
                 "": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
+                "dameng": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
                 "oracle": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
                 "redshift": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
                 "snowflake": "SELECT CASE WHEN a = b OR (a IS NULL AND b IS NULL) THEN c END",
@@ -456,6 +480,7 @@ class TestDialect(Validator):
             "SELECT DECODE(tbl.col, 'some_string', 'foo')",
             write={
                 "": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
+                "dameng": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
                 "oracle": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
                 "redshift": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
                 "snowflake": "SELECT CASE WHEN tbl.col = 'some_string' THEN 'foo' END",
@@ -485,6 +510,7 @@ class TestDialect(Validator):
                 "": "SELECT NVL2(a, b, c)",
                 "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
                 "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
+                "dameng": "SELECT NVL2(a, b, c)",
                 "databricks": "SELECT NVL2(a, b, c)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b ELSE c END",
@@ -511,6 +537,7 @@ class TestDialect(Validator):
                 "": "SELECT NVL2(a, b)",
                 "bigquery": "SELECT CASE WHEN NOT a IS NULL THEN b END",
                 "clickhouse": "SELECT CASE WHEN NOT a IS NULL THEN b END",
+                "dameng": "SELECT NVL2(a, b)",
                 "databricks": "SELECT NVL2(a, b)",
                 "doris": "SELECT CASE WHEN NOT a IS NULL THEN b END",
                 "drill": "SELECT CASE WHEN NOT a IS NULL THEN b END",
@@ -551,6 +578,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_TIME('2020-01-01', '%Y-%m-%d')",
             write={
+                "dameng": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "drill": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
                 "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
                 "hive": "CAST('2020-01-01' AS TIMESTAMP)",
@@ -564,6 +592,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_TO_TIME(x, '%y')",
             write={
+                "dameng": "TO_TIMESTAMP(x, 'YY')",
                 "drill": "TO_TIMESTAMP(x, 'yy')",
                 "duckdb": "STRPTIME(x, '%y')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yy')) AS TIMESTAMP)",
@@ -620,6 +649,7 @@ class TestDialect(Validator):
             "TIME_TO_STR(x, '%Y-%m-%d')",
             write={
                 "bigquery": "FORMAT_DATE('%Y-%m-%d', x)",
+                "dameng": "TO_CHAR(x, 'YYYY-MM-DD')",
                 "drill": "TO_CHAR(x, 'yyyy-MM-dd')",
                 "duckdb": "STRFTIME(x, '%Y-%m-%d')",
                 "hive": "DATE_FORMAT(x, 'yyyy-MM-dd')",
@@ -695,6 +725,7 @@ class TestDialect(Validator):
         self.validate_all(
             "UNIX_TO_TIME(x)",
             write={
+                "dameng": "TO_DATE('1970-01-01','YYYY-MM-DD') + (x / 86400)",
                 "duckdb": "TO_TIMESTAMP(x)",
                 "hive": "FROM_UNIXTIME(x)",
                 "oracle": "TO_DATE('1970-01-01','YYYY-MM-DD') + (x / 86400)",
@@ -1080,6 +1111,7 @@ class TestDialect(Validator):
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={
                 "bigquery": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
+                "dameng": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
                 "duckdb": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC, lname NULLS FIRST",
                 "oracle": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
                 "presto": "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC, lname NULLS FIRST",
@@ -1099,6 +1131,7 @@ class TestDialect(Validator):
                 "doris": "x -> 'y'",
             },
             write={
+                "dameng": "JSON_EXTRACT(x, 'y')",
                 "mysql": "JSON_EXTRACT(x, 'y')",
                 "oracle": "JSON_EXTRACT(x, 'y')",
                 "postgres": "x -> 'y'",
@@ -1315,6 +1348,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "LOWER(x) LIKE '%y'",
                 "clickhouse": "x ILIKE '%y'",
+                "dameng": "LOWER(x) LIKE '%y'",
                 "drill": "x `ILIKE` '%y'",
                 "duckdb": "x ILIKE '%y'",
                 "hive": "LOWER(x) LIKE '%y'",
@@ -1504,6 +1538,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "a / b",
                 "clickhouse": "a / b",
+                "dameng": "a / b",
                 "databricks": "a / b",
                 "duckdb": "a / b",
                 "hive": "a / b",
@@ -1583,6 +1618,7 @@ class TestDialect(Validator):
                 "snowflake": "SELECT TOP 10 x FROM y",
             },
             write={
+                "dameng": "SELECT x FROM y FETCH FIRST 10 ROWS ONLY",
                 "sqlite": "SELECT x FROM y LIMIT 10",
                 "oracle": "SELECT x FROM y FETCH FIRST 10 ROWS ONLY",
                 "tsql": "SELECT TOP 10 x FROM y",
@@ -1591,6 +1627,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT x FROM y LIMIT 10 OFFSET 5",
             write={
+                "dameng": "SELECT x FROM y OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY",
                 "sqlite": "SELECT x FROM y LIMIT 10 OFFSET 5",
                 "oracle": "SELECT x FROM y OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY",
             },
@@ -1598,6 +1635,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT x FROM y OFFSET 10 FETCH FIRST 3 ROWS ONLY",
             write={
+                "dameng": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
                 "sqlite": "SELECT x FROM y LIMIT 3 OFFSET 10",
                 "oracle": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
             },
@@ -1605,6 +1643,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
             write={
+                "dameng": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
                 "oracle": "SELECT x FROM y OFFSET 10 ROWS FETCH FIRST 3 ROWS ONLY",
             },
         )
@@ -1632,6 +1671,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CREATE TABLE t (c CHAR, nc NCHAR, v1 VARCHAR, v2 VARCHAR2, nv NVARCHAR, nv2 NVARCHAR2)",
             write={
+                "dameng": "CREATE TABLE t (c CHAR, nc NCHAR, v1 VARCHAR2, v2 VARCHAR2, nv NVARCHAR2, nv2 NVARCHAR2)",
                 "duckdb": "CREATE TABLE t (c TEXT, nc TEXT, v1 TEXT, v2 TEXT, nv TEXT, nv2 TEXT)",
                 "hive": "CREATE TABLE t (c CHAR, nc CHAR, v1 STRING, v2 STRING, nv STRING, nv2 STRING)",
                 "oracle": "CREATE TABLE t (c CHAR, nc NCHAR, v1 VARCHAR2, v2 VARCHAR2, nv NVARCHAR2, nv2 NVARCHAR2)",
@@ -1673,6 +1713,7 @@ class TestDialect(Validator):
         self.validate_all(
             "CREATE TABLE t (b1 BINARY, b2 BINARY(1024), c1 TEXT, c2 TEXT(1024))",
             write={
+                "dameng": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
                 "duckdb": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 TEXT, c2 TEXT(1024))",
                 "hive": "CREATE TABLE t (b1 BINARY, b2 BINARY(1024), c1 STRING, c2 VARCHAR(1024))",
                 "oracle": "CREATE TABLE t (b1 BLOB, b2 BLOB(1024), c1 CLOB, c2 CLOB(1024))",
@@ -1708,6 +1749,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT a AS b FROM x GROUP BY b",
             write={
+                "dameng": "SELECT a AS b FROM x GROUP BY 1",
                 "drill": "SELECT a AS b FROM x GROUP BY b",
                 "duckdb": "SELECT a AS b FROM x GROUP BY b",
                 "presto": "SELECT a AS b FROM x GROUP BY 1",
@@ -1720,6 +1762,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT y x FROM my_table t",
             write={
+                "dameng": "SELECT y AS x FROM my_table t",
                 "drill": "SELECT y AS x FROM my_table AS t",
                 "hive": "SELECT y AS x FROM my_table AS t",
                 "oracle": "SELECT y AS x FROM my_table t",
@@ -1730,6 +1773,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
             write={
+                "dameng": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
                 "drill": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
                 "hive": "SELECT * FROM (SELECT * FROM my_table AS t) AS tbl",
                 "oracle": "SELECT * FROM (SELECT * FROM my_table t) tbl",
@@ -1740,6 +1784,7 @@ class TestDialect(Validator):
         self.validate_all(
             "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
             write={
+                "dameng": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
                 "hive": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
                 "oracle": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
                 "postgres": "WITH cte1 AS (SELECT a, b FROM table1), cte2 AS (SELECT c, e AS d FROM table2) SELECT b, d AS dd FROM cte1 AS t CROSS JOIN cte2 WHERE cte1.a = cte2.c",
@@ -1891,6 +1936,7 @@ SELECT
             "SUBSTR('123456', 2, 3)",
             write={
                 "bigquery": "SUBSTR('123456', 2, 3)",
+                "dameng": "SUBSTR('123456', 2, 3)",
                 "oracle": "SUBSTR('123456', 2, 3)",
                 "postgres": "SUBSTR('123456', 2, 3)",
             },
@@ -1899,6 +1945,7 @@ SELECT
             "SUBSTRING('123456', 2, 3)",
             write={
                 "bigquery": "SUBSTRING('123456', 2, 3)",
+                "dameng": "SUBSTR('123456', 2, 3)",
                 "oracle": "SUBSTR('123456', 2, 3)",
                 "postgres": "SUBSTRING('123456' FROM 2 FOR 3)",
             },
@@ -1931,6 +1978,7 @@ SELECT
             "LOG(b, n)",
             read={
                 "bigquery": "LOG(n, b)",
+                "dameng": "LOG(b, n)",
                 "databricks": "LOG(b, n)",
                 "drill": "LOG(b, n)",
                 "hive": "LOG(b, n)",
@@ -1982,6 +2030,7 @@ SELECT
             "CAST(x AS some_udt)",
             write={
                 "": "CAST(x AS some_udt)",
+                "dameng": "CAST(x AS some_udt)",
                 "oracle": "CAST(x AS some_udt)",
                 "postgres": "CAST(x AS some_udt)",
                 "presto": "CAST(x AS some_udt)",
@@ -1997,6 +2046,7 @@ SELECT
         self.validate_all(
             "SELECT * FROM t QUALIFY COUNT(*) OVER () > 1",
             write={
+                "dameng": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) _t WHERE _w > 1",
                 "duckdb": "SELECT * FROM t QUALIFY COUNT(*) OVER () > 1",
                 "snowflake": "SELECT * FROM t QUALIFY COUNT(*) OVER () > 1",
                 "clickhouse": "SELECT * FROM (SELECT *, COUNT(*) OVER () AS _w FROM t) AS _t WHERE _w > 1",
@@ -2098,6 +2148,7 @@ SELECT
             write={
                 "bigquery": "RAND()",
                 "clickhouse": "randCanonical()",
+                "dameng": "RAND()",
                 "databricks": "RAND()",
                 "doris": "RAND()",
                 "drill": "RAND()",
@@ -2114,6 +2165,7 @@ SELECT
             read={
                 "bigquery": "RAND()",
                 "clickhouse": "randCanonical()",
+                "dameng": "RAND()",
                 "databricks": "RAND()",
                 "doris": "RAND()",
                 "drill": "RAND()",

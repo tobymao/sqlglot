@@ -27,6 +27,7 @@ class Dialects(str, Enum):
 
     BIGQUERY = "bigquery"
     CLICKHOUSE = "clickhouse"
+    DAMENG = "dameng"
     DATABRICKS = "databricks"
     DORIS = "doris"
     DRILL = "drill"

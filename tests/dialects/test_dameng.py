@@ -1,5 +1,6 @@
 from tests.dialects.test_dialect import Validator
 
+
 class TestDameng(Validator):
     dialect = "Dameng"
 

@@ -62,9 +62,9 @@ dialect implementations in order to understand how their various components can 
 
 from sqlglot.dialects.bigquery import BigQuery
 from sqlglot.dialects.clickhouse import ClickHouse
+from sqlglot.dialects.dameng import Dameng
 from sqlglot.dialects.databricks import Databricks
 from sqlglot.dialects.dialect import Dialect, Dialects
-from sqlglot.dialects.dameng import Dameng
 from sqlglot.dialects.doris import Doris
 from sqlglot.dialects.drill import Drill
 from sqlglot.dialects.duckdb import DuckDB

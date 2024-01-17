@@ -1461,6 +1461,14 @@ MATCH_RECOGNIZE (
             'SHOW TERSE PRIMARY KEYS IN "TEST"."PUBLIC"."customers"',
             'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."customers"',
         )
+        self.validate_identity(
+            "SHOW TERSE SCHEMAS IN DATABASE db1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
+            "SHOW TERSE SCHEMAS IN DATABASE db1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
+        )
+        # self.validate_identity(
+        #     "SHOW TERSE OBJECTS IN db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
+        #     "SHOW TERSE OBJECTS IN db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
+        # )
 
         ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
         table = ast.find(exp.Table)
@@ -1480,6 +1488,14 @@ MATCH_RECOGNIZE (
         self.assertEqual(table.sql(dialect="snowflake"), "dt_test")
 
         self.assertEqual(literal.sql(dialect="snowflake"), "'_testing%'")
+
+        ast = parse_one("SHOW SCHEMAS IN DATABASE db1", read="snowflake")
+        table = ast.find(exp.Table)
+        self.assertEqual(table.sql(dialect="snowflake"), "db1")
+
+        # ast = parse_one("SHOW OBJECTS IN db1.schema1", read="snowflake")
+        # table = ast.find(exp.Table)
+        # self.assertEqual(table.sql(dialect="snowflake"), "db1")
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")

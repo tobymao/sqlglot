@@ -501,6 +501,10 @@ class Snowflake(Dialect):
         }
 
         SHOW_PARSERS = {
+            "SCHEMAS": _show_parser("SCHEMAS"),
+            "TERSE SCHEMAS": _show_parser("SCHEMAS"),
+            "OBJECTS": _show_parser("SCHEMAS"),
+            "TERSE OBJECTS": _show_parser("OBJECTS"),
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "COLUMNS": _show_parser("COLUMNS"),
@@ -610,6 +614,10 @@ class Snowflake(Dialect):
             scope = None
             scope_kind = None
 
+            # will identity SHOW TERSE SCHEMAS but not SHOW TERSE PRIMARY KEYS
+            # which is syntactically valid but has no effect on the output
+            terse = self._tokens[self._index - 2].token_type == TokenType.TERSE
+
             like = self._parse_string() if self._match(TokenType.LIKE) else None
 
             if self._match(TokenType.IN):
@@ -623,8 +631,22 @@ class Snowflake(Dialect):
                     scope_kind = "TABLE"
                     scope = self._parse_table()
 
+            starts_with = self._parse_string() if self._match(TokenType.STARTS_WITH) else None
+
+            limit = self._parse_limit()
+
+            from_ = self._parse_string() if self._match(TokenType.FROM) else None
+
             return self.expression(
-                exp.Show, this=this, like=like, scope=scope, scope_kind=scope_kind
+                exp.Show,
+                terse=terse,
+                this=this,
+                like=like,
+                scope=scope,
+                scope_kind=scope_kind,
+                starts_with=starts_with,
+                limit=limit,
+                from_=from_,
             )
 
         def _parse_alter_table_swap(self) -> exp.SwapTable:
@@ -850,6 +872,7 @@ class Snowflake(Dialect):
             return f"{explode}{alias}"
 
         def show_sql(self, expression: exp.Show) -> str:
+            terse = "TERSE " if expression.args.get("terse") else ""
             like = self.sql(expression, "like")
             like = f" LIKE {like}" if like else ""
 
@@ -860,7 +883,19 @@ class Snowflake(Dialect):
             if scope_kind:
                 scope_kind = f" IN {scope_kind}"
 
-            return f"SHOW {expression.name}{like}{scope_kind}{scope}"
+            starts_with = self.sql(expression, "starts_with")
+            if starts_with:
+                starts_with = f" STARTS WITH {starts_with}"
+
+            limit = self.sql(expression, "limit")
+
+            from_ = self.sql(expression, "from_")
+            if from_:
+                from_ = f" FROM {from_}"
+
+            return (
+                f"SHOW {terse}{expression.name}{like}{scope_kind}{scope}{starts_with}{limit}{from_}"
+            )
 
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             # Other dialects don't support all of the following parameters, so we need to

@@ -2,7 +2,7 @@ from tests.dialects.test_dialect import Validator
 
 
 class TestDameng(Validator):
-    dialect = "Dameng"
+    dialect = "dameng"
 
     def test_dameng(self):
         self.validate_identity("REGEXP_REPLACE('source', 'search')")

@@ -3476,7 +3476,10 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
             return None
 
-        unit = self._parse_function() or self._parse_var(any_token=True, upper=True)
+        unit = self._parse_function() or (
+            not self._match(TokenType.ALIAS, advance=False)
+            and self._parse_var(any_token=True, upper=True)
+        )
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile

@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     format_time_lambda,
     max_or_greatest,
+    merge_without_target_sql,
     min_or_least,
     no_last_day_sql,
     no_map_from_entries_sql,
@@ -20,7 +21,6 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_trycast_sql,
     parse_timestamp_trunc,
-    remove_target_from_merge,
     rename_func,
     str_position_sql,
     struct_extract_sql,
@@ -414,7 +414,7 @@ class Postgres(Dialect):
             exp.Max: max_or_greatest,
             exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
-            exp.Merge: remove_target_from_merge,
+            exp.Merge: merge_without_target_sql,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]

@@ -4,7 +4,7 @@ import typing as t
 from enum import Enum, auto
 from functools import reduce
 
-from sqlglot import exp, transforms
+from sqlglot import exp
 from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
@@ -995,31 +995,27 @@ def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
     return self.sql(exp.cast(minus_one_day, "date"))
 
 
-def remove_target_from_merge(self: Generator, expression: exp.Merge) -> str:
-    def _remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
-        """Remove table refs from columns in when statements."""
-        if isinstance(expression, exp.Merge):
-            alias = expression.this.args.get("alias")
+def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
+    """Remove table refs from columns in when statements."""
+    alias = expression.this.args.get("alias")
 
-            normalize = (
-                lambda identifier: self.dialect.normalize_identifier(identifier).name
-                if identifier
-                else None
-            )
+    normalize = (
+        lambda identifier: self.dialect.normalize_identifier(identifier).name
+        if identifier
+        else None
+    )
 
-            targets = {normalize(expression.this.this)}
+    targets = {normalize(expression.this.this)}
 
-            if alias:
-                targets.add(normalize(alias.this))
+    if alias:
+        targets.add(normalize(alias.this))
 
-            for when in expression.expressions:
-                when.transform(
-                    lambda node: exp.column(node.this)
-                    if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
-                    else node,
-                    copy=False,
-                )
+    for when in expression.expressions:
+        when.transform(
+            lambda node: exp.column(node.this)
+            if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
+            else node,
+            copy=False,
+        )
 
-        return expression
-
-    return transforms.preprocess([_remove_target_from_merge])(self, expression)
+    return self.merge_sql(expression)

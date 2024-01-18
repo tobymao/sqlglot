@@ -1,6 +1,63 @@
 Changelog
 =========
 
+## [v20.9.0] - 2024-01-18
+### :boom: BREAKING CHANGES
+- due to [`1be93e4`](https://github.com/tobymao/sqlglot/commit/1be93e45d8347e5fa8a4e39dad625c6dd66ea461) - properly support all unix time scales *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  properly support all unix time scales
+
+
+### :sparkles: New Features
+- [`816976f`](https://github.com/tobymao/sqlglot/commit/816976f52865fb8ade580c727a890a90378c8e50) - extend submodule annotate_types to handle STRUCT *(PR [#2783](https://github.com/tobymao/sqlglot/pull/2783) by [@fool1280](https://github.com/fool1280))*
+- [`7bce2f6`](https://github.com/tobymao/sqlglot/commit/7bce2f6abe79dfd8064c625294d94364042207c5) - **oracle**: add support for ORDER SIBLINGS BY clause *(PR [#2821](https://github.com/tobymao/sqlglot/pull/2821) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2819](undefined) opened by [@Shweta-BI-Lead](https://github.com/Shweta-BI-Lead)*
+- [`ce8d254`](https://github.com/tobymao/sqlglot/commit/ce8d254305f56724982eed8e099ab1abeb8750a1) - **snowflake**: parse RM/REMOVE as commands *(PR [#2825](https://github.com/tobymao/sqlglot/pull/2825) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2824](undefined) opened by [@sfc-gh-jlambert](https://github.com/sfc-gh-jlambert)*
+- [`1902778`](https://github.com/tobymao/sqlglot/commit/19027786facf8ff730af49c1693149e244502cb0) - add support for multi-unit intervals *(PR [#2822](https://github.com/tobymao/sqlglot/pull/2822) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2793](undefined) opened by [@nikmalviya](https://github.com/nikmalviya)*
+- [`a537898`](https://github.com/tobymao/sqlglot/commit/a53789840b56be747fa5d670a9d5ea120aee371a) - add support for DESCRIBE EXTENDED *(PR [#2828](https://github.com/tobymao/sqlglot/pull/2828) by [@georgesittas](https://github.com/georgesittas))*
+- [`6e50759`](https://github.com/tobymao/sqlglot/commit/6e50759fb19c8d00825f626fb8c1ab6792fabd56) - **clickhouse**: support Date32 type *(PR [#2830](https://github.com/tobymao/sqlglot/pull/2830) by [@pkit](https://github.com/pkit))*
+- [`9560e8f`](https://github.com/tobymao/sqlglot/commit/9560e8fa93d6ac7f4f015bd55091d2fe75e85508) - add support for Heredocs in Databricks Python UDFs *(PR [#2801](https://github.com/tobymao/sqlglot/pull/2801) by [@viethungle-vt1401](https://github.com/viethungle-vt1401))*
+- [`52ed590`](https://github.com/tobymao/sqlglot/commit/52ed590b0fa75ef8a9f6e4cb2fb48b4fff65996f) - transpile SELECT .. INTO to dialects that do not support it *(PR [#2820](https://github.com/tobymao/sqlglot/pull/2820) by [@giorgosnikolaou](https://github.com/giorgosnikolaou))*
+- [`ea536c4`](https://github.com/tobymao/sqlglot/commit/ea536c4bd7bae0b2916d4bdf9a0ae6a7c5106135) - remove target alias in trino merge *(PR [#2852](https://github.com/tobymao/sqlglot/pull/2852) by [@eakmanrq](https://github.com/eakmanrq))*
+
+### :bug: Bug Fixes
+- [`6ddbefc`](https://github.com/tobymao/sqlglot/commit/6ddbefcb08ef933454ff8501ac4a3ea4cba2fe60) - **snowflake**: apply range parser after colon, if any *(PR [#2800](https://github.com/tobymao/sqlglot/pull/2800) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2798](undefined) opened by [@mbarugelCA](https://github.com/mbarugelCA)*
+- [`0c4f44e`](https://github.com/tobymao/sqlglot/commit/0c4f44e8027b28613c72285313493c4683c65275) - **oracle**: regexp_replace replacement is optional closes [#2803](https://github.com/tobymao/sqlglot/pull/2803) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5072d5a`](https://github.com/tobymao/sqlglot/commit/5072d5af9a9f629e857071a66228317afd89b1a6) - **oracle**: improve parsing of JSON_OBJECT[AGG] functions *(PR [#2807](https://github.com/tobymao/sqlglot/pull/2807) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2806](undefined) opened by [@Shweta-BI-Lead](https://github.com/Shweta-BI-Lead)*
+- [`ea39f10`](https://github.com/tobymao/sqlglot/commit/ea39f10150916f2624cb6efcefb6752154c2f88c) - **optimizer**: pushdown predicates more conservatively to avoid DAG cycles *(PR [#2808](https://github.com/tobymao/sqlglot/pull/2808) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2797](undefined) opened by [@Konntroll](https://github.com/Konntroll)*
+- [`ea58003`](https://github.com/tobymao/sqlglot/commit/ea58003caeed17861085825c19a1a5823e065691) - **snowflake**: insert overwrite into closes [#2815](https://github.com/tobymao/sqlglot/pull/2815) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`d5fa5be`](https://github.com/tobymao/sqlglot/commit/d5fa5be010a2656ead5524a0d756da6e25ab31dc) - **optimizer**: handle table alias columns for (UN)PIVOTs *(PR [#2816](https://github.com/tobymao/sqlglot/pull/2816) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2791](undefined) opened by [@billstark](https://github.com/billstark)*
+- [`24177f3`](https://github.com/tobymao/sqlglot/commit/24177f39b448490618d3b04f8b8ad75ec2069fd3) - unnest star expansion closes [#2811](https://github.com/tobymao/sqlglot/pull/2811) *(PR [#2818](https://github.com/tobymao/sqlglot/pull/2818) by [@tobymao](https://github.com/tobymao))*
+- [`3dba6c1`](https://github.com/tobymao/sqlglot/commit/3dba6c194e2fff90f93f0370255a94a1b2a2365a) - add parentheses to no_safe_divide args *(PR [#2826](https://github.com/tobymao/sqlglot/pull/2826) by [@j1ah0ng](https://github.com/j1ah0ng))*
+- [`ed68d6b`](https://github.com/tobymao/sqlglot/commit/ed68d6be51e8054eaf8b7bf64048f20c999c6cd2) - **clickhouse**: add ipv4/6 data type parser *(PR [#2829](https://github.com/tobymao/sqlglot/pull/2829) by [@pkit](https://github.com/pkit))*
+- [`70b280f`](https://github.com/tobymao/sqlglot/commit/70b280f24df0f4a0d4cc8262d72ce46412f76be3) - allow insert columns to have spaces *(commit by [@tobymao](https://github.com/tobymao))*
+- [`57917b8`](https://github.com/tobymao/sqlglot/commit/57917b88ddd9d7d85bc76fc8cb46ffcbf228453d) - **oracle**: TO_TIMESTAMP not parsed as StrToTime *(PR [#2833](https://github.com/tobymao/sqlglot/pull/2833) by [@pkit](https://github.com/pkit))*
+  - :arrow_lower_right: *fixes issue [#2831](undefined) opened by [@Rhiyo](https://github.com/Rhiyo)*
+- [`9960e11`](https://github.com/tobymao/sqlglot/commit/9960e114818640f26aaa6d911ad3e7ee53df1842) - **optimizer**: annotate struct value without alias correctly *(PR [#2812](https://github.com/tobymao/sqlglot/pull/2812) by [@fool1280](https://github.com/fool1280))*
+- [`a6d396b`](https://github.com/tobymao/sqlglot/commit/a6d396b79cfa199a66b04af9ed62bcd7cd619096) - **doris**: add transformation of aggregation function and last_day function *(PR [#2835](https://github.com/tobymao/sqlglot/pull/2835) by [@echo-hhj](https://github.com/echo-hhj))*
+- [`8cc252b`](https://github.com/tobymao/sqlglot/commit/8cc252b61b418004bbd6380a8447cb383cf51282) - interval without unit alias closes [#2838](https://github.com/tobymao/sqlglot/pull/2838) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`607817f`](https://github.com/tobymao/sqlglot/commit/607817f7e43edefe0a077bfeb81a77dd78e170e5) - schema with period name closes [#2842](https://github.com/tobymao/sqlglot/pull/2842) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`1be93e4`](https://github.com/tobymao/sqlglot/commit/1be93e45d8347e5fa8a4e39dad625c6dd66ea461) - properly support all unix time scales *(commit by [@tobymao](https://github.com/tobymao))*
+- [`a657fc0`](https://github.com/tobymao/sqlglot/commit/a657fc0ea21aff7452f292fecfcb4bc08ca2e4e9) - **clickhouse,doris**: fix the transformation of ArraySum *(PR [#2843](https://github.com/tobymao/sqlglot/pull/2843) by [@echo-hhj](https://github.com/echo-hhj))*
+- [`c92888c`](https://github.com/tobymao/sqlglot/commit/c92888c6b49d2ba60ce789281535679fd93cd235) - **parser**: fix order of query modifier parsing for nested subqueries *(PR [#2851](https://github.com/tobymao/sqlglot/pull/2851) by [@georgesittas](https://github.com/georgesittas))*
+- [`7949a4f`](https://github.com/tobymao/sqlglot/commit/7949a4f295fc0a9f0becca9b6460f8517ec733f1) - **clickhouse**: ensure arraySum generation is preserved, add tests *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`17a6ac6`](https://github.com/tobymao/sqlglot/commit/17a6ac6f5fb96a42668842b093a823662b5850b8) - move comment in expr as alias next to the alias *(PR [#2853](https://github.com/tobymao/sqlglot/pull/2853) by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`9e5ae50`](https://github.com/tobymao/sqlglot/commit/9e5ae50e02879cfb4915584df90f8dcfadbca321) - use flag instead of regex *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5c13a1e`](https://github.com/tobymao/sqlglot/commit/5c13a1e8e2ede284d12920734cea8ff82ebaf054) - simplify merge without target transformation *(PR [#2854](https://github.com/tobymao/sqlglot/pull/2854) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`5996a69`](https://github.com/tobymao/sqlglot/commit/5996a6949979dcfceee133f943a010ec4820e808) - **presto**: get rid of assert in ELEMENT_AT parser *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`f9a02ec`](https://github.com/tobymao/sqlglot/commit/f9a02ecc44f4d0139aae5edda922cc95d4a3e892) - fix table, column instantiation in schema normalization tests *(PR [#2817](https://github.com/tobymao/sqlglot/pull/2817) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v20.8.0] - 2024-01-08
 ### :boom: BREAKING CHANGES
 - due to [`68e1214`](https://github.com/tobymao/sqlglot/commit/68e121462b2c3dc388f3ae0d1d392ee8afc63133) - column field typing *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -2387,3 +2444,4 @@ Changelog
 [v20.6.0]: https://github.com/tobymao/sqlglot/compare/v20.5.0...v20.6.0
 [v20.7.1]: https://github.com/tobymao/sqlglot/compare/v20.6.0...v20.7.1
 [v20.8.0]: https://github.com/tobymao/sqlglot/compare/v20.7.1...v20.8.0
+[v20.9.0]: https://github.com/tobymao/sqlglot/compare/v20.8.0...v20.9.0

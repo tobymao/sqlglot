@@ -169,15 +169,8 @@ def _unix_to_time_sql(self: Presto.Generator, expression: exp.UnixToTime) -> str
     timestamp = self.sql(expression, "this")
     if scale in (None, exp.UnixToTime.SECONDS):
         return rename_func("FROM_UNIXTIME")(self, expression)
-    if scale == exp.UnixToTime.MILLIS:
-        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000)"
-    if scale == exp.UnixToTime.MICROS:
-        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000000)"
-    if scale == exp.UnixToTime.NANOS:
-        return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / 1000000000)"
 
-    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
-    return ""
+    return f"FROM_UNIXTIME(CAST({timestamp} AS DOUBLE) / POW(10, {scale}))"
 
 
 def _to_int(expression: exp.Expression) -> exp.Expression:

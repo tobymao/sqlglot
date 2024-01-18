@@ -345,7 +345,7 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "SELECT TIMESTAMP_MICROS(x)",
                 "duckdb": "SELECT MAKE_TIMESTAMP(x)",
-                "snowflake": "SELECT TO_TIMESTAMP(x / 1000, 3)",
+                "snowflake": "SELECT TO_TIMESTAMP(x, 6)",
                 "spark": "SELECT TIMESTAMP_MICROS(x)",
             },
         )

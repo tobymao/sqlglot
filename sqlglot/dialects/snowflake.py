@@ -39,21 +39,7 @@ def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, 
         if second_arg.is_string:
             # case: <string_expr> [ , <format> ]
             return format_time_lambda(exp.StrToTime, "snowflake")(args)
-
-        # case: <numeric_expr> [ , <scale> ]
-        if second_arg.name not in ["0", "3", "9"]:
-            raise ValueError(
-                f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
-            )
-
-        if second_arg.name == "0":
-            timescale = exp.UnixToTime.SECONDS
-        elif second_arg.name == "3":
-            timescale = exp.UnixToTime.MILLIS
-        elif second_arg.name == "9":
-            timescale = exp.UnixToTime.NANOS
-
-        return exp.UnixToTime(this=first_arg, scale=timescale)
+        return exp.UnixToTime(this=first_arg, scale=second_arg)
 
     from sqlglot.optimizer.simplify import simplify_literals
 
@@ -93,22 +79,6 @@ def _parse_datediff(args: t.List) -> exp.DateDiff:
     return exp.DateDiff(
         this=seq_get(args, 2), expression=seq_get(args, 1), unit=_map_date_part(seq_get(args, 0))
     )
-
-
-def _unix_to_time_sql(self: Snowflake.Generator, expression: exp.UnixToTime) -> str:
-    scale = expression.args.get("scale")
-    timestamp = self.sql(expression, "this")
-    if scale in (None, exp.UnixToTime.SECONDS):
-        return f"TO_TIMESTAMP({timestamp})"
-    if scale == exp.UnixToTime.MILLIS:
-        return f"TO_TIMESTAMP({timestamp}, 3)"
-    if scale == exp.UnixToTime.MICROS:
-        return f"TO_TIMESTAMP({timestamp} / 1000, 3)"
-    if scale == exp.UnixToTime.NANOS:
-        return f"TO_TIMESTAMP({timestamp}, 9)"
-
-    self.unsupported(f"Unsupported scale for timestamp: {scale}.")
-    return ""
 
 
 # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
@@ -775,7 +745,7 @@ class Snowflake(Dialect):
             exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
             exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
-            exp.UnixToTime: _unix_to_time_sql,
+            exp.UnixToTime: rename_func("TO_TIMESTAMP"),
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: rename_func("BOOLXOR"),

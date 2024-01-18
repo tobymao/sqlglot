@@ -5365,10 +5365,16 @@ class UnixToStr(Func):
 class UnixToTime(Func):
     arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False}
 
-    SECONDS = Literal.string("seconds")
-    MILLIS = Literal.string("millis")
-    MICROS = Literal.string("micros")
-    NANOS = Literal.string("nanos")
+    SECONDS = Literal.number(0)
+    DECIS = Literal.number(1)
+    CENTIS = Literal.number(2)
+    MILLIS = Literal.number(3)
+    DECIMILLIS = Literal.number(4)
+    CENTIMILLIS = Literal.number(5)
+    MICROS = Literal.number(6)
+    DECIMICROS = Literal.number(7)
+    CENTIMICROS = Literal.number(8)
+    NANOS = Literal.number(9)
 
 
 class UnixToTimeStr(Func):

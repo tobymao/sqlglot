@@ -261,7 +261,7 @@ class Generator:
     # Whether or not the SELECT .. INTO syntax is used instead of CTAS
     SUPPORTS_SELECT_INTO = False
 
-    # Whether UNLOGGED tables are allowed
+    # Whether or not UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
 
     TYPE_MAPPING = {

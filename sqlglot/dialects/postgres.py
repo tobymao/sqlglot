@@ -397,6 +397,9 @@ class Postgres(Dialect):
         PARAMETER_TOKEN = "$"
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
+        SUPPORTS_SELECT_INTO = True
+        # https://www.postgresql.org/docs/current/sql-createtable.html
+        SUPPORTS_UNLOGGED_TABLES = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

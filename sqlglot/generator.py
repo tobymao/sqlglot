@@ -258,6 +258,12 @@ class Generator:
     # INSERT OVERWRITE TABLE x override
     INSERT_OVERWRITE = " OVERWRITE TABLE"
 
+    # Whether or not the SELECT .. INTO syntax is used instead of CTAS
+    SUPPORTS_SELECT_INTO = False
+
+    # Whether UNLOGGED tables are allowed
+    SUPPORTS_UNLOGGED_TABLES = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2025,6 +2031,10 @@ class Generator:
         return [locks, self.sql(expression, "sample")]
 
     def select_sql(self, expression: exp.Select) -> str:
+        into = expression.args.get("into")
+        if not self.SUPPORTS_SELECT_INTO and into:
+            into.pop()
+
         hint = self.sql(expression, "hint")
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
@@ -2069,7 +2079,19 @@ class Generator:
             self.sql(expression, "into", comment=False),
             self.sql(expression, "from", comment=False),
         )
-        return self.prepend_ctes(expression, sql)
+
+        sql = self.prepend_ctes(expression, sql)
+
+        if not self.SUPPORTS_SELECT_INTO and into:
+            if into.args.get("temporary"):
+                table_kind = " TEMPORARY"
+            elif self.SUPPORTS_UNLOGGED_TABLES and into.args.get("unlogged"):
+                table_kind = " UNLOGGED"
+            else:
+                table_kind = ""
+            sql = f"CREATE{table_kind} TABLE {self.sql(into.this)} AS {sql}"
+
+        return sql
 
     def schema_sql(self, expression: exp.Schema) -> str:
         this = self.sql(expression, "this")

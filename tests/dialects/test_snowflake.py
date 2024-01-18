@@ -579,6 +579,14 @@ WHERE
             },
         )
         self.validate_all(
+            "SELECT TO_TIMESTAMP(16599817290000, 4)",
+            write={
+                "bigquery": "SELECT TIMESTAMP_SECONDS(CAST(16599817290000 / POW(10, 4) AS INT64))",
+                "snowflake": "SELECT TO_TIMESTAMP(16599817290000, 4)",
+                "spark": "SELECT TIMESTAMP_SECONDS(16599817290000 / POW(10, 4))",
+            },
+        )
+        self.validate_all(
             "SELECT TO_TIMESTAMP('1659981729')",
             write={
                 "snowflake": "SELECT TO_TIMESTAMP('1659981729')",
@@ -588,11 +596,11 @@ WHERE
         self.validate_all(
             "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
             write={
-                "bigquery": "SELECT TIMESTAMP_MICROS(CAST(1659981729000000000 / 1000 AS INT64))",
-                "duckdb": "SELECT TO_TIMESTAMP(1659981729000000000 / 1000000000)",
-                "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / 1000000000)",
+                "bigquery": "SELECT TIMESTAMP_SECONDS(CAST(1659981729000000000 / POW(10, 9) AS INT64))",
+                "duckdb": "SELECT TO_TIMESTAMP(1659981729000000000 / POW(10, 9))",
+                "presto": "SELECT FROM_UNIXTIME(CAST(1659981729000000000 AS DOUBLE) / POW(10, 9))",
                 "snowflake": "SELECT TO_TIMESTAMP(1659981729000000000, 9)",
-                "spark": "SELECT TIMESTAMP_SECONDS(1659981729000000000 / 1000000000)",
+                "spark": "SELECT TIMESTAMP_SECONDS(1659981729000000000 / POW(10, 9))",
             },
         )
         self.validate_all(

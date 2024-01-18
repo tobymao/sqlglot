@@ -40,23 +40,18 @@ def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, 
             # case: <string_expr> [ , <format> ]
             return format_time_lambda(exp.StrToTime, "snowflake")(args)
 
-        timescale = None
-        try:
-            timescale_idx = int(second_arg.name)
-            timescale = [
-                exp.UnixToTime.SECONDS,
-                exp.UnixToTime.DECIS,
-                exp.UnixToTime.CENTIS,
-                exp.UnixToTime.MILLIS,
-                exp.UnixToTime.DECIMILLIS,
-                exp.UnixToTime.CENTIMILLIS,
-                exp.UnixToTime.MICROS,
-                exp.UnixToTime.DECIMICROS,
-                exp.UnixToTime.CENTIMICROS,
-                exp.UnixToTime.NANOS,
-            ][timescale_idx]
-        except (ValueError, IndexError):
-            pass
+        # case: <numeric_expr> [ , <scale> ]
+        if second_arg.name not in ["0", "3", "9"]:
+            raise ValueError(
+                f"Scale for snowflake numeric timestamp is {second_arg}, but should be 0, 3, or 9"
+            )
+
+        if second_arg.name == "0":
+            timescale = exp.UnixToTime.SECONDS
+        elif second_arg.name == "3":
+            timescale = exp.UnixToTime.MILLIS
+        elif second_arg.name == "9":
+            timescale = exp.UnixToTime.NANOS
 
         return exp.UnixToTime(this=first_arg, scale=timescale)
 

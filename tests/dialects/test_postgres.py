@@ -74,6 +74,12 @@ class TestPostgres(Validator):
             "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
             "CREATE TABLE test (x TIMESTAMP[][])",
         )
+        self.validate_identity(
+            "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
+        )
+        self.validate_identity(
+            "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp"
+        )
 
         self.validate_all(
             "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",

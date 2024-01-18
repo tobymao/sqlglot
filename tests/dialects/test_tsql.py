@@ -74,6 +74,33 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
+            "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c AS c FROM t) AS temp",
+            write={
+                "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
+                "postgres": "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c AS c FROM t) AS temp",
+                "oracle": "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c AS c FROM t) temp",
+            },
+        )
+        self.validate_all(
+            "WITH t(c) AS (SELECT 1) SELECT * INTO TEMP UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
+            write={
+                "duckdb": "CREATE TEMPORARY TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
+                "postgres": "WITH t(c) AS (SELECT 1) SELECT * INTO TEMPORARY foo FROM (SELECT c AS c FROM t) AS temp",
+            },
+        )
+        self.validate_all(
+            "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
+            write={
+                "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
+            },
+        )
+        self.validate_all(
+            "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
+            write={
+                "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
+            },
+        )
+        self.validate_all(
             "WITH y AS (SELECT 2 AS c) INSERT INTO t SELECT * FROM y",
             read={
                 "duckdb": "WITH y AS (SELECT 2 AS c) INSERT INTO t SELECT * FROM y",

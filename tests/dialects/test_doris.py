@@ -18,7 +18,13 @@ class TestDoris(Validator):
         )
         self.validate_all(
             "SELECT ARRAY_SUM(x -> x * x, ARRAY(2, 3))",
-            read={"clickhouse": "SELECT arraySum(x -> x*x, [2, 3])"},
+            read={
+                "clickhouse": "SELECT arraySum(x -> x*x, [2, 3])",
+            },
+            write={
+                "clickhouse": "SELECT arraySum(x -> x * x, [2, 3])",
+                "doris": "SELECT ARRAY_SUM(x -> x * x, ARRAY(2, 3))",
+            },
         )
 
     def test_identity(self):

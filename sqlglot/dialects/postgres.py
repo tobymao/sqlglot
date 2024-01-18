@@ -20,6 +20,7 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_trycast_sql,
     parse_timestamp_trunc,
+    remove_target_from_merge,
     rename_func,
     str_position_sql,
     struct_extract_sql,
@@ -185,36 +186,6 @@ def _to_timestamp(args: t.List) -> exp.Expression:
 
     # https://www.postgresql.org/docs/current/functions-formatting.html
     return format_time_lambda(exp.StrToTime, "postgres")(args)
-
-
-def _merge_sql(self: Postgres.Generator, expression: exp.Merge) -> str:
-    def _remove_target_from_merge(expression: exp.Expression) -> exp.Expression:
-        """Remove table refs from columns in when statements."""
-        if isinstance(expression, exp.Merge):
-            alias = expression.this.args.get("alias")
-
-            normalize = (
-                lambda identifier: self.dialect.normalize_identifier(identifier).name
-                if identifier
-                else None
-            )
-
-            targets = {normalize(expression.this.this)}
-
-            if alias:
-                targets.add(normalize(alias.this))
-
-            for when in expression.expressions:
-                when.transform(
-                    lambda node: exp.column(node.this)
-                    if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
-                    else node,
-                    copy=False,
-                )
-
-        return expression
-
-    return transforms.preprocess([_remove_target_from_merge])(self, expression)
 
 
 class Postgres(Dialect):
@@ -443,7 +414,7 @@ class Postgres(Dialect):
             exp.Max: max_or_greatest,
             exp.MapFromEntries: no_map_from_entries_sql,
             exp.Min: min_or_least,
-            exp.Merge: _merge_sql,
+            exp.Merge: remove_target_from_merge,
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.PercentileCont: transforms.preprocess(
                 [transforms.add_within_group_for_percentiles]

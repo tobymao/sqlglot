@@ -4973,7 +4973,12 @@ class Parser(metaclass=_Parser):
         )
 
         if alias:
-            return self.expression(exp.Alias, comments=comments, this=this, alias=alias)
+            this = self.expression(exp.Alias, comments=comments, this=this, alias=alias)
+
+            # Moves the comment next to the alias in `expr /* comment */ AS alias`
+            if not this.comments and this.this.comments:
+                this.comments = this.this.comments
+                this.this.comments = None
 
         return this
 

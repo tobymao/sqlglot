@@ -93,6 +93,10 @@ class TestTranspile(unittest.TestCase):
 
     def test_comments(self):
         self.validate(
+            "SELECT c /* foo */ AS alias",
+            "SELECT c AS alias /* foo */",
+        )
+        self.validate(
             "SELECT c AS /* foo */ (a, b, c) FROM t",
             "SELECT c AS (a, b, c) /* foo */ FROM t",
         )
@@ -366,7 +370,7 @@ WHERE
             """,
             """SELECT
   col, /* This is testing comments */
-  CASE WHEN a THEN b ELSE c END /* 2nd testing comments */ AS d
+  CASE WHEN a THEN b ELSE c END AS d /* 2nd testing comments */
 FROM t""",
             pretty=True,
         )

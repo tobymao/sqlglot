@@ -2299,7 +2299,7 @@ class Parser(metaclass=_Parser):
                     if table
                     else self._parse_select(nested=True, parse_set_operation=False)
                 )
-                this = self._parse_set_operations(self._parse_query_modifiers(this))
+                this = self._parse_query_modifiers(self._parse_set_operations(this))
 
             self._match_r_paren()
 

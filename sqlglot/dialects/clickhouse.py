@@ -104,6 +104,7 @@ class ClickHouse(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
+            "ARRAYSUM": exp.ArraySum.from_arg_list,
             "COUNTIF": _parse_count_if,
             "DATE_ADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)

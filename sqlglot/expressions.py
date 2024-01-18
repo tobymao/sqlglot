@@ -4447,7 +4447,7 @@ class ArraySort(Func):
 
 
 class ArraySum(Func):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class ArrayUnionAgg(AggFunc):

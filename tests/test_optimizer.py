@@ -567,9 +567,9 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             ("SELECT ROW(1, 2.5, 'foo')", "presto"): "STRUCT<INT, DOUBLE, VARCHAR>",
         }
 
-        for sql, target_type in tests.items():
+        for (sql, dialect), target_type in tests.items():
             with self.subTest(sql):
-                expression = annotate_types(parse_one(sql[0], sql[1]))
+                expression = annotate_types(parse_one(sql, read=dialect))
                 assert expression.expressions[0].is_type(target_type)
 
     def test_literal_type_annotation(self):

@@ -7,212 +7,6 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
-    def test_ddl(self):
-        expr = parse_one("CREATE TABLE t (x INTERVAL day)", read="postgres")
-        cdef = expr.find(exp.ColumnDef)
-        cdef.args["kind"].assert_is(exp.DataType)
-        self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
-
-        self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
-        self.validate_identity("CREATE TABLE test (elems JSONB[])")
-        self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
-        self.validate_identity("CREATE TABLE test (foo HSTORE)")
-        self.validate_identity("CREATE TABLE test (foo JSONB)")
-        self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
-        self.validate_identity("CREATE TABLE test (foo INT) PARTITION BY HASH(foo)")
-        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")
-        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
-        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
-        self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
-        self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
-        self.validate_identity(
-            "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION do_sth()"
-        )
-        self.validate_identity(
-            "CREATE TABLE cust_part3 PARTITION OF customers FOR VALUES WITH (MODULUS 3, REMAINDER 2)"
-        )
-        self.validate_identity(
-            "CREATE TABLE measurement_y2016m07 PARTITION OF measurement (unitsales DEFAULT 0) FOR VALUES FROM ('2016-07-01') TO ('2016-08-01')"
-        )
-        self.validate_identity(
-            "CREATE TABLE measurement_ym_older PARTITION OF measurement_year_month FOR VALUES FROM (MINVALUE, MINVALUE) TO (2016, 11)"
-        )
-        self.validate_identity(
-            "CREATE TABLE measurement_ym_y2016m11 PARTITION OF measurement_year_month FOR VALUES FROM (2016, 11) TO (2016, 12)"
-        )
-        self.validate_identity(
-            "CREATE TABLE cities_ab PARTITION OF cities (CONSTRAINT city_id_nonzero CHECK (city_id <> 0)) FOR VALUES IN ('a', 'b')"
-        )
-        self.validate_identity(
-            "CREATE TABLE cities_ab PARTITION OF cities (CONSTRAINT city_id_nonzero CHECK (city_id <> 0)) FOR VALUES IN ('a', 'b') PARTITION BY RANGE(population)"
-        )
-        self.validate_identity(
-            "CREATE INDEX foo ON bar.baz USING btree(col1 varchar_pattern_ops ASC, col2)"
-        )
-        self.validate_identity(
-            "CREATE INDEX index_issues_on_title_trigram ON public.issues USING gin(title public.gin_trgm_ops)"
-        )
-        self.validate_identity(
-            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO NOTHING RETURNING *"
-        )
-        self.validate_identity(
-            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO UPDATE SET x.id = 1 RETURNING *"
-        )
-        self.validate_identity(
-            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO UPDATE SET x.id = excluded.id RETURNING *"
-        )
-        self.validate_identity(
-            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT ON CONSTRAINT pkey DO NOTHING RETURNING *"
-        )
-        self.validate_identity(
-            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT ON CONSTRAINT pkey DO UPDATE SET x.id = 1 RETURNING *"
-        )
-        self.validate_identity(
-            "DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid RETURNING a"
-        )
-        self.validate_identity(
-            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
-            "CREATE TABLE test (x TIMESTAMP[][])",
-        )
-        self.validate_identity(
-            "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
-        )
-        self.validate_identity(
-            "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp"
-        )
-
-        self.validate_all(
-            "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
-            write={
-                "postgres": "CREATE OR REPLACE FUNCTION function_name(input_a VARCHAR DEFAULT CAST(NULL AS VARCHAR))",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
-            write={
-                "postgres": "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)"
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)",
-            write={
-                "postgres": "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)"
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE products (product_no INT, name TEXT, price DECIMAL, UNIQUE (product_no, name))",
-            write={
-                "postgres": "CREATE TABLE products (product_no INT, name TEXT, price DECIMAL, UNIQUE (product_no, name))"
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE products ("
-            "product_no INT UNIQUE,"
-            " name TEXT,"
-            " price DECIMAL CHECK (price > 0),"
-            " discounted_price DECIMAL CONSTRAINT positive_discount CHECK (discounted_price > 0),"
-            " CHECK (product_no > 1),"
-            " CONSTRAINT valid_discount CHECK (price > discounted_price))",
-            write={
-                "postgres": "CREATE TABLE products ("
-                "product_no INT UNIQUE,"
-                " name TEXT,"
-                " price DECIMAL CHECK (price > 0),"
-                " discounted_price DECIMAL CONSTRAINT positive_discount CHECK (discounted_price > 0),"
-                " CHECK (product_no > 1),"
-                " CONSTRAINT valid_discount CHECK (price > discounted_price))"
-            },
-        )
-        self.validate_identity(
-            """
-            CREATE INDEX index_ci_builds_on_commit_id_and_artifacts_expireatandidpartial
-            ON public.ci_builds
-            USING btree (commit_id, artifacts_expire_at, id)
-            WHERE (
-                ((type)::text = 'Ci::Build'::text)
-                AND ((retried = false) OR (retried IS NULL))
-                AND ((name)::text = ANY (ARRAY[
-                    ('sast'::character varying)::text,
-                    ('dependency_scanning'::character varying)::text,
-                    ('sast:container'::character varying)::text,
-                    ('container_scanning'::character varying)::text,
-                    ('dast'::character varying)::text
-                ]))
-            )
-            """,
-            "CREATE INDEX index_ci_builds_on_commit_id_and_artifacts_expireatandidpartial ON public.ci_builds USING btree(commit_id, artifacts_expire_at, id) WHERE ((CAST((type) AS TEXT) = CAST('Ci::Build' AS TEXT)) AND ((retried = FALSE) OR (retried IS NULL)) AND (CAST((name) AS TEXT) = ANY (ARRAY[CAST((CAST('sast' AS VARCHAR)) AS TEXT), CAST((CAST('dependency_scanning' AS VARCHAR)) AS TEXT), CAST((CAST('sast:container' AS VARCHAR)) AS TEXT), CAST((CAST('container_scanning' AS VARCHAR)) AS TEXT), CAST((CAST('dast' AS VARCHAR)) AS TEXT)])))",
-        )
-        self.validate_identity(
-            "CREATE INDEX index_ci_pipelines_on_project_idandrefandiddesc ON public.ci_pipelines USING btree(project_id, ref, id DESC)"
-        )
-
-        with self.assertRaises(ParseError):
-            transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
-        with self.assertRaises(ParseError):
-            transpile(
-                "CREATE TABLE products (price DECIMAL, CHECK price > 1)",
-                read="postgres",
-            )
-
-    def test_unnest(self):
-        self.validate_identity(
-            "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
-        )
-
-        self.validate_all(
-            "SELECT UNNEST(c) FROM t",
-            write={
-                "hive": "SELECT EXPLODE(c) FROM t",
-                "postgres": "SELECT UNNEST(c) FROM t",
-                "presto": "SELECT IF(_u.pos = _u_2.pos_2, _u_2.col) AS col FROM t CROSS JOIN UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(c)))) AS _u(pos) CROSS JOIN UNNEST(c) WITH ORDINALITY AS _u_2(col, pos_2) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > CARDINALITY(c) AND _u_2.pos_2 = CARDINALITY(c))",
-            },
-        )
-        self.validate_all(
-            "SELECT UNNEST(ARRAY[1])",
-            write={
-                "hive": "SELECT EXPLODE(ARRAY(1))",
-                "postgres": "SELECT UNNEST(ARRAY[1])",
-                "presto": "SELECT IF(_u.pos = _u_2.pos_2, _u_2.col) AS col FROM UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(ARRAY[1])))) AS _u(pos) CROSS JOIN UNNEST(ARRAY[1]) WITH ORDINALITY AS _u_2(col, pos_2) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > CARDINALITY(ARRAY[1]) AND _u_2.pos_2 = CARDINALITY(ARRAY[1]))",
-            },
-        )
-
-    def test_array_offset(self):
-        with self.assertLogs(helper_logger) as cm:
-            self.validate_all(
-                "SELECT col[1]",
-                write={
-                    "bigquery": "SELECT col[0]",
-                    "duckdb": "SELECT col[1]",
-                    "hive": "SELECT col[0]",
-                    "postgres": "SELECT col[1]",
-                    "presto": "SELECT col[1]",
-                },
-            )
-
-            self.assertEqual(
-                cm.output,
-                [
-                    "WARNING:sqlglot:Applying array index offset (-1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                ],
-            )
-
-    def test_operator(self):
-        expr = parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3", read="postgres")
-
-        expr.left.assert_is(exp.Operator)
-        expr.left.left.assert_is(exp.Literal)
-        expr.left.right.assert_is(exp.Literal)
-        expr.right.assert_is(exp.Literal)
-        self.assertEqual(expr.sql(dialect="postgres"), "1 OPERATOR(+) 2 OPERATOR(*) 3")
-
-        self.validate_identity("SELECT operator FROM t")
-        self.validate_identity("SELECT 1 OPERATOR(+) 2")
-        self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
-        self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
-
     def test_postgres(self):
         self.validate_identity("EXEC AS myfunc @id = 123")
 
@@ -781,6 +575,212 @@ class TestPostgres(Validator):
         )
 
         self.assertIsInstance(parse_one("id::UUID", read="postgres"), exp.Cast)
+
+    def test_ddl(self):
+        expr = parse_one("CREATE TABLE t (x INTERVAL day)", read="postgres")
+        cdef = expr.find(exp.ColumnDef)
+        cdef.args["kind"].assert_is(exp.DataType)
+        self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
+
+        self.validate_identity("CREATE INDEX idx_x ON x USING BTREE(x, y) WHERE (NOT y IS NULL)")
+        self.validate_identity("CREATE TABLE test (elems JSONB[])")
+        self.validate_identity("CREATE TABLE public.y (x TSTZRANGE NOT NULL)")
+        self.validate_identity("CREATE TABLE test (foo HSTORE)")
+        self.validate_identity("CREATE TABLE test (foo JSONB)")
+        self.validate_identity("CREATE TABLE test (foo VARCHAR(64)[])")
+        self.validate_identity("CREATE TABLE test (foo INT) PARTITION BY HASH(foo)")
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a")
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
+        self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
+        self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
+        self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
+        self.validate_identity(
+            "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION do_sth()"
+        )
+        self.validate_identity(
+            "CREATE TABLE cust_part3 PARTITION OF customers FOR VALUES WITH (MODULUS 3, REMAINDER 2)"
+        )
+        self.validate_identity(
+            "CREATE TABLE measurement_y2016m07 PARTITION OF measurement (unitsales DEFAULT 0) FOR VALUES FROM ('2016-07-01') TO ('2016-08-01')"
+        )
+        self.validate_identity(
+            "CREATE TABLE measurement_ym_older PARTITION OF measurement_year_month FOR VALUES FROM (MINVALUE, MINVALUE) TO (2016, 11)"
+        )
+        self.validate_identity(
+            "CREATE TABLE measurement_ym_y2016m11 PARTITION OF measurement_year_month FOR VALUES FROM (2016, 11) TO (2016, 12)"
+        )
+        self.validate_identity(
+            "CREATE TABLE cities_ab PARTITION OF cities (CONSTRAINT city_id_nonzero CHECK (city_id <> 0)) FOR VALUES IN ('a', 'b')"
+        )
+        self.validate_identity(
+            "CREATE TABLE cities_ab PARTITION OF cities (CONSTRAINT city_id_nonzero CHECK (city_id <> 0)) FOR VALUES IN ('a', 'b') PARTITION BY RANGE(population)"
+        )
+        self.validate_identity(
+            "CREATE INDEX foo ON bar.baz USING btree(col1 varchar_pattern_ops ASC, col2)"
+        )
+        self.validate_identity(
+            "CREATE INDEX index_issues_on_title_trigram ON public.issues USING gin(title public.gin_trgm_ops)"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO NOTHING RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO UPDATE SET x.id = 1 RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT (id) DO UPDATE SET x.id = excluded.id RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT ON CONSTRAINT pkey DO NOTHING RETURNING *"
+        )
+        self.validate_identity(
+            "INSERT INTO x VALUES (1, 'a', 2.0) ON CONFLICT ON CONSTRAINT pkey DO UPDATE SET x.id = 1 RETURNING *"
+        )
+        self.validate_identity(
+            "DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid RETURNING a"
+        )
+        self.validate_identity(
+            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
+            "CREATE TABLE test (x TIMESTAMP[][])",
+        )
+        self.validate_identity(
+            "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
+        )
+        self.validate_identity(
+            "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp"
+        )
+
+        self.validate_all(
+            "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
+            write={
+                "postgres": "CREATE OR REPLACE FUNCTION function_name(input_a VARCHAR DEFAULT CAST(NULL AS VARCHAR))",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)",
+            write={
+                "postgres": "CREATE TABLE products (product_no INT UNIQUE, name TEXT, price DECIMAL)"
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)",
+            write={
+                "postgres": "CREATE TABLE products (product_no INT CONSTRAINT must_be_different UNIQUE, name TEXT CONSTRAINT present NOT NULL, price DECIMAL)"
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE products (product_no INT, name TEXT, price DECIMAL, UNIQUE (product_no, name))",
+            write={
+                "postgres": "CREATE TABLE products (product_no INT, name TEXT, price DECIMAL, UNIQUE (product_no, name))"
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE products ("
+            "product_no INT UNIQUE,"
+            " name TEXT,"
+            " price DECIMAL CHECK (price > 0),"
+            " discounted_price DECIMAL CONSTRAINT positive_discount CHECK (discounted_price > 0),"
+            " CHECK (product_no > 1),"
+            " CONSTRAINT valid_discount CHECK (price > discounted_price))",
+            write={
+                "postgres": "CREATE TABLE products ("
+                "product_no INT UNIQUE,"
+                " name TEXT,"
+                " price DECIMAL CHECK (price > 0),"
+                " discounted_price DECIMAL CONSTRAINT positive_discount CHECK (discounted_price > 0),"
+                " CHECK (product_no > 1),"
+                " CONSTRAINT valid_discount CHECK (price > discounted_price))"
+            },
+        )
+        self.validate_identity(
+            """
+            CREATE INDEX index_ci_builds_on_commit_id_and_artifacts_expireatandidpartial
+            ON public.ci_builds
+            USING btree (commit_id, artifacts_expire_at, id)
+            WHERE (
+                ((type)::text = 'Ci::Build'::text)
+                AND ((retried = false) OR (retried IS NULL))
+                AND ((name)::text = ANY (ARRAY[
+                    ('sast'::character varying)::text,
+                    ('dependency_scanning'::character varying)::text,
+                    ('sast:container'::character varying)::text,
+                    ('container_scanning'::character varying)::text,
+                    ('dast'::character varying)::text
+                ]))
+            )
+            """,
+            "CREATE INDEX index_ci_builds_on_commit_id_and_artifacts_expireatandidpartial ON public.ci_builds USING btree(commit_id, artifacts_expire_at, id) WHERE ((CAST((type) AS TEXT) = CAST('Ci::Build' AS TEXT)) AND ((retried = FALSE) OR (retried IS NULL)) AND (CAST((name) AS TEXT) = ANY (ARRAY[CAST((CAST('sast' AS VARCHAR)) AS TEXT), CAST((CAST('dependency_scanning' AS VARCHAR)) AS TEXT), CAST((CAST('sast:container' AS VARCHAR)) AS TEXT), CAST((CAST('container_scanning' AS VARCHAR)) AS TEXT), CAST((CAST('dast' AS VARCHAR)) AS TEXT)])))",
+        )
+        self.validate_identity(
+            "CREATE INDEX index_ci_pipelines_on_project_idandrefandiddesc ON public.ci_pipelines USING btree(project_id, ref, id DESC)"
+        )
+
+        with self.assertRaises(ParseError):
+            transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
+        with self.assertRaises(ParseError):
+            transpile(
+                "CREATE TABLE products (price DECIMAL, CHECK price > 1)",
+                read="postgres",
+            )
+
+    def test_unnest(self):
+        self.validate_identity(
+            "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
+        )
+
+        self.validate_all(
+            "SELECT UNNEST(c) FROM t",
+            write={
+                "hive": "SELECT EXPLODE(c) FROM t",
+                "postgres": "SELECT UNNEST(c) FROM t",
+                "presto": "SELECT IF(_u.pos = _u_2.pos_2, _u_2.col) AS col FROM t CROSS JOIN UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(c)))) AS _u(pos) CROSS JOIN UNNEST(c) WITH ORDINALITY AS _u_2(col, pos_2) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > CARDINALITY(c) AND _u_2.pos_2 = CARDINALITY(c))",
+            },
+        )
+        self.validate_all(
+            "SELECT UNNEST(ARRAY[1])",
+            write={
+                "hive": "SELECT EXPLODE(ARRAY(1))",
+                "postgres": "SELECT UNNEST(ARRAY[1])",
+                "presto": "SELECT IF(_u.pos = _u_2.pos_2, _u_2.col) AS col FROM UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(ARRAY[1])))) AS _u(pos) CROSS JOIN UNNEST(ARRAY[1]) WITH ORDINALITY AS _u_2(col, pos_2) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > CARDINALITY(ARRAY[1]) AND _u_2.pos_2 = CARDINALITY(ARRAY[1]))",
+            },
+        )
+
+    def test_array_offset(self):
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_all(
+                "SELECT col[1]",
+                write={
+                    "bigquery": "SELECT col[0]",
+                    "duckdb": "SELECT col[1]",
+                    "hive": "SELECT col[0]",
+                    "postgres": "SELECT col[1]",
+                    "presto": "SELECT col[1]",
+                },
+            )
+
+            self.assertEqual(
+                cm.output,
+                [
+                    "WARNING:sqlglot:Applying array index offset (-1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                    "WARNING:sqlglot:Applying array index offset (1)",
+                ],
+            )
+
+    def test_operator(self):
+        expr = parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3", read="postgres")
+
+        expr.left.assert_is(exp.Operator)
+        expr.left.left.assert_is(exp.Literal)
+        expr.left.right.assert_is(exp.Literal)
+        expr.right.assert_is(exp.Literal)
+        self.assertEqual(expr.sql(dialect="postgres"), "1 OPERATOR(+) 2 OPERATOR(*) 3")
+
+        self.validate_identity("SELECT operator FROM t")
+        self.validate_identity("SELECT 1 OPERATOR(+) 2")
+        self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
+        self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
 
     def test_bool_or(self):
         self.validate_all(

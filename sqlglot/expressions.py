@@ -1402,7 +1402,7 @@ class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
 
 
 class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
-    arg_types = {"start": True, "hidden": False}
+    arg_types = {"start": False, "hidden": False}
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
@@ -2017,7 +2017,13 @@ class AutoRefreshProperty(Property):
 
 
 class BlockCompressionProperty(Property):
-    arg_types = {"autotemp": False, "always": False, "default": True, "manual": True, "never": True}
+    arg_types = {
+        "autotemp": False,
+        "always": False,
+        "default": False,
+        "manual": False,
+        "never": False,
+    }
 
 
 class CharacterSetProperty(Property):
@@ -2100,11 +2106,11 @@ class OutputModelProperty(Property):
 
 class IsolatedLoadingProperty(Property):
     arg_types = {
-        "no": True,
-        "concurrent": True,
-        "for_all": True,
-        "for_insert": True,
-        "for_none": True,
+        "no": False,
+        "concurrent": False,
+        "for_all": False,
+        "for_insert": False,
+        "for_none": False,
     }
 
 

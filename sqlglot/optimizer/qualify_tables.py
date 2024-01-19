@@ -46,13 +46,17 @@ def qualify_tables(
     db = exp.parse_identifier(db, dialect=dialect) if db else None
     catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
 
-    if isinstance(expression, exp.AlterTable):
-        for reference in expression.find_all(exp.Table):
+    def _qualify(tree: E) -> E:
+        for reference in tree.find_all(exp.Table):
             if isinstance(reference.this, exp.Identifier):
                 if not reference.args.get("db"):
                     reference.set("db", db)
                 if not reference.args.get("catalog") and reference.args.get("db"):
                     reference.set("catalog", catalog)
+        return tree
+
+    if isinstance(expression, exp.AlterTable):
+        _qualify(expression)
         return t.cast(E, expression)
 
     for scope in traverse_scope(expression):
@@ -74,13 +78,7 @@ def qualify_tables(
                 pivots[0].set("alias", exp.TableAlias(this=exp.to_identifier(next_alias_name())))
 
         for name, source in scope.sources.items():
-            if isinstance(source, exp.Table):
-                if isinstance(source.this, exp.Identifier):
-                    if not source.args.get("db"):
-                        source.set("db", db)
-                    if not source.args.get("catalog") and source.args.get("db"):
-                        source.set("catalog", catalog)
-
+                _qualify(source)
                 pivots = pivots = source.args.get("pivots")
                 if not source.alias:
                     # Don't add the pivot's alias to the pivoted table, use the table's name instead

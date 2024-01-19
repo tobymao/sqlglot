@@ -297,10 +297,7 @@ def _parse_colon_get_path(
         if not self._match(TokenType.COLON):
             break
 
-    if self._match_set(self.RANGE_PARSERS):
-        this = self.RANGE_PARSERS[self._prev.token_type](self, this) or this
-
-    return this
+    return self._parse_range(this)
 
 
 def _parse_timestamp_from_parts(args: t.List) -> exp.Func:

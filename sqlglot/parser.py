@@ -3380,8 +3380,8 @@ class Parser(metaclass=_Parser):
     def _parse_comparison(self) -> t.Optional[exp.Expression]:
         return self._parse_tokens(self._parse_range, self.COMPARISON)
 
-    def _parse_range(self) -> t.Optional[exp.Expression]:
-        this = self._parse_bitwise()
+    def _parse_range(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
+        this = this or self._parse_bitwise()
         negate = self._match(TokenType.NOT)
 
         if self._match_set(self.RANGE_PARSERS):

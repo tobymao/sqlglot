@@ -561,7 +561,7 @@ class BigQuery(Dialect):
             exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
             exp.FromTimeZone: lambda self, e: self.func(
-                "DATETIME", self.func("TIMESTAMP", e.this, e.args["zone"]), "'UTC'"
+                "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
             ),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GetPath: path_to_jsonpath(),
@@ -788,7 +788,7 @@ class BigQuery(Dialect):
             # Only the TIMESTAMP one should use the below conversion, when AT TIME ZONE is included.
             if not isinstance(parent, exp.Cast) or not parent.to.is_type("text"):
                 return self.func(
-                    "TIMESTAMP", self.func("DATETIME", expression.this, expression.args["zone"])
+                    "TIMESTAMP", self.func("DATETIME", expression.this, expression.args.get("zone"))
                 )
 
             return super().attimezone_sql(expression)

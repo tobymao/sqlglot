@@ -775,7 +775,7 @@ class Generator:
     def generatedasrowcolumnconstraint_sql(
         self, expression: exp.GeneratedAsRowColumnConstraint
     ) -> str:
-        start = "START" if expression.args["start"] else "END"
+        start = "START" if expression.args.get("start") else "END"
         hidden = " HIDDEN" if expression.args.get("hidden") else ""
         return f"GENERATED ALWAYS AS ROW {start}{hidden}"
 

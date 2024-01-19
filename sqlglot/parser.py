@@ -5247,7 +5247,7 @@ class Parser(metaclass=_Parser):
 
             if self._match_text_seq("CHECK"):
                 expression = self._parse_wrapped(self._parse_conjunction)
-                enforced = self._match_text_seq("ENFORCED")
+                enforced = self._match_text_seq("ENFORCED") or False
 
                 return self.expression(
                     exp.AddConstraint, this=this, expression=expression, enforced=enforced
@@ -5637,7 +5637,7 @@ class Parser(metaclass=_Parser):
             if advance:
                 self._advance()
             return True
-        return False
+        return None
 
     def _match_text_seq(self, *texts, advance=True):
         index = self._index
@@ -5646,7 +5646,7 @@ class Parser(metaclass=_Parser):
                 self._advance()
             else:
                 self._retreat(index)
-                return False
+                return None
 
         if not advance:
             self._retreat(index)

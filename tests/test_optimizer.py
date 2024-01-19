@@ -207,6 +207,13 @@ class TestOptimizer(unittest.TestCase):
             catalog="c",
         )
 
+        self.assertEqual(
+            optimizer.qualify_tables.qualify_tables(
+                parse_one("alter table b.c add primary key (id) not enforced"), catalog="a"
+            ).sql(),
+            "ALTER TABLE a.b.c ADD PRIMARY KEY (id) NOT ENFORCED",
+        )
+
     def test_normalize(self):
         self.assertEqual(
             optimizer.normalize.normalize(

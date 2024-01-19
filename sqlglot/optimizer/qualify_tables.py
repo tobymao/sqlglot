@@ -46,6 +46,15 @@ def qualify_tables(
     db = exp.parse_identifier(db, dialect=dialect) if db else None
     catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
 
+    if isinstance(expression, exp.AlterTable):
+        for reference in expression.find_all(exp.Table):
+            if isinstance(reference.this, exp.Identifier):
+                if not reference.args.get("db"):
+                    reference.set("db", db)
+                if not reference.args.get("catalog") and reference.args.get("db"):
+                    reference.set("catalog", catalog)
+        return expression
+
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
             if isinstance(derived_table, exp.Subquery):

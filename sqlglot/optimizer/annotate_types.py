@@ -481,9 +481,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
     @t.no_type_check
     def _annotate_struct(self, expression: E) -> E:
-        args = expression.args
-        alias = args.get("alias")
-        expr_expression = args.get("expression")
+        alias = expression.args.get("alias")
 
         if not alias:
             if expr_expression:

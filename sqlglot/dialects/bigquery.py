@@ -560,6 +560,9 @@ class BigQuery(Dialect):
             exp.DatetimeAdd: date_add_interval_sql("DATETIME", "ADD"),
             exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
             exp.DateTrunc: lambda self, e: self.func("DATE_TRUNC", e.this, e.text("unit")),
+            exp.FromTimeZone: lambda self, e: self.func(
+                "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
+            ),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GetPath: path_to_jsonpath(),
             exp.GroupConcat: rename_func("STRING_AGG"),

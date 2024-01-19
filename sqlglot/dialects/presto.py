@@ -356,6 +356,7 @@ class Presto(Dialect):
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.First: _first_last_sql,
+            exp.FromTimeZone: lambda self, e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
             exp.GetPath: path_to_jsonpath(),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.GroupConcat: lambda self, e: self.func(

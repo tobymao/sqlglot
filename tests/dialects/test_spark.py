@@ -227,7 +227,6 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
-        self.validate_identity("FROM_UTC_TIMESTAMP(CAST(x AS TIMESTAMP), 'utc')")
         expr = parse_one("any_value(col, true)", read="spark")
         self.assertIsInstance(expr.args.get("ignore_nulls"), exp.Boolean)
         self.assertEqual(expr.sql(dialect="spark"), "ANY_VALUE(col, TRUE)")
@@ -276,6 +275,25 @@ TBLPROPERTIES (
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
 
+        self.validate_all(
+            "SELECT TO_UTC_TIMESTAMP('2016-08-31', 'Asia/Seoul')",
+            write={
+                "bigquery": "SELECT DATETIME(TIMESTAMP(CAST('2016-08-31' AS DATETIME), 'Asia/Seoul'), 'UTC')",
+                "duckdb": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul' AT TIME ZONE 'UTC'",
+                "postgres": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul' AT TIME ZONE 'UTC'",
+                "presto": "SELECT WITH_TIMEZONE(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul') AT TIME ZONE 'UTC'",
+                "redshift": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul' AT TIME ZONE 'UTC'",
+                "snowflake": "SELECT CONVERT_TIMEZONE('Asia/Seoul', 'UTC', CAST('2016-08-31' AS TIMESTAMPNTZ))",
+                "spark": "SELECT TO_UTC_TIMESTAMP(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul')",
+            },
+        )
+        self.validate_all(
+            "SELECT FROM_UTC_TIMESTAMP('2016-08-31', 'Asia/Seoul')",
+            write={
+                "presto": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul'",
+                "spark": "SELECT FROM_UTC_TIMESTAMP(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul')",
+            },
+        )
         self.validate_all(
             "foo.bar",
             read={

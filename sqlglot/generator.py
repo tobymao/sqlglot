@@ -2555,6 +2555,11 @@ class Generator:
         zone = self.sql(expression, "zone")
         return f"{this} AT TIME ZONE {zone}"
 
+    def fromtimezone_sql(self, expression: exp.FromTimeZone) -> str:
+        this = self.sql(expression, "this")
+        zone = self.sql(expression, "zone")
+        return f"{this} AT TIME ZONE {zone} AT TIME ZONE 'UTC'"
+
     def add_sql(self, expression: exp.Add) -> str:
         return self.binary(expression, "+")
 

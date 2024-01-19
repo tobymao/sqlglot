@@ -728,3 +728,19 @@ LIFETIME(MIN 0 MAX 0)""",
         )
         self.validate_identity("""CREATE TABLE ip_data (ip4 IPv4, ip6 IPv6) ENGINE=TinyLog()""")
         self.validate_identity("""CREATE TABLE dates (dt1 Date32) ENGINE=TinyLog()""")
+        self.validate_all(
+            """
+            CREATE TABLE t (
+                a AggregateFunction(quantiles(0.5, 0.9), UInt64),
+                b AggregateFunction(quantiles, UInt64),
+                c SimpleAggregateFunction(sum, Float64)
+            )""",
+            write={
+                "clickhouse": """CREATE TABLE t (
+  a AggregateFunction(quantiles(0.5, 0.9), UInt64),
+  b AggregateFunction(quantiles, UInt64),
+  c SimpleAggregateFunction(sum, Float64)
+)"""
+            },
+            pretty=True,
+        )

@@ -343,7 +343,6 @@ class TokenType(AutoName):
     SOME = auto()
     SORT_BY = auto()
     START_WITH = auto()
-    STARTS_WITH = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()
@@ -735,7 +734,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "START WITH": TokenType.START_WITH,
-        "STARTS WITH": TokenType.STARTS_WITH,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
         "TEMP": TokenType.TEMPORARY,

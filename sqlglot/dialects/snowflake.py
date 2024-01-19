@@ -593,10 +593,10 @@ class Snowflake(Dialect):
                 elif self._match_set(self.DB_CREATABLES):
                     scope_kind = self._prev.text.upper()
                     if self._curr:
-                        scope = self._parse_table()
+                        scope = self._parse_table_parts()
                 elif self._curr:
                     scope_kind = "SCHEMA" if this == "OBJECTS" else "TABLE"
-                    scope = self._parse_table()
+                    scope = self._parse_table_parts()
 
             return self.expression(
                 exp.Show,
@@ -606,9 +606,7 @@ class Snowflake(Dialect):
                     "like": like,
                     "scope": scope,
                     "scope_kind": scope_kind,
-                    "starts_with": self._parse_string()
-                    if self._match(TokenType.STARTS_WITH)
-                    else None,
+                    "starts_with": self._match_text_seq("STARTS", "WITH") and self._parse_string(),
                     "limit": self._parse_limit(),
                     "from": self._parse_string() if self._match(TokenType.FROM) else None,
                 },

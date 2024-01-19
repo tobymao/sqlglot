@@ -480,6 +480,20 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         return self._annotate_args(expression)
 
     @t.no_type_check
+    def _annotate_struct_value(
+        self, expression: exp.Expression
+    ) -> t.Optional[exp.DataType] | exp.ColumnDef:
+        alias = expression.args.get("alias")
+        if alias:
+            return exp.ColumnDef(this=alias.copy(), kind=expression.type)
+
+        # Case: key = value or key := value
+        if expression.expression:
+            return exp.ColumnDef(this=expression.this.copy(), kind=expression.expression.type)
+
+        return expression.type
+
+    @t.no_type_check
     def _annotate_by_args(
         self,
         expression: E,
@@ -516,16 +530,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             )
 
         if struct:
-            expressions = [
-                expr.type
-                if not expr.args.get("alias")
-                else exp.ColumnDef(this=expr.args["alias"].copy(), kind=expr.type)
-                for expr in expressions
-            ]
-
             self._set_type(
                 expression,
-                exp.DataType(this=exp.DataType.Type.STRUCT, expressions=expressions, nested=True),
+                exp.DataType(
+                    this=exp.DataType.Type.STRUCT,
+                    expressions=[self._annotate_struct_value(expr) for expr in expressions],
+                    nested=True,
+                ),
             )
 
         return expression

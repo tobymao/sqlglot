@@ -55,7 +55,7 @@ def qualify_tables(
                     table.set("catalog", catalog)
 
     if isinstance(expression, exp.AlterTable):
-        _qualify(*expression.find_all(exp.Table))
+        _qualify(expression.this)
         return t.cast(E, expression)
 
     for scope in traverse_scope(expression):

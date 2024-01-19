@@ -2681,6 +2681,8 @@ class Parser(metaclass=_Parser):
         else:
             columns = None
 
+        include = self._parse_wrapped_id_vars() if self._match_text_seq("INCLUDE") else None
+
         return self.expression(
             exp.Index,
             this=index,
@@ -2690,6 +2692,7 @@ class Parser(metaclass=_Parser):
             unique=unique,
             primary=primary,
             amp=amp,
+            include=include,
             partition_by=self._parse_partition_by(),
             where=self._parse_where(),
         )

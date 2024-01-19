@@ -46,6 +46,17 @@ def qualify_tables(
     db = exp.parse_identifier(db, dialect=dialect) if db else None
     catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
 
+    def _qualify(table: exp.Table) -> None:
+        if isinstance(table.this, exp.Identifier):
+            if not table.args.get("db"):
+                table.set("db", db)
+            if not table.args.get("catalog") and table.args.get("db"):
+                table.set("catalog", catalog)
+
+    if not isinstance(expression, exp.Subqueryable):
+        for table in expression.find_all(exp.Table):
+            _qualify(table)
+
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
             if isinstance(derived_table, exp.Subquery):
@@ -66,11 +77,7 @@ def qualify_tables(
 
         for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
-                if isinstance(source.this, exp.Identifier):
-                    if not source.args.get("db"):
-                        source.set("db", db)
-                    if not source.args.get("catalog") and source.args.get("db"):
-                        source.set("catalog", catalog)
+                _qualify(source)
 
                 pivots = pivots = source.args.get("pivots")
                 if not source.alias:

@@ -323,9 +323,14 @@ class Scope:
                 sources in the current scope.
         """
         if self._external_columns is None:
-            self._external_columns = [
-                c for c in self.columns if c.table not in self.selected_sources
-            ]
+            if isinstance(self.expression, exp.Union):
+                left, right = self.union_scopes
+                self._external_columns = left.external_columns + right.external_columns
+            else:
+                self._external_columns = [
+                    c for c in self.columns if c.table not in self.selected_sources
+                ]
+
         return self._external_columns
 
     @property

@@ -631,12 +631,6 @@ class Snowflake(Dialect):
                     scope_kind = "SCHEMA" if this == "OBJECTS" else "TABLE"
                     scope = self._parse_table()
 
-            starts_with = self._parse_string() if self._match(TokenType.STARTS_WITH) else None
-
-            limit = self._parse_limit()
-
-            from_ = self._parse_string() if self._match(TokenType.FROM) else None
-
             return self.expression(
                 exp.Show,
                 **{
@@ -645,9 +639,11 @@ class Snowflake(Dialect):
                     "like": like,
                     "scope": scope,
                     "scope_kind": scope_kind,
-                    "starts_with": starts_with,
-                    "limit": limit,
-                    "from": from_,
+                    "starts_with": self._parse_string()
+                    if self._match(TokenType.STARTS_WITH)
+                    else None,
+                    "limit": self._parse_limit(),
+                    "from": self._parse_string() if self._match(TokenType.FROM) else None,
                 },
             )
 

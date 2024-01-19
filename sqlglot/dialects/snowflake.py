@@ -639,14 +639,16 @@ class Snowflake(Dialect):
 
             return self.expression(
                 exp.Show,
-                terse=terse,
-                this=this,
-                like=like,
-                scope=scope,
-                scope_kind=scope_kind,
-                starts_with=starts_with,
-                limit=limit,
-                from_=from_,
+                **{
+                    "terse": terse,
+                    "this": this,
+                    "like": like,
+                    "scope": scope,
+                    "scope_kind": scope_kind,
+                    "starts_with": starts_with,
+                    "limit": limit,
+                    "from": from_,
+                },
             )
 
         def _parse_alter_table_swap(self) -> exp.SwapTable:
@@ -889,7 +891,7 @@ class Snowflake(Dialect):
 
             limit = self.sql(expression, "limit")
 
-            from_ = self.sql(expression, "from_")
+            from_ = self.sql(expression, "from")
             if from_:
                 from_ = f" FROM {from_}"
 

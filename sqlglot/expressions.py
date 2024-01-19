@@ -1135,7 +1135,7 @@ class Show(Expression):
         "offset": False,
         "starts_with": False,
         "limit": False,
-        "from_": False,
+        "from": False,
         "like": False,
         "where": False,
         "db": False,

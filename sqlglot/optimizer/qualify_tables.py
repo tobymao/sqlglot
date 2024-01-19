@@ -53,7 +53,7 @@ def qualify_tables(
                     reference.set("db", db)
                 if not reference.args.get("catalog") and reference.args.get("db"):
                     reference.set("catalog", catalog)
-        return expression
+        return t.cast(E, expression)
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):

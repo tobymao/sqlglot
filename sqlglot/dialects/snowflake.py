@@ -687,6 +687,9 @@ class Snowflake(Dialect):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.Explode: rename_func("FLATTEN"),
             exp.Extract: rename_func("DATE_PART"),
+            exp.FromTimeZone: lambda self, e: self.func(
+                "CONVERT_TIMEZONE", e.args["zone"], "'UTC'", e.this
+            ),
             exp.GenerateSeries: lambda self, e: self.func(
                 "ARRAY_GENERATE_RANGE", e.args["start"], e.args["end"] + 1, e.args.get("step")
             ),

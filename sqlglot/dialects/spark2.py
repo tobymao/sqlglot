@@ -133,6 +133,14 @@ class Spark2(Hive):
             if len(args) == 1
             else format_time_lambda(exp.StrToTime, "spark")(args),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
+            "TO_UTC_TIMESTAMP": lambda args: exp.FromTimeZone(
+                this=exp.cast_unless(
+                    seq_get(args, 0) or exp.Var(this=""),
+                    exp.DataType.build("timestamp"),
+                    exp.DataType.build("timestamp"),
+                ),
+                zone=seq_get(args, 1),
+            ),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
             "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         }
@@ -188,6 +196,7 @@ class Spark2(Hive):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.From: transforms.preprocess([_unalias_pivot]),
+            exp.FromTimeZone: lambda self, e: f"TO_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,

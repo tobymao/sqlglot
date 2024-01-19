@@ -4171,6 +4171,10 @@ class AtTimeZone(Expression):
     arg_types = {"this": True, "zone": True}
 
 
+class FromTimeZone(Expression):
+    arg_types = {"this": True, "zone": True}
+
+
 class Between(Predicate):
     arg_types = {"this": True, "low": True, "high": True}
 

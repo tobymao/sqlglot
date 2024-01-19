@@ -53,9 +53,9 @@ def qualify_tables(
             if not table.args.get("catalog") and table.args.get("db"):
                 table.set("catalog", catalog)
 
-    if isinstance(expression, exp.AlterTable):
-        _qualify(expression.this)
-        return t.cast(E, expression)
+    if not isinstance(expression, exp.Subqueryable):
+        for table in expression.find_all(exp.Table):
+            _qualify(table)
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):

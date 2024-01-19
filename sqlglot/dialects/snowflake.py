@@ -616,7 +616,7 @@ class Snowflake(Dialect):
 
             # will identity SHOW TERSE SCHEMAS but not SHOW TERSE PRIMARY KEYS
             # which is syntactically valid but has no effect on the output
-            terse = self._tokens[self._index - 2].token_type == TokenType.TERSE
+            terse = self._tokens[self._index - 2].text.upper() == "TERSE"
 
             like = self._parse_string() if self._match(TokenType.LIKE) else None
 

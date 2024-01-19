@@ -46,13 +46,12 @@ def qualify_tables(
     db = exp.parse_identifier(db, dialect=dialect) if db else None
     catalog = exp.parse_identifier(catalog, dialect=dialect) if catalog else None
 
-    def _qualify(*tables: exp.Table) -> None:
-        for table in tables:
-            if isinstance(table.this, exp.Identifier):
-                if not table.args.get("db"):
-                    table.set("db", db)
-                if not table.args.get("catalog") and table.args.get("db"):
-                    table.set("catalog", catalog)
+    def _qualify(table: exp.Table) -> None:
+        if isinstance(table.this, exp.Identifier):
+            if not table.args.get("db"):
+                table.set("db", db)
+            if not table.args.get("catalog") and table.args.get("db"):
+                table.set("catalog", catalog)
 
     if isinstance(expression, exp.AlterTable):
         _qualify(expression.this)

@@ -148,6 +148,11 @@ class Parser(metaclass=_Parser):
         TokenType.ENUM16,
     }
 
+    AGGREGATE_TYPE_TOKENS = {
+        TokenType.AGGREGATEFUNCTION,
+        TokenType.SIMPLEAGGREGATEFUNCTION,
+    }
+
     TYPE_TOKENS = {
         TokenType.BIT,
         TokenType.BOOLEAN,
@@ -241,6 +246,7 @@ class Parser(metaclass=_Parser):
         TokenType.NULL,
         *ENUM_TYPE_TOKENS,
         *NESTED_TYPE_TOKENS,
+        *AGGREGATE_TYPE_TOKENS,
     }
 
     SIGNED_TO_UNSIGNED_TYPE_TOKEN = {
@@ -3634,6 +3640,7 @@ class Parser(metaclass=_Parser):
 
         nested = type_token in self.NESTED_TYPE_TOKENS
         is_struct = type_token in self.STRUCT_TYPE_TOKENS
+        is_aggregate = type_token in self.AGGREGATE_TYPE_TOKENS
         expressions = None
         maybe_func = False
 
@@ -3648,6 +3655,18 @@ class Parser(metaclass=_Parser):
                 )
             elif type_token in self.ENUM_TYPE_TOKENS:
                 expressions = self._parse_csv(self._parse_equality)
+            elif is_aggregate:
+                func_or_ident = self._parse_function(anonymous=True) or self._parse_id_var(
+                    any_token=False, tokens=(TokenType.VAR,)
+                )
+                if not func_or_ident or not self._match(TokenType.COMMA):
+                    return None
+                expressions = self._parse_csv(
+                    lambda: self._parse_types(
+                        check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+                    )
+                )
+                expressions.insert(0, func_or_ident)
             else:
                 expressions = self._parse_csv(self._parse_type_size)
 

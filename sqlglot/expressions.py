@@ -3638,6 +3638,8 @@ class DataType(Expression):
 
     class Type(AutoName):
         ARRAY = auto()
+        AGGREGATEFUNCTION = auto()
+        SIMPLEAGGREGATEFUNCTION = auto()
         BIGDECIMAL = auto()
         BIGINT = auto()
         BIGSERIAL = auto()

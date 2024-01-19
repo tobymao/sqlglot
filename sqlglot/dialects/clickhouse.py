@@ -88,6 +88,8 @@ class ClickHouse(Dialect):
             "UINT8": TokenType.UTINYINT,
             "IPV4": TokenType.IPV4,
             "IPV6": TokenType.IPV6,
+            "AGGREGATEFUNCTION": TokenType.AGGREGATEFUNCTION,
+            "SIMPLEAGGREGATEFUNCTION": TokenType.SIMPLEAGGREGATEFUNCTION,
         }
 
         SINGLE_TOKENS = {
@@ -548,6 +550,8 @@ class ClickHouse(Dialect):
             exp.DataType.Type.UTINYINT: "UInt8",
             exp.DataType.Type.IPV4: "IPv4",
             exp.DataType.Type.IPV6: "IPv6",
+            exp.DataType.Type.AGGREGATEFUNCTION: "AggregateFunction",
+            exp.DataType.Type.SIMPLEAGGREGATEFUNCTION: "SimpleAggregateFunction",
         }
 
         TRANSFORMS = {

@@ -1111,7 +1111,10 @@ class Generator:
         partition_by = self.expressions(expression, key="partition_by", flat=True)
         partition_by = f" PARTITION BY {partition_by}" if partition_by else ""
         where = self.sql(expression, "where")
-        return f"{unique}{primary}{amp}{index}{name}{table}{using}{columns}{partition_by}{where}"
+        include = self.expressions(expression, key="include", flat=True)
+        if include:
+            include = f" INCLUDE ({include})"
+        return f"{unique}{primary}{amp}{index}{name}{table}{using}{columns}{include}{partition_by}{where}"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name

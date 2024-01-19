@@ -1667,6 +1667,7 @@ class Index(Expression):
         "unique": False,
         "primary": False,
         "amp": False,  # teradata
+        "include": False,
         "partition_by": False,  # teradata
         "where": False,  # postgres partial indexes
     }

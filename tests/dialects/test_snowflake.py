@@ -84,6 +84,10 @@ WHERE
             "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
         )
         self.validate_identity(
+            "SELECT p FROM t WHERE p:val NOT IN ('2')",
+            "SELECT p FROM t WHERE NOT GET_PATH(p, 'val') IN ('2')",
+        )
+        self.validate_identity(
             """SELECT PARSE_JSON('{"x": "hello"}'):x LIKE 'hello'""",
             """SELECT GET_PATH(PARSE_JSON('{"x": "hello"}'), 'x') LIKE 'hello'""",
         )

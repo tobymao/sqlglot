@@ -115,9 +115,13 @@ def qualify_tables(
                     for i, e in enumerate(udtf.expressions[0].expressions):
                         table_alias.append("columns", exp.to_identifier(f"_col_{i}"))
             else:
-                for table in scope.cte_table_references(name):
-                    if not table.alias:
+                for node, parent, _ in scope.walk():
+                    if (
+                        isinstance(node, exp.Table)
+                        and not node.alias
+                        and isinstance(parent, (exp.From, exp.Join))
+                    ):
                         # Mutates the table by attaching an alias to it
-                        alias(table, table.name, copy=False, table=True)
+                        alias(node, node.name, copy=False, table=True)
 
     return expression

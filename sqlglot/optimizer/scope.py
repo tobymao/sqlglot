@@ -95,7 +95,6 @@ class Scope:
         self._join_hints = None
         self._pivots = None
         self._references = None
-        self._cte_table_references = defaultdict(list)
 
     def branch(
         self, expression, scope_type, sources=None, cte_sources=None, lateral_sources=None, **kwargs
@@ -460,10 +459,6 @@ class Scope:
 
         return scope_ref_count
 
-    def cte_table_references(self, cte_name: str) -> t.List[exp.Table]:
-        """Fetch all Table references that correspond to a given CTE in this scope."""
-        return self._cte_table_references.get(cte_name) or []
-
 
 def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     """
@@ -599,15 +594,11 @@ def _traverse_ctes(scope):
             yield child_scope
 
             alias = cte.alias
-            recursive_table_ref = child_scope.sources.get(alias)
             sources[alias] = child_scope
 
             if recursive_scope:
                 child_scope.add_source(alias, recursive_scope)
                 child_scope.cte_sources[alias] = recursive_scope
-
-                if isinstance(recursive_table_ref, exp.Table):
-                    child_scope._cte_table_references[alias].append(recursive_table_ref)
 
         # append the final child_scope yielded
         if child_scope:
@@ -656,7 +647,6 @@ def _traverse_tables(scope):
                     sources[pivots[0].alias] = expression
                 else:
                     sources[source_name] = scope.sources[table_name]
-                    scope._cte_table_references[source_name].append(expression)
             elif source_name in sources:
                 sources[find_new_name(sources, table_name)] = expression
             else:

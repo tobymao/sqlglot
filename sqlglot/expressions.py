@@ -6583,7 +6583,10 @@ def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:
 
 
 def rename_column(
-    table_name: str | Table, old_column: str | Column, new_column: str | Column, exists: Boolean
+    table_name: str | Table,
+    old_column_name: str | Column,
+    new_column_name: str | Column,
+    exists: t.Optional[bool] = None,
 ) -> AlterTable:
     """Build ALTER TABLE... RENAME COLUMN... expression
 
@@ -6596,6 +6599,8 @@ def rename_column(
         Alter table expression
     """
     table = to_table(table_name)
+    old_column = to_column(old_column_name)
+    new_column = to_column(new_column_name)
     return AlterTable(
         this=table,
         actions=[

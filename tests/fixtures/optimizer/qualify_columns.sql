@@ -296,28 +296,28 @@ SELECT s.b AS b FROM (SELECT t1.b AS b FROM t1 AS t1 UNION ALL SELECT t2.b AS b 
 -- CTEs
 --------------------------------------
 WITH z AS (SELECT x.a AS a FROM x) SELECT z.a AS a FROM z;
-WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z;
+WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z AS z;
 
 WITH z(a) AS (SELECT a FROM x) SELECT * FROM z;
-WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z;
+WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z AS z;
 
 WITH z AS (SELECT a FROM x) SELECT * FROM z as q;
 WITH z AS (SELECT x.a AS a FROM x AS x) SELECT q.a AS a FROM z AS q;
 
 WITH z AS (SELECT a FROM x) SELECT * FROM z;
-WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z;
+WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z AS z;
 
 WITH z AS (SELECT a FROM x), q AS (SELECT * FROM z) SELECT * FROM q;
-WITH z AS (SELECT x.a AS a FROM x AS x), q AS (SELECT z.a AS a FROM z) SELECT q.a AS a FROM q;
+WITH z AS (SELECT x.a AS a FROM x AS x), q AS (SELECT z.a AS a FROM z AS z) SELECT q.a AS a FROM q AS q;
 
 WITH z AS (SELECT * FROM x) SELECT * FROM z UNION SELECT * FROM z;
-WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT z.a AS a, z.b AS b FROM z UNION SELECT z.a AS a, z.b AS b FROM z;
+WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT z.a AS a, z.b AS b FROM z AS z UNION SELECT z.a AS a, z.b AS b FROM z AS z;
 
 WITH z AS (SELECT * FROM x), q AS (SELECT b FROM z) SELECT b FROM q;
-WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x), q AS (SELECT z.b AS b FROM z) SELECT q.b AS b FROM q;
+WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x), q AS (SELECT z.b AS b FROM z AS z) SELECT q.b AS b FROM q AS q;
 
 WITH z AS ((SELECT b FROM x UNION ALL SELECT b FROM y) ORDER BY b) SELECT * FROM z;
-WITH z AS ((SELECT x.b AS b FROM x AS x UNION ALL SELECT y.b AS b FROM y AS y) ORDER BY b) SELECT z.b AS b FROM z;
+WITH z AS ((SELECT x.b AS b FROM x AS x UNION ALL SELECT y.b AS b FROM y AS y) ORDER BY b) SELECT z.b AS b FROM z AS z;
 
 WITH cte(x) AS (SELECT 1) SELECT * FROM cte AS cte(a);
 WITH cte AS (SELECT 1 AS x) SELECT cte.a AS a FROM cte AS cte(a);
@@ -327,7 +327,7 @@ WITH cte AS (SELECT 1 AS x, 2 AS y) SELECT cte.a AS a, cte.y AS y FROM cte AS ct
 
 # execute: false
 WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FROM player;
-WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player;
+WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player AS player;
 
 --------------------------------------
 -- Except and Replace
@@ -359,7 +359,7 @@ SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
 # execute: false
 WITH cte AS (SELECT a.b.c.d.f.g FROM tbl1) SELECT g FROM (SELECT g FROM tbl2) tbl2 JOIN cte USING(g);
-WITH cte AS (SELECT tbl1.a.b.c.d.f.g AS g FROM tbl1 AS tbl1) SELECT COALESCE(tbl2.g, cte.g) AS g FROM (SELECT tbl2.g AS g FROM tbl2 AS tbl2) AS tbl2 JOIN cte ON tbl2.g = cte.g;
+WITH cte AS (SELECT tbl1.a.b.c.d.f.g AS g FROM tbl1 AS tbl1) SELECT COALESCE(tbl2.g, cte.g) AS g FROM (SELECT tbl2.g AS g FROM tbl2 AS tbl2) AS tbl2 JOIN cte AS cte ON tbl2.g = cte.g;
 
 SELECT x.b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
@@ -413,7 +413,7 @@ SELECT a FROM t1 JOIN t2 USING(a);
 SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
 
 WITH m(a) AS (SELECT 1), n(b) AS (SELECT 1) SELECT * FROM m JOIN n AS foo(a) USING (a);
-WITH m AS (SELECT 1 AS a), n AS (SELECT 1 AS b) SELECT COALESCE(m.a, foo.a) AS a FROM m JOIN n AS foo(a) ON m.a = foo.a;
+WITH m AS (SELECT 1 AS a), n AS (SELECT 1 AS b) SELECT COALESCE(m.a, foo.a) AS a FROM m AS m JOIN n AS foo(a) ON m.a = foo.a;
 
 --------------------------------------
 -- Hint with table reference

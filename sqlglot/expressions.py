@@ -6594,6 +6594,7 @@ def rename_column(
         table_name: Name of the table
         old_column: The old name of the column
         new_column: The new name of the column
+        exists: Whether or not to add the `IF EXISTS` clause
 
     Returns:
         Alter table expression

@@ -1280,6 +1280,10 @@ class AlterColumn(Expression):
     }
 
 
+class RenameColumn(Expression):
+    arg_types = {"this": True, "to": True, "exists": False}
+
+
 class RenameTable(Expression):
     pass
 
@@ -6574,6 +6578,28 @@ def rename_table(old_name: str | Table, new_name: str | Table) -> AlterTable:
         this=old_table,
         actions=[
             RenameTable(this=new_table),
+        ],
+    )
+
+
+def rename_column(
+    table_name: str | Table, old_column: str | Column, new_column: str | Column, exists: Boolean
+) -> AlterTable:
+    """Build ALTER TABLE... RENAME COLUMN... expression
+
+    Args:
+        table_name: Name of the table
+        old_column: The old name of the column
+        new_column: The new name of the column
+
+    Returns:
+        Alter table expression
+    """
+    table = to_table(table_name)
+    return AlterTable(
+        this=table,
+        actions=[
+            RenameColumn(this=old_column, to=new_column, exists=exists),
         ],
     )
 

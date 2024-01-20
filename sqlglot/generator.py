@@ -2691,6 +2691,12 @@ class Generator:
         this = self.sql(expression, "this")
         return f"RENAME TO {this}"
 
+    def renamecolumn_sql(self, expression: exp.RenameColumn) -> str:
+        exists = " IF EXISTS" if expression.args.get("exists") else ""
+        old_column = self.sql(expression, "this")
+        new_column = self.sql(expression, "to")
+        return f"RENAME COLUMN{exists} {old_column} TO {new_column}"
+
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         actions = expression.args["actions"]
 

@@ -564,6 +564,16 @@ class TestParser(unittest.TestCase):
             "ALTER TABLE foo RENAME TO bar",
         )
 
+    def test_rename_column(self):
+        self.assertEqual(
+            parse_one("ALTER TABLE foo RENAME COLUMN c1 TO c2").sql(),
+            "ALTER TABLE foo RENAME COLUMN c1 TO c2",
+        )
+        self.assertEqual(
+            parse_one("ALTER TABLE foo RENAME COLUMN IF EXISTS c1 TO c2").sql(),
+            "ALTER TABLE foo RENAME COLUMN IF EXISTS c1 TO c2",
+        )
+
     def test_pivot_columns(self):
         nothing_aliased = """
             SELECT * FROM (

@@ -38,7 +38,6 @@ class Scope:
                 SELECT c FROM x LATERAL VIEW EXPLODE (a) AS c;
             The LATERAL VIEW EXPLODE gets x as a source.
         cte_sources (dict[str, Scope]): Sources from CTES
-        cte_table_references (dict[str, list[Table]]): CTE name to Table references in this scope
         outer_column_list (list[str]): If this is a derived table or CTE, and the outer query
             defines a column list of it's alias of this scope, this is that list of columns.
             For example:
@@ -69,7 +68,6 @@ class Scope:
         self.sources = sources or {}
         self.lateral_sources = lateral_sources or {}
         self.cte_sources = cte_sources or {}
-        self.cte_table_references = defaultdict(list)
         self.sources.update(self.lateral_sources)
         self.sources.update(self.cte_sources)
         self.outer_column_list = outer_column_list or []
@@ -97,6 +95,7 @@ class Scope:
         self._join_hints = None
         self._pivots = None
         self._references = None
+        self._cte_table_references = defaultdict(list)
 
     def branch(
         self, expression, scope_type, sources=None, cte_sources=None, lateral_sources=None, **kwargs
@@ -461,6 +460,10 @@ class Scope:
 
         return scope_ref_count
 
+    def cte_table_references(self, cte_name: str) -> t.List[exp.Table]:
+        """Fetch all Table references that correspond to a given CTE in this scope."""
+        return self._cte_table_references.get(cte_name) or []
+
 
 def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     """
@@ -597,14 +600,14 @@ def _traverse_ctes(scope):
 
             alias = cte.alias
             recursive_table_ref = child_scope.sources.get(alias)
-            if isinstance(recursive_table_ref, exp.Table):
-                child_scope.cte_table_references[alias].append(recursive_table_ref)
-
             sources[alias] = child_scope
 
             if recursive_scope:
                 child_scope.add_source(alias, recursive_scope)
                 child_scope.cte_sources[alias] = recursive_scope
+
+                if isinstance(recursive_table_ref, exp.Table):
+                    child_scope._cte_table_references[alias].append(recursive_table_ref)
 
         # append the final child_scope yielded
         if child_scope:
@@ -653,7 +656,7 @@ def _traverse_tables(scope):
                     sources[pivots[0].alias] = expression
                 else:
                     sources[source_name] = scope.sources[table_name]
-                    scope.cte_table_references[source_name].append(expression)
+                    scope._cte_table_references[source_name].append(expression)
             elif source_name in sources:
                 sources[find_new_name(sources, table_name)] = expression
             else:

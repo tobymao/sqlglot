@@ -882,7 +882,7 @@ WITH "revenue" AS (
 ), "_u_0" AS (
   SELECT
     MAX("revenue"."total_revenue") AS "_col_0"
-  FROM "revenue"
+  FROM "revenue" AS "revenue"
 )
 SELECT
   "supplier"."s_suppkey" AS "s_suppkey",
@@ -891,7 +891,7 @@ SELECT
   "supplier"."s_phone" AS "s_phone",
   "revenue"."total_revenue" AS "total_revenue"
 FROM "supplier" AS "supplier"
-JOIN "revenue"
+JOIN "revenue" AS "revenue"
   ON "revenue"."supplier_no" = "supplier"."s_suppkey"
 JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_col_0" = "revenue"."total_revenue"

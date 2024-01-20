@@ -191,7 +191,7 @@ WITH "wscs" AS (
         ELSE NULL
       END
     ) AS "sat_sales"
-  FROM "wscs"
+  FROM "wscs" AS "wscs"
   JOIN "date_dim" AS "date_dim"
     ON "date_dim"."d_date_sk" = "wscs"."sold_date_sk"
   GROUP BY
@@ -206,7 +206,7 @@ SELECT
   ROUND("wswscs"."thu_sales" / "wswscs_2"."thu_sales", 2) AS "_col_5",
   ROUND("wswscs"."fri_sales" / "wswscs_2"."fri_sales", 2) AS "_col_6",
   ROUND("wswscs"."sat_sales" / "wswscs_2"."sat_sales", 2) AS "_col_7"
-FROM "wswscs"
+FROM "wswscs" AS "wswscs"
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_week_seq" = "wswscs"."d_week_seq" AND "date_dim"."d_year" = 1998
 JOIN "wswscs" AS "wswscs_2"
@@ -821,7 +821,7 @@ WITH "salesreturns" AS (
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" - "ssr"."profit_loss" AS "profit"
-  FROM "ssr"
+  FROM "ssr" AS "ssr"
   UNION ALL
   SELECT
     'catalog channel' AS "channel",
@@ -829,7 +829,7 @@ WITH "salesreturns" AS (
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" - "csr"."profit_loss" AS "profit"
-  FROM "csr"
+  FROM "csr" AS "csr"
   UNION ALL
   SELECT
     'web channel' AS "channel",
@@ -837,7 +837,7 @@ WITH "salesreturns" AS (
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" - "wsr"."profit_loss" AS "profit"
-  FROM "wsr"
+  FROM "wsr" AS "wsr"
 )
 SELECT
   "x"."channel" AS "channel",
@@ -2203,7 +2203,7 @@ WITH "item_2" AS (
 ), "_u_1" AS (
   SELECT
     "avg_sales"."average_sales" AS "average_sales"
-  FROM "avg_sales"
+  FROM "avg_sales" AS "avg_sales"
 ), "_u_0" AS (
   SELECT
     "item"."i_item_sk" AS "ss_item_sk"
@@ -2996,7 +2996,7 @@ WITH "frequent_ss_items" AS (
   SELECT
     "customer"."c_customer_sk" AS "c_customer_sk"
   FROM "store_sales" AS "store_sales"
-  CROSS JOIN "max_store_sales"
+  CROSS JOIN "max_store_sales" AS "max_store_sales"
   JOIN "customer_2" AS "customer"
     ON "customer"."c_customer_sk" = "store_sales"."ss_customer_sk"
   GROUP BY
@@ -3006,13 +3006,13 @@ WITH "frequent_ss_items" AS (
 ), "_u_1" AS (
   SELECT
     "frequent_ss_items"."item_sk" AS "item_sk"
-  FROM "frequent_ss_items"
+  FROM "frequent_ss_items" AS "frequent_ss_items"
   GROUP BY
     "frequent_ss_items"."item_sk"
 ), "_u_2" AS (
   SELECT
     "best_ss_customer"."c_customer_sk" AS "c_customer_sk"
-  FROM "best_ss_customer"
+  FROM "best_ss_customer" AS "best_ss_customer"
   GROUP BY
     "best_ss_customer"."c_customer_sk"
 ), "date_dim_4" AS (
@@ -3137,14 +3137,14 @@ WITH "ssales" AS (
 ), "_u_0" AS (
   SELECT
     0.05 * AVG("ssales"."netpaid") AS "_col_0"
-  FROM "ssales"
+  FROM "ssales" AS "ssales"
 )
 SELECT
   "ssales"."c_last_name" AS "c_last_name",
   "ssales"."c_first_name" AS "c_first_name",
   "ssales"."s_store_name" AS "s_store_name",
   SUM("ssales"."netpaid") AS "paid"
-FROM "ssales"
+FROM "ssales" AS "ssales"
 CROSS JOIN "_u_0" AS "_u_0"
 WHERE
   "ssales"."i_color" = 'papaya'
@@ -4095,17 +4095,17 @@ WITH "customer_address_2" AS (
   SELECT
     "ss"."i_manufact_id" AS "i_manufact_id",
     "ss"."total_sales" AS "total_sales"
-  FROM "ss"
+  FROM "ss" AS "ss"
   UNION ALL
   SELECT
     "cs"."i_manufact_id" AS "i_manufact_id",
     "cs"."total_sales" AS "total_sales"
-  FROM "cs"
+  FROM "cs" AS "cs"
   UNION ALL
   SELECT
     "ws"."i_manufact_id" AS "i_manufact_id",
     "ws"."total_sales" AS "total_sales"
-  FROM "ws"
+  FROM "ws" AS "ws"
 )
 SELECT
   "tmp1"."i_manufact_id" AS "i_manufact_id",
@@ -5534,7 +5534,7 @@ SELECT
   "v1"."sum_sales" AS "sum_sales",
   "v1_lag"."sum_sales" AS "psum",
   "v1_lead"."sum_sales" AS "nsum"
-FROM "v1"
+FROM "v1" AS "v1"
 JOIN "v1" AS "v1_lag"
   ON "v1"."i_brand" = "v1_lag"."i_brand"
   AND "v1"."i_category" = "v1_lag"."i_category"
@@ -6455,7 +6455,7 @@ WITH "cs_or_ws_sales" AS (
 ), "my_revenue" AS (
   SELECT
     SUM("store_sales"."ss_ext_sales_price") AS "revenue"
-  FROM "my_customers"
+  FROM "my_customers" AS "my_customers"
   JOIN "customer_address" AS "customer_address"
     ON "customer_address"."ca_address_sk" = "my_customers"."c_current_addr_sk"
   JOIN "store_sales" AS "store_sales"
@@ -6480,7 +6480,7 @@ SELECT
   CAST((
     "my_revenue"."revenue" / 50
   ) AS INT) * 50 AS "segment_base"
-FROM "my_revenue"
+FROM "my_revenue" AS "my_revenue"
 GROUP BY
   CAST((
     "my_revenue"."revenue" / 50
@@ -6681,17 +6681,17 @@ WITH "customer_address_2" AS (
   SELECT
     "ss"."i_item_id" AS "i_item_id",
     "ss"."total_sales" AS "total_sales"
-  FROM "ss"
+  FROM "ss" AS "ss"
   UNION ALL
   SELECT
     "cs"."i_item_id" AS "i_item_id",
     "cs"."total_sales" AS "total_sales"
-  FROM "cs"
+  FROM "cs" AS "cs"
   UNION ALL
   SELECT
     "ws"."i_item_id" AS "i_item_id",
     "ws"."total_sales" AS "total_sales"
-  FROM "ws"
+  FROM "ws" AS "ws"
 )
 SELECT
   "tmp1"."i_item_id" AS "i_item_id",
@@ -6813,7 +6813,7 @@ SELECT
   "v1"."sum_sales" AS "sum_sales",
   "v1_lag"."sum_sales" AS "psum",
   "v1_lead"."sum_sales" AS "nsum"
-FROM "v1"
+FROM "v1" AS "v1"
 JOIN "v1" AS "v1_lag"
   ON "v1"."cc_name" = "v1_lag"."cc_name"
   AND "v1"."i_brand" = "v1_lag"."i_brand"
@@ -7014,14 +7014,14 @@ SELECT
   (
     "ss_items"."ss_item_rev" + "cs_items"."cs_item_rev" + "ws_items"."ws_item_rev"
   ) / 3 AS "average"
-FROM "ss_items"
-JOIN "cs_items"
+FROM "ss_items" AS "ss_items"
+JOIN "cs_items" AS "cs_items"
   ON "cs_items"."cs_item_rev" <= 1.1 * "ss_items"."ss_item_rev"
   AND "cs_items"."cs_item_rev" >= 0.9 * "ss_items"."ss_item_rev"
   AND "cs_items"."item_id" = "ss_items"."item_id"
   AND "ss_items"."ss_item_rev" <= 1.1 * "cs_items"."cs_item_rev"
   AND "ss_items"."ss_item_rev" >= 0.9 * "cs_items"."cs_item_rev"
-JOIN "ws_items"
+JOIN "ws_items" AS "ws_items"
   ON "cs_items"."cs_item_rev" <= 1.1 * "ws_items"."ws_item_rev"
   AND "cs_items"."cs_item_rev" >= 0.9 * "ws_items"."ws_item_rev"
   AND "ss_items"."item_id" = "ws_items"."item_id"
@@ -7193,7 +7193,7 @@ WITH "wss" AS (
     "wss"."thu_sales" AS "thu_sales2",
     "wss"."fri_sales" AS "fri_sales2",
     "wss"."sat_sales" AS "sat_sales2"
-  FROM "wss"
+  FROM "wss" AS "wss"
   JOIN "date_dim" AS "d"
     ON "d"."d_month_seq" <= 1219
     AND "d"."d_month_seq" >= 1208
@@ -7212,7 +7212,7 @@ SELECT
   "wss"."thu_sales" / "x"."thu_sales2" AS "_col_7",
   "wss"."fri_sales" / "x"."fri_sales2" AS "_col_8",
   "wss"."sat_sales" / "x"."sat_sales2" AS "_col_9"
-FROM "wss"
+FROM "wss" AS "wss"
 JOIN "date_dim" AS "d"
   ON "d"."d_month_seq" <= 1207
   AND "d"."d_month_seq" >= 1196
@@ -7379,17 +7379,17 @@ WITH "customer_address_2" AS (
   SELECT
     "ss"."i_item_id" AS "i_item_id",
     "ss"."total_sales" AS "total_sales"
-  FROM "ss"
+  FROM "ss" AS "ss"
   UNION ALL
   SELECT
     "cs"."i_item_id" AS "i_item_id",
     "cs"."total_sales" AS "total_sales"
-  FROM "cs"
+  FROM "cs" AS "cs"
   UNION ALL
   SELECT
     "ws"."i_item_id" AS "i_item_id",
     "ws"."total_sales" AS "total_sales"
-  FROM "ws"
+  FROM "ws" AS "ws"
 )
 SELECT
   "tmp1"."i_item_id" AS "i_item_id",
@@ -7921,7 +7921,7 @@ WITH "cs_ui" AS (
     ON "ad1"."ca_address_sk" = "store_sales"."ss_addr_sk"
   JOIN "customer_demographics" AS "cd1"
     ON "cd1"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
-  JOIN "cs_ui"
+  JOIN "cs_ui" AS "cs_ui"
     ON "cs_ui"."cs_item_sk" = "store_sales"."ss_item_sk"
   JOIN "customer" AS "customer"
     ON "customer"."c_customer_sk" = "store_sales"."ss_customer_sk"
@@ -10343,8 +10343,8 @@ WITH "date_dim_2" AS (
     "ss"."sales" AS "sales",
     COALESCE("sr"."returns1", 0) AS "returns1",
     "ss"."profit" - COALESCE("sr"."profit_loss", 0) AS "profit"
-  FROM "ss"
-  LEFT JOIN "sr"
+  FROM "ss" AS "ss"
+  LEFT JOIN "sr" AS "sr"
     ON "sr"."s_store_sk" = "ss"."s_store_sk"
   UNION ALL
   SELECT
@@ -10353,8 +10353,8 @@ WITH "date_dim_2" AS (
     "cs"."sales" AS "sales",
     "cr"."returns1" AS "returns1",
     "cs"."profit" - "cr"."profit_loss" AS "profit"
-  FROM "cs"
-  CROSS JOIN "cr"
+  FROM "cs" AS "cs"
+  CROSS JOIN "cr" AS "cr"
   UNION ALL
   SELECT
     'web channel' AS "channel",
@@ -10362,8 +10362,8 @@ WITH "date_dim_2" AS (
     "ws"."sales" AS "sales",
     COALESCE("wr"."returns1", 0) AS "returns1",
     "ws"."profit" - COALESCE("wr"."profit_loss", 0) AS "profit"
-  FROM "ws"
-  LEFT JOIN "wr"
+  FROM "ws" AS "ws"
+  LEFT JOIN "wr" AS "wr"
     ON "wr"."wp_web_page_sk" = "ws"."wp_web_page_sk"
 )
 SELECT
@@ -10546,12 +10546,12 @@ SELECT
   COALESCE("ws"."ws_qty", 0) + COALESCE("cs"."cs_qty", 0) AS "other_chan_qty",
   COALESCE("ws"."ws_wc", 0) + COALESCE("cs"."cs_wc", 0) AS "other_chan_wholesale_cost",
   COALESCE("ws"."ws_sp", 0) + COALESCE("cs"."cs_sp", 0) AS "other_chan_sales_price"
-FROM "ss"
-LEFT JOIN "cs"
+FROM "ss" AS "ss"
+LEFT JOIN "cs" AS "cs"
   ON "cs"."cs_customer_sk" = "ss"."ss_customer_sk"
   AND "cs"."cs_item_sk" = "cs"."cs_item_sk"
   AND "cs"."cs_sold_year" = "ss"."ss_sold_year"
-LEFT JOIN "ws"
+LEFT JOIN "ws" AS "ws"
   ON "ss"."ss_customer_sk" = "ws"."ws_customer_sk"
   AND "ss"."ss_item_sk" = "ws"."ws_item_sk"
   AND "ss"."ss_sold_year" = "ws"."ws_sold_year"
@@ -10850,7 +10850,7 @@ WITH "date_dim_2" AS (
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" AS "profit"
-  FROM "ssr"
+  FROM "ssr" AS "ssr"
   UNION ALL
   SELECT
     'catalog channel' AS "channel",
@@ -10858,7 +10858,7 @@ WITH "date_dim_2" AS (
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" AS "profit"
-  FROM "csr"
+  FROM "csr" AS "csr"
   UNION ALL
   SELECT
     'web channel' AS "channel",
@@ -10866,7 +10866,7 @@ WITH "date_dim_2" AS (
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" AS "profit"
-  FROM "wsr"
+  FROM "wsr" AS "wsr"
 )
 SELECT
   "x"."channel" AS "channel",
@@ -11249,10 +11249,10 @@ SELECT
   (
     "sr_items"."sr_item_qty" + "cr_items"."cr_item_qty" + "wr_items"."wr_item_qty"
   ) / 3.0 AS "average"
-FROM "sr_items"
-JOIN "cr_items"
+FROM "sr_items" AS "sr_items"
+JOIN "cr_items" AS "cr_items"
   ON "cr_items"."item_id" = "sr_items"."item_id"
-JOIN "wr_items"
+JOIN "wr_items" AS "wr_items"
   ON "sr_items"."item_id" = "wr_items"."item_id"
 ORDER BY
   "sr_items"."item_id",
@@ -12312,14 +12312,14 @@ WITH "ws_wh" AS (
 ), "_u_0" AS (
   SELECT
     "ws_wh"."ws_order_number" AS "ws_order_number"
-  FROM "ws_wh"
+  FROM "ws_wh" AS "ws_wh"
   GROUP BY
     "ws_wh"."ws_order_number"
 ), "_u_1" AS (
   SELECT
     "web_returns"."wr_order_number" AS "wr_order_number"
   FROM "web_returns" AS "web_returns"
-  JOIN "ws_wh"
+  JOIN "ws_wh" AS "ws_wh"
     ON "web_returns"."wr_order_number" = "ws_wh"."ws_order_number"
   GROUP BY
     "web_returns"."wr_order_number"
@@ -12475,8 +12475,8 @@ SELECT
       ELSE 0
     END
   ) AS "store_and_catalog"
-FROM "ssci"
-FULL JOIN "csci"
+FROM "ssci" AS "ssci"
+FULL JOIN "csci" AS "csci"
   ON "csci"."customer_sk" = "ssci"."customer_sk" AND "csci"."item_sk" = "ssci"."item_sk"
 LIMIT 100;
 

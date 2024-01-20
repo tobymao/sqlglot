@@ -38,6 +38,7 @@ class Scope:
                 SELECT c FROM x LATERAL VIEW EXPLODE (a) AS c;
             The LATERAL VIEW EXPLODE gets x as a source.
         cte_sources (dict[str, Scope]): Sources from CTES
+        cte_table_references (dict[str, list[Table]]): CTE name to Table references in this scope
         outer_column_list (list[str]): If this is a derived table or CTE, and the outer query
             defines a column list of it's alias of this scope, this is that list of columns.
             For example:
@@ -68,6 +69,7 @@ class Scope:
         self.sources = sources or {}
         self.lateral_sources = lateral_sources or {}
         self.cte_sources = cte_sources or {}
+        self.cte_table_references = defaultdict(list)
         self.sources.update(self.lateral_sources)
         self.sources.update(self.cte_sources)
         self.outer_column_list = outer_column_list or []
@@ -594,6 +596,10 @@ def _traverse_ctes(scope):
             yield child_scope
 
             alias = cte.alias
+            recursive_table_ref = child_scope.sources.get(alias)
+            if isinstance(recursive_table_ref, exp.Table):
+                child_scope.cte_table_references[alias].append(recursive_table_ref)
+
             sources[alias] = child_scope
 
             if recursive_scope:
@@ -647,6 +653,7 @@ def _traverse_tables(scope):
                     sources[pivots[0].alias] = expression
                 else:
                     sources[source_name] = scope.sources[table_name]
+                    scope.cte_table_references[source_name].append(expression)
             elif source_name in sources:
                 sources[find_new_name(sources, table_name)] = expression
             else:

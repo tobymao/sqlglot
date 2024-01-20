@@ -114,5 +114,10 @@ def qualify_tables(
                 if isinstance(udtf, exp.Values) and not table_alias.columns:
                     for i, e in enumerate(udtf.expressions[0].expressions):
                         table_alias.append("columns", exp.to_identifier(f"_col_{i}"))
+            else:
+                for table in scope.cte_table_references[name]:
+                    if not table.alias:
+                        # Mutates the table by attaching an alias to it
+                        alias(table, table.name, copy=False, table=True)
 
     return expression

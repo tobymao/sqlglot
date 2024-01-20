@@ -79,7 +79,7 @@ WITH "cte" AS (
 )
 SELECT
   "cte"."a" AS "a"
-FROM "cte";
+FROM "cte" AS "cte";
 
 # title: Chained CTEs
 WITH cte1 AS (
@@ -103,11 +103,11 @@ WITH "cte1" AS (
 )
 SELECT
   "cte1"."a" AS "a"
-FROM "cte1"
+FROM "cte1" AS "cte1"
 UNION ALL
 SELECT
   "cte1"."a" + 1 AS "a"
-FROM "cte1";
+FROM "cte1" AS "cte1";
 
 # title: Correlated subquery
 SELECT a, SUM(b) AS sum_b
@@ -223,14 +223,14 @@ WITH "m" AS (
   SELECT
     "m"."a" AS "a",
     "m"."b" AS "b"
-  FROM "m"
+  FROM "m" AS "m"
   WHERE
     "m"."a" = 1
 ), "o" AS (
   SELECT
     "m"."a" AS "a",
     "m"."b" AS "b"
-  FROM "m"
+  FROM "m" AS "m"
   WHERE
     "m"."a" = 2
 )
@@ -238,10 +238,10 @@ SELECT
   "n"."a" AS "a",
   "n"."b" AS "b",
   "o"."b" AS "b"
-FROM "n"
+FROM "n" AS "n"
 JOIN "n" AS "n2"
   ON "n"."a" = "n2"."a"
-FULL JOIN "o"
+FULL JOIN "o" AS "o"
   ON "n"."a" = "o"."a"
 WHERE
   "o"."b" > 0;
@@ -355,7 +355,7 @@ WITH RECURSIVE "base" AS (
     "cte1"."a" AS "a",
     "cte1"."b" AS "b",
     "cte1"."c" AS "c"
-  FROM "cte1"
+  FROM "cte1" AS "cte1"
   WHERE
     "cte1"."a" < 1
 )
@@ -363,7 +363,7 @@ SELECT
   "cte1"."a" AS "a",
   "cte1"."b" AS "b",
   "cte1"."c" AS "c"
-FROM "cte1";
+FROM "cte1" AS "cte1";
 
 # title: right join should not push down to from
 SELECT x.a, y.b
@@ -747,7 +747,7 @@ SELECT
   `_q_0`.`second_half_sales` AS `second_half_sales`
 FROM `produce` AS `produce` UNPIVOT((`first_half_sales`, `second_half_sales`) FOR `semesters` IN ((`produce`.`q1`, `produce`.`q2`) AS 'semester_1', (`produce`.`q3`, `produce`.`q4`) AS 'semester_2')) AS `_q_0`;
 
-# title: quoting is maintained
+# title: quoting is preserved
 # dialect: snowflake
 with cte1("id", foo) as (select 1, 2) select "id" from cte1;
 WITH "CTE1" AS (
@@ -756,7 +756,7 @@ WITH "CTE1" AS (
 )
 SELECT
   "CTE1"."id" AS "id"
-FROM "CTE1";
+FROM "CTE1" AS "CTE1";
 
 # title: ensures proper quoting happens after all optimizations
 # execute: false
@@ -1090,7 +1090,7 @@ WITH "m" AS (
 )
 SELECT
   COALESCE("m"."a", "foo"."a") AS "a"
-FROM "m"
+FROM "m" AS "m"
 JOIN "n" AS "foo"("a")
   ON "foo"."a" = "m"."a";
 
@@ -1170,7 +1170,7 @@ SELECT
   "alias3"."m_od" AS "m_od",
   COALESCE("alias3"."c_od", 0) AS "c_od"
 FROM "table1" AS "table1"
-LEFT JOIN "alias3"
+LEFT JOIN "alias3" AS "alias3"
   ON "alias3"."cid" = "table1"."cid";
 
 # title: CTE with EXPLODE cannot be merged
@@ -1205,7 +1205,7 @@ WITH `T` AS (
 )
 SELECT
   `T`.`CoL` AS `CoL`
-FROM `T`;
+FROM `T` AS `T`;
 
 # title: override mysql's settings so it normalizes to lowercase
 # dialect: mysql, normalization_strategy = lowercase
@@ -1217,7 +1217,7 @@ WITH `t` AS (
 )
 SELECT
   `t`.`CoL` AS `CoL`
-FROM `t`;
+FROM `t` AS `t`;
 
 # title: top-level query is parenthesized
 # execute: false
@@ -1239,11 +1239,11 @@ WITH "x" AS (
 (
   SELECT
     "x"."a" AS "a"
-  FROM "x"
+  FROM "x" AS "x"
   UNION ALL
   SELECT
     "x"."a" AS "a"
-  FROM "x"
+  FROM "x" AS "x"
   LIMIT 10
 )
 LIMIT 10;

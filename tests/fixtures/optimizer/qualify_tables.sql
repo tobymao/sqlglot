@@ -19,9 +19,13 @@ SELECT 1 FROM x.y.z AS z;
 SELECT 1 FROM y.z AS z, z.a;
 SELECT 1 FROM c.y.z AS z, z.a;
 
-# title: cte can't be qualified
+# title: single cte
 WITH a AS (SELECT 1 FROM z) SELECT 1 FROM a;
-WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a;
+WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a AS a;
+
+# title: two ctes that are self-joined
+WITH a AS (SELECT 1 FROM z) SELECT 1 FROM a CROSS JOIN a;
+WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a AS a CROSS JOIN a AS a;
 
 # title: query that yields a single column as projection
 SELECT (SELECT y.c FROM y AS y) FROM x;

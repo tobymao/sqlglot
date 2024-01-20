@@ -51,7 +51,7 @@ class TestLineage(unittest.TestCase):
         )
         self.assertEqual(
             node.source.sql(),
-            "WITH z AS (SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */) SELECT z.a AS a FROM z",
+            "WITH z AS (SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */) SELECT z.a AS a FROM z AS z",
         )
         self.assertEqual(node.alias, "")
 
@@ -79,14 +79,14 @@ class TestLineage(unittest.TestCase):
         )
         self.assertEqual(
             node.source.sql(),
-            "SELECT z.a AS a FROM (WITH y AS (SELECT x.a AS a FROM x AS x) SELECT y.a AS a FROM y) AS z /* source: z */",
+            "SELECT z.a AS a FROM (WITH y AS (SELECT x.a AS a FROM x AS x) SELECT y.a AS a FROM y AS y) AS z /* source: z */",
         )
         self.assertEqual(node.alias, "")
 
         downstream = node.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
-            "WITH y AS (SELECT x.a AS a FROM x AS x) SELECT y.a AS a FROM y",
+            "WITH y AS (SELECT x.a AS a FROM x AS x) SELECT y.a AS a FROM y AS y",
         )
         self.assertEqual(downstream.alias, "z")
 
@@ -104,7 +104,7 @@ class TestLineage(unittest.TestCase):
         )
         self.assertEqual(
             node.source.sql(),
-            "WITH y AS (SELECT * FROM x AS x) SELECT y.a AS a FROM y",
+            "WITH y AS (SELECT * FROM x AS x) SELECT y.a AS a FROM y AS y",
         )
         self.assertEqual(node.alias, "")
 
@@ -122,7 +122,7 @@ class TestLineage(unittest.TestCase):
         )
         self.assertEqual(
             node.source.sql(),
-            "WITH y AS (SELECT * FROM x AS x) SELECT a AS a FROM y JOIN z AS z ON y.uid = z.uid",
+            "WITH y AS (SELECT * FROM x AS x) SELECT a AS a FROM y AS y JOIN z AS z ON y.uid = z.uid",
         )
         self.assertEqual(node.alias, "")
 
@@ -166,12 +166,12 @@ class TestLineage(unittest.TestCase):
 
         self.assertEqual(
             node.source.sql(),
-            "WITH t1 AS (SELECT t2.c2 AS c2 FROM a.b.t2 AS t2), inter AS (SELECT t1.c2 AS c2 FROM t1) SELECT inter.c2 AS c2 FROM inter",
+            "WITH t1 AS (SELECT t2.c2 AS c2 FROM a.b.t2 AS t2), inter AS (SELECT t1.c2 AS c2 FROM t1 AS t1) SELECT inter.c2 AS c2 FROM inter AS inter",
         )
         self.assertEqual(node.alias, "")
 
         downstream = node.downstream[0]
-        self.assertEqual(downstream.source.sql(), "SELECT t1.c2 AS c2 FROM t1")
+        self.assertEqual(downstream.source.sql(), "SELECT t1.c2 AS c2 FROM t1 AS t1")
         self.assertEqual(downstream.expression.sql(), "t1.c2 AS c2")
         self.assertEqual(downstream.alias, "")
 

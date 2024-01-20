@@ -226,7 +226,7 @@ FROM
   t1
 WHERE
   row_num = 1;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.a AS a, t1.b AS b FROM t1 WHERE t1.row_num = 1;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.a AS a, t1.b AS b FROM t1 AS t1 WHERE t1.row_num = 1;
 
 # title: Test preventing merge of window expressions join clause
 with t1 as (
@@ -241,7 +241,7 @@ SELECT
   t1.a,
   t1.b
 FROM t1 JOIN y ON t1.a = y.c AND t1.row_num = 1;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.a AS a, t1.b AS b FROM t1 JOIN y AS y ON t1.a = y.c AND t1.row_num = 1;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.a AS a, t1.b AS b FROM t1 AS t1 JOIN y AS y ON t1.a = y.c AND t1.row_num = 1;
 
 # title: Test preventing merge of window expressions agg function
 with t1 as (
@@ -256,7 +256,7 @@ SELECT
   SUM(t1.row_num) as total_rows
 FROM
   t1;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT SUM(t1.row_num) AS total_rows FROM t1;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT SUM(t1.row_num) AS total_rows FROM t1 AS t1;
 
 # title: Test prevent merging of window if in group by func
 with t1 as (
@@ -274,7 +274,7 @@ FROM
   t1
 GROUP BY t1.row_num
 ORDER BY t1.row_num;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, SUM(t1.a) AS total FROM t1 GROUP BY t1.row_num ORDER BY row_num;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, SUM(t1.a) AS total FROM t1 AS t1 GROUP BY t1.row_num ORDER BY row_num;
 
 # title: Test prevent merging of window if in order by func
 with t1 as (
@@ -291,7 +291,7 @@ SELECT
 FROM
   t1
 ORDER BY t1.row_num, t1.a;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, t1.a AS a FROM t1 ORDER BY t1.row_num, t1.a;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.row_num AS row_num, t1.a AS a FROM t1 AS t1 ORDER BY t1.row_num, t1.a;
 
 # title: Test allow merging of window function
 with t1 as (

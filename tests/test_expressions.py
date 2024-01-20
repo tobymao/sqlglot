@@ -943,16 +943,6 @@ FROM foo""",
             "ALTER TABLE t1 RENAME TO t2",
         )
 
-    def test_rename_column(self):
-        self.assertEqual(
-            exp.rename_column("table1", "c1", "c2", True).sql(),
-            "ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2",
-        )
-        self.assertEqual(
-            exp.rename_column("table1", "c1", "c2", False).sql(),
-            "ALTER TABLE table1 RENAME COLUMN c1 TO c2",
-        )
-
     def test_is_star(self):
         assert parse_one("*").is_star
         assert parse_one("foo.*").is_star

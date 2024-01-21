@@ -525,6 +525,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expression) -> None:
             selection = alias(
                 selection,
                 alias=selection.output_name or f"_col_{i}",
+                copy=False,
             )
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))

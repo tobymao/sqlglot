@@ -5350,7 +5350,7 @@ class Parser(metaclass=_Parser):
 
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:
-            actions = ensure_list(parse_result)
+            actions = ensure_list(parser(self))
 
             if not self._curr:
                 return self.expression(

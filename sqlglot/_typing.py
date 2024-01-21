@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+from typing_extensions import Literal as Lit  # noqa
+
 import sqlglot
 
 # A little hack for backwards compatibility with Python 3.7.

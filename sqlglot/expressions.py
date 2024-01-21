@@ -36,8 +36,7 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
-    from typing_extensions import Literal as Lit
-
+    from sqlglot._typing import Lit
     from sqlglot.dialects.dialect import DialectType
 
 

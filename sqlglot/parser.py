@@ -5326,10 +5326,10 @@ class Parser(metaclass=_Parser):
             old_column = self._parse_column()
             to = self._match_text_seq("TO")
             new_column = self._parse_column()
-            
+
             if old_column is None or to is None or new_column is None:
                 return None
-            
+
             return self.expression(exp.RenameColumn, this=old_column, to=new_column, exists=exists)
 
         self._match_text_seq("TO")

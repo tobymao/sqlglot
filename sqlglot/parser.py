@@ -5320,7 +5320,18 @@ class Parser(metaclass=_Parser):
         self._retreat(index)
         return self._parse_csv(self._parse_drop_column)
 
-    def _parse_alter_table_rename(self) -> exp.RenameTable:
+    def _parse_alter_table_rename(self) -> t.Optional[exp.RenameTable | exp.RenameColumn]:
+        if self._match(TokenType.COLUMN):
+            exists = self._parse_exists()
+            old_column = self._parse_column()
+            to = self._match_text_seq("TO")
+            new_column = self._parse_column()
+
+            if old_column is None or to is None or new_column is None:
+                return None
+
+            return self.expression(exp.RenameColumn, this=old_column, to=new_column, exists=exists)
+
         self._match_text_seq("TO")
         return self.expression(exp.RenameTable, this=self._parse_table(schema=True))
 
@@ -5341,7 +5352,7 @@ class Parser(metaclass=_Parser):
         if parser:
             actions = ensure_list(parser(self))
 
-            if not self._curr:
+            if not self._curr and actions:
                 return self.expression(
                     exp.AlterTable,
                     this=this,

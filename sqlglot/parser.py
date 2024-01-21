@@ -5350,10 +5350,6 @@ class Parser(metaclass=_Parser):
 
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:
-            parse_result = parser(self)
-            if parse_result is None:
-                return self._parse_as_command(start)
-
             actions = ensure_list(parse_result)
 
             if not self._curr:

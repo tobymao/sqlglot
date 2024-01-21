@@ -227,6 +227,14 @@ SELECT x.a AS a FROM x AS x WHERE x.b IN (SELECT y.c AS c FROM y AS y);
 SELECT (SELECT c FROM y) FROM x;
 SELECT (SELECT y.c AS c FROM y AS y) AS _col_0 FROM x AS x;
 
+# execute: false
+WITH t(c) AS (SELECT 1) SELECT (SELECT c) FROM t;
+WITH t AS (SELECT 1 AS c) SELECT (SELECT t.c AS c) AS _col_0 FROM t AS t;
+
+# execute: false
+WITH t1(c1) AS (SELECT 1), t2(c2) AS (SELECT 2) SELECT (SELECT c1 FROM t2) FROM t1;
+WITH t1 AS (SELECT 1 AS c1), t2 AS (SELECT 2 AS c2) SELECT (SELECT t1.c1 AS c1 FROM t2 AS t2) AS _col_0 FROM t1 AS t1;
+
 SELECT a FROM (SELECT a FROM x) WHERE a IN (SELECT b FROM (SELECT b FROM y));
 SELECT _q_1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _q_1 WHERE _q_1.a IN (SELECT _q_0.b AS b FROM (SELECT y.b AS b FROM y AS y) AS _q_0);
 

@@ -653,6 +653,18 @@ class TestBuild(unittest.TestCase):
                 lambda: exp.cast_unless("CAST(x AS TEXT)", "int", "int"),
                 "CAST(CAST(x AS TEXT) AS INT)",
             ),
+            (
+                lambda: exp.rename_column("table1", "c1", "c2", True),
+                "ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2",
+            ),
+            (
+                lambda: exp.rename_column("table1", "c1", "c2", False),
+                "ALTER TABLE table1 RENAME COLUMN c1 TO c2",
+            ),
+            (
+                lambda: exp.rename_column("table1", "c1", "c2"),
+                "ALTER TABLE table1 RENAME COLUMN c1 TO c2",
+            ),
         ]:
             with self.subTest(sql):
                 self.assertEqual(expression().sql(dialect[0] if dialect else None), sql)

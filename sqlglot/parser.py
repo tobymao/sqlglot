@@ -5352,7 +5352,7 @@ class Parser(metaclass=_Parser):
         if parser:
             actions = ensure_list(parser(self))
 
-            if not self._curr:
+            if not self._curr and actions:
                 return self.expression(
                     exp.AlterTable,
                     this=this,

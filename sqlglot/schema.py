@@ -106,6 +106,19 @@ class Schema(abc.ABC):
         name = column if isinstance(column, str) else column.name
         return name in self.column_names(table, dialect=dialect, normalize=normalize)
 
+    @abc.abstractmethod
+    def find(self, table: exp.Table, raise_on_missing: bool = True) -> t.Optional[t.Any]:
+        """
+        Returns the schema of a given table.
+
+        Args:
+            table: the target table.
+            raise_on_missing: whether or not to raise in case the schema is not found.
+
+        Returns:
+            The schema of the target table.
+        """
+
     @property
     @abc.abstractmethod
     def supported_table_args(self) -> t.Tuple[str, ...]:
@@ -156,11 +169,9 @@ class AbstractMappingSchema:
             return [table.this.name]
         return [table.text(part) for part in exp.TABLE_PARTS if table.text(part)]
 
-    def find(
-        self, table: exp.Table, trie: t.Optional[t.Dict] = None, raise_on_missing: bool = True
-    ) -> t.Optional[t.Any]:
+    def find(self, table: exp.Table, raise_on_missing: bool = True) -> t.Optional[t.Any]:
         parts = self.table_parts(table)[0 : len(self.supported_table_args)]
-        value, trie = in_trie(self.mapping_trie if trie is None else trie, parts)
+        value, trie = in_trie(self.mapping_trie, parts)
 
         if value == TrieResult.FAILED:
             return None

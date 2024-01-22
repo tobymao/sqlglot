@@ -282,6 +282,11 @@ class Postgres(Dialect):
         VAR_SINGLE_TOKENS = {"$"}
 
     class Parser(parser.Parser):
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "DATE_TRUNC": parse_timestamp_trunc,

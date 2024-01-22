@@ -2281,6 +2281,10 @@ class SetProperty(Property):
     arg_types = {"multi": True}
 
 
+class SetConfigProperty(Property):
+    arg_types = {"this": True}
+
+
 class SettingsProperty(Property):
     arg_types = {"expressions": True}
 

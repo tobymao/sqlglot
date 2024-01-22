@@ -597,6 +597,8 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
         self.validate_identity("CREATE TABLE t (c CHAR(2) UNIQUE NOT NULL) INHERITS (t1)")
         self.validate_identity("CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)")
+        self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'")
+        self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET foo FROM CURRENT")
         self.validate_identity(
             "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION do_sth()"
         )
@@ -643,14 +645,21 @@ class TestPostgres(Validator):
             "DELETE FROM event USING sales AS s WHERE event.eventid = s.eventid RETURNING a"
         )
         self.validate_identity(
-            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
-            "CREATE TABLE test (x TIMESTAMP[][])",
-        )
-        self.validate_identity(
             "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
         )
         self.validate_identity(
             "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION add(INT, INT) RETURNS INT SET search_path TO 'public' AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION x(INT) RETURNS INT SET search_path TO 'public'",
+            "CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'",
+        )
+        self.validate_identity(
+            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
+            "CREATE TABLE test (x TIMESTAMP[][])",
         )
 
         self.validate_all(

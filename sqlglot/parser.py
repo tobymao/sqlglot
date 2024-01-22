@@ -1216,7 +1216,22 @@ class Parser(metaclass=_Parser):
         if index != self._index:
             self._advance(index - self._index)
 
+    def _warn_unsupported(self) -> None:
+        if len(self._tokens) <= 1:
+            return
+
+        # We use _find_sql because self.sql may comprise multiple chunks, and we're only
+        # interested in emitting a warning for the one being currently processed.
+        sql = self._find_sql(self._tokens[0], self._tokens[-1])
+
+        logger.warning(
+            f"Input '{sql}' contains unsupported syntax, proceeding to parse it into the"
+            " fallback 'Command' expression. Consider filing a GitHub issue to request support"
+            " for this syntax, e.g. if transpilation or AST metadata extraction is required."
+        )
+
     def _parse_command(self) -> exp.Command:
+        self._warn_unsupported()
         return self.expression(
             exp.Command, this=self._prev.text.upper(), expression=self._parse_string()
         )
@@ -1338,8 +1353,10 @@ class Parser(metaclass=_Parser):
         start = self._prev
         comments = self._prev_comments
 
-        replace = start.text.upper() == "REPLACE" or self._match_pair(
-            TokenType.OR, TokenType.REPLACE
+        replace = (
+            start.token_type == TokenType.REPLACE
+            or self._match_pair(TokenType.OR, TokenType.REPLACE)
+            or self._match_pair(TokenType.OR, TokenType.ALTER)
         )
         unique = self._match(TokenType.UNIQUE)
 
@@ -5506,6 +5523,7 @@ class Parser(metaclass=_Parser):
             self._advance()
         text = self._find_sql(start, self._prev)
         size = len(start.text)
+        self._warn_unsupported()
         return exp.Command(this=text[:size], expression=text[size:])
 
     def _parse_dict_property(self, this: str) -> exp.DictProperty:

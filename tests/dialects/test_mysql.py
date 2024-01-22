@@ -126,7 +126,7 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:00.0000')")
         self.validate_identity("SELECT @var1 := 1, @var2")
         self.validate_identity("UNLOCK TABLES")
-        self.validate_identity("LOCK TABLES `app_fields` WRITE")
+        self.validate_identity("LOCK TABLES `app_fields` WRITE", check_command_warning=True)
         self.validate_identity("SELECT 1 XOR 0")
         self.validate_identity("SELECT 1 && 0", "SELECT 1 AND 0")
         self.validate_identity("SELECT /*+ BKA(t1) NO_BKA(t2) */ * FROM t1 INNER JOIN t2")

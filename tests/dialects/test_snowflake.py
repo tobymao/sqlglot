@@ -39,8 +39,8 @@ WHERE
   )""",
         )
 
-        self.validate_identity("RM @parquet_stage")
-        self.validate_identity("REMOVE @parquet_stage")
+        self.validate_identity("RM @parquet_stage", check_command_warning=True)
+        self.validate_identity("REMOVE @parquet_stage", check_command_warning=True)
         self.validate_identity("SELECT TIMESTAMP_FROM_PARTS(d, t)")
         self.validate_identity("SELECT GET_PATH(v, 'attr[0].name') FROM vartab")
         self.validate_identity("SELECT TO_ARRAY(CAST(x AS ARRAY))")
@@ -781,9 +781,10 @@ WHERE
         self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
-        self.validate_identity("PUT file:///dir/tmp.csv @%table")
+        self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
         self.validate_identity(
-            'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)'
+            'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)',
+            check_command_warning=True,
         )
         self.validate_identity(
             "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla"
@@ -1099,7 +1100,7 @@ WHERE
         )
 
     def test_stored_procedures(self):
-        self.validate_identity("CALL a.b.c(x, y)")
+        self.validate_identity("CALL a.b.c(x, y)", check_command_warning=True)
         self.validate_identity(
             "CREATE PROCEDURE a.b.c(x INT, y VARIANT) RETURNS OBJECT EXECUTE AS CALLER AS 'BEGIN SELECT 1; END;'"
         )
@@ -1453,10 +1454,10 @@ MATCH_RECOGNIZE (
 
     def test_show(self):
         # Parsed as Command
-        self.validate_identity("SHOW TABLES LIKE 'line%' IN tpch.public")
-
-        ast = parse_one("SHOW TABLES HISTORY IN tpch.public", read="snowflake")
-        self.assertIsInstance(ast, exp.Command)
+        self.validate_identity(
+            "SHOW TABLES LIKE 'line%' IN tpch.public", check_command_warning=True
+        )
+        self.validate_identity("SHOW TABLES HISTORY IN tpch.public", check_command_warning=True)
 
         # Parsed as Show
         self.validate_identity("SHOW PRIMARY KEYS")

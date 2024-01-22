@@ -5,6 +5,7 @@ from unittest import mock
 from sqlglot import parse_one, transpile
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from sqlglot.helper import logger as helper_logger
+from sqlglot.parser import logger as parser_logger
 from tests.helpers import (
     assert_logger_contains,
     load_sql_fixture_pairs,
@@ -735,6 +736,45 @@ FROM base""",
         for sql in load_sql_fixtures("identity.sql"):
             with self.subTest(sql):
                 self.assertEqual(transpile(sql)[0], sql.strip())
+
+    def test_command_identity(self):
+        for sql in (
+            "ALTER AGGREGATE bla(foo) OWNER TO CURRENT_USER",
+            "ALTER DOMAIN foo VALIDATE CONSTRAINT bla",
+            "ALTER ROLE CURRENT_USER WITH REPLICATION",
+            "ALTER RULE foo ON bla RENAME TO baz",
+            "ALTER SEQUENCE IF EXISTS baz RESTART WITH boo",
+            "ALTER SESSION SET STATEMENT_TIMEOUT_IN_SECONDS=3",
+            "ALTER TABLE integers DROP PRIMARY KEY",
+            "ALTER TABLE s_ut ADD CONSTRAINT s_ut_uq UNIQUE hajo",
+            "ALTER TABLE table1 MODIFY COLUMN name1 SET TAG foo='bar'",
+            "ALTER TABLE table1 RENAME COLUMN c1 AS c2",
+            "ALTER TABLE table1 RENAME COLUMN c1 TO c2, c2 TO c3",
+            "ALTER TABLE table1 RENAME COLUMN c1 c2",
+            "ALTER TYPE electronic_mail RENAME TO email",
+            "ALTER VIEW foo ALTER COLUMN bla SET DEFAULT 'NOT SET'",
+            "ALTER schema doo",
+            "ANALYZE a.y",
+            "CALL catalog.system.iceberg_procedure_name(named_arg_1 => 'arg_1', named_arg_2 => 'arg_2')",
+            "COMMENT ON ACCESS METHOD gin IS 'GIN index access method'",
+            "CREATE OR REPLACE STAGE",
+            "CREATE SET GLOBAL TEMPORARY TABLE a, NO BEFORE JOURNAL, NO AFTER JOURNAL, MINIMUM DATABLOCKSIZE, BLOCKCOMPRESSION=NEVER (a INT)",
+            "EXECUTE statement",
+            "EXPLAIN SELECT * FROM x",
+            "GRANT INSERT ON foo TO bla",
+            "LOAD foo",
+            "OPTIMIZE TABLE y",
+            "PREPARE statement",
+            "SET -v",
+            "SET @user OFF",
+            "SHOW TABLES",
+            "TRUNCATE TABLE x",
+            "VACUUM FREEZE my_table",
+        ):
+            with self.subTest(sql):
+                with self.assertLogs(parser_logger) as cm:
+                    self.assertEqual(transpile(sql)[0], sql)
+                    assert f"Input '{sql}' contains unsupported syntax" in cm.output[0]
 
     def test_normalize_name(self):
         self.assertEqual(

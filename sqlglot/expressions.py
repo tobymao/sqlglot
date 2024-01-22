@@ -2102,6 +2102,10 @@ class FreespaceProperty(Property):
     arg_types = {"this": True, "percent": False}
 
 
+class InheritsProperty(Property):
+    arg_types = {"expressions": True}
+
+
 class InputModelProperty(Property):
     arg_types = {"this": True}
 

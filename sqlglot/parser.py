@@ -711,6 +711,9 @@ class Parser(metaclass=_Parser):
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
+        "INHERITS": lambda self: self.expression(
+            exp.InheritsProperty, expressions=self._parse_wrapped_csv(self._parse_table)
+        ),
         "INPUT": lambda self: self.expression(exp.InputModelProperty, this=self._parse_schema()),
         "JOURNAL": lambda self, **kwargs: self._parse_journal(**kwargs),
         "LANGUAGE": lambda self: self._parse_property_assignment(exp.LanguageProperty),

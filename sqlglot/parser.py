@@ -1220,6 +1220,8 @@ class Parser(metaclass=_Parser):
         if len(self._tokens) <= 1:
             return
 
+        # We use _find_sql because self.sql may comprise multiple chunks, and we're only
+        # interested in emitting a warning for the one being currently processed.
         sql = self._find_sql(self._tokens[0], self._tokens[-1])
         if sql:
             sql = f" '{sql}'"

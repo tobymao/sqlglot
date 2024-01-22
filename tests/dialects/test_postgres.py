@@ -595,6 +595,8 @@ class TestPostgres(Validator):
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
         self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
         self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
+        self.validate_identity("CREATE TABLE t (c CHAR(2) UNIQUE NOT NULL) INHERITS (t1)")
+        self.validate_identity("CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)")
         self.validate_identity(
             "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION do_sth()"
         )

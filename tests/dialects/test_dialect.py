@@ -11,6 +11,7 @@ from sqlglot import (
     parse_one,
 )
 from sqlglot.dialects import BigQuery, Hive, Snowflake
+from sqlglot.parser import logger as parser_logger
 
 
 class Validator(unittest.TestCase):
@@ -19,8 +20,14 @@ class Validator(unittest.TestCase):
     def parse_one(self, sql):
         return parse_one(sql, read=self.dialect)
 
-    def validate_identity(self, sql, write_sql=None, pretty=False):
-        expression = self.parse_one(sql)
+    def validate_identity(self, sql, write_sql=None, pretty=False, check_command_warning=False):
+        if check_command_warning:
+            with self.assertLogs(parser_logger) as cm:
+                expression = self.parse_one(sql)
+                assert f"Input '{sql}' contains unsupported syntax" in cm.output[0]
+        else:
+            expression = self.parse_one(sql)
+
         self.assertEqual(write_sql or sql, expression.sql(dialect=self.dialect, pretty=pretty))
         return expression
 

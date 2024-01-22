@@ -286,6 +286,7 @@ class Postgres(Dialect):
             **parser.Parser.PROPERTY_PARSERS,
             "SET": lambda self: self.expression(exp.SetConfigProperty, this=self._parse_set()),
         }
+        PROPERTY_PARSERS.pop("INPUT", None)
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

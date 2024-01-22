@@ -600,6 +600,13 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'")
         self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET foo FROM CURRENT")
         self.validate_identity(
+            "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION add(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL IMMUTABLE STRICT"
+        )
+
+        self.validate_identity(
             "CREATE CONSTRAINT TRIGGER my_trigger AFTER INSERT OR DELETE OR UPDATE OF col_a, col_b ON public.my_table DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION do_sth()"
         )
         self.validate_identity(

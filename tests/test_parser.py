@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from sqlglot import Parser, exp, parse, parse_one
 from sqlglot.errors import ErrorLevel, ParseError
+from sqlglot.parser import logger as parser_logger
 from tests.helpers import assert_logger_contains
 
 
@@ -151,11 +152,14 @@ class TestParser(unittest.TestCase):
         )
 
     def test_command(self):
-        expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1", read="hive")
-        self.assertEqual(len(expressions), 3)
-        self.assertEqual(expressions[0].sql(), "SET x = 1")
-        self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
-        self.assertEqual(expressions[2].sql(), "SELECT 1")
+        with self.assertLogs(parser_logger) as cm:
+            expressions = parse("SET x = 1; ADD JAR s3://a; SELECT 1", read="hive")
+            self.assertEqual(len(expressions), 3)
+            self.assertEqual(expressions[0].sql(), "SET x = 1")
+            self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
+            self.assertEqual(expressions[2].sql(), "SELECT 1")
+
+        assert "Input 'ADD JAR s3://a'" in cm.output[0]
 
     def test_lambda_struct(self):
         expression = parse_one("FILTER(a.b, x -> x.id = id)")
@@ -504,7 +508,9 @@ class TestParser(unittest.TestCase):
         self.assertEqual(set_to.sql(), "SET x = 1")
         self.assertIsInstance(set_to, exp.Set)
 
-        set_as_command = parse_one("SET DEFAULT ROLE ALL TO USER")
+        with self.assertLogs(parser_logger) as cm:
+            set_as_command = parse_one("SET DEFAULT ROLE ALL TO USER")
+            assert "Input 'SET DEFAULT ROLE ALL TO USER'" in cm.output[0]
 
         self.assertEqual(set_as_command.sql(), "SET DEFAULT ROLE ALL TO USER")
 

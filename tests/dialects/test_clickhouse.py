@@ -42,7 +42,6 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT isNaN(1.0)")
         self.validate_identity("SELECT startsWith('Spider-Man', 'Spi')")
         self.validate_identity("SELECT xor(TRUE, FALSE)")
-        self.validate_identity("ATTACH DATABASE DEFAULT ENGINE = ORDINARY")
         self.validate_identity("CAST(['hello'], 'Array(Enum8(''hello'' = 1))')")
         self.validate_identity("SELECT x, COUNT() FROM y GROUP BY x WITH TOTALS")
         self.validate_identity("SELECT INTERVAL t.days DAY")
@@ -75,6 +74,9 @@ class TestClickhouse(Validator):
         self.validate_identity("CAST(x AS DATETIME)")
         self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
         self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
+        self.validate_identity(
+            "ATTACH DATABASE DEFAULT ENGINE = ORDINARY", check_command_warning=True
+        )
         self.validate_identity(
             "SELECT n, source FROM (SELECT toFloat32(number % 10) AS n, 'original' AS source FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL"
         )

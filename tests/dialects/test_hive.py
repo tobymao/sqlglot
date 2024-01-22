@@ -399,6 +399,7 @@ class TestHive(Validator):
         )
 
     def test_hive(self):
+        self.validate_identity("SET hiveconf:some_var = 5", check_command_warning=True)
         self.validate_identity("(VALUES (1 AS a, 2 AS b, 3))")
         self.validate_identity("SELECT * FROM my_table TIMESTAMP AS OF DATE_ADD(CURRENT_DATE, -1)")
         self.validate_identity("SELECT * FROM my_table VERSION AS OF DATE_ADD(CURRENT_DATE, -1)")
@@ -440,13 +441,6 @@ class TestHive(Validator):
             "SELECT key, value, GROUPING__ID, COUNT(*) FROM T1 GROUP BY key, value WITH ROLLUP"
         )
 
-        self.validate_all(
-            "SET hiveconf:some_var = 5",
-            write={
-                "hive": "SET hiveconf:some_var = 5",
-                "spark": "SET hiveconf:some_var = 5",
-            },
-        )
         self.validate_all(
             "SELECT ${hiveconf:some_var}",
             write={

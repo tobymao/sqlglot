@@ -42,11 +42,13 @@ class TestTeradata(Validator):
         )
 
     def test_statistics(self):
-        self.validate_identity("COLLECT STATISTICS ON tbl INDEX(col)")
-        self.validate_identity("COLLECT STATS ON tbl COLUMNS(col)")
-        self.validate_identity("COLLECT STATS COLUMNS(col) ON tbl")
-        self.validate_identity("HELP STATISTICS personel.employee")
-        self.validate_identity("HELP STATISTICS personnel.employee FROM my_qcd")
+        self.validate_identity("COLLECT STATISTICS ON tbl INDEX(col)", check_command_warning=True)
+        self.validate_identity("COLLECT STATS ON tbl COLUMNS(col)", check_command_warning=True)
+        self.validate_identity("COLLECT STATS COLUMNS(col) ON tbl", check_command_warning=True)
+        self.validate_identity("HELP STATISTICS personel.employee", check_command_warning=True)
+        self.validate_identity(
+            "HELP STATISTICS personnel.employee FROM my_qcd", check_command_warning=True
+        )
 
     def test_create(self):
         self.validate_identity(

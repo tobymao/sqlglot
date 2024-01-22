@@ -9,6 +9,7 @@ from sqlglot import (
     transpile,
 )
 from sqlglot.helper import logger as helper_logger
+from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -77,14 +78,16 @@ class TestBigQuery(Validator):
         with self.assertRaises(ParseError):
             transpile("DATE_ADD(x, day)", read="bigquery")
 
-        for_in_stmts = parse(
-            "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
-            read="bigquery",
-        )
-        self.assertEqual(
-            [s.sql(dialect="bigquery") for s in for_in_stmts],
-            ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
-        )
+        with self.assertLogs(parser_logger) as cm:
+            for_in_stmts = parse(
+                "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
+                read="bigquery",
+            )
+            self.assertEqual(
+                [s.sql(dialect="bigquery") for s in for_in_stmts],
+                ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
+            )
+            assert "Input 'END FOR'" in cm.output[0]
 
         self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
         self.validate_identity("TIME('2008-12-25 15:30:00+08')")
@@ -135,7 +138,7 @@ class TestBigQuery(Validator):
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
         self.validate_identity("CAST(x AS TIMESTAMP)")
         self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
-        self.validate_identity("BEGIN A B C D E F")
+        self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")

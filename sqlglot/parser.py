@@ -1356,7 +1356,7 @@ class Parser(metaclass=_Parser):
         comments = self._prev_comments
 
         replace = (
-            start.text.upper() == "REPLACE"
+            start.token_type == TokenType.REPLACE
             or self._match_pair(TokenType.OR, TokenType.REPLACE)
             or self._match_pair(TokenType.OR, TokenType.ALTER)
         )

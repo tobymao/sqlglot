@@ -1223,11 +1223,9 @@ class Parser(metaclass=_Parser):
         # We use _find_sql because self.sql may comprise multiple chunks, and we're only
         # interested in emitting a warning for the one being currently processed.
         sql = self._find_sql(self._tokens[0], self._tokens[-1])
-        if sql:
-            sql = f" '{sql}'"
 
         logger.warning(
-            f"Input{sql} contains unsupported syntax, proceeding to parse it into the"
+            f"Input '{sql}' contains unsupported syntax, proceeding to parse it into the"
             " fallback 'Command' expression. Consider filing a GitHub issue to request support"
             " for this syntax, e.g. if transpilation or AST metadata extraction is required."
         )

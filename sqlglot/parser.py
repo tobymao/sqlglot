@@ -1449,6 +1449,9 @@ class Parser(metaclass=_Parser):
                     exp.Clone, this=self._parse_table(schema=True), shallow=shallow, copy=copy
                 )
 
+        if self._curr:
+            return self._parse_as_command(start)
+
         return self.expression(
             exp.Create,
             comments=comments,

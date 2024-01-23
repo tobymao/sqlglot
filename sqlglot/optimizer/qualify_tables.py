@@ -54,7 +54,7 @@ def qualify_tables(
                 table.set("catalog", catalog)
 
     if not isinstance(expression, exp.Subqueryable):
-        for node, *_ in expression.walk(prune=lambda n, *_: isinstance(n, exp.Subqueryable)):
+        for node, *_ in expression.walk(prune=lambda n, *_: isinstance(n, exp.Unionable)):
             if isinstance(node, exp.Table):
                 _qualify(node)
 

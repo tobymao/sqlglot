@@ -50,11 +50,12 @@ def unnest(select, parent_select, next_alias_name):
     ):
         return
 
+    clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)
+
     # This subquery returns a scalar and can just be converted to a cross join
     if not isinstance(predicate, (exp.In, exp.Any)):
         column = exp.column(select.selects[0].alias_or_name, alias)
 
-        clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)
         clause_parent_select = clause.parent_select if clause else None
 
         if (isinstance(clause, exp.Having) and clause_parent_select is parent_select) or (
@@ -84,12 +85,18 @@ def unnest(select, parent_select, next_alias_name):
     column = _other_operand(predicate)
     value = select.selects[0]
 
-    on = exp.condition(f'{column} = "{alias}"."{value.alias}"')
-    _replace(predicate, f"NOT {on.right} IS NULL")
+    join_key = exp.column(value.alias, alias)
+    join_key_not_null = join_key.is_(exp.null()).not_()
+
+    if isinstance(clause, exp.Join):
+        _replace(predicate, exp.true())
+        parent_select.where(join_key_not_null, copy=False)
+    else:
+        _replace(predicate, join_key_not_null)
 
     parent_select.join(
         select.group_by(value.this, copy=False),
-        on=on,
+        on=column.eq(join_key),
         join_type="LEFT",
         join_alias=alias,
         copy=False,

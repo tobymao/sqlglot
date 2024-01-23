@@ -41,7 +41,7 @@ LEFT JOIN (
   GROUP BY
     y.a
 ) AS _u_1
-  ON x.a = "_u_1"."a"
+  ON x.a = _u_1.a
 LEFT JOIN (
   SELECT
     y.b AS b
@@ -49,7 +49,7 @@ LEFT JOIN (
   GROUP BY
     y.b
 ) AS _u_2
-  ON x.a = "_u_2"."b"
+  ON x.a = _u_2.b
 LEFT JOIN (
   SELECT
     y.a AS a
@@ -57,7 +57,7 @@ LEFT JOIN (
   GROUP BY
     y.a
 ) AS _u_3
-  ON x.a = "_u_3"."a"
+  ON x.a = _u_3.a
 LEFT JOIN (
   SELECT
     SUM(y.b) AS b,
@@ -157,9 +157,9 @@ LEFT JOIN (
   ON _u_21._u_22 = x.a
 WHERE
   x.a = _u_0.a
-  AND NOT "_u_1"."a" IS NULL
-  AND NOT "_u_2"."b" IS NULL
-  AND NOT "_u_3"."a" IS NULL
+  AND NOT _u_1.a IS NULL
+  AND NOT _u_2.b IS NULL
+  AND NOT _u_3.a IS NULL
   AND x.a = _u_4.b
   AND x.a > _u_6.b
   AND x.a = _u_8.a

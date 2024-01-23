@@ -1273,3 +1273,41 @@ JOIN "stops" AS "d"("id", "name")
   AND (
     "c"."name" = 'Craiglockhart' OR "d"."name" = 'Tollcross'
   );
+
+# title: avoid dag cycles with unnesting subqueries
+# execute: false
+# dialect: snowflake
+SELECT
+  A.ACCOUNT_ID,
+  A.NAME,
+  C.EMAIL_DOMAIN
+FROM ACCOUNTS AS A
+LEFT JOIN CONTACTS AS C
+  ON C.ACCOUNT_ID = A.ACCOUNT_ID
+  AND C.EMAIL_DOMAIN IN (
+    SELECT
+      D.DOMAIN
+    FROM DOMAINS D
+    WHERE
+      TYPE = 'education'
+  );
+WITH "_u_0" AS (
+  SELECT
+    "D"."DOMAIN" AS "DOMAIN"
+  FROM "DOMAINS" AS "D"
+  WHERE
+    "D"."TYPE" = 'education'
+  GROUP BY
+    "D"."DOMAIN"
+)
+SELECT
+  "A"."ACCOUNT_ID" AS "ACCOUNT_ID",
+  "A"."NAME" AS "NAME",
+  "C"."EMAIL_DOMAIN" AS "EMAIL_DOMAIN"
+FROM "ACCOUNTS" AS "A"
+LEFT JOIN "CONTACTS" AS "C"
+  ON "A"."ACCOUNT_ID" = "C"."ACCOUNT_ID"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "C"."EMAIL_DOMAIN" = "_u_0"."DOMAIN"
+WHERE
+  NOT "_u_0"."DOMAIN" IS NULL;

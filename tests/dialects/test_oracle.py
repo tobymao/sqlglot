@@ -12,6 +12,7 @@ class TestOracle(Validator):
             exp.AlterTable
         )
 
+        self.validate_identity("TIMESTAMP(3) WITH TIME ZONE")
         self.validate_identity("CURRENT_TIMESTAMP(precision)")
         self.validate_identity("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol")
         self.validate_identity("ALTER TABLE Payments ADD Stock NUMBER NOT NULL")

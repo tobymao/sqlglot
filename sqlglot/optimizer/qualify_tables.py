@@ -54,8 +54,9 @@ def qualify_tables(
                 table.set("catalog", catalog)
 
     if not isinstance(expression, exp.Subqueryable):
-        for table in expression.find_all(exp.Table):
-            _qualify(table)
+        for node, *_ in expression.walk(prune=lambda n, *_: isinstance(n, exp.Unionable)):
+            if isinstance(node, exp.Table):
+                _qualify(node)
 
     for scope in traverse_scope(expression):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):

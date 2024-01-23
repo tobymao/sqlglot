@@ -482,11 +482,12 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
 
     Args:
         expression (exp.Expression): expression to traverse
+
     Returns:
         list[Scope]: scope instances
     """
     if isinstance(expression, exp.Unionable) or (
-        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Subqueryable)
+        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Unionable)
     ):
         return list(_traverse_scope(Scope(expression)))
 

@@ -166,6 +166,7 @@ class Oracle(Dialect):
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
         SUPPORTS_SELECT_INTO = True
+        TZ_TO_WITH_TIME_ZONE = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -179,6 +180,8 @@ class Oracle(Dialect):
             exp.DataType.Type.NVARCHAR: "NVARCHAR2",
             exp.DataType.Type.NCHAR: "NCHAR",
             exp.DataType.Type.TEXT: "CLOB",
+            exp.DataType.Type.TIMETZ: "TIME",
+            exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.VARBINARY: "BLOB",
         }

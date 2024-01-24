@@ -1,6 +1,46 @@
 Changelog
 =========
 
+## [v20.10.0] - 2024-01-24
+### :boom: BREAKING CHANGES
+- due to [`1f5fc39`](https://github.com/tobymao/sqlglot/commit/1f5fc39c10b92b94bd94afa5fd038fdb9afeb4b4) - jsonpath parsing *(PR [#2867](https://github.com/tobymao/sqlglot/pull/2867) by [@tobymao](https://github.com/tobymao))*:
+
+  jsonpath parsing (#2867)
+
+
+### :sparkles: New Features
+- [`89b439e`](https://github.com/tobymao/sqlglot/commit/89b439e2f93b6c3bedb4e58fe4b5014d42dd5080) - **postgres**: support the INCLUDE clause in INDEX creation *(PR [#2857](https://github.com/tobymao/sqlglot/pull/2857) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2855](undefined) opened by [@dezhin](https://github.com/dezhin)*
+- [`90ffff8`](https://github.com/tobymao/sqlglot/commit/90ffff83266b5714b1371a576d9484dfbe4be155) - **clickhouse**: AggregateFunction data type *(PR [#2832](https://github.com/tobymao/sqlglot/pull/2832) by [@pkit](https://github.com/pkit))*
+- [`326d3ae`](https://github.com/tobymao/sqlglot/commit/326d3ae7113cca4a67cca3ab3335f7b8dde91f71) - improve transpilation of Spark's TO_UTC_TIMESTAMP *(PR [#2861](https://github.com/tobymao/sqlglot/pull/2861) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2846](undefined) opened by [@hdemers](https://github.com/hdemers)*
+- [`6d03587`](https://github.com/tobymao/sqlglot/commit/6d035871feee2b206d73e37b5f9b8c99fc40708f) - **snowflake**: SHOW SCHEMAS/OBJECTS *(PR [#2845](https://github.com/tobymao/sqlglot/pull/2845) by [@tekumara](https://github.com/tekumara))*
+  - :arrow_lower_right: *addresses issue [#2784](undefined) opened by [@tekumara](https://github.com/tekumara)*
+- [`d5a08b8`](https://github.com/tobymao/sqlglot/commit/d5a08b8f3a1cdd87e9560c0fe4f11b0f1586978b) - **optimizer**: improve struct type annotation support for EQ-delimited kv pairs *(PR [#2863](https://github.com/tobymao/sqlglot/pull/2863) by [@fool1280](https://github.com/fool1280))*
+- [`1f5fc39`](https://github.com/tobymao/sqlglot/commit/1f5fc39c10b92b94bd94afa5fd038fdb9afeb4b4) - jsonpath parsing *(PR [#2867](https://github.com/tobymao/sqlglot/pull/2867) by [@tobymao](https://github.com/tobymao))*
+- [`7fd9045`](https://github.com/tobymao/sqlglot/commit/7fd9045488beb88b2726ae906b8769b7963d1b37) - add support for rename column *(PR [#2866](https://github.com/tobymao/sqlglot/pull/2866) by [@gableh](https://github.com/gableh))*
+- [`89b781b`](https://github.com/tobymao/sqlglot/commit/89b781b991ce264cd7f8c44fa67860eb9a587b07) - **postgres**: add support for the INHERITS property closes [#2871](https://github.com/tobymao/sqlglot/pull/2871) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`970c202`](https://github.com/tobymao/sqlglot/commit/970c2022a27d4fc355fedb7af830367a5dd96009) - **postgres**: add support for the SET property *(PR [#2873](https://github.com/tobymao/sqlglot/pull/2873) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2872](undefined) opened by [@edongashi](https://github.com/edongashi)*
+- [`6845c37`](https://github.com/tobymao/sqlglot/commit/6845c37e749448972a231926236c08affb71a64f) - make the CREATE parser more lenient *(PR [#2875](https://github.com/tobymao/sqlglot/pull/2875) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`bf03a45`](https://github.com/tobymao/sqlglot/commit/bf03a45d8df9abd63b8102e431c13ca0eb0b0fb0) - **snowflake**: extend _parse_range to gracefully handle colon operator *(PR [#2856](https://github.com/tobymao/sqlglot/pull/2856) by [@georgesittas](https://github.com/georgesittas))*
+- [`ad14f4e`](https://github.com/tobymao/sqlglot/commit/ad14f4ed1ed3870ae0d7370643c67c235fc89b4b) - qualify alter table table refs in optimizer qualify *(PR [#2862](https://github.com/tobymao/sqlglot/pull/2862) by [@z3z1ma](https://github.com/z3z1ma))*
+- [`8599903`](https://github.com/tobymao/sqlglot/commit/859990356210f3091b1b66647c1a674fdb0f2ad9) - **optimizer**: compute external columns for union sopes correctly *(PR [#2864](https://github.com/tobymao/sqlglot/pull/2864) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2860](undefined) opened by [@derekpaulsen](https://github.com/derekpaulsen)*
+- [`3e065f9`](https://github.com/tobymao/sqlglot/commit/3e065f9503607e6c620fc187e2bdc2d45f7fa1dd) - **optimizer**: don't copy projection in qualify_outputs when attaching alias *(PR [#2868](https://github.com/tobymao/sqlglot/pull/2868) by [@georgesittas](https://github.com/georgesittas))*
+- [`a642758`](https://github.com/tobymao/sqlglot/commit/a6427585e16fa4b5adc9e01cc22baeb09b2f69bb) - avoid dag cycle with unnesting subqueries closes [#2876](https://github.com/tobymao/sqlglot/pull/2876) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`0648453`](https://github.com/tobymao/sqlglot/commit/06484532f0e222004e844501a192b8d4aec654c7) - set div type on multiplication closes [#2878](https://github.com/tobymao/sqlglot/pull/2878) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`b7fb800`](https://github.com/tobymao/sqlglot/commit/b7fb8006b825ec36d62135877b4e32fccad8d044) - **oracle**: generate with time zone for timestamptz fixes [#2879](https://github.com/tobymao/sqlglot/pull/2879) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`8770e3b`](https://github.com/tobymao/sqlglot/commit/8770e3b7855110a82cb3bc05f3cb6c36a88cfdb2) - **optimizer**: don't qualify CTEs for DDL/DML statements *(PR [#2880](https://github.com/tobymao/sqlglot/pull/2880) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2877](undefined) opened by [@hsheth2](https://github.com/hsheth2)*
+
+### :wrench: Chores
+- [`d55cfba`](https://github.com/tobymao/sqlglot/commit/d55cfba7226a61cc8419b3a83eaa0a2ead23be10) - move postgres tests *(commit by [@tobymao](https://github.com/tobymao))*
+- [`0e43c58`](https://github.com/tobymao/sqlglot/commit/0e43c58a38bb6af63f653062e79626b85f605b63) - **parser**: warn when parsing (>1 tokens) SQL into exp.Command *(PR [#2874](https://github.com/tobymao/sqlglot/pull/2874) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v20.9.0] - 2024-01-18
 ### :boom: BREAKING CHANGES
 - due to [`1be93e4`](https://github.com/tobymao/sqlglot/commit/1be93e45d8347e5fa8a4e39dad625c6dd66ea461) - properly support all unix time scales *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -2445,3 +2485,4 @@ Changelog
 [v20.7.1]: https://github.com/tobymao/sqlglot/compare/v20.6.0...v20.7.1
 [v20.8.0]: https://github.com/tobymao/sqlglot/compare/v20.7.1...v20.8.0
 [v20.9.0]: https://github.com/tobymao/sqlglot/compare/v20.8.0...v20.9.0
+[v20.10.0]: https://github.com/tobymao/sqlglot/compare/v20.9.0...v20.10.0

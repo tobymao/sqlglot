@@ -938,7 +938,11 @@ WHERE
         )
 
     def test_len(self):
-        self.validate_all("LEN(x)", read={"": "LENGTH(x)"}, write={"spark": "LENGTH(x)"})
+        self.validate_all(
+            "LEN(x)", read={"": "LENGTH(x)"}, write={"spark": "LENGTH(CAST(x AS STRING))"}
+        )
+        self.validate_all("LEN(1)", write={"tsql": "LEN(1)", "spark": "LENGTH(CAST(1 AS STRING))"})
+        self.validate_all("LEN('x')", write={"tsql": "LEN('x')", "spark": "LENGTH('x')"})
 
     def test_replicate(self):
         self.validate_all("REPLICATE('x', 2)", write={"spark": "REPEAT('x', 2)"})

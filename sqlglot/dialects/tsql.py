@@ -264,6 +264,15 @@ def _parse_timefromparts(args: t.List) -> exp.TimeFromParts:
     )
 
 
+def _parse_len(args: t.List) -> exp.Length:
+    this = seq_get(args, 0)
+
+    if this and not this.is_string:
+        this = exp.cast(this, exp.DataType.Type.TEXT)
+
+    return exp.Length(this=this)
+
+
 class TSQL(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
@@ -431,7 +440,7 @@ class TSQL(Dialect):
             "IIF": exp.If.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
             "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
-            "LEN": exp.Length.from_arg_list,
+            "LEN": _parse_len,
             "REPLICATE": exp.Repeat.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
@@ -702,7 +711,6 @@ class TSQL(Dialect):
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
             exp.LastDay: lambda self, e: self.func("EOMONTH", e.this),
-            exp.Length: rename_func("LEN"),
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
             exp.Min: min_or_least,
@@ -922,3 +930,11 @@ class TSQL(Dialect):
             this = self.sql(expression, "this")
             expressions = self.expressions(expression, flat=True, sep=" ")
             return f"CONSTRAINT {this} {expressions}"
+
+        def length_sql(self, expression: exp.Length) -> str:
+            this = expression.this
+            if isinstance(this, exp.Cast) and this.is_type(exp.DataType.Type.TEXT):
+                this_sql = self.sql(this, "this")
+            else:
+                this_sql = self.sql(this)
+            return self.func("LEN", this_sql)

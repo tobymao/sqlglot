@@ -4,11 +4,13 @@ import itertools
 import typing as t
 
 from sqlglot import alias, exp
-from sqlglot._typing import E
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.helper import csv_reader, name_sequence
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 
 def qualify_tables(

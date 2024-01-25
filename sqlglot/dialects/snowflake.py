@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
-from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -24,6 +23,9 @@ from sqlglot.dialects.dialect import (
 from sqlglot.expressions import Literal
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 
 def _check_int(s: str) -> bool:
@@ -373,7 +375,7 @@ class Snowflake(Dialect):
             and isinstance(expression.parent, exp.Table)
             and expression.name.lower() == "dual"
         ):
-            return t.cast(E, expression)
+            return expression  # type: ignore
 
         return super().quote_identifier(expression, identify=identify)
 

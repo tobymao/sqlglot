@@ -30,7 +30,6 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
 )
 from sqlglot.helper import seq_get
-from sqlglot.jsonpath import generate as generate_json_path
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -394,7 +393,7 @@ class Postgres(Dialect):
             "child": lambda n: n.get("value") or "",
             "key": lambda n: n.get("value") or "",
             "root": lambda _: "",
-            "subscript": lambda n: generate_json_path([n["value"]]),
+            "subscript": lambda n: generator.generate_json_path([n["value"]]),
         }
 
         TYPE_MAPPING = {

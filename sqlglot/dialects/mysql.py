@@ -147,6 +147,18 @@ def _remove_ts_or_ds_to_date(
     return func
 
 
+def _parse_json_extract(args: t.List) -> exp.JSONExtract:
+    this, *paths = args
+    path = parser.parse_json_path(seq_get(paths, 0))
+    if isinstance(path, exp.JSONPath):
+        for p in paths[1:]:
+            parsed = parser.parse_json_path(p)
+            if isinstance(parsed, exp.JSONPath):
+                path.this.extend(parsed.this[1:])
+
+    return exp.JSONExtract(this=this, expression=path)
+
+
 class MySQL(Dialect):
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -298,6 +310,7 @@ class MySQL(Dialect):
             "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "ISNULL": isnull_to_is_null,
+            "JSON_EXTRACT": _parse_json_extract,
             "LOCATE": locate_to_strposition,
             "MAKETIME": exp.TimeFromParts.from_arg_list,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),

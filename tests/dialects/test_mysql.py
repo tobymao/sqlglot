@@ -150,6 +150,7 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE A LIKE B")
         self.validate_identity("SELECT * FROM t1, t2 FOR SHARE OF t1, t2 SKIP LOCKED")
         self.validate_identity("SELECT a || b", "SELECT a OR b")
+        self.validate_identity("SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')")
         self.validate_identity(
             "SELECT * FROM x ORDER BY BINARY a", "SELECT * FROM x ORDER BY CAST(a AS BINARY)"
         )

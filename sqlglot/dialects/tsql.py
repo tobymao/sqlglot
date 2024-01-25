@@ -275,6 +275,12 @@ def _parse_len(args: t.List) -> exp.Length:
     return exp.Length(this=this)
 
 
+def _json_extract_sql(self: TSQL.Generator, expression: exp.JSONExtract) -> str:
+    json_query = rename_func("JSON_QUERY")(self, expression)
+    json_value = rename_func("JSON_VALUE")(self, expression)
+    return self.func("ISNULL", json_query, json_value)
+
+
 class TSQL(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
@@ -441,7 +447,8 @@ class TSQL(Dialect):
             "HASHBYTES": _parse_hashbytes,
             "IIF": exp.If.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
-            "JSON_VALUE": exp.JSONExtractScalar.from_arg_list,
+            "JSON_QUERY": parser.parse_extract_json_with_path(exp.JSONExtract),
+            "JSON_VALUE": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
             "LEN": _parse_len,
             "REPLICATE": exp.Repeat.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
@@ -715,6 +722,8 @@ class TSQL(Dialect):
             exp.GetPath: path_to_jsonpath("JSON_VALUE"),
             exp.GroupConcat: _string_agg_sql,
             exp.If: rename_func("IIF"),
+            exp.JSONExtract: _json_extract_sql,
+            exp.JSONExtractScalar: _json_extract_sql,
             exp.LastDay: lambda self, e: self.func("EOMONTH", e.this),
             exp.Max: max_or_greatest,
             exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),

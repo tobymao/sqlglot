@@ -32,9 +32,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
 
-if t.TYPE_CHECKING:
-    from sqlglot._typing import E
-
 
 def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
@@ -164,13 +161,6 @@ def _parse_struct_pack(args: t.List) -> exp.Struct:
     return exp.Struct.from_arg_list(args_with_columns_as_identifiers)
 
 
-def _parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
-    def _parser(args: t.List) -> E:
-        return expr_type(this=seq_get(args, 0), expression=parser.parse_json_path(seq_get(args, 1)))
-
-    return _parser
-
-
 class DuckDB(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -238,9 +228,9 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "JSON": exp.ParseJSON.from_arg_list,
-            "JSON_EXTRACT_PATH": _parse_extract_json_with_path(exp.JSONExtract),
-            "JSON_EXTRACT_STRING": _parse_extract_json_with_path(exp.JSONExtractScalar),
-            "JSON_EXTRACT_PATH_TEXT": _parse_extract_json_with_path(exp.JSONExtractScalar),
+            "JSON_EXTRACT_PATH": parser.parse_extract_json_with_path(exp.JSONExtract),
+            "JSON_EXTRACT_STRING": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
+            "JSON_EXTRACT_PATH_TEXT": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,

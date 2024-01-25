@@ -1119,6 +1119,7 @@ class TestDialect(Validator):
                 "spark": "GET_JSON_OBJECT(x, '$.y')",
                 "sqlite": "x -> '$.y'",
                 "starrocks": "x -> '$.y'",
+                "tsql": "ISNULL(JSON_QUERY(x, '$.y'), JSON_VALUE(x, '$.y'))",
             },
         )
         self.validate_all(
@@ -1140,6 +1141,7 @@ class TestDialect(Validator):
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "spark": "GET_JSON_OBJECT(x, '$.y')",
                 "sqlite": "x ->> '$.y'",
+                "tsql": "ISNULL(JSON_QUERY(x, '$.y'), JSON_VALUE(x, '$.y'))",
             },
         )
         self.validate_all(

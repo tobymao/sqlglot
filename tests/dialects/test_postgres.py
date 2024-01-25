@@ -323,6 +323,7 @@ class TestPostgres(Validator):
                 "redshift": """JSON_EXTRACT_PATH_TEXT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', 'f4')""",
                 "spark": """GET_JSON_OBJECT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
                 "sqlite": """'{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}' -> '$.f4'""",
+                "tsql": """ISNULL(JSON_QUERY('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4'), JSON_VALUE('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4'))""",
             },
         )
         self.validate_all(

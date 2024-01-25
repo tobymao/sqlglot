@@ -74,6 +74,13 @@ def parse_json_path(path: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
     return path
 
 
+def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
+    def _parser(args: t.List) -> E:
+        return expr_type(this=seq_get(args, 0), expression=parse_json_path(seq_get(args, 1)))
+
+    return _parser
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -116,12 +123,8 @@ class Parser(metaclass=_Parser):
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
-        "JSON_EXTRACT": lambda args: exp.JSONExtract(
-            this=seq_get(args, 0), expression=parse_json_path(seq_get(args, 1))
-        ),
-        "JSON_EXTRACT_SCALAR": lambda args: exp.JSONExtractScalar(
-            this=seq_get(args, 0), expression=parse_json_path(seq_get(args, 1))
-        ),
+        "JSON_EXTRACT": parse_extract_json_with_path(exp.JSONExtract),
+        "JSON_EXTRACT_SCALAR": parse_extract_json_with_path(exp.JSONExtractScalar),
         "LIKE": parse_like,
         "LOG": parse_logarithm,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(

@@ -4,7 +4,6 @@ import functools
 import typing as t
 
 from sqlglot import exp
-from sqlglot._typing import E
 from sqlglot.helper import (
     ensure_list,
     is_date_unit,
@@ -17,7 +16,7 @@ from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema, ensure_schema
 
 if t.TYPE_CHECKING:
-    B = t.TypeVar("B", bound=exp.Binary)
+    from sqlglot._typing import B, E
 
     BinaryCoercionFunc = t.Callable[[exp.Expression, exp.Expression], exp.DataType.Type]
     BinaryCoercions = t.Dict[

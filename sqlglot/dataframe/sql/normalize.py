@@ -7,10 +7,10 @@ from sqlglot.dataframe.sql.column import Column
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.helper import ensure_list
 
-NORMALIZE_INPUT = t.TypeVar("NORMALIZE_INPUT", bound=t.Union[str, exp.Expression, Column])
-
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql.session import SparkSession
+
+    NORMALIZE_INPUT = t.TypeVar("NORMALIZE_INPUT", bound=t.Union[str, exp.Expression, Column])
 
 
 def normalize(spark: SparkSession, expression_context: exp.Select, expr: t.List[NORMALIZE_INPUT]):

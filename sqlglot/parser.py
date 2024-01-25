@@ -12,9 +12,7 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from typing_extensions import Literal
-
-    from sqlglot._typing import E
+    from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import Dialect, DialectType
 
 logger = logging.getLogger("sqlglot")
@@ -4676,11 +4674,11 @@ class Parser(metaclass=_Parser):
         return None
 
     @t.overload
-    def _parse_json_object(self, agg: Literal[False]) -> exp.JSONObject:
+    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
         ...
 
     @t.overload
-    def _parse_json_object(self, agg: Literal[True]) -> exp.JSONObjectAgg:
+    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
         ...
 
     def _parse_json_object(self, agg=False):

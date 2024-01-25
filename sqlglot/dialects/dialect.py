@@ -5,7 +5,6 @@ from enum import Enum, auto
 from functools import reduce
 
 from sqlglot import exp
-from sqlglot._typing import E
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import AutoName, flatten, seq_get
@@ -14,10 +13,11 @@ from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 
-B = t.TypeVar("B", bound=exp.Binary)
-
 DATE_ADD_OR_DIFF = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateDiff, exp.TsOrDsDiff]
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import B, E
 
 
 class Dialects(str, Enum):

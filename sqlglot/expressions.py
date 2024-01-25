@@ -6636,7 +6636,7 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
     if isinstance(value, bool):
         return Boolean(this=value)
     if value is None or (isinstance(value, float) and math.isnan(value)):
-        return NULL
+        return null()
     if isinstance(value, numbers.Number):
         return Literal.number(value)
     if isinstance(value, datetime.datetime):
@@ -6997,9 +6997,3 @@ def null() -> Null:
     Returns a Null expression.
     """
     return Null()
-
-
-# TODO: deprecate this
-TRUE = Boolean(this=True)
-FALSE = Boolean(this=False)
-NULL = Null()

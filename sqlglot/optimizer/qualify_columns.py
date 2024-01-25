@@ -4,13 +4,15 @@ import itertools
 import typing as t
 
 from sqlglot import alias, exp
-from sqlglot._typing import E
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
 from sqlglot.optimizer.simplify import simplify_parens
 from sqlglot.schema import Schema, ensure_schema
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 
 def qualify_columns(

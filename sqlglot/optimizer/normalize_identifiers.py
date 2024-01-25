@@ -3,8 +3,10 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot._typing import E
 from sqlglot.dialects.dialect import Dialect, DialectType
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 
 @t.overload

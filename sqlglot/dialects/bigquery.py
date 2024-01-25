@@ -5,7 +5,6 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
-from sqlglot._typing import E
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -30,7 +29,7 @@ from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
-    from typing_extensions import Literal
+    from sqlglot._typing import E, Lit
 
 logger = logging.getLogger("sqlglot")
 
@@ -473,11 +472,11 @@ class BigQuery(Dialect):
             return table
 
         @t.overload
-        def _parse_json_object(self, agg: Literal[False]) -> exp.JSONObject:
+        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
             ...
 
         @t.overload
-        def _parse_json_object(self, agg: Literal[True]) -> exp.JSONObjectAgg:
+        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
             ...
 
         def _parse_json_object(self, agg=False):

@@ -23,7 +23,6 @@ from copy import deepcopy
 from enum import auto
 from functools import reduce
 
-from sqlglot._typing import E
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.helper import (
     AutoName,
@@ -36,7 +35,7 @@ from sqlglot.helper import (
 from sqlglot.tokens import Token
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import Lit
+    from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import DialectType
 
 
@@ -388,7 +387,7 @@ class Expression(metaclass=_Expression):
         ancestor = self.parent
         while ancestor and not isinstance(ancestor, expression_types):
             ancestor = ancestor.parent
-        return t.cast(E, ancestor)
+        return ancestor  # type: ignore
 
     @property
     def parent_select(self) -> t.Optional[Select]:

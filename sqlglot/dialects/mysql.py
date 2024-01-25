@@ -147,16 +147,13 @@ def _remove_ts_or_ds_to_date(
     return func
 
 
-def _parse_json_extract(args: t.List) -> exp.JSONExtract:
-    this, *paths = args
-    path = parser.parse_json_path(seq_get(paths, 0))
-    if isinstance(path, exp.JSONPath):
-        for p in paths[1:]:
-            parsed = parser.parse_json_path(p)
-            if isinstance(parsed, exp.JSONPath):
-                path.this.extend(parsed.this[1:])
+def _parse_json_extract(args: t.List) -> exp.Anonymous | exp.JSONExtract:
+    if len(args) > 2:
+        # MySQL's multi-path variant constructs a list of the extracted values
+        # TODO: add a new expression to facilitate the transpilation of this variant
+        return exp.Anonymous(this="JSON_EXTRACT", expressions=args)
 
-    return exp.JSONExtract(this=this, expression=path)
+    return parser.parse_extract_json_with_path(exp.JSONExtract)(args)
 
 
 class MySQL(Dialect):

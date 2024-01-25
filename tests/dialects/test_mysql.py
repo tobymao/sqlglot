@@ -151,6 +151,7 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT * FROM t1, t2 FOR SHARE OF t1, t2 SKIP LOCKED")
         self.validate_identity("SELECT a || b", "SELECT a OR b")
         self.validate_identity("SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')")
+        self.validate_identity("SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')")
         self.validate_identity(
             "SELECT * FROM x ORDER BY BINARY a", "SELECT * FROM x ORDER BY CAST(a AS BINARY)"
         )
@@ -163,10 +164,6 @@ class TestMySQL(Validator):
         self.validate_identity(
             """SELECT * FROM foo WHERE 3 MEMBER OF(info->'$.value')""",
             """SELECT * FROM foo WHERE 3 MEMBER OF(JSON_EXTRACT(info, '$.value'))""",
-        )
-        self.validate_identity(
-            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
-            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1][0]')",
         )
 
         # Index hints

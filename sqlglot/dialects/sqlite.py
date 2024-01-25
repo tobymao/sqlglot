@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     rename_func,
 )
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -61,6 +62,18 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
+def _parse_json_extract(args: t.List) -> exp.JSONExtract:
+    this, *paths = args
+    path = parser.parse_json_path(seq_get(paths, 0))
+    if isinstance(path, exp.JSONPath):
+        for p in paths[1:]:
+            parsed = parser.parse_json_path(p)
+            if isinstance(parsed, exp.JSONPath):
+                path.this.extend(parsed.this[1:])
+
+    return exp.JSONExtract(this=this, expression=path)
+
+
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -76,6 +89,7 @@ class SQLite(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
+            "JSON_EXTRACT": _parse_json_extract,
         }
         STRING_ALIASES = True
 

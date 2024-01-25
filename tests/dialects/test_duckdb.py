@@ -200,6 +200,22 @@ class TestDuckDB(Validator):
         self.validate_identity("FROM (FROM tbl)", "SELECT * FROM (SELECT * FROM tbl)")
         self.validate_identity("FROM tbl", "SELECT * FROM tbl")
         self.validate_identity(
+            "JSON_EXTRACT(x, '$.family')",
+            "x -> '$.family'",
+        )
+        self.validate_identity(
+            "JSON_EXTRACT_PATH(x, '$.family')",
+            "x -> '$.family'",
+        )
+        self.validate_identity(
+            "JSON_EXTRACT_STRING(x, '$.family')",
+            "x ->> '$.family'",
+        )
+        self.validate_identity(
+            "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
+            "x ->> '$.family'",
+        )
+        self.validate_identity(
             "ATTACH DATABASE ':memory:' AS new_database", check_command_warning=True
         )
         self.validate_identity(

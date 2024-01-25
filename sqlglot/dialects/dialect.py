@@ -501,12 +501,15 @@ def if_sql(
     return _if_sql
 
 
-def arrow_json_extract_sql(self: Generator, expression: exp.JSONExtract) -> str:
+def arrow_json_extract_sql(
+    self: Generator,
+    expression: exp.JSONExtract | exp.JSONBExtract | exp.JSONExtractScalar | exp.JSONBExtractScalar,
+) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this.copy(), "json"))
 
-    if type(expression) in (exp.JSONExtract, exp.JSONBExtract):
+    if isinstance(expression, (exp.JSONExtract, exp.JSONBExtract)):
         return self.binary(expression, "->")
 
     return self.binary(expression, "->>")
@@ -1051,10 +1054,12 @@ def parse_json_extract_path(
         jsonpath = exp.JSONPath(this=segments)
 
         # This is done to avoid failing in the expression validator due to the arg count
-        args.clear()
-        args.extend([this, jsonpath])
+        del args[2:]
 
-        return expr_type(this=this, expression=jsonpath, null_if_invalid=null_if_invalid)
+        if expr_type is exp.JSONExtractScalar:
+            return expr_type(this=this, expression=jsonpath, null_if_invalid=null_if_invalid)
+
+        return expr_type(this=this, expression=jsonpath)
 
     return _parse_json_extract_path
 

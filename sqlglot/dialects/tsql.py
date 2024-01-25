@@ -275,7 +275,9 @@ def _parse_len(args: t.List) -> exp.Length:
     return exp.Length(this=this)
 
 
-def _json_extract_sql(self: TSQL.Generator, expression: exp.JSONExtract) -> str:
+def _json_extract_sql(
+    self: TSQL.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
+) -> str:
     json_query = rename_func("JSON_QUERY")(self, expression)
     json_value = rename_func("JSON_VALUE")(self, expression)
     return self.func("ISNULL", json_query, json_value)

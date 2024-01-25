@@ -3805,6 +3805,7 @@ class DataType(Expression):
         dtype: DATA_TYPE,
         dialect: DialectType = None,
         udt: bool = False,
+        copy: bool = True,
         **kwargs,
     ) -> DataType:
         """
@@ -3815,7 +3816,8 @@ class DataType(Expression):
             dialect: the dialect to use for parsing `dtype`, in case it's a string.
             udt: when set to True, `dtype` will be used as-is if it can't be parsed into a
                 DataType, thus creating a user-defined type.
-            kawrgs: additional arguments to pass in the constructor of DataType.
+            copy: whether or not to copy the data type.
+            kwargs: additional arguments to pass in the constructor of DataType.
 
         Returns:
             The constructed DataType object.
@@ -3837,7 +3839,7 @@ class DataType(Expression):
         elif isinstance(dtype, DataType.Type):
             data_type_exp = DataType(this=dtype)
         elif isinstance(dtype, DataType):
-            return dtype
+            return maybe_copy(dtype, copy)
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DataType.Type")
 
@@ -3855,7 +3857,7 @@ class DataType(Expression):
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
         for dtype in dtypes:
-            other = DataType.build(dtype, udt=True)
+            other = DataType.build(dtype, copy=False, udt=True)
 
             if (
                 other.expressions
@@ -4943,15 +4945,16 @@ class JSONExtract(Binary, Func):
     _sql_names = ["JSON_EXTRACT"]
 
 
-class JSONExtractScalar(JSONExtract):
+class JSONExtractScalar(Binary, Func):
+    arg_types = {"this": True, "expression": True, "null_if_invalid": False}
     _sql_names = ["JSON_EXTRACT_SCALAR"]
 
 
-class JSONBExtract(JSONExtract):
+class JSONBExtract(Binary, Func):
     _sql_names = ["JSONB_EXTRACT"]
 
 
-class JSONBExtractScalar(JSONExtract):
+class JSONBExtractScalar(Binary, Func):
     _sql_names = ["JSONB_EXTRACT_SCALAR"]
 
 
@@ -6468,7 +6471,7 @@ def column(
     return this
 
 
-def cast(expression: ExpOrStr, to: DATA_TYPE, **opts) -> Cast:
+def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast:
     """Cast an expression to a data type.
 
     Example:
@@ -6478,12 +6481,13 @@ def cast(expression: ExpOrStr, to: DATA_TYPE, **opts) -> Cast:
     Args:
         expression: The expression to cast.
         to: The datatype to cast to.
+        copy: Whether or not to copy the supplied expressions.
 
     Returns:
         The new Cast instance.
     """
-    expression = maybe_parse(expression, **opts)
-    data_type = DataType.build(to, **opts)
+    expression = maybe_parse(expression, copy=copy, **opts)
+    data_type = DataType.build(to, copy=copy, **opts)
     expression = Cast(this=expression, to=data_type)
     expression.type = data_type
     return expression

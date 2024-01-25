@@ -4859,6 +4859,62 @@ class IsInf(Func):
     _sql_names = ["IS_INF", "ISINF"]
 
 
+class JSONPath(Expression):
+    arg_types = {"expressions": True}
+
+
+class JSONPathPart(Expression):
+    arg_types = {}
+
+
+class JSONPathChild(JSONPathPart):
+    arg_types = {"this": False}
+
+
+class JSONPathCurrent(JSONPathPart):
+    arg_types = {}
+
+
+class JSONPathFilter(JSONPathPart):
+    arg_types = {"this": True}
+
+
+class JSONPathKey(JSONPathPart):
+    arg_types = {"this": True}
+
+
+class JSONPathRecursive(JSONPathPart):
+    arg_types = {"this": False}
+
+
+class JSONPathRoot(JSONPathPart):
+    arg_types = {}
+
+
+class JSONPathScript(JSONPathPart):
+    arg_types = {"this": True}
+
+
+class JSONPathSlice(JSONPathPart):
+    arg_types = {"start": False, "end": False, "step": False}
+
+
+class JSONPathSelector(JSONPathPart):
+    arg_types = {"this": True}
+
+
+class JSONPathSubscript(JSONPathPart):
+    arg_types = {"this": True}
+
+
+class JSONPathUnion(JSONPathPart):
+    arg_types = {"expressions": True}
+
+
+class JSONPathWildcard(JSONPathPart):
+    arg_types = {}
+
+
 class FormatJson(Expression):
     pass
 
@@ -5478,6 +5534,8 @@ def _norm_arg(arg):
 
 ALL_FUNCTIONS = subclasses(__name__, Func, (AggFunc, Anonymous, Func))
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
+
+JSON_PATH_PARTS = subclasses(__name__, JSONPathPart, (JSONPathPart,))
 
 
 # Helpers
@@ -6185,7 +6243,7 @@ def paren(expression: ExpOrStr, copy: bool = True) -> Paren:
     return Paren(this=maybe_parse(expression, copy=copy))
 
 
-SAFE_IDENTIFIER_RE = re.compile(r"^[_a-zA-Z][\w]*$")
+SAFE_IDENTIFIER_RE: t.Pattern[str] = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 @t.overload

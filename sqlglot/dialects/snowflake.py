@@ -772,9 +772,10 @@ class Snowflake(Dialect):
         }
 
         JSON_PATH_MAPPING = {
-            key: generator.Generator.JSON_PATH_MAPPING[key] for key in ("child", "key", "subscript")
+            key: generator.Generator.JSON_PATH_MAPPING[key]
+            for key in (exp.JSONPathChild, exp.JSONPathKey, exp.JSONPathSubscript)
         }
-        JSON_PATH_MAPPING["root"] = lambda _: ""
+        JSON_PATH_MAPPING[exp.JSONPathRoot] = lambda _: ""
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,

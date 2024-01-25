@@ -69,7 +69,8 @@ def _parse_json_extract(args: t.List) -> exp.JSONExtract:
         for p in paths[1:]:
             parsed = parser.parse_json_path(p)
             if isinstance(parsed, exp.JSONPath):
-                path.this.extend(parsed.this[1:])
+                for segment in parsed.expressions[1:]:
+                    path.append("expressions", segment)
 
     # This is done to avoid failing in the expression validator due to the arg count
     del args[2:]

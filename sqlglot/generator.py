@@ -63,6 +63,10 @@ class Generator:
     """
 
     TRANSFORMS = {
+        **{  # type: ignore
+            expr_type: lambda self, e: generate_json_path([e], mapping=self.JSON_PATH_MAPPING)
+            for expr_type in exp.JSON_PATH_PARTS
+        },
         exp.DateAdd: lambda self, e: self.func(
             "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
         ),
@@ -2378,7 +2382,7 @@ class Generator:
         return f"{self.sql(expression, 'this')}{self.JSON_KEY_VALUE_PAIR_SEP} {self.sql(expression, 'expression')}"
 
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
-        path = generate_json_path(expression.this, mapping=self.JSON_PATH_MAPPING)
+        path = generate_json_path(expression.expressions, mapping=self.JSON_PATH_MAPPING)
         path = path[1:] if path.startswith(".") else path
         return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 

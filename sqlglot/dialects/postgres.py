@@ -393,10 +393,10 @@ class Postgres(Dialect):
         SUPPORTS_UNLOGGED_TABLES = True
 
         JSON_PATH_MAPPING = {
-            "child": lambda n: n.get("value") or "",
-            "key": lambda n: n.get("value") or "",
-            "root": lambda _: "",
-            "subscript": lambda n: generator.generate_json_path([n["value"]]),
+            exp.JSONPathChild: lambda n: n.name,
+            exp.JSONPathKey: lambda n: n.name,
+            exp.JSONPathRoot: lambda _: "",
+            exp.JSONPathSubscript: lambda n: generator.generate_json_path([n.this]),
         }
 
         TYPE_MAPPING = {

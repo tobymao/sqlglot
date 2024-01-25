@@ -67,7 +67,7 @@ def parse_json_path(path: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
         if path.is_number:
             path_text = f"[{path_text}]"
         try:
-            return exp.JSONPath(this=_parse_json_path(path_text))
+            return exp.JSONPath(expressions=_parse_json_path(path_text))
         except ParseError:
             logger.warning(f"Invalid JSON path syntax: {path_text}")
 

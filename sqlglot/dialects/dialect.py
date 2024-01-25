@@ -1034,24 +1034,22 @@ def parse_json_extract_path(
     expr_type: t.Type[E],
     supports_null_if_invalid: bool = False,
 ) -> t.Callable[[t.List], E]:
-    from sqlglot.jsonpath import _node
-
     def _parse_json_extract_path(args: t.List) -> E:
         null_if_invalid = None
 
-        segments = [_node("root")]
+        segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
         for arg in args[1:]:
             if isinstance(arg, exp.Literal):
                 text = arg.name
                 if text.isnumeric():
-                    segments.append(_node("subscript", int(text)))
+                    segments.append(exp.JSONPathSubscript(this=int(text)))
                 else:
-                    segments.append(_node("child", text))
+                    segments.append(exp.JSONPathChild(this=text))
             elif supports_null_if_invalid:
                 null_if_invalid = arg
 
         this = seq_get(args, 0)
-        jsonpath = exp.JSONPath(this=segments)
+        jsonpath = exp.JSONPath(expressions=segments)
 
         # This is done to avoid failing in the expression validator due to the arg count
         del args[2:]
@@ -1066,7 +1064,7 @@ def parse_json_extract_path(
 
 def json_path_segments(self: Generator, expression: exp.JSONPath) -> t.List[str]:
     segments = []
-    for segment in expression.this:
+    for segment in expression.expressions:
         path = generate_json_path([segment], mapping=self.JSON_PATH_MAPPING)
         if path:
             segments.append(f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}")

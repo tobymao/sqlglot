@@ -507,7 +507,7 @@ def arrow_json_extract_sql(
 ) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
-        this.replace(exp.cast(this.copy(), "json"))
+        this.replace(exp.cast(this, "json"))
 
     if isinstance(expression, (exp.JSONExtract, exp.JSONBExtract)):
         return self.binary(expression, "->")

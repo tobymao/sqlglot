@@ -199,6 +199,11 @@ class TestDuckDB(Validator):
         self.validate_identity("FROM  x SELECT x UNION SELECT 1", "SELECT x FROM x UNION SELECT 1")
         self.validate_identity("FROM (FROM tbl)", "SELECT * FROM (SELECT * FROM tbl)")
         self.validate_identity("FROM tbl", "SELECT * FROM tbl")
+        self.validate_identity("x -> '$.family'")
+        self.validate_identity(
+            """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
+            """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
+        )
         self.validate_identity(
             "JSON_EXTRACT(x, '$.family')",
             "x -> '$.family'",

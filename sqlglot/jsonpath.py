@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 
 from sqlglot.errors import ParseError
@@ -8,6 +9,8 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
+
+logger = logging.getLogger("sqlglot")
 
 
 class JSONPathTokenizer(Tokenizer):
@@ -172,6 +175,11 @@ def parse(path: str) -> t.List[JSONPathNode]:
         else:
             raise ParseError(_error(f"Unexpected {tokens[i].token_type}"))
 
+    # We canonicalize the JSON path AST so that it always starts with a
+    # "root" element, so paths like "field" will be generated as "$.field"
+    if nodes and nodes[0]["kind"] != "root":
+        nodes.insert(0, _node("root"))
+
     return nodes
 
 
@@ -200,16 +208,26 @@ def generate(
     nodes: t.List[JSONPathNode],
     mapping: t.Optional[t.Dict[str, t.Callable[[JSONPathNode], str]]] = None,
 ) -> str:
+    unsupported_kinds = set()
     mapping = MAPPING if mapping is None else mapping
-    path = []
 
+    path = []
     for node in nodes:
         if isinstance(node, dict):
-            path.append(mapping[node["kind"]](node))
+            kind = node["kind"]
+            generator = mapping.get(kind)
+
+            if generator:
+                path.append(generator(node))
+            else:
+                unsupported_kinds.add(kind)
         elif isinstance(node, str):
             escaped = node.replace('"', '\\"')
             path.append(f'"{escaped}"')
         else:
             path.append(str(node))
+
+    if unsupported_kinds:
+        logger.warning(f"Unsupported JSON path syntax: {', '.join(k for k in unsupported_kinds)}")
 
     return "".join(path)

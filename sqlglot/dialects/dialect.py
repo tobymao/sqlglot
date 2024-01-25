@@ -8,6 +8,7 @@ from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import AutoName, flatten, seq_get
+from sqlglot.jsonpath import generate as generate_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -500,13 +501,14 @@ def if_sql(
     return _if_sql
 
 
-def arrow_json_extract_sql(self: Generator, expression: exp.JSONExtract | exp.JSONBExtract) -> str:
-    return self.binary(expression, "->")
+def arrow_json_extract_sql(self: Generator, expression: exp.JSONExtract) -> str:
+    this = expression.this
+    if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
+        this.replace(exp.cast(this.copy(), "json"))
 
+    if type(expression) in (exp.JSONExtract, exp.JSONBExtract):
+        return self.binary(expression, "->")
 
-def arrow_json_extract_scalar_sql(
-    self: Generator, expression: exp.JSONExtractScalar | exp.JSONBExtractScalar
-) -> str:
     return self.binary(expression, "->>")
 
 
@@ -1023,3 +1025,46 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
         )
 
     return self.merge_sql(expression)
+
+
+def parse_json_extract_path_text(
+    supports_null_if_invalid: bool = False,
+) -> t.Callable[[t.List], exp.JSONExtractScalar]:
+    from sqlglot.jsonpath import _node
+
+    def _parse_json_extract_path_text(args: t.List) -> exp.JSONExtractScalar:
+        null_if_invalid = None
+
+        segments = [_node("root")]
+        for arg in args[1:]:
+            if isinstance(arg, exp.Literal):
+                text = arg.name
+                if text.isnumeric():
+                    segments.append(_node("subscript", int(text)))
+                else:
+                    segments.append(_node("child", text))
+            elif supports_null_if_invalid:
+                null_if_invalid = arg
+
+        this = seq_get(args, 0)
+        jsonpath = exp.JSONPath(this=segments)
+
+        # This is done to avoid failing in the expression validator due to the arg count
+        args.clear()
+        args.extend([this, jsonpath])
+
+        return exp.JSONExtractScalar(
+            this=this, expression=jsonpath, null_if_invalid=null_if_invalid
+        )
+
+    return _parse_json_extract_path_text
+
+
+def json_path_segments(self: Generator, expression: exp.JSONPath) -> t.List[str]:
+    segments = []
+    for segment in expression.this:
+        path = generate_json_path([segment], mapping=self.JSON_PATH_MAPPING)
+        if path:
+            segments.append(f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}")
+
+    return segments

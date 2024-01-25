@@ -9,6 +9,10 @@ from functools import reduce
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.helper import apply_index_offset, csv, seq_get
+from sqlglot.jsonpath import (
+    MAPPING as JSON_PATH_MAPPING,
+    generate as generate_json_path,
+)
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -265,6 +269,12 @@ class Generator:
 
     # Whether or not UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
+
+    # Whether or not the JSON extraction operators expect a value of type JSON
+    JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
+
+    # The mapping used for generating JSON path ASTs
+    JSON_PATH_MAPPING = JSON_PATH_MAPPING.copy()
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -2366,6 +2376,11 @@ class Generator:
 
     def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
         return f"{self.sql(expression, 'this')}{self.JSON_KEY_VALUE_PAIR_SEP} {self.sql(expression, 'expression')}"
+
+    def jsonpath_sql(self, expression: exp.JSONPath) -> str:
+        path = generate_json_path(expression.this, mapping=self.JSON_PATH_MAPPING)
+        path = path[1:] if path.startswith(".") else path
+        return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"

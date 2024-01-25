@@ -45,7 +45,7 @@ def load(obj: JSON) -> Node:
     """
     if isinstance(obj, list):
         return [load(i) for i in obj]
-    if isinstance(obj, dict):
+    if isinstance(obj, dict) and "class" in obj:
         class_name = obj["class"]
 
         if class_name == "DataType.Type":

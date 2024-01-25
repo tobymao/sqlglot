@@ -1097,32 +1097,32 @@ class TestDialect(Validator):
 
     def test_json(self):
         self.validate_all(
-            "JSON_EXTRACT(x, 'y')",
+            "JSON_EXTRACT(x, '$.y')",
             read={
-                "mysql": "JSON_EXTRACT(x, 'y')",
+                "mysql": "JSON_EXTRACT(x, '$.y')",
                 "postgres": "x->'y'",
-                "presto": "JSON_EXTRACT(x, 'y')",
-                "starrocks": "x -> 'y'",
-                "doris": "x -> 'y'",
+                "presto": "JSON_EXTRACT(x, '$.y')",
+                "starrocks": "x -> '$.y'",
+                "doris": "x -> '$.y'",
             },
             write={
-                "mysql": "JSON_EXTRACT(x, 'y')",
-                "oracle": "JSON_EXTRACT(x, 'y')",
-                "postgres": "x -> 'y'",
-                "presto": "JSON_EXTRACT(x, 'y')",
-                "starrocks": "x -> 'y'",
-                "doris": "x -> 'y'",
+                "mysql": "JSON_EXTRACT(x, '$.y')",
+                "oracle": "JSON_EXTRACT(x, '$.y')",
+                "postgres": "JSON_EXTRACT_PATH(x, 'y')",
+                "presto": "JSON_EXTRACT(x, '$.y')",
+                "starrocks": "x -> '$.y'",
+                "doris": "x -> '$.y'",
             },
         )
         self.validate_all(
-            "JSON_EXTRACT_SCALAR(x, 'y')",
+            "JSON_EXTRACT_SCALAR(x, '$.y')",
             read={
                 "postgres": "x ->> 'y'",
-                "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
+                "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
             },
             write={
-                "postgres": "x ->> 'y'",
-                "presto": "JSON_EXTRACT_SCALAR(x, 'y')",
+                "postgres": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
+                "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
             },
         )
         self.validate_all(

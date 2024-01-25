@@ -771,6 +771,11 @@ class Snowflake(Dialect):
             exp.Xor: rename_func("BOOLXOR"),
         }
 
+        JSON_PATH_MAPPING = {
+            key: generator.Generator.JSON_PATH_MAPPING[key] for key in ("child", "key", "subscript")
+        }
+        JSON_PATH_MAPPING["root"] = lambda _: ""
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",

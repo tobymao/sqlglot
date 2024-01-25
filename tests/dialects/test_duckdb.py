@@ -92,14 +92,14 @@ class TestDuckDB(Validator):
         self.validate_all(
             """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
             write={
-                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
+                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> '$.fruit'""",
                 "snowflake": """SELECT PARSE_JSON('{"fruit":"banana"}')['fruit']""",
             },
         )
         self.validate_all(
             """SELECT JSON('{"fruit": {"foo": "banana"}}') -> 'fruit' -> 'foo'""",
             write={
-                "duckdb": """SELECT JSON('{"fruit": {"foo": "banana"}}') -> 'fruit' -> 'foo'""",
+                "duckdb": """SELECT JSON('{"fruit": {"foo": "banana"}}') -> '$.fruit' -> '$.foo'""",
                 "snowflake": """SELECT PARSE_JSON('{"fruit": {"foo": "banana"}}')['fruit']['foo']""",
             },
         )

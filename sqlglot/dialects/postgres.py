@@ -7,11 +7,10 @@ from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
     any_value_to_max_sql,
-    arrow_json_extract_scalar_sql,
-    arrow_json_extract_sql,
     bool_xor_sql,
     datestrtodate_sql,
     format_time_lambda,
+    json_path_segments,
     max_or_greatest,
     merge_without_target_sql,
     min_or_least,
@@ -20,6 +19,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_pivot_sql,
     no_trycast_sql,
+    parse_json_extract_path_text,
     parse_timestamp_trunc,
     rename_func,
     str_position_sql,
@@ -30,6 +30,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
 )
 from sqlglot.helper import seq_get
+from sqlglot.jsonpath import generate as generate_json_path
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
@@ -188,6 +189,16 @@ def _to_timestamp(args: t.List) -> exp.Expression:
     return format_time_lambda(exp.StrToTime, "postgres")(args)
 
 
+def _json_extract_sql(
+    self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
+) -> str:
+    return self.func(
+        "JSON_EXTRACT_PATH" if type(expression) is exp.JSONExtract else "JSON_EXTRACT_PATH_TEXT",
+        expression.this,
+        *json_path_segments(self, expression.expression),
+    )
+
+
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
@@ -292,6 +303,7 @@ class Postgres(Dialect):
             **parser.Parser.FUNCTIONS,
             "DATE_TRUNC": parse_timestamp_trunc,
             "GENERATE_SERIES": _generate_series,
+            "JSON_EXTRACT_PATH_TEXT": parse_json_extract_path_text(),
             "MAKE_TIME": exp.TimeFromParts.from_arg_list,
             "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
@@ -375,8 +387,15 @@ class Postgres(Dialect):
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         SUPPORTS_SELECT_INTO = True
-        # https://www.postgresql.org/docs/current/sql-createtable.html
+        JSON_TYPE_REQUIRED_FOR_EXTRACTION = True
         SUPPORTS_UNLOGGED_TABLES = True
+
+        JSON_PATH_MAPPING = {
+            "child": lambda n: n.get("value") or "",
+            "key": lambda n: n.get("value") or "",
+            "root": lambda _: "",
+            "subscript": lambda n: generate_json_path([n["value"]]),
+        }
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -412,8 +431,8 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.GroupConcat: _string_agg_sql,
-            exp.JSONExtract: arrow_json_extract_sql,
-            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONExtract: _json_extract_sql,
+            exp.JSONExtractScalar: _json_extract_sql,
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),

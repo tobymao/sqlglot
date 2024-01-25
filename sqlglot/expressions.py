@@ -5550,6 +5550,14 @@ def maybe_parse(
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 
+def is_int(instance: Expression) -> bool:
+    try:
+        int(self.name)
+        return True
+    except ValueError:
+        return False
+
+
 @t.overload
 def maybe_copy(instance: None, copy: bool = True) -> None: ...
 

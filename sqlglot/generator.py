@@ -62,8 +62,8 @@ class Generator:
             Default: True
     """
 
-    TRANSFORMS = {
-        **{  # type: ignore
+    TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
+        **{
             expr_type: lambda self, e: generate_json_path([e], mapping=self.JSON_PATH_MAPPING)
             for expr_type in exp.JSON_PATH_PARTS
         },

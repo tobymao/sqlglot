@@ -313,6 +313,19 @@ class TestPostgres(Validator):
         )
 
         self.validate_all(
+            """JSON_EXTRACT_PATH('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}','f4')""",
+            write={
+                "bigquery": """JSON_EXTRACT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
+                "duckdb": """'{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}' -> '$.f4'""",
+                "mysql": """JSON_EXTRACT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
+                "postgres": """JSON_EXTRACT_PATH('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', 'f4')""",
+                "presto": """JSON_EXTRACT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
+                "redshift": """JSON_EXTRACT_PATH_TEXT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', 'f4')""",
+                "spark": """GET_JSON_OBJECT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
+                "sqlite": """'{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}' -> '$.f4'""",
+            },
+        )
+        self.validate_all(
             """JSON_EXTRACT_PATH_TEXT('{"farm": ["a", "b", "c"]}', 'farm', '0')""",
             read={
                 "redshift": """JSON_EXTRACT_PATH_TEXT('{"farm": ["a", "b", "c"]}', 'farm', '0')""",

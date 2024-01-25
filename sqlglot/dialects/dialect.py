@@ -1027,12 +1027,13 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
     return self.merge_sql(expression)
 
 
-def parse_json_extract_path_text(
+def parse_json_extract_path(
+    expr_type: t.Type[E],
     supports_null_if_invalid: bool = False,
-) -> t.Callable[[t.List], exp.JSONExtractScalar]:
+) -> t.Callable[[t.List], E]:
     from sqlglot.jsonpath import _node
 
-    def _parse_json_extract_path_text(args: t.List) -> exp.JSONExtractScalar:
+    def _parse_json_extract_path(args: t.List) -> E:
         null_if_invalid = None
 
         segments = [_node("root")]
@@ -1053,11 +1054,9 @@ def parse_json_extract_path_text(
         args.clear()
         args.extend([this, jsonpath])
 
-        return exp.JSONExtractScalar(
-            this=this, expression=jsonpath, null_if_invalid=null_if_invalid
-        )
+        return expr_type(this=this, expression=jsonpath, null_if_invalid=null_if_invalid)
 
-    return _parse_json_extract_path_text
+    return _parse_json_extract_path
 
 
 def json_path_segments(self: Generator, expression: exp.JSONPath) -> t.List[str]:

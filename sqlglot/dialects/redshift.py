@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     generatedasidentitycolumnconstraint_sql,
     json_path_segments,
     no_tablesample_sql,
-    parse_json_extract_path_text,
+    parse_json_extract_path,
     rename_func,
 )
 from sqlglot.dialects.postgres import Postgres
@@ -71,7 +71,9 @@ class Redshift(Postgres):
             "DATE_ADD": _parse_date_delta(exp.TsOrDsAdd),
             "DATEDIFF": _parse_date_delta(exp.TsOrDsDiff),
             "DATE_DIFF": _parse_date_delta(exp.TsOrDsDiff),
-            "JSON_EXTRACT_PATH_TEXT": parse_json_extract_path_text(supports_null_if_invalid=True),
+            "JSON_EXTRACT_PATH_TEXT": parse_json_extract_path(
+                exp.JSONExtractScalar, supports_null_if_invalid=True
+            ),
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
         }

@@ -1099,30 +1099,47 @@ class TestDialect(Validator):
         self.validate_all(
             "JSON_EXTRACT(x, '$.y')",
             read={
+                "bigquery": "JSON_EXTRACT(x, '$.y')",
+                "duckdb": "x -> 'y'",
+                "doris": "x -> '$.y'",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, '$.y')",
+                "sqlite": "x -> '$.y'",
                 "starrocks": "x -> '$.y'",
-                "doris": "x -> '$.y'",
             },
             write={
+                "bigquery": "JSON_EXTRACT(x, '$.y')",
+                "doris": "x -> '$.y'",
+                "duckdb": "x -> '$.y'",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
                 "oracle": "JSON_EXTRACT(x, '$.y')",
                 "postgres": "JSON_EXTRACT_PATH(x, 'y')",
                 "presto": "JSON_EXTRACT(x, '$.y')",
+                "spark": "GET_JSON_OBJECT(x, '$.y')",
+                "sqlite": "x -> '$.y'",
                 "starrocks": "x -> '$.y'",
-                "doris": "x -> '$.y'",
             },
         )
         self.validate_all(
             "JSON_EXTRACT_SCALAR(x, '$.y')",
             read={
+                "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y')",
+                "duckdb": "x ->> 'y'",
                 "postgres": "x ->> 'y'",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
+                "spark": "GET_JSON_OBJECT(x, '$.y')",
+                "sqlite": "x ->> '$.y'",
             },
             write={
+                "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y')",
+                "duckdb": "x ->> '$.y'",
                 "postgres": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
+                "spark": "GET_JSON_OBJECT(x, '$.y')",
+                "sqlite": "x ->> '$.y'",
             },
         )
         self.validate_all(

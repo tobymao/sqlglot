@@ -520,6 +520,11 @@ class BigQuery(Dialect):
 
             return bracket
 
+        def _parse_if(self) -> t.Optional[exp.Expression]:
+            if not self._match(TokenType.L_PAREN, advance=False):
+                return self._parse_as_command(self._prev)
+            return super()._parse_if()
+
     class Generator(generator.Generator):
         EXPLICIT_UNION = True
         INTERVAL_ALLOWS_PLURAL_FORM = False

@@ -29,7 +29,7 @@ jobs:
       run: |
         source ./.venv/bin/activate
         if [[ ${{ matrix.python-version }} == "3.7" ]]; then
-          make check
-        else
           make test test-rs
+        else
+          make check
         fi

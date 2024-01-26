@@ -159,7 +159,7 @@ class TestParser(unittest.TestCase):
             self.assertEqual(expressions[1].sql(), "ADD JAR s3://a")
             self.assertEqual(expressions[2].sql(), "SELECT 1")
 
-        assert "Input 'ADD JAR s3://a'" in cm.output[0]
+        assert "'ADD JAR s3://a'" in cm.output[0]
 
     def test_lambda_struct(self):
         expression = parse_one("FILTER(a.b, x -> x.id = id)")
@@ -510,7 +510,7 @@ class TestParser(unittest.TestCase):
 
         with self.assertLogs(parser_logger) as cm:
             set_as_command = parse_one("SET DEFAULT ROLE ALL TO USER")
-            assert "Input 'SET DEFAULT ROLE ALL TO USER'" in cm.output[0]
+            assert "'SET DEFAULT ROLE ALL TO USER'" in cm.output[0]
 
         self.assertEqual(set_as_command.sql(), "SET DEFAULT ROLE ALL TO USER")
 

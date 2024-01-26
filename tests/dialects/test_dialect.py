@@ -24,7 +24,7 @@ class Validator(unittest.TestCase):
         if check_command_warning:
             with self.assertLogs(parser_logger) as cm:
                 expression = self.parse_one(sql)
-                assert f"Input '{sql}' contains unsupported syntax" in cm.output[0]
+                assert f"'{sql[:100]}' contains unsupported syntax" in cm.output[0]
         else:
             expression = self.parse_one(sql)
 

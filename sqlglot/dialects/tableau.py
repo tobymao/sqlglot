@@ -38,3 +38,4 @@ class Tableau(Dialect):
             **parser.Parser.FUNCTIONS,
             "COUNTD": lambda args: exp.Count(this=exp.Distinct(expressions=args)),
         }
+        NO_PAREN_IF_COMMANDS = False

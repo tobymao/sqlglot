@@ -829,6 +829,7 @@ class Parser(metaclass=_Parser):
     ALTER_PARSERS = {
         "ADD": lambda self: self._parse_alter_table_add(),
         "ALTER": lambda self: self._parse_alter_table_alter(),
+        "CLUSTER BY": lambda self: self._parse_cluster(wrapped=True),
         "DELETE": lambda self: self.expression(exp.Delete, where=self._parse_where()),
         "DROP": lambda self: self._parse_alter_table_drop(),
         "RENAME": lambda self: self._parse_alter_table_rename(),
@@ -1658,8 +1659,13 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.ChecksumProperty, on=on, default=self._match(TokenType.DEFAULT))
 
-    def _parse_cluster(self) -> exp.Cluster:
-        return self.expression(exp.Cluster, expressions=self._parse_csv(self._parse_ordered))
+    def _parse_cluster(self, wrapped: bool = False) -> exp.Cluster:
+        return self.expression(
+            exp.Cluster,
+            expressions=self._parse_wrapped_csv(self._parse_ordered)
+            if wrapped
+            else self._parse_csv(self._parse_ordered),
+        )
 
     def _parse_clustered_by(self) -> exp.ClusteredByProperty:
         self._match_text_seq("BY")

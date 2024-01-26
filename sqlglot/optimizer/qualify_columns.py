@@ -212,7 +212,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
         if not node:
             return
 
-        for column, *_ in walk_in_scope(node):
+        for column, *_ in walk_in_scope(node, prune=lambda node, *_: node.is_star):
             if not isinstance(column, exp.Column):
                 continue
 

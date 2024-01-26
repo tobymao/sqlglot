@@ -177,9 +177,9 @@ MAPPING = {
     exp.JSONPathChild: lambda n: f".{n.this}" if n.this is not None else "",
     exp.JSONPathCurrent: lambda _: "@",
     exp.JSONPathFilter: lambda n: f"?{n.this}",
-    exp.JSONPathKey: lambda n: f".{n.this}"
-    if exp.SAFE_IDENTIFIER_RE.match(n.this)
-    else f"[{generate([n.this])}]",
+    exp.JSONPathKey: lambda n: (
+        f".{n.this}" if exp.SAFE_IDENTIFIER_RE.match(n.this) else f"[{generate([n.this])}]"
+    ),
     exp.JSONPathRecursive: lambda n: f"..{n.this}" if n.this is not None else "..",
     exp.JSONPathRoot: lambda _: "$",
     exp.JSONPathScript: lambda n: f"({n.this}",

@@ -192,9 +192,11 @@ def _json_extract_sql(
     self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
     return self.func(
-        "JSON_EXTRACT_PATH"
-        if isinstance(expression, exp.JSONExtract)
-        else "JSON_EXTRACT_PATH_TEXT",
+        (
+            "JSON_EXTRACT_PATH"
+            if isinstance(expression, exp.JSONExtract)
+            else "JSON_EXTRACT_PATH_TEXT"
+        ),
         expression.this,
         *json_path_segments(self, expression.expression),
     )

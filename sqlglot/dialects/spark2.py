@@ -129,9 +129,11 @@ class Spark2(Hive):
             "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
             "STRING": _parse_as_cast("string"),
             "TIMESTAMP": _parse_as_cast("timestamp"),
-            "TO_TIMESTAMP": lambda args: _parse_as_cast("timestamp")(args)
-            if len(args) == 1
-            else format_time_lambda(exp.StrToTime, "spark")(args),
+            "TO_TIMESTAMP": lambda args: (
+                _parse_as_cast("timestamp")(args)
+                if len(args) == 1
+                else format_time_lambda(exp.StrToTime, "spark")(args)
+            ),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "TO_UTC_TIMESTAMP": lambda args: exp.FromTimeZone(
                 this=exp.cast_unless(
@@ -264,10 +266,12 @@ class Spark2(Hive):
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             return super().columndef_sql(
                 expression,
-                sep=": "
-                if isinstance(expression.parent, exp.DataType)
-                and expression.parent.is_type("struct")
-                else sep,
+                sep=(
+                    ": "
+                    if isinstance(expression.parent, exp.DataType)
+                    and expression.parent.is_type("struct")
+                    else sep
+                ),
             )
 
     class Tokenizer(Hive.Tokenizer):

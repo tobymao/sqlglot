@@ -178,9 +178,9 @@ def parse(path: str) -> t.List[JSONPathNode]:
 MAPPING = {
     "child": lambda n: f".{n['value']}" if n.get("value") is not None else "",
     "filter": lambda n: f"?{n['value']}",
-    "key": lambda n: f".{n['value']}"
-    if SAFE_IDENTIFIER_RE.match(n["value"])
-    else f'[{generate([n["value"]])}]',
+    "key": lambda n: (
+        f".{n['value']}" if SAFE_IDENTIFIER_RE.match(n["value"]) else f'[{generate([n["value"]])}]'
+    ),
     "recursive": lambda n: f"..{n['value']}" if n.get("value") is not None else "..",
     "root": lambda _: "$",
     "script": lambda n: f"({n['value']}",

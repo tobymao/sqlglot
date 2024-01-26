@@ -392,9 +392,9 @@ def _lambda_sql(self, e: exp.Lambda) -> str:
     names = {e.name.lower() for e in e.expressions}
 
     e = e.transform(
-        lambda n: exp.var(n.name)
-        if isinstance(n, exp.Identifier) and n.name.lower() in names
-        else n
+        lambda n: (
+            exp.var(n.name) if isinstance(n, exp.Identifier) and n.name.lower() in names else n
+        )
     )
 
     return f"lambda {self.expressions(e, flat=True)}: {self.sql(e, 'this')}"
@@ -438,9 +438,9 @@ class Python(Dialect):
             exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
             exp.In: lambda self, e: f"{self.sql(e, 'this')} in {{{self.expressions(e, flat=True)}}}",
             exp.Interval: lambda self, e: f"INTERVAL({self.sql(e.this)}, '{self.sql(e.unit)}')",
-            exp.Is: lambda self, e: self.binary(e, "==")
-            if isinstance(e.this, exp.Literal)
-            else self.binary(e, "is"),
+            exp.Is: lambda self, e: (
+                self.binary(e, "==") if isinstance(e.this, exp.Literal) else self.binary(e, "is")
+            ),
             exp.Lambda: _lambda_sql,
             exp.Not: lambda self, e: f"not {self.sql(e.this)}",
             exp.Null: lambda *_: "None",

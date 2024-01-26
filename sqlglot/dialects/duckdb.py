@@ -148,8 +148,8 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
 def _rename_unless_within_group(
     a: str, b: str
 ) -> t.Callable[[DuckDB.Generator, exp.Expression], str]:
-    return (
-        lambda self, expression: self.func(a, *flatten(expression.args.values()))
+    return lambda self, expression: (
+        self.func(a, *flatten(expression.args.values()))
         if isinstance(expression.find_ancestor(exp.Select, exp.WithinGroup), exp.WithinGroup)
         else self.func(b, *flatten(expression.args.values()))
     )
@@ -273,9 +273,11 @@ class DuckDB(Dialect):
 
         PLACEHOLDER_PARSERS = {
             **parser.Parser.PLACEHOLDER_PARSERS,
-            TokenType.PARAMETER: lambda self: self.expression(exp.Placeholder, this=self._prev.text)
-            if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
-            else None,
+            TokenType.PARAMETER: lambda self: (
+                self.expression(exp.Placeholder, this=self._prev.text)
+                if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
+                else None
+            ),
         }
 
         def _parse_types(
@@ -321,9 +323,11 @@ class DuckDB(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Array: lambda self, e: self.func("ARRAY", e.expressions[0])
-            if e.expressions and e.expressions[0].find(exp.Select)
-            else inline_array_sql(self, e),
+            exp.Array: lambda self, e: (
+                self.func("ARRAY", e.expressions[0])
+                if e.expressions and e.expressions[0].find(exp.Select)
+                else inline_array_sql(self, e)
+            ),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
             exp.ArgMin: arg_max_or_min_no_count("ARG_MIN"),

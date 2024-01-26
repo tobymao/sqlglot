@@ -76,9 +76,11 @@ def _format_time_lambda(
             format=exp.Literal.string(
                 format_time(
                     args[0].name.lower(),
-                    {**TSQL.TIME_MAPPING, **FULL_FORMAT_TIME_MAPPING}
-                    if full_format_mapping
-                    else TSQL.TIME_MAPPING,
+                    (
+                        {**TSQL.TIME_MAPPING, **FULL_FORMAT_TIME_MAPPING}
+                        if full_format_mapping
+                        else TSQL.TIME_MAPPING
+                    ),
                 )
             ),
         )
@@ -487,9 +489,11 @@ class TSQL(Dialect):
             See: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-clause-transact-sql?view=sql-server-ver16#syntax
             """
             return [
-                exp.alias_(projection.expression, projection.this.this, copy=False)
-                if isinstance(projection, exp.EQ) and isinstance(projection.this, exp.Column)
-                else projection
+                (
+                    exp.alias_(projection.expression, projection.this.this, copy=False)
+                    if isinstance(projection, exp.EQ) and isinstance(projection.this, exp.Column)
+                    else projection
+                )
                 for projection in super()._parse_projections()
             ]
 

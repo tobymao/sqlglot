@@ -82,9 +82,11 @@ class SparkSession:
         ]
 
         sel_columns = [
-            F.col(name).cast(data_type).alias(name).expression
-            if data_type is not None
-            else F.col(name).expression
+            (
+                F.col(name).cast(data_type).alias(name).expression
+                if data_type is not None
+                else F.col(name).expression
+            )
             for name, data_type in column_mapping.items()
         ]
 

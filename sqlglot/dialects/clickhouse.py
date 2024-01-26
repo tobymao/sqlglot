@@ -655,12 +655,16 @@ class ClickHouse(Dialect):
 
         def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:
             return super().after_limit_modifiers(expression) + [
-                self.seg("SETTINGS ") + self.expressions(expression, key="settings", flat=True)
-                if expression.args.get("settings")
-                else "",
-                self.seg("FORMAT ") + self.sql(expression, "format")
-                if expression.args.get("format")
-                else "",
+                (
+                    self.seg("SETTINGS ") + self.expressions(expression, key="settings", flat=True)
+                    if expression.args.get("settings")
+                    else ""
+                ),
+                (
+                    self.seg("FORMAT ") + self.sql(expression, "format")
+                    if expression.args.get("format")
+                    else ""
+                ),
             ]
 
         def parameterizedagg_sql(self, expression: exp.ParameterizedAgg) -> str:

@@ -572,9 +572,11 @@ class Generator:
 
     def wrap(self, expression: exp.Expression | str) -> str:
         this_sql = self.indent(
-            self.sql(expression)
-            if isinstance(expression, (exp.Select, exp.Union))
-            else self.sql(expression, "this"),
+            (
+                self.sql(expression)
+                if isinstance(expression, (exp.Select, exp.Union))
+                else self.sql(expression, "this")
+            ),
             level=1,
             pad=0,
         )
@@ -609,9 +611,11 @@ class Generator:
         lines = sql.split("\n")
 
         return "\n".join(
-            line
-            if (skip_first and i == 0) or (skip_last and i == len(lines) - 1)
-            else f"{' ' * (level * self._indent + pad)}{line}"
+            (
+                line
+                if (skip_first and i == 0) or (skip_last and i == len(lines) - 1)
+                else f"{' ' * (level * self._indent + pad)}{line}"
+            )
             for i, line in enumerate(lines)
         )
 
@@ -2024,9 +2028,11 @@ class Generator:
     def after_having_modifiers(self, expression: exp.Expression) -> t.List[str]:
         return [
             self.sql(expression, "qualify"),
-            self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
-            if expression.args.get("windows")
-            else "",
+            (
+                self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
+                if expression.args.get("windows")
+                else ""
+            ),
             self.sql(expression, "distribute"),
             self.sql(expression, "sort"),
             self.sql(expression, "cluster"),

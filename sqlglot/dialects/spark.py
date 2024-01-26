@@ -80,9 +80,9 @@ class Spark(Spark2):
             exp.TimestampAdd: lambda self, e: self.func(
                 "DATEADD", e.args.get("unit") or "DAY", e.expression, e.this
             ),
-            exp.TryCast: lambda self, e: self.trycast_sql(e)
-            if e.args.get("safe")
-            else self.cast_sql(e),
+            exp.TryCast: lambda self, e: (
+                self.trycast_sql(e) if e.args.get("safe") else self.cast_sql(e)
+            ),
         }
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)

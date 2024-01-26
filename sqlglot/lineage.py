@@ -41,9 +41,9 @@ class Node:
             else:
                 label = node.expression.sql(pretty=True, dialect=dialect)
                 source = node.source.transform(
-                    lambda n: exp.Tag(this=n, prefix="<b>", postfix="</b>")
-                    if n is node.expression
-                    else n,
+                    lambda n: (
+                        exp.Tag(this=n, prefix="<b>", postfix="</b>") if n is node.expression else n
+                    ),
                     copy=False,
                 ).sql(pretty=True, dialect=dialect)
                 title = f"<pre>{source}</pre>"

@@ -140,12 +140,10 @@ class DataFrame:
         return cte, name
 
     @t.overload
-    def _ensure_list_of_columns(self, cols: t.Collection[ColumnOrLiteral]) -> t.List[Column]:
-        ...
+    def _ensure_list_of_columns(self, cols: t.Collection[ColumnOrLiteral]) -> t.List[Column]: ...
 
     @t.overload
-    def _ensure_list_of_columns(self, cols: ColumnOrLiteral) -> t.List[Column]:
-        ...
+    def _ensure_list_of_columns(self, cols: ColumnOrLiteral) -> t.List[Column]: ...
 
     def _ensure_list_of_columns(self, cols):
         return Column.ensure_cols(ensure_list(cols))
@@ -496,9 +494,11 @@ class DataFrame:
             join_column_names = [left_col.alias_or_name for left_col, _ in join_column_pairs]
             # To match spark behavior only the join clause gets deduplicated and it gets put in the front of the column list
             select_column_names = [
-                column.alias_or_name
-                if not isinstance(column.expression.this, exp.Star)
-                else column.sql()
+                (
+                    column.alias_or_name
+                    if not isinstance(column.expression.this, exp.Star)
+                    else column.sql()
+                )
                 for column in self_columns + other_columns
             ]
             select_column_names = [
@@ -552,9 +552,11 @@ class DataFrame:
         ), "The length of items in ascending must equal the number of columns provided"
         col_and_ascending = list(zip(columns, ascending))
         order_by_columns = [
-            exp.Ordered(this=col.expression, desc=not asc)
-            if i not in pre_ordered_col_indexes
-            else columns[i].column_expression
+            (
+                exp.Ordered(this=col.expression, desc=not asc)
+                if i not in pre_ordered_col_indexes
+                else columns[i].column_expression
+            )
             for i, (col, asc) in enumerate(col_and_ascending)
         ]
         return self.copy(expression=self.expression.order_by(*order_by_columns))

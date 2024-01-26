@@ -657,9 +657,11 @@ class Parser(metaclass=_Parser):
     PLACEHOLDER_PARSERS = {
         TokenType.PLACEHOLDER: lambda self: self.expression(exp.Placeholder),
         TokenType.PARAMETER: lambda self: self._parse_parameter(),
-        TokenType.COLON: lambda self: self.expression(exp.Placeholder, this=self._prev.text)
-        if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
-        else None,
+        TokenType.COLON: lambda self: (
+            self.expression(exp.Placeholder, this=self._prev.text)
+            if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
+            else None
+        ),
     }
 
     RANGE_PARSERS = {
@@ -1543,11 +1545,13 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.FileFormatProperty,
-            this=self.expression(
-                exp.InputOutputFormat, input_format=input_format, output_format=output_format
-            )
-            if input_format or output_format
-            else self._parse_var_or_string() or self._parse_number() or self._parse_id_var(),
+            this=(
+                self.expression(
+                    exp.InputOutputFormat, input_format=input_format, output_format=output_format
+                )
+                if input_format or output_format
+                else self._parse_var_or_string() or self._parse_number() or self._parse_id_var()
+            ),
         )
 
     def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
@@ -1662,9 +1666,11 @@ class Parser(metaclass=_Parser):
     def _parse_cluster(self, wrapped: bool = False) -> exp.Cluster:
         return self.expression(
             exp.Cluster,
-            expressions=self._parse_wrapped_csv(self._parse_ordered)
-            if wrapped
-            else self._parse_csv(self._parse_ordered),
+            expressions=(
+                self._parse_wrapped_csv(self._parse_ordered)
+                if wrapped
+                else self._parse_csv(self._parse_ordered)
+            ),
         )
 
     def _parse_clustered_by(self) -> exp.ClusteredByProperty:
@@ -4679,12 +4685,10 @@ class Parser(metaclass=_Parser):
         return None
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
-        ...
+    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
-        ...
+    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
 
     def _parse_json_object(self, agg=False):
         star = self._parse_star()
@@ -5718,14 +5722,12 @@ class Parser(metaclass=_Parser):
         return True
 
     @t.overload
-    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression:
-        ...
+    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression: ...
 
     @t.overload
     def _replace_columns_with_dots(
         self, this: t.Optional[exp.Expression]
-    ) -> t.Optional[exp.Expression]:
-        ...
+    ) -> t.Optional[exp.Expression]: ...
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

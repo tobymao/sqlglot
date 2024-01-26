@@ -144,9 +144,11 @@ class Column:
     ) -> Column:
         ensured_column = None if column is None else cls.ensure_col(column)
         ensure_expression_values = {
-            k: [Column.ensure_col(x).expression for x in v]
-            if is_iterable(v)
-            else Column.ensure_col(v).expression
+            k: (
+                [Column.ensure_col(x).expression for x in v]
+                if is_iterable(v)
+                else Column.ensure_col(v).expression
+            )
             for k, v in kwargs.items()
             if v is not None
         }

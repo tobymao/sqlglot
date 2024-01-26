@@ -924,7 +924,7 @@ class DerivedTable(Expression):
 class Unionable(Expression):
     def union(
         self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
-    ) -> Unionable:
+    ) -> Union:
         """
         Builds a UNION expression.
 

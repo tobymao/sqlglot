@@ -1224,8 +1224,7 @@ class Parser(metaclass=_Parser):
 
         logger.warning(
             f"Input '{sql}' contains unsupported syntax, proceeding to parse it into the"
-            " fallback 'Command' expression. Consider filing a GitHub issue to request support"
-            " for this syntax, e.g. if transpilation or AST metadata extraction is required."
+            " fallback 'Command' expression."
         )
 
     def _parse_command(self) -> exp.Command:

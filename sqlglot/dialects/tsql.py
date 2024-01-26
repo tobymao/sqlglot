@@ -480,6 +480,7 @@ class TSQL(Dialect):
 
         ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         STRING_ALIASES = True
+        NO_PAREN_IF_COMMANDS = False
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """

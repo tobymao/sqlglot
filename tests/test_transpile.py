@@ -774,7 +774,7 @@ FROM base""",
             with self.subTest(sql):
                 with self.assertLogs(parser_logger) as cm:
                     self.assertEqual(transpile(sql)[0], sql)
-                    assert f"Input '{sql}' contains unsupported syntax" in cm.output[0]
+                    assert f"'{sql[:100]}' contains unsupported syntax" in cm.output[0]
 
     def test_normalize_name(self):
         self.assertEqual(

@@ -983,6 +983,9 @@ class Parser(metaclass=_Parser):
     MODIFIERS_ATTACHED_TO_UNION = True
     UNION_MODIFIERS = {"order", "limit", "offset"}
 
+    # parses no parenthesis if statements as commands
+    NO_PAREN_IF_COMMANDS = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -1223,11 +1226,10 @@ class Parser(metaclass=_Parser):
 
         # We use _find_sql because self.sql may comprise multiple chunks, and we're only
         # interested in emitting a warning for the one being currently processed.
-        sql = self._find_sql(self._tokens[0], self._tokens[-1])
+        sql = self._find_sql(self._tokens[0], self._tokens[-1])[: self.error_message_context]
 
         logger.warning(
-            f"Input '{sql}' contains unsupported syntax, proceeding to parse it into the"
-            " fallback 'Command' expression."
+            f"'{sql}' contains unsupported syntax. Falling back to parsing as a 'Command'."
         )
 
     def _parse_command(self) -> exp.Command:
@@ -4474,6 +4476,10 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
         else:
             index = self._index - 1
+
+            if self.NO_PAREN_IF_COMMANDS and index == 0:
+                return self._parse_as_command(self._prev)
+
             condition = self._parse_conjunction()
 
             if not condition:

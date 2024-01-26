@@ -105,7 +105,7 @@ class TestBigQuery(Validator):
                 [s.sql(dialect="bigquery") for s in for_in_stmts],
                 ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
             )
-            assert "Input 'END FOR'" in cm.output[0]
+            assert "'END FOR'" in cm.output[0]
 
         self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
         self.validate_identity("TIME('2008-12-25 15:30:00+08')")

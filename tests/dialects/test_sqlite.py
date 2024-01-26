@@ -73,11 +73,10 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT UNIXEPOCH('now', 'subsec')")
         self.validate_identity("SELECT TIMEDIFF('now', '1809-02-12')")
         self.validate_identity(
-            """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
+            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]')",
         )
         self.validate_identity(
-            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]')",
-            "SELECT '[10, 20, [30, 40]]' -> '$[2][0]'",
+            """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
         )
 
         self.validate_all("SELECT LIKE(y, x)", write={"sqlite": "SELECT x LIKE y"})

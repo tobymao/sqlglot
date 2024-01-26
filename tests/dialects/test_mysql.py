@@ -150,8 +150,6 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE A LIKE B")
         self.validate_identity("SELECT * FROM t1, t2 FOR SHARE OF t1, t2 SKIP LOCKED")
         self.validate_identity("SELECT a || b", "SELECT a OR b")
-        self.validate_identity("SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')")
-        self.validate_identity("SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')")
         self.validate_identity(
             "SELECT * FROM x ORDER BY BINARY a", "SELECT * FROM x ORDER BY CAST(a AS BINARY)"
         )
@@ -592,6 +590,26 @@ class TestMySQL(Validator):
         )
 
     def test_mysql(self):
+        self.validate_all(
+            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+            read={
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+            },
+            write={
+                "mysql": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+                "sqlite": "SELECT '[10, 20, [30, 40]]' -> '$[1]'",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+            read={
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+            },
+            write={
+                "mysql": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+            },
+        )
         self.validate_all(
             "SELECT * FROM x LEFT JOIN y ON x.id = y.id UNION SELECT * FROM x RIGHT JOIN y ON x.id = y.id LIMIT 0",
             read={

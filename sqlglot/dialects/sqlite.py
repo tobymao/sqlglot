@@ -16,7 +16,6 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     rename_func,
 )
-from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -26,6 +25,12 @@ def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:
     unit = expression.args.get("unit")
     modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
     return self.func("DATE", expression.this, modifier)
+
+
+def _json_extract_sql(self: SQLite.Generator, expression: exp.JSONExtract) -> str:
+    if expression.expressions:
+        return self.function_fallback_sql(expression)
+    return arrow_json_extract_sql(self, expression)
 
 
 def _transform_create(expression: exp.Expression) -> exp.Expression:
@@ -62,21 +67,6 @@ def _transform_create(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _parse_json_extract(args: t.List) -> exp.JSONExtract:
-    this, *paths = args
-    path = parser.parse_json_path(seq_get(paths, 0))
-    if isinstance(path, exp.JSONPath):
-        for p in paths[1:]:
-            parsed = parser.parse_json_path(p)
-            if isinstance(parsed, exp.JSONPath):
-                for segment in parsed.expressions[1:]:
-                    path.append("expressions", segment)
-
-    # This is done to avoid failing in the expression validator due to the arg count
-    del args[2:]
-    return exp.JSONExtract(this=this, expression=path)
-
-
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -92,7 +82,6 @@ class SQLite(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "EDITDIST3": exp.Levenshtein.from_arg_list,
-            "JSON_EXTRACT": _parse_json_extract,
         }
         STRING_ALIASES = True
 
@@ -136,7 +125,7 @@ class SQLite(Dialect):
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.ILike: no_ilike_sql,
-            exp.JSONExtract: arrow_json_extract_sql,
+            exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONBExtract: arrow_json_extract_sql,
             exp.JSONBExtractScalar: arrow_json_extract_sql,

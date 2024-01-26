@@ -76,7 +76,11 @@ def parse_json_path(path: t.Optional[exp.Expression]) -> t.Optional[exp.Expressi
 
 def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
     def _parser(args: t.List) -> E:
-        return expr_type(this=seq_get(args, 0), expression=parse_json_path(seq_get(args, 1)))
+        expression = expr_type(this=seq_get(args, 0), expression=parse_json_path(seq_get(args, 1)))
+        if len(args) > 2 and expr_type is exp.JSONExtract:
+            expression.set("expressions", args[2:])
+
+        return expression
 
     return _parser
 

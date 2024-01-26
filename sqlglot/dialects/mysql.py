@@ -147,15 +147,6 @@ def _remove_ts_or_ds_to_date(
     return func
 
 
-def _parse_json_extract(args: t.List) -> exp.Anonymous | exp.JSONExtract:
-    if len(args) > 2:
-        # MySQL's multi-path variant constructs a list of the extracted values
-        # TODO: add a new expression to facilitate the transpilation of this variant
-        return exp.Anonymous(this="JSON_EXTRACT", expressions=args)
-
-    return parser.parse_extract_json_with_path(exp.JSONExtract)(args)
-
-
 class MySQL(Dialect):
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -307,7 +298,6 @@ class MySQL(Dialect):
             "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
             "INSTR": lambda args: exp.StrPosition(substr=seq_get(args, 1), this=seq_get(args, 0)),
             "ISNULL": isnull_to_is_null,
-            "JSON_EXTRACT": _parse_json_extract,
             "LOCATE": locate_to_strposition,
             "MAKETIME": exp.TimeFromParts.from_arg_list,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),

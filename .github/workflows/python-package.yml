@@ -26,12 +26,12 @@ jobs:
         python -m pip install --upgrade pip
         make install-dev
     - name: Run checks (linter, code style, tests)
-      if: ${{ matrix.python-version }} != "3.7"
+      if: matrix.python-version != "3.7"
       run: |
         source ./.venv/bin/activate
         make check
     - name: Run only tests
-      if: ${{ matrix.python-version }} == "3.7"
+      if: matrix.python-version == "3.7"
       run: |
         source ./.venv/bin/activate
         make test

@@ -359,6 +359,9 @@ SELECT x.b AS b FROM x AS x;
 SELECT * EXCEPT (a, b) FROM x;
 SELECT * EXCEPT (x.a, x.b) FROM x AS x;
 
+SELECT COALESCE(t1.a, '') AS a, t2.* EXCEPT (a) FROM x AS t1, x AS t2;
+SELECT COALESCE(t1.a, '') AS a, t2.b AS b FROM x AS t1, x AS t2;
+
 --------------------------------------
 -- Using
 --------------------------------------

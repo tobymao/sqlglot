@@ -19,6 +19,24 @@ class TestBigQuery(Validator):
 
     def test_bigquery(self):
         with self.assertLogs(helper_logger) as cm:
+            statements = parse(
+                """
+            BEGIN
+              DECLARE 1;
+              IF from_date IS NULL THEN SET x = 1;
+              END IF;
+            END
+            """,
+                read="bigquery",
+            )
+            self.assertIn("unsupported syntax", cm.output[0])
+
+        for actual, expected in zip(
+            statements, ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END")
+        ):
+            self.assertEqual(actual.sql(dialect="bigquery"), expected)
+
+        with self.assertLogs(helper_logger) as cm:
             self.validate_identity(
                 "SELECT * FROM t AS t(c1, c2)",
                 "SELECT * FROM t AS t",

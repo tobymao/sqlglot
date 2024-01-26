@@ -391,9 +391,11 @@ class Postgres(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
-            exp.Array: lambda self, e: f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
-            if isinstance(seq_get(e.expressions, 0), exp.Select)
-            else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]",
+            exp.Array: lambda self, e: (
+                f"{self.normalize_func('ARRAY')}({self.sql(e.expressions[0])})"
+                if isinstance(seq_get(e.expressions, 0), exp.Select)
+                else f"{self.normalize_func('ARRAY')}[{self.expressions(e, flat=True)}]"
+            ),
             exp.ArrayConcat: rename_func("ARRAY_CAT"),
             exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),

@@ -397,9 +397,11 @@ class Hive(Dialect):
 
             if this and not schema:
                 return this.transform(
-                    lambda node: node.replace(exp.DataType.build("text"))
-                    if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
-                    else node,
+                    lambda node: (
+                        node.replace(exp.DataType.build("text"))
+                        if isinstance(node, exp.DataType) and node.is_type("char", "varchar")
+                        else node
+                    ),
                     copy=False,
                 )
 
@@ -409,9 +411,11 @@ class Hive(Dialect):
             self,
         ) -> t.Tuple[t.List[exp.Expression], t.Optional[exp.Expression]]:
             return (
-                self._parse_csv(self._parse_conjunction)
-                if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
-                else [],
+                (
+                    self._parse_csv(self._parse_conjunction)
+                    if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
+                    else []
+                ),
                 super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY)),
             )
 
@@ -483,9 +487,9 @@ class Hive(Dialect):
             exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
             exp.Min: min_or_least,
             exp.MonthsBetween: lambda self, e: self.func("MONTHS_BETWEEN", e.this, e.expression),
-            exp.NotNullColumnConstraint: lambda self, e: ""
-            if e.args.get("allow_null")
-            else "NOT NULL",
+            exp.NotNullColumnConstraint: lambda self, e: (
+                "" if e.args.get("allow_null") else "NOT NULL"
+            ),
             exp.VarMap: var_map_sql,
             exp.Create: _create_sql,
             exp.Quantile: rename_func("PERCENTILE"),

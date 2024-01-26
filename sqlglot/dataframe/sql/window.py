@@ -90,9 +90,11 @@ class WindowSpec:
                 **kwargs,
                 **{
                     "start_side": "PRECEDING",
-                    "start": "UNBOUNDED"
-                    if start <= Window.unboundedPreceding
-                    else F.lit(start).expression,
+                    "start": (
+                        "UNBOUNDED"
+                        if start <= Window.unboundedPreceding
+                        else F.lit(start).expression
+                    ),
                 },
             }
         if end == Window.currentRow:
@@ -102,9 +104,9 @@ class WindowSpec:
                 **kwargs,
                 **{
                     "end_side": "FOLLOWING",
-                    "end": "UNBOUNDED"
-                    if end >= Window.unboundedFollowing
-                    else F.lit(end).expression,
+                    "end": (
+                        "UNBOUNDED" if end >= Window.unboundedFollowing else F.lit(end).expression
+                    ),
                 },
             }
         return kwargs

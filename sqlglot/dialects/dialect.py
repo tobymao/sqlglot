@@ -381,9 +381,11 @@ class Dialect(metaclass=_Dialect):
         ):
             expression.set(
                 "this",
-                expression.this.upper()
-                if self.normalization_strategy is NormalizationStrategy.UPPERCASE
-                else expression.this.lower(),
+                (
+                    expression.this.upper()
+                    if self.normalization_strategy is NormalizationStrategy.UPPERCASE
+                    else expression.this.lower()
+                ),
             )
 
         return expression
@@ -877,9 +879,11 @@ def pivot_column_names(aggregations: t.List[exp.Expression], dialect: DialectTyp
             Otherwise, we'd end up with `col_avg(`foo`)` (notice the double quotes).
             """
             agg_all_unquoted = agg.transform(
-                lambda node: exp.Identifier(this=node.name, quoted=False)
-                if isinstance(node, exp.Identifier)
-                else node
+                lambda node: (
+                    exp.Identifier(this=node.name, quoted=False)
+                    if isinstance(node, exp.Identifier)
+                    else node
+                )
             )
             names.append(agg_all_unquoted.sql(dialect=dialect, normalize_functions="lower"))
 
@@ -999,10 +1003,8 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
     """Remove table refs from columns in when statements."""
     alias = expression.this.args.get("alias")
 
-    normalize = (
-        lambda identifier: self.dialect.normalize_identifier(identifier).name
-        if identifier
-        else None
+    normalize = lambda identifier: (
+        self.dialect.normalize_identifier(identifier).name if identifier else None
     )
 
     targets = {normalize(expression.this.this)}
@@ -1012,9 +1014,11 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
 
     for when in expression.expressions:
         when.transform(
-            lambda node: exp.column(node.this)
-            if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
-            else node,
+            lambda node: (
+                exp.column(node.this)
+                if isinstance(node, exp.Column) and normalize(node.args.get("table")) in targets
+                else node
+            ),
             copy=False,
         )
 

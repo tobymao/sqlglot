@@ -1068,9 +1068,11 @@ def extract_interval(expression):
 def date_literal(date):
     return exp.cast(
         exp.Literal.string(date),
-        exp.DataType.Type.DATETIME
-        if isinstance(date, datetime.datetime)
-        else exp.DataType.Type.DATE,
+        (
+            exp.DataType.Type.DATETIME
+            if isinstance(date, datetime.datetime)
+            else exp.DataType.Type.DATE
+        ),
     )
 
 

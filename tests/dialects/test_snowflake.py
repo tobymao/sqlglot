@@ -10,6 +10,7 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
         self.validate_identity(
             "INSERT OVERWRITE TABLE t SELECT 1", "INSERT OVERWRITE INTO t SELECT 1"
         )

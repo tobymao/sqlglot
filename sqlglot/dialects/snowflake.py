@@ -917,3 +917,6 @@ class Snowflake(Dialect):
 
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, wrapped=False, prefix=self.seg(""), sep=" ")
+
+        def cluster_sql(self, expression: exp.Cluster) -> str:
+            return f"CLUSTER BY ({self.expressions(expression, flat=True)})"

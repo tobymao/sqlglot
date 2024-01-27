@@ -4871,10 +4871,6 @@ class JSONPathChild(JSONPathPart):
     arg_types = {"this": False}
 
 
-class JSONPathCurrent(JSONPathPart):
-    arg_types = {}
-
-
 class JSONPathFilter(JSONPathPart):
     arg_types = {"this": True}
 

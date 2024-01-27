@@ -360,8 +360,6 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
-            exp.JSONBExtract: arrow_json_extract_sql,
-            exp.JSONBExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONFormat: _json_format_sql,
@@ -423,6 +421,14 @@ class DuckDB(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: bool_xor_sql,
+        }
+
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathChild,
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+            exp.JSONPathWildcard,
         }
 
         TYPE_MAPPING = {

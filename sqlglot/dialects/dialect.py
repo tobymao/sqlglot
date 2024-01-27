@@ -1065,7 +1065,9 @@ def parse_json_extract_path(
 def json_path_segments(self: Generator, expression: exp.JSONPath) -> t.List[str]:
     segments = []
     for segment in expression.expressions:
-        path = generate_json_path([segment], mapping=self.JSON_PATH_MAPPING)
+        path = generate_json_path(
+            segment, mapping=self._JSON_PATH_MAPPING, unsupported_callback=self.unsupported
+        )
         if path:
             segments.append(f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}")
 

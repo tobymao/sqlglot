@@ -91,6 +91,13 @@ class SQLite(Dialect):
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
 
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathChild,
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+        }
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "INTEGER",
@@ -127,8 +134,6 @@ class SQLite(Dialect):
             exp.ILike: no_ilike_sql,
             exp.JSONExtract: _json_extract_sql,
             exp.JSONExtractScalar: arrow_json_extract_sql,
-            exp.JSONBExtract: arrow_json_extract_sql,
-            exp.JSONBExtractScalar: arrow_json_extract_sql,
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),

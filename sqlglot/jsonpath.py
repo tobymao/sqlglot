@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import logging
 import typing as t
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ParseError
+from sqlglot.helper import ensure_list
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
-
-logger = logging.getLogger("sqlglot")
 
 
 class JSONPathTokenizer(Tokenizer):
@@ -160,8 +158,6 @@ def parse(path: str) -> t.List[exp.JSONPathPart]:
             nodes.append(exp.JSONPathKey(this=_prev().text))
         elif _match(TokenType.STAR):
             nodes.append(exp.JSONPathWildcard())
-        elif _match(TokenType.PARAMETER):
-            nodes.append(exp.JSONPathCurrent())
         else:
             raise ParseError(_error(f"Unexpected {tokens[i].token_type}"))
 
@@ -174,44 +170,44 @@ def parse(path: str) -> t.List[exp.JSONPathPart]:
 
 
 MAPPING = {
-    exp.JSONPathChild: lambda n: f".{n.this}" if n.this is not None else "",
-    exp.JSONPathCurrent: lambda _: "@",
-    exp.JSONPathFilter: lambda n: f"?{n.this}",
-    exp.JSONPathKey: lambda n: (
-        f".{n.this}" if exp.SAFE_IDENTIFIER_RE.match(n.this) else f"[{generate([n.this])}]"
+    exp.JSONPathChild: lambda n, **kwargs: f".{n.this}" if n.this is not None else "",
+    exp.JSONPathFilter: lambda n, **kwargs: f"?{n.this}",
+    exp.JSONPathKey: lambda n, **kwargs: (
+        f".{n.this}" if exp.SAFE_IDENTIFIER_RE.match(n.this) else f"[{generate(n.this, **kwargs)}]"
     ),
-    exp.JSONPathRecursive: lambda n: f"..{n.this}" if n.this is not None else "..",
-    exp.JSONPathRoot: lambda _: "$",
-    exp.JSONPathScript: lambda n: f"({n.this}",
-    exp.JSONPathSlice: lambda n: ":".join(
-        "" if p is False else generate([p])
+    exp.JSONPathRecursive: lambda n, **kwargs: f"..{n.this}" if n.this is not None else "..",
+    exp.JSONPathRoot: lambda n, **kwargs: "$",
+    exp.JSONPathScript: lambda n, **kwargs: f"({n.this}",
+    exp.JSONPathSlice: lambda n, **kwargs: ":".join(
+        "" if p is False else generate(p, **kwargs)
         for p in [n.args.get("start"), n.args.get("end"), n.args.get("step")]
         if p is not None
     ),
-    exp.JSONPathSelector: lambda n: f"[{generate([n.this])}]",
-    exp.JSONPathSubscript: lambda n: f"[{generate([n.this])}]",
-    exp.JSONPathUnion: lambda n: f"[{','.join(generate([p]) for p in n.expressions)}]",
-    exp.JSONPathWildcard: lambda _: "*",
+    exp.JSONPathSelector: lambda n, **kwargs: f"[{generate(n.this, **kwargs)}]",
+    exp.JSONPathSubscript: lambda n, **kwargs: f"[{generate(n.this, **kwargs)}]",
+    exp.JSONPathUnion: lambda n, **kwargs: f"[{','.join(generate(p, **kwargs) for p in n.expressions)}]",
+    exp.JSONPathWildcard: lambda n, **kwargs: "*",
 }
 
 
 def generate(
-    nodes: t.List[exp.JSONPathPart],
-    mapping: t.Optional[
-        t.Dict[t.Type[exp.JSONPathPart], t.Callable[[exp.JSONPathPart], str]]
-    ] = None,
+    nodes: exp.JSONPathPart | t.List[exp.JSONPathPart],
+    mapping: t.Optional[t.Dict[t.Type[exp.JSONPathPart], t.Callable[..., str]]] = None,
+    unsupported_callback: t.Optional[t.Callable[[str], None]] = None,
 ) -> str:
     unsupported_nodes: t.Set[str] = set()
     mapping = MAPPING if mapping is None else mapping
 
     path = []
-    for node in nodes:
+    for node in ensure_list(nodes):
         if isinstance(node, exp.JSONPathPart):
             node_class = node.__class__
             generator = mapping.get(node_class)
 
             if generator:
-                path.append(generator(node))
+                path.append(
+                    generator(node, mapping=mapping, unsupported_callback=unsupported_callback)
+                )
             else:
                 unsupported_nodes.add(node_class.__name__)
         elif isinstance(node, str):
@@ -220,7 +216,9 @@ def generate(
         else:
             path.append(str(node))
 
-    if unsupported_nodes:
-        logger.warning(f"Unsupported JSON path syntax: {', '.join(k for k in unsupported_nodes)}")
+    if unsupported_nodes and unsupported_callback:
+        unsupported_callback(
+            f"Unsupported JSON path syntax: {', '.join(k for k in unsupported_nodes)}"
+        )
 
     return "".join(path)

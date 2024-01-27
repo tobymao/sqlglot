@@ -313,6 +313,33 @@ class TestPostgres(Validator):
         )
 
         self.validate_all(
+            "x #> 'y'",
+            read={
+                "": "JSONB_EXTRACT(x, 'y')",
+            },
+            write={
+                "": "JSONB_EXTRACT(x, 'y')",
+                "postgres": "x #> 'y'",
+            },
+        )
+        self.validate_all(
+            "x #>> 'y'",
+            read={
+                "": "JSONB_EXTRACT_SCALAR(x, 'y')",
+            },
+            write={
+                "": "JSONB_EXTRACT_SCALAR(x, 'y')",
+                "postgres": "x #>> 'y'",
+            },
+        )
+        self.validate_all(
+            "x -> 'y' -> 0 -> 'z'",
+            write={
+                "": "JSON_EXTRACT(JSON_EXTRACT(JSON_EXTRACT(x, '$.y'), '$[0]'), '$.z')",
+                "postgres": "JSON_EXTRACT_PATH(JSON_EXTRACT_PATH(JSON_EXTRACT_PATH(x, 'y'), '0'), 'z')",
+            },
+        )
+        self.validate_all(
             """JSON_EXTRACT_PATH('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}','f4')""",
             write={
                 "bigquery": """JSON_EXTRACT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",

@@ -25,7 +25,23 @@ logger = logging.getLogger("sqlglot")
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 
 
-class Generator:
+class _Generator(type):
+    def __new__(cls, clsname, bases, attrs):
+        klass = super().__new__(cls, clsname, bases, attrs)
+
+        # Fill in default implementations for every non-overridden supported JSONPathPart
+        klass._JSON_PATH_MAPPING = {
+            **{
+                expr_type: JSON_PATH_MAPPING[expr_type]
+                for expr_type in klass.SUPPORTED_JSON_PATH_PARTS
+            },
+            **(klass.JSON_PATH_MAPPING or {}),
+        }
+
+        return klass
+
+
+class Generator(metaclass=_Generator):
     """
     Generator converts a given syntax tree to the corresponding SQL string.
 
@@ -64,7 +80,9 @@ class Generator:
 
     TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
         **{
-            expr_type: lambda self, e: generate_json_path([e], mapping=self.JSON_PATH_MAPPING)
+            expr_type: lambda self, e: generate_json_path(
+                e, mapping=self._JSON_PATH_MAPPING, unsupported_callback=self.unsupported
+            )
             for expr_type in exp.JSON_PATH_PARTS
         },
         exp.DateAdd: lambda self, e: self.func(
@@ -277,8 +295,15 @@ class Generator:
     # Whether or not the JSON extraction operators expect a value of type JSON
     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
 
-    # The mapping used for generating JSON path ASTs
-    JSON_PATH_MAPPING = JSON_PATH_MAPPING.copy()
+    # The JSONPathPart expressions supported by this dialect
+    SUPPORTED_JSON_PATH_PARTS: t.Set[t.Type[exp.JSONPathPart]] = set(JSON_PATH_MAPPING)
+
+    # Mapping that specifies how each JSONPathPart supported by this dialect should be generated.
+    # This is populated based on SUPPORTED_JSON_PATH_PARTS and the default MAPPING in jsonpath.py,
+    # but it's possible to override specific entries as well
+    JSON_PATH_MAPPING: t.Optional[
+        t.Dict[t.Type[exp.JSONPathPart], t.Callable[[exp.JSONPathPart], str]]
+    ] = None
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -423,6 +448,11 @@ class Generator:
     KEY_VALUE_DEFINITIONS = (exp.Bracket, exp.EQ, exp.PropertyEQ, exp.Slice)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
+
+    # Autofilled
+    _JSON_PATH_MAPPING: t.Optional[
+        t.Dict[t.Type[exp.JSONPathPart], t.Callable[[exp.JSONPathPart], str]]
+    ] = None
 
     __slots__ = (
         "pretty",
@@ -2382,7 +2412,11 @@ class Generator:
         return f"{self.sql(expression, 'this')}{self.JSON_KEY_VALUE_PAIR_SEP} {self.sql(expression, 'expression')}"
 
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
-        path = generate_json_path(expression.expressions, mapping=self.JSON_PATH_MAPPING)
+        path = generate_json_path(
+            expression.expressions,
+            mapping=self._JSON_PATH_MAPPING,
+            unsupported_callback=self.unsupported,
+        )
         path = path[1:] if path.startswith(".") else path
         return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 

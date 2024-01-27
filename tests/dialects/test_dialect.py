@@ -1145,32 +1145,62 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "JSON_EXTRACT_SCALAR(stream_data, '$.data.results')",
+            "JSON_EXTRACT(x, '$.y[0].z')",
             read={
-                "hive": "GET_JSON_OBJECT(stream_data, '$.data.results')",
-                "mysql": "stream_data ->> '$.data.results'",
+                "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
+                "duckdb": "x -> '$.y[0].z'",
+                "doris": "x -> '$.y[0].z'",
+                "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
+                "presto": "JSON_EXTRACT(x, '$.y[0].z')",
+                "sqlite": "x -> '$.y[0].z'",
+                "starrocks": "x -> '$.y[0].z'",
             },
             write={
-                "hive": "GET_JSON_OBJECT(stream_data, '$.data.results')",
-                "mysql": "stream_data ->> '$.data.results'",
+                "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
+                "doris": "x -> '$.y[0].z'",
+                "duckdb": "x -> '$.y[0].z'",
+                "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
+                "oracle": "JSON_EXTRACT(x, '$.y[0].z')",
+                "postgres": "JSON_EXTRACT_PATH(x, 'y', '0', 'z')",
+                "presto": "JSON_EXTRACT(x, '$.y[0].z')",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y', '0', 'z')",
+                "spark": "GET_JSON_OBJECT(x, '$.y[0].z')",
+                "sqlite": "x -> '$.y[0].z'",
+                "starrocks": "x -> '$.y[0].z'",
+                "tsql": "ISNULL(JSON_QUERY(x, '$.y[0].z'), JSON_VALUE(x, '$.y[0].z'))",
             },
         )
         self.validate_all(
-            "JSONB_EXTRACT(x, 'y')",
+            "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
             read={
-                "postgres": "x#>'y'",
+                "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
+                "duckdb": "x ->> '$.y[0].z'",
+                "presto": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
+                "spark": "GET_JSON_OBJECT(x, '$.y[0].z')",
+                "sqlite": "x ->> '$.y[0].z'",
             },
             write={
-                "postgres": "x #> 'y'",
+                "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
+                "duckdb": "x ->> '$.y[0].z'",
+                "postgres": "JSON_EXTRACT_PATH_TEXT(x, 'y', '0', 'z')",
+                "presto": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y', '0', 'z')",
+                "spark": "GET_JSON_OBJECT(x, '$.y[0].z')",
+                "sqlite": "x ->> '$.y[0].z'",
+                "tsql": "ISNULL(JSON_QUERY(x, '$.y[0].z'), JSON_VALUE(x, '$.y[0].z'))",
             },
         )
         self.validate_all(
-            "JSONB_EXTRACT_SCALAR(x, 'y')",
-            read={
-                "postgres": "x#>>'y'",
-            },
+            "JSON_EXTRACT(x, '$.y[*]')",
             write={
-                "postgres": "x #>> 'y'",
+                "bigquery": UnsupportedError,
+                "duckdb": "x -> '$.y[*]'",
+                "postgres": UnsupportedError,
+                "presto": "JSON_EXTRACT(x, '$.y[*]')",
+                "redshift": UnsupportedError,
+                "spark": "GET_JSON_OBJECT(x, '$.y[*]')",
+                "sqlite": UnsupportedError,
+                "tsql": UnsupportedError,
             },
         )
 

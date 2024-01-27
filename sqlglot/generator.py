@@ -2687,6 +2687,10 @@ class Generator:
         if default:
             return f"ALTER COLUMN {this} SET DEFAULT {default}"
 
+        comment = self.sql(expression, "comment")
+        if comment:
+            return f"ALTER COLUMN {this} COMMENT {comment}"
+
         if not expression.args.get("drop"):
             self.unsupported("Unsupported ALTER COLUMN syntax")
 

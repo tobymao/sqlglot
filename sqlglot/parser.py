@@ -5343,6 +5343,8 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.AlterColumn, this=column, drop=True)
         if self._match_pair(TokenType.SET, TokenType.DEFAULT):
             return self.expression(exp.AlterColumn, this=column, default=self._parse_conjunction())
+        if self._match(TokenType.COMMENT):
+            return self.expression(exp.AlterColumn, this=column, comment=self._parse_string())
 
         self._match_text_seq("SET", "DATA")
         return self.expression(

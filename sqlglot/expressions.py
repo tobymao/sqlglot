@@ -1276,6 +1276,7 @@ class AlterColumn(Expression):
         "using": False,
         "default": False,
         "drop": False,
+        "comment": False,
     }
 
 

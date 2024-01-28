@@ -3667,6 +3667,7 @@ class Parser(metaclass=_Parser):
 
                     return exp.DataType.build(type_name, udt=True)
                 else:
+                    self._retreat(self._index - 1)
                     return None
             else:
                 return None

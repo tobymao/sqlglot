@@ -502,17 +502,13 @@ def if_sql(
 
 
 def arrow_json_extract_sql(
-    self: Generator,
-    expression: exp.JSONExtract | exp.JSONBExtract | exp.JSONExtractScalar | exp.JSONBExtractScalar,
+    self: Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this, "json"))
 
-    if isinstance(expression, (exp.JSONExtract, exp.JSONBExtract)):
-        return self.binary(expression, "->")
-
-    return self.binary(expression, "->>")
+    return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
 
 def inline_array_sql(self: Generator, expression: exp.Array) -> str:

@@ -366,6 +366,17 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "JSON_EXTRACT_PATH(x, 'x', 'y', 'z')",
+            read={
+                "duckdb": "x -> '$.x.y.z'",
+                "postgres": "JSON_EXTRACT_PATH(x, 'x', 'y', 'z')",
+            },
+            write={
+                "duckdb": "x -> '$.x.y.z'",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'x', 'y', 'z')",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM t TABLESAMPLE SYSTEM (50)",
             write={
                 "postgres": "SELECT * FROM t TABLESAMPLE SYSTEM (50)",

@@ -70,6 +70,9 @@
                                             <a class="variable" href="#Tableau.Parser.FUNCTIONS">FUNCTIONS</a>
                                     </li>
                                     <li>
+                                            <a class="variable" href="#Tableau.Parser.NO_PAREN_IF_COMMANDS">NO_PAREN_IF_COMMANDS</a>
+                                    </li>
+                                    <li>
                                             <a class="variable" href="#Tableau.Parser.SHOW_TRIE">SHOW_TRIE</a>
                                     </li>
                                     <li>
@@ -204,6 +207,7 @@
 </span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
 </span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>            <span class="s2">&quot;COUNTD&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">args</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Count</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Distinct</span><span class="p">(</span><span class="n">expressions</span><span class="o">=</span><span class="n">args</span><span class="p">)),</span>
 </span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>        <span class="p">}</span>
+</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>        <span class="n">NO_PAREN_IF_COMMANDS</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -253,6 +257,7 @@
 </span><span id="Tableau-39"><a href="#Tableau-39"><span class="linenos">39</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
 </span><span id="Tableau-40"><a href="#Tableau-40"><span class="linenos">40</span></a>            <span class="s2">&quot;COUNTD&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">args</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Count</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Distinct</span><span class="p">(</span><span class="n">expressions</span><span class="o">=</span><span class="n">args</span><span class="p">)),</span>
 </span><span id="Tableau-41"><a href="#Tableau-41"><span class="linenos">41</span></a>        <span class="p">}</span>
+</span><span id="Tableau-42"><a href="#Tableau-42"><span class="linenos">42</span></a>        <span class="n">NO_PAREN_IF_COMMANDS</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1135,6 +1140,7 @@ Default: True</li>
 </span><span id="Tableau.Parser-39"><a href="#Tableau.Parser-39"><span class="linenos">39</span></a>            <span class="o">**</span><span class="n">parser</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">FUNCTIONS</span><span class="p">,</span>
 </span><span id="Tableau.Parser-40"><a href="#Tableau.Parser-40"><span class="linenos">40</span></a>            <span class="s2">&quot;COUNTD&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">args</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Count</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Distinct</span><span class="p">(</span><span class="n">expressions</span><span class="o">=</span><span class="n">args</span><span class="p">)),</span>
 </span><span id="Tableau.Parser-41"><a href="#Tableau.Parser-41"><span class="linenos">41</span></a>        <span class="p">}</span>
+</span><span id="Tableau.Parser-42"><a href="#Tableau.Parser-42"><span class="linenos">42</span></a>        <span class="n">NO_PAREN_IF_COMMANDS</span> <span class="o">=</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1164,6 +1170,18 @@ Default: 3</li>
         
     </div>
     <a class="headerlink" href="#Tableau.Parser.FUNCTIONS"></a>
+    
+    
+
+                            </div>
+                            <div id="Tableau.Parser.NO_PAREN_IF_COMMANDS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">NO_PAREN_IF_COMMANDS</span>        =
+<span class="default_value">False</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Tableau.Parser.NO_PAREN_IF_COMMANDS"></a>
     
     
 

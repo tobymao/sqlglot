@@ -1041,7 +1041,7 @@ def parse_json_extract_path(
         for arg in args[1:]:
             if isinstance(arg, exp.Literal):
                 text = arg.name
-                if text.isnumeric():
+                if exp.is_int(text):
                     segments.append(exp.JSONPathSubscript(this=int(text)))
                 else:
                     segments.append(exp.JSONPathChild(this=text))

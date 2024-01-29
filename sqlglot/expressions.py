@@ -175,13 +175,7 @@ class Expression(metaclass=_Expression):
         """
         Checks whether a Literal expression is an integer.
         """
-        if self.is_number:
-            try:
-                int(self.name)
-                return True
-            except ValueError:
-                pass
-        return False
+        return self.is_number and is_int(self.name)
 
     @property
     def is_star(self) -> bool:
@@ -5610,9 +5604,9 @@ def maybe_parse(
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
 
 
-def is_int(instance: Expression) -> bool:
+def is_int(text: str) -> bool:
     try:
-        int(self.name)
+        int(text)
         return True
     except ValueError:
         return False

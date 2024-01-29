@@ -2417,8 +2417,7 @@ class Generator(metaclass=_Generator):
             mapping=self._JSON_PATH_MAPPING,
             unsupported_callback=self.unsupported,
         )
-        path = path[1:] if path.startswith(".") else path
-        return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
+        return f"{self.dialect.QUOTE_START}{path.lstrip('.')}{self.dialect.QUOTE_END}"
 
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"

@@ -356,9 +356,11 @@ class TestPostgres(Validator):
         self.validate_all(
             """JSON_EXTRACT_PATH_TEXT('{"farm": ["a", "b", "c"]}', 'farm', '0')""",
             read={
+                "duckdb": """'{"farm": ["a", "b", "c"]}' ->> '$.farm[0]'""",
                 "redshift": """JSON_EXTRACT_PATH_TEXT('{"farm": ["a", "b", "c"]}', 'farm', '0')""",
             },
             write={
+                "duckdb": """'{"farm": ["a", "b", "c"]}' ->> '$.farm[0]'""",
                 "postgres": """JSON_EXTRACT_PATH_TEXT('{"farm": ["a", "b", "c"]}', 'farm', '0')""",
                 "redshift": """JSON_EXTRACT_PATH_TEXT('{"farm": ["a", "b", "c"]}', 'farm', '0')""",
             },

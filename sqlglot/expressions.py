@@ -29,6 +29,7 @@ from sqlglot.helper import (
     camel_to_snake_case,
     ensure_collection,
     ensure_list,
+    is_int,
     seq_get,
     subclasses,
 )
@@ -5602,14 +5603,6 @@ def maybe_parse(
         sql = f"{prefix} {sql}"
 
     return sqlglot.parse_one(sql, read=dialect, into=into, **opts)
-
-
-def is_int(text: str) -> bool:
-    try:
-        int(text)
-        return True
-    except ValueError:
-        return False
 
 
 @t.overload

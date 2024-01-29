@@ -1,6 +1,34 @@
 Changelog
 =========
 
+## [v20.11.0] - 2024-01-29
+### :boom: BREAKING CHANGES
+- due to [`eb8b40a`](https://github.com/tobymao/sqlglot/commit/eb8b40aade54eec8b34a808dda95420dcf7a7e13) - deprecate NULL, TRUE, FALSE constant expressions *(PR [#2884](https://github.com/tobymao/sqlglot/pull/2884) by [@georgesittas](https://github.com/georgesittas))*:
+
+  deprecate NULL, TRUE, FALSE constant expressions (#2884)
+
+
+### :sparkles: New Features
+- [`3a8ed85`](https://github.com/tobymao/sqlglot/commit/3a8ed8573d5562110b312586ae6fca22038e5d05) - add alter table alter comment closes [#2889](https://github.com/tobymao/sqlglot/pull/2889) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`dc2d7d7`](https://github.com/tobymao/sqlglot/commit/dc2d7d7dd4253fe6b247d534bd92327f186e9aa8) - **tsql**: len text transpilation closes [#2885](https://github.com/tobymao/sqlglot/pull/2885) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`ad50f47`](https://github.com/tobymao/sqlglot/commit/ad50f479c47d5b4990f1b41272c69079a453cf21) - type imports *(PR [#2886](https://github.com/tobymao/sqlglot/pull/2886) by [@tobymao](https://github.com/tobymao))*
+- [`e4fb7f6`](https://github.com/tobymao/sqlglot/commit/e4fb7f6e1b8ab15ceb5acc6a93256c849c738740) - union should return union *(commit by [@tobymao](https://github.com/tobymao))*
+- [`8f795ea`](https://github.com/tobymao/sqlglot/commit/8f795ea00164b69acba093c3684ab54b62138e8e) - don't expand star except/replace refs *(commit by [@tobymao](https://github.com/tobymao))*
+- [`218121c`](https://github.com/tobymao/sqlglot/commit/218121c274656a1b252143a7d0fc2d73407115ca) - alter table cluster by closes [#2887](https://github.com/tobymao/sqlglot/pull/2887) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5cec283`](https://github.com/tobymao/sqlglot/commit/5cec2839f8ed8477821bf766025f4b5de0621fe2) - bigquery script if statement closes [#2888](https://github.com/tobymao/sqlglot/pull/2888) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5fc7791`](https://github.com/tobymao/sqlglot/commit/5fc7791a4d19d704c0d4fafe8924cf8f76fcb867) - all view column options without types closes [#2891](https://github.com/tobymao/sqlglot/pull/2891) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`102304e`](https://github.com/tobymao/sqlglot/commit/102304e28f2ed7126840789837ed797a75bae44e) - **postgres**: generate CurrentUser without parentheses closes [#2893](https://github.com/tobymao/sqlglot/pull/2893) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`43902db`](https://github.com/tobymao/sqlglot/commit/43902db25706a2434fe7e9ba39addd1c31c2aa64) - error level ignore comments closes [#2895](https://github.com/tobymao/sqlglot/pull/2895) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`eb8b40a`](https://github.com/tobymao/sqlglot/commit/eb8b40aade54eec8b34a808dda95420dcf7a7e13) - deprecate NULL, TRUE, FALSE constant expressions *(PR [#2884](https://github.com/tobymao/sqlglot/pull/2884) by [@georgesittas](https://github.com/georgesittas))*
+- [`29cddd5`](https://github.com/tobymao/sqlglot/commit/29cddd5c3f5401033197d47e7544cedd91b8046c) - change warning message *(commit by [@tobymao](https://github.com/tobymao))*
+- [`9eac93e`](https://github.com/tobymao/sqlglot/commit/9eac93e0acd5ae8b034045759fc48937586cbc2e) - upgrade black *(commit by [@tobymao](https://github.com/tobymao))*
+- [`4f3fac7`](https://github.com/tobymao/sqlglot/commit/4f3fac7815e0d8206c80f1f255336ab630503d4d) - cleanup command parsing and warnings *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v20.10.0] - 2024-01-24
 ### :boom: BREAKING CHANGES
 - due to [`1f5fc39`](https://github.com/tobymao/sqlglot/commit/1f5fc39c10b92b94bd94afa5fd038fdb9afeb4b4) - jsonpath parsing *(PR [#2867](https://github.com/tobymao/sqlglot/pull/2867) by [@tobymao](https://github.com/tobymao))*:
@@ -2486,3 +2514,4 @@ Changelog
 [v20.8.0]: https://github.com/tobymao/sqlglot/compare/v20.7.1...v20.8.0
 [v20.9.0]: https://github.com/tobymao/sqlglot/compare/v20.8.0...v20.9.0
 [v20.10.0]: https://github.com/tobymao/sqlglot/compare/v20.9.0...v20.10.0
+[v20.11.0]: https://github.com/tobymao/sqlglot/compare/v20.10.0...v20.11.0

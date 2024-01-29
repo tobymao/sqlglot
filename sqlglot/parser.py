@@ -5040,11 +5040,12 @@ class Parser(metaclass=_Parser):
 
         if alias:
             this = self.expression(exp.Alias, comments=comments, this=this, alias=alias)
+            column = this.this
 
             # Moves the comment next to the alias in `expr /* comment */ AS alias`
-            if not this.comments and this.this.comments:
-                this.comments = this.this.comments
-                this.this.comments = None
+            if not this.comments and column and column.comments:
+                this.comments = column.comments
+                column.comments = None
 
         return this
 

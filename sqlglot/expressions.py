@@ -4879,7 +4879,7 @@ class JSONPathRecursive(JSONPathPart):
 
 
 class JSONPathRoot(JSONPathPart):
-    arg_types = {}
+    pass
 
 
 class JSONPathScript(JSONPathPart):
@@ -4903,7 +4903,7 @@ class JSONPathUnion(JSONPathPart):
 
 
 class JSONPathWildcard(JSONPathPart):
-    arg_types = {}
+    pass
 
 
 class FormatJson(Expression):

@@ -276,6 +276,8 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("SELECT A[:")
 
+        self.assertEqual(parse_one("as as", error_level=ErrorLevel.IGNORE).sql(), "AS as")
+
     def test_space(self):
         self.assertEqual(
             parse_one("SELECT ROW() OVER(PARTITION  BY x) FROM x GROUP  BY y").sql(),

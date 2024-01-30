@@ -9,7 +9,9 @@ from sqlglot.dialects.dialect import (
     concat_ws_to_dpipe_sql,
     date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
+    json_path_segments,
     no_tablesample_sql,
+    parse_json_extract_path,
     rename_func,
 )
 from sqlglot.dialects.postgres import Postgres
@@ -20,8 +22,15 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _json_sql(self: Redshift.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar) -> str:
-    return f'{self.sql(expression, "this")}."{expression.expression.name}"'
+def _json_extract_sql(
+    self: Redshift.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
+) -> str:
+    return self.func(
+        "JSON_EXTRACT_PATH_TEXT",
+        expression.this,
+        *json_path_segments(self, expression.expression),
+        expression.args.get("null_if_invalid"),
+    )
 
 
 def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
@@ -62,6 +71,9 @@ class Redshift(Postgres):
             "DATE_ADD": _parse_date_delta(exp.TsOrDsAdd),
             "DATEDIFF": _parse_date_delta(exp.TsOrDsDiff),
             "DATE_DIFF": _parse_date_delta(exp.TsOrDsDiff),
+            "JSON_EXTRACT_PATH_TEXT": parse_json_extract_path(
+                exp.JSONExtractScalar, supports_null_if_invalid=True
+            ),
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
         }
@@ -197,8 +209,8 @@ class Redshift(Postgres):
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.FromBase: rename_func("STRTOL"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
-            exp.JSONExtract: _json_sql,
-            exp.JSONExtractScalar: _json_sql,
+            exp.JSONExtract: _json_extract_sql,
+            exp.JSONExtractScalar: _json_extract_sql,
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Select: transforms.preprocess(
@@ -227,6 +239,13 @@ class Redshift(Postgres):
         def with_properties(self, properties: exp.Properties) -> str:
             """Redshift doesn't have `WITH` as part of their with_properties so we remove it"""
             return self.properties(properties, prefix=" ", suffix="")
+
+        def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
+            if expression.is_type(exp.DataType.Type.JSON):
+                # Redshift doesn't support a JSON type, so casting to it is treated as a noop
+                return self.sql(expression, "this")
+
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             """

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
+import sqlglot.expressions as exp
 from sqlglot.errors import ParseError
-from sqlglot.expressions import SAFE_IDENTIFIER_RE
+from sqlglot.helper import ensure_list
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
@@ -36,19 +37,7 @@ class JSONPathTokenizer(Tokenizer):
     STRING_ESCAPES = ["\\"]
 
 
-JSONPathNode = t.Dict[str, t.Any]
-
-
-def _node(kind: str, value: t.Any = None, **kwargs: t.Any) -> JSONPathNode:
-    node = {"kind": kind, **kwargs}
-
-    if value is not None:
-        node["value"] = value
-
-    return node
-
-
-def parse(path: str) -> t.List[JSONPathNode]:
+def parse(path: str) -> t.List[exp.JSONPathPart]:
     """Takes in a JSONPath string and converts into a list of nodes."""
     tokens = JSONPathTokenizer().tokenize(path)
     size = len(tokens)
@@ -89,7 +78,7 @@ def parse(path: str) -> t.List[JSONPathNode]:
         if token:
             return token.text
         if _match(TokenType.STAR):
-            return _node("wildcard")
+            return exp.JSONPathWildcard()
         if _match(TokenType.PLACEHOLDER) or _match(TokenType.L_PAREN):
             script = _prev().text == "("
             start = i
@@ -100,9 +89,9 @@ def parse(path: str) -> t.List[JSONPathNode]:
                 if _curr() in (TokenType.R_BRACKET, None):
                     break
                 _advance()
-            return _node(
-                "script" if script else "filter", path[tokens[start].start : tokens[i].end]
-            )
+
+            expr_type = exp.JSONPathScript if script else exp.JSONPathFilter
+            return expr_type(this=path[tokens[start].start : tokens[i].end])
 
         number = "-" if _match(TokenType.DASH) else ""
 
@@ -121,9 +110,10 @@ def parse(path: str) -> t.List[JSONPathNode]:
 
         if end is None and step is None:
             return start
-        return _node("slice", start=start, end=end, step=step)
 
-    def _parse_bracket() -> JSONPathNode:
+        return exp.JSONPathSlice(start=start, end=end, step=step)
+
+    def _parse_bracket() -> exp.JSONPathPart:
         literal = _parse_slice()
 
         if isinstance(literal, str) or literal is not False:
@@ -136,13 +126,15 @@ def parse(path: str) -> t.List[JSONPathNode]:
 
             if len(indexes) == 1:
                 if isinstance(literal, str):
-                    node = _node("key", indexes[0])
-                elif isinstance(literal, dict) and literal["kind"] in ("script", "filter"):
-                    node = _node("selector", indexes[0])
+                    node: exp.JSONPathPart = exp.JSONPathKey(this=indexes[0])
+                elif isinstance(literal, exp.JSONPathPart) and isinstance(
+                    literal, (exp.JSONPathScript, exp.JSONPathFilter)
+                ):
+                    node = exp.JSONPathSelector(this=indexes[0])
                 else:
-                    node = _node("subscript", indexes[0])
+                    node = exp.JSONPathSubscript(this=indexes[0])
             else:
-                node = _node("union", indexes)
+                node = exp.JSONPathUnion(expressions=indexes)
         else:
             raise ParseError(_error("Cannot have empty segment"))
 
@@ -150,66 +142,83 @@ def parse(path: str) -> t.List[JSONPathNode]:
 
         return node
 
-    nodes = []
+    nodes: t.List[exp.JSONPathPart] = []
 
     while _curr():
         if _match(TokenType.DOLLAR):
-            nodes.append(_node("root"))
+            nodes.append(exp.JSONPathRoot())
         elif _match(TokenType.DOT):
             recursive = _prev().text == ".."
             value = _match(TokenType.VAR) or _match(TokenType.STAR)
-            nodes.append(
-                _node("recursive" if recursive else "child", value=value.text if value else None)
-            )
+            expr_type = exp.JSONPathRecursive if recursive else exp.JSONPathChild
+            nodes.append(expr_type(this=value.text if value else None))
         elif _match(TokenType.L_BRACKET):
             nodes.append(_parse_bracket())
         elif _match(TokenType.VAR):
-            nodes.append(_node("key", _prev().text))
+            nodes.append(exp.JSONPathKey(this=_prev().text))
         elif _match(TokenType.STAR):
-            nodes.append(_node("wildcard"))
-        elif _match(TokenType.PARAMETER):
-            nodes.append(_node("current"))
+            nodes.append(exp.JSONPathWildcard())
         else:
             raise ParseError(_error(f"Unexpected {tokens[i].token_type}"))
+
+    # We canonicalize the JSON path AST so that it always starts with a
+    # "root" element, so paths like "field" will be generated as "$.field"
+    if nodes and not isinstance(nodes[0], exp.JSONPathRoot):
+        nodes.insert(0, exp.JSONPathRoot())
 
     return nodes
 
 
 MAPPING = {
-    "child": lambda n: f".{n['value']}" if n.get("value") is not None else "",
-    "filter": lambda n: f"?{n['value']}",
-    "key": lambda n: (
-        f".{n['value']}" if SAFE_IDENTIFIER_RE.match(n["value"]) else f'[{generate([n["value"]])}]'
+    exp.JSONPathChild: lambda n, **kwargs: f".{n.this}" if n.this is not None else "",
+    exp.JSONPathFilter: lambda n, **kwargs: f"?{n.this}",
+    exp.JSONPathKey: lambda n, **kwargs: (
+        f".{n.this}" if exp.SAFE_IDENTIFIER_RE.match(n.this) else f"[{generate(n.this, **kwargs)}]"
     ),
-    "recursive": lambda n: f"..{n['value']}" if n.get("value") is not None else "..",
-    "root": lambda _: "$",
-    "script": lambda n: f"({n['value']}",
-    "slice": lambda n: ":".join(
-        "" if p is False else generate([p])
-        for p in [n["start"], n["end"], n["step"]]
+    exp.JSONPathRecursive: lambda n, **kwargs: f"..{n.this}" if n.this is not None else "..",
+    exp.JSONPathRoot: lambda n, **kwargs: "$",
+    exp.JSONPathScript: lambda n, **kwargs: f"({n.this}",
+    exp.JSONPathSlice: lambda n, **kwargs: ":".join(
+        "" if p is False else generate(p, **kwargs)
+        for p in [n.args.get("start"), n.args.get("end"), n.args.get("step")]
         if p is not None
     ),
-    "selector": lambda n: f"[{generate([n['value']])}]",
-    "subscript": lambda n: f"[{generate([n['value']])}]",
-    "union": lambda n: f"[{','.join(generate([p]) for p in n['value'])}]",
-    "wildcard": lambda _: "*",
+    exp.JSONPathSelector: lambda n, **kwargs: f"[{generate(n.this, **kwargs)}]",
+    exp.JSONPathSubscript: lambda n, **kwargs: f"[{generate(n.this, **kwargs)}]",
+    exp.JSONPathUnion: lambda n, **kwargs: f"[{','.join(generate(p, **kwargs) for p in n.expressions)}]",
+    exp.JSONPathWildcard: lambda n, **kwargs: "*",
 }
 
 
 def generate(
-    nodes: t.List[JSONPathNode],
-    mapping: t.Optional[t.Dict[str, t.Callable[[JSONPathNode], str]]] = None,
+    nodes: exp.JSONPathPart | t.List[exp.JSONPathPart],
+    mapping: t.Optional[t.Dict[t.Type[exp.JSONPathPart], t.Callable[..., str]]] = None,
+    unsupported_callback: t.Optional[t.Callable[[str], None]] = None,
 ) -> str:
+    unsupported_nodes: t.Set[str] = set()
     mapping = MAPPING if mapping is None else mapping
-    path = []
 
-    for node in nodes:
-        if isinstance(node, dict):
-            path.append(mapping[node["kind"]](node))
+    path = []
+    for node in ensure_list(nodes):
+        if isinstance(node, exp.JSONPathPart):
+            node_class = node.__class__
+            generator = mapping.get(node_class)
+
+            if generator:
+                path.append(
+                    generator(node, mapping=mapping, unsupported_callback=unsupported_callback)
+                )
+            else:
+                unsupported_nodes.add(node_class.__name__)
         elif isinstance(node, str):
             escaped = node.replace('"', '\\"')
             path.append(f'"{escaped}"')
         else:
             path.append(str(node))
+
+    if unsupported_nodes and unsupported_callback:
+        unsupported_callback(
+            f"Unsupported JSON path syntax: {', '.join(k for k in unsupported_nodes)}"
+        )
 
     return "".join(path)

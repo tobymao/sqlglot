@@ -950,10 +950,20 @@ WHERE
     def test_isnull(self):
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
 
-    def test_jsonvalue(self):
+    def test_json(self):
+        self.validate_all(
+            "JSON_QUERY(r.JSON, '$.Attr_INT')",
+            write={
+                "spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')",
+                "tsql": "ISNULL(JSON_QUERY(r.JSON, '$.Attr_INT'), JSON_VALUE(r.JSON, '$.Attr_INT'))",
+            },
+        )
         self.validate_all(
             "JSON_VALUE(r.JSON, '$.Attr_INT')",
-            write={"spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')"},
+            write={
+                "spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')",
+                "tsql": "ISNULL(JSON_QUERY(r.JSON, '$.Attr_INT'), JSON_VALUE(r.JSON, '$.Attr_INT'))",
+            },
         )
 
     def test_datefromparts(self):

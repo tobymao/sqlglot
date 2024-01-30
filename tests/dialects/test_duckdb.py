@@ -92,14 +92,14 @@ class TestDuckDB(Validator):
         self.validate_all(
             """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
             write={
-                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
+                "duckdb": """SELECT JSON('{"fruit":"banana"}') -> '$.fruit'""",
                 "snowflake": """SELECT PARSE_JSON('{"fruit":"banana"}')['fruit']""",
             },
         )
         self.validate_all(
             """SELECT JSON('{"fruit": {"foo": "banana"}}') -> 'fruit' -> 'foo'""",
             write={
-                "duckdb": """SELECT JSON('{"fruit": {"foo": "banana"}}') -> 'fruit' -> 'foo'""",
+                "duckdb": """SELECT JSON('{"fruit": {"foo": "banana"}}') -> '$.fruit' -> '$.foo'""",
                 "snowflake": """SELECT PARSE_JSON('{"fruit": {"foo": "banana"}}')['fruit']['foo']""",
             },
         )
@@ -199,6 +199,27 @@ class TestDuckDB(Validator):
         self.validate_identity("FROM  x SELECT x UNION SELECT 1", "SELECT x FROM x UNION SELECT 1")
         self.validate_identity("FROM (FROM tbl)", "SELECT * FROM (SELECT * FROM tbl)")
         self.validate_identity("FROM tbl", "SELECT * FROM tbl")
+        self.validate_identity("x -> '$.family'")
+        self.validate_identity(
+            """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
+            """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
+        )
+        self.validate_identity(
+            "JSON_EXTRACT(x, '$.family')",
+            "x -> '$.family'",
+        )
+        self.validate_identity(
+            "JSON_EXTRACT_PATH(x, '$.family')",
+            "x -> '$.family'",
+        )
+        self.validate_identity(
+            "JSON_EXTRACT_STRING(x, '$.family')",
+            "x ->> '$.family'",
+        )
+        self.validate_identity(
+            "JSON_EXTRACT_PATH_TEXT(x, '$.family')",
+            "x ->> '$.family'",
+        )
         self.validate_identity(
             "ATTACH DATABASE ':memory:' AS new_database", check_command_warning=True
         )

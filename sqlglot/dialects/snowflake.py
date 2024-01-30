@@ -771,6 +771,17 @@ class Snowflake(Dialect):
             exp.Xor: rename_func("BOOLXOR"),
         }
 
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathChild,
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+        }
+
+        JSON_PATH_MAPPING = {
+            exp.JSONPathRoot: lambda n, **kwargs: "",
+        }
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",

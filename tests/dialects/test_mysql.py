@@ -591,6 +591,26 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+            read={
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+            },
+            write={
+                "mysql": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+                "sqlite": "SELECT '[10, 20, [30, 40]]' -> '$[1]'",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+            read={
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+            },
+            write={
+                "mysql": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]', '$[0]')",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM x LEFT JOIN y ON x.id = y.id UNION SELECT * FROM x RIGHT JOIN y ON x.id = y.id LIMIT 0",
             read={
                 "postgres": "SELECT * FROM x FULL JOIN y ON x.id = y.id LIMIT 0",

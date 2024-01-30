@@ -15,5 +15,12 @@ class Trino(Presto):
             exp.Merge: merge_without_target_sql,
         }
 
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathChild,
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+        }
+
     class Tokenizer(Presto.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

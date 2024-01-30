@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.hive import _parse_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2
 from sqlglot.helper import seq_get
 
@@ -45,9 +46,7 @@ class Spark(Spark2):
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
-            "ANY_VALUE": lambda args: exp.AnyValue(
-                this=seq_get(args, 0), ignore_nulls=seq_get(args, 1)
-            ),
+            "ANY_VALUE": _parse_ignore_nulls(exp.AnyValue),
             "DATEDIFF": _parse_datediff,
         }
 

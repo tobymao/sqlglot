@@ -192,6 +192,18 @@ def _to_date_sql(self: Hive.Generator, expression: exp.TsOrDsToDate) -> str:
     return f"TO_DATE({this})"
 
 
+def _parse_ignore_nulls(
+    exp_class: t.Type[exp.Expression],
+) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
+    def _parse(args: t.List[exp.Expression]) -> exp.Expression:
+        this = exp_class(this=seq_get(args, 0))
+        if seq_get(args, 1) == exp.true():
+            return exp.IgnoreNulls(this=this)
+        return this
+
+    return _parse
+
+
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -298,8 +310,12 @@ class Hive(Dialect):
                 expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
             ),
             "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+            "FIRST": _parse_ignore_nulls(exp.First),
+            "FIRST_VALUE": _parse_ignore_nulls(exp.FirstValue),
             "FROM_UNIXTIME": format_time_lambda(exp.UnixToStr, "hive", True),
             "GET_JSON_OBJECT": exp.JSONExtractScalar.from_arg_list,
+            "LAST": _parse_ignore_nulls(exp.Last),
+            "LAST_VALUE": _parse_ignore_nulls(exp.LastValue),
             "LOCATE": locate_to_strposition,
             "MAP": parse_var_map,
             "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),

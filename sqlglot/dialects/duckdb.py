@@ -321,6 +321,7 @@ class DuckDB(Dialect):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_KEY_VALUE_PAIR_SEP = ","
+        IGNORE_NULLS_IN_FUNC = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

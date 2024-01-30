@@ -143,6 +143,10 @@ class Generator(metaclass=_Generator):
     # True: Full Support, None: No support, False: No support in window specifications
     NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
 
+    # Whether or not ignore nulls is inside the agg or outside.
+    # FIRST(x IGNORE NULLS) OVER vs FIRST (x) IGNORE NULLS OVER
+    IGNORE_NULLS_IN_FUNC = False
+
     # Whether or not locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
     LOCKING_READS_SUPPORTED = False
 
@@ -2813,10 +2817,20 @@ class Generator(metaclass=_Generator):
         return f"DISTINCT{this}{on}"
 
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
-        return f"{self.sql(expression, 'this')} IGNORE NULLS"
+        return self._embed_ignore_nulls(expression, "IGNORE NULLS")
 
     def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
-        return f"{self.sql(expression, 'this')} RESPECT NULLS"
+        return self._embed_ignore_nulls(expression, "RESPECT NULLS")
+
+    def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
+        if self.IGNORE_NULLS_IN_FUNC:
+            this = expression.find(exp.AggFunc)
+            if this:
+                sql = self.sql(this)
+                sql = sql[:-1] + f" {text})"
+                return sql
+
+        return f"{self.sql(expression, 'this')} {text}"
 
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
         return self.sql(

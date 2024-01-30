@@ -18,6 +18,64 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_all(
+            "SELECT SUM(x IGNORE NULLS) AS x",
+            read={
+                "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",
+                "duckdb": "SELECT SUM(x IGNORE NULLS) AS x",
+                "postgres": "SELECT SUM(x) IGNORE NULLS AS x",
+                "spark": "SELECT SUM(x) IGNORE NULLS AS x",
+                "snowflake": "SELECT SUM(x) IGNORE NULLS AS x",
+            },
+            write={
+                "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",
+                "duckdb": "SELECT SUM(x IGNORE NULLS) AS x",
+                "postgres": "SELECT SUM(x) IGNORE NULLS AS x",
+                "spark": "SELECT SUM(x) IGNORE NULLS AS x",
+                "snowflake": "SELECT SUM(x) IGNORE NULLS AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT SUM(x RESPECT NULLS) AS x",
+            read={
+                "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
+                "duckdb": "SELECT SUM(x RESPECT NULLS) AS x",
+                "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
+                "spark": "SELECT SUM(x) RESPECT NULLS AS x",
+                "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
+            },
+            write={
+                "bigquery": "SELECT SUM(x RESPECT NULLS) AS x",
+                "duckdb": "SELECT SUM(x RESPECT NULLS) AS x",
+                "postgres": "SELECT SUM(x) RESPECT NULLS AS x",
+                "spark": "SELECT SUM(x) RESPECT NULLS AS x",
+                "snowflake": "SELECT SUM(x) RESPECT NULLS AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT PERCENTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
+            write={
+                "duckdb": "SELECT QUANTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
+                "spark": "SELECT PERCENTILE_CONT(x, 0.5) RESPECT NULLS OVER ()",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 10 IGNORE NULLS) AS x",
+                "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 10) IGNORE NULLS AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 1, 10) AS x",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 1, 10 IGNORE NULLS) AS x",
+                "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 1, 10) IGNORE NULLS AS x",
+            },
+        )
+        self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
+        self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
+
         self.validate_identity(
             "create or replace view test (tenant_id OPTIONS(description='Test description on table creation')) select 1 as tenant_id, 1 as customer_id;",
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",

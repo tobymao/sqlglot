@@ -528,7 +528,7 @@ class TestFunctions(unittest.TestCase):
         col = SF.first(SF.col("cola"))
         self.assertEqual("FIRST(cola)", col.sql())
         ignore_nulls = SF.first("cola", True)
-        self.assertEqual("FIRST(cola, TRUE)", ignore_nulls.sql())
+        self.assertEqual("FIRST(cola) IGNORE NULLS", ignore_nulls.sql())
 
     def test_grouping_id(self):
         col_str = SF.grouping_id("cola", "colb")
@@ -562,7 +562,7 @@ class TestFunctions(unittest.TestCase):
         col = SF.last(SF.col("cola"))
         self.assertEqual("LAST(cola)", col.sql())
         ignore_nulls = SF.last("cola", True)
-        self.assertEqual("LAST(cola, TRUE)", ignore_nulls.sql())
+        self.assertEqual("LAST(cola) IGNORE NULLS", ignore_nulls.sql())
 
     def test_monotonically_increasing_id(self):
         col = SF.monotonically_increasing_id()
@@ -713,8 +713,10 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual("NTH_VALUE(cola, 3)", col.sql())
         col_no_offset = SF.nth_value("cola")
         self.assertEqual("NTH_VALUE(cola)", col_no_offset.sql())
-        with self.assertRaises(NotImplementedError):
-            SF.nth_value("cola", ignoreNulls=True)
+
+        self.assertEqual(
+            "NTH_VALUE(cola) IGNORE NULLS", SF.nth_value("cola", ignoreNulls=True).sql()
+        )
 
     def test_ntile(self):
         col = SF.ntile(2)

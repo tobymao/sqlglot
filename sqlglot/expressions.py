@@ -4487,15 +4487,37 @@ class Avg(AggFunc):
 
 
 class AnyValue(AggFunc):
-    arg_types = {"this": True, "having": False, "max": False, "ignore_nulls": False}
+    arg_types = {"this": True, "having": False, "max": False}
 
 
-class First(Func):
-    arg_types = {"this": True, "ignore_nulls": False}
+class Lag(AggFunc):
+    arg_types = {"this": True, "offset": False, "default": False}
 
 
-class Last(Func):
-    arg_types = {"this": True, "ignore_nulls": False}
+class Lead(AggFunc):
+    arg_types = {"this": True, "offset": False, "default": False}
+
+
+# some dialects have a distinction between first and first_value, usually first is an aggregate func
+# and first_value is a window func
+class First(AggFunc):
+    pass
+
+
+class Last(AggFunc):
+    pass
+
+
+class FirstValue(AggFunc):
+    pass
+
+
+class LastValue(AggFunc):
+    pass
+
+
+class NthValue(AggFunc):
+    arg_types = {"this": True, "offset": True}
 
 
 class Case(Func):

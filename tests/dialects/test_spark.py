@@ -227,9 +227,11 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
-        expr = parse_one("any_value(col, true)", read="spark")
-        self.assertIsInstance(expr.args.get("ignore_nulls"), exp.Boolean)
-        self.assertEqual(expr.sql(dialect="spark"), "ANY_VALUE(col, TRUE)")
+        self.validate_identity("any_value(col, true)", "ANY_VALUE(col) IGNORE NULLS")
+        self.validate_identity("first(col, true)", "FIRST(col) IGNORE NULLS")
+        self.validate_identity("first_value(col, true)", "FIRST_VALUE(col) IGNORE NULLS")
+        self.validate_identity("last(col, true)", "LAST(col) IGNORE NULLS")
+        self.validate_identity("last_value(col, true)", "LAST_VALUE(col) IGNORE NULLS")
 
         self.assertEqual(
             parse_one("REFRESH TABLE t", read="spark").assert_is(exp.Refresh).sql(dialect="spark"),

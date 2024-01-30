@@ -150,7 +150,7 @@ def _unnest_sequence(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _first_last_sql(self: Presto.Generator, expression: exp.First | exp.Last) -> str:
+def _first_last_sql(self: Presto.Generator, expression: exp.Func) -> str:
     """
     Trino doesn't support FIRST / LAST as functions, but they're valid in the context
     of MATCH_RECOGNIZE, so we need to preserve them in that case. In all other cases
@@ -356,6 +356,7 @@ class Presto(Dialect):
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
             exp.FileFormatProperty: lambda self, e: f"FORMAT='{e.name.upper()}'",
             exp.First: _first_last_sql,
+            exp.FirstValue: _first_last_sql,
             exp.FromTimeZone: lambda self, e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
             exp.GetPath: path_to_jsonpath(),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
@@ -368,6 +369,7 @@ class Presto(Dialect):
             exp.Initcap: _initcap_sql,
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Last: _first_last_sql,
+            exp.LastValue: _first_last_sql,
             exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
             exp.Lateral: _explode_to_unnest_sql,
             exp.Left: left_to_substring_sql,

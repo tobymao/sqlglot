@@ -7,7 +7,8 @@ from functools import reduce
 from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
-from sqlglot.helper import AutoName, flatten, seq_get
+from sqlglot.helper import AutoName, flatten, is_int, seq_get
+from sqlglot.jsonpath import generate as generate_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -500,14 +501,14 @@ def if_sql(
     return _if_sql
 
 
-def arrow_json_extract_sql(self: Generator, expression: exp.JSONExtract | exp.JSONBExtract) -> str:
-    return self.binary(expression, "->")
-
-
-def arrow_json_extract_scalar_sql(
-    self: Generator, expression: exp.JSONExtractScalar | exp.JSONBExtractScalar
+def arrow_json_extract_sql(
+    self: Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
-    return self.binary(expression, "->>")
+    this = expression.this
+    if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
+        this.replace(exp.cast(this, "json"))
+
+    return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
 
 def inline_array_sql(self: Generator, expression: exp.Array) -> str:
@@ -1023,3 +1024,47 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
         )
 
     return self.merge_sql(expression)
+
+
+def parse_json_extract_path(
+    expr_type: t.Type[E],
+    supports_null_if_invalid: bool = False,
+) -> t.Callable[[t.List], E]:
+    def _parse_json_extract_path(args: t.List) -> E:
+        null_if_invalid = None
+
+        segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
+        for arg in args[1:]:
+            if isinstance(arg, exp.Literal):
+                text = arg.name
+                if is_int(text):
+                    segments.append(exp.JSONPathSubscript(this=int(text)))
+                else:
+                    segments.append(exp.JSONPathChild(this=text))
+            elif supports_null_if_invalid:
+                null_if_invalid = arg
+
+        this = seq_get(args, 0)
+        jsonpath = exp.JSONPath(expressions=segments)
+
+        # This is done to avoid failing in the expression validator due to the arg count
+        del args[2:]
+
+        if expr_type is exp.JSONExtractScalar:
+            return expr_type(this=this, expression=jsonpath, null_if_invalid=null_if_invalid)
+
+        return expr_type(this=this, expression=jsonpath)
+
+    return _parse_json_extract_path
+
+
+def json_path_segments(self: Generator, expression: exp.JSONPath) -> t.List[str]:
+    segments = []
+    for segment in expression.expressions:
+        path = generate_json_path(
+            segment, mapping=self._JSON_PATH_MAPPING, unsupported_callback=self.unsupported
+        )
+        if path:
+            segments.append(f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}")
+
+    return segments

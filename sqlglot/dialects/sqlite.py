@@ -7,7 +7,6 @@ from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
     any_value_to_max_sql,
-    arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
     concat_to_dpipe_sql,
     count_if_to_sum,
@@ -26,6 +25,12 @@ def _date_add_sql(self: SQLite.Generator, expression: exp.DateAdd) -> str:
     unit = expression.args.get("unit")
     modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
     return self.func("DATE", expression.this, modifier)
+
+
+def _json_extract_sql(self: SQLite.Generator, expression: exp.JSONExtract) -> str:
+    if expression.expressions:
+        return self.function_fallback_sql(expression)
+    return arrow_json_extract_sql(self, expression)
 
 
 def _transform_create(expression: exp.Expression) -> exp.Expression:
@@ -86,6 +91,13 @@ class SQLite(Dialect):
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
 
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathChild,
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+        }
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BOOLEAN: "INTEGER",
@@ -120,10 +132,8 @@ class SQLite(Dialect):
             exp.DateAdd: _date_add_sql,
             exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
             exp.ILike: no_ilike_sql,
-            exp.JSONExtract: arrow_json_extract_sql,
-            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
-            exp.JSONBExtract: arrow_json_extract_sql,
-            exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONExtract: _json_extract_sql,
+            exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.Levenshtein: rename_func("EDITDIST3"),
             exp.LogicalOr: rename_func("MAX"),
             exp.LogicalAnd: rename_func("MIN"),

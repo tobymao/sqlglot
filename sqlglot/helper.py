@@ -316,6 +316,14 @@ def find_new_name(taken: t.Collection[str], base: str) -> str:
     return new
 
 
+def is_int(text: str) -> bool:
+    try:
+        int(text)
+        return True
+    except ValueError:
+        return False
+
+
 def name_sequence(prefix: str) -> t.Callable[[], str]:
     """Returns a name generator given a prefix (e.g. a0, a1, a2, ... if the prefix is "a")."""
     sequence = count()

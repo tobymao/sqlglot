@@ -8,7 +8,6 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
-    arrow_json_extract_scalar_sql,
     arrow_json_extract_sql,
     binary_from_function,
     bool_xor_sql,
@@ -229,6 +228,9 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "JSON": exp.ParseJSON.from_arg_list,
+            "JSON_EXTRACT_PATH": parser.parse_extract_json_with_path(exp.JSONExtract),
+            "JSON_EXTRACT_STRING": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
+            "JSON_EXTRACT_PATH_TEXT": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
@@ -358,10 +360,8 @@ class DuckDB(Dialect):
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
             exp.IsInf: rename_func("ISINF"),
             exp.IsNan: rename_func("ISNAN"),
-            exp.JSONBExtract: arrow_json_extract_sql,
-            exp.JSONBExtractScalar: arrow_json_extract_scalar_sql,
             exp.JSONExtract: arrow_json_extract_sql,
-            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONFormat: _json_format_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),
@@ -421,6 +421,14 @@ class DuckDB(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: bool_xor_sql,
+        }
+
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathChild,
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+            exp.JSONPathWildcard,
         }
 
         TYPE_MAPPING = {

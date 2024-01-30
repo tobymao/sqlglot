@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 
-from sqlglot import jsonpath
+from sqlglot import exp, jsonpath
 from sqlglot.errors import ParseError, TokenError
 from tests.helpers import FIXTURES_DIR
 
@@ -14,20 +14,17 @@ class TestJsonpath(unittest.TestCase):
         self.assertEqual(
             jsonpath.parse("$.*.a[0]['x'][*, 'y', 1].z[?(@.a == 'b'), 1:][1:5][1,?@.a][(@.x)]"),
             [
-                {"kind": "root"},
-                {"kind": "child", "value": "*"},
-                {"kind": "child", "value": "a"},
-                {"kind": "subscript", "value": 0},
-                {"kind": "key", "value": "x"},
-                {"kind": "union", "value": [{"kind": "wildcard"}, "y", 1]},
-                {"kind": "child", "value": "z"},
-                {"kind": "selector", "value": {"kind": "filter", "value": "(@.a == 'b'), 1:"}},
-                {
-                    "kind": "subscript",
-                    "value": {"end": 5, "kind": "slice", "start": 1, "step": None},
-                },
-                {"kind": "union", "value": [1, {"kind": "filter", "value": "@.a"}]},
-                {"kind": "selector", "value": {"kind": "script", "value": "@.x)"}},
+                exp.JSONPathRoot(),
+                exp.JSONPathChild(this="*"),
+                exp.JSONPathChild(this="a"),
+                exp.JSONPathSubscript(this=0),
+                exp.JSONPathKey(this="x"),
+                exp.JSONPathUnion(expressions=[exp.JSONPathWildcard(), "y", 1]),
+                exp.JSONPathChild(this="z"),
+                exp.JSONPathSelector(this=exp.JSONPathFilter(this="(@.a == 'b'), 1:")),
+                exp.JSONPathSubscript(this=exp.JSONPathSlice(start=1, end=5, step=None)),
+                exp.JSONPathUnion(expressions=[1, exp.JSONPathFilter(this="@.a")]),
+                exp.JSONPathSelector(this=exp.JSONPathScript(this="@.x)")),
             ],
         )
 

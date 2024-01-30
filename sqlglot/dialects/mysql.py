@@ -6,7 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    arrow_json_extract_scalar_sql,
+    arrow_json_extract_sql,
     date_add_interval_sql,
     datestrtodate_sql,
     format_time_lambda,
@@ -630,6 +630,7 @@ class MySQL(Dialect):
         VALUES_AS_TABLE = False
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
+        JSON_TYPE_REQUIRED_FOR_EXTRACTION = True
         JSON_KEY_VALUE_PAIR_SEP = ","
 
         TRANSFORMS = {
@@ -649,7 +650,7 @@ class MySQL(Dialect):
             exp.GetPath: path_to_jsonpath(),
             exp.GroupConcat: lambda self, e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,
-            exp.JSONExtractScalar: arrow_json_extract_scalar_sql,
+            exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Month: _remove_ts_or_ds_to_date(),

@@ -623,6 +623,13 @@ class BigQuery(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
         }
 
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathChild,
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+        }
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.BIGDECIMAL: "BIGNUMERIC",

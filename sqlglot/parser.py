@@ -4937,6 +4937,13 @@ class Parser(metaclass=_Parser):
         #   (https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/img_text/first_value.html)
         #   and Snowflake chose to do the same for familiarity
         #   https://docs.snowflake.com/en/sql-reference/functions/first_value.html#usage-notes
+        if isinstance(this, exp.AggFunc):
+            ignore_respect = this.find(exp.IgnoreNulls, exp.RespectNulls)
+
+            if ignore_respect and ignore_respect is not this:
+                ignore_respect.replace(ignore_respect.this)
+                this = self.expression(ignore_respect.__class__, this=this)
+
         this = self._parse_respect_or_ignore_nulls(this)
 
         # bigquery select from window x AS (partition by ...)

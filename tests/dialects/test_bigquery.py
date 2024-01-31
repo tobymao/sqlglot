@@ -416,10 +416,25 @@ class TestBigQuery(Validator):
             "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), minute)",
             write={
                 "bigquery": "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), MINUTE)",
+                "databricks": "SELECT TIMESTAMPDIFF(MINUTE, CAST(FROM_UNIXTIME(0) AS TIMESTAMP), CAST(FROM_UNIXTIME(60) AS TIMESTAMP))",
                 "duckdb": "SELECT DATE_DIFF('MINUTE', TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
                 "snowflake": "SELECT TIMESTAMPDIFF(MINUTE, TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
             },
         )
+        self.validate_all(
+            "TIMESTAMP_DIFF(a, b, MONTH)",
+            read={
+                "bigquery": "TIMESTAMP_DIFF(a, b, month)",
+                "databricks": "TIMESTAMPDIFF(month, b, a)",
+                "mysql": "TIMESTAMPDIFF(month, b, a)",
+            },
+            write={
+                "databricks": "TIMESTAMPDIFF(MONTH, b, a)",
+                "mysql": "TIMESTAMPDIFF(MONTH, b, a)",
+                "snowflake": "TIMESTAMPDIFF(MONTH, b, a)",
+            },
+        )
+
         self.validate_all(
             "SELECT TIMESTAMP_MICROS(x)",
             read={

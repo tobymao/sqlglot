@@ -4731,6 +4731,7 @@ class TimestampSub(Func, TimeUnit):
 
 
 class TimestampDiff(Func, TimeUnit):
+    _sql_names = ["TIMESTAMPDIFF", "TIMESTAMP_DIFF"]
     arg_types = {"this": True, "expression": True, "unit": False}
 
 

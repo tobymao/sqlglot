@@ -1454,12 +1454,6 @@ MATCH_RECOGNIZE (
                 )
 
     def test_show(self):
-        # Parsed as Command
-        self.validate_identity(
-            "SHOW TABLES LIKE 'line%' IN tpch.public", check_command_warning=True
-        )
-        self.validate_identity("SHOW TABLES HISTORY IN tpch.public", check_command_warning=True)
-
         # Parsed as Show
         self.validate_identity("SHOW PRIMARY KEYS")
         self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")
@@ -1487,6 +1481,22 @@ MATCH_RECOGNIZE (
             "show terse objects in db1.schema1 starts with 'a' limit 10 from 'b'",
             "SHOW TERSE OBJECTS IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
         )
+        self.validate_identity(
+            "SHOW TABLES LIKE 'line%' IN tpch.public",
+            "SHOW TABLES LIKE 'line%' IN SCHEMA tpch.public",
+        )
+        self.validate_identity(
+            "SHOW TABLES HISTORY IN tpch.public",
+            "SHOW TABLES HISTORY IN SCHEMA tpch.public",
+        )
+        self.validate_identity(
+            "show terse tables in schema db1.schema1 starts with 'a' limit 10 from 'b'",
+            "SHOW TERSE TABLES IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
+        )
+        self.validate_identity(
+            "show terse tables in db1.schema1 starts with 'a' limit 10 from 'b'",
+            "SHOW TERSE TABLES IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
+        )
 
         ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
         table = ast.find(exp.Table)
@@ -1513,6 +1523,11 @@ MATCH_RECOGNIZE (
         self.assertEqual(table.sql(dialect="snowflake"), "db1")
 
         ast = parse_one("SHOW OBJECTS IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
+        table = ast.find(exp.Table)
+        self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")
+
+        ast = parse_one("SHOW TABLES IN db1.schema1", read="snowflake")
         self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
         table = ast.find(exp.Table)
         self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")

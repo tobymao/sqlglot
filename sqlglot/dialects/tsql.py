@@ -266,13 +266,24 @@ def _parse_timefromparts(args: t.List) -> exp.TimeFromParts:
     )
 
 
-def _parse_len(args: t.List) -> exp.Length:
-    this = seq_get(args, 0)
+def _parse_as_text(
+    klass: t.Type[exp.Expression],
+) -> t.Callable[[t.List[exp.Expression]], exp.Expression]:
+    def _parse(args: t.List[exp.Expression]) -> exp.Expression:
+        this = seq_get(args, 0)
 
-    if this and not this.is_string:
-        this = exp.cast(this, exp.DataType.Type.TEXT)
+        if this and not this.is_string:
+            this = exp.cast(this, exp.DataType.Type.TEXT)
 
-    return exp.Length(this=this)
+        expression = seq_get(args, 1)
+        kwargs = {"this": this}
+
+        if expression:
+            kwargs["expression"] = expression
+
+        return klass(**kwargs)
+
+    return _parse
 
 
 def _json_extract_sql(
@@ -451,7 +462,9 @@ class TSQL(Dialect):
             "ISNULL": exp.Coalesce.from_arg_list,
             "JSON_QUERY": parser.parse_extract_json_with_path(exp.JSONExtract),
             "JSON_VALUE": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
-            "LEN": _parse_len,
+            "LEN": _parse_as_text(exp.Length),
+            "LEFT": _parse_as_text(exp.Left),
+            "RIGHT": _parse_as_text(exp.Right),
             "REPLICATE": exp.Repeat.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
             "SYSDATETIME": exp.CurrentTimestamp.from_arg_list,
@@ -955,9 +968,19 @@ class TSQL(Dialect):
             return f"CONSTRAINT {this} {expressions}"
 
         def length_sql(self, expression: exp.Length) -> str:
+            return self._uncast_text(expression, "LEN")
+
+        def right_sql(self, expression: exp.Right) -> str:
+            return self._uncast_text(expression, "RIGHT")
+
+        def left_sql(self, expression: exp.Left) -> str:
+            return self._uncast_text(expression, "LEFT")
+
+        def _uncast_text(self, expression: exp.Expression, name: str) -> str:
             this = expression.this
             if isinstance(this, exp.Cast) and this.is_type(exp.DataType.Type.TEXT):
                 this_sql = self.sql(this, "this")
             else:
                 this_sql = self.sql(this)
-            return self.func("LEN", this_sql)
+            expression_sql = self.sql(expression, "expression")
+            return self.func(name, this_sql, expression_sql if expression_sql else None)

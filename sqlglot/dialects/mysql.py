@@ -19,6 +19,7 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    parse_date_delta,
     parse_date_delta_with_interval,
     path_to_jsonpath,
     rename_func,
@@ -306,6 +307,7 @@ class MySQL(Dialect):
                 format=exp.Literal.string("%B"),
             ),
             "STR_TO_DATE": _str_to_date,
+            "TIMESTAMPDIFF": parse_date_delta(exp.TimestampDiff),
             "TO_DAYS": lambda args: exp.paren(
                 exp.DateDiff(
                     this=exp.TsOrDsToDate(this=seq_get(args, 0)),
@@ -673,6 +675,9 @@ class MySQL(Dialect):
             exp.TableSample: no_tablesample_sql,
             exp.TimeFromParts: rename_func("MAKETIME"),
             exp.TimestampAdd: date_add_interval_sql("DATE", "ADD"),
+            exp.TimestampDiff: lambda self, e: self.func(
+                "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
+            ),
             exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeStrToTime: lambda self, e: self.sql(exp.cast(e.this, "datetime", copy=True)),

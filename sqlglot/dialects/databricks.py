@@ -22,6 +22,7 @@ class Databricks(Spark):
             "DATEADD": parse_date_delta(exp.DateAdd),
             "DATE_ADD": parse_date_delta(exp.DateAdd),
             "DATEDIFF": parse_date_delta(exp.DateDiff),
+            "TIMESTAMPDIFF": parse_date_delta(exp.TimestampDiff),
         }
 
         FACTOR = {
@@ -46,6 +47,9 @@ class Databricks(Spark):
                 e.this,
             ),
             exp.DatetimeDiff: lambda self, e: self.func(
+                "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
+            ),
+            exp.TimestampDiff: lambda self, e: self.func(
                 "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
             ),
             exp.DatetimeTrunc: timestamptrunc_sql,

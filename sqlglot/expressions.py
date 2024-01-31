@@ -751,7 +751,8 @@ class Expression(metaclass=_Expression):
 
     def __getitem__(self, other: ExpOrStr | t.Tuple[ExpOrStr]) -> Bracket:
         return Bracket(
-            this=self.copy(), expressions=[convert(e, copy=True) for e in ensure_list(other)]
+            this=self.copy(),
+            expressions=[convert(e, copy=True) for e in ensure_list(other)],
         )
 
     def __iter__(self) -> t.Iterator:
@@ -921,7 +922,11 @@ class DerivedTable(Expression):
 
 class Unionable(Expression):
     def union(
-        self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+        self,
+        expression: ExpOrStr,
+        distinct: bool = True,
+        dialect: DialectType = None,
+        **opts,
     ) -> Union:
         """
         Builds a UNION expression.
@@ -944,7 +949,11 @@ class Unionable(Expression):
         return union(left=self, right=expression, distinct=distinct, dialect=dialect, **opts)
 
     def intersect(
-        self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+        self,
+        expression: ExpOrStr,
+        distinct: bool = True,
+        dialect: DialectType = None,
+        **opts,
     ) -> Unionable:
         """
         Builds an INTERSECT expression.
@@ -967,7 +976,11 @@ class Unionable(Expression):
         return intersect(left=self, right=expression, distinct=distinct, dialect=dialect, **opts)
 
     def except_(
-        self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
+        self,
+        expression: ExpOrStr,
+        distinct: bool = True,
+        dialect: DialectType = None,
+        **opts,
     ) -> Unionable:
         """
         Builds an EXCEPT expression.
@@ -1208,7 +1221,13 @@ class UnicodeString(Condition):
 
 
 class Column(Condition):
-    arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
+    arg_types = {
+        "this": True,
+        "table": False,
+        "db": False,
+        "catalog": False,
+        "join_mark": False,
+    }
 
     @property
     def table(self) -> str:
@@ -1727,7 +1746,14 @@ class Insert(DDL, DML):
             The modified expression.
         """
         return _apply_cte_builder(
-            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
+            self,
+            alias,
+            as_,
+            recursive=recursive,
+            append=append,
+            dialect=dialect,
+            copy=copy,
+            **opts,
         )
 
 
@@ -2464,7 +2490,11 @@ class Subqueryable(Unionable):
         return Subquery(this=instance, alias=alias)
 
     def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        expression: ExpOrStr | int,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Select:
         raise NotImplementedError
 
@@ -2526,7 +2556,14 @@ class Subqueryable(Unionable):
             The modified expression.
         """
         return _apply_cte_builder(
-            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
+            self,
+            alias,
+            as_,
+            recursive=recursive,
+            append=append,
+            dialect=dialect,
+            copy=copy,
+            **opts,
         )
 
 
@@ -2644,7 +2681,11 @@ class Union(Subqueryable):
     }
 
     def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        expression: ExpOrStr | int,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Select:
         """
         Set the LIMIT expression.
@@ -2808,7 +2849,11 @@ class Select(Subqueryable):
     }
 
     def from_(
-        self, expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        expression: ExpOrStr,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Select:
         """
         Set the FROM expression.
@@ -3004,7 +3049,11 @@ class Select(Subqueryable):
         )
 
     def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        expression: ExpOrStr | int,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Select:
         """
         Set the LIMIT expression.
@@ -3038,7 +3087,11 @@ class Select(Subqueryable):
         )
 
     def offset(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+        self,
+        expression: ExpOrStr | int,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
     ) -> Select:
         """
         Set the OFFSET expression.
@@ -3470,7 +3523,8 @@ class Select(Subqueryable):
         """
         inst = maybe_copy(self, copy)
         inst.set(
-            "hint", Hint(expressions=[maybe_parse(h, copy=copy, dialect=dialect) for h in hints])
+            "hint",
+            Hint(expressions=[maybe_parse(h, copy=copy, dialect=dialect) for h in hints]),
         )
 
         return inst
@@ -5473,7 +5527,13 @@ class UnixToStr(Func):
 # https://prestodb.io/docs/current/functions/datetime.html
 # presto has weird zone/hours/minutes
 class UnixToTime(Func):
-    arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False}
+    arg_types = {
+        "this": True,
+        "scale": False,
+        "zone": False,
+        "hours": False,
+        "minutes": False,
+    }
 
     SECONDS = Literal.number(0)
     DECIS = Literal.number(1)
@@ -5535,7 +5595,13 @@ class Use(Expression):
 
 
 class Merge(Expression):
-    arg_types = {"this": True, "using": True, "on": True, "expressions": True, "with": False}
+    arg_types = {
+        "this": True,
+        "using": True,
+        "on": True,
+        "expressions": True,
+        "with": False,
+    }
 
 
 class When(Func):
@@ -6081,7 +6147,8 @@ def delete(
         delete_expr = delete_expr.where(where, dialect=dialect, copy=False, **opts)
     if returning:
         delete_expr = t.cast(
-            Delete, delete_expr.returning(returning, dialect=dialect, copy=False, **opts)
+            Delete,
+            delete_expr.returning(returning, dialect=dialect, copy=False, **opts),
         )
     return delete_expr
 
@@ -6168,7 +6235,10 @@ def condition(
 
 
 def and_(
-    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+    *expressions: t.Optional[ExpOrStr],
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
 ) -> Condition:
     """
     Combine multiple conditions with an AND logical operator.
@@ -6191,7 +6261,10 @@ def and_(
 
 
 def or_(
-    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+    *expressions: t.Optional[ExpOrStr],
+    dialect: DialectType = None,
+    copy: bool = True,
+    **opts,
 ) -> Condition:
     """
     Combine multiple conditions with an OR logical operator.
@@ -6353,7 +6426,10 @@ def to_table(sql_path: None, **kwargs) -> None:
 
 
 def to_table(
-    sql_path: t.Optional[str | Table], dialect: DialectType = None, copy: bool = True, **kwargs
+    sql_path: t.Optional[str | Table],
+    dialect: DialectType = None,
+    copy: bool = True,
+    **kwargs,
 ) -> t.Optional[Table]:
     """
     Create a table expression from a `[catalog].[schema].[table]` sql path. Catalog and schema are optional.
@@ -6847,7 +6923,10 @@ def normalize_table_name(table: str | Table, dialect: DialectType = None, copy: 
 
 
 def replace_tables(
-    expression: E, mapping: t.Dict[str, str], dialect: DialectType = None, copy: bool = True
+    expression: E,
+    mapping: t.Dict[str, str],
+    dialect: DialectType = None,
+    copy: bool = True,
 ) -> E:
     """Replace all tables in expression according to the mapping.
 

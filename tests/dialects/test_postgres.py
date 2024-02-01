@@ -50,7 +50,13 @@ class TestPostgres(Validator):
         self.validate_identity("CAST(x AS DATEMULTIRANGE)")
         self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
         self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
-        self.validate_identity("SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]")
+        self.validate_all(
+            "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
+            write={
+                "": "SELECT ARRAY_OVERLAPS(ARRAY(1, 2, 3), ARRAY(1, 2))",
+                "postgres": "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
+            },
+        )
         self.validate_identity("x$")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")

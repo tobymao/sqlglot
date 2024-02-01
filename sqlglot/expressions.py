@@ -4126,10 +4126,6 @@ class Sub(Binary):
     pass
 
 
-class ArrayOverlaps(Binary):
-    pass
-
-
 # Unary Expressions
 # (NOT a)
 class Unary(Condition):
@@ -4465,6 +4461,10 @@ class ArrayFilter(Func):
 
 class ArrayJoin(Func):
     arg_types = {"this": True, "expression": True, "null": False}
+
+
+class ArrayOverlaps(Binary, Func):
+    pass
 
 
 class ArraySize(Func):

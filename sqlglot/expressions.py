@@ -605,7 +605,8 @@ class Expression(metaclass=_Expression):
             >>> sqlglot.parse_one("SELECT x from y").assert_is(Select).select("z").sql()
             'SELECT x, z FROM y'
         """
-        assert isinstance(self, type_)
+        if not isinstance(self, type_):
+            raise AssertionError(f"{self} is not {type_}.")
         return self
 
     def error_messages(self, args: t.Optional[t.Sequence] = None) -> t.List[str]:

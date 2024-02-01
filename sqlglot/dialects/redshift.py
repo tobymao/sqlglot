@@ -71,6 +71,7 @@ class Redshift(Postgres):
             "DATE_ADD": _parse_date_delta(exp.TsOrDsAdd),
             "DATEDIFF": _parse_date_delta(exp.TsOrDsDiff),
             "DATE_DIFF": _parse_date_delta(exp.TsOrDsDiff),
+            "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "JSON_EXTRACT_PATH_TEXT": parse_json_extract_path(
                 exp.JSONExtractScalar, supports_null_if_invalid=True
             ),

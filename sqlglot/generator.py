@@ -2676,6 +2676,9 @@ class Generator(metaclass=_Generator):
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
 
+    def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+        return self.func("CURRENT_TIMESTAMP", expression.this)
+
     def collate_sql(self, expression: exp.Collate) -> str:
         if self.COLLATE_IS_FUNC:
             return self.function_fallback_sql(expression)

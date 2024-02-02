@@ -324,6 +324,7 @@ class Presto(Dialect):
             exp.ArrayContains: rename_func("CONTAINS"),
             exp.ArraySize: rename_func("CARDINALITY"),
             exp.ArrayUniqueAgg: rename_func("SET_AGG"),
+            exp.AtTimeZone: rename_func("AT_TIMEZONE"),
             exp.BitwiseAnd: lambda self, e: f"BITWISE_AND({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.BitwiseLeftShift: lambda self, e: f"BITWISE_ARITHMETIC_SHIFT_LEFT({self.sql(e, 'this')}, {self.sql(e, 'expression')})",
             exp.BitwiseNot: lambda self, e: f"BITWISE_NOT({self.sql(e, 'this')})",

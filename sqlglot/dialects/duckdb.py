@@ -171,7 +171,7 @@ class DuckDB(Dialect):
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
-    def parse_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
             # DuckDB also supports the JSON pointer syntax, where every path starts with a `/`.
             # Additionally, it allows accessing the back of lists using the `[#-i]` syntax.
@@ -181,7 +181,7 @@ class DuckDB(Dialect):
             if path_text.startswith("/") or "[#" in path_text:
                 return path
 
-        return super().parse_json_path(path)
+        return super().to_json_path(path)
 
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {

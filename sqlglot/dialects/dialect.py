@@ -444,7 +444,7 @@ class Dialect(metaclass=_Dialect):
 
         return expression
 
-    def parse_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+    def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         if isinstance(path, exp.Literal):
             path_text = path.name
             if path.is_number:

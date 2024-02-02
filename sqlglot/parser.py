@@ -63,7 +63,7 @@ def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
 def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
     def _parser(args: t.List, dialect: Dialect) -> E:
         expression = expr_type(
-            this=seq_get(args, 0), expression=dialect.parse_json_path(seq_get(args, 1))
+            this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
         )
         if len(args) > 2 and expr_type is exp.JSONExtract:
             expression.set("expressions", args[2:])
@@ -546,12 +546,12 @@ class Parser(metaclass=_Parser):
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
             this=this,
-            expression=self.dialect.parse_json_path(path),
+            expression=self.dialect.to_json_path(path),
         ),
         TokenType.DARROW: lambda self, this, path: self.expression(
             exp.JSONExtractScalar,
             this=this,
-            expression=self.dialect.parse_json_path(path),
+            expression=self.dialect.to_json_path(path),
         ),
         TokenType.HASH_ARROW: lambda self, this, path: self.expression(
             exp.JSONBExtract,

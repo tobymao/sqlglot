@@ -4631,7 +4631,7 @@ class CurrentTime(Func):
 
 
 class CurrentTimestamp(Func):
-    arg_types = {"this": False}
+    arg_types = {"this": False, "transaction": False}
 
 
 class CurrentUser(Func):

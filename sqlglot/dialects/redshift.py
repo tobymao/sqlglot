@@ -82,6 +82,7 @@ class Redshift(Postgres):
         NO_PAREN_FUNCTION_PARSERS = {
             **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
             "APPROXIMATE": lambda self: self._parse_approximate_count(),
+            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, transaction=True),
         }
 
         def _parse_table(
@@ -166,7 +167,6 @@ class Redshift(Postgres):
             **Postgres.Tokenizer.KEYWORDS,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
-            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
@@ -203,7 +203,9 @@ class Redshift(Postgres):
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
             exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
-            exp.CurrentTimestamp: lambda self, e: "SYSDATE",
+            exp.CurrentTimestamp: lambda self, e: (
+                "SYSDATE" if e.args.get("transaction") else "GETDATE()"
+            ),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",

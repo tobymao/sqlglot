@@ -2221,7 +2221,7 @@ class Generator(metaclass=_Generator):
             if alias and isinstance(offset, exp.Expression):
                 alias.append("columns", offset)
 
-        if alias and self.dialect.UNNEST_COLUMN_ONLY:
+        if alias and hasattr(alias, "columns") and self.dialect.UNNEST_COLUMN_ONLY:
             columns = alias.columns
             alias = self.sql(columns[0]) if columns else ""
         else:

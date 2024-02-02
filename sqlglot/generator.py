@@ -2676,6 +2676,9 @@ class Generator(metaclass=_Generator):
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"
 
+    def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+        return f"CURRENT_TIMESTAMP({self.sql(expression, 'this')})"
+
     def collate_sql(self, expression: exp.Collate) -> str:
         if self.COLLATE_IS_FUNC:
             return self.function_fallback_sql(expression)
@@ -2999,9 +3002,7 @@ class Generator(metaclass=_Generator):
         return f"{self.normalize_func(name)}{prefix}{self.format_args(*args)}{suffix}"
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
-        arg_sqls = tuple(
-            self.sql(arg) for arg in args if arg is not None and not isinstance(arg, bool)
-        )
+        arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)
         if self.pretty and self.text_width(arg_sqls) > self.max_text_width:
             return self.indent("\n" + f",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
         return ", ".join(arg_sqls)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import typing as t
 from enum import Enum, auto
 from functools import reduce
@@ -8,7 +9,7 @@ from sqlglot import exp
 from sqlglot.errors import ParseError
 from sqlglot.generator import Generator
 from sqlglot.helper import AutoName, flatten, is_int, seq_get
-from sqlglot.jsonpath import generate as generate_json_path
+from sqlglot.jsonpath import generate as generate_json_path, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.time import TIMEZONES, format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -19,6 +20,8 @@ DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E
+
+logger = logging.getLogger("sqlglot")
 
 
 class Dialects(str, Enum):
@@ -440,6 +443,19 @@ class Dialect(metaclass=_Dialect):
             )
 
         return expression
+
+    def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        if isinstance(path, exp.Literal):
+            path_text = path.name
+            if path.is_number:
+                path_text = f"[{path_text}]"
+
+            try:
+                return exp.JSONPath(expressions=parse_json_path(path_text))
+            except ParseError:
+                logger.warning(f"Invalid JSON path syntax: {path_text}")
+
+        return path
 
     def parse(self, sql: str, **opts) -> t.List[t.Optional[exp.Expression]]:
         return self.parser(**opts).parse(self.tokenize(sql), sql)

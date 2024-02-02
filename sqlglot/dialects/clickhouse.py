@@ -579,7 +579,8 @@ class ClickHouse(Dialect):
             exp.Rand: rename_func("randCanonical"),
             exp.Select: transforms.preprocess([transforms.eliminate_qualify]),
             exp.StartsWith: rename_func("startsWith"),
-            exp.StrPosition: lambda self, e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
+            exp.StrPosition: lambda self,
+            e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
         }

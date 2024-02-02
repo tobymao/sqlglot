@@ -470,7 +470,8 @@ class Postgres(Dialect):
                 ]
             ),
             exp.StrPosition: str_position_sql,
-            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToTime: lambda self,
+            e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.StructExtract: struct_extract_sql,
             exp.Substring: _substring_sql,
             exp.TimeFromParts: rename_func("MAKE_TIME"),

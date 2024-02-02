@@ -492,34 +492,42 @@ class TestBigQuery(Validator):
                 "snowflake": "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
             },
         )
-        self.validate_all(
-            "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
-            write={
-                "bigquery": "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
-                "databricks": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
-            },
-        ),
-        self.validate_all(
-            "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
-            write={
-                "bigquery": "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
-                "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1, '2023-01-01T00:00:00')",
-            },
-        ),
-        self.validate_all(
-            "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
-            write={
-                "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
-                "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1 * -1, '2023-01-01T00:00:00')",
-            },
-        ),
-        self.validate_all(
-            "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
-            write={
-                "bigquery": "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
-                "databricks": "SELECT DATE_TRUNC('HOUR', '2023-01-01T01:01:01')",
-            },
-        ),
+        (
+            self.validate_all(
+                "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
+                write={
+                    "bigquery": "SELECT DATETIME_DIFF('2023-01-01T00:00:00', '2023-01-01T05:00:00', MILLISECOND)",
+                    "databricks": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
+                },
+            ),
+        )
+        (
+            self.validate_all(
+                "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+                write={
+                    "bigquery": "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+                    "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1, '2023-01-01T00:00:00')",
+                },
+            ),
+        )
+        (
+            self.validate_all(
+                "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+                write={
+                    "bigquery": "SELECT DATETIME_SUB('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",
+                    "databricks": "SELECT TIMESTAMPADD(MILLISECOND, 1 * -1, '2023-01-01T00:00:00')",
+                },
+            ),
+        )
+        (
+            self.validate_all(
+                "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
+                write={
+                    "bigquery": "SELECT DATETIME_TRUNC('2023-01-01T01:01:01', HOUR)",
+                    "databricks": "SELECT DATE_TRUNC('HOUR', '2023-01-01T01:01:01')",
+                },
+            ),
+        )
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
         self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
         self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})

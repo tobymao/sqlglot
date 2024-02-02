@@ -55,11 +55,14 @@ class Doris(MySQL):
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
-            exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToUnix: lambda self,
+            e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.TimeStrToDate: rename_func("TO_DATE"),
-            exp.ToChar: lambda self, e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.TsOrDsAdd: lambda self, e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",  # Only for day level
+            exp.ToChar: lambda self,
+            e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TsOrDsAdd: lambda self,
+            e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",  # Only for day level
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimestampTrunc: lambda self, e: self.func(

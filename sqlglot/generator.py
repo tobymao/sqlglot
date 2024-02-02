@@ -2999,7 +2999,9 @@ class Generator(metaclass=_Generator):
         return f"{self.normalize_func(name)}{prefix}{self.format_args(*args)}{suffix}"
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
-        arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)
+        arg_sqls = tuple(
+            self.sql(arg) for arg in args if arg is not None and not isinstance(arg, bool)
+        )
         if self.pretty and self.text_width(arg_sqls) > self.max_text_width:
             return self.indent("\n" + f",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
         return ", ".join(arg_sqls)

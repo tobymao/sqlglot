@@ -886,7 +886,7 @@ WHERE
             "END",
         ]
 
-        with self.assertLogs(parser_logger) as cm:
+        with self.assertLogs(parser_logger):
             for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
                 self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
@@ -907,7 +907,7 @@ WHERE
             "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
         ]
 
-        with self.assertLogs(parser_logger) as cm:
+        with self.assertLogs(parser_logger):
             for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
                 self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 

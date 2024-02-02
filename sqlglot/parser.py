@@ -2526,11 +2526,11 @@ class Parser(metaclass=_Parser):
         elif self._match_text_seq("ALL", "ROWS", "PER", "MATCH"):
             text = "ALL ROWS PER MATCH"
             if self._match_text_seq("SHOW", "EMPTY", "MATCHES"):
-                text += f" SHOW EMPTY MATCHES"
+                text += " SHOW EMPTY MATCHES"
             elif self._match_text_seq("OMIT", "EMPTY", "MATCHES"):
-                text += f" OMIT EMPTY MATCHES"
+                text += " OMIT EMPTY MATCHES"
             elif self._match_text_seq("WITH", "UNMATCHED", "ROWS"):
-                text += f" WITH UNMATCHED ROWS"
+                text += " WITH UNMATCHED ROWS"
             rows = exp.var(text)
         else:
             rows = None
@@ -2538,9 +2538,9 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("AFTER", "MATCH", "SKIP"):
             text = "AFTER MATCH SKIP"
             if self._match_text_seq("PAST", "LAST", "ROW"):
-                text += f" PAST LAST ROW"
+                text += " PAST LAST ROW"
             elif self._match_text_seq("TO", "NEXT", "ROW"):
-                text += f" TO NEXT ROW"
+                text += " TO NEXT ROW"
             elif self._match_text_seq("TO", "FIRST"):
                 text += f" TO FIRST {self._advance_any().text}"  # type: ignore
             elif self._match_text_seq("TO", "LAST"):
@@ -4402,7 +4402,10 @@ class Parser(metaclass=_Parser):
             options[kind] = action
 
         return self.expression(
-            exp.ForeignKey, expressions=expressions, reference=reference, **options  # type: ignore
+            exp.ForeignKey,
+            expressions=expressions,
+            reference=reference,
+            **options,  # type: ignore
         )
 
     def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
@@ -4719,10 +4722,12 @@ class Parser(metaclass=_Parser):
         return None
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
+        ...
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
+        ...
 
     def _parse_json_object(self, agg=False):
         star = self._parse_star()
@@ -5766,12 +5771,14 @@ class Parser(metaclass=_Parser):
         return True
 
     @t.overload
-    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression: ...
+    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression:
+        ...
 
     @t.overload
     def _replace_columns_with_dots(
         self, this: t.Optional[exp.Expression]
-    ) -> t.Optional[exp.Expression]: ...
+    ) -> t.Optional[exp.Expression]:
+        ...
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

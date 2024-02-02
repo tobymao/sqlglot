@@ -29,16 +29,14 @@ setup(
     python_requires=">=3.7",
     extras_require={
         "dev": [
-            "autoflake",
-            "black",
             "duckdb>=0.6",
-            "isort",
-            "mypy>=0.990",
+            "mypy",
             "pandas",
             "pyspark",
             "python-dateutil",
             "pdoc",
             "pre-commit",
+            "ruff",
             "types-python-dateutil",
             "typing_extensions",
             "maturin>=1.4,<2.0",

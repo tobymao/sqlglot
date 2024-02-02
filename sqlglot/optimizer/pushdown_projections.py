@@ -8,10 +8,10 @@ from sqlglot.schema import ensure_schema
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
 
+
 # Selection to use if selection list is empty
-DEFAULT_SELECTION = lambda is_agg: alias(
-    exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_"
-)
+def default_selection(is_agg: bool) -> exp.Alias:
+    return alias(exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_")
 
 
 def pushdown_projections(expression, schema=None, remove_unused_selections=True):
@@ -129,7 +129,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
 
     # If there are no remaining selections, just select a single constant
     if not new_selections:
-        new_selections.append(DEFAULT_SELECTION(is_agg))
+        new_selections.append(default_selection(is_agg))
 
     scope.expression.select(*new_selections, append=False, copy=False)
 

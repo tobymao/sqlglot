@@ -44,12 +44,14 @@ class StarRocks(MySQL):
             exp.JSONExtractScalar: arrow_json_extract_sql,
             exp.JSONExtract: arrow_json_extract_sql,
             exp.RegexpLike: rename_func("REGEXP"),
-            exp.StrToUnix: lambda self, e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToUnix: lambda self,
+            e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
             ),
             exp.TimeStrToDate: rename_func("TO_DATE"),
-            exp.UnixToStr: lambda self, e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.UnixToStr: lambda self,
+            e: f"FROM_UNIXTIME({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.UnixToTime: rename_func("FROM_UNIXTIME"),
         }
 

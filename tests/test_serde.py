@@ -6,7 +6,8 @@ from sqlglot.optimizer.annotate_types import annotate_types
 from tests.helpers import load_sql_fixtures
 
 
-class CustomExpression(exp.Expression): ...
+class CustomExpression(exp.Expression):
+    ...
 
 
 class TestSerDe(unittest.TestCase):

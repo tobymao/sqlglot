@@ -1,9 +1,10 @@
+# ruff: noqa: F401
 """
 ## Dialects
 
 While there is a SQL standard, most SQL engines support a variation of that standard. This makes it difficult
 to write portable SQL code. SQLGlot bridges all the different variations, called "dialects", with an extensible
-SQL transpilation framework. 
+SQL transpilation framework.
 
 The base `sqlglot.dialects.dialect.Dialect` class implements a generic dialect that aims to be as universal as possible.
 

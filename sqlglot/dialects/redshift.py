@@ -202,7 +202,8 @@ class Redshift(Postgres):
             **Postgres.Generator.TRANSFORMS,
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
-            exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
+            exp.ApproxDistinct: lambda self,
+            e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
             exp.CurrentTimestamp: lambda self, e: (
                 "SYSDATE" if e.args.get("transaction") else "GETDATE()"
             ),
@@ -219,7 +220,8 @@ class Redshift(Postgres):
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
-            exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.SortKeyProperty: lambda self,
+            e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),

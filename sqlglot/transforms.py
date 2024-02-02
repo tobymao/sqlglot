@@ -485,8 +485,8 @@ def preprocess(
         expression_type = type(expression)
 
         expression = transforms[0](expression)
-        for t in transforms[1:]:
-            expression = t(expression)
+        for transform in transforms[1:]:
+            expression = transform(expression)
 
         _sql_handler = getattr(self, expression.key + "_sql", None)
         if _sql_handler:

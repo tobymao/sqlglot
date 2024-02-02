@@ -7,7 +7,7 @@ from unittest import mock
 from pdoc.__main__ import cli, parser
 
 # Need this import or else import_module doesn't work
-import sqlglot
+import sqlglot  # noqa
 
 
 def mocked_import(*args, **kwargs):

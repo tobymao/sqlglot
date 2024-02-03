@@ -21,7 +21,6 @@ from tests.helpers import (
 )
 
 DIR = FIXTURES_DIR + "/optimizer/tpc-h/"
-pd.set_option("future.no_silent_downcasting", True)
 
 
 @unittest.skipIf(SKIP_INTEGRATION, "Skipping Integration Tests since `SKIP_INTEGRATION` is set")

@@ -1,3 +1,4 @@
+# ruff: noqa: F401
 """
 .. include:: ../README.md
 
@@ -87,11 +88,13 @@ def parse(
 
 
 @t.overload
-def parse_one(sql: str, *, into: t.Type[E], **opts) -> E: ...
+def parse_one(sql: str, *, into: t.Type[E], **opts) -> E:
+    ...
 
 
 @t.overload
-def parse_one(sql: str, **opts) -> Expression: ...
+def parse_one(sql: str, **opts) -> Expression:
+    ...
 
 
 def parse_one(

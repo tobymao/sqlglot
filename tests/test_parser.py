@@ -10,7 +10,7 @@ from tests.helpers import assert_logger_contains
 
 class TestParser(unittest.TestCase):
     def test_parse_empty(self):
-        with self.assertRaises(ParseError) as ctx:
+        with self.assertRaises(ParseError):
             parse_one("")
 
     def test_parse_into(self):

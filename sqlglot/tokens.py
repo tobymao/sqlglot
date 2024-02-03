@@ -1141,7 +1141,7 @@ class Tokenizer(metaclass=_Tokenizer):
             self._comments.append(self._text[comment_start_size : -comment_end_size + 1])
             self._advance(comment_end_size - 1)
         else:
-            while not self._end and not self.WHITE_SPACE.get(self._peek) is TokenType.BREAK:
+            while not self._end and self.WHITE_SPACE.get(self._peek) is not TokenType.BREAK:
                 self._advance(alnum=True)
             self._comments.append(self._text[comment_start_size:])
 
@@ -1259,7 +1259,7 @@ class Tokenizer(metaclass=_Tokenizer):
         if base:
             try:
                 int(text, base)
-            except:
+            except Exception:
                 raise TokenError(
                     f"Numeric string contains invalid characters from {self._line}:{self._start}"
                 )

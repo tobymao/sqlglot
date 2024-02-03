@@ -53,11 +53,13 @@ def seq_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
 
 
 @t.overload
-def ensure_list(value: t.Collection[T]) -> t.List[T]: ...
+def ensure_list(value: t.Collection[T]) -> t.List[T]:
+    ...
 
 
 @t.overload
-def ensure_list(value: T) -> t.List[T]: ...
+def ensure_list(value: T) -> t.List[T]:
+    ...
 
 
 def ensure_list(value):
@@ -79,11 +81,13 @@ def ensure_list(value):
 
 
 @t.overload
-def ensure_collection(value: t.Collection[T]) -> t.Collection[T]: ...
+def ensure_collection(value: t.Collection[T]) -> t.Collection[T]:
+    ...
 
 
 @t.overload
-def ensure_collection(value: T) -> t.Collection[T]: ...
+def ensure_collection(value: T) -> t.Collection[T]:
+    ...
 
 
 def ensure_collection(value):
@@ -232,7 +236,7 @@ def tsort(dag: t.Dict[T, t.Set[T]]) -> t.List[T]:
 
     for node, deps in tuple(dag.items()):
         for dep in deps:
-            if not dep in dag:
+            if dep not in dag:
                 dag[dep] = set()
 
     while dag:

@@ -88,11 +88,14 @@ class Generator(metaclass=_Generator):
         exp.DateAdd: lambda self, e: self.func(
             "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
         ),
-        exp.CaseSpecificColumnConstraint: lambda self, e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
+        exp.CaseSpecificColumnConstraint: lambda self,
+        e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
-        exp.CharacterSetProperty: lambda self, e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",
+        exp.CharacterSetProperty: lambda self,
+        e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",
         exp.CheckColumnConstraint: lambda self, e: f"CHECK ({self.sql(e, 'this')})",
-        exp.ClusteredColumnConstraint: lambda self, e: f"CLUSTERED ({self.expressions(e, 'this', indent=False)})",
+        exp.ClusteredColumnConstraint: lambda self,
+        e: f"CLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.CopyGrantsProperty: lambda self, e: "COPY GRANTS",
@@ -112,28 +115,32 @@ class Generator(metaclass=_Generator):
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.MaterializedProperty: lambda self, e: "MATERIALIZED",
         exp.NoPrimaryIndexProperty: lambda self, e: "NO PRIMARY INDEX",
-        exp.NonClusteredColumnConstraint: lambda self, e: f"NONCLUSTERED ({self.expressions(e, 'this', indent=False)})",
+        exp.NonClusteredColumnConstraint: lambda self,
+        e: f"NONCLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.NotForReplicationColumnConstraint: lambda self, e: "NOT FOR REPLICATION",
-        exp.OnCommitProperty: lambda self, e: f"ON COMMIT {'DELETE' if e.args.get('delete') else 'PRESERVE'} ROWS",
+        exp.OnCommitProperty: lambda self,
+        e: f"ON COMMIT {'DELETE' if e.args.get('delete') else 'PRESERVE'} ROWS",
         exp.OnProperty: lambda self, e: f"ON {self.sql(e, 'this')}",
         exp.OnUpdateColumnConstraint: lambda self, e: f"ON UPDATE {self.sql(e, 'this')}",
         exp.OutputModelProperty: lambda self, e: f"OUTPUT{self.sql(e, 'this')}",
         exp.PathColumnConstraint: lambda self, e: f"PATH {self.sql(e, 'this')}",
-        exp.RemoteWithConnectionModelProperty: lambda self, e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
+        exp.RemoteWithConnectionModelProperty: lambda self,
+        e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.SampleProperty: lambda self, e: f"SAMPLE BY {self.sql(e, 'this')}",
         exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SetConfigProperty: lambda self, e: self.sql(e, "this"),
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
         exp.SqlReadWriteProperty: lambda self, e: e.name,
-        exp.SqlSecurityProperty: lambda self, e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
+        exp.SqlSecurityProperty: lambda self,
+        e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.StabilityProperty: lambda self, e: e.name,
-        exp.TemporaryProperty: lambda self, e: f"TEMPORARY",
+        exp.TemporaryProperty: lambda self, e: "TEMPORARY",
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransientProperty: lambda self, e: "TRANSIENT",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
-        exp.UppercaseColumnConstraint: lambda self, e: f"UPPERCASE",
+        exp.UppercaseColumnConstraint: lambda self, e: "UPPERCASE",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.VolatileProperty: lambda self, e: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
@@ -850,7 +857,7 @@ class Generator(metaclass=_Generator):
         desc = expression.args.get("desc")
         if desc is not None:
             return f"PRIMARY KEY{' DESC' if desc else ' ASC'}"
-        return f"PRIMARY KEY"
+        return "PRIMARY KEY"
 
     def uniquecolumnconstraint_sql(self, expression: exp.UniqueColumnConstraint) -> str:
         this = self.sql(expression, "this")
@@ -3004,7 +3011,7 @@ class Generator(metaclass=_Generator):
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
         arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)
         if self.pretty and self.text_width(arg_sqls) > self.max_text_width:
-            return self.indent("\n" + f",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
+            return self.indent("\n" + ",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
         return ", ".join(arg_sqls)
 
     def text_width(self, args: t.Iterable) -> int:

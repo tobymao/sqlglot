@@ -377,7 +377,7 @@ class Dialect(metaclass=_Dialect):
         """
         if (
             isinstance(expression, exp.Identifier)
-            and not self.normalization_strategy is NormalizationStrategy.CASE_SENSITIVE
+            and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
             and (
                 not expression.quoted
                 or self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE
@@ -1020,9 +1020,8 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
     """Remove table refs from columns in when statements."""
     alias = expression.this.args.get("alias")
 
-    normalize = lambda identifier: (
-        self.dialect.normalize_identifier(identifier).name if identifier else None
-    )
+    def normalize(identifier: t.Optional[exp.Identifier]) -> t.Optional[str]:
+        return self.dialect.normalize_identifier(identifier).name if identifier else None
 
     targets = {normalize(expression.this.this)}
 

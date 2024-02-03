@@ -10,7 +10,6 @@ import logging
 import time
 import typing as t
 
-from sqlglot import maybe_parse
 from sqlglot.errors import ExecuteError
 from sqlglot.executor.python import PythonExecutor
 from sqlglot.executor.table import Table, ensure_tables
@@ -23,7 +22,6 @@ logger = logging.getLogger("sqlglot")
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
-    from sqlglot.executor.table import Tables
     from sqlglot.expressions import Expression
     from sqlglot.schema import Schema
 

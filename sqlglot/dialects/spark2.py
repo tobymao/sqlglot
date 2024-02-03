@@ -187,8 +187,10 @@ class Spark2(Hive):
         TRANSFORMS = {
             **Hive.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
-            exp.ArraySum: lambda self, e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
-            exp.AtTimeZone: lambda self, e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
+            exp.ArraySum: lambda self,
+            e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
+            exp.AtTimeZone: lambda self,
+            e: f"FROM_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
             exp.BitwiseLeftShift: rename_func("SHIFTLEFT"),
             exp.BitwiseRightShift: rename_func("SHIFTRIGHT"),
             exp.DateFromParts: rename_func("MAKE_DATE"),
@@ -198,7 +200,8 @@ class Spark2(Hive):
             exp.DayOfYear: rename_func("DAYOFYEAR"),
             exp.FileFormatProperty: lambda self, e: f"USING {e.name.upper()}",
             exp.From: transforms.preprocess([_unalias_pivot]),
-            exp.FromTimeZone: lambda self, e: f"TO_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
+            exp.FromTimeZone: lambda self,
+            e: f"TO_UTC_TIMESTAMP({self.sql(e, 'this')}, {self.sql(e, 'zone')})",
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,
@@ -212,7 +215,8 @@ class Spark2(Hive):
                 e.args.get("position"),
             ),
             exp.StrToDate: _str_to_date,
-            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToTime: lambda self,
+            e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
             ),

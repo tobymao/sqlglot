@@ -474,10 +474,12 @@ class BigQuery(Dialect):
             return table
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
+            ...
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
+            ...
 
         def _parse_json_object(self, agg=False):
             json_object = super()._parse_json_object()
@@ -555,7 +557,8 @@ class BigQuery(Dialect):
             exp.Create: _create_sql,
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
-            exp.DateDiff: lambda self, e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
+            exp.DateDiff: lambda self,
+            e: f"DATE_DIFF({self.sql(e, 'this')}, {self.sql(e, 'expression')}, {self.sql(e.args.get('unit', 'DAY'))})",
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: date_add_interval_sql("DATE", "SUB"),
@@ -598,12 +601,13 @@ class BigQuery(Dialect):
                 ]
             ),
             exp.SHA2: lambda self, e: self.func(
-                f"SHA256" if e.text("length") == "256" else "SHA512", e.this
+                "SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),
             exp.StabilityProperty: lambda self, e: (
-                f"DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
+                "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
             ),
-            exp.StrToDate: lambda self, e: f"PARSE_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
+            exp.StrToDate: lambda self,
+            e: f"PARSE_DATE({self.format_time(e)}, {self.sql(e, 'this')})",
             exp.StrToTime: lambda self, e: self.func(
                 "PARSE_TIMESTAMP", self.format_time(e), e.this, e.args.get("zone")
             ),
@@ -614,7 +618,7 @@ class BigQuery(Dialect):
             exp.TimestampDiff: rename_func("TIMESTAMP_DIFF"),
             exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.Trim: lambda self, e: self.func(f"TRIM", e.this, e.expression),
+            exp.Trim: lambda self, e: self.func("TRIM", e.this, e.expression),
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: _ts_or_ds_diff_sql,
             exp.TsOrDsToTime: rename_func("TIME"),

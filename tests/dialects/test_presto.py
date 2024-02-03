@@ -564,7 +564,7 @@ class TestPresto(Validator):
             )
 
     def test_presto(self):
-        with self.assertLogs(helper_logger) as cm:
+        with self.assertLogs(helper_logger):
             self.validate_all(
                 "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
                 write={

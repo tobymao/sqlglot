@@ -488,8 +488,8 @@ class Expression(metaclass=_Expression):
 
         A AND B AND C -> [A, B, C]
         """
-        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and not type(n) is self.__class__):
-            if not type(node) is self.__class__:
+        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and type(n) is not self.__class__):
+            if type(node) is not self.__class__:
                 yield node.unnest() if unnest and not isinstance(node, Subquery) else node
 
     def __str__(self) -> str:
@@ -548,10 +548,12 @@ class Expression(metaclass=_Expression):
         return new_node
 
     @t.overload
-    def replace(self, expression: E) -> E: ...
+    def replace(self, expression: E) -> E:
+        ...
 
     @t.overload
-    def replace(self, expression: None) -> None: ...
+    def replace(self, expression: None) -> None:
+        ...
 
     def replace(self, expression):
         """
@@ -1672,7 +1674,6 @@ class Index(Expression):
         "amp": False,  # teradata
         "include": False,
         "partition_by": False,  # teradata
-        "where": False,  # postgres partial indexes
     }
 
 
@@ -3999,7 +4000,7 @@ class Dot(Binary):
     def build(self, expressions: t.Sequence[Expression]) -> Dot:
         """Build a Dot object with a sequence of expressions."""
         if len(expressions) < 2:
-            raise ValueError(f"Dot requires >= 2 expressions.")
+            raise ValueError("Dot requires >= 2 expressions.")
 
         return t.cast(Dot, reduce(lambda x, y: Dot(this=x, expression=y), expressions))
 
@@ -5566,7 +5567,8 @@ def maybe_parse(
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts,
-) -> E: ...
+) -> E:
+    ...
 
 
 @t.overload
@@ -5578,7 +5580,8 @@ def maybe_parse(
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts,
-) -> E: ...
+) -> E:
+    ...
 
 
 def maybe_parse(
@@ -5618,7 +5621,7 @@ def maybe_parse(
         return sql_or_expression
 
     if sql_or_expression is None:
-        raise ParseError(f"SQL cannot be None")
+        raise ParseError("SQL cannot be None")
 
     import sqlglot
 
@@ -5630,11 +5633,13 @@ def maybe_parse(
 
 
 @t.overload
-def maybe_copy(instance: None, copy: bool = True) -> None: ...
+def maybe_copy(instance: None, copy: bool = True) -> None:
+    ...
 
 
 @t.overload
-def maybe_copy(instance: E, copy: bool = True) -> E: ...
+def maybe_copy(instance: E, copy: bool = True) -> E:
+    ...
 
 
 def maybe_copy(instance, copy=True):
@@ -6257,13 +6262,15 @@ SAFE_IDENTIFIER_RE: t.Pattern[str] = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 @t.overload
-def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None: ...
+def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None:
+    ...
 
 
 @t.overload
 def to_identifier(
     name: str | Identifier, quoted: t.Optional[bool] = None, copy: bool = True
-) -> Identifier: ...
+) -> Identifier:
+    ...
 
 
 def to_identifier(name, quoted=None, copy=True):
@@ -6335,11 +6342,13 @@ def to_interval(interval: str | Literal) -> Interval:
 
 
 @t.overload
-def to_table(sql_path: str | Table, **kwargs) -> Table: ...
+def to_table(sql_path: str | Table, **kwargs) -> Table:
+    ...
 
 
 @t.overload
-def to_table(sql_path: None, **kwargs) -> None: ...
+def to_table(sql_path: None, **kwargs) -> None:
+    ...
 
 
 def to_table(

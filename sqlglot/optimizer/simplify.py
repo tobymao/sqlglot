@@ -490,7 +490,7 @@ def simplify_equality(expression: exp.Expression) -> exp.Expression:
     if isinstance(expression, COMPARISONS):
         l, r = expression.left, expression.right
 
-        if not l.__class__ in INVERSE_OPS:
+        if l.__class__ not in INVERSE_OPS:
             return expression
 
         if r.is_number:
@@ -714,8 +714,7 @@ def simplify_concat(expression):
     """Reduces all groups that contain string literals by concatenating them."""
     if not isinstance(expression, CONCATS) or (
         # We can't reduce a CONCAT_WS call if we don't statically know the separator
-        isinstance(expression, exp.ConcatWs)
-        and not expression.expressions[0].is_string
+        isinstance(expression, exp.ConcatWs) and not expression.expressions[0].is_string
     ):
         return expression
 

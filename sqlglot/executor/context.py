@@ -44,9 +44,9 @@ class Context:
 
             for other in self.tables.values():
                 if self._table.columns != other.columns:
-                    raise Exception(f"Columns are different.")
+                    raise Exception("Columns are different.")
                 if len(self._table.rows) != len(other.rows):
-                    raise Exception(f"Rows are different.")
+                    raise Exception("Rows are different.")
 
         return self._table
 

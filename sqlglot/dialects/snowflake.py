@@ -241,7 +241,6 @@ DATE_PART_MAPPING = {
     "NSECOND": "NANOSECOND",
     "NSECONDS": "NANOSECOND",
     "NANOSECS": "NANOSECOND",
-    "NSECONDS": "NANOSECOND",
     "EPOCH": "EPOCH_SECOND",
     "EPOCH_SECONDS": "EPOCH_SECOND",
     "EPOCH_MILLISECONDS": "EPOCH_MILLISECOND",
@@ -745,7 +744,8 @@ class Snowflake(Dialect):
             exp.StrPosition: lambda self, e: self.func(
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),
-            exp.StrToTime: lambda self, e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToTime: lambda self,
+            e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.Struct: lambda self, e: self.func(
                 "OBJECT_CONSTRUCT",
                 *(arg for expression in e.expressions for arg in expression.flatten()),

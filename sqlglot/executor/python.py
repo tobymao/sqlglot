@@ -444,6 +444,9 @@ class Python(Dialect):
             exp.Is: lambda self, e: (
                 self.binary(e, "==") if isinstance(e.this, exp.Literal) else self.binary(e, "is")
             ),
+            exp.JSONPath: lambda self, e: f"[{','.join(self.sql(p) for p in e.expressions[1:])}]",
+            exp.JSONPathKey: lambda self, e: f"'{self.sql(e.this)}'",
+            exp.JSONPathSubscript: lambda self, e: f"'{e.this}'",
             exp.Lambda: _lambda_sql,
             exp.Not: lambda self, e: f"not {self.sql(e.this)}",
             exp.Null: lambda *_: "None",

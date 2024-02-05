@@ -38,7 +38,7 @@ class JSONPathTokenizer(Tokenizer):
 
 
 def parse(path: str) -> t.List[exp.JSONPathPart]:
-    """Takes in a JSONPath string and converts into a list of nodes."""
+    """Takes in a JSONPath string and converts it into a list of nodes."""
     tokens = JSONPathTokenizer().tokenize(path)
     size = len(tokens)
 
@@ -147,14 +147,19 @@ def parse(path: str) -> t.List[exp.JSONPathPart]:
     while _curr():
         if _match(TokenType.DOLLAR):
             nodes.append(exp.JSONPathRoot())
-        elif _match(TokenType.DOT):
+        elif _match(TokenType.DOT) or _match(TokenType.COLON):
             recursive = _prev().text == ".."
-            value = _match(TokenType.VAR) or _match(TokenType.STAR)
-            expr_type = exp.JSONPathRecursive if recursive else exp.JSONPathChild
-            nodes.append(expr_type(this=value.text if value else None))
+            value = _match(TokenType.VAR) or _match(TokenType.IDENTIFIER) or _match(TokenType.STAR)
+
+            if recursive:
+                nodes.append(exp.JSONPathRecursive(this=value.text if value else None))
+            elif value:
+                nodes.append(exp.JSONPathKey(this=value.text))
+            else:
+                raise ParseError(_error("Expected key name after DOT"))
         elif _match(TokenType.L_BRACKET):
             nodes.append(_parse_bracket())
-        elif _match(TokenType.VAR):
+        elif _match(TokenType.VAR) or _match(TokenType.IDENTIFIER):
             nodes.append(exp.JSONPathKey(this=_prev().text))
         elif _match(TokenType.STAR):
             nodes.append(exp.JSONPathWildcard())
@@ -169,12 +174,18 @@ def parse(path: str) -> t.List[exp.JSONPathPart]:
     return nodes
 
 
-MAPPING = {
-    exp.JSONPathChild: lambda n, **kwargs: f".{n.this}" if n.this is not None else "",
+def _generate_json_path_key(node: exp.JSONPathKey, **kwargs) -> str:
+    this = node.this
+    if this == "*" or exp.SAFE_IDENTIFIER_RE.match(this):
+        return f".{this}"
+
+    this = generate(this, **kwargs)
+    return f"[{this}]" if kwargs.get("bracketed_key_supported") else f".{this}"
+
+
+MAPPING: t.Dict[t.Type[exp.JSONPathPart], t.Callable[..., str]] = {
     exp.JSONPathFilter: lambda n, **kwargs: f"?{n.this}",
-    exp.JSONPathKey: lambda n, **kwargs: (
-        f".{n.this}" if exp.SAFE_IDENTIFIER_RE.match(n.this) else f"[{generate(n.this, **kwargs)}]"
-    ),
+    exp.JSONPathKey: _generate_json_path_key,
     exp.JSONPathRecursive: lambda n, **kwargs: f"..{n.this}" if n.this is not None else "..",
     exp.JSONPathRoot: lambda n, **kwargs: "$",
     exp.JSONPathScript: lambda n, **kwargs: f"({n.this}",
@@ -195,7 +206,18 @@ def generate(
     nodes: exp.JSONPathPart | t.List[exp.JSONPathPart],
     mapping: t.Optional[t.Dict[t.Type[exp.JSONPathPart], t.Callable[..., str]]] = None,
     unsupported_callback: t.Optional[t.Callable[[str], None]] = None,
+    bracketed_key_supported: bool = True,
 ) -> str:
+    """
+    Generates a string from a JSON Path AST.
+
+    Args:
+        nodes: One or more expressions that represent the path of interest.
+        mapping: Mapping that specifies how each expression will be generated.
+        unsupported_callback: Callback that will be called if an expression is not supported.
+        bracketed_key_supported: Whether or not the `["a b"]` lookup syntax is supported. If
+            this is `False`, then the brackets will simply be omitted.
+    """
     unsupported_nodes: t.Set[str] = set()
     mapping = MAPPING if mapping is None else mapping
 
@@ -207,7 +229,12 @@ def generate(
 
             if generator:
                 path.append(
-                    generator(node, mapping=mapping, unsupported_callback=unsupported_callback)
+                    generator(
+                        node,
+                        mapping=mapping,
+                        unsupported_callback=unsupported_callback,
+                        bracketed_key_supported=bracketed_key_supported,
+                    )
                 )
             else:
                 unsupported_nodes.add(node_class.__name__)

@@ -1096,6 +1096,22 @@ class TestDialect(Validator):
         )
 
     def test_json(self):
+        # TODO: Hive-like dialects and Bigquery do ['key'], i.e. escape using single quotes
+        self.validate_all(
+            """JSON_EXTRACT(x, '$["a b"]')""",
+            write={
+                "": """JSON_EXTRACT(x, '$["a b"]')""",
+                "duckdb": """x -> '$."a b"'""",
+                "mysql": """JSON_EXTRACT(x, '$."a b"')""",
+                "postgres": "JSON_EXTRACT_PATH(x, 'a b')",
+                "presto": """JSON_EXTRACT(x, '$["a b"]')""",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'a b')",
+                "snowflake": """GET_PATH(x, '["a b"]')""",
+                "sqlite": """x -> '$."a b"'""",
+                "trino": """JSON_EXTRACT(x, '$["a b"]')""",
+                "tsql": """ISNULL(JSON_QUERY(x, '$."a b"'), JSON_VALUE(x, '$."a b"'))""",
+            },
+        )
         self.validate_all(
             "JSON_EXTRACT(x, '$.y')",
             read={

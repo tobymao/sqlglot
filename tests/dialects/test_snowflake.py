@@ -118,7 +118,7 @@ WHERE
         )
         self.validate_identity(
             'SELECT v:"fruit" FROM vartab',
-            """SELECT GET_PATH(v, '"fruit"') FROM vartab""",
+            """SELECT GET_PATH(v, 'fruit') FROM vartab""",
         )
         self.validate_identity(
             "v:attr[0]:name",
@@ -271,7 +271,7 @@ WHERE
                 "mysql": """SELECT JSON_EXTRACT('{"fruit":"banana"}', '$.fruit')""",
                 "presto": """SELECT JSON_EXTRACT(JSON_PARSE('{"fruit":"banana"}'), '$.fruit')""",
                 "snowflake": """SELECT GET_PATH(PARSE_JSON('{"fruit":"banana"}'), 'fruit')""",
-                "tsql": """SELECT JSON_VALUE('{"fruit":"banana"}', '$.fruit')""",
+                "tsql": """SELECT ISNULL(JSON_QUERY('{"fruit":"banana"}', '$.fruit'), JSON_VALUE('{"fruit":"banana"}', '$.fruit'))""",
             },
         )
         self.validate_all(
@@ -550,7 +550,7 @@ WHERE
             write={
                 "duckdb": """SELECT JSON('{"a": {"b c": "foo"}}') -> '$.a' -> '$."b c"'""",
                 "mysql": """SELECT JSON_EXTRACT(JSON_EXTRACT('{"a": {"b c": "foo"}}', '$.a'), '$."b c"')""",
-                "snowflake": """SELECT GET_PATH(GET_PATH(PARSE_JSON('{"a": {"b c": "foo"}}'), 'a'), '"b c"')""",
+                "snowflake": """SELECT GET_PATH(GET_PATH(PARSE_JSON('{"a": {"b c": "foo"}}'), 'a'), '["b c"]')""",
             },
         )
         self.validate_all(

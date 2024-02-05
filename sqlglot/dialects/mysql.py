@@ -633,6 +633,7 @@ class MySQL(Dialect):
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = True
+        JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         JSON_KEY_VALUE_PAIR_SEP = ","
 
         TRANSFORMS = {

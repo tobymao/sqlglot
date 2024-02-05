@@ -290,7 +290,9 @@ def _parse_colon_get_path(
             path = exp.Literal.string(path.sql(dialect="snowflake"))
 
         # The extraction operator : is left-associative
-        this = self.expression(exp.GetPath, this=this, expression=path)
+        this = self.expression(
+            exp.JSONExtract, this=this, expression=self.dialect.to_json_path(path)
+        )
 
         if target_type:
             this = exp.cast(this, target_type)
@@ -714,7 +716,7 @@ class Snowflake(Dialect):
             ),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
-            exp.JSONExtract: lambda self, e: f"{self.sql(e, 'this')}[{self.sql(e, 'expression')}]",
+            exp.JSONExtract: lambda self, e: self.func("GET_PATH", e.this, e.expression),
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
@@ -772,7 +774,6 @@ class Snowflake(Dialect):
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
-            exp.JSONPathChild,
             exp.JSONPathKey,
             exp.JSONPathRoot,
             exp.JSONPathSubscript,

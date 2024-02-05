@@ -4882,13 +4882,14 @@ class IsInf(Func):
 class JSONPath(Expression):
     arg_types = {"expressions": True}
 
+    @property
+    def output_name(self) -> str:
+        last_segment = self.expressions[-1].this
+        return last_segment if isinstance(last_segment, str) else ""
+
 
 class JSONPathPart(Expression):
     arg_types = {}
-
-
-class JSONPathChild(JSONPathPart):
-    arg_types = {"this": False}
 
 
 class JSONPathFilter(JSONPathPart):
@@ -5019,10 +5020,18 @@ class JSONExtract(Binary, Func):
     arg_types = {"this": True, "expression": True, "expressions": False}
     _sql_names = ["JSON_EXTRACT"]
 
+    @property
+    def output_name(self) -> str:
+        return self.expression.output_name if not self.expressions else ""
+
 
 class JSONExtractScalar(Binary, Func):
     arg_types = {"this": True, "expression": True, "null_if_invalid": False}
     _sql_names = ["JSON_EXTRACT_SCALAR"]
+
+    @property
+    def output_name(self) -> str:
+        return self.expression.output_name
 
 
 class JSONBExtract(Binary, Func):

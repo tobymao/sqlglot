@@ -452,8 +452,8 @@ class Dialect(metaclass=_Dialect):
 
             try:
                 return exp.JSONPath(expressions=parse_json_path(path_text))
-            except ParseError:
-                logger.warning(f"Invalid JSON path syntax: {path_text}")
+            except ParseError as e:
+                logger.warning(f"Invalid JSON path syntax. {str(e)}")
 
         return path
 
@@ -1055,7 +1055,7 @@ def parse_json_extract_path(
                 if is_int(text):
                     segments.append(exp.JSONPathSubscript(this=int(text)))
                 else:
-                    segments.append(exp.JSONPathChild(this=text))
+                    segments.append(exp.JSONPathKey(this=text))
             elif supports_null_if_invalid:
                 null_if_invalid = arg
 

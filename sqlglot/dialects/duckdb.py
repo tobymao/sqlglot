@@ -334,6 +334,7 @@ class DuckDB(Dialect):
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_KEY_VALUE_PAIR_SEP = ","
         IGNORE_NULLS_IN_FUNC = True
+        JSON_PATH_BRACKETED_KEY_SUPPORTED = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -443,7 +444,6 @@ class DuckDB(Dialect):
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
-            exp.JSONPathChild,
             exp.JSONPathKey,
             exp.JSONPathRoot,
             exp.JSONPathSubscript,

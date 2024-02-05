@@ -90,9 +90,9 @@ class SQLite(Dialect):
         TABLE_HINTS = False
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
+        JSON_PATH_BRACKETED_KEY_SUPPORTED = False
 
         SUPPORTED_JSON_PATH_PARTS = {
-            exp.JSONPathChild,
             exp.JSONPathKey,
             exp.JSONPathRoot,
             exp.JSONPathSubscript,

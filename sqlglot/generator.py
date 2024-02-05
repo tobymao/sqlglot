@@ -306,6 +306,9 @@ class Generator(metaclass=_Generator):
     # Whether or not the JSON extraction operators expect a value of type JSON
     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
 
+    # Whether or not bracketed keys like ["foo"] are supported in JSON paths
+    JSON_PATH_BRACKETED_KEY_SUPPORTED = True
+
     # The JSONPathPart expressions supported by this dialect
     SUPPORTED_JSON_PATH_PARTS: t.Set[t.Type[exp.JSONPathPart]] = set(JSON_PATH_MAPPING)
 
@@ -2427,6 +2430,7 @@ class Generator(metaclass=_Generator):
             expression.expressions,
             mapping=self._JSON_PATH_MAPPING,
             unsupported_callback=self.unsupported,
+            bracketed_key_supported=self.JSON_PATH_BRACKETED_KEY_SUPPORTED,
         )
         return f"{self.dialect.QUOTE_START}{path.lstrip('.')}{self.dialect.QUOTE_END}"
 

@@ -699,6 +699,7 @@ class TSQL(Dialect):
         SUPPORTS_SINGLE_ARG_CONCAT = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         SUPPORTS_SELECT_INTO = True
+        JSON_PATH_BRACKETED_KEY_SUPPORTED = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
@@ -711,7 +712,6 @@ class TSQL(Dialect):
         }
 
         SUPPORTED_JSON_PATH_PARTS = {
-            exp.JSONPathChild,
             exp.JSONPathKey,
             exp.JSONPathRoot,
             exp.JSONPathSubscript,

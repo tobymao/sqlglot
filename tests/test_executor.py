@@ -777,13 +777,23 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(result.rows, expected)
 
     def test_dict_values(self):
-        tables = {
-            "foo": [{"raw": {"name": "Hello, World"}}],
-        }
-        result = execute("SELECT raw:name AS name FROM foo", read="snowflake", tables=tables)
+        tables = {"foo": [{"raw": {"name": "Hello, World", "a": [{"b": 1}]}}]}
 
+        result = execute("SELECT raw:name AS name FROM foo", read="snowflake", tables=tables)
         self.assertEqual(result.columns, ("NAME",))
         self.assertEqual(result.rows, [("Hello, World",)])
+
+        result = execute("SELECT raw:a[0].b AS b FROM foo", read="snowflake", tables=tables)
+        self.assertEqual(result.columns, ("B",))
+        self.assertEqual(result.rows, [(1,)])
+
+        result = execute("SELECT raw:a[1].b AS b FROM foo", read="snowflake", tables=tables)
+        self.assertEqual(result.columns, ("B",))
+        self.assertEqual(result.rows, [(None,)])
+
+        result = execute("SELECT raw:a[0].c AS c FROM foo", read="snowflake", tables=tables)
+        self.assertEqual(result.columns, ("C",))
+        self.assertEqual(result.rows, [(None,)])
 
         tables = {
             '"ITEM"': [

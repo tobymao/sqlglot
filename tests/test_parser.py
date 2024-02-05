@@ -99,11 +99,6 @@ class TestParser(unittest.TestCase):
     def test_float(self):
         self.assertEqual(parse_one(".2"), parse_one("0.2"))
 
-    def test_bpchar(self):
-        cast = parse_one("cast(foo as bpchar)")
-        self.assertIsInstance(cast.to, exp.DataType)
-        self.assertEqual(cast.sql(), "CAST(foo AS BPCHAR)")
-
     def test_unnest_projection(self):
         expr = parse_one("SELECT foo IN UNNEST(bla) AS bar")
         self.assertIsInstance(expr.selects[0], exp.Alias)

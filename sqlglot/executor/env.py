@@ -6,7 +6,7 @@ from functools import wraps
 
 from sqlglot import exp
 from sqlglot.generator import Generator
-from sqlglot.helper import PYTHON_VERSION
+from sqlglot.helper import PYTHON_VERSION, is_int, seq_get
 
 
 class reverse_key:
@@ -143,6 +143,22 @@ def arrayjoin(this, expression, null=None):
     return expression.join(x for x in (x if x is not None else null for x in this) if x is not None)
 
 
+@null_if_any("this", "expression")
+def jsonextract(this, expression):
+    for path_segment in expression:
+        if isinstance(this, dict):
+            this = this.get(path_segment)
+        elif isinstance(this, list) and is_int(path_segment):
+            this = seq_get(this, int(path_segment))
+        else:
+            raise NotImplementedError(f"Unable to extract value for {this} at {path_segment}.")
+
+        if this is None:
+            break
+
+    return this
+
+
 ENV = {
     "exp": exp,
     # aggs
@@ -175,12 +191,12 @@ ENV = {
     "DOT": null_if_any(lambda e, this: e[this]),
     "EQ": null_if_any(lambda this, e: this == e),
     "EXTRACT": null_if_any(lambda this, e: getattr(e, this)),
-    "GETPATH": null_if_any(lambda this, e: this.get(e)),
     "GT": null_if_any(lambda this, e: this > e),
     "GTE": null_if_any(lambda this, e: this >= e),
     "IF": lambda predicate, true, false: true if predicate else false,
     "INTDIV": null_if_any(lambda e, this: e // this),
     "INTERVAL": interval,
+    "JSONEXTRACT": jsonextract,
     "LEFT": null_if_any(lambda this, e: this[:e]),
     "LIKE": null_if_any(
         lambda this, e: bool(re.match(e.replace("_", ".").replace("%", ".*"), this))

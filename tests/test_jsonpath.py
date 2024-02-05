@@ -15,12 +15,12 @@ class TestJsonpath(unittest.TestCase):
             jsonpath.parse("$.*.a[0]['x'][*, 'y', 1].z[?(@.a == 'b'), 1:][1:5][1,?@.a][(@.x)]"),
             [
                 exp.JSONPathRoot(),
-                exp.JSONPathChild(this="*"),
-                exp.JSONPathChild(this="a"),
+                exp.JSONPathKey(this="*"),
+                exp.JSONPathKey(this="a"),
                 exp.JSONPathSubscript(this=0),
                 exp.JSONPathKey(this="x"),
                 exp.JSONPathUnion(expressions=[exp.JSONPathWildcard(), "y", 1]),
-                exp.JSONPathChild(this="z"),
+                exp.JSONPathKey(this="z"),
                 exp.JSONPathSelector(this=exp.JSONPathFilter(this="(@.a == 'b'), 1:")),
                 exp.JSONPathSubscript(this=exp.JSONPathSlice(start=1, end=5, step=None)),
                 exp.JSONPathUnion(expressions=[1, exp.JSONPathFilter(this="@.a")]),
@@ -43,6 +43,7 @@ class TestJsonpath(unittest.TestCase):
 
         # sqlglot json path generator rewrites to a normal form
         overrides = {
+            "$.☺": '$["☺"]',
             """$['a',1]""": """$["a",1]""",
             """$[*,'a']""": """$[*,"a"]""",
             """$..['a','d']""": """$..["a","d"]""",

@@ -117,6 +117,7 @@ class Parser(metaclass=_Parser):
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "JSON_EXTRACT": parse_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_SCALAR": parse_extract_json_with_path(exp.JSONExtractScalar),
+        "JSON_EXTRACT_PATH_TEXT": parse_extract_json_with_path(exp.JSONExtractScalar),
         "LIKE": parse_like,
         "LOG": parse_logarithm,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(

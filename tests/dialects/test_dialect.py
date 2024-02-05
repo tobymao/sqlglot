@@ -1096,6 +1096,22 @@ class TestDialect(Validator):
         )
 
     def test_json(self):
+        # TODO: Hive-like dialects and Bigquery do ['key'], i.e. escape using single quotes
+        self.validate_all(
+            """JSON_EXTRACT(x, '$["a b"]')""",
+            write={
+                "": """JSON_EXTRACT(x, '$["a b"]')""",
+                "duckdb": """x -> '$."a b"'""",
+                "mysql": """JSON_EXTRACT(x, '$."a b"')""",
+                "postgres": "JSON_EXTRACT_PATH(x, 'a b')",
+                "presto": """JSON_EXTRACT(x, '$["a b"]')""",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'a b')",
+                "snowflake": """GET_PATH(x, '["a b"]')""",
+                "sqlite": """x -> '$."a b"'""",
+                "trino": """JSON_EXTRACT(x, '$["a b"]')""",
+                "tsql": """ISNULL(JSON_QUERY(x, '$."a b"'), JSON_VALUE(x, '$."a b"'))""",
+            },
+        )
         self.validate_all(
             "JSON_EXTRACT(x, '$.y')",
             read={
@@ -1105,6 +1121,7 @@ class TestDialect(Validator):
                 "mysql": "JSON_EXTRACT(x, '$.y')",
                 "postgres": "x->'y'",
                 "presto": "JSON_EXTRACT(x, '$.y')",
+                "snowflake": "GET_PATH(x, 'y')",
                 "sqlite": "x -> '$.y'",
                 "starrocks": "x -> '$.y'",
             },
@@ -1116,6 +1133,7 @@ class TestDialect(Validator):
                 "oracle": "JSON_EXTRACT(x, '$.y')",
                 "postgres": "JSON_EXTRACT_PATH(x, 'y')",
                 "presto": "JSON_EXTRACT(x, '$.y')",
+                "snowflake": "GET_PATH(x, 'y')",
                 "spark": "GET_JSON_OBJECT(x, '$.y')",
                 "sqlite": "x -> '$.y'",
                 "starrocks": "x -> '$.y'",
@@ -1131,6 +1149,7 @@ class TestDialect(Validator):
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "spark": "GET_JSON_OBJECT(x, '$.y')",
+                "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "sqlite": "x ->> '$.y'",
             },
             write={
@@ -1139,6 +1158,7 @@ class TestDialect(Validator):
                 "postgres": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
+                "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "spark": "GET_JSON_OBJECT(x, '$.y')",
                 "sqlite": "x ->> '$.y'",
                 "tsql": "ISNULL(JSON_QUERY(x, '$.y'), JSON_VALUE(x, '$.y'))",
@@ -1152,6 +1172,7 @@ class TestDialect(Validator):
                 "doris": "x -> '$.y[0].z'",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
                 "presto": "JSON_EXTRACT(x, '$.y[0].z')",
+                "snowflake": "GET_PATH(x, 'y[0].z')",
                 "sqlite": "x -> '$.y[0].z'",
                 "starrocks": "x -> '$.y[0].z'",
             },
@@ -1164,6 +1185,7 @@ class TestDialect(Validator):
                 "postgres": "JSON_EXTRACT_PATH(x, 'y', '0', 'z')",
                 "presto": "JSON_EXTRACT(x, '$.y[0].z')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y', '0', 'z')",
+                "snowflake": "GET_PATH(x, 'y[0].z')",
                 "spark": "GET_JSON_OBJECT(x, '$.y[0].z')",
                 "sqlite": "x -> '$.y[0].z'",
                 "starrocks": "x -> '$.y[0].z'",
@@ -1176,6 +1198,7 @@ class TestDialect(Validator):
                 "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
                 "duckdb": "x ->> '$.y[0].z'",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
+                "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y[0].z')",
                 "spark": "GET_JSON_OBJECT(x, '$.y[0].z')",
                 "sqlite": "x ->> '$.y[0].z'",
             },
@@ -1185,6 +1208,7 @@ class TestDialect(Validator):
                 "postgres": "JSON_EXTRACT_PATH_TEXT(x, 'y', '0', 'z')",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y', '0', 'z')",
+                "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y[0].z')",
                 "spark": "GET_JSON_OBJECT(x, '$.y[0].z')",
                 "sqlite": "x ->> '$.y[0].z'",
                 "tsql": "ISNULL(JSON_QUERY(x, '$.y[0].z'), JSON_VALUE(x, '$.y[0].z'))",
@@ -1198,6 +1222,7 @@ class TestDialect(Validator):
                 "postgres": UnsupportedError,
                 "presto": "JSON_EXTRACT(x, '$.y[*]')",
                 "redshift": UnsupportedError,
+                "snowflake": UnsupportedError,
                 "spark": "GET_JSON_OBJECT(x, '$.y[*]')",
                 "sqlite": UnsupportedError,
                 "tsql": UnsupportedError,

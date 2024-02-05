@@ -18,7 +18,6 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_safe_divide_sql,
     no_timestamp_sql,
-    path_to_jsonpath,
     regexp_extract_sql,
     rename_func,
     right_to_substring_sql,
@@ -367,7 +366,6 @@ class Presto(Dialect):
             exp.FirstValue: _first_last_sql,
             exp.FromTimeZone: lambda self,
             e: f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'",
-            exp.GetPath: path_to_jsonpath(),
             exp.Group: transforms.preprocess([transforms.unalias_group]),
             exp.GroupConcat: lambda self, e: self.func(
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")

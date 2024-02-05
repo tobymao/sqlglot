@@ -358,6 +358,7 @@ class MySQL(Dialect):
             "CREATE TRIGGER": _show_parser("CREATE TRIGGER", target=True),
             "CREATE VIEW": _show_parser("CREATE VIEW", target=True),
             "DATABASES": _show_parser("DATABASES"),
+            "SCHEMAS": _show_parser("DATABASES"),
             "ENGINE": _show_parser("ENGINE", target=True),
             "STORAGE ENGINES": _show_parser("ENGINES"),
             "ENGINES": _show_parser("ENGINES"),

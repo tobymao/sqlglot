@@ -473,6 +473,8 @@ class Snowflake(Dialect):
             "TERSE SCHEMAS": _show_parser("SCHEMAS"),
             "OBJECTS": _show_parser("OBJECTS"),
             "TERSE OBJECTS": _show_parser("OBJECTS"),
+            "TABLES": _show_parser("TABLES"),
+            "TERSE TABLES": _show_parser("TABLES"),
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "COLUMNS": _show_parser("COLUMNS"),
@@ -586,6 +588,8 @@ class Snowflake(Dialect):
             # which is syntactically valid but has no effect on the output
             terse = self._tokens[self._index - 2].text.upper() == "TERSE"
 
+            history = self._match_text_seq("HISTORY")
+
             like = self._parse_string() if self._match(TokenType.LIKE) else None
 
             if self._match(TokenType.IN):
@@ -596,7 +600,7 @@ class Snowflake(Dialect):
                     if self._curr:
                         scope = self._parse_table_parts()
                 elif self._curr:
-                    scope_kind = "SCHEMA" if this == "OBJECTS" else "TABLE"
+                    scope_kind = "SCHEMA" if this in ("OBJECTS", "TABLES") else "TABLE"
                     scope = self._parse_table_parts()
 
             return self.expression(
@@ -604,6 +608,7 @@ class Snowflake(Dialect):
                 **{
                     "terse": terse,
                     "this": this,
+                    "history": history,
                     "like": like,
                     "scope": scope,
                     "scope_kind": scope_kind,
@@ -852,6 +857,7 @@ class Snowflake(Dialect):
 
         def show_sql(self, expression: exp.Show) -> str:
             terse = "TERSE " if expression.args.get("terse") else ""
+            history = " HISTORY" if expression.args.get("history") else ""
             like = self.sql(expression, "like")
             like = f" LIKE {like}" if like else ""
 
@@ -872,9 +878,7 @@ class Snowflake(Dialect):
             if from_:
                 from_ = f" FROM {from_}"
 
-            return (
-                f"SHOW {terse}{expression.name}{like}{scope_kind}{scope}{starts_with}{limit}{from_}"
-            )
+            return f"SHOW {terse}{expression.name}{history}{like}{scope_kind}{scope}{starts_with}{limit}{from_}"
 
         def regexpextract_sql(self, expression: exp.RegexpExtract) -> str:
             # Other dialects don't support all of the following parameters, so we need to

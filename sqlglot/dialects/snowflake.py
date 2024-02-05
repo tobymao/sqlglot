@@ -600,7 +600,7 @@ class Snowflake(Dialect):
                     if self._curr:
                         scope = self._parse_table_parts()
                 elif self._curr:
-                    scope_kind = "SCHEMA" if this in ["OBJECTS", "TABLES"] else "TABLE"
+                    scope_kind = "SCHEMA" if this in ("OBJECTS", "TABLES") else "TABLE"
                     scope = self._parse_table_parts()
 
             return self.expression(

@@ -191,6 +191,7 @@ class Parser(metaclass=_Parser):
         TokenType.NCHAR,
         TokenType.VARCHAR,
         TokenType.NVARCHAR,
+        TokenType.BPCHAR,
         TokenType.TEXT,
         TokenType.MEDIUMTEXT,
         TokenType.LONGTEXT,
@@ -311,6 +312,7 @@ class Parser(metaclass=_Parser):
         TokenType.ASC,
         TokenType.AUTO_INCREMENT,
         TokenType.BEGIN,
+        TokenType.BPCHAR,
         TokenType.CACHE,
         TokenType.CASE,
         TokenType.COLLATE,
@@ -3666,7 +3668,6 @@ class Parser(metaclass=_Parser):
             identifier = allow_identifiers and self._parse_id_var(
                 any_token=False, tokens=(TokenType.VAR,)
             )
-
             if identifier:
                 tokens = self.dialect.tokenize(identifier.name)
 

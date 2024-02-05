@@ -7,7 +7,6 @@ from collections import defaultdict
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, ParseError, concat_messages, merge_errors
 from sqlglot.helper import apply_index_offset, ensure_list, seq_get
-from sqlglot.jsonpath import parse as _parse_json_path
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
@@ -61,22 +60,11 @@ def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
 
 
-def parse_json_path(path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
-    if isinstance(path, exp.Literal):
-        path_text = path.name
-        if path.is_number:
-            path_text = f"[{path_text}]"
-        try:
-            return exp.JSONPath(expressions=_parse_json_path(path_text))
-        except ParseError:
-            logger.warning(f"Invalid JSON path syntax: {path_text}")
-
-    return path
-
-
-def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
-    def _parser(args: t.List) -> E:
-        expression = expr_type(this=seq_get(args, 0), expression=parse_json_path(seq_get(args, 1)))
+def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+    def _parser(args: t.List, dialect: Dialect) -> E:
+        expression = expr_type(
+            this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
+        )
         if len(args) > 2 and expr_type is exp.JSONExtract:
             expression.set("expressions", args[2:])
 
@@ -558,12 +546,12 @@ class Parser(metaclass=_Parser):
         TokenType.ARROW: lambda self, this, path: self.expression(
             exp.JSONExtract,
             this=this,
-            expression=parse_json_path(path),
+            expression=self.dialect.to_json_path(path),
         ),
         TokenType.DARROW: lambda self, this, path: self.expression(
             exp.JSONExtractScalar,
             this=this,
-            expression=parse_json_path(path),
+            expression=self.dialect.to_json_path(path),
         ),
         TokenType.HASH_ARROW: lambda self, this, path: self.expression(
             exp.JSONBExtract,
@@ -2526,11 +2514,11 @@ class Parser(metaclass=_Parser):
         elif self._match_text_seq("ALL", "ROWS", "PER", "MATCH"):
             text = "ALL ROWS PER MATCH"
             if self._match_text_seq("SHOW", "EMPTY", "MATCHES"):
-                text += f" SHOW EMPTY MATCHES"
+                text += " SHOW EMPTY MATCHES"
             elif self._match_text_seq("OMIT", "EMPTY", "MATCHES"):
-                text += f" OMIT EMPTY MATCHES"
+                text += " OMIT EMPTY MATCHES"
             elif self._match_text_seq("WITH", "UNMATCHED", "ROWS"):
-                text += f" WITH UNMATCHED ROWS"
+                text += " WITH UNMATCHED ROWS"
             rows = exp.var(text)
         else:
             rows = None
@@ -2538,9 +2526,9 @@ class Parser(metaclass=_Parser):
         if self._match_text_seq("AFTER", "MATCH", "SKIP"):
             text = "AFTER MATCH SKIP"
             if self._match_text_seq("PAST", "LAST", "ROW"):
-                text += f" PAST LAST ROW"
+                text += " PAST LAST ROW"
             elif self._match_text_seq("TO", "NEXT", "ROW"):
-                text += f" TO NEXT ROW"
+                text += " TO NEXT ROW"
             elif self._match_text_seq("TO", "FIRST"):
                 text += f" TO FIRST {self._advance_any().text}"  # type: ignore
             elif self._match_text_seq("TO", "LAST"):
@@ -4402,7 +4390,10 @@ class Parser(metaclass=_Parser):
             options[kind] = action
 
         return self.expression(
-            exp.ForeignKey, expressions=expressions, reference=reference, **options  # type: ignore
+            exp.ForeignKey,
+            expressions=expressions,
+            reference=reference,
+            **options,  # type: ignore
         )
 
     def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
@@ -4719,10 +4710,12 @@ class Parser(metaclass=_Parser):
         return None
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
+        ...
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
+        ...
 
     def _parse_json_object(self, agg=False):
         star = self._parse_star()
@@ -5766,12 +5759,14 @@ class Parser(metaclass=_Parser):
         return True
 
     @t.overload
-    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression: ...
+    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression:
+        ...
 
     @t.overload
     def _replace_columns_with_dots(
         self, this: t.Optional[exp.Expression]
-    ) -> t.Optional[exp.Expression]: ...
+    ) -> t.Optional[exp.Expression]:
+        ...
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

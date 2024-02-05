@@ -886,7 +886,7 @@ WHERE
             "END",
         ]
 
-        with self.assertLogs(parser_logger) as cm:
+        with self.assertLogs(parser_logger):
             for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
                 self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
@@ -907,7 +907,7 @@ WHERE
             "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
         ]
 
-        with self.assertLogs(parser_logger) as cm:
+        with self.assertLogs(parser_logger):
             for expr, expected_sql in zip(parse(sql, read="tsql"), expected_sqls):
                 self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
@@ -1458,7 +1458,7 @@ WHERE
                 "mysql": "LAST_DAY(DATE(CURRENT_TIMESTAMP()))",
                 "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE)) + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",
                 "presto": "LAST_DAY_OF_MONTH(CAST(CAST(CURRENT_TIMESTAMP AS TIMESTAMP) AS DATE))",
-                "redshift": "LAST_DAY(CAST(SYSDATE AS DATE))",
+                "redshift": "LAST_DAY(CAST(GETDATE() AS DATE))",
                 "snowflake": "LAST_DAY(CAST(CURRENT_TIMESTAMP() AS DATE))",
                 "spark": "LAST_DAY(TO_DATE(CURRENT_TIMESTAMP()))",
                 "tsql": "EOMONTH(CAST(GETDATE() AS DATE))",
@@ -1473,7 +1473,7 @@ WHERE
                 "mysql": "LAST_DAY(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -1 MONTH))",
                 "postgres": "CAST(DATE_TRUNC('MONTH', CAST(CURRENT_TIMESTAMP AS DATE) + INTERVAL '-1 MONTH') + INTERVAL '1 MONTH' - INTERVAL '1 DAY' AS DATE)",
                 "presto": "LAST_DAY_OF_MONTH(DATE_ADD('MONTH', CAST(-1 AS BIGINT), CAST(CAST(CURRENT_TIMESTAMP AS TIMESTAMP) AS DATE)))",
-                "redshift": "LAST_DAY(DATEADD(MONTH, -1, CAST(SYSDATE AS DATE)))",
+                "redshift": "LAST_DAY(DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)))",
                 "snowflake": "LAST_DAY(DATEADD(MONTH, -1, CAST(CURRENT_TIMESTAMP() AS DATE)))",
                 "spark": "LAST_DAY(ADD_MONTHS(TO_DATE(CURRENT_TIMESTAMP()), -1))",
                 "tsql": "EOMONTH(DATEADD(MONTH, -1, CAST(GETDATE() AS DATE)))",

@@ -89,6 +89,14 @@ class TestDuckDB(Validator):
                 },
             )
 
+        self.validate_identity("""SELECT '{"duck": [1, 2, 3]}' -> '$.duck[#-1]'""")
+        self.validate_all(
+            """SELECT JSON_EXTRACT('{"duck": [1, 2, 3]}', '/duck/0')""",
+            write={
+                "": """SELECT JSON_EXTRACT('{"duck": [1, 2, 3]}', '/duck/0')""",
+                "duckdb": """SELECT '{"duck": [1, 2, 3]}' -> '/duck/0'""",
+            },
+        )
         self.validate_all(
             """SELECT JSON('{"fruit":"banana"}') -> 'fruit'""",
             write={

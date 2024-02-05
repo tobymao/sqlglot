@@ -1,28 +1,27 @@
 repos:
   - repo: local
     hooks:
-      - id: autoflake
-        name: autoflake
-        entry: autoflake -i -r
-        language: system
-        types: [ python ]
+      - id: ruff
+        name: ruff
+        description: "Run 'ruff' for extremely fast Python linting"
+        entry: ruff check
+          --force-exclude --fix
+          --ignore E721
+          --ignore E741
+        language: python
+        types_or: [python, pyi]
         require_serial: true
+        additional_dependencies: []
         files: ^(sqlglot/|tests/|setup.py)
-      - id: isort
-        args: [--combine-as]
-        name: isort
-        entry: isort
-        language: system
-        types: [ python ]
-        files: ^(sqlglot/|tests/|setup.py)
+      - id: ruff-format
+        name: ruff-format
+        description: "Run 'ruff format' for extremely fast Python formatting"
+        entry: ruff format
+          --force-exclude
+          --line-length 100
+        language: python
+        types_or: [python, pyi]
         require_serial: true
-      - id: black
-        name: black
-        entry: black --line-length 100
-        language: system
-        types: [ python ]
-        require_serial: true
-        files: ^(sqlglot/|tests/|setup.py)
       - id: mypy
         name: mypy
         entry: mypy sqlglot tests

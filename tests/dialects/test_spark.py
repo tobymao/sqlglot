@@ -292,7 +292,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT FROM_UTC_TIMESTAMP('2016-08-31', 'Asia/Seoul')",
             write={
-                "presto": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul'",
+                "presto": "SELECT AT_TIMEZONE(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul')",
                 "spark": "SELECT FROM_UTC_TIMESTAMP(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul')",
             },
         )

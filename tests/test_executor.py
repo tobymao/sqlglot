@@ -94,11 +94,10 @@ class TestExecutor(unittest.TestCase):
                 with self.subTest(f"tpch-h {i + 1}"):
                     sql, _ = self.sqls[i]
                     a = self.cached_execute(sql)
-                    b = pd.DataFrame(table.rows, columns=table.columns)
-
-                    # The executor represents NULL values as None, whereas DuckDB represents them as NaN,
-                    # and so the following is done to silence Pandas' "Mismatched null-like values" warnings
-                    b = b.fillna(value=np.nan)
+                    b = pd.DataFrame(
+                        ((np.nan if c is None else c for c in r) for r in table.rows),
+                        columns=table.columns,
+                    )
 
                     assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
 

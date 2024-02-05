@@ -71,6 +71,7 @@ class Redshift(Postgres):
             "DATE_ADD": _parse_date_delta(exp.TsOrDsAdd),
             "DATEDIFF": _parse_date_delta(exp.TsOrDsDiff),
             "DATE_DIFF": _parse_date_delta(exp.TsOrDsDiff),
+            "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "JSON_EXTRACT_PATH_TEXT": parse_json_extract_path(
                 exp.JSONExtractScalar, supports_null_if_invalid=True
             ),
@@ -81,6 +82,7 @@ class Redshift(Postgres):
         NO_PAREN_FUNCTION_PARSERS = {
             **Postgres.Parser.NO_PAREN_FUNCTION_PARSERS,
             "APPROXIMATE": lambda self: self._parse_approximate_count(),
+            "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, transaction=True),
         }
 
         def _parse_table(
@@ -165,7 +167,6 @@ class Redshift(Postgres):
             **Postgres.Tokenizer.KEYWORDS,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "SUPER": TokenType.SUPER,
-            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
@@ -201,8 +202,11 @@ class Redshift(Postgres):
             **Postgres.Generator.TRANSFORMS,
             exp.Concat: concat_to_dpipe_sql,
             exp.ConcatWs: concat_ws_to_dpipe_sql,
-            exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
-            exp.CurrentTimestamp: lambda self, e: "SYSDATE",
+            exp.ApproxDistinct: lambda self,
+            e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
+            exp.CurrentTimestamp: lambda self, e: (
+                "SYSDATE" if e.args.get("transaction") else "GETDATE()"
+            ),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
@@ -216,7 +220,8 @@ class Redshift(Postgres):
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
-            exp.SortKeyProperty: lambda self, e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.SortKeyProperty: lambda self,
+            e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
             exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),

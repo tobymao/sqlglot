@@ -488,8 +488,8 @@ class Expression(metaclass=_Expression):
 
         A AND B AND C -> [A, B, C]
         """
-        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and not type(n) is self.__class__):
-            if not type(node) is self.__class__:
+        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and type(n) is not self.__class__):
+            if type(node) is not self.__class__:
                 yield node.unnest() if unnest and not isinstance(node, Subquery) else node
 
     def __str__(self) -> str:
@@ -607,7 +607,8 @@ class Expression(metaclass=_Expression):
             >>> sqlglot.parse_one("SELECT x from y").assert_is(Select).select("z").sql()
             'SELECT x, z FROM y'
         """
-        assert isinstance(self, type_)
+        if not isinstance(self, type_):
+            raise AssertionError(f"{self} is not {type_}.")
         return self
 
     def error_messages(self, args: t.Optional[t.Sequence] = None) -> t.List[str]:
@@ -1674,7 +1675,6 @@ class Index(Expression):
         "amp": False,  # teradata
         "include": False,
         "partition_by": False,  # teradata
-        "where": False,  # postgres partial indexes
     }
 
 
@@ -4001,7 +4001,7 @@ class Dot(Binary):
     def build(self, expressions: t.Sequence[Expression]) -> Dot:
         """Build a Dot object with a sequence of expressions."""
         if len(expressions) < 2:
-            raise ValueError(f"Dot requires >= 2 expressions.")
+            raise ValueError("Dot requires >= 2 expressions.")
 
         return t.cast(Dot, reduce(lambda x, y: Dot(this=x, expression=y), expressions))
 
@@ -4125,10 +4125,6 @@ class Slice(Binary):
 
 
 class Sub(Binary):
-    pass
-
-
-class ArrayOverlaps(Binary):
     pass
 
 
@@ -4469,6 +4465,10 @@ class ArrayJoin(Func):
     arg_types = {"this": True, "expression": True, "null": False}
 
 
+class ArrayOverlaps(Binary, Func):
+    pass
+
+
 class ArraySize(Func):
     arg_types = {"this": True, "expression": False}
 
@@ -4633,7 +4633,7 @@ class CurrentTime(Func):
 
 
 class CurrentTimestamp(Func):
-    arg_types = {"this": False}
+    arg_types = {"this": False, "transaction": False}
 
 
 class CurrentUser(Func):
@@ -5622,7 +5622,7 @@ def maybe_parse(
         return sql_or_expression
 
     if sql_or_expression is None:
-        raise ParseError(f"SQL cannot be None")
+        raise ParseError("SQL cannot be None")
 
     import sqlglot
 

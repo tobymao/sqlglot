@@ -7,6 +7,16 @@ class TestRedshift(Validator):
 
     def test_redshift(self):
         self.validate_all(
+            "GETDATE()",
+            read={
+                "duckdb": "CURRENT_TIMESTAMP",
+            },
+            write={
+                "duckdb": "CURRENT_TIMESTAMP",
+                "redshift": "GETDATE()",
+            },
+        )
+        self.validate_all(
             """SELECT JSON_EXTRACT_PATH_TEXT('{ "farm": {"barn": { "color": "red", "feed stocked": true }}}', 'farm', 'barn', 'color')""",
             write={
                 "bigquery": """SELECT JSON_EXTRACT_SCALAR('{ "farm": {"barn": { "color": "red", "feed stocked": true }}}', '$.farm.barn.color')""",

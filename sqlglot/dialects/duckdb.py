@@ -171,6 +171,18 @@ class DuckDB(Dialect):
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    def to_json_path(self, path: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        if isinstance(path, exp.Literal):
+            # DuckDB also supports the JSON pointer syntax, where every path starts with a `/`.
+            # Additionally, it allows accessing the back of lists using the `[#-i]` syntax.
+            # This check ensures we'll avoid trying to parse these as JSON paths, which can
+            # either result in a noisy warning or in an invalid representation of the path.
+            path_text = path.name
+            if path_text.startswith("/") or "[#" in path_text:
+                return path
+
+        return super().to_json_path(path)
+
     class Tokenizer(tokens.Tokenizer):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
@@ -353,9 +365,11 @@ class DuckDB(Dialect):
                 "DATE_DIFF", f"'{e.args.get('unit') or 'DAY'}'", e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateToDi: lambda self, e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
+            exp.DateToDi: lambda self,
+            e: f"CAST(STRFTIME({self.sql(e, 'this')}, {DuckDB.DATEINT_FORMAT}) AS INT)",
             exp.Decode: lambda self, e: encode_decode_sql(self, e, "DECODE", replace=False),
-            exp.DiToDate: lambda self, e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
+            exp.DiToDate: lambda self,
+            e: f"CAST(STRPTIME(CAST({self.sql(e, 'this')} AS TEXT), {DuckDB.DATEINT_FORMAT}) AS DATE)",
             exp.Encode: lambda self, e: encode_decode_sql(self, e, "ENCODE", replace=False),
             exp.Explode: rename_func("UNNEST"),
             exp.IntDiv: lambda self, e: self.binary(e, "//"),
@@ -396,7 +410,8 @@ class DuckDB(Dialect):
             exp.StrPosition: str_position_sql,
             exp.StrToDate: lambda self, e: f"CAST({str_to_time_sql(self, e)} AS DATE)",
             exp.StrToTime: str_to_time_sql,
-            exp.StrToUnix: lambda self, e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
+            exp.StrToUnix: lambda self,
+            e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
             exp.Struct: _struct_sql,
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampDiff: lambda self, e: self.func(
@@ -406,9 +421,11 @@ class DuckDB(Dialect):
             exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
-            exp.TimeToStr: lambda self, e: f"STRFTIME({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeToStr: lambda self,
+            e: f"STRFTIME({self.sql(e, 'this')}, {self.format_time(e)})",
             exp.TimeToUnix: rename_func("EPOCH"),
-            exp.TsOrDiToDi: lambda self, e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
+            exp.TsOrDiToDi: lambda self,
+            e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
             exp.TsOrDsAdd: _ts_or_ds_add_sql,
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
@@ -416,7 +433,8 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, "TIMESTAMP"),
                 exp.cast(e.this, "TIMESTAMP"),
             ),
-            exp.UnixToStr: lambda self, e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
+            exp.UnixToStr: lambda self,
+            e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
             exp.VariancePop: rename_func("VAR_POP"),

@@ -343,16 +343,16 @@ class TestPresto(Validator):
         )
 
         self.validate_all(
-            "SELECT timestamp '2012-10-31 00:00' AT TIME ZONE 'America/Sao_Paulo'",
+            "SELECT CAST('2012-10-31 00:00' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
             write={
                 "spark": "SELECT FROM_UTC_TIMESTAMP(CAST('2012-10-31 00:00' AS TIMESTAMP), 'America/Sao_Paulo')",
-                "presto": "SELECT CAST('2012-10-31 00:00' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
+                "presto": "SELECT AT_TIMEZONE(CAST('2012-10-31 00:00' AS TIMESTAMP), 'America/Sao_Paulo')",
             },
         )
         self.validate_all(
-            "CAST('2012-10-31 00:00' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
+            "SELECT AT_TIMEZONE(CAST('2012-10-31 00:00' AS TIMESTAMP), 'America/Sao_Paulo')",
             read={
-                "spark": "FROM_UTC_TIMESTAMP('2012-10-31 00:00', 'America/Sao_Paulo')",
+                "spark": "SELECT FROM_UTC_TIMESTAMP(TIMESTAMP '2012-10-31 00:00', 'America/Sao_Paulo')",
             },
         )
         self.validate_all(
@@ -368,7 +368,7 @@ class TestPresto(Validator):
             "TIMESTAMP(x, 'America/Los_Angeles')",
             write={
                 "duckdb": "CAST(x AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
-                "presto": "CAST(x AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
+                "presto": "AT_TIMEZONE(CAST(x AS TIMESTAMP), 'America/Los_Angeles')",
             },
         )
         # this case isn't really correct, but it's a fall back for mysql's version
@@ -564,7 +564,7 @@ class TestPresto(Validator):
             )
 
     def test_presto(self):
-        with self.assertLogs(helper_logger) as cm:
+        with self.assertLogs(helper_logger):
             self.validate_all(
                 "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",
                 write={

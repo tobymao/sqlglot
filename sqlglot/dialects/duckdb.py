@@ -21,7 +21,6 @@ from sqlglot.dialects.dialect import (
     no_safe_divide_sql,
     no_timestamp_sql,
     pivot_column_names,
-    prepend_dollar_to_path,
     regexp_extract_sql,
     rename_func,
     str_position_sql,
@@ -242,7 +241,6 @@ class DuckDB(Dialect):
             "JSON": exp.ParseJSON.from_arg_list,
             "JSON_EXTRACT_PATH": parser.parse_extract_json_with_path(exp.JSONExtract),
             "JSON_EXTRACT_STRING": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
-            "JSON_EXTRACT_PATH_TEXT": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
             "LIST_HAS": exp.ArrayContains.from_arg_list,
             "LIST_REVERSE_SORT": _sort_array_reverse,
             "LIST_SORT": exp.SortArray.from_arg_list,
@@ -512,10 +510,6 @@ class DuckDB(Dialect):
             return super().tablesample_sql(
                 expression, sep=sep, tablesample_keyword=tablesample_keyword
             )
-
-        def getpath_sql(self, expression: exp.GetPath) -> str:
-            expression = prepend_dollar_to_path(expression)
-            return f"{self.sql(expression, 'this')} -> {self.sql(expression, 'expression')}"
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier: t.Optional[int] = None

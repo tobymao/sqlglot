@@ -982,32 +982,6 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
     return _delta_sql
 
 
-def prepend_dollar_to_path(expression: exp.GetPath) -> exp.GetPath:
-    from sqlglot.optimizer.simplify import simplify
-
-    # Makes sure the path will be evaluated correctly at runtime to include the path root.
-    # For example, `[0].foo` will become `$[0].foo`, and `foo` will become `$.foo`.
-    path = expression.expression
-    path = exp.func(
-        "if",
-        exp.func("startswith", path, "'['"),
-        exp.func("concat", "'$'", path),
-        exp.func("concat", "'$.'", path),
-    )
-
-    expression.expression.replace(simplify(path))
-    return expression
-
-
-def path_to_jsonpath(
-    name: str = "JSON_EXTRACT",
-) -> t.Callable[[Generator, exp.GetPath], str]:
-    def _transform(self: Generator, expression: exp.GetPath) -> str:
-        return rename_func(name)(self, prepend_dollar_to_path(expression))
-
-    return _transform
-
-
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
     trunc_curr_date = exp.func("date_trunc", "month", expression.this)
     plus_one_month = exp.func("date_add", trunc_curr_date, 1, "month")

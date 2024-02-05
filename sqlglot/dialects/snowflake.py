@@ -21,17 +21,11 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
 )
 from sqlglot.expressions import Literal
-from sqlglot.helper import seq_get
+from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-
-
-def _check_int(s: str) -> bool:
-    if s[0] in ("-", "+"):
-        return s[1:].isdigit()
-    return s.isdigit()
 
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
@@ -53,7 +47,7 @@ def _parse_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, 
         return exp.TimeStrToTime.from_arg_list(args)
 
     if first_arg.is_string:
-        if _check_int(first_arg.this):
+        if is_int(first_arg.this):
             # case: <integer>
             return exp.UnixToTime.from_arg_list(args)
 
@@ -412,6 +406,9 @@ class Snowflake(Dialect):
             "DATEDIFF": _parse_datediff,
             "DIV0": _div0_to_if,
             "FLATTEN": exp.Explode.from_arg_list,
+            "GET_PATH": lambda args, dialect: exp.JSONExtract(
+                this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
+            ),
             "IFF": exp.If.from_arg_list,
             "LAST_DAY": lambda args: exp.LastDay(
                 this=seq_get(args, 0), unit=_map_date_part(seq_get(args, 1))
@@ -716,7 +713,8 @@ class Snowflake(Dialect):
             ),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
-            exp.JSONExtract: lambda self, e: self.func("GET_PATH", e.this, e.expression),
+            exp.JSONExtract: rename_func("GET_PATH"),
+            exp.JSONExtractScalar: rename_func("JSON_EXTRACT_PATH_TEXT"),
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),

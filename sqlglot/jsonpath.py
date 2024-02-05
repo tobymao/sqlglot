@@ -147,7 +147,7 @@ def parse(path: str) -> t.List[exp.JSONPathPart]:
     while _curr():
         if _match(TokenType.DOLLAR):
             nodes.append(exp.JSONPathRoot())
-        elif _match(TokenType.DOT):
+        elif _match(TokenType.DOT) or _match(TokenType.COLON):
             recursive = _prev().text == ".."
             value = _match(TokenType.VAR) or _match(TokenType.IDENTIFIER) or _match(TokenType.STAR)
 

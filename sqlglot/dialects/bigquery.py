@@ -19,7 +19,6 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     no_ilike_sql,
     parse_date_delta_with_interval,
-    path_to_jsonpath,
     regexp_replace_sql,
     rename_func,
     timestrtotime_sql,
@@ -569,7 +568,6 @@ class BigQuery(Dialect):
                 "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
             ),
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
-            exp.GetPath: path_to_jsonpath(),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.Hex: rename_func("TO_HEX"),
             exp.If: if_sql(false_value="NULL"),

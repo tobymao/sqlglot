@@ -21,7 +21,6 @@ from sqlglot.dialects.dialect import (
     no_trycast_sql,
     parse_date_delta,
     parse_date_delta_with_interval,
-    path_to_jsonpath,
     rename_func,
     strposition_to_locate_sql,
 )
@@ -650,7 +649,6 @@ class MySQL(Dialect):
             exp.DayOfMonth: _remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),
             exp.DayOfWeek: _remove_ts_or_ds_to_date(rename_func("DAYOFWEEK")),
             exp.DayOfYear: _remove_ts_or_ds_to_date(rename_func("DAYOFYEAR")),
-            exp.GetPath: path_to_jsonpath(),
             exp.GroupConcat: lambda self,
             e: f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})""",
             exp.ILike: no_ilike_sql,

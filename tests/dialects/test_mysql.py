@@ -809,6 +809,7 @@ COMMENT='客户账户表'"""
             ("CHARACTER SET", "CHARACTER SET"),
             ("COLLATION", "COLLATION"),
             ("DATABASES", "DATABASES"),
+            ("SCHEMAS", "DATABASES"),
             ("FUNCTION STATUS", "FUNCTION STATUS"),
             ("PROCEDURE STATUS", "PROCEDURE STATUS"),
             ("GLOBAL STATUS", "GLOBAL STATUS"),

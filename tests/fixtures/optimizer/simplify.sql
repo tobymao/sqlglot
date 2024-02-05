@@ -756,6 +756,9 @@ CAST(CAST('2023-01-01' AS TIMESTAMP) AS DATE);
 COALESCE(CAST(NULL AS DATE), x);
 COALESCE(CAST(NULL AS DATE), x);
 
+NOT COALESCE(x, 1) = 2 AND y = 3;
+(x <> 2 OR x IS NULL) AND y = 3;
+
 --------------------------------------
 -- CONCAT
 --------------------------------------

@@ -1131,6 +1131,7 @@ class SetItem(Expression):
 class Show(Expression):
     arg_types = {
         "this": True,
+        "history": False,
         "terse": False,
         "target": False,
         "offset": False,

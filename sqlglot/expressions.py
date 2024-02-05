@@ -3662,6 +3662,7 @@ class DataType(Expression):
         BINARY = auto()
         BIT = auto()
         BOOLEAN = auto()
+        BPCHAR = auto()
         CHAR = auto()
         DATE = auto()
         DATE32 = auto()

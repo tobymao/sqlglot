@@ -125,6 +125,7 @@ class TokenType(AutoName):
     NCHAR = auto()
     VARCHAR = auto()
     NVARCHAR = auto()
+    BPCHAR = auto()
     TEXT = auto()
     MEDIUMTEXT = auto()
     LONGTEXT = auto()
@@ -801,6 +802,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "VARCHAR2": TokenType.VARCHAR,
         "NVARCHAR": TokenType.NVARCHAR,
         "NVARCHAR2": TokenType.NVARCHAR,
+        "BPCHAR": TokenType.BPCHAR,
         "STR": TokenType.TEXT,
         "STRING": TokenType.TEXT,
         "TEXT": TokenType.TEXT,

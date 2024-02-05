@@ -699,8 +699,6 @@ class Generator(metaclass=_Generator):
 
         if callable(transform):
             sql = transform(self, expression)
-        elif transform:
-            sql = transform
         elif isinstance(expression, exp.Expression):
             exp_handler_name = f"{expression.key}_sql"
 

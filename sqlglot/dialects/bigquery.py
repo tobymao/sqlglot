@@ -540,6 +540,7 @@ class BigQuery(Dialect):
         JSON_KEY_VALUE_PAIR_SEP = ","
         NULL_ORDERING_SUPPORTED = False
         IGNORE_NULLS_IN_FUNC = True
+        JSON_PATH_SINGLE_QUOTE_ESCAPE = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

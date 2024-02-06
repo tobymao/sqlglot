@@ -569,11 +569,6 @@ def no_trycast_sql(self: Generator, expression: exp.TryCast) -> str:
     return self.cast_sql(expression)
 
 
-def no_properties_sql(self: Generator, expression: exp.Properties) -> str:
-    self.unsupported("Properties unsupported")
-    return ""
-
-
 def no_comment_column_constraint_sql(
     self: Generator, expression: exp.CommentColumnConstraint
 ) -> str:

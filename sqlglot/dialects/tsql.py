@@ -860,21 +860,30 @@ class TSQL(Dialect):
             exists = expression.args.pop("exists", None)
             sql = super().create_sql(expression)
 
+            like_property = expression.find(exp.LikeProperty)
+            if like_property:
+                ctas_expression = like_property.this
+            else:
+                ctas_expression = expression.expression
+
             table = expression.find(exp.Table)
 
             # Convert CTAS statement to SELECT .. INTO ..
-            if kind == "TABLE" and expression.expression:
-                ctas_with = expression.expression.args.get("with")
+            if kind == "TABLE" and ctas_expression:
+                ctas_with = ctas_expression.args.get("with")
                 if ctas_with:
                     ctas_with = ctas_with.pop()
 
-                subquery = expression.expression
+                subquery = ctas_expression
                 if isinstance(subquery, exp.Subqueryable):
                     subquery = subquery.subquery()
 
                 select_into = exp.select("*").from_(exp.alias_(subquery, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
                 select_into.set("with", ctas_with)
+
+                if like_property:
+                    select_into.limit(0, copy=False)
 
                 sql = self.sql(select_into)
 

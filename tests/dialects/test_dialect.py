@@ -1245,11 +1245,38 @@ class TestDialect(Validator):
             write={
                 "bigquery": UnsupportedError,
                 "duckdb": "x -> '$.y[*]'",
+                "mysql": "JSON_EXTRACT(x, '$.y[*]')",
                 "postgres": UnsupportedError,
                 "presto": "JSON_EXTRACT(x, '$.y[*]')",
                 "redshift": UnsupportedError,
                 "snowflake": UnsupportedError,
                 "spark": "GET_JSON_OBJECT(x, '$.y[*]')",
+                "sqlite": UnsupportedError,
+                "tsql": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "JSON_EXTRACT(x, '$.y[*]')",
+            write={
+                "bigquery": "JSON_EXTRACT(x, '$.y')",
+                "postgres": "JSON_EXTRACT_PATH(x, 'y')",
+                "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
+                "snowflake": "GET_PATH(x, 'y')",
+                "sqlite": "x -> '$.y'",
+                "tsql": "ISNULL(JSON_QUERY(x, '$.y'), JSON_VALUE(x, '$.y'))",
+            },
+        )
+        self.validate_all(
+            "JSON_EXTRACT(x, '$.y.*')",
+            write={
+                "bigquery": UnsupportedError,
+                "duckdb": "x -> '$.y.*'",
+                "mysql": "JSON_EXTRACT(x, '$.y.*')",
+                "postgres": UnsupportedError,
+                "presto": "JSON_EXTRACT(x, '$.y.*')",
+                "redshift": UnsupportedError,
+                "snowflake": UnsupportedError,
+                "spark": UnsupportedError,
                 "sqlite": UnsupportedError,
                 "tsql": UnsupportedError,
             },

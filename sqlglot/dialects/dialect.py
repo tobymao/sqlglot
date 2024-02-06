@@ -112,9 +112,7 @@ class _Dialect(type):
         klass.parser_class = getattr(klass, "Parser", Parser)
         klass.generator_class = getattr(klass, "Generator", Generator)
 
-        QUOTES = klass.tokenizer_class._QUOTES
-
-        klass.QUOTE_START, klass.QUOTE_END = list(QUOTES.items())[0]
+        klass.QUOTE_START, klass.QUOTE_END = list(klass.tokenizer_class._QUOTES.items())[0]
         klass.IDENTIFIER_START, klass.IDENTIFIER_END = list(
             klass.tokenizer_class._IDENTIFIERS.items()
         )[0]

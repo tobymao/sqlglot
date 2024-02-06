@@ -534,7 +534,9 @@ class Snowflake(Dialect):
 
             return table
 
-        def _parse_table_parts(self, schema: bool = False) -> exp.Table:
+        def _parse_table_parts(
+            self, schema: bool = False, is_db_reference: bool = False
+        ) -> exp.Table:
             # https://docs.snowflake.com/en/user-guide/querying-stage
             if self._match(TokenType.STRING, advance=False):
                 table = self._parse_string()
@@ -550,7 +552,9 @@ class Snowflake(Dialect):
                 self._match(TokenType.L_PAREN)
                 while self._curr and not self._match(TokenType.R_PAREN):
                     if self._match_text_seq("FILE_FORMAT", "=>"):
-                        file_format = self._parse_string() or super()._parse_table_parts()
+                        file_format = self._parse_string() or super()._parse_table_parts(
+                            is_db_reference=is_db_reference
+                        )
                     elif self._match_text_seq("PATTERN", "=>"):
                         pattern = self._parse_string()
                     else:
@@ -560,7 +564,7 @@ class Snowflake(Dialect):
 
                 table = self.expression(exp.Table, this=table, format=file_format, pattern=pattern)
             else:
-                table = super()._parse_table_parts(schema=schema)
+                table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
 
             return self._parse_at_before(table)
 

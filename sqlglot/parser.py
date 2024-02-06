@@ -1352,7 +1352,9 @@ class Parser(metaclass=_Parser):
             exp.Drop,
             comments=start.comments,
             exists=exists or self._parse_exists(),
-            this=self._parse_table(schema=True),
+            this=self._parse_table(
+                schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
+            ),
             kind=kind,
             temporary=temporary,
             materialized=materialized,
@@ -1440,7 +1442,9 @@ class Parser(metaclass=_Parser):
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index(index=self._parse_id_var())
         elif create_token.token_type in self.DB_CREATABLES:
-            table_parts = self._parse_table_parts(schema=True)
+            table_parts = self._parse_table_parts(
+                schema=True, is_db_reference=create_token.token_type == TokenType.SCHEMA
+            )
 
             # exp.Properties.Location.POST_NAME
             self._match(TokenType.COMMA)
@@ -2790,7 +2794,7 @@ class Parser(metaclass=_Parser):
             or self._parse_placeholder()
         )
 
-    def _parse_table_parts(self, schema: bool = False) -> exp.Table:
+    def _parse_table_parts(self, schema: bool = False, is_db_reference: bool = False) -> exp.Table:
         catalog = None
         db = None
         table: t.Optional[exp.Expression | str] = self._parse_table_part(schema=schema)
@@ -2806,8 +2810,15 @@ class Parser(metaclass=_Parser):
                 db = table
                 table = self._parse_table_part(schema=schema) or ""
 
-        if not table:
+        if is_db_reference:
+            catalog = db
+            db = table
+            table = None
+
+        if not table and not is_db_reference:
             self.raise_error(f"Expected table name but got {self._curr}")
+        if not db and is_db_reference:
+            self.raise_error(f"Expected database name but got {self._curr}")
 
         return self.expression(
             exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
@@ -2819,6 +2830,7 @@ class Parser(metaclass=_Parser):
         joins: bool = False,
         alias_tokens: t.Optional[t.Collection[TokenType]] = None,
         parse_bracket: bool = False,
+        is_db_reference: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -2841,7 +2853,11 @@ class Parser(metaclass=_Parser):
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table, this=bracket) if bracket else None
         this = t.cast(
-            exp.Expression, bracket or self._parse_bracket(self._parse_table_parts(schema=schema))
+            exp.Expression,
+            bracket
+            or self._parse_bracket(
+                self._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+            ),
         )
 
         if schema:

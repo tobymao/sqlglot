@@ -2421,6 +2421,7 @@ class Generator(metaclass=_Generator):
             return str(expression)
 
         if self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
+            escaped = expression.replace("'", "\\'")
             escaped = f"\\'{expression}\\'"
         else:
             escaped = expression.replace('"', '\\"')

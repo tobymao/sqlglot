@@ -17,7 +17,6 @@ from sqlglot.dialects.dialect import (
     format_time_lambda,
     inline_array_sql,
     no_comment_column_constraint_sql,
-    no_properties_sql,
     no_safe_divide_sql,
     no_timestamp_sql,
     pivot_column_names,
@@ -391,7 +390,6 @@ class DuckDB(Dialect):
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
-            exp.Properties: no_properties_sql,
             exp.RegexpExtract: regexp_extract_sql,
             exp.RegexpReplace: lambda self, e: self.func(
                 "REGEXP_REPLACE",
@@ -467,10 +465,23 @@ class DuckDB(Dialect):
 
         UNWRAPPED_INTERVAL_VALUES = (exp.Column, exp.Literal, exp.Paren)
 
+        # DuckDB doesn't generally support CREATE TABLE .. properties
+        # https://duckdb.org/docs/sql/statements/create_table.html
         PROPERTIES_LOCATION = {
-            **generator.Generator.PROPERTIES_LOCATION,
-            exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+            prop: exp.Properties.Location.UNSUPPORTED
+            for prop in generator.Generator.PROPERTIES_LOCATION
         }
+
+        # There are a few exceptions (e.g. temporary tables) which are supported or
+        # can be transpiled to DuckDB, so we explicitly override them accordingly
+        PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
+        PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
+
+        def likeproperty_sql(self, expression: exp.LikeProperty) -> str:
+            if expression.expressions:
+                self.unsupported("Transpilation of LIKE property options is unsupported")
+
+            return f"AS SELECT * FROM {self.sql(expression, 'this')} LIMIT 0"
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

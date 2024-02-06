@@ -119,9 +119,6 @@ class _Dialect(type):
             klass.tokenizer_class._IDENTIFIERS.items()
         )[0]
 
-        if klass.generator_class.JSON_PATH_SINGLE_QUOTE_ESCAPE and '"' in QUOTES:
-            klass.JSON_PATH_QUOTE = '"'
-
         def get_start_end(token_type: TokenType) -> t.Tuple[t.Optional[str], t.Optional[str]]:
             return next(
                 (
@@ -270,9 +267,6 @@ class Dialect(metaclass=_Dialect):
     QUOTE_END = "'"
     IDENTIFIER_START = '"'
     IDENTIFIER_END = '"'
-
-    # Delimiter only for JSON path string literals
-    JSON_PATH_QUOTE = QUOTE_START
 
     # Delimiters for bit, hex, byte and unicode literals
     BIT_START: t.Optional[str] = None

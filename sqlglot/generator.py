@@ -2406,7 +2406,7 @@ class Generator(metaclass=_Generator):
 
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
         path = self.expressions(expression, sep="", flat=True).lstrip(".")
-        return f"{self.dialect.JSON_PATH_QUOTE}{path}{self.dialect.JSON_PATH_QUOTE}"
+        return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 
     def json_path_part(self, expression: int | str | exp.JSONPathPart) -> str:
         if isinstance(expression, exp.JSONPathPart):
@@ -2421,8 +2421,7 @@ class Generator(metaclass=_Generator):
             return str(expression)
 
         if self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
-            escaped = expression.replace("'", "\\'")
-            escaped = f"'{escaped}'"
+            escaped = f"\\'{expression}\\'"
         else:
             escaped = expression.replace('"', '\\"')
             escaped = f'"{escaped}"'

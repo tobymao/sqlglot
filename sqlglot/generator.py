@@ -1293,7 +1293,7 @@ class Generator(metaclass=_Generator):
         if expression.expressions:
             self.unsupported("Transpilation of LIKE property options is unsupported")
 
-        select = exp.select("*").from_(self.sql(expression, "this")).limit(0)
+        select = exp.select("*").from_(expression.this).limit(0)
         return f"AS {self.sql(select)}"
 
     def fallbackproperty_sql(self, expression: exp.FallbackProperty) -> str:

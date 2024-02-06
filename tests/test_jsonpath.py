@@ -13,7 +13,7 @@ class TestJsonpath(unittest.TestCase):
     def test_jsonpath(self):
         expected_expressions = [
             exp.JSONPathRoot(),
-            exp.JSONPathKey(this="*"),
+            exp.JSONPathKey(this=exp.JSONPathWildcard()),
             exp.JSONPathKey(this="a"),
             exp.JSONPathSubscript(this=0),
             exp.JSONPathKey(this="x"),

@@ -150,14 +150,20 @@ def parse(path: str) -> exp.JSONPath:
     while _curr():
         if _match(TokenType.DOT) or _match(TokenType.COLON):
             recursive = _prev().text == ".."
-            value = _match(TokenType.VAR) or _match(TokenType.IDENTIFIER) or _match(TokenType.STAR)
+
+            if _match(TokenType.VAR) or _match(TokenType.IDENTIFIER):
+                value: t.Optional[str | exp.JSONPathWildcard] = _prev().text
+            elif _match(TokenType.STAR):
+                value = exp.JSONPathWildcard()
+            else:
+                value = None
 
             if recursive:
-                expressions.append(exp.JSONPathRecursive(this=value.text if value else None))
+                expressions.append(exp.JSONPathRecursive(this=value))
             elif value:
-                expressions.append(exp.JSONPathKey(this=value.text))
+                expressions.append(exp.JSONPathKey(this=value))
             else:
-                raise ParseError(_error("Expected key name after DOT"))
+                raise ParseError(_error("Expected key name or * after DOT"))
         elif _match(TokenType.L_BRACKET):
             expressions.append(_parse_bracket())
         elif _match(TokenType.VAR) or _match(TokenType.IDENTIFIER):
@@ -182,7 +188,7 @@ JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] 
         for p in [e.args.get("start"), e.args.get("end"), e.args.get("step")]
         if p is not None
     ),
-    exp.JSONPathSubscript: lambda self, e: f"[{self.json_path_part(e.this)}]",
+    exp.JSONPathSubscript: lambda self, e: self._jsonpathsubscript_sql(e),
     exp.JSONPathUnion: lambda self,
     e: f"[{','.join(self.json_path_part(p) for p in e.expressions)}]",
     exp.JSONPathWildcard: lambda *_: "*",

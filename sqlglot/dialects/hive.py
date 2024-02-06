@@ -574,6 +574,13 @@ class Hive(Dialect):
             exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
+            if isinstance(expression.this, exp.JSONPathWildcard):
+                self.unsupported("Unsupported wildcard in JSONPathKey expression")
+                return ""
+
+            return super()._jsonpathkey_sql(expression)
+
         def temporary_storage_provider(self, expression: exp.Create) -> exp.Create:
             # Hive has no temporary storage provider (there are hive settings though)
             return expression

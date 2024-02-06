@@ -2571,7 +2571,7 @@ class HistoricalData(Expression):
 
 class Table(Expression):
     arg_types = {
-        "this": True,
+        "this": False,
         "alias": False,
         "db": False,
         "catalog": False,

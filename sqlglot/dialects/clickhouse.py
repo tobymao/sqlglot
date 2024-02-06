@@ -354,9 +354,14 @@ class ClickHouse(Dialect):
             joins: bool = False,
             alias_tokens: t.Optional[t.Collection[TokenType]] = None,
             parse_bracket: bool = False,
+            is_db_reference: bool = False,
         ) -> t.Optional[exp.Expression]:
             this = super()._parse_table(
-                schema=schema, joins=joins, alias_tokens=alias_tokens, parse_bracket=parse_bracket
+                schema=schema,
+                joins=joins,
+                alias_tokens=alias_tokens,
+                parse_bracket=parse_bracket,
+                is_db_reference=is_db_reference,
             )
 
             if self._match(TokenType.FINAL):

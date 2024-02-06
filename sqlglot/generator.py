@@ -3371,11 +3371,19 @@ class Generator(metaclass=_Generator):
 
     def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
         this = expression.this
-        if this == "*" or exp.SAFE_IDENTIFIER_RE.match(this):
+        if isinstance(this, exp.JSONPathWildcard):
+            this = self.json_path_part(this)
+            return f".{this}" if this else ""
+
+        if exp.SAFE_IDENTIFIER_RE.match(this):
             return f".{this}"
 
         this = self.json_path_part(this)
         return f"[{this}]" if self.JSON_PATH_BRACKETED_KEY_SUPPORTED else f".{this}"
+
+    def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
+        this = self.json_path_part(expression.this)
+        return f"[{this}]" if this else ""
 
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):

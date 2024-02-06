@@ -440,7 +440,6 @@ class Postgres(Dialect):
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
-            exp.JSONPathKey: lambda _, e: e.name,
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.LastDay: no_last_day_sql,
@@ -495,6 +494,12 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
+            if not isinstance(expression.this, str):
+                self.unsupported("Unsupported wildcard in JSONPathKey expression")
+
+            return expression.name
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             """Forms like ARRAY[1, 2, 3][3] aren't allowed; we need to wrap the ARRAY."""

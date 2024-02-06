@@ -1055,13 +1055,6 @@ WHERE
         )
 
         self.validate_all(
-            "CREATE TABLE t2 LIKE t1",
-            write={
-                "duckdb": "CREATE TABLE t2 AS SELECT * FROM t1 LIMIT 0",
-                "snowflake": "CREATE TABLE t2 LIKE t1",
-            },
-        )
-        self.validate_all(
             "CREATE TABLE orders_clone CLONE orders",
             read={
                 "bigquery": "CREATE TABLE orders_clone CLONE orders",

@@ -332,6 +332,7 @@ class DuckDB(Dialect):
         JSON_KEY_VALUE_PAIR_SEP = ","
         IGNORE_NULLS_IN_FUNC = True
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
+        SUPPORTS_CREATE_TABLE_LIKE = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -476,12 +477,6 @@ class DuckDB(Dialect):
         # can be transpiled to DuckDB, so we explicitly override them accordingly
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
-
-        def likeproperty_sql(self, expression: exp.LikeProperty) -> str:
-            if expression.expressions:
-                self.unsupported("Transpilation of LIKE property options is unsupported")
-
-            return f"AS SELECT * FROM {self.sql(expression, 'this')} LIMIT 0"
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

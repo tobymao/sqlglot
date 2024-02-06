@@ -378,6 +378,31 @@ class TestDialect(Validator):
             read={"postgres": "INET '127.0.0.1/32'"},
         )
 
+    def test_ddl(self):
+        self.validate_all(
+            "CREATE TABLE a LIKE b",
+            write={
+                "": "CREATE TABLE a LIKE b",
+                "bigquery": "CREATE TABLE a LIKE b",
+                "clickhouse": "CREATE TABLE a AS b",
+                "databricks": "CREATE TABLE a LIKE b",
+                "doris": "CREATE TABLE a LIKE b",
+                "drill": "CREATE TABLE a AS SELECT * FROM b LIMIT 0",
+                "duckdb": "CREATE TABLE a AS SELECT * FROM b LIMIT 0",
+                "hive": "CREATE TABLE a LIKE b",
+                "mysql": "CREATE TABLE a LIKE b",
+                "oracle": "CREATE TABLE a LIKE b",
+                "postgres": "CREATE TABLE a (LIKE b)",
+                "presto": "CREATE TABLE a (LIKE b)",
+                "redshift": "CREATE TABLE a (LIKE b)",
+                "snowflake": "CREATE TABLE a LIKE b",
+                "spark": "CREATE TABLE a LIKE b",
+                "sqlite": "CREATE TABLE a AS SELECT * FROM b LIMIT 0",
+                "trino": "CREATE TABLE a (LIKE b)",
+                "tsql": "SELECT TOP 0 * INTO a FROM b AS temp",
+            },
+        )
+
     def test_heredoc_strings(self):
         for dialect in ("clickhouse", "postgres", "redshift"):
             # Invalid matching tag

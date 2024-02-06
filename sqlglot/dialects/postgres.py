@@ -393,6 +393,7 @@ class Postgres(Dialect):
         SUPPORTS_SELECT_INTO = True
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = True
         SUPPORTS_UNLOGGED_TABLES = True
+        LIKE_PROPERTY_INSIDE_SCHEMA = True
 
         JSON_PATH_MAPPING = {
             exp.JSONPathKey: lambda n, **kwargs: n.name,

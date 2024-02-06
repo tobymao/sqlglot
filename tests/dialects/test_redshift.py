@@ -481,16 +481,26 @@ FROM (
         )
 
     def test_create_table_like(self):
+        self.validate_identity(
+            "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL"
+        )
+
         self.validate_all(
-            "CREATE TABLE t1 LIKE t2",
+            "CREATE TABLE t1 (LIKE t2)",
             write={
+                "postgres": "CREATE TABLE t1 (LIKE t2)",
+                "presto": "CREATE TABLE t1 (LIKE t2)",
                 "redshift": "CREATE TABLE t1 (LIKE t2)",
+                "trino": "CREATE TABLE t1 (LIKE t2)",
             },
         )
         self.validate_all(
-            "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL",
+            "CREATE TABLE t1 (col VARCHAR, LIKE t2)",
             write={
-                "redshift": "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL",
+                "postgres": "CREATE TABLE t1 (col VARCHAR, LIKE t2)",
+                "presto": "CREATE TABLE t1 (col VARCHAR, LIKE t2)",
+                "redshift": "CREATE TABLE t1 (col VARCHAR, LIKE t2)",
+                "trino": "CREATE TABLE t1 (col VARCHAR, LIKE t2)",
             },
         )
 

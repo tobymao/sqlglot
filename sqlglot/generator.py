@@ -9,10 +9,7 @@ from functools import reduce
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.helper import apply_index_offset, csv, seq_get
-from sqlglot.jsonpath import (
-    MAPPING as JSON_PATH_MAPPING,
-    generate as generate_json_path,
-)
+from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
@@ -29,14 +26,9 @@ class _Generator(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
 
-        # Fill in default implementations for every non-overridden supported JSONPathPart
-        klass._JSON_PATH_MAPPING = {
-            **{
-                expr_type: JSON_PATH_MAPPING[expr_type]
-                for expr_type in klass.SUPPORTED_JSON_PATH_PARTS
-            },
-            **(klass.JSON_PATH_MAPPING or {}),
-        }
+        # Remove transforms that correspond to unsupported JSONPathPart expressions
+        for part in ALL_JSON_PATH_PARTS - klass.SUPPORTED_JSON_PATH_PARTS:
+            klass.TRANSFORMS.pop(part, None)
 
         return klass
 
@@ -79,15 +71,8 @@ class Generator(metaclass=_Generator):
     """
 
     TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
-        **{
-            expr_type: lambda self, e: generate_json_path(
-                e, mapping=self._JSON_PATH_MAPPING, unsupported_callback=self.unsupported
-            )
-            for expr_type in exp.JSON_PATH_PARTS
-        },
-        exp.DateAdd: lambda self, e: self.func(
-            "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
-        ),
+        **JSON_PATH_PART_TRANSFORMS,
+        exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda self,
         e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
@@ -97,9 +82,11 @@ class Generator(metaclass=_Generator):
         exp.ClusteredColumnConstraint: lambda self,
         e: f"CLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
-        exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
-        exp.CopyGrantsProperty: lambda self, e: "COPY GRANTS",
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
+        exp.CopyGrantsProperty: lambda self, e: "COPY GRANTS",
+        exp.DateAdd: lambda self, e: self.func(
+            "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
+        ),
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
@@ -114,9 +101,9 @@ class Generator(metaclass=_Generator):
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.MaterializedProperty: lambda self, e: "MATERIALIZED",
-        exp.NoPrimaryIndexProperty: lambda self, e: "NO PRIMARY INDEX",
         exp.NonClusteredColumnConstraint: lambda self,
         e: f"NONCLUSTERED ({self.expressions(e, 'this', indent=False)})",
+        exp.NoPrimaryIndexProperty: lambda self, e: "NO PRIMARY INDEX",
         exp.NotForReplicationColumnConstraint: lambda self, e: "NOT FOR REPLICATION",
         exp.OnCommitProperty: lambda self,
         e: f"ON COMMIT {'DELETE' if e.args.get('delete') else 'PRESERVE'} ROWS",
@@ -128,18 +115,18 @@ class Generator(metaclass=_Generator):
         e: f"REMOTE WITH CONNECTION {self.sql(e, 'this')}",
         exp.ReturnsProperty: lambda self, e: self.naked_property(e),
         exp.SampleProperty: lambda self, e: f"SAMPLE BY {self.sql(e, 'this')}",
-        exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SetConfigProperty: lambda self, e: self.sql(e, "this"),
+        exp.SetProperty: lambda self, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
         exp.SqlReadWriteProperty: lambda self, e: e.name,
         exp.SqlSecurityProperty: lambda self,
         e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
         exp.StabilityProperty: lambda self, e: e.name,
         exp.TemporaryProperty: lambda self, e: "TEMPORARY",
-        exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
-        exp.TransientProperty: lambda self, e: "TRANSIENT",
-        exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
+        exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
+        exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
+        exp.TransientProperty: lambda self, e: "TRANSIENT",
         exp.UppercaseColumnConstraint: lambda self, e: "UPPERCASE",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.VolatileProperty: lambda self, e: "VOLATILE",
@@ -309,15 +296,11 @@ class Generator(metaclass=_Generator):
     # Whether or not bracketed keys like ["foo"] are supported in JSON paths
     JSON_PATH_BRACKETED_KEY_SUPPORTED = True
 
-    # The JSONPathPart expressions supported by this dialect
-    SUPPORTED_JSON_PATH_PARTS: t.Set[t.Type[exp.JSONPathPart]] = set(JSON_PATH_MAPPING)
+    # Whether or not to escape keys using single quotes in JSON paths
+    JSON_PATH_SINGLE_QUOTE_ESCAPE = False
 
-    # Mapping that specifies how each JSONPathPart supported by this dialect should be generated.
-    # This is populated based on SUPPORTED_JSON_PATH_PARTS and the default MAPPING in jsonpath.py,
-    # but it's possible to override specific entries as well
-    JSON_PATH_MAPPING: t.Optional[
-        t.Dict[t.Type[exp.JSONPathPart], t.Callable[[exp.JSONPathPart], str]]
-    ] = None
+    # The JSONPathPart expressions supported by this dialect
+    SUPPORTED_JSON_PATH_PARTS = ALL_JSON_PATH_PARTS.copy()
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -462,11 +445,6 @@ class Generator(metaclass=_Generator):
     KEY_VALUE_DEFINITIONS = (exp.Bracket, exp.EQ, exp.PropertyEQ, exp.Slice)
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
-
-    # Autofilled
-    _JSON_PATH_MAPPING: t.Optional[
-        t.Dict[t.Type[exp.JSONPathPart], t.Callable[[exp.JSONPathPart], str]]
-    ] = None
 
     __slots__ = (
         "pretty",
@@ -2424,13 +2402,29 @@ class Generator(metaclass=_Generator):
         return f"{self.sql(expression, 'this')}{self.JSON_KEY_VALUE_PAIR_SEP} {self.sql(expression, 'expression')}"
 
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
-        path = generate_json_path(
-            expression.expressions,
-            mapping=self._JSON_PATH_MAPPING,
-            unsupported_callback=self.unsupported,
-            bracketed_key_supported=self.JSON_PATH_BRACKETED_KEY_SUPPORTED,
-        )
-        return f"{self.dialect.QUOTE_START}{path.lstrip('.')}{self.dialect.QUOTE_END}"
+        path = self.expressions(expression, sep="", flat=True).lstrip(".")
+        return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
+
+    def json_path_part(self, expression: int | str | exp.JSONPathPart) -> str:
+        if isinstance(expression, exp.JSONPathPart):
+            transform = self.TRANSFORMS.get(expression.__class__)
+            if not callable(transform):
+                self.unsupported(f"Unsupported JSONPathPart type {expression.__class__.__name__}")
+                return ""
+
+            return transform(self, expression)
+
+        if isinstance(expression, int):
+            return str(expression)
+
+        if self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
+            escaped = expression.replace("'", "\\'")
+            escaped = f"\\'{expression}\\'"
+        else:
+            escaped = expression.replace('"', '\\"')
+            escaped = f'"{escaped}"'
+
+        return escaped
 
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
@@ -3356,6 +3350,14 @@ class Generator(metaclass=_Generator):
             self.unsupported("Date parts are not supported in LAST_DAY.")
 
         return self.func("LAST_DAY", expression.this)
+
+    def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
+        this = expression.this
+        if this == "*" or exp.SAFE_IDENTIFIER_RE.match(this):
+            return f".{this}"
+
+        this = self.json_path_part(this)
+        return f"[{this}]" if self.JSON_PATH_BRACKETED_KEY_SUPPORTED else f".{this}"
 
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):

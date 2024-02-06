@@ -725,6 +725,7 @@ class Snowflake(Dialect):
             exp.JSONExtract: rename_func("GET_PATH"),
             exp.JSONExtractScalar: rename_func("JSON_EXTRACT_PATH_TEXT"),
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
+            exp.JSONPathRoot: lambda *_: "",
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),
             exp.LogicalOr: rename_func("BOOLOR_AGG"),
             exp.Map: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
@@ -784,10 +785,6 @@ class Snowflake(Dialect):
             exp.JSONPathKey,
             exp.JSONPathRoot,
             exp.JSONPathSubscript,
-        }
-
-        JSON_PATH_MAPPING = {
-            exp.JSONPathRoot: lambda n, **kwargs: "",
         }
 
         TYPE_MAPPING = {

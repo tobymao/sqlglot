@@ -36,7 +36,7 @@ class TestJsonpath(unittest.TestCase):
             ("$[((@.length-1))]", "$[((@.length-1))]"),
         ):
             with self.subTest(f"{selector} -> {expected}"):
-                self.assertEqual(jsonpath.generate(jsonpath.parse(selector)), expected)
+                self.assertEqual(jsonpath.parse(selector).sql(), f"'{expected}'")
 
     def test_cts_file(self):
         with open(os.path.join(FIXTURES_DIR, "jsonpath", "cts.json")) as file:
@@ -135,5 +135,5 @@ class TestJsonpath(unittest.TestCase):
                     except (ParseError, TokenError):
                         pass
                 else:
-                    nodes = jsonpath.parse(selector)
-                    self.assertEqual(jsonpath.generate(nodes), overrides.get(selector, selector))
+                    path = jsonpath.parse(selector)
+                    self.assertEqual(path.sql(), f"'{overrides.get(selector, selector)}'")

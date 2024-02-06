@@ -8,7 +8,6 @@ from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
-    from sqlglot.dialects.dialect import DialectType
 
 
 class JSONPathTokenizer(Tokenizer):
@@ -169,11 +168,6 @@ def parse(path: str) -> exp.JSONPath:
             raise ParseError(_error(f"Unexpected {tokens[i].token_type}"))
 
     return exp.JSONPath(expressions=expressions)
-
-
-def generate(path: exp.JSONPath, dialect: DialectType = None) -> str:
-    """Generates a string from a JSONPath expression, optionally targetting a given SQL dialect."""
-    return path.sql(dialect=dialect)[1:-1]  # The slice is used to remove the string delimiters
 
 
 JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {

@@ -297,7 +297,6 @@ class Generator(metaclass=_Generator):
     JSON_PATH_BRACKETED_KEY_SUPPORTED = True
 
     # Whether or not to escape keys using single quotes in JSON paths
-    # Note: this should only be set for dialects that also support double quotes as string delimiters
     JSON_PATH_SINGLE_QUOTE_ESCAPE = False
 
     # The JSONPathPart expressions supported by this dialect

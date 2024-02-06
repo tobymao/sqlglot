@@ -614,6 +614,9 @@ class ClickHouse(Dialect):
             "NAMED COLLECTION",
         }
 
+        def likeproperty_sql(self, expression: exp.LikeProperty) -> str:
+            return f"AS {self.sql(expression, 'this')}"
+
         def _any_to_has(
             self,
             expression: exp.EQ | exp.NEQ,

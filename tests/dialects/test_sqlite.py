@@ -10,11 +10,9 @@ class TestSQLite(Validator):
         self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)")
+        self.validate_identity("CREATE TEMPORARY TABLE foo (id INTEGER)")
 
-        self.validate_all(
-            "CREATE TABLE foo (id INTEGER PRIMARY  KEY ASC)",
-            write={"sqlite": "CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)"},
-        )
         self.validate_all(
             """
             CREATE TABLE "Track"

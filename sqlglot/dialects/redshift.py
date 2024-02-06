@@ -195,11 +195,6 @@ class Redshift(Postgres):
             exp.DataType.Type.VARBINARY: "VARBYTE",
         }
 
-        PROPERTIES_LOCATION = {
-            **Postgres.Generator.PROPERTIES_LOCATION,
-            exp.LikeProperty: exp.Properties.Location.POST_WITH,
-        }
-
         TRANSFORMS = {
             **Postgres.Generator.TRANSFORMS,
             exp.Concat: concat_to_dpipe_sql,

@@ -290,6 +290,12 @@ class Generator(metaclass=_Generator):
     # Whether or not UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
 
+    # Whether or not the CREATE TABLE LIKE statement is supported
+    SUPPORTS_CREATE_TABLE_LIKE = True
+
+    # Whether or not the LikeProperty needs to be specified inside of the schema clause
+    LIKE_PROPERTY_INSIDE_SCHEMA = False
+
     # Whether or not the JSON extraction operators expect a value of type JSON
     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
 
@@ -1252,9 +1258,21 @@ class Generator(metaclass=_Generator):
         return f"{property_name}={self.sql(expression, 'this')}"
 
     def likeproperty_sql(self, expression: exp.LikeProperty) -> str:
-        options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)
-        options = f" {options}" if options else ""
-        return f"LIKE {self.sql(expression, 'this')}{options}"
+        if self.SUPPORTS_CREATE_TABLE_LIKE:
+            options = " ".join(f"{e.name} {self.sql(e, 'value')}" for e in expression.expressions)
+            options = f" {options}" if options else ""
+
+            like = f"LIKE {self.sql(expression, 'this')}{options}"
+            if self.LIKE_PROPERTY_INSIDE_SCHEMA and not isinstance(expression.parent, exp.Schema):
+                like = f"({like})"
+
+            return like
+
+        if expression.expressions:
+            self.unsupported("Transpilation of LIKE property options is unsupported")
+
+        select = exp.select("*").from_(expression.this).limit(0)
+        return f"AS {self.sql(select)}"
 
     def fallbackproperty_sql(self, expression: exp.FallbackProperty) -> str:
         no = "NO " if expression.args.get("no") else ""

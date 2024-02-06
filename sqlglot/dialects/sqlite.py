@@ -91,6 +91,7 @@ class SQLite(Dialect):
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
+        SUPPORTS_CREATE_TABLE_LIKE = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
@@ -151,10 +152,17 @@ class SQLite(Dialect):
             exp.TryCast: no_trycast_sql,
         }
 
+        # SQLite doesn't generally support CREATE TABLE .. properties
+        # https://www.sqlite.org/lang_createtable.html
         PROPERTIES_LOCATION = {
-            k: exp.Properties.Location.UNSUPPORTED
-            for k, v in generator.Generator.PROPERTIES_LOCATION.items()
+            prop: exp.Properties.Location.UNSUPPORTED
+            for prop in generator.Generator.PROPERTIES_LOCATION
         }
+
+        # There are a few exceptions (e.g. temporary tables) which are supported or
+        # can be transpiled to SQLite, so we explicitly override them accordingly
+        PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
+        PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
 
         LIMIT_FETCH = "LIMIT"
 

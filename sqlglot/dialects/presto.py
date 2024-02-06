@@ -291,6 +291,7 @@ class Presto(Dialect):
         STRUCT_DELIMITER = ("(", ")")
         LIMIT_ONLY_LITERALS = True
         SUPPORTS_SINGLE_ARG_CONCAT = False
+        LIKE_PROPERTY_INSIDE_SCHEMA = True
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

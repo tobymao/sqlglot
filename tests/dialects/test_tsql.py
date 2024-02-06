@@ -964,14 +964,14 @@ WHERE
         self.validate_all(
             "JSON_QUERY(r.JSON, '$.Attr_INT')",
             write={
-                "spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')",
+                "spark": 'GET_JSON_OBJECT(r.JSON, "$.Attr_INT")',
                 "tsql": "ISNULL(JSON_QUERY(r.JSON, '$.Attr_INT'), JSON_VALUE(r.JSON, '$.Attr_INT'))",
             },
         )
         self.validate_all(
             "JSON_VALUE(r.JSON, '$.Attr_INT')",
             write={
-                "spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')",
+                "spark": 'GET_JSON_OBJECT(r.JSON, "$.Attr_INT")',
                 "tsql": "ISNULL(JSON_QUERY(r.JSON, '$.Attr_INT'), JSON_VALUE(r.JSON, '$.Attr_INT'))",
             },
         )

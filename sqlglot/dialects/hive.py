@@ -445,6 +445,7 @@ class Hive(Dialect):
         EXTRACT_ALLOWS_QUOTES = False
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
+        JSON_PATH_SINGLE_QUOTE_ESCAPE = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,

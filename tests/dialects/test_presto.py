@@ -826,16 +826,16 @@ class TestPresto(Validator):
             "SELECT JSON_EXTRACT(x, '$.name')",
             write={
                 "presto": "SELECT JSON_EXTRACT(x, '$.name')",
-                "hive": "SELECT GET_JSON_OBJECT(x, '$.name')",
-                "spark": "SELECT GET_JSON_OBJECT(x, '$.name')",
+                "hive": 'SELECT GET_JSON_OBJECT(x, "$.name")',
+                "spark": 'SELECT GET_JSON_OBJECT(x, "$.name")',
             },
         )
         self.validate_all(
             "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
             write={
                 "presto": "SELECT JSON_EXTRACT_SCALAR(x, '$.name')",
-                "hive": "SELECT GET_JSON_OBJECT(x, '$.name')",
-                "spark": "SELECT GET_JSON_OBJECT(x, '$.name')",
+                "hive": 'SELECT GET_JSON_OBJECT(x, "$.name")',
+                "spark": 'SELECT GET_JSON_OBJECT(x, "$.name")',
             },
         )
         self.validate_all(

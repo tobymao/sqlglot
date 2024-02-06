@@ -394,15 +394,11 @@ class Postgres(Dialect):
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = True
         SUPPORTS_UNLOGGED_TABLES = True
 
-        JSON_PATH_MAPPING = {
-            exp.JSONPathKey: lambda n, **kwargs: n.name,
-            exp.JSONPathRoot: lambda n, **kwargs: "",
-            exp.JSONPathSubscript: lambda n, **kwargs: generator.generate_json_path(
-                n.this, **kwargs
-            ),
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
         }
-
-        SUPPORTED_JSON_PATH_PARTS = set(JSON_PATH_MAPPING)
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -443,6 +439,9 @@ class Postgres(Dialect):
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
+            exp.JSONPathKey: lambda _, e: e.name,
+            exp.JSONPathRoot: lambda *_: "",
+            exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.LastDay: no_last_day_sql,
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.LogicalAnd: rename_func("BOOL_AND"),

@@ -4,11 +4,11 @@ import typing as t
 
 import sqlglot.expressions as exp
 from sqlglot.errors import ParseError
-from sqlglot.helper import ensure_list
 from sqlglot.tokens import Token, Tokenizer, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import Lit
+    from sqlglot.dialects.dialect import DialectType
 
 
 class JSONPathTokenizer(Tokenizer):
@@ -37,8 +37,8 @@ class JSONPathTokenizer(Tokenizer):
     STRING_ESCAPES = ["\\"]
 
 
-def parse(path: str) -> t.List[exp.JSONPathPart]:
-    """Takes in a JSONPath string and converts it into a list of nodes."""
+def parse(path: str) -> exp.JSONPath:
+    """Takes in a JSON path string and parses it into a JSONPath expression."""
     tokens = JSONPathTokenizer().tokenize(path)
     size = len(tokens)
 
@@ -101,6 +101,7 @@ def parse(path: str) -> t.List[exp.JSONPathPart]:
 
         if number:
             return int(number)
+
         return False
 
     def _parse_slice() -> t.Any:
@@ -142,111 +143,55 @@ def parse(path: str) -> t.List[exp.JSONPathPart]:
 
         return node
 
-    nodes: t.List[exp.JSONPathPart] = []
+    # We canonicalize the JSON path AST so that it always starts with a
+    # "root" element, so paths like "field" will be generated as "$.field"
+    _match(TokenType.DOLLAR)
+    expressions: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
 
     while _curr():
-        if _match(TokenType.DOLLAR):
-            nodes.append(exp.JSONPathRoot())
-        elif _match(TokenType.DOT) or _match(TokenType.COLON):
+        if _match(TokenType.DOT) or _match(TokenType.COLON):
             recursive = _prev().text == ".."
             value = _match(TokenType.VAR) or _match(TokenType.IDENTIFIER) or _match(TokenType.STAR)
 
             if recursive:
-                nodes.append(exp.JSONPathRecursive(this=value.text if value else None))
+                expressions.append(exp.JSONPathRecursive(this=value.text if value else None))
             elif value:
-                nodes.append(exp.JSONPathKey(this=value.text))
+                expressions.append(exp.JSONPathKey(this=value.text))
             else:
                 raise ParseError(_error("Expected key name after DOT"))
         elif _match(TokenType.L_BRACKET):
-            nodes.append(_parse_bracket())
+            expressions.append(_parse_bracket())
         elif _match(TokenType.VAR) or _match(TokenType.IDENTIFIER):
-            nodes.append(exp.JSONPathKey(this=_prev().text))
+            expressions.append(exp.JSONPathKey(this=_prev().text))
         elif _match(TokenType.STAR):
-            nodes.append(exp.JSONPathWildcard())
+            expressions.append(exp.JSONPathWildcard())
         else:
             raise ParseError(_error(f"Unexpected {tokens[i].token_type}"))
 
-    # We canonicalize the JSON path AST so that it always starts with a
-    # "root" element, so paths like "field" will be generated as "$.field"
-    if nodes and not isinstance(nodes[0], exp.JSONPathRoot):
-        nodes.insert(0, exp.JSONPathRoot())
-
-    return nodes
+    return exp.JSONPath(expressions=expressions)
 
 
-def _generate_json_path_key(node: exp.JSONPathKey, **kwargs) -> str:
-    this = node.this
-    if this == "*" or exp.SAFE_IDENTIFIER_RE.match(this):
-        return f".{this}"
-
-    this = generate(this, **kwargs)
-    return f"[{this}]" if kwargs.get("bracketed_key_supported") else f".{this}"
+def generate(path: exp.JSONPath, dialect: DialectType = None) -> str:
+    """Generates a string from a JSONPath expression, optionally targetting a given SQL dialect."""
+    return path.sql(dialect=dialect)[1:-1]  # The slice is used to remove the string delimiters
 
 
-MAPPING: t.Dict[t.Type[exp.JSONPathPart], t.Callable[..., str]] = {
-    exp.JSONPathFilter: lambda n, **kwargs: f"?{n.this}",
-    exp.JSONPathKey: _generate_json_path_key,
-    exp.JSONPathRecursive: lambda n, **kwargs: f"..{n.this}" if n.this is not None else "..",
-    exp.JSONPathRoot: lambda n, **kwargs: "$",
-    exp.JSONPathScript: lambda n, **kwargs: f"({n.this}",
-    exp.JSONPathSlice: lambda n, **kwargs: ":".join(
-        "" if p is False else generate(p, **kwargs)
-        for p in [n.args.get("start"), n.args.get("end"), n.args.get("step")]
+JSON_PATH_PART_TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
+    exp.JSONPathFilter: lambda _, e: f"?{e.this}",
+    exp.JSONPathKey: lambda self, e: self._jsonpathkey_sql(e),
+    exp.JSONPathRecursive: lambda _, e: f"..{e.this or ''}",
+    exp.JSONPathRoot: lambda *_: "$",
+    exp.JSONPathScript: lambda _, e: f"({e.this}",
+    exp.JSONPathSelector: lambda self, e: f"[{self.json_path_part(e.this)}]",
+    exp.JSONPathSlice: lambda self, e: ":".join(
+        "" if p is False else self.json_path_part(p)
+        for p in [e.args.get("start"), e.args.get("end"), e.args.get("step")]
         if p is not None
     ),
-    exp.JSONPathSelector: lambda n, **kwargs: f"[{generate(n.this, **kwargs)}]",
-    exp.JSONPathSubscript: lambda n, **kwargs: f"[{generate(n.this, **kwargs)}]",
-    exp.JSONPathUnion: lambda n,
-    **kwargs: f"[{','.join(generate(p, **kwargs) for p in n.expressions)}]",
-    exp.JSONPathWildcard: lambda n, **kwargs: "*",
+    exp.JSONPathSubscript: lambda self, e: f"[{self.json_path_part(e.this)}]",
+    exp.JSONPathUnion: lambda self,
+    e: f"[{','.join(self.json_path_part(p) for p in e.expressions)}]",
+    exp.JSONPathWildcard: lambda *_: "*",
 }
 
-
-def generate(
-    nodes: exp.JSONPathPart | t.List[exp.JSONPathPart],
-    mapping: t.Optional[t.Dict[t.Type[exp.JSONPathPart], t.Callable[..., str]]] = None,
-    unsupported_callback: t.Optional[t.Callable[[str], None]] = None,
-    bracketed_key_supported: bool = True,
-) -> str:
-    """
-    Generates a string from a JSON Path AST.
-
-    Args:
-        nodes: One or more expressions that represent the path of interest.
-        mapping: Mapping that specifies how each expression will be generated.
-        unsupported_callback: Callback that will be called if an expression is not supported.
-        bracketed_key_supported: Whether or not the `["a b"]` lookup syntax is supported. If
-            this is `False`, then the brackets will simply be omitted.
-    """
-    unsupported_nodes: t.Set[str] = set()
-    mapping = MAPPING if mapping is None else mapping
-
-    path = []
-    for node in ensure_list(nodes):
-        if isinstance(node, exp.JSONPathPart):
-            node_class = node.__class__
-            generator = mapping.get(node_class)
-
-            if generator:
-                path.append(
-                    generator(
-                        node,
-                        mapping=mapping,
-                        unsupported_callback=unsupported_callback,
-                        bracketed_key_supported=bracketed_key_supported,
-                    )
-                )
-            else:
-                unsupported_nodes.add(node_class.__name__)
-        elif isinstance(node, str):
-            escaped = node.replace('"', '\\"')
-            path.append(f'"{escaped}"')
-        else:
-            path.append(str(node))
-
-    if unsupported_nodes and unsupported_callback:
-        unsupported_callback(
-            f"Unsupported JSON path syntax: {', '.join(k for k in unsupported_nodes)}"
-        )
-
-    return "".join(path)
+ALL_JSON_PATH_PARTS = set(JSON_PATH_PART_TRANSFORMS)

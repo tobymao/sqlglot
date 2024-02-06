@@ -11,21 +11,22 @@ class TestJsonpath(unittest.TestCase):
     maxDiff = None
 
     def test_jsonpath(self):
+        expected_expressions = [
+            exp.JSONPathRoot(),
+            exp.JSONPathKey(this="*"),
+            exp.JSONPathKey(this="a"),
+            exp.JSONPathSubscript(this=0),
+            exp.JSONPathKey(this="x"),
+            exp.JSONPathUnion(expressions=[exp.JSONPathWildcard(), "y", 1]),
+            exp.JSONPathKey(this="z"),
+            exp.JSONPathSelector(this=exp.JSONPathFilter(this="(@.a == 'b'), 1:")),
+            exp.JSONPathSubscript(this=exp.JSONPathSlice(start=1, end=5, step=None)),
+            exp.JSONPathUnion(expressions=[1, exp.JSONPathFilter(this="@.a")]),
+            exp.JSONPathSelector(this=exp.JSONPathScript(this="@.x)")),
+        ]
         self.assertEqual(
             jsonpath.parse("$.*.a[0]['x'][*, 'y', 1].z[?(@.a == 'b'), 1:][1:5][1,?@.a][(@.x)]"),
-            [
-                exp.JSONPathRoot(),
-                exp.JSONPathKey(this="*"),
-                exp.JSONPathKey(this="a"),
-                exp.JSONPathSubscript(this=0),
-                exp.JSONPathKey(this="x"),
-                exp.JSONPathUnion(expressions=[exp.JSONPathWildcard(), "y", 1]),
-                exp.JSONPathKey(this="z"),
-                exp.JSONPathSelector(this=exp.JSONPathFilter(this="(@.a == 'b'), 1:")),
-                exp.JSONPathSubscript(this=exp.JSONPathSlice(start=1, end=5, step=None)),
-                exp.JSONPathUnion(expressions=[1, exp.JSONPathFilter(this="@.a")]),
-                exp.JSONPathSelector(this=exp.JSONPathScript(this="@.x)")),
-            ],
+            exp.JSONPath(expressions=expected_expressions),
         )
 
     def test_identity(self):

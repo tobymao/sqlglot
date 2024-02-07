@@ -1969,7 +1969,7 @@ class Final(Expression):
 
 
 class Offset(Expression):
-    arg_types = {"this": False, "expression": True}
+    arg_types = {"this": False, "expression": True, "expressions": False}
 
 
 class Order(Expression):

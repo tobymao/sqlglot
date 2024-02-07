@@ -1848,11 +1848,11 @@ class Generator(metaclass=_Generator):
 
     def offset_sql(self, expression: exp.Offset) -> str:
         this = self.sql(expression, "this")
-        expression = expression.expression
-        expression = (
-            self._simplify_unless_literal(expression) if self.LIMIT_ONLY_LITERALS else expression
-        )
-        return f"{this}{self.seg('OFFSET')} {self.sql(expression)}"
+        value = expression.expression
+        value = self._simplify_unless_literal(value) if self.LIMIT_ONLY_LITERALS else value
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" BY {expressions}" if expressions else ""
+        return f"{this}{self.seg('OFFSET')} {self.sql(value)}{expressions}"
 
     def setitem_sql(self, expression: exp.SetItem) -> str:
         kind = self.sql(expression, "kind")

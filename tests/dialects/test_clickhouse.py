@@ -75,6 +75,7 @@ class TestClickhouse(Validator):
         self.validate_identity("CAST(x as MEDIUMINT)", "CAST(x AS Int32)")
         self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
+        self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity(
             "SELECT * FROM table LIMIT 1 BY CONCAT(datalayerVariantNo, datalayerProductId, warehouse)"
         )

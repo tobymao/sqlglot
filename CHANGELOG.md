@@ -1,6 +1,60 @@
 Changelog
 =========
 
+## [v21.0.0] - 2024-02-07
+### :boom: BREAKING CHANGES
+- due to [`b4e8868`](https://github.com/tobymao/sqlglot/commit/b4e886877ecfbafdd64c515c765c3c54764bd987) - improve transpilation of JSON paths across dialects *(PR [#2883](https://github.com/tobymao/sqlglot/pull/2883) by [@georgesittas](https://github.com/georgesittas))*:
+
+  improve transpilation of JSON paths across dialects (#2883)
+
+- due to [`aa388ea`](https://github.com/tobymao/sqlglot/commit/aa388ea64404a26550dbb0734f4d3e35111f9e2c) - ignore nulls closes [#2896](https://github.com/tobymao/sqlglot/pull/2896) *(PR [#2898](https://github.com/tobymao/sqlglot/pull/2898) by [@tobymao](https://github.com/tobymao))*:
+
+  ignore nulls closes #2896 (#2898)
+
+- due to [`617a8c0`](https://github.com/tobymao/sqlglot/commit/617a8c0dfc5e9f2716f7827381af0db2e135059e) - timestamp diff for mysql and databricks *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  timestamp diff for mysql and databricks
+
+- due to [`b00b393`](https://github.com/tobymao/sqlglot/commit/b00b393d853ae05a3fce4ef78d7673edbcabf67d) - use raise instead of assert for assert_is *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  use raise instead of assert for assert_is
+
+- due to [`326aa31`](https://github.com/tobymao/sqlglot/commit/326aa31e32e511f4e40d3a5a7b1d599b5e2c1307) - deprecate case where transforms can be plain strs *(PR [#2919](https://github.com/tobymao/sqlglot/pull/2919) by [@georgesittas](https://github.com/georgesittas))*:
+
+  deprecate case where transforms can be plain strs (#2919)
+
+
+### :sparkles: New Features
+- [`fb450f0`](https://github.com/tobymao/sqlglot/commit/fb450f0263ecd6b7c9d0f49d84441327d50b9d83) - add tsql right left auto casting closes [#2899](https://github.com/tobymao/sqlglot/pull/2899) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`617a8c0`](https://github.com/tobymao/sqlglot/commit/617a8c0dfc5e9f2716f7827381af0db2e135059e) - timestamp diff for mysql and databricks *(commit by [@tobymao](https://github.com/tobymao))*
+- [`3fa92ca`](https://github.com/tobymao/sqlglot/commit/3fa92cac285cbb2bd9d8b5724dadb77be7e12731) - **redshift**: parse GETDATE *(PR [#2904](https://github.com/tobymao/sqlglot/pull/2904) by [@erickpeirson](https://github.com/erickpeirson))*
+- [`d262139`](https://github.com/tobymao/sqlglot/commit/d26213998b27fa9b6a66b6d21ab5a3a15f65635e) - **snowflake**: implement parsing logic for SHOW TABLES *(PR [#2913](https://github.com/tobymao/sqlglot/pull/2913) by [@tekumara](https://github.com/tekumara))*
+- [`838e780`](https://github.com/tobymao/sqlglot/commit/838e7800c32ad16074efef6a188ebd89083a9717) - improve transpilation of CREATE TABLE LIKE statement *(PR [#2923](https://github.com/tobymao/sqlglot/pull/2923) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2922](https://github.com/tobymao/sqlglot/issues/2922) opened by [@tharwan](https://github.com/tharwan)*
+- [`cbbad1f`](https://github.com/tobymao/sqlglot/commit/cbbad1fc40b6b2ca837ddb0f798b1802ad4063da) - improve transpilation of JSON path wildcards *(PR [#2924](https://github.com/tobymao/sqlglot/pull/2924) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`aa388ea`](https://github.com/tobymao/sqlglot/commit/aa388ea64404a26550dbb0734f4d3e35111f9e2c) - ignore nulls closes [#2896](https://github.com/tobymao/sqlglot/pull/2896) *(PR [#2898](https://github.com/tobymao/sqlglot/pull/2898) by [@tobymao](https://github.com/tobymao))*
+- [`b00b393`](https://github.com/tobymao/sqlglot/commit/b00b393d853ae05a3fce4ef78d7673edbcabf67d) - use raise instead of assert for assert_is *(commit by [@tobymao](https://github.com/tobymao))*
+- [`ab97246`](https://github.com/tobymao/sqlglot/commit/ab972462b1c545b4a60bb88cb40cdb98cb64e360) - array overlaps closes [#2903](https://github.com/tobymao/sqlglot/pull/2903) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f3bdcb0`](https://github.com/tobymao/sqlglot/commit/f3bdcb087bb993289c4a1a5d2de54155ae2d2681) - **duckdb**: fix JSON pointer path parsing, reduce warning noise *(PR [#2911](https://github.com/tobymao/sqlglot/pull/2911) by [@georgesittas](https://github.com/georgesittas))*
+- [`072264f`](https://github.com/tobymao/sqlglot/commit/072264f8af25737050f7becd27af5a9331bde896) - **mysql**: SHOW SCHEMAS *(PR [#2916](https://github.com/tobymao/sqlglot/pull/2916) by [@barakalon](https://github.com/barakalon))*
+- [`15fdff2`](https://github.com/tobymao/sqlglot/commit/15fdff2df3363ab8d3595e7eeb8baee65e525733) - **optimizer**: don't remove NOT parenthesis *(PR [#2917](https://github.com/tobymao/sqlglot/pull/2917) by [@barakalon](https://github.com/barakalon))*
+- [`d20d826`](https://github.com/tobymao/sqlglot/commit/d20d826e9cc4a9b0d636a9b56b5547cd906a5903) - have table exclude this if schema target *(PR [#2921](https://github.com/tobymao/sqlglot/pull/2921) by [@eakmanrq](https://github.com/eakmanrq))*
+
+### :recycle: Refactors
+- [`b4e8868`](https://github.com/tobymao/sqlglot/commit/b4e886877ecfbafdd64c515c765c3c54764bd987) - improve transpilation of JSON paths across dialects *(PR [#2883](https://github.com/tobymao/sqlglot/pull/2883) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2839](https://github.com/tobymao/sqlglot/issues/2839) opened by [@FlaviovLeal](https://github.com/FlaviovLeal)*
+- [`9481f94`](https://github.com/tobymao/sqlglot/commit/9481f946b068e43d99c9aaae6e1c59abf384eeac) - several JSON path improvements *(PR [#2914](https://github.com/tobymao/sqlglot/pull/2914) by [@georgesittas](https://github.com/georgesittas))*
+- [`326aa31`](https://github.com/tobymao/sqlglot/commit/326aa31e32e511f4e40d3a5a7b1d599b5e2c1307) - deprecate case where transforms can be plain strs *(PR [#2919](https://github.com/tobymao/sqlglot/pull/2919) by [@georgesittas](https://github.com/georgesittas))*
+- [`15582f4`](https://github.com/tobymao/sqlglot/commit/15582f40bd18da3fa7adbe454b401ef8d31a131e) - move JSON path generation logic in Generator *(PR [#2920](https://github.com/tobymao/sqlglot/pull/2920) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`afb4f9b`](https://github.com/tobymao/sqlglot/commit/afb4f9bfe074200e60b5a870267fe21aa04a87c5) - switch to ruff *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f9fdf7b`](https://github.com/tobymao/sqlglot/commit/f9fdf7b3bb25aa7e830b70600728bb35ee1e4ff7) - switch to ruff *(PR [#2912](https://github.com/tobymao/sqlglot/pull/2912) by [@tobymao](https://github.com/tobymao))*
+- [`71c33fa`](https://github.com/tobymao/sqlglot/commit/71c33fa13b9c416ae50acb10a9b08dcfcfd35f92) - pandas warning *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v20.11.0] - 2024-01-29
 ### :boom: BREAKING CHANGES
 - due to [`eb8b40a`](https://github.com/tobymao/sqlglot/commit/eb8b40aade54eec8b34a808dda95420dcf7a7e13) - deprecate NULL, TRUE, FALSE constant expressions *(PR [#2884](https://github.com/tobymao/sqlglot/pull/2884) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2515,3 +2569,4 @@ Changelog
 [v20.9.0]: https://github.com/tobymao/sqlglot/compare/v20.8.0...v20.9.0
 [v20.10.0]: https://github.com/tobymao/sqlglot/compare/v20.9.0...v20.10.0
 [v20.11.0]: https://github.com/tobymao/sqlglot/compare/v20.10.0...v20.11.0
+[v21.0.0]: https://github.com/tobymao/sqlglot/compare/v20.11.0...v21.0.0

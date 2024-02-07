@@ -2465,8 +2465,14 @@ class Parser(metaclass=_Parser):
                         this.set(key, expression)
                         if key == "limit":
                             offset = expression.args.pop("offset", None)
+
                             if offset:
-                                this.set("offset", exp.Offset(expression=offset))
+                                offset = exp.Offset(expression=offset)
+                                this.set("offset", offset)
+
+                                limit_by_expressions = expression.expressions
+                                expression.set("expressions", None)
+                                offset.set("expressions", limit_by_expressions)
                         continue
                 break
         return this
@@ -3341,7 +3347,12 @@ class Parser(metaclass=_Parser):
                 offset = None
 
             limit_exp = self.expression(
-                exp.Limit, this=this, expression=expression, offset=offset, comments=comments
+                exp.Limit,
+                this=this,
+                expression=expression,
+                offset=offset,
+                comments=comments,
+                expressions=self._parse_limit_by(),
             )
 
             return limit_exp
@@ -3377,7 +3388,13 @@ class Parser(metaclass=_Parser):
 
         count = self._parse_term()
         self._match_set((TokenType.ROW, TokenType.ROWS))
-        return self.expression(exp.Offset, this=this, expression=count)
+
+        return self.expression(
+            exp.Offset, this=this, expression=count, expressions=self._parse_limit_by()
+        )
+
+    def _parse_limit_by(self) -> t.Optional[t.List[exp.Expression]]:
+        return self._match_text_seq("BY") and self._parse_csv(self._parse_bitwise)
 
     def _parse_locks(self) -> t.List[exp.Lock]:
         locks = []

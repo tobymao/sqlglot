@@ -9,9 +9,8 @@ from sqlglot.dialects.dialect import (
     concat_ws_to_dpipe_sql,
     date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
-    json_path_segments,
+    json_extract_segments,
     no_tablesample_sql,
-    parse_json_extract_path,
     rename_func,
 )
 from sqlglot.dialects.postgres import Postgres
@@ -20,17 +19,6 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-
-
-def _json_extract_sql(
-    self: Redshift.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
-) -> str:
-    return self.func(
-        "JSON_EXTRACT_PATH_TEXT",
-        expression.this,
-        *json_path_segments(self, expression.expression),
-        expression.args.get("null_if_invalid"),
-    )
 
 
 def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
@@ -72,9 +60,6 @@ class Redshift(Postgres):
             "DATEDIFF": _parse_date_delta(exp.TsOrDsDiff),
             "DATE_DIFF": _parse_date_delta(exp.TsOrDsDiff),
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
-            "JSON_EXTRACT_PATH_TEXT": parse_json_extract_path(
-                exp.JSONExtractScalar, supports_null_if_invalid=True
-            ),
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
         }
@@ -210,8 +195,7 @@ class Redshift(Postgres):
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.FromBase: rename_func("STRTOL"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
-            exp.JSONExtract: _json_extract_sql,
-            exp.JSONExtractScalar: _json_extract_sql,
+            exp.JSONExtract: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Select: transforms.preprocess(

@@ -19,7 +19,9 @@ DATE_ADD_OR_DIFF = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateDiff, exp.TsOrDsD
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import B, E
+    from sqlglot._typing import B, E, F
+
+    JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
 
 logger = logging.getLogger("sqlglot")
 
@@ -517,9 +519,7 @@ def if_sql(
     return _if_sql
 
 
-def arrow_json_extract_sql(
-    self: Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
-) -> str:
+def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this, "json"))
@@ -1011,42 +1011,57 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
 
 
 def parse_json_extract_path(
-    expr_type: t.Type[E],
-    supports_null_if_invalid: bool = False,
-) -> t.Callable[[t.List], E]:
-    def _parse_json_extract_path(args: t.List) -> E:
-        null_if_invalid = None
-
+    expr_type: t.Type[F], zero_based_indexing: bool = True
+) -> t.Callable[[t.List], F]:
+    def _parse_json_extract_path(args: t.List) -> F:
         segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
         for arg in args[1:]:
-            if isinstance(arg, exp.Literal):
-                text = arg.name
-                if is_int(text):
-                    segments.append(exp.JSONPathSubscript(this=int(text)))
-                else:
-                    segments.append(exp.JSONPathKey(this=text))
-            elif supports_null_if_invalid:
-                null_if_invalid = arg
+            if not isinstance(arg, exp.Literal):
+                # We use the fallback parser because we can't really transpile non-literals safely
+                return expr_type.from_arg_list(args)
 
-        this = seq_get(args, 0)
-        jsonpath = exp.JSONPath(expressions=segments)
+            text = arg.name
+            if is_int(text):
+                index = int(text)
+                segments.append(
+                    exp.JSONPathSubscript(this=index if zero_based_indexing else index - 1)
+                )
+            else:
+                segments.append(exp.JSONPathKey(this=text))
 
         # This is done to avoid failing in the expression validator due to the arg count
         del args[2:]
-
-        if expr_type is exp.JSONExtractScalar:
-            return expr_type(this=this, expression=jsonpath, null_if_invalid=null_if_invalid)
-
-        return expr_type(this=this, expression=jsonpath)
+        return expr_type(this=seq_get(args, 0), expression=exp.JSONPath(expressions=segments))
 
     return _parse_json_extract_path
 
 
-def json_path_segments(self: Generator, expression: exp.JSONPath) -> t.List[str]:
-    segments = []
-    for segment in expression.expressions:
-        path = self.sql(segment)
-        if path:
-            segments.append(f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}")
+def json_extract_segments(
+    name: str, quoted_index: bool = True
+) -> t.Callable[[Generator, JSON_EXTRACT_TYPE], str]:
+    def _json_extract_segments(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
+        path = expression.expression
+        if not isinstance(path, exp.JSONPath):
+            return rename_func(name)(self, expression)
 
-    return segments
+        segments = []
+        for segment in path.expressions:
+            path = self.sql(segment)
+            if path:
+                if isinstance(segment, exp.JSONPathPart) and (
+                    quoted_index or not isinstance(segment, exp.JSONPathSubscript)
+                ):
+                    path = f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
+
+                segments.append(path)
+
+        return self.func(name, expression.this, *segments)
+
+    return _json_extract_segments
+
+
+def json_path_key_only_name(self: Generator, expression: exp.JSONPathKey) -> str:
+    if isinstance(expression.this, exp.JSONPathWildcard):
+        self.unsupported("Unsupported wildcard in JSONPathKey expression")
+
+    return expression.name

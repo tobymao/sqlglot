@@ -306,6 +306,9 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
         self.validate_identity(
+            """SELECT JSON_EXTRACT_PATH_TEXT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}', 'f4', 'f6', TRUE)"""
+        )
+        self.validate_identity(
             "SELECT CONCAT('abc', 'def')",
             "SELECT 'abc' || 'def'",
         )

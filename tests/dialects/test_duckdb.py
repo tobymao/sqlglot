@@ -41,6 +41,7 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("SELECT 1 WHERE x > $1")
         self.validate_identity("SELECT 1 WHERE x > $name")
+        self.validate_identity("""SELECT '{"x": 1}' -> c FROM t""")
 
         self.assertEqual(
             parse_one("select * from t limit (select 5)").sql(dialect="duckdb"),

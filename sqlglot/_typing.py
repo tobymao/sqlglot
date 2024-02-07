@@ -13,4 +13,5 @@ if t.TYPE_CHECKING:
 A = t.TypeVar("A", bound=t.Any)
 B = t.TypeVar("B", bound="sqlglot.exp.Binary")
 E = t.TypeVar("E", bound="sqlglot.exp.Expression")
+F = t.TypeVar("F", bound="sqlglot.exp.Func")
 T = t.TypeVar("T")

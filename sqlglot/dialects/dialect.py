@@ -19,9 +19,8 @@ DATE_ADD_OR_DIFF = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateDiff, exp.TsOrDsD
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import B, E
+    from sqlglot._typing import B, E, F
 
-    F = t.TypeVar("F", bound="exp.Func")
     JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
 
 logger = logging.getLogger("sqlglot")

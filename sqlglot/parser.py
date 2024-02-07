@@ -3340,8 +3340,18 @@ class Parser(metaclass=_Parser):
             else:
                 offset = None
 
+            if self._match_text_seq("BY"):
+                expressions = self._parse_csv(self._parse_bitwise)
+            else:
+                expressions = None
+
             limit_exp = self.expression(
-                exp.Limit, this=this, expression=expression, offset=offset, comments=comments
+                exp.Limit,
+                this=this,
+                expression=expression,
+                offset=offset,
+                comments=comments,
+                expressions=expressions,
             )
 
             return limit_exp

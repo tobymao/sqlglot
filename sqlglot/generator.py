@@ -1841,7 +1841,10 @@ class Generator(metaclass=_Generator):
 
         args_sql = ", ".join(self.sql(e) for e in args)
         args_sql = f"({args_sql})" if any(top and not e.is_number for e in args) else args_sql
-        return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args_sql}"
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" BY {expressions}" if expressions else ""
+
+        return f"{this}{self.seg('TOP' if top else 'LIMIT')} {args_sql}{expressions}"
 
     def offset_sql(self, expression: exp.Offset) -> str:
         this = self.sql(expression, "this")

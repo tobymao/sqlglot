@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v21.0.1] - 2024-02-07
+### :sparkles: New Features
+- [`3a20eac`](https://github.com/tobymao/sqlglot/commit/3a20eaccbf5d5a80bd24b95c837cca8103dfe70a) - **clickhouse**: add support for JSONExtractString, clean up some helpers *(PR [#2925](https://github.com/tobymao/sqlglot/pull/2925) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2051](https://github.com/tobymao/sqlglot/issues/2051) opened by [@BTheunissen](https://github.com/BTheunissen)*
+
+
 ## [v21.0.0] - 2024-02-07
 ### :boom: BREAKING CHANGES
 - due to [`b4e8868`](https://github.com/tobymao/sqlglot/commit/b4e886877ecfbafdd64c515c765c3c54764bd987) - improve transpilation of JSON paths across dialects *(PR [#2883](https://github.com/tobymao/sqlglot/pull/2883) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2570,3 +2576,4 @@ Changelog
 [v20.10.0]: https://github.com/tobymao/sqlglot/compare/v20.9.0...v20.10.0
 [v20.11.0]: https://github.com/tobymao/sqlglot/compare/v20.10.0...v20.11.0
 [v21.0.0]: https://github.com/tobymao/sqlglot/compare/v20.11.0...v21.0.0
+[v21.0.1]: https://github.com/tobymao/sqlglot/compare/v21.0.0...v21.0.1

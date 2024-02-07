@@ -1126,6 +1126,7 @@ class TestDialect(Validator):
             write={
                 "": """JSON_EXTRACT(x, '$["a b"]')""",
                 "bigquery": """JSON_EXTRACT(x, '$[\\'a b\\']')""",
+                "clickhouse": "JSONExtractString(x, 'a b')",
                 "duckdb": """x -> '$."a b"'""",
                 "mysql": """JSON_EXTRACT(x, '$."a b"')""",
                 "postgres": "JSON_EXTRACT_PATH(x, 'a b')",
@@ -1153,6 +1154,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
+                "clickhouse": "JSONExtractString(x, 'y')",
                 "doris": "x -> '$.y'",
                 "duckdb": "x -> '$.y'",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
@@ -1170,6 +1172,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT_SCALAR(x, '$.y')",
             read={
                 "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y')",
+                "clickhouse": "JSONExtractString(x, 'y')",
                 "duckdb": "x ->> 'y'",
                 "postgres": "x ->> 'y'",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
@@ -1180,6 +1183,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y')",
+                "clickhouse": "JSONExtractString(x, 'y')",
                 "duckdb": "x ->> '$.y'",
                 "postgres": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
@@ -1204,6 +1208,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
+                "clickhouse": "JSONExtractString(x, 'y', 1, 'z')",
                 "doris": "x -> '$.y[0].z'",
                 "duckdb": "x -> '$.y[0].z'",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
@@ -1222,6 +1227,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
             read={
                 "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
+                "clickhouse": "JSONExtractString(x, 'y', 1, 'z')",
                 "duckdb": "x ->> '$.y[0].z'",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
                 "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y[0].z')",
@@ -1230,6 +1236,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
+                "clickhouse": "JSONExtractString(x, 'y', 1, 'z')",
                 "duckdb": "x ->> '$.y[0].z'",
                 "postgres": "JSON_EXTRACT_PATH_TEXT(x, 'y', '0', 'z')",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
@@ -1244,6 +1251,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y[*]')",
             write={
                 "bigquery": UnsupportedError,
+                "clickhouse": UnsupportedError,
                 "duckdb": "x -> '$.y[*]'",
                 "mysql": "JSON_EXTRACT(x, '$.y[*]')",
                 "postgres": UnsupportedError,
@@ -1259,6 +1267,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y[*]')",
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
+                "clickhouse": "JSONExtractString(x, 'y')",
                 "postgres": "JSON_EXTRACT_PATH(x, 'y')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "snowflake": "GET_PATH(x, 'y')",
@@ -1270,6 +1279,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y.*')",
             write={
                 "bigquery": UnsupportedError,
+                "clickhouse": UnsupportedError,
                 "duckdb": "x -> '$.y.*'",
                 "mysql": "JSON_EXTRACT(x, '$.y.*')",
                 "postgres": UnsupportedError,

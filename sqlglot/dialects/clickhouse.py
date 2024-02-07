@@ -8,12 +8,15 @@ from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
     date_delta_sql,
     inline_array_sql,
+    json_extract_segments,
+    json_path_key_only_name,
     no_pivot_sql,
+    parse_json_extract_path,
     rename_func,
     var_map_sql,
 )
 from sqlglot.errors import ParseError
-from sqlglot.helper import seq_get
+from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import parse_var_map
 from sqlglot.tokens import Token, TokenType
 
@@ -119,6 +122,9 @@ class ClickHouse(Dialect):
             ),
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
+            ),
+            "JSONEXTRACTSTRING": parse_json_extract_path(
+                exp.JSONExtractScalar, zero_based_indexing=False
             ),
             "MAP": parse_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
@@ -523,6 +529,12 @@ class ClickHouse(Dialect):
             exp.DataType.Type.VARCHAR: "String",
         }
 
+        SUPPORTED_JSON_PATH_PARTS = {
+            exp.JSONPathKey,
+            exp.JSONPathRoot,
+            exp.JSONPathSubscript,
+        }
+
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             **STRING_TYPE_MAPPING,
@@ -575,6 +587,10 @@ class ClickHouse(Dialect):
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),
+            exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
+            exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
+            exp.JSONPathKey: json_path_key_only_name,
+            exp.JSONPathRoot: lambda *_: "",
             exp.Map: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Nullif: rename_func("nullIf"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
@@ -613,6 +629,10 @@ class ClickHouse(Dialect):
             "FUNCTION",
             "NAMED COLLECTION",
         }
+
+        def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
+            this = self.json_path_part(expression.this)
+            return str(int(this) + 1) if is_int(this) else this
 
         def likeproperty_sql(self, expression: exp.LikeProperty) -> str:
             return f"AS {self.sql(expression, 'this')}"

@@ -319,6 +319,18 @@ class TestPostgres(Validator):
         )
 
         self.validate_all(
+            "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
+            read={
+                "clickhouse": "SELECT JSONExtractString(x, k1, k2, k3) FROM t",
+                "redshift": "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
+            },
+            write={
+                "clickhouse": "SELECT JSONExtractString(x, k1, k2, k3) FROM t",
+                "postgres": "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
+                "redshift": "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
+            },
+        )
+        self.validate_all(
             "x #> 'y'",
             read={
                 "": "JSONB_EXTRACT(x, 'y')",

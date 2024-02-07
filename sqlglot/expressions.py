@@ -5017,10 +5017,9 @@ class JSONBContains(Binary):
 
 
 class JSONExtract(Binary, Func):
-    # MySQL and SQLite support a variant of JSON_EXTRACT where you can have multiple JSON
-    # paths and you get back a list of values. These paths will be stored in `expressions`
     arg_types = {"this": True, "expression": True, "expressions": False}
     _sql_names = ["JSON_EXTRACT"]
+    is_var_len_args = True
 
     @property
     def output_name(self) -> str:
@@ -5028,8 +5027,9 @@ class JSONExtract(Binary, Func):
 
 
 class JSONExtractScalar(Binary, Func):
-    arg_types = {"this": True, "expression": True, "null_if_invalid": False}
+    arg_types = {"this": True, "expression": True, "expressions": False}
     _sql_names = ["JSON_EXTRACT_SCALAR"]
+    is_var_len_args = True
 
     @property
     def output_name(self) -> str:

@@ -3851,12 +3851,14 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.AtTimeZone, this=this, zone=self._parse_unary())
 
     def _parse_column(self) -> t.Optional[exp.Expression]:
+        this = self._parse_column_reference()
+        return self._parse_column_ops(this) if this else self._parse_bracket(this)
+
+    def _parse_column_reference(self) -> t.Optional[exp.Expression]:
         this = self._parse_field()
         if isinstance(this, exp.Identifier):
             this = self.expression(exp.Column, this=this)
-        elif not this:
-            return self._parse_bracket(this)
-        return self._parse_column_ops(this)
+        return this
 
     def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         this = self._parse_bracket(this)
@@ -3870,13 +3872,7 @@ class Parser(metaclass=_Parser):
                 if not field:
                     self.raise_error("Expected type")
             elif op and self._curr:
-                self._advance()
-                value = self._prev.text
-                field = (
-                    exp.Literal.number(value)
-                    if self._prev.token_type == TokenType.NUMBER
-                    else exp.Literal.string(value)
-                )
+                field = self._parse_column_reference()
             else:
                 field = self._parse_field(anonymous_func=True, any_token=True)
 

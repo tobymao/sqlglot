@@ -10,7 +10,8 @@ from sqlglot.dialects.dialect import (
     bool_xor_sql,
     datestrtodate_sql,
     format_time_lambda,
-    json_path_segments,
+    json_extract_segments,
+    json_path_key_only_name,
     max_or_greatest,
     merge_without_target_sql,
     min_or_least,
@@ -186,20 +187,6 @@ def _to_timestamp(args: t.List) -> exp.Expression:
 
     # https://www.postgresql.org/docs/current/functions-formatting.html
     return format_time_lambda(exp.StrToTime, "postgres")(args)
-
-
-def _json_extract_sql(
-    self: Postgres.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
-) -> str:
-    return self.func(
-        (
-            "JSON_EXTRACT_PATH"
-            if isinstance(expression, exp.JSONExtract)
-            else "JSON_EXTRACT_PATH_TEXT"
-        ),
-        expression.this,
-        *json_path_segments(self, expression.expression),
-    )
 
 
 class Postgres(Dialect):
@@ -435,11 +422,12 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.GroupConcat: _string_agg_sql,
-            exp.JSONExtract: _json_extract_sql,
-            exp.JSONExtractScalar: _json_extract_sql,
+            exp.JSONExtract: json_extract_segments("JSON_EXTRACT_PATH"),
+            exp.JSONExtractScalar: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),
+            exp.JSONPathKey: json_path_key_only_name,
             exp.JSONPathRoot: lambda *_: "",
             exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
             exp.LastDay: no_last_day_sql,
@@ -494,12 +482,6 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
-
-        def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
-            if not isinstance(expression.this, str):
-                self.unsupported("Unsupported wildcard in JSONPathKey expression")
-
-            return expression.name
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             """Forms like ARRAY[1, 2, 3][3] aren't allowed; we need to wrap the ARRAY."""

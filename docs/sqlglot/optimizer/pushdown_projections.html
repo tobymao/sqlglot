@@ -34,7 +34,7 @@
                     <a class="variable" href="#SELECT_ALL">SELECT_ALL</a>
             </li>
             <li>
-                    <a class="function" href="#DEFAULT_SELECTION">DEFAULT_SELECTION</a>
+                    <a class="function" href="#default_selection">default_selection</a>
             </li>
             <li>
                     <a class="function" href="#pushdown_projections">pushdown_projections</a>
@@ -72,10 +72,10 @@
 </span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="c1"># Sentinel value that means an outer query selecting ALL columns</span>
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="n">SELECT_ALL</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a>
-</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="c1"># Selection to use if selection list is empty</span>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="n">DEFAULT_SELECTION</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">is_agg</span><span class="p">:</span> <span class="n">alias</span><span class="p">(</span>
-</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a>    <span class="n">exp</span><span class="o">.</span><span class="n">Max</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">is_agg</span> <span class="k">else</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="p">)</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="c1"># Selection to use if selection list is empty</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="k">def</span> <span class="nf">default_selection</span><span class="p">(</span><span class="n">is_agg</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Alias</span><span class="p">:</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a>    <span class="k">return</span> <span class="n">alias</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Max</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">is_agg</span> <span class="k">else</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
 </span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="k">def</span> <span class="nf">pushdown_projections</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">remove_unused_selections</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -193,7 +193,7 @@
 </span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>
 </span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a>    <span class="c1"># If there are no remaining selections, just select a single constant</span>
 </span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">new_selections</span><span class="p">:</span>
-</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>        <span class="n">new_selections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DEFAULT_SELECTION</span><span class="p">(</span><span class="n">is_agg</span><span class="p">))</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>        <span class="n">new_selections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">default_selection</span><span class="p">(</span><span class="n">is_agg</span><span class="p">))</span>
 </span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>
 </span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>    <span class="n">scope</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">*</span><span class="n">new_selections</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>
@@ -215,20 +215,19 @@
     
 
                 </section>
-                <section id="DEFAULT_SELECTION">
-                            <input id="DEFAULT_SELECTION-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                <section id="default_selection">
+                            <input id="default_selection-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">DEFAULT_SELECTION</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">is_agg</span></span><span class="return-annotation">):</span></span>
+        <span class="name">default_selection</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">is_agg</span><span class="p">:</span> <span class="nb">bool</span></span><span class="return-annotation">) -> <span class="n"><a href="../expressions.html#Alias">sqlglot.expressions.Alias</a></span>:</span></span>
 
-                <label class="view-source-button" for="DEFAULT_SELECTION-view-source"><span>View Source</span></label>
+                <label class="view-source-button" for="default_selection-view-source"><span>View Source</span></label>
 
     </div>
-    <a class="headerlink" href="#DEFAULT_SELECTION"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="DEFAULT_SELECTION-13"><a href="#DEFAULT_SELECTION-13"><span class="linenos">13</span></a><span class="n">DEFAULT_SELECTION</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">is_agg</span><span class="p">:</span> <span class="n">alias</span><span class="p">(</span>
-</span><span id="DEFAULT_SELECTION-14"><a href="#DEFAULT_SELECTION-14"><span class="linenos">14</span></a>    <span class="n">exp</span><span class="o">.</span><span class="n">Max</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">is_agg</span> <span class="k">else</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span>
-</span><span id="DEFAULT_SELECTION-15"><a href="#DEFAULT_SELECTION-15"><span class="linenos">15</span></a><span class="p">)</span>
+    <a class="headerlink" href="#default_selection"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="default_selection-14"><a href="#default_selection-14"><span class="linenos">14</span></a><span class="k">def</span> <span class="nf">default_selection</span><span class="p">(</span><span class="n">is_agg</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exp</span><span class="o">.</span><span class="n">Alias</span><span class="p">:</span>
+</span><span id="default_selection-15"><a href="#default_selection-15"><span class="linenos">15</span></a>    <span class="k">return</span> <span class="n">alias</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Max</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">exp</span><span class="o">.</span><span class="n">Literal</span><span class="o">.</span><span class="n">number</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="n">is_agg</span> <span class="k">else</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
 </span></pre></div>
 
 

@@ -3872,11 +3872,7 @@ class Parser(metaclass=_Parser):
                 if not field:
                     self.raise_error("Expected type")
             elif op and self._curr:
-                if self._curr.token_type == TokenType.NUMBER:
-                    self._advance()
-                    field = exp.Literal.number(self._prev.text)
-                else:
-                    field = self._parse_column_reference()
+                field = self._parse_column_reference()
             else:
                 field = self._parse_field(anonymous_func=True, any_token=True)
 

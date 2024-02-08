@@ -5,7 +5,6 @@ import typing as t
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
-    create_with_partitions_sql,
     datestrtodate_sql,
     format_time_lambda,
     no_trycast_sql,
@@ -13,6 +12,7 @@ from sqlglot.dialects.dialect import (
     str_position_sql,
     timestrtotime_sql,
 )
+from sqlglot.transforms import preprocess, move_schema_columns_to_partitioned_by
 
 
 def _date_add_sql(kind: str) -> t.Callable[[Drill.Generator, exp.DateAdd | exp.DateSub], str]:
@@ -125,7 +125,7 @@ class Drill(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),
-            exp.Create: create_with_partitions_sql,
+            exp.Create: preprocess([move_schema_columns_to_partitioned_by]),
             exp.DateAdd: _date_add_sql("ADD"),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateSub: _date_add_sql("SUB"),

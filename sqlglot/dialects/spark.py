@@ -5,8 +5,14 @@ import typing as t
 from sqlglot import exp
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.dialects.hive import _parse_ignore_nulls
-from sqlglot.dialects.spark2 import Spark2
+from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider
 from sqlglot.helper import seq_get
+from sqlglot.transforms import (
+    ctas_with_tmp_tables_to_create_tmp_view,
+    remove_unique_constraints,
+    preprocess,
+    move_partitioned_by_to_schema_columns,
+)
 
 
 def _parse_datediff(args: t.List) -> exp.Expression:
@@ -33,6 +39,15 @@ def _parse_datediff(args: t.List) -> exp.Expression:
     return exp.DateDiff(
         this=exp.TsOrDsToDate(this=this), expression=exp.TsOrDsToDate(this=expression), unit=unit
     )
+
+
+def _normalize_partition(e: exp.Expression) -> exp.Expression:
+    """Normalize the expressions in PARTITION BY (<expression>, <expression>, ...)"""
+    if isinstance(e, str):
+        return exp.to_identifier(e)
+    if isinstance(e, exp.Literal):
+        return exp.to_identifier(e.name)
+    return e
 
 
 class Spark(Spark2):
@@ -75,6 +90,17 @@ class Spark(Spark2):
 
         TRANSFORMS = {
             **Spark2.Generator.TRANSFORMS,
+            exp.Create: preprocess(
+                [
+                    remove_unique_constraints,
+                    lambda e: ctas_with_tmp_tables_to_create_tmp_view(
+                        e, temporary_storage_provider
+                    ),
+                    move_partitioned_by_to_schema_columns,
+                ]
+            ),
+            exp.PartitionedByProperty: lambda self,
+            e: f"PARTITIONED BY {self.wrap(self.expressions(sqls=[_normalize_partition(e) for e in e.this.expressions], skip_first=True))}",
             exp.StartsWith: rename_func("STARTSWITH"),
             exp.TimestampAdd: lambda self, e: self.func(
                 "DATEADD", e.args.get("unit") or "DAY", e.expression, e.this

@@ -232,6 +232,9 @@ class Postgres(Dialect):
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
         HEREDOC_STRINGS = ["$"]
 
+        HEREDOC_TAG_IS_IDENTIFIER = True
+        HEREDOC_STRING_ALTERNATIVE = TokenType.PARAMETER
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "~~": TokenType.LIKE,

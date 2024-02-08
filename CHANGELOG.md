@@ -1,6 +1,22 @@
 Changelog
 =========
 
+## [v21.0.2] - 2024-02-08
+### :sparkles: New Features
+- [`1842c96`](https://github.com/tobymao/sqlglot/commit/1842c96611cadb0227dd3ce8f42457679ab0e08b) - **clickhouse**: add support for LIMIT BY clause *(PR [#2926](https://github.com/tobymao/sqlglot/pull/2926) by [@georgesittas](https://github.com/georgesittas))*
+- [`9241858`](https://github.com/tobymao/sqlglot/commit/9241858e559f089b166d9b794e3ebb395624d84a) - add typing for explode closes [#2927](https://github.com/tobymao/sqlglot/pull/2927) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`85073d1`](https://github.com/tobymao/sqlglot/commit/85073d1538de8ceef3e5c622a901efd9e6bd38e3) - transpile multi-arg DISTINCT expression *(PR [#2936](https://github.com/tobymao/sqlglot/pull/2936) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2930](https://github.com/tobymao/sqlglot/issues/2930) opened by [@Jake-00](https://github.com/Jake-00)*
+
+### :bug: Bug Fixes
+- [`b827626`](https://github.com/tobymao/sqlglot/commit/b8276262bdca57e358284fadfdd468d2bc957e84) - remove find method from Schema *(PR [#2934](https://github.com/tobymao/sqlglot/pull/2934) by [@georgesittas](https://github.com/georgesittas))*
+- [`08cd117`](https://github.com/tobymao/sqlglot/commit/08cd117322302f08c95889ebf8699f4171c1d504) - **postgres**: fallback to parameter parser if heredoc is untokenizable *(PR [#2935](https://github.com/tobymao/sqlglot/pull/2935) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2931](https://github.com/tobymao/sqlglot/issues/2931) opened by [@eric-zhu](https://github.com/eric-zhu)*
+
+### :wrench: Chores
+- [`e4b5edb`](https://github.com/tobymao/sqlglot/commit/e4b5edbef42944b44d11c35aea31411ce3d79826) - bump sqlglotrs to 0.1.1 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v21.0.1] - 2024-02-07
 ### :sparkles: New Features
 - [`3a20eac`](https://github.com/tobymao/sqlglot/commit/3a20eaccbf5d5a80bd24b95c837cca8103dfe70a) - **clickhouse**: add support for JSONExtractString, clean up some helpers *(PR [#2925](https://github.com/tobymao/sqlglot/pull/2925) by [@georgesittas](https://github.com/georgesittas))*
@@ -2577,3 +2593,4 @@ Changelog
 [v20.11.0]: https://github.com/tobymao/sqlglot/compare/v20.10.0...v20.11.0
 [v21.0.0]: https://github.com/tobymao/sqlglot/compare/v20.11.0...v21.0.0
 [v21.0.1]: https://github.com/tobymao/sqlglot/compare/v21.0.0...v21.0.1
+[v21.0.2]: https://github.com/tobymao/sqlglot/compare/v21.0.1...v21.0.2

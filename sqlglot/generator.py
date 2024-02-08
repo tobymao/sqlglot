@@ -296,6 +296,10 @@ class Generator(metaclass=_Generator):
     # Whether or not the LikeProperty needs to be specified inside of the schema clause
     LIKE_PROPERTY_INSIDE_SCHEMA = False
 
+    # Whether or not DISTINCT can be followed by multiple args in an AggFunc. If not, it will be
+    # transpiled into a series of CASE-WHEN-ELSE, ultimately using a tuple conseisting of the args
+    MULTI_ARG_DISTINCT = True
+
     # Whether or not the JSON extraction operators expect a value of type JSON
     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
 
@@ -2837,6 +2841,13 @@ class Generator(metaclass=_Generator):
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)
+
+        if not self.MULTI_ARG_DISTINCT and len(expression.expressions) > 1:
+            case = exp.case()
+            for arg in expression.expressions:
+                case = case.when(arg.is_(exp.null()), exp.null())
+            this = self.sql(case.else_(f"({this})"))
+
         this = f" {this}" if this else ""
 
         on = self.sql(expression, "on")

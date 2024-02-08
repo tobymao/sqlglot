@@ -333,6 +333,7 @@ class DuckDB(Dialect):
         IGNORE_NULLS_IN_FUNC = True
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_CREATE_TABLE_LIKE = False
+        MULTI_ARG_DISTINCT = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

@@ -384,6 +384,7 @@ class Postgres(Dialect):
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = True
         SUPPORTS_UNLOGGED_TABLES = True
         LIKE_PROPERTY_INSIDE_SCHEMA = True
+        MULTI_ARG_DISTINCT = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

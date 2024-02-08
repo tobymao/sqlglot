@@ -980,6 +980,12 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
         self.assertEqual(expression.selects[0].type.sql(dialect="bigquery"), "STRUCT<`f` STRING>")
 
+        expression = annotate_types(
+            parse_one("SELECT unnest(t.x) FROM t AS t", dialect="postgres"),
+            schema={"t": {"x": "array<int>"}},
+        )
+        self.assertTrue(expression.selects[0].is_type("int"))
+
     def test_type_annotation_cache(self):
         sql = "SELECT 1 + 1"
         expression = annotate_types(parse_one(sql))

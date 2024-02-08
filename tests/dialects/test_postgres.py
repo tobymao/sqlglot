@@ -33,6 +33,7 @@ class TestPostgres(Validator):
         self.assertIsInstance(expr, exp.AlterTable)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
 
+        self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
         self.validate_identity("x @@ y")
         self.validate_identity("CAST(x AS MONEY)")

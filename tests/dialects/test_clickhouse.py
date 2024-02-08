@@ -78,6 +78,10 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
         self.validate_identity(
+            "SELECT $1$foo$1$",
+            "SELECT 'foo'",
+        )
+        self.validate_identity(
             "SELECT * FROM table LIMIT 1, 2 BY a, b",
             "SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b",
         )

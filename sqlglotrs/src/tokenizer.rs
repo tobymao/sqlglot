@@ -399,6 +399,19 @@ impl<'a> TokenizerState<'a> {
             } else if *token_type == self.token_types.bit_string {
                 (Some(2), *token_type, end.clone())
             } else if *token_type == self.token_types.heredoc_string {
+                if self.settings.heredoc_tag_is_identifier
+                    && !self.is_identifier(self.peek_char)
+                    && self.peek_char.to_string() != *end
+                {
+                    if self.token_types.heredoc_string_alternative != self.token_types.var {
+                        self.add(self.token_types.heredoc_string_alternative, None)?
+                    } else {
+                        self.scan_var()?
+                    };
+
+                    return Ok(true)
+                };
+
                 self.advance(1)?;
                 let tag = if self.current_char.to_string() == *end {
                     String::from("")
@@ -469,7 +482,7 @@ impl<'a> TokenizerState<'a> {
             } else if self.peek_char.to_ascii_uppercase() == 'E' && scientific == 0 {
                 scientific += 1;
                 self.advance(1)?;
-            } else if self.peek_char.is_alphabetic() || self.peek_char == '_' {
+            } else if self.is_identifier(self.peek_char) {
                 let number_text = self.text();
                 let mut literal = String::from("");
 
@@ -641,6 +654,10 @@ impl<'a> TokenizerState<'a> {
             }
         }
         Ok(text)
+    }
+
+    fn is_identifier(&mut self, name: char) -> bool {
+        name.is_alphabetic() || name == '_'
     }
 
     fn extract_value(&mut self) -> Result<String, TokenizerError> {

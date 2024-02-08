@@ -17,6 +17,7 @@ pub struct TokenTypeSettings {
     pub semicolon: TokenType,
     pub string: TokenType,
     pub var: TokenType,
+    pub heredoc_string_alternative: TokenType,
 }
 
 #[pymethods]
@@ -34,6 +35,7 @@ impl TokenTypeSettings {
         semicolon: TokenType,
         string: TokenType,
         var: TokenType,
+        heredoc_string_alternative: TokenType,
     ) -> Self {
         TokenTypeSettings {
             bit_string,
@@ -47,6 +49,7 @@ impl TokenTypeSettings {
             semicolon,
             string,
             var,
+            heredoc_string_alternative,
         }
     }
 }
@@ -69,6 +72,7 @@ pub struct TokenizerSettings {
     pub var_single_tokens: HashSet<char>,
     pub commands: HashSet<TokenType>,
     pub command_prefix_tokens: HashSet<TokenType>,
+    pub heredoc_tag_is_identifier: bool,
 }
 
 #[pymethods]
@@ -90,6 +94,7 @@ impl TokenizerSettings {
         var_single_tokens: HashSet<String>,
         commands: HashSet<TokenType>,
         command_prefix_tokens: HashSet<TokenType>,
+        heredoc_tag_is_identifier: bool,
     ) -> Self {
         let to_char = |v: &String| {
             if v.len() == 1 {
@@ -138,6 +143,7 @@ impl TokenizerSettings {
             var_single_tokens: var_single_tokens_native,
             commands,
             command_prefix_tokens,
+            heredoc_tag_is_identifier,
         }
     }
 }

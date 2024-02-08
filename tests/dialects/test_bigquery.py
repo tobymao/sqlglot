@@ -18,6 +18,11 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity("ARRAY_AGG(x IGNORE NULLS LIMIT 1)")
+        self.validate_identity("ARRAY_AGG(x IGNORE NULLS ORDER BY x LIMIT 1)")
+        self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 1)")
+        self.validate_identity("ARRAY_AGG(x IGNORE NULLS)")
+
         self.validate_all(
             "SELECT SUM(x IGNORE NULLS) AS x",
             read={
@@ -55,6 +60,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT PERCENTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
             write={
+                "bigquery": "SELECT PERCENTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
                 "duckdb": "SELECT QUANTILE_CONT(x, 0.5 RESPECT NULLS) OVER ()",
                 "spark": "SELECT PERCENTILE_CONT(x, 0.5) RESPECT NULLS OVER ()",
             },
@@ -62,14 +68,16 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
             write={
-                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 10 IGNORE NULLS) AS x",
+                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a NULLS FIRST, b DESC LIMIT 10) AS x",
                 "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 10) IGNORE NULLS AS x",
             },
         )
         self.validate_all(
             "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 1, 10) AS x",
             write={
-                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 1, 10 IGNORE NULLS) AS x",
+                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 1, 10) AS x",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a NULLS FIRST, b DESC LIMIT 1, 10) AS x",
                 "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 1, 10) IGNORE NULLS AS x",
             },
         )

@@ -2861,12 +2861,20 @@ class Generator(metaclass=_Generator):
         return self._embed_ignore_nulls(expression, "RESPECT NULLS")
 
     def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
-        if self.IGNORE_NULLS_IN_FUNC:
-            this = expression.find(exp.AggFunc)
-            if this:
-                sql = self.sql(this)
-                sql = sql[:-1] + f" {text})"
-                return sql
+        if self.IGNORE_NULLS_IN_FUNC and not expression.meta.get("inline"):
+            for klass in (exp.Order, exp.Limit):
+                mod = expression.find(klass)
+
+                if mod:
+                    this = expression.__class__(this=mod.this.copy())
+                    this.meta["inline"] = True
+                    mod.this.replace(this)
+                    return self.sql(expression.this)
+
+            agg_func = expression.find(exp.AggFunc)
+
+            if agg_func:
+                return self.sql(agg_func)[:-1] + f" {text})"
 
         return f"{self.sql(expression, 'this')} {text}"
 

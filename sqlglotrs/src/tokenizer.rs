@@ -399,6 +399,19 @@ impl<'a> TokenizerState<'a> {
             } else if *token_type == self.token_types.bit_string {
                 (Some(2), *token_type, end.clone())
             } else if *token_type == self.token_types.heredoc_string {
+                if self.settings.heredoc_tag_is_identifier
+                    && !(self.peek_char.is_alphabetic() || self.peek_char == '_')
+                    && self.peek_char.to_string() != *end
+                {
+                    if self.token_types.heredoc_string_alternative != self.token_types.var {
+                        self.add(self.token_types.heredoc_string_alternative, None)?
+                    } else {
+                        self.scan_var()?
+                    };
+
+                    return Ok(true)
+                };
+
                 self.advance(1)?;
                 let tag = if self.current_char.to_string() == *end {
                     String::from("")

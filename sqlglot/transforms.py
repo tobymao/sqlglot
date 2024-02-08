@@ -510,7 +510,8 @@ def move_schema_columns_to_partitioned_by(expression: exp.Expression) -> exp.Exp
     """
     assert isinstance(expression, exp.Create)
     has_schema = isinstance(expression.this, exp.Schema)
-    is_partitionable = expression.args.get("kind").upper() in {"TABLE", "VIEW"}
+    kind = expression.args.get("kind")
+    is_partitionable = kind and kind.upper() in {"TABLE", "VIEW"}
 
     if has_schema and is_partitionable:
         prop = expression.find(exp.PartitionedByProperty)

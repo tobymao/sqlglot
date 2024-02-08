@@ -518,9 +518,7 @@ class _Tokenizer(type):
                 semicolon=_TOKEN_TYPE_TO_INDEX[TokenType.SEMICOLON],
                 string=_TOKEN_TYPE_TO_INDEX[TokenType.STRING],
                 var=_TOKEN_TYPE_TO_INDEX[TokenType.VAR],
-                heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[
-                    klass.HEREDOC_STRING_ALTERNATIVE or TokenType.VAR
-                ],
+                heredoc_string_alternative=_TOKEN_TYPE_TO_INDEX[klass.HEREDOC_STRING_ALTERNATIVE],
             )
             klass._RS_TOKENIZER = RsTokenizer(settings, token_types)
         else:
@@ -581,7 +579,7 @@ class Tokenizer(metaclass=_Tokenizer):
     HEREDOC_TAG_IS_IDENTIFIER = False
 
     # Token that we'll generate as a fallback if the heredoc prefix doesn't correspond to a heredoc
-    HEREDOC_STRING_ALTERNATIVE: t.Optional[TokenType] = None
+    HEREDOC_STRING_ALTERNATIVE = TokenType.VAR
 
     # Autofilled
     _COMMENTS: t.Dict[str, str] = {}
@@ -1264,7 +1262,7 @@ class Tokenizer(metaclass=_Tokenizer):
                     and not self._peek.isidentifier()
                     and not self._peek == end
                 ):
-                    if self.HEREDOC_STRING_ALTERNATIVE:
+                    if self.HEREDOC_STRING_ALTERNATIVE != token_type.VAR:
                         self._add(self.HEREDOC_STRING_ALTERNATIVE)
                     else:
                         self._scan_var()

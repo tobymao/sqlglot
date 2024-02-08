@@ -1241,7 +1241,7 @@ Default: 3</li>
                             <div id="Oracle.Parser.WINDOW_BEFORE_PAREN_TOKENS" class="classattr">
                                 <div class="attr variable">
             <span class="name">WINDOW_BEFORE_PAREN_TOKENS</span>        =
-<span class="default_value">{&lt;TokenType.KEEP: &#39;KEEP&#39;&gt;, &lt;TokenType.OVER: &#39;OVER&#39;&gt;}</span>
+<span class="default_value">{&lt;TokenType.OVER: &#39;OVER&#39;&gt;, &lt;TokenType.KEEP: &#39;KEEP&#39;&gt;}</span>
 
         
     </div>
@@ -1304,7 +1304,7 @@ Default: 3</li>
                             <div id="Oracle.Parser.DISTINCT_TOKENS" class="classattr">
                                 <div class="attr variable">
             <span class="name">DISTINCT_TOKENS</span>        =
-<span class="default_value">{&lt;TokenType.UNIQUE: &#39;UNIQUE&#39;&gt;, &lt;TokenType.DISTINCT: &#39;DISTINCT&#39;&gt;}</span>
+<span class="default_value">{&lt;TokenType.DISTINCT: &#39;DISTINCT&#39;&gt;, &lt;TokenType.UNIQUE: &#39;UNIQUE&#39;&gt;}</span>
 
         
     </div>
@@ -1894,6 +1894,7 @@ Default: True</li>
                 <dd id="Oracle.Generator.SUPPORTS_UNLOGGED_TABLES" class="variable"><a href="../generator.html#Generator.SUPPORTS_UNLOGGED_TABLES">SUPPORTS_UNLOGGED_TABLES</a></dd>
                 <dd id="Oracle.Generator.SUPPORTS_CREATE_TABLE_LIKE" class="variable"><a href="../generator.html#Generator.SUPPORTS_CREATE_TABLE_LIKE">SUPPORTS_CREATE_TABLE_LIKE</a></dd>
                 <dd id="Oracle.Generator.LIKE_PROPERTY_INSIDE_SCHEMA" class="variable"><a href="../generator.html#Generator.LIKE_PROPERTY_INSIDE_SCHEMA">LIKE_PROPERTY_INSIDE_SCHEMA</a></dd>
+                <dd id="Oracle.Generator.MULTI_ARG_DISTINCT" class="variable"><a href="../generator.html#Generator.MULTI_ARG_DISTINCT">MULTI_ARG_DISTINCT</a></dd>
                 <dd id="Oracle.Generator.JSON_TYPE_REQUIRED_FOR_EXTRACTION" class="variable"><a href="../generator.html#Generator.JSON_TYPE_REQUIRED_FOR_EXTRACTION">JSON_TYPE_REQUIRED_FOR_EXTRACTION</a></dd>
                 <dd id="Oracle.Generator.JSON_PATH_BRACKETED_KEY_SUPPORTED" class="variable"><a href="../generator.html#Generator.JSON_PATH_BRACKETED_KEY_SUPPORTED">JSON_PATH_BRACKETED_KEY_SUPPORTED</a></dd>
                 <dd id="Oracle.Generator.JSON_PATH_SINGLE_QUOTE_ESCAPE" class="variable"><a href="../generator.html#Generator.JSON_PATH_SINGLE_QUOTE_ESCAPE">JSON_PATH_SINGLE_QUOTE_ESCAPE</a></dd>
@@ -2259,7 +2260,7 @@ Default: True</li>
                             <div id="Oracle.Tokenizer.VAR_SINGLE_TOKENS" class="classattr">
                                 <div class="attr variable">
             <span class="name">VAR_SINGLE_TOKENS</span>        =
-<span class="default_value">{&#39;#&#39;, &#39;$&#39;, &#39;@&#39;}</span>
+<span class="default_value">{&#39;#&#39;, &#39;@&#39;, &#39;$&#39;}</span>
 
         
     </div>
@@ -2297,6 +2298,8 @@ Default: True</li>
                 <dd id="Oracle.Tokenizer.IDENTIFIER_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.IDENTIFIER_ESCAPES">IDENTIFIER_ESCAPES</a></dd>
                 <dd id="Oracle.Tokenizer.QUOTES" class="variable"><a href="../tokens.html#Tokenizer.QUOTES">QUOTES</a></dd>
                 <dd id="Oracle.Tokenizer.STRING_ESCAPES" class="variable"><a href="../tokens.html#Tokenizer.STRING_ESCAPES">STRING_ESCAPES</a></dd>
+                <dd id="Oracle.Tokenizer.HEREDOC_TAG_IS_IDENTIFIER" class="variable"><a href="../tokens.html#Tokenizer.HEREDOC_TAG_IS_IDENTIFIER">HEREDOC_TAG_IS_IDENTIFIER</a></dd>
+                <dd id="Oracle.Tokenizer.HEREDOC_STRING_ALTERNATIVE" class="variable"><a href="../tokens.html#Tokenizer.HEREDOC_STRING_ALTERNATIVE">HEREDOC_STRING_ALTERNATIVE</a></dd>
                 <dd id="Oracle.Tokenizer.WHITE_SPACE" class="variable"><a href="../tokens.html#Tokenizer.WHITE_SPACE">WHITE_SPACE</a></dd>
                 <dd id="Oracle.Tokenizer.COMMANDS" class="variable"><a href="../tokens.html#Tokenizer.COMMANDS">COMMANDS</a></dd>
                 <dd id="Oracle.Tokenizer.COMMAND_PREFIX_TOKENS" class="variable"><a href="../tokens.html#Tokenizer.COMMAND_PREFIX_TOKENS">COMMAND_PREFIX_TOKENS</a></dd>

@@ -292,6 +292,7 @@ class Presto(Dialect):
         LIMIT_ONLY_LITERALS = True
         SUPPORTS_SINGLE_ARG_CONCAT = False
         LIKE_PROPERTY_INSIDE_SCHEMA = True
+        MULTI_ARG_DISTINCT = False
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,

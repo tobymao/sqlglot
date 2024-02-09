@@ -148,7 +148,7 @@ def atanh(col: ColumnOrName) -> Column:
 
 
 def cbrt(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "CBRT")
+    return Column.invoke_expression_over_column(col, expression.Cbrt)
 
 
 def ceil(col: ColumnOrName) -> Column:

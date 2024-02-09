@@ -2860,16 +2860,28 @@ class Generator(metaclass=_Generator):
     def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
         return self._embed_ignore_nulls(expression, "RESPECT NULLS")
 
+    def havingmax_sql(self, expression: exp.HavingMax) -> str:
+        this_sql = self.sql(expression, "this")
+        expression_sql = self.sql(expression, "expression")
+        kind = "MAX" if expression.args.get("max") else "MIN"
+        return f"{this_sql} HAVING {kind} {expression_sql}"
+
     def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
         if self.IGNORE_NULLS_IN_FUNC and not expression.meta.get("inline"):
-            for klass in (exp.Order, exp.Limit):
-                mod = expression.find(klass)
+            # The first modifier here will be the one closest to the AggFunc's arg
+            mods = sorted(
+                expression.find_all(exp.HavingMax, exp.Order, exp.Limit),
+                key=lambda x: 0
+                if isinstance(x, exp.HavingMax)
+                else (1 if isinstance(x, exp.Order) else 2),
+            )
 
-                if mod:
-                    this = expression.__class__(this=mod.this.copy())
-                    this.meta["inline"] = True
-                    mod.this.replace(this)
-                    return self.sql(expression.this)
+            if mods:
+                mod = mods[0]
+                this = expression.__class__(this=mod.this.copy())
+                this.meta["inline"] = True
+                mod.this.replace(this)
+                return self.sql(expression.this)
 
             agg_func = expression.find(exp.AggFunc)
 

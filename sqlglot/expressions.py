@@ -4291,6 +4291,11 @@ class RespectNulls(Expression):
     pass
 
 
+# https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate-function-calls#max_min_clause
+class HavingMax(Expression):
+    arg_types = {"this": True, "expression": True, "max": True}
+
+
 # Functions
 class Func(Condition):
     """
@@ -4491,7 +4496,7 @@ class Avg(AggFunc):
 
 
 class AnyValue(AggFunc):
-    arg_types = {"this": True, "having": False, "max": False}
+    pass
 
 
 class Lag(AggFunc):

@@ -872,7 +872,6 @@ class Parser(metaclass=_Parser):
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
     FUNCTION_PARSERS = {
-        "ANY_VALUE": lambda self: self._parse_any_value(),
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
         "DECODE": lambda self: self._parse_decode(),
@@ -4132,7 +4131,9 @@ class Parser(metaclass=_Parser):
         else:
             this = self._parse_select_or_expression(alias=alias)
 
-        return self._parse_limit(self._parse_order(self._parse_respect_or_ignore_nulls(this)))
+        return self._parse_limit(
+            self._parse_order(self._parse_having_max(self._parse_respect_or_ignore_nulls(this)))
+        )
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         index = self._index
@@ -4566,18 +4567,6 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.Extract, this=this, expression=self._parse_bitwise())
 
-    def _parse_any_value(self) -> exp.AnyValue:
-        this = self._parse_lambda()
-        is_max = None
-        having = None
-
-        if self._match(TokenType.HAVING):
-            self._match_texts(("MAX", "MIN"))
-            is_max = self._prev.text == "MAX"
-            having = self._parse_column()
-
-        return self.expression(exp.AnyValue, this=this, having=having, max=is_max)
-
     def _parse_cast(self, strict: bool, safe: t.Optional[bool] = None) -> exp.Expression:
         this = self._parse_conjunction()
 
@@ -4956,6 +4945,16 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.IgnoreNulls, this=this)
         if self._match_text_seq("RESPECT", "NULLS"):
             return self.expression(exp.RespectNulls, this=this)
+        return this
+
+    def _parse_having_max(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+        if self._match(TokenType.HAVING):
+            self._match_texts(("MAX", "MIN"))
+            max = self._prev.text.upper() != "MIN"
+            return self.expression(
+                exp.HavingMax, this=this, expression=self._parse_column(), max=max
+            )
+
         return this
 
     def _parse_window(

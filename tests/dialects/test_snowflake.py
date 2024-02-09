@@ -1,7 +1,6 @@
 from unittest import mock
 
 from sqlglot import UnsupportedError, exp, parse_one
-from sqlglot.expressions import Show
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from tests.dialects.test_dialect import Validator
 

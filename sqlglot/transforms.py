@@ -213,6 +213,16 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                     is_posexplode = isinstance(explode, exp.Posexplode)
                     explode_arg = explode.this
 
+                    if isinstance(explode, exp.ExplodeOuter):
+                        explode_arg = exp.func(
+                            "IF",
+                            exp.func(
+                                "ARRAY_SIZE", exp.func("COALESCE", explode_arg, exp.Array())
+                            ).eq(0),
+                            exp.Array(expressions=[exp.null()]),
+                            explode_arg,
+                        )
+
                     # This ensures that we won't use [POS]EXPLODE's argument as a new selection
                     if isinstance(explode_arg, exp.Column):
                         taken_select_names.add(explode_arg.output_name)

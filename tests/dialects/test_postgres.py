@@ -8,6 +8,8 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_postgres(self):
+        self.validate_identity("|/ x", "SQRT(x)")
+        self.validate_identity("||/ x", "CBRT(x)")
         expr = parse_one(
             "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)", read="postgres"
         )

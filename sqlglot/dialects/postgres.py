@@ -244,6 +244,8 @@ class Postgres(Dialect):
             "@@": TokenType.DAT,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
+            "|/": TokenType.PIPE_SLASH,
+            "||/": TokenType.DPIPE_SLASH,
             "BEGIN": TokenType.COMMAND,
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,

@@ -4626,6 +4626,11 @@ class CountIf(AggFunc):
     _sql_names = ["COUNT_IF", "COUNTIF"]
 
 
+# cube root
+class Cbrt(Func):
+    pass
+
+
 class CurrentDate(Func):
     arg_types = {"this": False}
 

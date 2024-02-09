@@ -638,6 +638,8 @@ class Parser(metaclass=_Parser):
         TokenType.NOT: lambda self: self.expression(exp.Not, this=self._parse_equality()),
         TokenType.TILDA: lambda self: self.expression(exp.BitwiseNot, this=self._parse_unary()),
         TokenType.DASH: lambda self: self.expression(exp.Neg, this=self._parse_unary()),
+        TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt, this=self._parse_unary()),
+        TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt, this=self._parse_unary()),
     }
 
     PRIMARY_PARSERS = {

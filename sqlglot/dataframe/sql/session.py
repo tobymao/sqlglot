@@ -70,12 +70,10 @@ class SparkSession:
             column_mapping = {f"_{i}": None for i in range(1, len(data[0]) + 1)}
 
         data_expressions = [
-            exp.Tuple(
-                expressions=list(
-                    map(
-                        lambda x: F.lit(x).expression,
-                        row if not isinstance(row, dict) else row.values(),
-                    )
+            exp.tuple_(
+                *map(
+                    lambda x: F.lit(x).expression,
+                    row if not isinstance(row, dict) else row.values(),
                 )
             )
             for row in data

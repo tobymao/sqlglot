@@ -219,7 +219,7 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                             exp.func(
                                 "ARRAY_SIZE", exp.func("COALESCE", explode_arg, exp.Array())
                             ).eq(0),
-                            exp.Array(expressions=[exp.null()]),
+                            exp.array(exp.null(), copy=False),
                             explode_arg,
                         )
 

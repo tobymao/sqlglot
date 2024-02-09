@@ -1537,7 +1537,7 @@ MATCH_RECOGNIZE (
         self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")
 
         users_exp = self.validate_identity("SHOW USERS")
-        self.assertTrue(isinstance(users_exp, Show))
+        self.assertTrue(isinstance(users_exp, exp.Show))
         self.assertEqual(users_exp.this, "USERS")
 
     def test_swap(self):

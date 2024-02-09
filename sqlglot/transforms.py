@@ -487,17 +487,14 @@ def ctas_with_tmp_tables_to_create_tmp_view(
     )
 
     # CTAS with temp tables map to CREATE TEMPORARY VIEW
-    kind = expression.args["kind"]
-    if kind.upper() == "TABLE" and temporary:
+    if expression.kind == "TABLE" and temporary:
         if expression.expression:
             return exp.Create(
                 kind="TEMPORARY VIEW",
                 this=expression.this,
                 expression=expression.expression,
             )
-        else:
-            # CREATE TEMPORARY TABLE may require storage provider
-            return tmp_storage_provider(expression)
+        return tmp_storage_provider(expression)
 
     return expression
 
@@ -510,8 +507,7 @@ def move_schema_columns_to_partitioned_by(expression: exp.Expression) -> exp.Exp
     """
     assert isinstance(expression, exp.Create)
     has_schema = isinstance(expression.this, exp.Schema)
-    kind = expression.args.get("kind")
-    is_partitionable = kind and kind.upper() in {"TABLE", "VIEW"}
+    is_partitionable = expression.kind in {"TABLE", "VIEW"}
 
     if has_schema and is_partitionable:
         prop = expression.find(exp.PartitionedByProperty)

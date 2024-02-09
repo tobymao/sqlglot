@@ -22,6 +22,7 @@ class TestBigQuery(Validator):
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS)")
+        self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS HAVING MAX x ORDER BY x LIMIT 1)")
 
         self.validate_all(
             "SELECT SUM(x IGNORE NULLS) AS x",

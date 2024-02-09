@@ -39,24 +39,31 @@ def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Va
 
     alias = expression.args.get("alias")
 
-    structs = [
-        exp.Struct(
+    return self.unnest_sql(
+        exp.Unnest(
             expressions=[
-                exp.alias_(value, column_name)
-                for value, column_name in zip(
-                    t.expressions,
-                    (
-                        alias.columns
-                        if alias and alias.columns
-                        else (f"_c{i}" for i in range(len(t.expressions)))
+                exp.array(
+                    *(
+                        exp.Struct(
+                            expressions=[
+                                exp.alias_(value, column_name)
+                                for value, column_name in zip(
+                                    t.expressions,
+                                    (
+                                        alias.columns
+                                        if alias and alias.columns
+                                        else (f"_c{i}" for i in range(len(t.expressions)))
+                                    ),
+                                )
+                            ]
+                        )
+                        for t in expression.find_all(exp.Tuple)
                     ),
+                    copy=False,
                 )
             ]
         )
-        for t in expression.find_all(exp.Tuple)
-    ]
-
-    return self.unnest_sql(exp.Unnest(expressions=[exp.Array(expressions=structs)]))
+    )
 
 
 def _returnsproperty_sql(self: BigQuery.Generator, expression: exp.ReturnsProperty) -> str:

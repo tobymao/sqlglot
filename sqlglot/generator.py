@@ -3360,7 +3360,7 @@ class Generator(metaclass=_Generator):
             return self.sql(arg)
 
         cond_for_null = arg.is_(exp.null())
-        return self.sql(exp.func("IF", cond_for_null, exp.null(), exp.Array(expressions=[arg])))
+        return self.sql(exp.func("IF", cond_for_null, exp.null(), exp.array(arg, copy=False)))
 
     def tsordstotime_sql(self, expression: exp.TsOrDsToTime) -> str:
         this = expression.this

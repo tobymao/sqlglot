@@ -7072,6 +7072,60 @@ def cast_unless(
     return cast(expr, to, **opts)
 
 
+def array(
+    *expressions: ExpOrStr, copy: bool = True, dialect: DialectType = None, **kwargs
+) -> Array:
+    """
+    Returns an array.
+
+    Examples:
+        >>> array(1, 'x').sql()
+        'ARRAY(1, x)'
+
+    Args:
+        expressions: the expressions to add to the array.
+        copy: whether or not to copy the argument expressions.
+        dialect: the source dialect.
+        kwargs: the kwargs used to instantiate the function of interest.
+
+    Returns:
+        An array expression.
+    """
+    return Array(
+        expressions=[
+            maybe_parse(expression, copy=copy, dialect=dialect, **kwargs)
+            for expression in expressions
+        ]
+    )
+
+
+def tuple_(
+    *expressions: ExpOrStr, copy: bool = True, dialect: DialectType = None, **kwargs
+) -> Tuple:
+    """
+    Returns an tuple.
+
+    Examples:
+        >>> tuple_(1, 'x').sql()
+        '(1, x)'
+
+    Args:
+        expressions: the expressions to add to the tuple.
+        copy: whether or not to copy the argument expressions.
+        dialect: the source dialect.
+        kwargs: the kwargs used to instantiate the function of interest.
+
+    Returns:
+        A tuple expression.
+    """
+    return Tuple(
+        expressions=[
+            maybe_parse(expression, copy=copy, dialect=dialect, **kwargs)
+            for expression in expressions
+        ]
+    )
+
+
 def true() -> Boolean:
     """
     Returns a true Boolean expression.

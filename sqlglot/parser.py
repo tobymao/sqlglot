@@ -29,8 +29,8 @@ def parse_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
         values.append(args[i + 1])
 
     return exp.VarMap(
-        keys=exp.Array(expressions=keys),
-        values=exp.Array(expressions=values),
+        keys=exp.array(*keys, copy=False),
+        values=exp.array(*values, copy=False),
     )
 
 

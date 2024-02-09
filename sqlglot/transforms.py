@@ -214,12 +214,15 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
                     explode_arg = explode.this
 
                     if isinstance(explode, exp.ExplodeOuter):
+                        bracket = explode_arg[0]
+                        bracket.set("safe", True)
+                        bracket.set("offset", True)
                         explode_arg = exp.func(
                             "IF",
                             exp.func(
                                 "ARRAY_SIZE", exp.func("COALESCE", explode_arg, exp.Array())
                             ).eq(0),
-                            exp.array(exp.null(), copy=False),
+                            exp.array(bracket, copy=False),
                             explode_arg,
                         )
 

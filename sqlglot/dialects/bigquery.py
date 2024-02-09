@@ -24,7 +24,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_add_cast,
 )
-from sqlglot.helper import seq_get, split_num_words
+from sqlglot.helper import seq_get, split_num_words, find_new_name
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -109,6 +109,97 @@ def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
                     column.set("table", None)
                 elif column.db in unnest_aliases:
                     column.set("db", None)
+
+    return expression
+
+
+def _explode_to_unnest(expression: exp.Expression) -> exp.Expression:
+    """
+    Transforms EXPLODE nodes to UNNEST nodes within the given expression.
+    """
+    if isinstance(expression, exp.Select):
+        taken_select_names = set(expression.named_selects)
+
+        def new_name(names: t.Set[str], name: str) -> str:
+            name = find_new_name(names, name)
+            names.add(name)
+            return name
+
+        # we use list here because expression.selects is mutated inside the loop
+        for select in list(expression.selects):
+            explode = select.find(exp.Explode)
+
+            if explode:
+                pos_alias = ""
+                explode_alias = ""
+
+                if isinstance(select, exp.Alias):
+                    explode_alias = select.args["alias"]
+                    alias = select
+                elif isinstance(select, exp.Aliases):
+                    pos_alias = select.aliases[0]
+                    explode_alias = select.aliases[1]
+                    alias = select.replace(exp.alias_(select.this, "", copy=False))
+                else:
+                    alias = select.replace(exp.alias_(select, ""))
+                    explode = alias.find(exp.Explode)
+                    assert explode
+
+                is_posexplode = isinstance(explode, exp.Posexplode)
+                explode_arg = explode.this
+
+                # This ensures that we won't use [POS]EXPLODE's argument as a new selection
+                if isinstance(explode_arg, exp.Column):
+                    taken_select_names.add(explode_arg.output_name)
+
+                if not explode_alias:
+                    explode_alias = new_name(taken_select_names, "col")
+
+                    if is_posexplode:
+                        pos_alias = new_name(taken_select_names, "pos")
+
+                if not pos_alias:
+                    pos_alias = new_name(taken_select_names, "pos")
+
+                alias.set("alias", exp.to_identifier(explode_alias))
+
+                expressions = expression.expressions
+                index = expressions.index(alias)
+                expressions[index].replace(exp.column(explode_alias))
+
+                offset = None
+                if is_posexplode:
+                    expressions = expression.expressions
+                    expressions.insert(
+                        index + 1,
+                        exp.column(pos_alias),
+                    )
+                    expression.set("expressions", expressions)
+                    offset = exp.to_identifier(pos_alias)
+
+                unnest = exp.alias_(
+                    exp.Unnest(
+                        expressions=[explode_arg.copy()],
+                        offset=offset,
+                    ),
+                    "",
+                    table=[explode_alias],
+                )
+                if expression.args.get("from"):
+                    join_type = (
+                        "LEFT"
+                        if isinstance(explode, exp.ExplodeOuter)
+                        or isinstance(explode, exp.PosexplodeOuter)
+                        else "CROSS"
+                    )
+
+                    expression.join(
+                        unnest,
+                        join_type=join_type,
+                        copy=False,
+                    )
+                else:
+                    expression.from_(unnest, copy=False)
 
     return expression
 
@@ -601,7 +692,7 @@ class BigQuery(Dialect):
             exp.ReturnsProperty: _returnsproperty_sql,
             exp.Select: transforms.preprocess(
                 [
-                    transforms.explode_to_unnest(),
+                    _explode_to_unnest,
                     _unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,

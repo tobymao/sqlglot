@@ -4838,7 +4838,7 @@ class Posexplode(Explode):
     pass
 
 
-class PosexplodeOuter(Posexplode):
+class PosexplodeOuter(Posexplode, ExplodeOuter):
     pass
 
 

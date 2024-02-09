@@ -654,28 +654,6 @@ def time_format(
     return _time_format
 
 
-def create_with_partitions_sql(self: Generator, expression: exp.Create) -> str:
-    """
-    In Hive and Spark, the PARTITIONED BY property acts as an extension of a table's schema. When the
-    PARTITIONED BY value is an array of column names, they are transformed into a schema. The corresponding
-    columns are removed from the create statement.
-    """
-    has_schema = isinstance(expression.this, exp.Schema)
-    is_partitionable = expression.args.get("kind") in ("TABLE", "VIEW")
-
-    if has_schema and is_partitionable:
-        prop = expression.find(exp.PartitionedByProperty)
-        if prop and prop.this and not isinstance(prop.this, exp.Schema):
-            schema = expression.this
-            columns = {v.name.upper() for v in prop.this.expressions}
-            partitions = [col for col in schema.expressions if col.name.upper() in columns]
-            schema.set("expressions", [e for e in schema.expressions if e not in partitions])
-            prop.replace(exp.PartitionedByProperty(this=exp.Schema(expressions=partitions)))
-            expression.set("this", schema)
-
-    return self.create_sql(expression)
-
-
 def parse_date_delta(
     exp_class: t.Type[E], unit_mapping: t.Optional[t.Dict[str, str]] = None
 ) -> t.Callable[[t.List], E]:

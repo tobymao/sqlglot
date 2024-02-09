@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     NormalizationStrategy,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
-    create_with_partitions_sql,
     datestrtodate_sql,
     format_time_lambda,
     if_sql,
@@ -32,6 +31,12 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     var_map_sql,
 )
+from sqlglot.transforms import (
+    remove_unique_constraints,
+    ctas_with_tmp_tables_to_create_tmp_view,
+    preprocess,
+    move_schema_columns_to_partitioned_by,
+)
 from sqlglot.helper import seq_get
 from sqlglot.parser import parse_var_map
 from sqlglot.tokens import TokenType
@@ -53,30 +58,6 @@ TIME_DIFF_FACTOR = {
 }
 
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
-
-
-def _create_sql(self, expression: exp.Create) -> str:
-    # remove UNIQUE column constraints
-    for constraint in expression.find_all(exp.UniqueColumnConstraint):
-        if constraint.parent:
-            constraint.parent.pop()
-
-    properties = expression.args.get("properties")
-    temporary = any(
-        isinstance(prop, exp.TemporaryProperty)
-        for prop in (properties.expressions if properties else [])
-    )
-
-    # CTAS with temp tables map to CREATE TEMPORARY VIEW
-    kind = expression.args["kind"]
-    if kind.upper() == "TABLE" and temporary:
-        if expression.expression:
-            return f"CREATE TEMPORARY VIEW {self.sql(expression, 'this')} AS {self.sql(expression, 'expression')}"
-        else:
-            # CREATE TEMPORARY TABLE may require storage provider
-            expression = self.temporary_storage_provider(expression)
-
-    return create_with_partitions_sql(self, expression)
 
 
 def _add_date_sql(self: Hive.Generator, expression: DATE_ADD_OR_SUB) -> str:
@@ -518,7 +499,13 @@ class Hive(Dialect):
                 "" if e.args.get("allow_null") else "NOT NULL"
             ),
             exp.VarMap: var_map_sql,
-            exp.Create: _create_sql,
+            exp.Create: preprocess(
+                [
+                    remove_unique_constraints,
+                    ctas_with_tmp_tables_to_create_tmp_view,
+                    move_schema_columns_to_partitioned_by,
+                ]
+            ),
             exp.Quantile: rename_func("PERCENTILE"),
             exp.ApproxQuantile: rename_func("PERCENTILE_APPROX"),
             exp.RegexpExtract: regexp_extract_sql,
@@ -580,10 +567,6 @@ class Hive(Dialect):
                 return ""
 
             return super()._jsonpathkey_sql(expression)
-
-        def temporary_storage_provider(self, expression: exp.Create) -> exp.Create:
-            # Hive has no temporary storage provider (there are hive settings though)
-            return expression
 
         def parameter_sql(self, expression: exp.Parameter) -> str:
             this = self.sql(expression, "this")

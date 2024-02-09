@@ -50,9 +50,6 @@ class Spark(Spark2):
             "DATEDIFF": _parse_datediff,
         }
 
-        FUNCTION_PARSERS = Spark2.Parser.FUNCTION_PARSERS.copy()
-        FUNCTION_PARSERS.pop("ANY_VALUE")
-
         def _parse_generated_as_identity(
             self,
         ) -> (

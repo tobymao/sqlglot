@@ -1,6 +1,7 @@
 from unittest import mock
 
 from sqlglot import UnsupportedError, exp, parse_one
+from sqlglot.expressions import Show
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from tests.dialects.test_dialect import Validator
 
@@ -1535,6 +1536,10 @@ MATCH_RECOGNIZE (
         self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
         table = ast.find(exp.Table)
         self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")
+
+        users_exp = self.validate_identity("SHOW USERS")
+        self.assertTrue(isinstance(users_exp, Show))
+        self.assertEqual(users_exp.this, "USERS")
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")

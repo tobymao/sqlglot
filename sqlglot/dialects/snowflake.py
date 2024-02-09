@@ -477,6 +477,8 @@ class Snowflake(Dialect):
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "COLUMNS": _show_parser("COLUMNS"),
+            "USERS": _show_parser("USERS"),
+            "TERSE USERS": _show_parser("USERS"),
         }
 
         STAGED_FILE_SINGLE_TOKENS = {

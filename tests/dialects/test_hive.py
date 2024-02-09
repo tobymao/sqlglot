@@ -152,7 +152,7 @@ class TestHive(Validator):
                 "duckdb": "CREATE TABLE x (w TEXT)",  # Partition columns should exist in table
                 "presto": "CREATE TABLE x (w VARCHAR, y INTEGER, z INTEGER) WITH (PARTITIONED_BY=ARRAY['y', 'z'])",
                 "hive": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
-                "spark": "CREATE TABLE x (w STRING) PARTITIONED BY (y INT, z INT)",
+                "spark": "CREATE TABLE x (w STRING, y INT, z INT) PARTITIONED BY (y, z)",
             },
         )
         self.validate_all(

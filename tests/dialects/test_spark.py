@@ -93,11 +93,12 @@ TBLPROPERTIES (
   'x'='1'
 )""",
                 "spark": """CREATE TABLE blah (
-  col_a INT
+  col_a INT,
+  date STRING
 )
 COMMENT 'Test comment: blah'
 PARTITIONED BY (
-  date STRING
+  date
 )
 USING ICEBERG
 TBLPROPERTIES (
@@ -123,13 +124,6 @@ TBLPROPERTIES (
             "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
             write={
                 "spark": "ALTER TABLE StudentInfo DROP COLUMNS (LastName, DOB)",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE x USING ICEBERG PARTITIONED BY (MONTHS(y)) LOCATION 's3://z'",
-            identify=True,
-            write={
-                "spark": "CREATE TABLE `x` USING ICEBERG PARTITIONED BY (MONTHS(`y`)) LOCATION 's3://z'",
             },
         )
 

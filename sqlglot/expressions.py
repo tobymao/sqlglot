@@ -1090,6 +1090,11 @@ class Create(DDL):
         "clone": False,
     }
 
+    @property
+    def kind(self) -> t.Optional[str]:
+        kind = self.args.get("kind")
+        return kind and kind.upper()
+
 
 # https://docs.snowflake.com/en/sql-reference/sql/create-clone
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_clone_statement

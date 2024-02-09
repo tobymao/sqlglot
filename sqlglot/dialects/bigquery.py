@@ -168,10 +168,16 @@ def _pushdown_cte_column_names(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def _parse_timestamp(args: t.List) -> exp.StrToTime:
+def _parse_parse_timestamp(args: t.List) -> exp.StrToTime:
     this = format_time_lambda(exp.StrToTime, "bigquery")([seq_get(args, 1), seq_get(args, 0)])
     this.set("zone", seq_get(args, 2))
     return this
+
+
+def _parse_timestamp(args: t.List) -> exp.Timestamp:
+    timestamp = exp.Timestamp.from_arg_list(args)
+    timestamp.set("with_tz", True)
+    return timestamp
 
 
 def _parse_date(args: t.List) -> exp.Date | exp.DateFromParts:
@@ -355,7 +361,7 @@ class BigQuery(Dialect):
             "PARSE_DATE": lambda args: format_time_lambda(exp.StrToDate, "bigquery")(
                 [seq_get(args, 1), seq_get(args, 0)]
             ),
-            "PARSE_TIMESTAMP": _parse_timestamp,
+            "PARSE_TIMESTAMP": _parse_parse_timestamp,
             "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
             "REGEXP_EXTRACT": lambda args: exp.RegexpExtract(
                 this=seq_get(args, 0),
@@ -374,6 +380,7 @@ class BigQuery(Dialect):
             "TIME": _parse_time,
             "TIME_ADD": parse_date_delta_with_interval(exp.TimeAdd),
             "TIME_SUB": parse_date_delta_with_interval(exp.TimeSub),
+            "TIMESTAMP": _parse_timestamp,
             "TIMESTAMP_ADD": parse_date_delta_with_interval(exp.TimestampAdd),
             "TIMESTAMP_SUB": parse_date_delta_with_interval(exp.TimestampSub),
             "TIMESTAMP_MICROS": lambda args: exp.UnixToTime(

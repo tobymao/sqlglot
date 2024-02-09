@@ -2868,6 +2868,7 @@ class Generator(metaclass=_Generator):
 
     def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
         if self.IGNORE_NULLS_IN_FUNC and not expression.meta.get("inline"):
+            # The first modifier here will be the one closest to the AggFunc's arg
             mods = sorted(
                 expression.find_all(exp.HavingMax, exp.Order, exp.Limit),
                 key=lambda x: 0

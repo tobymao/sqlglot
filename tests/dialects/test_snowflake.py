@@ -1536,6 +1536,10 @@ MATCH_RECOGNIZE (
         table = ast.find(exp.Table)
         self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")
 
+        users_exp = self.validate_identity("SHOW USERS")
+        self.assertTrue(isinstance(users_exp, exp.Show))
+        self.assertEqual(users_exp.this, "USERS")
+
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")
         assert isinstance(ast, exp.AlterTable)

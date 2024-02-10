@@ -4740,11 +4740,6 @@ class Extract(Func):
 class Timestamp(Func):
     arg_types = {"this": False, "expression": False, "with_tz": False}
 
-    @property
-    def return_type(self) -> DataType:
-        tz_aware = self.args.get("with_tz")
-        return DataType.build(DataType.Type.TIMESTAMPTZ if tz_aware else DataType.Type.TIMESTAMP)
-
 
 class TimestampAdd(Func, TimeUnit):
     arg_types = {"this": True, "expression": True, "unit": False}

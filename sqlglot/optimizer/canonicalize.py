@@ -42,7 +42,7 @@ def replace_date_funcs(node: exp.Expression) -> exp.Expression:
             from sqlglot.optimizer.annotate_types import annotate_types
 
             node = annotate_types(node)
-        return exp.cast(node.this, to=node.type)
+        return exp.cast(node.this, to=node.type or exp.DataType.Type.TIMESTAMP)
 
     return node
 

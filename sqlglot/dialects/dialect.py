@@ -722,7 +722,8 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
     if not expression.expression:
         from sqlglot.optimizer.annotate_types import annotate_types
 
-        return self.sql(exp.cast(expression.this, to=annotate_types(expression).type))
+        target_type = annotate_types(expression).type or exp.DataType.Type.TIMESTAMP
+        return self.sql(exp.cast(expression.this, to=target_type))
     if expression.text("expression").lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(

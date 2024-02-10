@@ -874,6 +874,12 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(case_ifs_expr.type.this, exp.DataType.Type.VARCHAR)
         self.assertEqual(case_ifs_expr.args["true"].type.this, exp.DataType.Type.VARCHAR)
 
+        timestamp = annotate_types(parse_one("TIMESTAMP(x)"))
+        self.assertEqual(timestamp.type.this, exp.DataType.Type.TIMESTAMP)
+
+        timestamptz = annotate_types(parse_one("TIMESTAMP(x)", read="bigquery"))
+        self.assertEqual(timestamptz.type.this, exp.DataType.Type.TIMESTAMPTZ)
+
     def test_unknown_annotation(self):
         schema = {"x": {"cola": "VARCHAR"}}
         sql = "SELECT x.cola + SOME_ANONYMOUS_FUNC(x.cola) AS col FROM x AS x"

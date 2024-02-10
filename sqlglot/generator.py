@@ -124,6 +124,7 @@ class Generator(metaclass=_Generator):
         exp.StabilityProperty: lambda self, e: e.name,
         exp.TemporaryProperty: lambda self, e: "TEMPORARY",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
+        exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.expression),
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda self, e: "TRANSIENT",

@@ -720,7 +720,10 @@ def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
 
 def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
     if not expression.expression:
-        return self.sql(exp.cast(expression.this, to=exp.DataType.Type.TIMESTAMP))
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        target_type = annotate_types(expression).type or exp.DataType.Type.TIMESTAMP
+        return self.sql(exp.cast(expression.this, to=target_type))
     if expression.text("expression").lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(
@@ -728,7 +731,7 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
                 zone=expression.expression,
             )
         )
-    return self.function_fallback_sql(expression)
+    return self.func("TIMESTAMP", expression.this, expression.expression)
 
 
 def locate_to_strposition(args: t.List) -> exp.Expression:

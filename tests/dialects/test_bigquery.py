@@ -25,6 +25,14 @@ class TestBigQuery(Validator):
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS HAVING MAX x ORDER BY x LIMIT 1)")
 
         self.validate_all(
+            "TIMESTAMP(x)",
+            write={
+                "bigquery": "TIMESTAMP(x)",
+                "duckdb": "CAST(x AS TIMESTAMPTZ)",
+                "presto": "CAST(x AS TIMESTAMP WITH TIME ZONE)",
+            },
+        )
+        self.validate_all(
             "SELECT SUM(x IGNORE NULLS) AS x",
             read={
                 "bigquery": "SELECT SUM(x IGNORE NULLS) AS x",

@@ -204,7 +204,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.TimeAdd,
             exp.TimeStrToTime,
             exp.TimeSub,
-            exp.Timestamp,
             exp.TimestampAdd,
             exp.TimestampSub,
             exp.UnixToTime,
@@ -276,6 +275,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Nullif: lambda self, e: self._annotate_by_args(e, "this", "expression"),
         exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
+        exp.Timestamp: lambda self, e: self._annotate_with_type(
+            e,
+            exp.DataType.Type.TIMESTAMPTZ if e.args.get("with_tz") else exp.DataType.Type.TIMESTAMP,
+        ),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
         exp.Struct: lambda self, e: self._annotate_by_args(e, "expressions", struct=True),

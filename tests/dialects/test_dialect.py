@@ -2101,7 +2101,7 @@ SELECT
                 "databricks": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
                 "presto": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
                 "snowflake": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
-                "sqlite": "SELECT SUM(CASE WHEN col % 2 = 0 THEN 1 ELSE 0 END) FROM foo",
+                "sqlite": "SELECT SUM(IIF(col % 2 = 0, 1, 0)) FROM foo",
                 "tsql": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
             },
         )
@@ -2116,7 +2116,7 @@ SELECT
                 "": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
                 "databricks": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
                 "presto": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
-                "sqlite": "SELECT SUM(CASE WHEN col % 2 = 0 THEN 1 ELSE 0 END) FILTER(WHERE col < 1000) FROM foo",
+                "sqlite": "SELECT SUM(IIF(col % 2 = 0, 1, 0)) FILTER(WHERE col < 1000) FROM foo",
                 "tsql": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
             },
         )

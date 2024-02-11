@@ -29,6 +29,14 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
 
         self.validate_all(
+            "SELECT IIF(cond <> 0, 'True', 'False')",
+            read={
+                "spark": "SELECT IF(cond, 'True', 'False')",
+                "sqlite": "SELECT IIF(cond, 'True', 'False')",
+                "tsql": "SELECT IIF(cond <> 0, 'True', 'False')",
+            },
+        )
+        self.validate_all(
             "SELECT TRIM(BOTH 'a' FROM a)",
             read={
                 "mysql": "SELECT TRIM(BOTH 'a' FROM a)",
@@ -1299,20 +1307,6 @@ WHERE
                 "spark": "SELECT DATEDIFF(QUARTER, CAST('start' AS TIMESTAMP), CAST('end' AS TIMESTAMP))",
                 "spark2": "SELECT CAST(MONTHS_BETWEEN(CAST('end' AS TIMESTAMP), CAST('start' AS TIMESTAMP)) / 3 AS INT)",
                 "tsql": "SELECT DATEDIFF(QUARTER, CAST('start' AS DATETIME2), CAST('end' AS DATETIME2))",
-            },
-        )
-
-    def test_iif(self):
-        self.validate_identity(
-            "SELECT IF(cond, 'True', 'False')", "SELECT IIF(cond <> 0, 'True', 'False')"
-        )
-        self.validate_identity(
-            "SELECT IIF(cond, 'True', 'False')", "SELECT IIF(cond <> 0, 'True', 'False')"
-        )
-        self.validate_all(
-            "SELECT IIF(cond, 'True', 'False');",
-            write={
-                "spark": "SELECT IF(cond, 'True', 'False')",
             },
         )
 

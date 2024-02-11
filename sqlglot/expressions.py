@@ -4878,6 +4878,7 @@ class Xor(Connector, Func):
 
 class If(Func):
     arg_types = {"this": True, "true": True, "false": False}
+    _sql_names = ["IF", "IIF"]
 
 
 class Nullif(Func):

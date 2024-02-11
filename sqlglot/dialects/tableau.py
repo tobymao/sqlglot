@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from sqlglot import exp, generator, parser, transforms
+from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import Dialect, rename_func
 
 
 class Tableau(Dialect):
+    class Tokenizer(tokens.Tokenizer):
+        IDENTIFIERS = [("[", "]")]
+        QUOTES = ["'", '"']
+
     class Generator(generator.Generator):
         JOIN_HINTS = False
         TABLE_HINTS = False

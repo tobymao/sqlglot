@@ -6,6 +6,21 @@ class TestTableau(Validator):
 
     def test_tableau(self):
         self.validate_all(
+            "[x]",
+            write={
+                "hive": "`x`",
+                "tableau": "[x]",
+            },
+        )
+        self.validate_all(
+            '"x"',
+            write={
+                "hive": "'x'",
+                "tableau": "'x'",
+            },
+        )
+
+        self.validate_all(
             "IF x = 'a' THEN y ELSE NULL END",
             read={
                 "presto": "IF(x = 'a', y, NULL)",

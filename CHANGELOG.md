@@ -1,6 +1,30 @@
 Changelog
 =========
 
+## [v21.1.0] - 2024-02-12
+### :sparkles: New Features
+- [`e71d489`](https://github.com/tobymao/sqlglot/commit/e71d4899e6744812fdefc2704c66bbd6043b5bc9) - add array and tuple helpers *(commit by [@tobymao](https://github.com/tobymao))*
+- [`876e075`](https://github.com/tobymao/sqlglot/commit/876e07580bb2de06b587fc8ad40eb67604ae8507) - **postgres**: root operator closes [#2940](https://github.com/tobymao/sqlglot/pull/2940) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`e731276`](https://github.com/tobymao/sqlglot/commit/e731276dd5490a7d294430e0887eebf19e16d28f) - **snowflake**: add support for SHOW USERS *(PR [#2948](https://github.com/tobymao/sqlglot/pull/2948) by [@DanCardin](https://github.com/DanCardin))*
+- [`b9d4468`](https://github.com/tobymao/sqlglot/commit/b9d44688c2b785212db635f121b686df02e2dec9) - **tableau**: identifier and quotes closes [#2950](https://github.com/tobymao/sqlglot/pull/2950) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f8d9dbf`](https://github.com/tobymao/sqlglot/commit/f8d9dbf6744f95bf4b7517e8bcc35dd3a6f70c5d) - **sqlite**: add support for IIF *(PR [#2951](https://github.com/tobymao/sqlglot/pull/2951) by [@georgesittas](https://github.com/georgesittas))*
+- [`b755551`](https://github.com/tobymao/sqlglot/commit/b7555516c6bf038dc39c4bba2b243839ceb6e3b5) - **clickhouse**: add basic support for system statement *(PR [#2953](https://github.com/tobymao/sqlglot/pull/2953) by [@GaliFFun](https://github.com/GaliFFun))*
+
+### :bug: Bug Fixes
+- [`844018b`](https://github.com/tobymao/sqlglot/commit/844018b8d3a3398d746fdc04c966c7e19d311998) - explode_outer to unnest closes [#2941](https://github.com/tobymao/sqlglot/pull/2941) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`159da45`](https://github.com/tobymao/sqlglot/commit/159da4523d6eb3ca6853d631bb98dc8f13c7b0fb) - posexplode_outer to unnest *(PR [#2942](https://github.com/tobymao/sqlglot/pull/2942) by [@chelsea-lin](https://github.com/chelsea-lin))*
+- [`76d6634`](https://github.com/tobymao/sqlglot/commit/76d66340e566bd9fa8c783f5d311101eb2e80480) - **spark**: CREATE TABLE ... PARTITIONED BY fixes *(PR [#2937](https://github.com/tobymao/sqlglot/pull/2937) by [@barakalon](https://github.com/barakalon))*
+- [`d07ddf9`](https://github.com/tobymao/sqlglot/commit/d07ddf9b460c1b6f672fda4f34dc9231419e6c9d) - **optimizer**: remove redundant casts *(PR [#2945](https://github.com/tobymao/sqlglot/pull/2945) by [@barakalon](https://github.com/barakalon))*
+- [`b70a394`](https://github.com/tobymao/sqlglot/commit/b70a394222bf209298026fd100f6b9498acf9fff) - if doesn't support different types *(commit by [@tobymao](https://github.com/tobymao))*
+- [`6a988e0`](https://github.com/tobymao/sqlglot/commit/6a988e0160022d33623cd036bf84bb0b222c9062) - **bigquery**: fix annotation of timestamp(x) *(PR [#2946](https://github.com/tobymao/sqlglot/pull/2946) by [@georgesittas](https://github.com/georgesittas))*
+- [`78e6d0d`](https://github.com/tobymao/sqlglot/commit/78e6d0de83efbff1d3b61c8550db56c1819f7c22) - **optimizer**: qualify_columns optimizations for wide tables *(PR [#2955](https://github.com/tobymao/sqlglot/pull/2955) by [@barakalon](https://github.com/barakalon))*
+- [`c20cc70`](https://github.com/tobymao/sqlglot/commit/c20cc70dfc7f6395af157521c7e99074d697beb4) - **redshift**: don't assume Table is an unnested Column if Join has a predicate *(PR [#2956](https://github.com/tobymao/sqlglot/pull/2956) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2952](https://github.com/tobymao/sqlglot/issues/2952) opened by [@vidit-wisdom](https://github.com/vidit-wisdom)*
+
+### :wrench: Chores
+- [`c4524ce`](https://github.com/tobymao/sqlglot/commit/c4524ce1e6a85e16db7ea0289116d0160732dc51) - fix unit test *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v21.0.2] - 2024-02-08
 ### :sparkles: New Features
 - [`1842c96`](https://github.com/tobymao/sqlglot/commit/1842c96611cadb0227dd3ce8f42457679ab0e08b) - **clickhouse**: add support for LIMIT BY clause *(PR [#2926](https://github.com/tobymao/sqlglot/pull/2926) by [@georgesittas](https://github.com/georgesittas))*
@@ -2594,3 +2618,4 @@ Changelog
 [v21.0.0]: https://github.com/tobymao/sqlglot/compare/v20.11.0...v21.0.0
 [v21.0.1]: https://github.com/tobymao/sqlglot/compare/v21.0.0...v21.0.1
 [v21.0.2]: https://github.com/tobymao/sqlglot/compare/v21.0.1...v21.0.2
+[v21.1.0]: https://github.com/tobymao/sqlglot/compare/v21.0.2...v21.1.0

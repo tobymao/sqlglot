@@ -136,7 +136,7 @@ class Redshift(Postgres):
                     refs.add(
                         (
                             this.args["from"] if i == 0 else this.args["joins"][i - 1]
-                        ).alias_or_name.lower()
+                        ).this.alias.lower()
                     )
                     table = join.this
 

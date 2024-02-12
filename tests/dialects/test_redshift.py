@@ -1,4 +1,4 @@
-from sqlglot import transpile
+from sqlglot import exp, parse_one, transpile
 from tests.dialects.test_dialect import Validator
 
 
@@ -381,8 +381,6 @@ class TestRedshift(Validator):
             "SELECT DATEADD(DAY, 1, DATE('2023-01-01'))",
         )
 
-        self.validate_identity("SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l")
-
         self.validate_identity(
             """SELECT
   c_name,
@@ -531,4 +529,29 @@ FROM (
             write={
                 "redshift": "CREATE OR REPLACE VIEW v1 AS SELECT cola, colb FROM t1 WITH NO SCHEMA BINDING",
             },
+        )
+
+    def test_column_unnesting(self):
+        ast = parse_one("SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3", read="redshift")
+        self.assertIsInstance(ast.args["from"].this, exp.Table)
+        self.assertIsInstance(ast.args["joins"][0].this, exp.Table)
+        self.assertEqual(ast.sql("redshift"), "SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3")
+
+        ast = parse_one("SELECT * FROM t AS t CROSS JOIN t.c1 ON c1.c2 = t.c3", read="redshift")
+        self.assertIsInstance(ast.args["from"].this, exp.Table)
+        self.assertIsInstance(ast.args["joins"][0].this, exp.Column)
+        self.assertEqual(
+            ast.sql("redshift"), "SELECT * FROM t AS t CROSS JOIN t.c1 ON c1.c2 = t.c3"
+        )
+
+        ast = parse_one(
+            "SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l", read="redshift"
+        )
+        joins = ast.args["joins"]
+        self.assertIsInstance(ast.args["from"].this, exp.Table)
+        self.assertIsInstance(joins[0].this.this, exp.Column)
+        self.assertIsInstance(joins[1].this.this, exp.Column)
+        self.assertIsInstance(joins[2].this.this, exp.Dot)
+        self.assertEqual(
+            ast.sql("redshift"), "SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l"
         )

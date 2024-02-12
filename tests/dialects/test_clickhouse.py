@@ -369,6 +369,7 @@ class TestClickhouse(Validator):
             "SELECT STARTS_WITH('a', 'b'), STARTSWITH('a', 'b')",
             write={"clickhouse": "SELECT startsWith('a', 'b'), startsWith('a', 'b')"},
         )
+        self.validate_identity("SYSTEM STOP MERGES foo.bar")
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")

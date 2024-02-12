@@ -93,6 +93,7 @@ class ClickHouse(Dialect):
             "IPV6": TokenType.IPV6,
             "AGGREGATEFUNCTION": TokenType.AGGREGATEFUNCTION,
             "SIMPLEAGGREGATEFUNCTION": TokenType.SIMPLEAGGREGATEFUNCTION,
+            "SYSTEM": TokenType.COMMAND,
         }
 
         SINGLE_TOKENS = {

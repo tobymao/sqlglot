@@ -537,12 +537,10 @@ FROM (
         self.assertIsInstance(ast.args["joins"][0].this, exp.Table)
         self.assertEqual(ast.sql("redshift"), "SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3")
 
-        ast = parse_one("SELECT * FROM t AS t CROSS JOIN t.c1 ON c1.c2 = t.c3", read="redshift")
+        ast = parse_one("SELECT * FROM t AS t CROSS JOIN t.c1", read="redshift")
         self.assertIsInstance(ast.args["from"].this, exp.Table)
         self.assertIsInstance(ast.args["joins"][0].this, exp.Column)
-        self.assertEqual(
-            ast.sql("redshift"), "SELECT * FROM t AS t CROSS JOIN t.c1 ON c1.c2 = t.c3"
-        )
+        self.assertEqual(ast.sql("redshift"), "SELECT * FROM t AS t CROSS JOIN t.c1")
 
         ast = parse_one(
             "SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l", read="redshift"

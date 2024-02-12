@@ -662,8 +662,13 @@ class Resolver:
         else:
             column_aliases = []
 
-        # If the source's columns are aliased, their aliases shadow the corresponding column names
-        return [alias or name for (name, alias) in itertools.zip_longest(columns, column_aliases)]
+        if column_aliases:
+            # If the source's columns are aliased, their aliases shadow the corresponding column names.
+            # This can be expensive if there are lots of columns, so only do this if column_aliases exist.
+            return [
+                alias or name for (name, alias) in itertools.zip_longest(columns, column_aliases)
+            ]
+        return columns
 
     def _get_all_source_columns(self) -> t.Dict[str, t.List[str]]:
         if self._source_columns is None:

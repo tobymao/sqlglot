@@ -462,7 +462,7 @@ WHERE
             "DIV0(foo, bar)",
             write={
                 "snowflake": "IFF(bar = 0, 0, foo / bar)",
-                "sqlite": "CASE WHEN bar = 0 THEN 0 ELSE CAST(foo AS REAL) / bar END",
+                "sqlite": "IIF(bar = 0, 0, CAST(foo AS REAL) / bar)",
                 "presto": "IF(bar = 0, 0, CAST(foo AS DOUBLE) / bar)",
                 "spark": "IF(bar = 0, 0, foo / bar)",
                 "hive": "IF(bar = 0, 0, foo / bar)",
@@ -473,7 +473,7 @@ WHERE
             "ZEROIFNULL(foo)",
             write={
                 "snowflake": "IFF(foo IS NULL, 0, foo)",
-                "sqlite": "CASE WHEN foo IS NULL THEN 0 ELSE foo END",
+                "sqlite": "IIF(foo IS NULL, 0, foo)",
                 "presto": "IF(foo IS NULL, 0, foo)",
                 "spark": "IF(foo IS NULL, 0, foo)",
                 "hive": "IF(foo IS NULL, 0, foo)",
@@ -484,7 +484,7 @@ WHERE
             "NULLIFZERO(foo)",
             write={
                 "snowflake": "IFF(foo = 0, NULL, foo)",
-                "sqlite": "CASE WHEN foo = 0 THEN NULL ELSE foo END",
+                "sqlite": "IIF(foo = 0, NULL, foo)",
                 "presto": "IF(foo = 0, NULL, foo)",
                 "spark": "IF(foo = 0, NULL, foo)",
                 "hive": "IF(foo = 0, NULL, foo)",

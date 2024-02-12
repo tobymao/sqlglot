@@ -134,7 +134,6 @@ class Spark2(Hive):
                 ),
                 zone=seq_get(args, 1),
             ),
-            "IIF": exp.If.from_arg_list,
             "INT": _parse_as_cast("int"),
             "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,

@@ -533,23 +533,23 @@ FROM (
 
     def test_column_unnesting(self):
         ast = parse_one("SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3", read="redshift")
-        self.assertIsInstance(ast.args["from"].this, exp.Table)
-        self.assertIsInstance(ast.args["joins"][0].this, exp.Table)
+        ast.args["from"].this.assert_is(exp.Table)
+        ast.args["joins"][0].this.assert_is(exp.Table)
         self.assertEqual(ast.sql("redshift"), "SELECT * FROM t.t JOIN t.c1 ON c1.c2 = t.c3")
 
         ast = parse_one("SELECT * FROM t AS t CROSS JOIN t.c1", read="redshift")
-        self.assertIsInstance(ast.args["from"].this, exp.Table)
-        self.assertIsInstance(ast.args["joins"][0].this, exp.Column)
+        ast.args["from"].this.assert_is(exp.Table)
+        ast.args["joins"][0].this.assert_is(exp.Column)
         self.assertEqual(ast.sql("redshift"), "SELECT * FROM t AS t CROSS JOIN t.c1")
 
         ast = parse_one(
             "SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l", read="redshift"
         )
         joins = ast.args["joins"]
-        self.assertIsInstance(ast.args["from"].this, exp.Table)
-        self.assertIsInstance(joins[0].this.this, exp.Column)
-        self.assertIsInstance(joins[1].this.this, exp.Column)
-        self.assertIsInstance(joins[2].this.this, exp.Dot)
+        ast.args["from"].this.assert_is(exp.Table)
+        joins[0].this.this.assert_is(exp.Column)
+        joins[1].this.this.assert_is(exp.Column)
+        joins[2].this.this.assert_is(exp.Dot)
         self.assertEqual(
             ast.sql("redshift"), "SELECT * FROM x AS a, a.b AS c, c.d.e AS f, f.g.h.i.j.k AS l"
         )

@@ -136,11 +136,11 @@ class Redshift(Postgres):
                     refs.add(
                         (
                             this.args["from"] if i == 0 else this.args["joins"][i - 1]
-                        ).alias_or_name.lower()
+                        ).this.alias.lower()
                     )
-                    table = join.this
 
-                    if isinstance(table, exp.Table):
+                    table = join.this
+                    if isinstance(table, exp.Table) and not join.args.get("on"):
                         if table.parts[0].name.lower() in refs:
                             table.replace(table.to_column())
             return this

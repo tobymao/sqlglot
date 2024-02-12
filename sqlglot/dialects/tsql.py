@@ -457,7 +457,6 @@ class TSQL(Dialect):
             "FORMAT": _parse_format,
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "HASHBYTES": _parse_hashbytes,
-            "IIF": exp.If.from_arg_list,
             "ISNULL": exp.Coalesce.from_arg_list,
             "JSON_QUERY": parser.parse_extract_json_with_path(exp.JSONExtract),
             "JSON_VALUE": parser.parse_extract_json_with_path(exp.JSONExtractScalar),

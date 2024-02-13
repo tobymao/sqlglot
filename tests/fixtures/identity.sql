@@ -849,3 +849,4 @@ SELECT (ROW_NUMBER() OVER (PARTITION BY user ORDER BY date ASC) - ROW_NUMBER() O
 CAST(foo AS BPCHAR)
 values
 SELECT values
+SELECT values AS values FROM t WHERE values + 1 > 3

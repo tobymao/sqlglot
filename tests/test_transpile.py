@@ -554,11 +554,12 @@ FROM base""",
         self.validate(
             "WITH A(filter) AS (VALUES 1, 2, 3) SELECT * FROM A WHERE filter >= 2",
             "WITH A(filter) AS (VALUES (1), (2), (3)) SELECT * FROM A WHERE filter >= 2",
+            read="presto",
         )
         self.validate(
             "SELECT BOOL_OR(a > 10) FROM (VALUES 1, 2, 15) AS T(a)",
             "SELECT BOOL_OR(a > 10) FROM (VALUES (1), (2), (15)) AS T(a)",
-            write="presto",
+            read="presto",
         )
 
     def test_alter(self):

@@ -847,3 +847,5 @@ WITH use(use) AS (SELECT 1) SELECT use FROM use
 SELECT recursive FROM t
 SELECT (ROW_NUMBER() OVER (PARTITION BY user ORDER BY date ASC) - ROW_NUMBER() OVER (PARTITION BY user, segment ORDER BY date ASC)) AS group_id FROM example_table
 CAST(foo AS BPCHAR)
+values
+SELECT values

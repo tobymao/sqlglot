@@ -18,11 +18,254 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        with self.assertLogs(helper_logger) as cm:
+            statements = parse(
+                """
+            BEGIN
+              DECLARE 1;
+              IF from_date IS NULL THEN SET x = 1;
+              END IF;
+            END
+            """,
+                read="bigquery",
+            )
+            self.assertIn("unsupported syntax", cm.output[0])
+
+        for actual, expected in zip(
+            statements, ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END")
+        ):
+            self.assertEqual(actual.sql(dialect="bigquery"), expected)
+
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity(
+                "SELECT * FROM t AS t(c1, c2)",
+                "SELECT * FROM t AS t",
+            )
+
+            self.assertEqual(
+                cm.output, ["WARNING:sqlglot:Named columns are not supported in table alias."]
+            )
+
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_all(
+                "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
+                write={
+                    "duckdb": "SELECT a[2], b[2], c[1], d[2], e[1]",
+                    "bigquery": "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
+                    "presto": "SELECT a[2], b[2], c[1], ELEMENT_AT(d, 2), ELEMENT_AT(e, 1)",
+                },
+            )
+
+            self.validate_all(
+                "a[0]",
+                read={
+                    "bigquery": "a[0]",
+                    "duckdb": "a[1]",
+                    "presto": "a[1]",
+                },
+            )
+
+        with self.assertRaises(TokenError):
+            transpile("'\\'", read="bigquery")
+
+        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(ParseError):
+            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
+
+        with self.assertRaises(ParseError):
+            transpile("DATE_ADD(x, day)", read="bigquery")
+
+        with self.assertLogs(parser_logger) as cm:
+            for_in_stmts = parse(
+                "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
+                read="bigquery",
+            )
+            self.assertEqual(
+                [s.sql(dialect="bigquery") for s in for_in_stmts],
+                ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
+            )
+            assert "'END FOR'" in cm.output[0]
+
+        self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
+        self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
+        self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
+        self.validate_identity("FOO(values)")
+        self.validate_identity("STRUCT(values AS value)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS LIMIT 1)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS)")
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS HAVING MAX x ORDER BY x LIMIT 1)")
+        self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
+        self.validate_identity("TIME('2008-12-25 15:30:00+08')")
+        self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
+        self.validate_identity("SELECT test.Unknown FROM test")
+        self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
+        self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
+        self.validate_identity("STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)")
+        self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
+        self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
+        self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
+        self.validate_identity("SELECT `project-id`.udfs.func(call.dir)")
+        self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
+        self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
+        self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
+        self.validate_identity("CAST(STRUCT<a INT64>(1) AS STRUCT<a INT64>)")
+        self.validate_identity("STRING_AGG(a)")
+        self.validate_identity("STRING_AGG(a, ' & ')")
+        self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
+        self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
+        self.validate_identity("DATE(2016, 12, 25)")
+        self.validate_identity("DATE(CAST('2016-12-25 23:59:59' AS DATETIME))")
+        self.validate_identity("SELECT foo IN UNNEST(bar) AS bla")
+        self.validate_identity("SELECT * FROM x-0.a")
+        self.validate_identity("SELECT * FROM pivot CROSS JOIN foo")
+        self.validate_identity("SAFE_CAST(x AS STRING)")
+        self.validate_identity("SELECT * FROM a-b-c.mydataset.mytable")
+        self.validate_identity("SELECT * FROM abc-def-ghi")
+        self.validate_identity("SELECT * FROM a-b-c")
+        self.validate_identity("SELECT * FROM my-table")
+        self.validate_identity("SELECT * FROM my-project.mydataset.mytable")
+        self.validate_identity("SELECT * FROM pro-ject_id.c.d CROSS JOIN foo-bar")
+        self.validate_identity("SELECT * FROM foo.bar.25", "SELECT * FROM foo.bar.`25`")
+        self.validate_identity("SELECT * FROM foo.bar.25_", "SELECT * FROM foo.bar.`25_`")
+        self.validate_identity("SELECT * FROM foo.bar.25x a", "SELECT * FROM foo.bar.`25x` AS a")
+        self.validate_identity("SELECT * FROM foo.bar.25ab c", "SELECT * FROM foo.bar.`25ab` AS c")
+        self.validate_identity("x <> ''")
+        self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
+        self.validate_identity("SELECT b'abc'")
+        self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])""")
+        self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
+        self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
+        self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
+        self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
+        self.validate_identity("SELECT STRUCT<STRING>((SELECT a FROM b.c LIMIT 1)).*")
+        self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
+        self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
+        self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
+        self.validate_identity("CAST(x AS TIMESTAMP)")
+        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
+        self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
+        self.validate_identity("BEGIN TRANSACTION")
+        self.validate_identity("COMMIT TRANSACTION")
+        self.validate_identity("ROLLBACK TRANSACTION")
+        self.validate_identity("CAST(x AS BIGNUMERIC)")
+        self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
+        self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")
+        self.validate_identity("SELECT TIMESTAMP_MILLIS(2) AS t")
+        self.validate_identity("""SELECT JSON_EXTRACT_SCALAR('{"a": 5}', '$.a')""")
+        self.validate_identity("UPDATE x SET y = NULL")
+        self.validate_identity("LOG(n, b)")
+        self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
+        self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
+        self.validate_identity(
+            "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
+        )
+        self.validate_identity(
+            "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count"
+        )
+        self.validate_identity(
+            "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
+        )
+        self.validate_identity(
+            """CREATE TABLE x (a STRING OPTIONS (description='x')) OPTIONS (table_expiration_days=1)"""
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT * FROM `t`) AS a UNPIVOT((c) FOR c_name IN (v1, v2))"
+        )
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS foo AS SELECT * FROM bla EXCEPT DISTINCT (SELECT * FROM bar) LIMIT 0"
+        )
+        self.validate_identity(
+            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)"
+        )
+        self.validate_identity(
+            "SELECT item, purchases, LAST_VALUE(item) OVER (item_window ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce WINDOW item_window AS (ORDER BY purchases)"
+        )
+        self.validate_identity(
+            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
+        )
+        self.validate_identity(
+            """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
+        )
+        self.validate_identity(
+            "select array_contains([1, 2, 3], 1)",
+            "SELECT EXISTS(SELECT 1 FROM UNNEST([1, 2, 3]) AS _col WHERE _col = 1)",
+        )
+        self.validate_identity(
+            "create or replace view test (tenant_id OPTIONS(description='Test description on table creation')) select 1 as tenant_id, 1 as customer_id;",
+            "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
+        )
+        self.validate_identity(
+            "SELECT SPLIT(foo)",
+            "SELECT SPLIT(foo, ',')",
+        )
+        self.validate_identity(
+            "SELECT 1 AS hash",
+            "SELECT 1 AS `hash`",
+        )
+        self.validate_identity(
+            "SELECT 1 AS at",
+            "SELECT 1 AS `at`",
+        )
+        self.validate_identity(
+            'x <> ""',
+            "x <> ''",
+        )
+        self.validate_identity(
+            'x <> """"""',
+            "x <> ''",
+        )
+        self.validate_identity(
+            "x <> ''''''",
+            "x <> ''",
+        )
+        self.validate_identity(
+            "SELECT a overlaps",
+            "SELECT a AS overlaps",
+        )
+        self.validate_identity(
+            "SELECT y + 1 z FROM x GROUP BY y + 1 ORDER BY z",
+            "SELECT y + 1 AS z FROM x GROUP BY z ORDER BY z",
+        )
+        self.validate_identity(
+            "SELECT y + 1 z FROM x GROUP BY y + 1",
+            "SELECT y + 1 AS z FROM x GROUP BY y + 1",
+        )
+        self.validate_identity(
+            """SELECT JSON '"foo"' AS json_data""",
+            """SELECT PARSE_JSON('"foo"') AS json_data""",
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`",
+            "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
+        )
+        self.validate_identity(
+            "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
+            "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
+            "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
+        )
+        self.validate_identity(
+            r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
+            r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
+        )
 
         self.validate_all(
             "TIMESTAMP(x)",
@@ -90,237 +333,6 @@ class TestBigQuery(Validator):
                 "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 1, 10) IGNORE NULLS AS x",
             },
         )
-        self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
-        self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
-
-        self.validate_identity(
-            "create or replace view test (tenant_id OPTIONS(description='Test description on table creation')) select 1 as tenant_id, 1 as customer_id;",
-            "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
-        )
-
-        with self.assertLogs(helper_logger) as cm:
-            statements = parse(
-                """
-            BEGIN
-              DECLARE 1;
-              IF from_date IS NULL THEN SET x = 1;
-              END IF;
-            END
-            """,
-                read="bigquery",
-            )
-            self.assertIn("unsupported syntax", cm.output[0])
-
-        for actual, expected in zip(
-            statements, ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END")
-        ):
-            self.assertEqual(actual.sql(dialect="bigquery"), expected)
-
-        with self.assertLogs(helper_logger) as cm:
-            self.validate_identity(
-                "SELECT * FROM t AS t(c1, c2)",
-                "SELECT * FROM t AS t",
-            )
-
-            self.assertEqual(
-                cm.output, ["WARNING:sqlglot:Named columns are not supported in table alias."]
-            )
-
-        with self.assertLogs(helper_logger) as cm:
-            self.validate_all(
-                "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
-                write={
-                    "duckdb": "SELECT a[2], b[2], c[1], d[2], e[1]",
-                    "bigquery": "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
-                    "presto": "SELECT a[2], b[2], c[1], ELEMENT_AT(d, 2), ELEMENT_AT(e, 1)",
-                },
-            )
-
-            self.validate_all(
-                "a[0]",
-                read={
-                    "duckdb": "a[1]",
-                    "presto": "a[1]",
-                },
-            )
-
-        self.validate_identity(
-            "select array_contains([1, 2, 3], 1)",
-            "SELECT EXISTS(SELECT 1 FROM UNNEST([1, 2, 3]) AS _col WHERE _col = 1)",
-        )
-        self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
-        self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
-        self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
-
-        with self.assertRaises(TokenError):
-            transpile("'\\'", read="bigquery")
-
-        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(ParseError):
-            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
-
-        with self.assertRaises(ParseError):
-            transpile("DATE_ADD(x, day)", read="bigquery")
-
-        with self.assertLogs(parser_logger) as cm:
-            for_in_stmts = parse(
-                "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
-                read="bigquery",
-            )
-            self.assertEqual(
-                [s.sql(dialect="bigquery") for s in for_in_stmts],
-                ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
-            )
-            assert "'END FOR'" in cm.output[0]
-
-        self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
-        self.validate_identity("TIME('2008-12-25 15:30:00+08')")
-        self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
-        self.validate_identity("SELECT test.Unknown FROM test")
-        self.validate_identity(r"SELECT '\n\r\a\v\f\t'")
-        self.validate_identity("SELECT * FROM tbl FOR SYSTEM_TIME AS OF z")
-        self.validate_identity("STRING_AGG(DISTINCT a ORDER BY b DESC, c DESC LIMIT 10)")
-        self.validate_identity("SELECT PARSE_TIMESTAMP('%c', 'Thu Dec 25 07:30:00 2008', 'UTC')")
-        self.validate_identity("SELECT ANY_VALUE(fruit HAVING MAX sold) FROM fruits")
-        self.validate_identity("SELECT ANY_VALUE(fruit HAVING MIN sold) FROM fruits")
-        self.validate_identity("SELECT `project-id`.udfs.func(call.dir)")
-        self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
-        self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
-        self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
-        self.validate_identity("CAST(STRUCT<a INT64>(1) AS STRUCT<a INT64>)")
-        self.validate_identity("STRING_AGG(a)")
-        self.validate_identity("STRING_AGG(a, ' & ')")
-        self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")
-        self.validate_identity("STRING_AGG(a, ' & ' ORDER BY LENGTH(a))")
-        self.validate_identity("DATE(2016, 12, 25)")
-        self.validate_identity("DATE(CAST('2016-12-25 23:59:59' AS DATETIME))")
-        self.validate_identity("SELECT foo IN UNNEST(bar) AS bla")
-        self.validate_identity("SELECT * FROM x-0.a")
-        self.validate_identity("SELECT * FROM pivot CROSS JOIN foo")
-        self.validate_identity("SAFE_CAST(x AS STRING)")
-        self.validate_identity("SELECT * FROM a-b-c.mydataset.mytable")
-        self.validate_identity("SELECT * FROM abc-def-ghi")
-        self.validate_identity("SELECT * FROM a-b-c")
-        self.validate_identity("SELECT * FROM my-table")
-        self.validate_identity("SELECT * FROM my-project.mydataset.mytable")
-        self.validate_identity("SELECT * FROM pro-ject_id.c.d CROSS JOIN foo-bar")
-        self.validate_identity("SELECT * FROM foo.bar.25", "SELECT * FROM foo.bar.`25`")
-        self.validate_identity("SELECT * FROM foo.bar.25_", "SELECT * FROM foo.bar.`25_`")
-        self.validate_identity("SELECT * FROM foo.bar.25x a", "SELECT * FROM foo.bar.`25x` AS a")
-        self.validate_identity("SELECT * FROM foo.bar.25ab c", "SELECT * FROM foo.bar.`25ab` AS c")
-        self.validate_identity("x <> ''")
-        self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
-        self.validate_identity("SELECT b'abc'")
-        self.validate_identity("""SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64>>[])""")
-        self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
-        self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
-        self.validate_identity("SELECT AS VALUE STRUCT(1 AS a, 2 AS b)")
-        self.validate_identity("SELECT STRUCT<ARRAY<STRING>>(['2023-01-17'])")
-        self.validate_identity("SELECT STRUCT<STRING>((SELECT a FROM b.c LIMIT 1)).*")
-        self.validate_identity("SELECT * FROM q UNPIVOT(values FOR quarter IN (b, c))")
-        self.validate_identity("""CREATE TABLE x (a STRUCT<values ARRAY<INT64>>)""")
-        self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
-        self.validate_identity("CAST(x AS TIMESTAMP)")
-        self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
-        self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
-        self.validate_identity("BEGIN TRANSACTION")
-        self.validate_identity("COMMIT TRANSACTION")
-        self.validate_identity("ROLLBACK TRANSACTION")
-        self.validate_identity("CAST(x AS BIGNUMERIC)")
-        self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
-        self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")
-        self.validate_identity("SELECT TIMESTAMP_MILLIS(2) AS t")
-        self.validate_identity("""SELECT JSON_EXTRACT_SCALAR('{"a": 5}', '$.a')""")
-        self.validate_identity(
-            "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count"
-        )
-        self.validate_identity(
-            "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
-        )
-        self.validate_identity(
-            """CREATE TABLE x (a STRING OPTIONS (description='x')) OPTIONS (table_expiration_days=1)"""
-        )
-        self.validate_identity(
-            "SELECT * FROM (SELECT * FROM `t`) AS a UNPIVOT((c) FOR c_name IN (v1, v2))"
-        )
-        self.validate_identity(
-            "CREATE TABLE IF NOT EXISTS foo AS SELECT * FROM bla EXCEPT DISTINCT (SELECT * FROM bar) LIMIT 0"
-        )
-        self.validate_identity(
-            "SELECT ROW() OVER (y ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM x WINDOW y AS (PARTITION BY CATEGORY)"
-        )
-        self.validate_identity(
-            "SELECT item, purchases, LAST_VALUE(item) OVER (item_window ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce WINDOW item_window AS (ORDER BY purchases)"
-        )
-        self.validate_identity(
-            "SELECT LAST_VALUE(a IGNORE NULLS) OVER y FROM x WINDOW y AS (PARTITION BY CATEGORY)",
-        )
-        self.validate_identity(
-            """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
-        )
-        self.validate_identity(
-            "SELECT SPLIT(foo)",
-            "SELECT SPLIT(foo, ',')",
-        )
-        self.validate_identity(
-            "SELECT 1 AS hash",
-            "SELECT 1 AS `hash`",
-        )
-        self.validate_identity(
-            "SELECT 1 AS at",
-            "SELECT 1 AS `at`",
-        )
-        self.validate_identity(
-            'x <> ""',
-            "x <> ''",
-        )
-        self.validate_identity(
-            'x <> """"""',
-            "x <> ''",
-        )
-        self.validate_identity(
-            "x <> ''''''",
-            "x <> ''",
-        )
-        self.validate_identity(
-            "SELECT a overlaps",
-            "SELECT a AS overlaps",
-        )
-        self.validate_identity(
-            "SELECT y + 1 z FROM x GROUP BY y + 1 ORDER BY z",
-            "SELECT y + 1 AS z FROM x GROUP BY z ORDER BY z",
-        )
-        self.validate_identity(
-            "SELECT y + 1 z FROM x GROUP BY y + 1",
-            "SELECT y + 1 AS z FROM x GROUP BY y + 1",
-        )
-        self.validate_identity(
-            """SELECT JSON '"foo"' AS json_data""",
-            """SELECT PARSE_JSON('"foo"') AS json_data""",
-        )
-        self.validate_identity(
-            "CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`",
-            "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
-        )
-        self.validate_identity(
-            "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
-            "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
-        )
-
         self.validate_all(
             "SELECT * FROM Produce UNPIVOT((first_half_sales, second_half_sales) FOR semesters IN ((Q1, Q2) AS 'semester_1', (Q3, Q4) AS 'semester_2'))",
             read={
@@ -472,7 +484,6 @@ class TestBigQuery(Validator):
                 "duckdb": "SELECT * FROM t WHERE EXISTS(SELECT * FROM UNNEST(nums) AS _t(x) WHERE x > 1)",
             },
         )
-        self.validate_identity("UPDATE x SET y = NULL")
         self.validate_all(
             "NULL",
             read={
@@ -675,10 +686,6 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
             },
-        )
-        self.validate_identity(
-            r"REGEXP_EXTRACT(svc_plugin_output, r'\\\((.*)')",
-            r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",
@@ -1002,9 +1009,6 @@ class TestBigQuery(Validator):
                 "postgres": "CURRENT_DATE AT TIME ZONE 'UTC'",
             },
         )
-        self.validate_identity(
-            "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
-        )
         self.validate_all(
             "SELECT a FROM test WHERE a = 1 GROUP BY a HAVING a = 2 QUALIFY z ORDER BY a LIMIT 10",
             write={
@@ -1013,43 +1017,18 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
-            "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
-            write={
-                "spark": "SELECT cola, colb FROM VALUES (1, 'test') AS tab(cola, colb)",
+            "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
+            read={
                 "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
                 "snowflake": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
-            },
-        )
-        self.validate_all(
-            "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab",
-            write={
-                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS _c0, 'test' AS _c1)])",
-            },
-        )
-        self.validate_all(
-            "SELECT cola, colb FROM (VALUES (1, 'test'))",
-            write={
-                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS _c0, 'test' AS _c1)])",
+                "spark": "SELECT cola, colb FROM VALUES (1, 'test') AS tab(cola, colb)",
             },
         )
         self.validate_all(
             "SELECT * FROM UNNEST([STRUCT(1 AS id)]) CROSS JOIN UNNEST([STRUCT(1 AS id)])",
             read={
+                "bigquery": "SELECT * FROM UNNEST([STRUCT(1 AS id)]) CROSS JOIN UNNEST([STRUCT(1 AS id)])",
                 "postgres": "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",
-            },
-        )
-        self.validate_all(
-            "SELECT cola, colb, colc FROM (VALUES (1, 'test', NULL)) AS tab(cola, colb, colc)",
-            write={
-                "spark": "SELECT cola, colb, colc FROM VALUES (1, 'test', NULL) AS tab(cola, colb, colc)",
-                "bigquery": "SELECT cola, colb, colc FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb, NULL AS colc)])",
-                "snowflake": "SELECT cola, colb, colc FROM (VALUES (1, 'test', NULL)) AS tab(cola, colb, colc)",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
-            write={
-                "bigquery": "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) AS d, COUNT(*) AS e FOR c IN ('x', 'y'))",
             },
         )
         self.validate_all(
@@ -1107,8 +1086,6 @@ WHERE
             pretty=True,
         )
 
-        self.validate_identity("LOG(n, b)")
-
     def test_user_defined_functions(self):
         self.validate_identity(
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"
@@ -1130,35 +1107,22 @@ WHERE
         )
 
     def test_remove_precision_parameterized_types(self):
-        self.validate_all(
-            "SELECT CAST(1 AS NUMERIC(10, 2))",
-            write={
-                "bigquery": "SELECT CAST(1 AS NUMERIC)",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE test (a NUMERIC(10, 2))",
-            write={
-                "bigquery": "CREATE TABLE test (a NUMERIC(10, 2))",
-            },
-        )
-        self.validate_all(
-            "SELECT CAST('1' AS STRING(10)) UNION ALL SELECT CAST('2' AS STRING(10))",
-            write={
-                "bigquery": "SELECT CAST('1' AS STRING) UNION ALL SELECT CAST('2' AS STRING)",
-            },
-        )
-        self.validate_all(
-            "SELECT cola FROM (SELECT CAST('1' AS STRING(10)) AS cola UNION ALL SELECT CAST('2' AS STRING(10)) AS cola)",
-            write={
-                "bigquery": "SELECT cola FROM (SELECT CAST('1' AS STRING) AS cola UNION ALL SELECT CAST('2' AS STRING) AS cola)",
-            },
-        )
-        self.validate_all(
+        self.validate_identity("CREATE TABLE test (a NUMERIC(10, 2))")
+        self.validate_identity(
             "INSERT INTO test (cola, colb) VALUES (CAST(7 AS STRING(10)), CAST(14 AS STRING(10)))",
-            write={
-                "bigquery": "INSERT INTO test (cola, colb) VALUES (CAST(7 AS STRING), CAST(14 AS STRING))",
-            },
+            "INSERT INTO test (cola, colb) VALUES (CAST(7 AS STRING), CAST(14 AS STRING))",
+        )
+        self.validate_identity(
+            "SELECT CAST(1 AS NUMERIC(10, 2))",
+            "SELECT CAST(1 AS NUMERIC)",
+        )
+        self.validate_identity(
+            "SELECT CAST('1' AS STRING(10)) UNION ALL SELECT CAST('2' AS STRING(10))",
+            "SELECT CAST('1' AS STRING) UNION ALL SELECT CAST('2' AS STRING)",
+        )
+        self.validate_identity(
+            "SELECT cola FROM (SELECT CAST('1' AS STRING(10)) AS cola UNION ALL SELECT CAST('2' AS STRING(10)) AS cola)",
+            "SELECT cola FROM (SELECT CAST('1' AS STRING) AS cola UNION ALL SELECT CAST('2' AS STRING) AS cola)",
         )
 
     def test_models(self):

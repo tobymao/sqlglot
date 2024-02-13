@@ -330,7 +330,6 @@ class BigQuery(Dialect):
             "RECORD": TokenType.STRUCT,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
         }
-
         KEYWORDS.pop("DIV", None)
         KEYWORDS.pop("VALUES", None)
 

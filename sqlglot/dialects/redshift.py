@@ -158,7 +158,7 @@ class Redshift(Postgres):
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
         }
-        KEYWORDS.pop("VALUES", None)
+        KEYWORDS.pop("VALUES")
 
         # Redshift allows # to appear as a table identifier prefix
         SINGLE_TOKENS = Postgres.Tokenizer.SINGLE_TOKENS.copy()

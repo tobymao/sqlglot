@@ -47,6 +47,11 @@ class Redshift(Postgres):
     }
 
     class Parser(Postgres.Parser):
+        ID_VAR_TOKENS = {
+            *Postgres.Parser.ID_VAR_TOKENS,
+            TokenType.VALUES,
+        }
+
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.TsOrDsAdd(

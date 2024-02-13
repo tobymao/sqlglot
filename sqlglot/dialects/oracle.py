@@ -88,6 +88,7 @@ class Oracle(Dialect):
     class Parser(parser.Parser):
         ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
+        VALUES_FOLLOWED_BY_PAREN = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

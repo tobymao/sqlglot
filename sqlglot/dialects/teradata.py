@@ -74,6 +74,7 @@ class Teradata(Dialect):
 
     class Parser(parser.Parser):
         TABLESAMPLE_CSV = True
+        VALUES_FOLLOWED_BY_PAREN = False
 
         CHARSET_TRANSLATORS = {
             "GRAPHIC_TO_KANJISJIS",

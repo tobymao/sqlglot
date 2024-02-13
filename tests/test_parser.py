@@ -839,3 +839,17 @@ class TestParser(unittest.TestCase):
                     ),
                 )
                 self.assertEqual(ast.sql(dialect=dialect), "CREATE SCHEMA catalog.schema")
+
+    def test_values_as_identifier(self):
+        sql = "SELECT values FROM t WHERE values + 1 > x"
+        for dialect in (
+            None,
+            "bigquery",
+            "clickhouse",
+            "duckdb",
+            "postgres",
+            "redshift",
+            "snowflake",
+        ):
+            with self.subTest(dialect):
+                self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)

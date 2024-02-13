@@ -330,8 +330,8 @@ class BigQuery(Dialect):
             "RECORD": TokenType.STRUCT,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
         }
-        KEYWORDS.pop("DIV", None)
-        KEYWORDS.pop("VALUES", None)
+        KEYWORDS.pop("DIV")
+        KEYWORDS.pop("VALUES")
 
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True

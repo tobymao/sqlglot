@@ -153,7 +153,7 @@ def lineage(
                 raise ValueError(f"Could not find {column} in {scope.expression}")
 
             for s in scope.union_scopes:
-                to_node(index, scope=s, upstream=upstream)
+                to_node(index, scope=s, upstream=upstream, alias=alias)
 
             return upstream
 

@@ -218,6 +218,7 @@ with t1 as (
     ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) as row_num
   FROM
     x
+  ORDER BY x.a, x.b, row_num
 )
 SELECT
   t1.a,
@@ -226,7 +227,7 @@ FROM
   t1
 WHERE
   row_num = 1;
-WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT t1.a AS a, t1.b AS b FROM t1 AS t1 WHERE t1.row_num = 1;
+WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x ORDER BY x.a, x.b, row_num) SELECT t1.a AS a, t1.b AS b FROM t1 AS t1 WHERE t1.row_num = 1;
 
 # title: Test preventing merge of window expressions join clause
 with t1 as (
@@ -301,6 +302,7 @@ with t1 as (
     ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) as row_num
   FROM
     x
+  ORDER BY x.a, x.b, row_num
 )
 SELECT
   t1.a,
@@ -308,7 +310,7 @@ SELECT
   t1.row_num
 FROM
   t1;
-SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x;
+SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x ORDER BY x.a, x.b, row_num;
 
 # title: Don't merge window functions, inner table is aliased in outer query
 with t1 as (

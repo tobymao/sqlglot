@@ -85,6 +85,10 @@ WHERE
             "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
         )
         self.validate_identity(
+            "value:values::string",
+            "CAST(GET_PATH(value, 'values') AS TEXT)",
+        )
+        self.validate_identity(
             """SELECT GET_PATH(PARSE_JSON('{"y": [{"z": 1}]}'), 'y[0]:z')""",
             """SELECT GET_PATH(PARSE_JSON('{"y": [{"z": 1}]}'), 'y[0].z')""",
         )

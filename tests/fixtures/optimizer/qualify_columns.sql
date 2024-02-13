@@ -208,14 +208,14 @@ SELECT x.a AS a, y.c AS c FROM x AS x, y AS y;
 --------------------------------------
 -- Unions
 --------------------------------------
-SELECT a FROM x UNION SELECT a FROM x;
-SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x;
+SELECT a FROM x UNION SELECT a FROM x ORDER BY a;
+SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x ORDER BY a;
 
-SELECT a FROM x UNION SELECT a FROM x UNION SELECT a FROM x;
-SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x;
+SELECT a FROM x UNION SELECT a FROM x UNION SELECT a FROM x ORDER BY a;
+SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x ORDER BY a;
 
-SELECT a FROM (SELECT a FROM x UNION SELECT a FROM x);
-SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x) AS _q_0;
+SELECT a FROM (SELECT a FROM x UNION SELECT a FROM x) ORDER BY a;
+SELECT _q_0.a AS a FROM (SELECT x.a AS a FROM x AS x UNION SELECT x.a AS a FROM x AS x) AS _q_0 ORDER BY a;
 
 --------------------------------------
 -- Subqueries
@@ -318,8 +318,8 @@ WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z AS z;
 WITH z AS (SELECT a FROM x), q AS (SELECT * FROM z) SELECT * FROM q;
 WITH z AS (SELECT x.a AS a FROM x AS x), q AS (SELECT z.a AS a FROM z AS z) SELECT q.a AS a FROM q AS q;
 
-WITH z AS (SELECT * FROM x) SELECT * FROM z UNION SELECT * FROM z;
-WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT z.a AS a, z.b AS b FROM z AS z UNION SELECT z.a AS a, z.b AS b FROM z AS z;
+WITH z AS (SELECT * FROM x) SELECT * FROM z UNION SELECT * FROM z ORDER BY a, b;
+WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT z.a AS a, z.b AS b FROM z AS z UNION SELECT z.a AS a, z.b AS b FROM z AS z ORDER BY a, b;
 
 WITH z AS (SELECT * FROM x), q AS (SELECT b FROM z) SELECT b FROM q;
 WITH z AS (SELECT x.a AS a, x.b AS b FROM x AS x), q AS (SELECT z.b AS b FROM z AS z) SELECT q.b AS b FROM q AS q;
@@ -359,8 +359,8 @@ SELECT x.b AS b FROM x AS x;
 SELECT * EXCEPT (a, b) FROM x;
 SELECT * EXCEPT (x.a, x.b) FROM x AS x;
 
-SELECT COALESCE(t1.a, '') AS a, t2.* EXCEPT (a) FROM x AS t1, x AS t2;
-SELECT COALESCE(t1.a, '') AS a, t2.b AS b FROM x AS t1, x AS t2;
+SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.* EXCEPT (a) FROM x AS t1, x AS t2;
+SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.b AS b FROM x AS t1, x AS t2;
 
 --------------------------------------
 -- Using
@@ -468,8 +468,8 @@ select * from unnest ([1, 2]) as x with offset as y;
 SELECT x AS x, y AS y FROM UNNEST([1, 2]) AS x WITH OFFSET AS y;
 
 # dialect: presto
-SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(b, ',')) AS i(b);
-SELECT x.a AS a, i.b AS b FROM x AS x CROSS JOIN UNNEST(SPLIT(x.b, ',')) AS i(b);
+SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(CAST(b AS VARCHAR), ',')) AS i(b);
+SELECT x.a AS a, i.b AS b FROM x AS x CROSS JOIN UNNEST(SPLIT(CAST(x.b AS VARCHAR), ',')) AS i(b);
 
 # execute: false
 SELECT c FROM (SELECT 1 a) AS x LATERAL VIEW EXPLODE(a) AS c;
@@ -487,16 +487,16 @@ SELECT t.c1 AS c1, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
 -- Window functions
 --------------------------------------
 # title: ORDER BY in window function
-SELECT a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY a) AS row_num FROM x;
-SELECT x.a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a) AS row_num FROM x AS x;
+SELECT a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY a) AS row_num FROM x ORDER BY a, row_num;
+SELECT x.a + 1 AS a, ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a) AS row_num FROM x AS x ORDER BY a, row_num;
 
 # dialect: bigquery
 SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS row_num FROM x QUALIFY row_num = 1;
 SELECT ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS row_num FROM x AS x QUALIFY ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) = 1;
 
 # dialect: bigquery
-SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY x.b ORDER BY x.a DESC) = 1;
-SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a DESC) = 1;
+SELECT x.b, x.a FROM x LEFT JOIN y ON x.b = y.b QUALIFY ROW_NUMBER() OVER(PARTITION BY x.b ORDER BY x.a DESC) = 1 ORDER BY x.b, x.a;
+SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_NUMBER() OVER (PARTITION BY x.b ORDER BY x.a DESC) = 1 ORDER BY x.b, x.a;
 
 SELECT * FROM x QUALIFY COUNT(a) OVER (PARTITION BY b) > 1;
 SELECT x.a AS a, x.b AS b FROM x AS x QUALIFY COUNT(x.a) OVER (PARTITION BY x.b) > 1;

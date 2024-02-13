@@ -225,6 +225,8 @@ class Presto(Dialect):
         }
 
     class Parser(parser.Parser):
+        VALUES_FOLLOWED_BY_PAREN = False
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARBITRARY": exp.AnyValue.from_arg_list,

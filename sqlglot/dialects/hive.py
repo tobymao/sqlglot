@@ -266,6 +266,7 @@ class Hive(Dialect):
     class Parser(parser.Parser):
         LOG_DEFAULTS_TO_LN = True
         STRICT_CAST = False
+        VALUES_FOLLOWED_BY_PAREN = False
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

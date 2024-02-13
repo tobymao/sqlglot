@@ -1002,8 +1002,12 @@ class Parser(metaclass=_Parser):
     MODIFIERS_ATTACHED_TO_UNION = True
     UNION_MODIFIERS = {"order", "limit", "offset"}
 
-    # parses no parenthesis if statements as commands
+    # Parses no parenthesis if statements as commands
     NO_PAREN_IF_COMMANDS = True
+
+    # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
+    # If this is True and '(' is not found, the keyword will be treated as an identifier
+    VALUES_FOLLOWED_BY_PAREN = True
 
     __slots__ = (
         "error_level",
@@ -2269,8 +2273,7 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
             return self.expression(exp.Tuple, expressions=expressions)
 
-        # In presto we can have VALUES 1, 2 which results in 1 column & 2 rows.
-        # https://prestodb.io/docs/current/sql/values.html
+        # In some dialects we can have VALUES 1, 2 which results in 1 column & 2 rows.
         return self.expression(exp.Tuple, expressions=[self._parse_expression()])
 
     def _parse_projections(self) -> t.List[exp.Expression]:
@@ -3874,9 +3877,15 @@ class Parser(metaclass=_Parser):
 
     def _parse_column_reference(self) -> t.Optional[exp.Expression]:
         this = self._parse_field()
-        if isinstance(this, exp.Identifier):
-            this = self.expression(exp.Column, this=this)
-        return this
+        if (
+            not this
+            and self._match(TokenType.VALUES, advance=False)
+            and self.VALUES_FOLLOWED_BY_PAREN
+            and (not self._next or self._next.token_type != TokenType.L_PAREN)
+        ):
+            this = self._parse_id_var()
+
+        return self.expression(exp.Column, this=this) if isinstance(this, exp.Identifier) else this
 
     def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         this = self._parse_bracket(this)

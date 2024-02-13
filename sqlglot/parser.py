@@ -2064,7 +2064,7 @@ class Parser(metaclass=_Parser):
             partition=self._parse_partition(),
             where=self._match_pair(TokenType.REPLACE, TokenType.WHERE)
             and self._parse_conjunction(),
-            expression=self._parse_ddl_select(),
+            expression=self._parse_derived_table_values() or self._parse_ddl_select(),
             conflict=self._parse_on_conflict(),
             returning=returning or self._parse_returning(),
             overwrite=overwrite,
@@ -2372,12 +2372,8 @@ class Parser(metaclass=_Parser):
             # We return early here so that the UNION isn't attached to the subquery by the
             # following call to _parse_set_operations, but instead becomes the parent node
             return self._parse_subquery(this, parse_alias=parse_subquery_alias)
-        elif self._match(TokenType.VALUES):
-            this = self.expression(
-                exp.Values,
-                expressions=self._parse_csv(self._parse_value),
-                alias=self._parse_table_alias(),
-            )
+        elif self._match(TokenType.VALUES, advance=False):
+            this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
         else:
@@ -2974,7 +2970,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_derived_table_values(self) -> t.Optional[exp.Values]:
         is_derived = self._match_pair(TokenType.L_PAREN, TokenType.VALUES)
-        if not is_derived and not self._match(TokenType.VALUES):
+        if not is_derived and not self._match_text_seq("VALUES"):
             return None
 
         expressions = self._parse_csv(self._parse_value)
@@ -5522,7 +5518,7 @@ class Parser(metaclass=_Parser):
                     then = self.expression(
                         exp.Insert,
                         this=self._parse_value(),
-                        expression=self._match(TokenType.VALUES) and self._parse_value(),
+                        expression=self._match_text_seq("VALUES") and self._parse_value(),
                     )
             elif self._match(TokenType.UPDATE):
                 expressions = self._parse_star()

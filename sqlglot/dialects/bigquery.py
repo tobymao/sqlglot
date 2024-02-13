@@ -331,6 +331,7 @@ class BigQuery(Dialect):
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
         }
         KEYWORDS.pop("DIV")
+        KEYWORDS.pop("VALUES")
 
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True
@@ -407,11 +408,6 @@ class BigQuery(Dialect):
         NESTED_TYPE_TOKENS = {
             *parser.Parser.NESTED_TYPE_TOKENS,
             TokenType.TABLE,
-        }
-
-        ID_VAR_TOKENS = {
-            *parser.Parser.ID_VAR_TOKENS,
-            TokenType.VALUES,
         }
 
         PROPERTY_PARSERS = {

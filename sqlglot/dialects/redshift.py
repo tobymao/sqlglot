@@ -47,11 +47,6 @@ class Redshift(Postgres):
     }
 
     class Parser(Postgres.Parser):
-        ID_VAR_TOKENS = {
-            *Postgres.Parser.ID_VAR_TOKENS,
-            TokenType.VALUES,
-        }
-
         FUNCTIONS = {
             **Postgres.Parser.FUNCTIONS,
             "ADD_MONTHS": lambda args: exp.TsOrDsAdd(
@@ -163,6 +158,7 @@ class Redshift(Postgres):
             "UNLOAD": TokenType.COMMAND,
             "VARBYTE": TokenType.VARBINARY,
         }
+        KEYWORDS.pop("VALUES")
 
         # Redshift allows # to appear as a table identifier prefix
         SINGLE_TOKENS = Postgres.Tokenizer.SINGLE_TOKENS.copy()

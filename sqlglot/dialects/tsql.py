@@ -756,6 +756,9 @@ class TSQL(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
+            exp.StrPosition: lambda self, e: self.func(
+                "CHARINDEX", e.args.get("substr"), e.this, e.args.get("position")
+            ),
             exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
             exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
             exp.SHA2: lambda self, e: self.func(

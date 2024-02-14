@@ -49,7 +49,7 @@ class Schema(abc.ABC):
         only_visible: bool = False,
         dialect: DialectType = None,
         normalize: t.Optional[bool] = None,
-    ) -> t.List[str]:
+    ) -> t.Sequence[str]:
         """
         Get the column names for a table.
 
@@ -60,7 +60,7 @@ class Schema(abc.ABC):
             normalize: whether to normalize identifiers according to the dialect of interest.
 
         Returns:
-            The list of column names.
+            The sequence of column names.
         """
 
     @abc.abstractmethod

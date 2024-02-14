@@ -243,6 +243,15 @@ class TestExpressions(unittest.TestCase):
             'SELECT * FROM a1 AS a /* a */, b.a /* b */, c.a2 /* c.a */, d2 /* d.a */ CROSS JOIN e.a CROSS JOIN "F" /* f-F.A */ CROSS JOIN g1.a /* g */',
         )
 
+        self.assertEqual(
+            exp.replace_tables(
+                parse_one("select * from example.table", dialect="bigquery"),
+                {"example.table": "`my-project.example.table`"},
+                dialect="bigquery",
+            ).sql(),
+            'SELECT * FROM "my-project".example.table /* example.table */',
+        )
+
     def test_expand(self):
         self.assertEqual(
             exp.expand(

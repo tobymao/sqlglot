@@ -290,15 +290,15 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             """'{"x": {"y": 1}}'::json->'x'->'y'""",
-            """JSON_EXTRACT_PATH(JSON_EXTRACT_PATH(CAST('{"x": {"y": 1}}' AS JSON), 'x'), 'y')""",
+            """CAST('{"x": {"y": 1}}' AS JSON) -> 'x' -> 'y'""",
         )
         self.validate_identity(
             """'[1,2,3]'::json->>2""",
-            "JSON_EXTRACT_PATH_TEXT(CAST('[1,2,3]' AS JSON), '2')",
+            "CAST('[1,2,3]' AS JSON) ->> 2",
         )
         self.validate_identity(
             """'{"a":1,"b":2}'::json->>'b'""",
-            """JSON_EXTRACT_PATH_TEXT(CAST('{"a":1,"b":2}' AS JSON), 'b')""",
+            """CAST('{"a":1,"b":2}' AS JSON) ->> 'b'""",
         )
         self.validate_identity(
             """'{"a":[1,2,3],"b":[4,5,6]}'::json#>'{a,2}'""",
@@ -310,11 +310,11 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "'[1,2,3]'::json->2",
-            "JSON_EXTRACT_PATH(CAST('[1,2,3]' AS JSON), '2')",
+            "CAST('[1,2,3]' AS JSON) -> 2",
         )
         self.validate_identity(
             """SELECT JSON_ARRAY_ELEMENTS((foo->'sections')::JSON) AS sections""",
-            """SELECT JSON_ARRAY_ELEMENTS(CAST((JSON_EXTRACT_PATH(foo, 'sections')) AS JSON)) AS sections""",
+            """SELECT JSON_ARRAY_ELEMENTS(CAST((foo -> 'sections') AS JSON)) AS sections""",
         )
         self.validate_identity(
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
@@ -357,12 +357,13 @@ class TestPostgres(Validator):
             "x -> 'y' -> 0 -> 'z'",
             write={
                 "": "JSON_EXTRACT(JSON_EXTRACT(JSON_EXTRACT(x, '$.y'), '$[0]'), '$.z')",
-                "postgres": "JSON_EXTRACT_PATH(JSON_EXTRACT_PATH(JSON_EXTRACT_PATH(x, 'y'), '0'), 'z')",
+                "postgres": "x -> 'y' -> 0 -> 'z'",
             },
         )
         self.validate_all(
             """JSON_EXTRACT_PATH('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}','f4')""",
             write={
+                "": """JSON_EXTRACT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
                 "bigquery": """JSON_EXTRACT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
                 "duckdb": """'{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}' -> '$.f4'""",
                 "mysql": """JSON_EXTRACT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"foo"}}', '$.f4')""",
@@ -580,7 +581,7 @@ class TestPostgres(Validator):
         self.validate_all(
             """'{"a":1,"b":2}'::json->'b'""",
             write={
-                "postgres": """JSON_EXTRACT_PATH(CAST('{"a":1,"b":2}' AS JSON), 'b')""",
+                "postgres": """CAST('{"a":1,"b":2}' AS JSON) -> 'b'""",
                 "redshift": """JSON_EXTRACT_PATH_TEXT('{"a":1,"b":2}', 'b')""",
             },
         )

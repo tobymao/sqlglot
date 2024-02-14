@@ -288,8 +288,8 @@ def _parse_as_text(
 def _json_extract_sql(
     self: TSQL.Generator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
-    json_query = rename_func("JSON_QUERY")(self, expression)
-    json_value = rename_func("JSON_VALUE")(self, expression)
+    json_query = self.func("JSON_QUERY", expression.this, expression.expression)
+    json_value = self.func("JSON_VALUE", expression.this, expression.expression)
     return self.func("ISNULL", json_query, json_value)
 
 

@@ -724,8 +724,10 @@ class Snowflake(Dialect):
             ),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.If: if_sql(name="IFF", false_value="NULL"),
-            exp.JSONExtract: rename_func("GET_PATH"),
-            exp.JSONExtractScalar: rename_func("JSON_EXTRACT_PATH_TEXT"),
+            exp.JSONExtract: lambda self, e: self.func("GET_PATH", e.this, e.expression),
+            exp.JSONExtractScalar: lambda self, e: self.func(
+                "JSON_EXTRACT_PATH_TEXT", e.this, e.expression
+            ),
             exp.JSONObject: lambda self, e: self.func("OBJECT_CONSTRUCT_KEEP_NULL", *e.expressions),
             exp.JSONPathRoot: lambda *_: "",
             exp.LogicalAnd: rename_func("BOOLAND_AGG"),

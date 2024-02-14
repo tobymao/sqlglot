@@ -17,11 +17,11 @@ from sqlglot.trie import new_trie
 
 DATE_ADD_OR_DIFF = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateDiff, exp.TsOrDsDiff]
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
+JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
+
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F
-
-    JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar]
 
 logger = logging.getLogger("sqlglot")
 
@@ -1018,7 +1018,7 @@ def parse_json_extract_path(
 
 
 def json_extract_segments(
-    name: str, quoted_index: bool = True
+    name: str, quoted_index: bool = True, op: t.Optional[str] = None
 ) -> t.Callable[[Generator, JSON_EXTRACT_TYPE], str]:
     def _json_extract_segments(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
         path = expression.expression
@@ -1036,6 +1036,8 @@ def json_extract_segments(
 
                 segments.append(path)
 
+        if op:
+            return f" {op} ".join([self.sql(expression.this), *segments])
         return self.func(name, expression.this, *segments)
 
     return _json_extract_segments

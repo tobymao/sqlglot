@@ -487,8 +487,10 @@ class Hive(Dialect):
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.IsNan: rename_func("ISNAN"),
-            exp.JSONExtract: rename_func("GET_JSON_OBJECT"),
-            exp.JSONExtractScalar: rename_func("GET_JSON_OBJECT"),
+            exp.JSONExtract: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
+            exp.JSONExtractScalar: lambda self, e: self.func(
+                "GET_JSON_OBJECT", e.this, e.expression
+            ),
             exp.JSONFormat: _json_format_sql,
             exp.Left: left_to_substring_sql,
             exp.Map: var_map_sql,

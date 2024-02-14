@@ -550,11 +550,13 @@ class Parser(metaclass=_Parser):
             exp.JSONExtract,
             this=this,
             expression=self.dialect.to_json_path(path),
+            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
         ),
         TokenType.DARROW: lambda self, this, path: self.expression(
             exp.JSONExtractScalar,
             this=this,
             expression=self.dialect.to_json_path(path),
+            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
         ),
         TokenType.HASH_ARROW: lambda self, this, path: self.expression(
             exp.JSONBExtract,
@@ -1004,6 +1006,9 @@ class Parser(metaclass=_Parser):
 
     # Parses no parenthesis if statements as commands
     NO_PAREN_IF_COMMANDS = True
+
+    # Whether or not the -> and ->> operators expect documents of type JSON (e.g. Postgres)
+    JSON_ARROWS_REQUIRE_JSON_TYPE = False
 
     # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
     # If this is True and '(' is not found, the keyword will be treated as an identifier

@@ -126,6 +126,15 @@
             <li>
                     <a class="function" href="#is_date_unit">is_date_unit</a>
             </li>
+            <li>
+                    <a class="class" href="#SingleValuedMapping">SingleValuedMapping</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#SingleValuedMapping.__init__">SingleValuedMapping</a>
+                        </li>
+                </ul>
+
+            </li>
     </ul>
 
 
@@ -157,7 +166,7 @@
 </span><span id="L-6"><a href="#L-6"><span class="linenos">  6</span></a><span class="kn">import</span> <span class="nn">re</span>
 </span><span id="L-7"><a href="#L-7"><span class="linenos">  7</span></a><span class="kn">import</span> <span class="nn">sys</span>
 </span><span id="L-8"><a href="#L-8"><span class="linenos">  8</span></a><span class="kn">import</span> <span class="nn">typing</span> <span class="k">as</span> <span class="nn">t</span>
-</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Collection</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Collection</span><span class="p">,</span> <span class="n">Set</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a><span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">copy</span>
 </span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
@@ -647,6 +656,34 @@
 </span><span id="L-496"><a href="#L-496"><span class="linenos">496</span></a>
 </span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
+</span><span id="L-499"><a href="#L-499"><span class="linenos">499</span></a>
+</span><span id="L-500"><a href="#L-500"><span class="linenos">500</span></a>
+</span><span id="L-501"><a href="#L-501"><span class="linenos">501</span></a><span class="n">K</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">)</span>
+</span><span id="L-502"><a href="#L-502"><span class="linenos">502</span></a><span class="n">V</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
+</span><span id="L-503"><a href="#L-503"><span class="linenos">503</span></a>
+</span><span id="L-504"><a href="#L-504"><span class="linenos">504</span></a>
+</span><span id="L-505"><a href="#L-505"><span class="linenos">505</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
+</span><span id="L-506"><a href="#L-506"><span class="linenos">506</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-507"><a href="#L-507"><span class="linenos">507</span></a><span class="sd">    Mapping where all keys return the same value.</span>
+</span><span id="L-508"><a href="#L-508"><span class="linenos">508</span></a>
+</span><span id="L-509"><a href="#L-509"><span class="linenos">509</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
+</span><span id="L-510"><a href="#L-510"><span class="linenos">510</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
+</span><span id="L-511"><a href="#L-511"><span class="linenos">511</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-512"><a href="#L-512"><span class="linenos">512</span></a>
+</span><span id="L-513"><a href="#L-513"><span class="linenos">513</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="L-514"><a href="#L-514"><span class="linenos">514</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="L-515"><a href="#L-515"><span class="linenos">515</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+</span><span id="L-516"><a href="#L-516"><span class="linenos">516</span></a>
+</span><span id="L-517"><a href="#L-517"><span class="linenos">517</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
+</span><span id="L-518"><a href="#L-518"><span class="linenos">518</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
+</span><span id="L-519"><a href="#L-519"><span class="linenos">519</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+</span><span id="L-520"><a href="#L-520"><span class="linenos">520</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="L-521"><a href="#L-521"><span class="linenos">521</span></a>
+</span><span id="L-522"><a href="#L-522"><span class="linenos">522</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="L-523"><a href="#L-523"><span class="linenos">523</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="L-524"><a href="#L-524"><span class="linenos">524</span></a>
+</span><span id="L-525"><a href="#L-525"><span class="linenos">525</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
+</span><span id="L-526"><a href="#L-526"><span class="linenos">526</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1808,7 +1845,7 @@ belong to some totally-ordered set.</p>
                 <section id="DATE_UNITS">
                     <div class="attr variable">
             <span class="name">DATE_UNITS</span>        =
-<span class="default_value">{&#39;quarter&#39;, &#39;month&#39;, &#39;day&#39;, &#39;year&#39;, &#39;week&#39;, &#39;year_month&#39;}</span>
+<span class="default_value">{&#39;month&#39;, &#39;day&#39;, &#39;year_month&#39;, &#39;quarter&#39;, &#39;week&#39;, &#39;year&#39;}</span>
 
         
     </div>
@@ -1835,6 +1872,81 @@ belong to some totally-ordered set.</p>
 
     
 
+                </section>
+                <section id="SingleValuedMapping">
+                            <input id="SingleValuedMapping-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr class">
+            
+    <span class="def">class</span>
+    <span class="name">SingleValuedMapping</span><wbr>(<span class="base">typing.Mapping[~K, ~V]</span>):
+
+                <label class="view-source-button" for="SingleValuedMapping-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#SingleValuedMapping"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping-506"><a href="#SingleValuedMapping-506"><span class="linenos">506</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
+</span><span id="SingleValuedMapping-507"><a href="#SingleValuedMapping-507"><span class="linenos">507</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SingleValuedMapping-508"><a href="#SingleValuedMapping-508"><span class="linenos">508</span></a><span class="sd">    Mapping where all keys return the same value.</span>
+</span><span id="SingleValuedMapping-509"><a href="#SingleValuedMapping-509"><span class="linenos">509</span></a>
+</span><span id="SingleValuedMapping-510"><a href="#SingleValuedMapping-510"><span class="linenos">510</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
+</span><span id="SingleValuedMapping-511"><a href="#SingleValuedMapping-511"><span class="linenos">511</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
+</span><span id="SingleValuedMapping-512"><a href="#SingleValuedMapping-512"><span class="linenos">512</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="SingleValuedMapping-513"><a href="#SingleValuedMapping-513"><span class="linenos">513</span></a>
+</span><span id="SingleValuedMapping-514"><a href="#SingleValuedMapping-514"><span class="linenos">514</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="SingleValuedMapping-515"><a href="#SingleValuedMapping-515"><span class="linenos">515</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-516"><a href="#SingleValuedMapping-516"><span class="linenos">516</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+</span><span id="SingleValuedMapping-517"><a href="#SingleValuedMapping-517"><span class="linenos">517</span></a>
+</span><span id="SingleValuedMapping-518"><a href="#SingleValuedMapping-518"><span class="linenos">518</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-519"><a href="#SingleValuedMapping-519"><span class="linenos">519</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-520"><a href="#SingleValuedMapping-520"><span class="linenos">520</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+</span><span id="SingleValuedMapping-521"><a href="#SingleValuedMapping-521"><span class="linenos">521</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-522"><a href="#SingleValuedMapping-522"><span class="linenos">522</span></a>
+</span><span id="SingleValuedMapping-523"><a href="#SingleValuedMapping-523"><span class="linenos">523</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-524"><a href="#SingleValuedMapping-524"><span class="linenos">524</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-525"><a href="#SingleValuedMapping-525"><span class="linenos">525</span></a>
+</span><span id="SingleValuedMapping-526"><a href="#SingleValuedMapping-526"><span class="linenos">526</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
+</span><span id="SingleValuedMapping-527"><a href="#SingleValuedMapping-527"><span class="linenos">527</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span></pre></div>
+
+
+            <div class="docstring"><p>Mapping where all keys return the same value.</p>
+
+<p>This rigamarole is meant to avoid copying keys, which was originally intended
+as an optimization while qualifying columns for tables with lots of columns.</p>
+</div>
+
+
+                            <div id="SingleValuedMapping.__init__" class="classattr">
+                                        <input id="SingleValuedMapping.__init__-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="name">SingleValuedMapping</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">keys</span><span class="p">:</span> <span class="n">Collection</span><span class="p">[</span><span class="o">~</span><span class="n">K</span><span class="p">]</span>, </span><span class="param"><span class="n">value</span><span class="p">:</span> <span class="o">~</span><span class="n">V</span></span>)</span>
+
+                <label class="view-source-button" for="SingleValuedMapping.__init__-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#SingleValuedMapping.__init__"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping.__init__-514"><a href="#SingleValuedMapping.__init__-514"><span class="linenos">514</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="SingleValuedMapping.__init__-515"><a href="#SingleValuedMapping.__init__-515"><span class="linenos">515</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping.__init__-516"><a href="#SingleValuedMapping.__init__-516"><span class="linenos">516</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt>collections.abc.Mapping</dt>
+                                <dd id="SingleValuedMapping.get" class="function">get</dd>
+                <dd id="SingleValuedMapping.keys" class="function">keys</dd>
+                <dd id="SingleValuedMapping.items" class="function">items</dd>
+                <dd id="SingleValuedMapping.values" class="function">values</dd>
+
+            </div>
+                                </dl>
+                            </div>
                 </section>
     </main>
 <script>

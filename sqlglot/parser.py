@@ -3656,8 +3656,15 @@ class Parser(metaclass=_Parser):
     def _parse_type(self, parse_interval: bool = True) -> t.Optional[exp.Expression]:
         interval = parse_interval and self._parse_interval()
         if interval:
-            # Convert INTERVAL 'val_1' unit_1 ... 'val_n' unit_n into a sum of intervals
-            while self._match_set((TokenType.STRING, TokenType.NUMBER), advance=False):
+            # Convert INTERVAL 'val_1' unit_1 [+] ... [+] 'val_n' unit_n into a sum of intervals
+            while True:
+                index = self._index
+                self._match(TokenType.PLUS)
+
+                if not self._match_set((TokenType.STRING, TokenType.NUMBER), advance=False):
+                    self._retreat(index)
+                    break
+
                 interval = self.expression(  # type: ignore
                     exp.Add, this=interval, expression=self._parse_interval(match_interval=False)
                 )

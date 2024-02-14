@@ -5033,7 +5033,7 @@ class JSONBContains(Binary):
 
 
 class JSONExtract(Binary, Func):
-    arg_types = {"this": True, "expression": True, "expressions": False}
+    arg_types = {"this": True, "expression": True, "only_json_types": False, "expressions": False}
     _sql_names = ["JSON_EXTRACT"]
     is_var_len_args = True
 
@@ -5043,7 +5043,7 @@ class JSONExtract(Binary, Func):
 
 
 class JSONExtractScalar(Binary, Func):
-    arg_types = {"this": True, "expression": True, "expressions": False}
+    arg_types = {"this": True, "expression": True, "only_json_types": False, "expressions": False}
     _sql_names = ["JSON_EXTRACT_SCALAR"]
     is_var_len_args = True
 

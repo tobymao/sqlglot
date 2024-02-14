@@ -197,6 +197,7 @@ class Redshift(Postgres):
             exp.FromBase: rename_func("STRTOL"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
             exp.JSONExtract: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
+            exp.JSONExtractScalar: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Select: transforms.preprocess(

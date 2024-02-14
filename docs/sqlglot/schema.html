@@ -221,7 +221,7 @@
 </span><span id="L-49"><a href="#L-49"><span class="linenos"> 49</span></a>        <span class="n">only_visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="L-50"><a href="#L-50"><span class="linenos"> 50</span></a>        <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="L-51"><a href="#L-51"><span class="linenos"> 51</span></a>        <span class="n">normalize</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos"> 52</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 </span><span id="L-53"><a href="#L-53"><span class="linenos"> 53</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-54"><a href="#L-54"><span class="linenos"> 54</span></a><span class="sd">        Get the column names for a table.</span>
 </span><span id="L-55"><a href="#L-55"><span class="linenos"> 55</span></a>
@@ -232,7 +232,7 @@
 </span><span id="L-60"><a href="#L-60"><span class="linenos"> 60</span></a><span class="sd">            normalize: whether to normalize identifiers according to the dialect of interest.</span>
 </span><span id="L-61"><a href="#L-61"><span class="linenos"> 61</span></a>
 </span><span id="L-62"><a href="#L-62"><span class="linenos"> 62</span></a><span class="sd">        Returns:</span>
-</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">            The list of column names.</span>
+</span><span id="L-63"><a href="#L-63"><span class="linenos"> 63</span></a><span class="sd">            The sequence of column names.</span>
 </span><span id="L-64"><a href="#L-64"><span class="linenos"> 64</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="L-65"><a href="#L-65"><span class="linenos"> 65</span></a>
 </span><span id="L-66"><a href="#L-66"><span class="linenos"> 66</span></a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
@@ -789,7 +789,7 @@
 </span><span id="Schema-50"><a href="#Schema-50"><span class="linenos"> 50</span></a>        <span class="n">only_visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="Schema-51"><a href="#Schema-51"><span class="linenos"> 51</span></a>        <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="Schema-52"><a href="#Schema-52"><span class="linenos"> 52</span></a>        <span class="n">normalize</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="Schema-53"><a href="#Schema-53"><span class="linenos"> 53</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="Schema-53"><a href="#Schema-53"><span class="linenos"> 53</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 </span><span id="Schema-54"><a href="#Schema-54"><span class="linenos"> 54</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Schema-55"><a href="#Schema-55"><span class="linenos"> 55</span></a><span class="sd">        Get the column names for a table.</span>
 </span><span id="Schema-56"><a href="#Schema-56"><span class="linenos"> 56</span></a>
@@ -800,7 +800,7 @@
 </span><span id="Schema-61"><a href="#Schema-61"><span class="linenos"> 61</span></a><span class="sd">            normalize: whether to normalize identifiers according to the dialect of interest.</span>
 </span><span id="Schema-62"><a href="#Schema-62"><span class="linenos"> 62</span></a>
 </span><span id="Schema-63"><a href="#Schema-63"><span class="linenos"> 63</span></a><span class="sd">        Returns:</span>
-</span><span id="Schema-64"><a href="#Schema-64"><span class="linenos"> 64</span></a><span class="sd">            The list of column names.</span>
+</span><span id="Schema-64"><a href="#Schema-64"><span class="linenos"> 64</span></a><span class="sd">            The sequence of column names.</span>
 </span><span id="Schema-65"><a href="#Schema-65"><span class="linenos"> 65</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="Schema-66"><a href="#Schema-66"><span class="linenos"> 66</span></a>
 </span><span id="Schema-67"><a href="#Schema-67"><span class="linenos"> 67</span></a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
@@ -932,7 +932,7 @@ The added table must have the necessary number of qualifiers in its path to matc
                     <div class="decorator">@abc.abstractmethod</div>
 
         <span class="def">def</span>
-        <span class="name">column_names</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">table</span><span class="p">:</span> <span class="n"><a href="expressions.html#Table">sqlglot.expressions.Table</a></span> <span class="o">|</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">only_visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">normalize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
+        <span class="name">column_names</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">table</span><span class="p">:</span> <span class="n"><a href="expressions.html#Table">sqlglot.expressions.Table</a></span> <span class="o">|</span> <span class="nb">str</span>,</span><span class="param">	<span class="n">only_visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">dialect</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n"><a href="dialects/dialect.html#Dialect">sqlglot.dialects.dialect.Dialect</a></span><span class="p">],</span> <span class="n">NoneType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>,</span><span class="param">	<span class="n">normalize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></span><span class="return-annotation">) -> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>:</span></span>
 
                 <label class="view-source-button" for="Schema.column_names-view-source"><span>View Source</span></label>
 
@@ -945,7 +945,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 </span><span id="Schema.column_names-50"><a href="#Schema.column_names-50"><span class="linenos">50</span></a>        <span class="n">only_visible</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="Schema.column_names-51"><a href="#Schema.column_names-51"><span class="linenos">51</span></a>        <span class="n">dialect</span><span class="p">:</span> <span class="n">DialectType</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="Schema.column_names-52"><a href="#Schema.column_names-52"><span class="linenos">52</span></a>        <span class="n">normalize</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="Schema.column_names-53"><a href="#Schema.column_names-53"><span class="linenos">53</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="Schema.column_names-53"><a href="#Schema.column_names-53"><span class="linenos">53</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 </span><span id="Schema.column_names-54"><a href="#Schema.column_names-54"><span class="linenos">54</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="Schema.column_names-55"><a href="#Schema.column_names-55"><span class="linenos">55</span></a><span class="sd">        Get the column names for a table.</span>
 </span><span id="Schema.column_names-56"><a href="#Schema.column_names-56"><span class="linenos">56</span></a>
@@ -956,7 +956,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 </span><span id="Schema.column_names-61"><a href="#Schema.column_names-61"><span class="linenos">61</span></a><span class="sd">            normalize: whether to normalize identifiers according to the dialect of interest.</span>
 </span><span id="Schema.column_names-62"><a href="#Schema.column_names-62"><span class="linenos">62</span></a>
 </span><span id="Schema.column_names-63"><a href="#Schema.column_names-63"><span class="linenos">63</span></a><span class="sd">        Returns:</span>
-</span><span id="Schema.column_names-64"><a href="#Schema.column_names-64"><span class="linenos">64</span></a><span class="sd">            The list of column names.</span>
+</span><span id="Schema.column_names-64"><a href="#Schema.column_names-64"><span class="linenos">64</span></a><span class="sd">            The sequence of column names.</span>
 </span><span id="Schema.column_names-65"><a href="#Schema.column_names-65"><span class="linenos">65</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span></pre></div>
 
@@ -975,7 +975,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 <h6 id="returns">Returns:</h6>
 
 <blockquote>
-  <p>The list of column names.</p>
+  <p>The sequence of column names.</p>
 </blockquote>
 </div>
 
@@ -1970,7 +1970,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 <h6 id="returns">Returns:</h6>
 
 <blockquote>
-  <p>The list of column names.</p>
+  <p>The sequence of column names.</p>
 </blockquote>
 </div>
 

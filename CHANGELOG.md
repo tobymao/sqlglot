@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## [v21.1.1] - 2024-02-14
+### :sparkles: New Features
+- [`1d0b3d3`](https://github.com/tobymao/sqlglot/commit/1d0b3d3a22ba5a8128505d636a2ff71d0ea03d03) - add support for multi-part interval addition syntax *(PR [#2970](https://github.com/tobymao/sqlglot/pull/2970) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2969](https://github.com/tobymao/sqlglot/issues/2969) opened by [@aersam](https://github.com/aersam)*
+
+### :bug: Bug Fixes
+- [`1c67f03`](https://github.com/tobymao/sqlglot/commit/1c67f030cd9df530e26c620079b2298b1db97d50) - **parser**: enable parsing of values into Identifier for some dialects *(PR [#2962](https://github.com/tobymao/sqlglot/pull/2962) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2957](https://github.com/tobymao/sqlglot/issues/2957) opened by [@hsheth2](https://github.com/hsheth2)*
+- [`d8b0d4f`](https://github.com/tobymao/sqlglot/commit/d8b0d4fcc82662004056a68b05ca20f30996661f) - don't treat VALUES as a keyword in BigQuery, Redshift *(PR [#2965](https://github.com/tobymao/sqlglot/pull/2965) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2963](https://github.com/tobymao/sqlglot/issues/2963) opened by [@sean-rose](https://github.com/sean-rose)*
+- [`5b7fd10`](https://github.com/tobymao/sqlglot/commit/5b7fd107f279c2f83c9d66d4353032c6d830202c) - **optimizer**: more optimizations for qualifying wide tables *(PR [#2972](https://github.com/tobymao/sqlglot/pull/2972) by [@barakalon](https://github.com/barakalon))*
+- [`6cb985a`](https://github.com/tobymao/sqlglot/commit/6cb985ae1346c1a912ed6f81be30310ee1c91dfa) - pass dialect in to_table call inside replace_tables *(PR [#2973](https://github.com/tobymao/sqlglot/pull/2973) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v21.1.0] - 2024-02-12
 ### :sparkles: New Features
 - [`e71d489`](https://github.com/tobymao/sqlglot/commit/e71d4899e6744812fdefc2704c66bbd6043b5bc9) - add array and tuple helpers *(commit by [@tobymao](https://github.com/tobymao))*
@@ -2619,3 +2633,4 @@ Changelog
 [v21.0.1]: https://github.com/tobymao/sqlglot/compare/v21.0.0...v21.0.1
 [v21.0.2]: https://github.com/tobymao/sqlglot/compare/v21.0.1...v21.0.2
 [v21.1.0]: https://github.com/tobymao/sqlglot/compare/v21.0.2...v21.1.0
+[v21.1.1]: https://github.com/tobymao/sqlglot/compare/v21.1.0...v21.1.1

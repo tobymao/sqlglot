@@ -6894,6 +6894,7 @@ def replace_tables(
                 table = to_table(
                     new_name,
                     **{k: v for k, v in node.args.items() if k not in TABLE_PARTS},
+                    dialect=dialect,
                 )
                 table.add_comments([original])
                 return table

@@ -95,7 +95,7 @@ class TestLineage(unittest.TestCase):
             downstream.source.sql(),
             "SELECT x.a AS a FROM x AS x",
         )
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.alias, "z")
 
     def test_lineage_source_with_star(self) -> None:
         node = lineage(
@@ -153,7 +153,7 @@ class TestLineage(unittest.TestCase):
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.source.sql(), "(VALUES (1), (2)) AS t(a)")
         self.assertEqual(downstream.expression.sql(), "a")
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.alias, "y")
 
     def test_lineage_cte_name_appears_in_schema(self) -> None:
         schema = {"a": {"b": {"t1": {"c1": "int"}, "t2": {"c2": "int"}}}}

@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
+    JSON_EXTRACT_TYPE,
     any_value_to_max_sql,
     bool_xor_sql,
     datestrtodate_sql,
@@ -189,6 +190,17 @@ def _to_timestamp(args: t.List) -> exp.Expression:
     return format_time_lambda(exp.StrToTime, "postgres")(args)
 
 
+def _json_extract_sql(
+    name: str, op: str
+) -> t.Callable[[Postgres.Generator, JSON_EXTRACT_TYPE], str]:
+    def _generate(self: Postgres.Generator, expression: JSON_EXTRACT_TYPE) -> str:
+        if expression.args.get("only_json_types"):
+            return json_extract_segments(name, quoted_index=False, op=op)(self, expression)
+        return json_extract_segments(name)(self, expression)
+
+    return _generate
+
+
 class Postgres(Dialect):
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
@@ -338,6 +350,8 @@ class Postgres(Dialect):
             TokenType.END: lambda self: self._parse_commit_or_rollback(),
         }
 
+        JSON_ARROWS_REQUIRE_JSON_TYPE = True
+
         def _parse_operator(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
             while True:
                 if not self._match(TokenType.L_PAREN):
@@ -428,8 +442,8 @@ class Postgres(Dialect):
             exp.DateSub: _date_add_sql("-"),
             exp.Explode: rename_func("UNNEST"),
             exp.GroupConcat: _string_agg_sql,
-            exp.JSONExtract: json_extract_segments("JSON_EXTRACT_PATH"),
-            exp.JSONExtractScalar: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
+            exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
+            exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),
             exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
             exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
             exp.JSONBContains: lambda self, e: self.binary(e, "?"),

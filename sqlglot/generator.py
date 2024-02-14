@@ -97,6 +97,12 @@ class Generator(metaclass=_Generator):
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
         exp.IntervalSpan: lambda self, e: f"{self.sql(e, 'this')} TO {self.sql(e, 'expression')}",
+        exp.JSONExtract: lambda self, e: self.func(
+            "JSON_EXTRACT", e.this, e.expression, *e.expressions
+        ),
+        exp.JSONExtractScalar: lambda self, e: self.func(
+            "JSON_EXTRACT_SCALAR", e.this, e.expression, *e.expressions
+        ),
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda self, e: f"{'NO ' if e.args.get('no') else ''}LOG",

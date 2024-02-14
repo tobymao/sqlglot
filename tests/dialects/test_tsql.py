@@ -920,28 +920,48 @@ WHERE
                 self.assertEqual(expr.sql(dialect="tsql"), expected_sql)
 
     def test_charindex(self):
+        self.validate_identity(
+            "SELECT CAST(SUBSTRING('ABCD~1234', CHARINDEX('~', 'ABCD~1234') + 1, LEN('ABCD~1234')) AS BIGINT)"
+        )
+
         self.validate_all(
             "CHARINDEX(x, y, 9)",
+            read={
+                "spark": "LOCATE(x, y, 9)",
+            },
             write={
                 "spark": "LOCATE(x, y, 9)",
+                "tsql": "CHARINDEX(x, y, 9)",
             },
         )
         self.validate_all(
             "CHARINDEX(x, y)",
+            read={
+                "spark": "LOCATE(x, y)",
+            },
             write={
                 "spark": "LOCATE(x, y)",
+                "tsql": "CHARINDEX(x, y)",
             },
         )
         self.validate_all(
             "CHARINDEX('sub', 'testsubstring', 3)",
+            read={
+                "spark": "LOCATE('sub', 'testsubstring', 3)",
+            },
             write={
                 "spark": "LOCATE('sub', 'testsubstring', 3)",
+                "tsql": "CHARINDEX('sub', 'testsubstring', 3)",
             },
         )
         self.validate_all(
             "CHARINDEX('sub', 'testsubstring')",
+            read={
+                "spark": "LOCATE('sub', 'testsubstring')",
+            },
             write={
                 "spark": "LOCATE('sub', 'testsubstring')",
+                "tsql": "CHARINDEX('sub', 'testsubstring')",
             },
         )
 

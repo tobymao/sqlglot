@@ -284,6 +284,35 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream_b.name, "0")
         self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
 
+    def test_lineage_source_union(self) -> None:
+        query = "SELECT x, created_at FROM dataset;"
+        node = lineage(
+            "x",
+            query,
+            sources={
+                "dataset": """
+                SELECT *
+                FROM catalog.db.table_a
+
+                UNION
+
+                SELECT *
+                FROM catalog.db.table_b
+                """
+            },
+        )
+
+        self.assertEqual(node.name, "x")
+
+        downstream_a = node.downstream[0]
+        self.assertEqual(downstream_a.name, "0")
+        self.assertEqual(downstream_a.alias, "dataset")
+        self.assertEqual(downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a")
+        downstream_b = node.downstream[1]
+        self.assertEqual(downstream_b.name, "0")
+        self.assertEqual(downstream_b.alias, "dataset")
+        self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
+
     def test_select_star(self) -> None:
         node = lineage("x", "SELECT x from (SELECT * from table_a)")
 

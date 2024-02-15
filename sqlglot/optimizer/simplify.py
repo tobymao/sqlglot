@@ -41,7 +41,7 @@ def simplify(
 
     Args:
         expression (sqlglot.Expression): expression to simplify
-        constant_propagation: whether or not the constant propagation rule should be used
+        constant_propagation: whether the constant propagation rule should be used
 
     Returns:
         sqlglot.Expression: simplified expression

@@ -87,8 +87,8 @@ class Parser(metaclass=_Parser):
     Args:
         error_level: The desired error level.
             Default: ErrorLevel.IMMEDIATE
-        error_message_context: Determines the amount of context to capture from a
-            query string when displaying the error message (in number of characters).
+        error_message_context: The amount of context to capture from a query string when displaying
+            the error message (in number of characters).
             Default: 100
         max_errors: Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
@@ -982,32 +982,31 @@ class Parser(metaclass=_Parser):
 
     LOG_DEFAULTS_TO_LN = False
 
-    # Whether or not ADD is present for each column added by ALTER TABLE
+    # Whether ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
-    # Whether or not the table sample clause expects CSV syntax
+    # Whether the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
 
-    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments
+    # Whether the SET command needs a delimiter (e.g. "=") for assignments
     SET_REQUIRES_ASSIGNMENT_DELIMITER = True
 
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
-    # Whether or not string aliases are supported `SELECT COUNT(*) 'count'`
+    # Whether string aliases are supported `SELECT COUNT(*) 'count'`
     STRING_ALIASES = False
 
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_UNION = True
     UNION_MODIFIERS = {"order", "limit", "offset"}
 
-    # Parses no parenthesis if statements as commands
+    # Whether to parse IF statements that aren't followed by a left parenthesis as commands
     NO_PAREN_IF_COMMANDS = True
 
-    # Whether or not the -> and ->> operators expect documents of type JSON (e.g. Postgres)
+    # Whether the -> and ->> operators expect documents of type JSON (e.g. Postgres)
     JSON_ARROWS_REQUIRE_JSON_TYPE = False
 
-    # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
     # If this is True and '(' is not found, the keyword will be treated as an identifier
     VALUES_FOLLOWED_BY_PAREN = True
 

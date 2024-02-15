@@ -148,59 +148,65 @@ class _Dialect(type):
 
 class Dialect(metaclass=_Dialect):
     INDEX_OFFSET = 0
-    """Determines the base index offset for arrays."""
+    """The base index offset for arrays."""
 
     WEEK_OFFSET = 0
-    """Determines the day of week of DATE_TRUNC(week). Defaults to 0 (Monday). -1 would be Sunday."""
+    """First day of the week in DATE_TRUNC(week). Defaults to 0 (Monday). -1 would be Sunday."""
 
     UNNEST_COLUMN_ONLY = False
-    """Determines whether or not `UNNEST` table aliases are treated as column aliases."""
+    """Whether `UNNEST` table aliases are treated as column aliases."""
 
     ALIAS_POST_TABLESAMPLE = False
-    """Determines whether or not the table alias comes after tablesample."""
+    """Whether the table alias comes after tablesample."""
 
     TABLESAMPLE_SIZE_IS_PERCENT = False
-    """Determines whether or not a size in the table sample clause represents percentage."""
+    """Whether a size in the table sample clause represents percentage."""
 
     NORMALIZATION_STRATEGY = NormalizationStrategy.LOWERCASE
     """Specifies the strategy according to which identifiers should be normalized."""
 
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
-    """Determines whether or not an unquoted identifier can start with a digit."""
+    """Whether an unquoted identifier can start with a digit."""
 
     DPIPE_IS_STRING_CONCAT = True
-    """Determines whether or not the DPIPE token (`||`) is a string concatenation operator."""
+    """Whether the DPIPE token (`||`) is a string concatenation operator."""
 
     STRICT_STRING_CONCAT = False
-    """Determines whether or not `CONCAT`'s arguments must be strings."""
+    """Whether `CONCAT`'s arguments must be strings."""
 
     SUPPORTS_USER_DEFINED_TYPES = True
-    """Determines whether or not user-defined data types are supported."""
+    """Whether user-defined data types are supported."""
 
     SUPPORTS_SEMI_ANTI_JOIN = True
-    """Determines whether or not `SEMI` or `ANTI` joins are supported."""
+    """Whether `SEMI` or `ANTI` joins are supported."""
 
     NORMALIZE_FUNCTIONS: bool | str = "upper"
-    """Determines how function names are going to be normalized."""
+    """
+    Determines how function names are going to be normalized.
+    Possible values:
+        "upper" or True: Convert names to uppercase.
+        "lower": Convert names to lowercase.
+        False: Disables function name normalization.
+    """
 
     LOG_BASE_FIRST = True
-    """Determines whether or not the base comes first in the `LOG` function."""
+    """Whether the base comes first in the `LOG` function."""
 
     NULL_ORDERING = "nulls_are_small"
     """
-    Determines the default `NULL` ordering method to use if not explicitly set.
+    Default `NULL` ordering method to use if not explicitly set.
     Possible values: `"nulls_are_small"`, `"nulls_are_large"`, `"nulls_are_last"`
     """
 
     TYPED_DIVISION = False
     """
-    Determines whether or not the behavior of `a / b` depends on the types of `a` and `b`.
+    Whether the behavior of `a / b` depends on the types of `a` and `b`.
     False means `a / b` is always float division.
     True means `a / b` is integer division if both `a` and `b` are integers.
     """
 
     SAFE_DIVISION = False
-    """Determines whether division by zero throws an error (`False`) or returns NULL (`True`)."""
+    """Whether division by zero throws an error (`False`) or returns NULL (`True`)."""
 
     CONCAT_COALESCE = False
     """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
@@ -418,7 +424,7 @@ class Dialect(metaclass=_Dialect):
                 `"safe"`: Only returns `True` if the identifier is case-insensitive.
 
         Returns:
-            Whether or not the given text can be identified.
+            Whether the given text can be identified.
         """
         if identify is True or identify == "always":
             return True

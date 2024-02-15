@@ -59,9 +59,7 @@ class Doris(MySQL):
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.TimeStrToDate: rename_func("TO_DATE"),
             exp.ToChar: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
-            exp.TsOrDsAdd: lambda self, e: self.func(
-                "DATE_ADD", e.this, e.expression
-            ),  # Only for day level
+            exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimestampTrunc: lambda self, e: self.func(

@@ -729,7 +729,7 @@ class TestDialect(Validator):
             write={
                 "duckdb": "TO_TIMESTAMP(x)",
                 "hive": "FROM_UNIXTIME(x)",
-                "oracle": "TO_DATE('1970-01-01','YYYY-MM-DD') + (x / 86400)",
+                "oracle": "TO_DATE('1970-01-01', 'YYYY-MM-DD') + (x / 86400)",
                 "postgres": "TO_TIMESTAMP(x)",
                 "presto": "FROM_UNIXTIME(x)",
                 "starrocks": "FROM_UNIXTIME(x)",

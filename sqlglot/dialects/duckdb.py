@@ -14,7 +14,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     datestrtodate_sql,
     encode_decode_sql,
-    format_time_lambda,
+    build_formatted_time,
     inline_array_sql,
     no_comment_column_constraint_sql,
     no_safe_divide_sql,
@@ -62,26 +62,24 @@ def _date_sql(self: DuckDB.Generator, expression: exp.Date) -> str:
 
 def _array_sort_sql(self: DuckDB.Generator, expression: exp.ArraySort) -> str:
     if expression.expression:
-        self.unsupported("DUCKDB ARRAY_SORT does not support a comparator")
-    return f"ARRAY_SORT({self.sql(expression, 'this')})"
+        self.unsupported("DuckDB ARRAY_SORT does not support a comparator")
+    return self.func("ARRAY_SORT", expression.this)
 
 
 def _sort_array_sql(self: DuckDB.Generator, expression: exp.SortArray) -> str:
-    this = self.sql(expression, "this")
-    if expression.args.get("asc") == exp.false():
-        return f"ARRAY_REVERSE_SORT({this})"
-    return f"ARRAY_SORT({this})"
+    name = "ARRAY_REVERSE_SORT" if expression.args.get("asc") == exp.false() else "ARRAY_SORT"
+    return self.func(name, expression.this)
 
 
-def _sort_array_reverse(args: t.List) -> exp.Expression:
+def _build_sort_array_desc(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
-def _parse_date_diff(args: t.List) -> exp.Expression:
+def _build_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
-def _parse_make_timestamp(args: t.List) -> exp.Expression:
+def _build_make_timestamp(args: t.List) -> exp.Expression:
     if len(args) == 1:
         return exp.UnixToTime(this=seq_get(args, 0), scale=exp.UnixToTime.MICROS)
 
@@ -131,15 +129,15 @@ def _json_format_sql(self: DuckDB.Generator, expression: exp.JSONFormat) -> str:
 
 def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
-    timestamp = self.sql(expression, "this")
+    timestamp = expression.this
     if scale in (None, exp.UnixToTime.SECONDS):
-        return f"TO_TIMESTAMP({timestamp})"
+        return self.func("TO_TIMESTAMP", timestamp)
     if scale == exp.UnixToTime.MILLIS:
-        return f"EPOCH_MS({timestamp})"
+        return self.func("EPOCH_MS", timestamp)
     if scale == exp.UnixToTime.MICROS:
-        return f"MAKE_TIMESTAMP({timestamp})"
+        return self.func("MAKE_TIMESTAMP", timestamp)
 
-    return f"TO_TIMESTAMP({timestamp} / POW(10, {scale}))"
+    return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
 
 
 def _rename_unless_within_group(
@@ -152,7 +150,7 @@ def _rename_unless_within_group(
     )
 
 
-def _parse_struct_pack(args: t.List) -> exp.Struct:
+def _build_struct_pack(args: t.List) -> exp.Struct:
     args_with_columns_as_identifiers = [
         exp.PropertyEQ(this=arg.this.this, expression=arg.expression) for arg in args
     ]
@@ -222,9 +220,9 @@ class DuckDB(Dialect):
             "ARRAY_HAS": exp.ArrayContains.from_arg_list,
             "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
-            "ARRAY_REVERSE_SORT": _sort_array_reverse,
-            "DATEDIFF": _parse_date_diff,
-            "DATE_DIFF": _parse_date_diff,
+            "ARRAY_REVERSE_SORT": _build_sort_array_desc,
+            "DATEDIFF": _build_date_diff,
+            "DATE_DIFF": _build_date_diff,
             "DATE_TRUNC": date_trunc_to_time,
             "DATETRUNC": date_trunc_to_time,
             "DECODE": lambda args: exp.Decode(
@@ -238,14 +236,14 @@ class DuckDB(Dialect):
                 this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
             ),
             "JSON": exp.ParseJSON.from_arg_list,
-            "JSON_EXTRACT_PATH": parser.parse_extract_json_with_path(exp.JSONExtract),
-            "JSON_EXTRACT_STRING": parser.parse_extract_json_with_path(exp.JSONExtractScalar),
+            "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
+            "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
             "LIST_HAS": exp.ArrayContains.from_arg_list,
-            "LIST_REVERSE_SORT": _sort_array_reverse,
+            "LIST_REVERSE_SORT": _build_sort_array_desc,
             "LIST_SORT": exp.SortArray.from_arg_list,
             "LIST_VALUE": exp.Array.from_arg_list,
             "MAKE_TIME": exp.TimeFromParts.from_arg_list,
-            "MAKE_TIMESTAMP": _parse_make_timestamp,
+            "MAKE_TIMESTAMP": _build_make_timestamp,
             "MEDIAN": lambda args: exp.PercentileCont(
                 this=seq_get(args, 0), expression=exp.Literal.number(0.5)
             ),
@@ -261,12 +259,12 @@ class DuckDB(Dialect):
                 replacement=seq_get(args, 2),
                 modifiers=seq_get(args, 3),
             ),
-            "STRFTIME": format_time_lambda(exp.TimeToStr, "duckdb"),
+            "STRFTIME": build_formatted_time(exp.TimeToStr, "duckdb"),
             "STRING_SPLIT": exp.Split.from_arg_list,
             "STRING_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "STRING_TO_ARRAY": exp.Split.from_arg_list,
-            "STRPTIME": format_time_lambda(exp.StrToTime, "duckdb"),
-            "STRUCT_PACK": _parse_struct_pack,
+            "STRPTIME": build_formatted_time(exp.StrToTime, "duckdb"),
+            "STRUCT_PACK": _build_struct_pack,
             "STR_SPLIT": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
@@ -275,7 +273,7 @@ class DuckDB(Dialect):
         }
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
-        FUNCTION_PARSERS.pop("DECODE", None)
+        FUNCTION_PARSERS.pop("DECODE")
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,
@@ -350,9 +348,9 @@ class DuckDB(Dialect):
             exp.ArraySum: rename_func("LIST_SUM"),
             exp.BitwiseXor: rename_func("XOR"),
             exp.CommentColumnConstraint: no_comment_column_constraint_sql,
-            exp.CurrentDate: lambda self, e: "CURRENT_DATE",
-            exp.CurrentTime: lambda self, e: "CURRENT_TIME",
-            exp.CurrentTimestamp: lambda self, e: "CURRENT_TIMESTAMP",
+            exp.CurrentDate: lambda *_: "CURRENT_DATE",
+            exp.CurrentTime: lambda *_: "CURRENT_TIME",
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
@@ -409,19 +407,19 @@ class DuckDB(Dialect):
             exp.StrPosition: str_position_sql,
             exp.StrToDate: lambda self, e: f"CAST({str_to_time_sql(self, e)} AS DATE)",
             exp.StrToTime: str_to_time_sql,
-            exp.StrToUnix: lambda self,
-            e: f"EPOCH(STRPTIME({self.sql(e, 'this')}, {self.format_time(e)}))",
+            exp.StrToUnix: lambda self, e: self.func(
+                "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
+            ),
             exp.Struct: _struct_sql,
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
             exp.TimestampTrunc: timestamptrunc_sql,
-            exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, "date")),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeStrToUnix: lambda self, e: f"EPOCH(CAST({self.sql(e, 'this')} AS TIMESTAMP))",
-            exp.TimeToStr: lambda self,
-            e: f"STRFTIME({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeStrToUnix: lambda self, e: self.func("EPOCH", exp.cast(e.this, "timestamp")),
+            exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS TEXT), '-', ''), 1, 8) AS INT)",
@@ -432,8 +430,9 @@ class DuckDB(Dialect):
                 exp.cast(e.expression, "TIMESTAMP"),
                 exp.cast(e.this, "TIMESTAMP"),
             ),
-            exp.UnixToStr: lambda self,
-            e: f"STRFTIME(TO_TIMESTAMP({self.sql(e, 'this')}), {self.format_time(e)})",
+            exp.UnixToStr: lambda self, e: self.func(
+                "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
+            ),
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
             exp.VariancePop: rename_func("VAR_POP"),

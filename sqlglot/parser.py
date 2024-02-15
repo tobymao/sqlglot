@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("sqlglot")
 
 
-def parse_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
+def build_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
     if len(args) == 1 and args[0].is_star:
         return exp.StarMap(this=args[0])
 
@@ -28,13 +28,10 @@ def parse_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
         keys.append(args[i])
         values.append(args[i + 1])
 
-    return exp.VarMap(
-        keys=exp.array(*keys, copy=False),
-        values=exp.array(*values, copy=False),
-    )
+    return exp.VarMap(keys=exp.array(*keys, copy=False), values=exp.array(*values, copy=False))
 
 
-def parse_like(args: t.List) -> exp.Escape | exp.Like:
+def build_like(args: t.List) -> exp.Escape | exp.Like:
     like = exp.Like(this=seq_get(args, 1), expression=seq_get(args, 0))
     return exp.Escape(this=like, expression=seq_get(args, 2)) if len(args) > 2 else like
 
@@ -47,7 +44,7 @@ def binary_range_parser(
     )
 
 
-def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
+def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     # Default argument order is base, expression
     this = seq_get(args, 0)
     expression = seq_get(args, 1)
@@ -60,8 +57,8 @@ def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
 
 
-def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
-    def _parser(args: t.List, dialect: Dialect) -> E:
+def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+    def _builder(args: t.List, dialect: Dialect) -> E:
         expression = expr_type(
             this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
         )
@@ -70,7 +67,7 @@ def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Di
 
         return expression
 
-    return _parser
+    return _builder
 
 
 class _Parser(type):
@@ -115,11 +112,11 @@ class Parser(metaclass=_Parser):
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
-        "JSON_EXTRACT": parse_extract_json_with_path(exp.JSONExtract),
-        "JSON_EXTRACT_SCALAR": parse_extract_json_with_path(exp.JSONExtractScalar),
-        "JSON_EXTRACT_PATH_TEXT": parse_extract_json_with_path(exp.JSONExtractScalar),
-        "LIKE": parse_like,
-        "LOG": parse_logarithm,
+        "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
+        "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
+        "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
+        "LIKE": build_like,
+        "LOG": build_logarithm,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
@@ -132,7 +129,7 @@ class Parser(metaclass=_Parser):
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
         ),
-        "VAR_MAP": parse_var_map,
+        "VAR_MAP": build_var_map,
     }
 
     NO_PAREN_FUNCTIONS = {

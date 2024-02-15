@@ -45,6 +45,7 @@ def _str_to_date(self: Spark2.Generator, expression: exp.StrToDate) -> str:
 def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = expression.this
+
     if scale is None:
         return self.sql(exp.cast(exp.func("from_unixtime", timestamp), "timestamp"))
     if scale == exp.UnixToTime.SECONDS:

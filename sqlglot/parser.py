@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
 logger = logging.getLogger("sqlglot")
 
 
-def parse_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
+def build_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
     if len(args) == 1 and args[0].is_star:
         return exp.StarMap(this=args[0])
 
@@ -28,13 +28,10 @@ def parse_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
         keys.append(args[i])
         values.append(args[i + 1])
 
-    return exp.VarMap(
-        keys=exp.array(*keys, copy=False),
-        values=exp.array(*values, copy=False),
-    )
+    return exp.VarMap(keys=exp.array(*keys, copy=False), values=exp.array(*values, copy=False))
 
 
-def parse_like(args: t.List) -> exp.Escape | exp.Like:
+def build_like(args: t.List) -> exp.Escape | exp.Like:
     like = exp.Like(this=seq_get(args, 1), expression=seq_get(args, 0))
     return exp.Escape(this=like, expression=seq_get(args, 2)) if len(args) > 2 else like
 
@@ -47,7 +44,7 @@ def binary_range_parser(
     )
 
 
-def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
+def build_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     # Default argument order is base, expression
     this = seq_get(args, 0)
     expression = seq_get(args, 1)
@@ -60,8 +57,8 @@ def parse_logarithm(args: t.List, dialect: Dialect) -> exp.Func:
     return (exp.Ln if dialect.parser_class.LOG_DEFAULTS_TO_LN else exp.Log)(this=this)
 
 
-def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
-    def _parser(args: t.List, dialect: Dialect) -> E:
+def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Dialect], E]:
+    def _builder(args: t.List, dialect: Dialect) -> E:
         expression = expr_type(
             this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
         )
@@ -70,7 +67,7 @@ def parse_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Di
 
         return expression
 
-    return _parser
+    return _builder
 
 
 class _Parser(type):
@@ -90,8 +87,8 @@ class Parser(metaclass=_Parser):
     Args:
         error_level: The desired error level.
             Default: ErrorLevel.IMMEDIATE
-        error_message_context: Determines the amount of context to capture from a
-            query string when displaying the error message (in number of characters).
+        error_message_context: The amount of context to capture from a query string when displaying
+            the error message (in number of characters).
             Default: 100
         max_errors: Maximum number of error messages to include in a raised ParseError.
             This is only relevant if error_level is ErrorLevel.RAISE.
@@ -115,11 +112,11 @@ class Parser(metaclass=_Parser):
             to=exp.DataType(this=exp.DataType.Type.TEXT),
         ),
         "GLOB": lambda args: exp.Glob(this=seq_get(args, 1), expression=seq_get(args, 0)),
-        "JSON_EXTRACT": parse_extract_json_with_path(exp.JSONExtract),
-        "JSON_EXTRACT_SCALAR": parse_extract_json_with_path(exp.JSONExtractScalar),
-        "JSON_EXTRACT_PATH_TEXT": parse_extract_json_with_path(exp.JSONExtractScalar),
-        "LIKE": parse_like,
-        "LOG": parse_logarithm,
+        "JSON_EXTRACT": build_extract_json_with_path(exp.JSONExtract),
+        "JSON_EXTRACT_SCALAR": build_extract_json_with_path(exp.JSONExtractScalar),
+        "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
+        "LIKE": build_like,
+        "LOG": build_logarithm,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),
@@ -132,7 +129,7 @@ class Parser(metaclass=_Parser):
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
         ),
-        "VAR_MAP": parse_var_map,
+        "VAR_MAP": build_var_map,
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -985,29 +982,29 @@ class Parser(metaclass=_Parser):
 
     LOG_DEFAULTS_TO_LN = False
 
-    # Whether or not ADD is present for each column added by ALTER TABLE
+    # Whether ADD is present for each column added by ALTER TABLE
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = True
 
-    # Whether or not the table sample clause expects CSV syntax
+    # Whether the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
 
-    # Whether or not the SET command needs a delimiter (e.g. "=") for assignments
+    # Whether the SET command needs a delimiter (e.g. "=") for assignments
     SET_REQUIRES_ASSIGNMENT_DELIMITER = True
 
     # Whether the TRIM function expects the characters to trim as its first argument
     TRIM_PATTERN_FIRST = False
 
-    # Whether or not string aliases are supported `SELECT COUNT(*) 'count'`
+    # Whether string aliases are supported `SELECT COUNT(*) 'count'`
     STRING_ALIASES = False
 
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_UNION = True
     UNION_MODIFIERS = {"order", "limit", "offset"}
 
-    # Parses no parenthesis if statements as commands
+    # Whether to parse IF statements that aren't followed by a left parenthesis as commands
     NO_PAREN_IF_COMMANDS = True
 
-    # Whether or not the -> and ->> operators expect documents of type JSON (e.g. Postgres)
+    # Whether the -> and ->> operators expect documents of type JSON (e.g. Postgres)
     JSON_ARROWS_REQUIRE_JSON_TYPE = False
 
     # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.

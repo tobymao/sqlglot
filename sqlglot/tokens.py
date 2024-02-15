@@ -577,7 +577,7 @@ class Tokenizer(metaclass=_Tokenizer):
     STRING_ESCAPES = ["'"]
     VAR_SINGLE_TOKENS: t.Set[str] = set()
 
-    # Whether or not the heredoc tags follow the same lexical rules as unquoted identifiers
+    # Whether the heredoc tags follow the same lexical rules as unquoted identifiers
     HEREDOC_TAG_IS_IDENTIFIER = False
 
     # Token that we'll generate as a fallback if the heredoc prefix doesn't correspond to a heredoc

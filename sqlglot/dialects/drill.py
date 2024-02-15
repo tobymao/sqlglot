@@ -6,7 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     datestrtodate_sql,
-    format_time_lambda,
+    build_formatted_time,
     no_trycast_sql,
     rename_func,
     str_position_sql,
@@ -19,9 +19,7 @@ def _date_add_sql(kind: str) -> t.Callable[[Drill.Generator, exp.DateAdd | exp.D
     def func(self: Drill.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
         unit = exp.var(expression.text("unit").upper() or "DAY")
-        return (
-            f"DATE_{kind}({this}, {self.sql(exp.Interval(this=expression.expression, unit=unit))})"
-        )
+        return self.func(f"DATE_{kind}", this, exp.Interval(this=expression.expression, unit=unit))
 
     return func
 
@@ -30,8 +28,8 @@ def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.DATE_FORMAT:
-        return f"CAST({this} AS DATE)"
-    return f"TO_DATE({this}, {time_format})"
+        return self.sql(exp.cast(this, "date"))
+    return self.func("TO_DATE", this, time_format)
 
 
 class Drill(Dialect):
@@ -86,9 +84,9 @@ class Drill(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "DATE_FORMAT": format_time_lambda(exp.TimeToStr, "drill"),
+            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "drill"),
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
-            "TO_CHAR": format_time_lambda(exp.TimeToStr, "drill"),
+            "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -135,8 +133,7 @@ class Drill(Dialect):
             e: f"TO_DATE(CAST({self.sql(e, 'this')} AS VARCHAR), {Drill.DATEINT_FORMAT})",
             exp.If: lambda self,
             e: f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})",
-            exp.ILike: lambda self,
-            e: f" {self.sql(e, 'this')} `ILIKE` {self.sql(e, 'expression')}",
+            exp.ILike: lambda self, e: self.binary(e, "`ILIKE`"),
             exp.Levenshtein: rename_func("LEVENSHTEIN_DISTANCE"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.RegexpLike: rename_func("REGEXP_MATCHES"),
@@ -146,12 +143,11 @@ class Drill(Dialect):
             exp.Select: transforms.preprocess(
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
-            exp.StrToTime: lambda self,
-            e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.TimeStrToDate: lambda self, e: f"CAST({self.sql(e, 'this')} AS DATE)",
+            exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, "date")),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-            exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.TryCast: no_trycast_sql,

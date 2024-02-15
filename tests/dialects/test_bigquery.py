@@ -18,88 +18,6 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
-        with self.assertLogs(helper_logger) as cm:
-            statements = parse(
-                """
-            BEGIN
-              DECLARE 1;
-              IF from_date IS NULL THEN SET x = 1;
-              END IF;
-            END
-            """,
-                read="bigquery",
-            )
-            self.assertIn("unsupported syntax", cm.output[0])
-
-        for actual, expected in zip(
-            statements, ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END")
-        ):
-            self.assertEqual(actual.sql(dialect="bigquery"), expected)
-
-        with self.assertLogs(helper_logger) as cm:
-            self.validate_identity(
-                "SELECT * FROM t AS t(c1, c2)",
-                "SELECT * FROM t AS t",
-            )
-
-            self.assertEqual(
-                cm.output, ["WARNING:sqlglot:Named columns are not supported in table alias."]
-            )
-
-        with self.assertLogs(helper_logger) as cm:
-            self.validate_all(
-                "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
-                write={
-                    "duckdb": "SELECT a[2], b[2], c[1], d[2], e[1]",
-                    "bigquery": "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
-                    "presto": "SELECT a[2], b[2], c[1], ELEMENT_AT(d, 2), ELEMENT_AT(e, 1)",
-                },
-            )
-
-            self.validate_all(
-                "a[0]",
-                read={
-                    "bigquery": "a[0]",
-                    "duckdb": "a[1]",
-                    "presto": "a[1]",
-                },
-            )
-
-        with self.assertRaises(TokenError):
-            transpile("'\\'", read="bigquery")
-
-        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
-                write="bigquery",
-                unsupported_level=ErrorLevel.RAISE,
-            )
-
-        with self.assertRaises(ParseError):
-            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
-
-        with self.assertRaises(ParseError):
-            transpile("DATE_ADD(x, day)", read="bigquery")
-
-        with self.assertLogs(parser_logger) as cm:
-            for_in_stmts = parse(
-                "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
-                read="bigquery",
-            )
-            self.assertEqual(
-                [s.sql(dialect="bigquery") for s in for_in_stmts],
-                ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
-            )
-            assert "'END FOR'" in cm.output[0]
-
         self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
         self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
@@ -1085,6 +1003,106 @@ WHERE
             },
             pretty=True,
         )
+
+    def test_errors(self):
+        with self.assertRaises(TokenError):
+            transpile("'\\'", read="bigquery")
+
+        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(ParseError):
+            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
+
+        with self.assertRaises(ParseError):
+            transpile("DATE_ADD(x, day)", read="bigquery")
+
+    def test_warnings(self):
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity(
+                "WITH cte(c) AS (SELECT * FROM t) SELECT * FROM cte",
+                "WITH cte AS (SELECT * FROM t) SELECT * FROM cte",
+            )
+
+            self.assertIn("Can't push down CTE column names for star queries.", cm.output[0])
+            self.assertIn("Named columns are not supported in table alias.", cm.output[1])
+
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity(
+                "SELECT * FROM t AS t(c1, c2)",
+                "SELECT * FROM t AS t",
+            )
+
+            self.assertIn("Named columns are not supported in table alias.", cm.output[0])
+
+        with self.assertLogs(helper_logger) as cm:
+            statements = parse(
+                """
+            BEGIN
+              DECLARE 1;
+              IF from_date IS NULL THEN SET x = 1;
+              END IF;
+            END
+            """,
+                read="bigquery",
+            )
+
+            for actual, expected in zip(
+                statements,
+                ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END"),
+            ):
+                self.assertEqual(actual.sql(dialect="bigquery"), expected)
+
+            self.assertIn("unsupported syntax", cm.output[0])
+
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity(
+                "SELECT * FROM t AS t(c1, c2)",
+                "SELECT * FROM t AS t",
+            )
+
+            self.assertIn("Named columns are not supported in table alias.", cm.output[0])
+
+        with self.assertLogs(helper_logger):
+            self.validate_all(
+                "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
+                write={
+                    "duckdb": "SELECT a[2], b[2], c[1], d[2], e[1]",
+                    "bigquery": "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
+                    "presto": "SELECT a[2], b[2], c[1], ELEMENT_AT(d, 2), ELEMENT_AT(e, 1)",
+                },
+            )
+            self.validate_all(
+                "a[0]",
+                read={
+                    "bigquery": "a[0]",
+                    "duckdb": "a[1]",
+                    "presto": "a[1]",
+                },
+            )
+
+        with self.assertLogs(parser_logger) as cm:
+            for_in_stmts = parse(
+                "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
+                read="bigquery",
+            )
+            self.assertEqual(
+                [s.sql(dialect="bigquery") for s in for_in_stmts],
+                ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
+            )
+            self.assertIn("'END FOR'", cm.output[0])
 
     def test_user_defined_functions(self):
         self.validate_identity(

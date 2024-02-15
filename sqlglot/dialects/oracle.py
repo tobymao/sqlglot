@@ -6,7 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
-    format_time_lambda,
+    build_formatted_time,
     no_ilike_sql,
     rename_func,
     trim_sql,
@@ -18,26 +18,7 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _parse_xml_table(self: Oracle.Parser) -> exp.XMLTable:
-    this = self._parse_string()
-
-    passing = None
-    columns = None
-
-    if self._match_text_seq("PASSING"):
-        # The BY VALUE keywords are optional and are provided for semantic clarity
-        self._match_text_seq("BY", "VALUE")
-        passing = self._parse_csv(self._parse_column)
-
-    by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
-
-    if self._match_text_seq("COLUMNS"):
-        columns = self._parse_csv(self._parse_field_def)
-
-    return self.expression(exp.XMLTable, this=this, passing=passing, columns=columns, by_ref=by_ref)
-
-
-def to_char(args: t.List) -> exp.TimeToStr | exp.ToChar:
+def _build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
     this = seq_get(args, 0)
 
     if this and not this.type:
@@ -45,7 +26,7 @@ def to_char(args: t.List) -> exp.TimeToStr | exp.ToChar:
 
         annotate_types(this)
         if this.is_type(*exp.DataType.TEMPORAL_TYPES):
-            return format_time_lambda(exp.TimeToStr, "oracle", default=True)(args)
+            return build_formatted_time(exp.TimeToStr, "oracle", default=True)(args)
 
     return exp.ToChar.from_arg_list(args)
 
@@ -93,9 +74,9 @@ class Oracle(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
-            "TO_CHAR": to_char,
-            "TO_TIMESTAMP": format_time_lambda(exp.StrToTime, "oracle"),
-            "TO_DATE": format_time_lambda(exp.StrToDate, "oracle"),
+            "TO_CHAR": _build_timetostr_or_tochar,
+            "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
+            "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -109,7 +90,7 @@ class Oracle(Dialect):
                 this=self._parse_format_json(self._parse_bitwise()),
                 order=self._parse_order(),
             ),
-            "XMLTABLE": _parse_xml_table,
+            "XMLTABLE": lambda self: self._parse_xml_table(),
         }
 
         QUERY_MODIFIER_PARSERS = {
@@ -126,6 +107,26 @@ class Oracle(Dialect):
         # SELECT UNIQUE .. is old-style Oracle syntax for SELECT DISTINCT ..
         # Reference: https://stackoverflow.com/a/336455
         DISTINCT_TOKENS = {TokenType.DISTINCT, TokenType.UNIQUE}
+
+        def _parse_xml_table(self) -> exp.XMLTable:
+            this = self._parse_string()
+
+            passing = None
+            columns = None
+
+            if self._match_text_seq("PASSING"):
+                # The BY VALUE keywords are optional and are provided for semantic clarity
+                self._match_text_seq("BY", "VALUE")
+                passing = self._parse_csv(self._parse_column)
+
+            by_ref = self._match_text_seq("RETURNING", "SEQUENCE", "BY", "REF")
+
+            if self._match_text_seq("COLUMNS"):
+                columns = self._parse_csv(self._parse_field_def)
+
+            return self.expression(
+                exp.XMLTable, this=this, passing=passing, columns=columns, by_ref=by_ref
+            )
 
         def _parse_json_array(self, expr_type: t.Type[E], **kwargs) -> E:
             return self.expression(
@@ -200,18 +201,17 @@ class Oracle(Dialect):
                     transforms.eliminate_qualify,
                 ]
             ),
-            exp.StrToTime: lambda self,
-            e: f"TO_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.StrToDate: lambda self, e: f"TO_DATE({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
+            exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
             exp.Substring: rename_func("SUBSTR"),
             exp.Table: lambda self, e: self.table_sql(e, sep=" "),
             exp.TableSample: lambda self, e: self.tablesample_sql(e, sep=" "),
-            exp.TimeToStr: lambda self, e: f"TO_CHAR({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.UnixToTime: lambda self,
-            e: f"TO_DATE('1970-01-01','YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
+            e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",
         }
 
         PROPERTIES_LOCATION = {

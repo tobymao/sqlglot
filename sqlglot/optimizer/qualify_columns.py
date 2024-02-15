@@ -35,11 +35,11 @@ def qualify_columns(
     Args:
         expression: Expression to qualify.
         schema: Database schema.
-        expand_alias_refs: Whether or not to expand references to aliases.
-        expand_stars: Whether or not to expand star queries. This is a necessary step
+        expand_alias_refs: Whether to expand references to aliases.
+        expand_stars: Whether to expand star queries. This is a necessary step
             for most of the optimizer's rules to work; do not set to False unless you
             know what you're doing!
-        infer_schema: Whether or not to infer the schema if missing.
+        infer_schema: Whether to infer the schema if missing.
 
     Returns:
         The qualified expression.

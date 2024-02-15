@@ -48,15 +48,15 @@ def qualify(
         db: Default database name for tables.
         catalog: Default catalog name for tables.
         schema: Schema to infer column names and types.
-        expand_alias_refs: Whether or not to expand references to aliases.
-        expand_stars: Whether or not to expand star queries. This is a necessary step
+        expand_alias_refs: Whether to expand references to aliases.
+        expand_stars: Whether to expand star queries. This is a necessary step
             for most of the optimizer's rules to work; do not set to False unless you
             know what you're doing!
-        infer_schema: Whether or not to infer the schema if missing.
-        isolate_tables: Whether or not to isolate table selects.
-        qualify_columns: Whether or not to qualify columns.
-        validate_qualify_columns: Whether or not to validate columns.
-        quote_identifiers: Whether or not to run the quote_identifiers step.
+        infer_schema: Whether to infer the schema if missing.
+        isolate_tables: Whether to isolate table selects.
+        qualify_columns: Whether to qualify columns.
+        validate_qualify_columns: Whether to validate columns.
+        quote_identifiers: Whether to run the quote_identifiers step.
             This step is necessary to ensure correctness for case sensitive queries.
             But this flag is provided in case this step is performed at a later time.
         identify: If True, quote all identifiers, else only necessary ones.

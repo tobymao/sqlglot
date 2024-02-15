@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import rename_func
-from sqlglot.dialects.hive import _parse_ignore_nulls
+from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider
 from sqlglot.helper import seq_get
 from sqlglot.transforms import (
@@ -15,7 +15,7 @@ from sqlglot.transforms import (
 )
 
 
-def _parse_datediff(args: t.List) -> exp.Expression:
+def _build_datediff(args: t.List) -> exp.Expression:
     """
     Although Spark docs don't mention the "unit" argument, Spark3 added support for
     it at some point. Databricks also supports this variant (see below).
@@ -61,8 +61,8 @@ class Spark(Spark2):
     class Parser(Spark2.Parser):
         FUNCTIONS = {
             **Spark2.Parser.FUNCTIONS,
-            "ANY_VALUE": _parse_ignore_nulls(exp.AnyValue),
-            "DATEDIFF": _parse_datediff,
+            "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
+            "DATEDIFF": _build_datediff,
         }
 
         def _parse_generated_as_identity(

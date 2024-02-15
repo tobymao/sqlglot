@@ -4,7 +4,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
-    parse_timestamp_trunc,
+    build_timestamp_trunc,
     rename_func,
     time_format,
 )
@@ -20,7 +20,7 @@ class Doris(MySQL):
         FUNCTIONS = {
             **MySQL.Parser.FUNCTIONS,
             "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
-            "DATE_TRUNC": parse_timestamp_trunc,
+            "DATE_TRUNC": build_timestamp_trunc,
             "REGEXP": exp.RegexpLike.from_arg_list,
             "TO_DATE": exp.TsOrDsToDate.from_arg_list,
         }
@@ -46,7 +46,7 @@ class Doris(MySQL):
             exp.ArgMin: rename_func("MIN_BY"),
             exp.ArrayAgg: rename_func("COLLECT_LIST"),
             exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
-            exp.CurrentTimestamp: lambda *_: "NOW()",
+            exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
             exp.DateTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
             ),
@@ -55,14 +55,11 @@ class Doris(MySQL):
             exp.Map: rename_func("ARRAY_MAP"),
             exp.RegexpLike: rename_func("REGEXP"),
             exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
-            exp.StrToUnix: lambda self,
-            e: f"UNIX_TIMESTAMP({self.sql(e, 'this')}, {self.format_time(e)})",
+            exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
             exp.Split: rename_func("SPLIT_BY_STRING"),
             exp.TimeStrToDate: rename_func("TO_DATE"),
-            exp.ToChar: lambda self,
-            e: f"DATE_FORMAT({self.sql(e, 'this')}, {self.format_time(e)})",
-            exp.TsOrDsAdd: lambda self,
-            e: f"DATE_ADD({self.sql(e, 'this')}, {self.sql(e, 'expression')})",  # Only for day level
+            exp.ToChar: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
+            exp.TsOrDsAdd: lambda self, e: self.func("DATE_ADD", e.this, e.expression),
             exp.TsOrDsToDate: lambda self, e: self.func("TO_DATE", e.this),
             exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimestampTrunc: lambda self, e: self.func(

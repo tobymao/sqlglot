@@ -34,8 +34,8 @@ class Tableau(Dialect):
         def count_sql(self, expression: exp.Count) -> str:
             this = expression.this
             if isinstance(this, exp.Distinct):
-                return f"COUNTD({self.expressions(this, flat=True)})"
-            return f"COUNT({self.sql(expression, 'this')})"
+                return self.func("COUNTD", *this.expressions)
+            return self.func("COUNT", this)
 
     class Parser(parser.Parser):
         FUNCTIONS = {

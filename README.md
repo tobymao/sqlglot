@@ -82,7 +82,7 @@ I tried to output SQL but it's not in the correct dialect!
 
 I tried to parse invalid SQL and it worked, even though it should raise an error! Why didn't it validate my SQL?
   
-* SQLGlot is not a SQL validator - it is designed to be very forgiving, e.g. so that it can successfully parse trailing commas in projection lists.
+* SQLGlot does not aim to be a SQL validator - it is designed to be very forgiving. This makes the codebase more comprehensive and also gives more flexibility to its users, e.g. by allowing them to include trailing commas in their projection lists.
 
 ## Examples
 

@@ -1,3 +1,4 @@
+import os
 import datetime
 import unittest
 from datetime import date
@@ -17,10 +18,12 @@ from tests.helpers import (
     FIXTURES_DIR,
     SKIP_INTEGRATION,
     TPCH_SCHEMA,
+    TPCDS_SCHEMA,
     load_sql_fixture_pairs,
 )
 
-DIR = FIXTURES_DIR + "/optimizer/tpc-h/"
+DIR_TPCH = FIXTURES_DIR + "/optimizer/tpc-h/"
+DIR_TPCDS = FIXTURES_DIR + "/optimizer/tpc-ds/"
 
 
 @unittest.skipIf(SKIP_INTEGRATION, "Skipping Integration Tests since `SKIP_INTEGRATION` is set")
@@ -34,7 +37,7 @@ class TestExecutor(unittest.TestCase):
                 f"""
                 CREATE VIEW {table} AS
                 SELECT *
-                FROM READ_CSV('{DIR}{table}.csv.gz', delim='|', header=True, columns={columns})
+                FROM READ_CSV('{DIR_TPCH}{table}.csv.gz', delim='|', header=True, columns={columns})
                 """
             )
 
@@ -77,7 +80,7 @@ class TestExecutor(unittest.TestCase):
         def to_csv(expression):
             if isinstance(expression, exp.Table) and expression.name not in ("revenue"):
                 return parse_one(
-                    f"READ_CSV('{DIR}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
+                    f"READ_CSV('{DIR_TPCH}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
 
@@ -91,7 +94,37 @@ class TestExecutor(unittest.TestCase):
                     ),
                 )
             ):
-                with self.subTest(f"tpch-h {i + 1}"):
+                with self.subTest(f"tpc-h {i + 1}"):
+                    sql, _ = self.sqls[i]
+                    a = self.cached_execute(sql)
+                    b = pd.DataFrame(
+                        ((np.nan if c is None else c for c in r) for r in table.rows),
+                        columns=table.columns,
+                    )
+
+                    assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
+
+    def test_execute_tpcds(self):
+        def to_csv(expression):
+            if isinstance(expression, exp.Table) and os.path.exists(
+                f"{DIR_TPCDS}{expression.name}.csv.gz"
+            ):
+                return parse_one(
+                    f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
+                )
+            return expression
+
+        with Pool() as pool:
+            for i, table in enumerate(
+                pool.starmap(
+                    execute,
+                    (
+                        (parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
+                        for sql, _ in self.sqls
+                    ),
+                )
+            ):
+                with self.subTest(f"tpc-ds {i + 1}"):
                     sql, _ = self.sqls[i]
                     a = self.cached_execute(sql)
                     b = pd.DataFrame(

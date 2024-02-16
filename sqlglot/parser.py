@@ -1380,7 +1380,7 @@ class Parser(metaclass=_Parser):
             and self._match(TokenType.EXISTS)
         )
 
-    def _parse_create(self) -> exp.Create | exp.Command:
+    def _parse_create(self) -> exp.Create | exp.Command | None:
         # Note: this can't be None because we've matched a statement parser
         start = self._prev
         comments = self._prev_comments

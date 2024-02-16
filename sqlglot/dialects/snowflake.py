@@ -460,6 +460,7 @@ class Snowflake(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.SHOW: lambda self: self._parse_show(),
+            TokenType.CREATE: lambda self: self._parse_create(),
         }
 
         PROPERTY_PARSERS = {
@@ -641,6 +642,43 @@ class Snowflake(Dialect):
 
             return exp.var("".join(part.text for part in parts if part))
 
+        def _parse_create(self) -> exp.Create | exp.Command | None:
+            if not self._match_set({TokenType.USER, TokenType.ROLE}, advance=False):
+                return super()._parse_create()
+
+            self._advance()
+
+            create_token = self._prev
+            assert create_token
+
+            identifier = self._parse_id_var()
+
+            properties = []
+
+            while True:
+                prop = self._parse_var()
+                if not prop:
+                    break
+
+                index = self._index
+                if not self._match(TokenType.EQ):
+                    self._retreat(index)
+                    return None
+
+                value = self._parse_string() or self._parse_boolean()
+
+                property = self.expression(exp.Property, this=prop, value=value)
+                properties.append(property)
+
+            return self.expression(
+                exp.Create,
+                this=identifier,
+                kind=create_token.text.upper(),
+                properties=self.expression(exp.Properties, expressions=properties)
+                if properties
+                else None,
+            )
+
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
@@ -661,6 +699,7 @@ class Snowflake(Dialect):
             "PUT": TokenType.COMMAND,
             "REMOVE": TokenType.COMMAND,
             "RENAME": TokenType.REPLACE,
+            "ROLE": TokenType.ROLE,
             "RM": TokenType.COMMAND,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "SQL_DOUBLE": TokenType.DOUBLE,
@@ -670,6 +709,7 @@ class Snowflake(Dialect):
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
             "TIMESTAMPNTZ": TokenType.TIMESTAMP,
             "TOP": TokenType.TOP,
+            "USER": TokenType.USER,
         }
 
         SINGLE_TOKENS = {

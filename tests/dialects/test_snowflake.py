@@ -1588,3 +1588,21 @@ MATCH_RECOGNIZE (
 
         expression = annotate_types(expression)
         self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(FOO() AS TEXT)")
+
+    def test_create_user(self):
+        create_user = self.validate_identity("CREATE USER foo")
+        self.assertTrue(isinstance(create_user, exp.Create))
+        self.assertEqual(create_user.kind, "USER")
+        self.assertEqual(create_user.this.this, "foo")
+
+        create_user = self.validate_identity("CREATE USER foo PASSWORD='bar' LOGIN_NAME='baz'")
+        self.assertTrue(isinstance(create_user, exp.Create))
+        self.assertEqual(create_user.kind, "USER")
+        self.assertEqual(create_user.this.this, "foo")
+
+        properties = create_user.args["properties"]
+        self.assertEqual(len(properties.expressions), 2)
+        self.assertEqual(properties.expressions[0].this.this, "PASSWORD")
+        self.assertEqual(properties.expressions[0].args["value"].this, "bar")
+        self.assertEqual(properties.expressions[1].this.this, "LOGIN_NAME")
+        self.assertEqual(properties.expressions[1].args["value"].this, "baz")

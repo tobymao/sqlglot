@@ -74,15 +74,15 @@ We'd love to hear from you. Join our community [Slack channel](https://tobikodat
 
 I tried to parse SQL that should be valid but it failed, why did that happen?
   
-* You need to specify the dialect to read the SQL properly, by default it is SQLGlot's dialect which is designed to be a superset of all dialects `parse_one(sql, dialect="spark")`. If you tried specifying the dialect and it still doesn't work, please file an issue.
+* Most of the time, issues like this occur because the "source" dialect is omitted. For example, when parsing a SQL query which is written in Spark SQL, one needs to specify the dialect like so: `parse_one(sql, dialect="spark")` (alternatively: `read="spark"`). If no dialect is specified, `parse_one` will attempt to parse the query according to the "SQLGlot dialect", which is designed to be a superset of all supported dialects. If you tried specifying the dialect and it still doesn't work, please file an issue.
 
 I tried to output SQL but it's not in the correct dialect!
   
-* You need to specify the dialect to write the sql properly, by default it is in SQLGlot's dialect `parse_one(sql, dialect="spark").sql(dialect="spark")`.
+* Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")`.
 
-I tried to parse invalid SQL and it should raise an error but it worked! Why didn't it validate my SQL.
+I tried to parse invalid SQL and it worked, even though it should raise an error! Why didn't it validate my SQL?
   
-* SQLGlot is not a validator and designed to be very forgiving, handling things like trailing commas.
+* SQLGlot is not a SQL validator - it is designed to be very forgiving, e.g. so that it can successfully parse trailing commas in projection lists.
 
 ## Examples
 

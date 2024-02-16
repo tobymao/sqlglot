@@ -301,6 +301,7 @@ class BigQuery(Dialect):
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "DECLARE": TokenType.COMMAND,
+            "EXCEPTION": TokenType.COMMAND,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "MODEL": TokenType.MODEL,

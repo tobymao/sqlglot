@@ -1068,6 +1068,27 @@ WHERE
             self.assertIn("unsupported syntax", cm.output[0])
 
         with self.assertLogs(helper_logger) as cm:
+            statements = parse(
+                """
+                BEGIN CALL `project_id.dataset_id.stored_procedure_id`();
+                EXCEPTION WHEN ERROR THEN INSERT INTO `project_id.dataset_id.table_id` SELECT @@error.message, CURRENT_TIMESTAMP();
+                END
+                """,
+                read="bigquery",
+            )
+
+            expected_statements = (
+                "BEGIN CALL `project_id.dataset_id.stored_procedure_id`()",
+                "EXCEPTION WHEN ERROR THEN INSERT INTO `project_id.dataset_id.table_id` SELECT @@error.message, CURRENT_TIMESTAMP()",
+                "END",
+            )
+
+            for actual, expected in zip(statements, expected_statements):
+                self.assertEqual(actual.sql(dialect="bigquery"), expected)
+
+            self.assertIn("unsupported syntax", cm.output[0])
+
+        with self.assertLogs(helper_logger) as cm:
             self.validate_identity(
                 "SELECT * FROM t AS t(c1, c2)",
                 "SELECT * FROM t AS t",

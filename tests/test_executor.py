@@ -110,7 +110,7 @@ class TestExecutor(unittest.TestCase):
                 f"{DIR_TPCDS}{expression.name}.csv.gz"
             ):
                 return parse_one(
-                    f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
+                    f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', ',') AS {expression.alias_or_name}"
                 )
             return expression
 

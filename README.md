@@ -78,7 +78,7 @@ I tried to parse SQL that should be valid but it failed, why did that happen?
 
 I tried to output SQL but it's not in the correct dialect!
   
-* Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")`.
+* Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")` (alternatively: `transpile(sql, read="spark", write="duckdb")`).
 
 I tried to parse invalid SQL and it worked, even though it should raise an error! Why didn't it validate my SQL?
   

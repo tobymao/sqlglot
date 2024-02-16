@@ -74,7 +74,7 @@ We'd love to hear from you. Join our community [Slack channel](https://tobikodat
 
 I tried to parse SQL that should be valid but it failed, why did that happen?
   
-* Most of the time, issues like this occur because the "source" dialect is omitted during parsing. For example, when parsing a SQL query which is written in Spark SQL, one needs to specify the dialect like so: `parse_one(sql, dialect="spark")` (alternatively: `read="spark"`). If no dialect is specified, `parse_one` will attempt to parse the query according to the "SQLGlot dialect", which is designed to be a superset of all supported dialects. If you tried specifying the dialect and it still doesn't work, please file an issue.
+* Most of the time, issues like this occur because the "source" dialect is omitted during parsing. For example, this is how to correctly parse a SQL query written in Spark SQL: `parse_one(sql, dialect="spark")` (alternatively: `read="spark"`). If no dialect is specified, `parse_one` will attempt to parse the query according to the "SQLGlot dialect", which is designed to be a superset of all supported dialects. If you tried specifying the dialect and it still doesn't work, please file an issue.
 
 I tried to output SQL but it's not in the correct dialect!
   

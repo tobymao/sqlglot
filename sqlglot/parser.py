@@ -289,6 +289,7 @@ class Parser(metaclass=_Parser):
         TokenType.VIEW,
         TokenType.MODEL,
         TokenType.DICTIONARY,
+        TokenType.STORAGE_INTEGRATION,
     }
 
     CREATABLES = {

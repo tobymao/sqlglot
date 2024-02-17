@@ -663,6 +663,7 @@ class Snowflake(Dialect):
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "SQL_DOUBLE": TokenType.DOUBLE,
             "SQL_VARCHAR": TokenType.VARCHAR,
+            "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,
             "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
             "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,

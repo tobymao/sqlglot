@@ -1520,6 +1520,9 @@ MATCH_RECOGNIZE (
         self.validate_identity("SHOW USERS")
         self.validate_identity("SHOW TERSE USERS")
         self.validate_identity("SHOW USERS LIKE '_foo%' STARTS WITH 'bar' LIMIT 5 FROM 'baz'")
+        ast = parse_one("SHOW USERS LIKE '_foo%'", read="snowflake")
+        literal = ast.find(exp.Literal)
+        self.assertEqual(literal.sql(dialect="snowflake"), "'_foo%'")
 
         ast = parse_one("SHOW COLUMNS LIKE '_testing%' IN dt_test", read="snowflake")
         table = ast.find(exp.Table)
@@ -1547,6 +1550,32 @@ MATCH_RECOGNIZE (
         users_exp = self.validate_identity("SHOW USERS")
         self.assertTrue(isinstance(users_exp, exp.Show))
         self.assertEqual(users_exp.this, "USERS")
+
+    def test_storage_integration(self):
+        self.validate_identity(
+            """CREATE STORAGE INTEGRATION s3_int
+TYPE=EXTERNAL_STAGE
+STORAGE_PROVIDER='S3'
+STORAGE_AWS_ROLE_ARN='arn:aws:iam::001234567890:role/myrole'
+ENABLED=TRUE
+STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
+            pretty=True,
+        )
+        ast = parse_one(
+            "CREATE STORAGE INTEGRATION s3_int STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')",
+            read="snowflake",
+        )
+        assert isinstance(ast, exp.Create)
+        assert ast.this == exp.Table(this=exp.Identifier(this="s3_int"))
+        assert ast.args["properties"].expressions[0] == exp.Property(
+            this=exp.Identifier(this="STORAGE_ALLOWED_LOCATIONS"),
+            value=exp.Tuple(
+                expressions=[
+                    exp.Literal(this="s3://mybucket1/path1/", is_string=True),
+                    exp.Literal(this="s3://mybucket2/path2/", is_string=True),
+                ]
+            ),
+        )
 
     def test_swap(self):
         ast = parse_one("ALTER TABLE a SWAP WITH b", read="snowflake")

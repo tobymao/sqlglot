@@ -129,7 +129,6 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        
         with Pool() as pool:
             for i, table in enumerate(
                 pool.starmap(

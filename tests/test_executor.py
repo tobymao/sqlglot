@@ -66,9 +66,9 @@ class TestExecutor(unittest.TestCase):
         cls.tpch_conn.close()
         cls.tpcds_conn.close()
 
-    def cached_execute(self, sql, type_exec="tpch"):
+    def cached_execute(self, sql, type_exec="tpc-h"):
         if sql not in self.cache:
-            if type_exec == "tpch":
+            if type_exec == "tpc-h":
                 self.cache[sql] = self.tpch_conn.execute(sql).fetchdf()
             else:
                 self.cache[sql] = self.tpcds_conn.execute(sql).fetchdf()
@@ -94,6 +94,19 @@ class TestExecutor(unittest.TestCase):
                 self.rename_anonymous(b, a)
                 assert_frame_equal(a, b)
 
+    def subtestHelper(self, i, table, type_exec="tpc-h"):
+        with self.subTest(f"{type_exec} {i + 1}"):
+            if type_exec == "tpc-h":
+                sql, _ = self.tpch_sqls[i]
+            else:
+                sql, _ = self.tpcds_sqls[i]
+            a = self.cached_execute(sql, type_exec)
+            b = pd.DataFrame(
+                ((np.nan if c is None else c for c in r) for r in table.rows),
+                columns=table.columns,
+            )
+            assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
+
     def test_execute_tpch(self):
         def to_csv(expression):
             if isinstance(expression, exp.Table) and expression.name not in ("revenue"):
@@ -101,6 +114,7 @@ class TestExecutor(unittest.TestCase):
                     f"READ_CSV('{DIR_TPCH}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
+        
         with Pool() as pool:
             for i, table in enumerate(
                 pool.starmap(
@@ -111,15 +125,7 @@ class TestExecutor(unittest.TestCase):
                     ),
                 )
             ):
-                with self.subTest(f"tpc-h {i + 1}"):
-                    sql, _ = self.tpch_sqls[i]
-                    a = self.cached_execute(sql, "tpch")
-                    b = pd.DataFrame(
-                        ((np.nan if c is None else c for c in r) for r in table.rows),
-                        columns=table.columns,
-                    )
-
-                    assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
+                self.subtestHelper(i, table, "tpc-h")
 
     def test_execute_tpcds(self):
         def to_csv(expression):
@@ -141,15 +147,7 @@ class TestExecutor(unittest.TestCase):
                     ),
                 )
             ):
-                with self.subTest(f"tpc-ds {i + 1}"):
-                    sql, _ = self.tpcds_sqls[i]
-                    a = self.cached_execute(sql, "tpcds")
-                    b = pd.DataFrame(
-                        ((np.nan if c is None else c for c in r) for r in table.rows),
-                        columns=table.columns,
-                    )
-
-                    assert_frame_equal(a, b, check_dtype=False, check_index_type=False)
+                self.subtestHelper(i, table, "tpc-ds")
 
     def test_execute_callable(self):
         tables = {

@@ -156,7 +156,7 @@ class TestOptimizer(unittest.TestCase):
                     df1 = self.conn.execute(
                         sqlglot.transpile(sql, read=dialect, write="duckdb")[0]
                     ).df()
-                    df2 = self.conn.execute(optimized.sql(pretty=pretty, dialect="duckdb")).df()
+                    df2 = self.conn.execute(optimized.sql(dialect="duckdb")).df()
                     assert_frame_equal(df1, df2)
 
     @patch("sqlglot.generator.logger")

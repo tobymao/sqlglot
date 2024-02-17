@@ -32,7 +32,7 @@ class TestExecutor(unittest.TestCase):
     def setUpClass(cls):
         cls.tpch_conn = duckdb.connect()
         cls.tpcds_conn = duckdb.connect()
-        
+
         for table, columns in TPCH_SCHEMA.items():
             cls.tpch_conn.execute(
                 f"""
@@ -41,7 +41,7 @@ class TestExecutor(unittest.TestCase):
                 FROM READ_CSV('{DIR_TPCH}{table}.csv.gz', delim='|', header=True, columns={columns})
                 """
             )
-        
+
         for table, columns in TPCDS_SCHEMA.items():
             cls.tpcds_conn.execute(
                 f"""
@@ -50,7 +50,7 @@ class TestExecutor(unittest.TestCase):
                 FROM READ_CSV('{DIR_TPCDS}{table}.csv.gz', delim=',', header=True, columns={columns})
                 """
             )
-        
+
         cls.cache = {}
         cls.tpch_sqls = [
             (sql, expected)
@@ -123,7 +123,9 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_tpcds(self):
         def to_csv(expression):
-            if isinstance(expression, exp.Table) and os.path.exists(f"{DIR_TPCDS}{expression.name}.csv.gz"):
+            if isinstance(expression, exp.Table) and os.path.exists(
+                f"{DIR_TPCDS}{expression.name}.csv.gz"
+            ):
                 return parse_one(
                     f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', ',') AS {expression.alias_or_name}"
                 )

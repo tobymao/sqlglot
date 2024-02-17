@@ -575,10 +575,12 @@ class Expression(metaclass=_Expression):
         return new_node
 
     @t.overload
-    def replace(self, expression: E) -> E: ...
+    def replace(self, expression: E) -> E:
+        ...
 
     @t.overload
-    def replace(self, expression: None) -> None: ...
+    def replace(self, expression: None) -> None:
+        ...
 
     def replace(self, expression):
         """
@@ -5016,6 +5018,21 @@ class If(Func):
     _sql_names = ["IF", "IIF"]
 
 
+class ElseIf(Expression):
+    arg_types = {"this": True, "block": False}
+
+
+class IfStatement(Expression):
+    # We have both else_block and else so we can re-generate the sql better (i.e. - display an empty else block or not)
+    arg_types = {
+        "this": True,
+        "if_block": False,
+        "elseif_blocks": False,
+        "else_block": False,
+        "else_": False,
+    }
+
+
 class Nullif(Func):
     arg_types = {"this": True, "expression": True}
 
@@ -5714,6 +5731,31 @@ class NextValueFor(Func):
     arg_types = {"this": True, "order": False}
 
 
+class While(Expression):
+    arg_types = {"this": True, "body": False, "end": False}
+
+
+class BeginBlock(Expression):
+    # A block can be empty.
+    arg_types = {"this": False, "end": False}
+
+
+class Call(Expression):
+    arg_types = {"this": False, "call_args": False}
+
+
+class StoredProcedure(Expression):
+    arg_types = {"this": True, "body": False}
+
+
+class Declare(Expression):
+    arg_types = {"this": True, "vars_type": False, "default_value": False}
+
+
+class SetStatement(Expression):
+    arg_types = {"this": True, "values": True}
+
+
 def _norm_arg(arg):
     return arg.lower() if type(arg) is str else arg
 
@@ -5734,7 +5776,8 @@ def maybe_parse(
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts,
-) -> E: ...
+) -> E:
+    ...
 
 
 @t.overload
@@ -5746,7 +5789,8 @@ def maybe_parse(
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts,
-) -> E: ...
+) -> E:
+    ...
 
 
 def maybe_parse(
@@ -5798,11 +5842,13 @@ def maybe_parse(
 
 
 @t.overload
-def maybe_copy(instance: None, copy: bool = True) -> None: ...
+def maybe_copy(instance: None, copy: bool = True) -> None:
+    ...
 
 
 @t.overload
-def maybe_copy(instance: E, copy: bool = True) -> E: ...
+def maybe_copy(instance: E, copy: bool = True) -> E:
+    ...
 
 
 def maybe_copy(instance, copy=True):
@@ -6425,13 +6471,15 @@ SAFE_IDENTIFIER_RE: t.Pattern[str] = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 @t.overload
-def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None: ...
+def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None:
+    ...
 
 
 @t.overload
 def to_identifier(
     name: str | Identifier, quoted: t.Optional[bool] = None, copy: bool = True
-) -> Identifier: ...
+) -> Identifier:
+    ...
 
 
 def to_identifier(name, quoted=None, copy=True):
@@ -6503,11 +6551,13 @@ def to_interval(interval: str | Literal) -> Interval:
 
 
 @t.overload
-def to_table(sql_path: str | Table, **kwargs) -> Table: ...
+def to_table(sql_path: str | Table, **kwargs) -> Table:
+    ...
 
 
 @t.overload
-def to_table(sql_path: None, **kwargs) -> None: ...
+def to_table(sql_path: None, **kwargs) -> None:
+    ...
 
 
 def to_table(

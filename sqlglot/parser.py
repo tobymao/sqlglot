@@ -1182,15 +1182,7 @@ class Parser(metaclass=_Parser):
             errors=merge_errors(errors),
         ) from errors[-1]
 
-    def _parse(
-        self,
-        parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
-        raw_tokens: t.List[Token],
-        sql: t.Optional[str] = None,
-    ) -> t.List[t.Optional[exp.Expression]]:
-        self.reset()
-        self.sql = sql or ""
-
+    def _chunkify(self, raw_tokens):
         total = len(raw_tokens)
         chunks: t.List[t.List[Token]] = [[]]
 
@@ -1200,6 +1192,19 @@ class Parser(metaclass=_Parser):
                     chunks.append([])
             else:
                 chunks[-1].append(token)
+
+        return chunks
+
+    def _parse(
+        self,
+        parse_method: t.Callable[[Parser], t.Optional[exp.Expression]],
+        raw_tokens: t.List[Token],
+        sql: t.Optional[str] = None,
+    ) -> t.List[t.Optional[exp.Expression]]:
+        self.reset()
+        self.sql = sql or ""
+
+        chunks = self._chunkify(raw_tokens)
 
         expressions = []
 
@@ -1405,6 +1410,7 @@ class Parser(metaclass=_Parser):
             aggregates=aggregates,
         )
 
+    # TODO: We can probalby remove the match_semicolon, check this later in tests..
     def _parse_statement(self) -> t.Optional[exp.Expression]:
         if self._curr is None:
             return None
@@ -1417,7 +1423,8 @@ class Parser(metaclass=_Parser):
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
-        return self._parse_query_modifiers(expression)
+        result = self._parse_query_modifiers(expression)
+        return result
 
     def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
         start = self._prev
@@ -1449,6 +1456,42 @@ class Parser(metaclass=_Parser):
             and (not not_ or self._match(TokenType.NOT))
             and self._match(TokenType.EXISTS)
         )
+
+    def _parse_function_body(self, create_token: Token, extend_props: t.Callable):
+        begin = None
+        end = None
+        this = self._parse_user_defined_function(kind=create_token.token_type)
+
+        # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
+        extend_props(self._parse_properties())
+
+        expression = self._match(TokenType.ALIAS) and self._parse_heredoc()
+
+        if not expression:
+            if self._match(TokenType.COMMAND):
+                expression = self._parse_as_command(self._prev)
+            else:
+                begin = self._match(TokenType.BEGIN)
+                return_ = self._match_text_seq("RETURN")
+
+                if self._match(TokenType.STRING, advance=False):
+                    # Takes care of BigQuery's JavaScript UDF definitions that end in an OPTIONS property
+                    # # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement
+                    expression = self._parse_string()
+                    extend_props(self._parse_properties())
+                else:
+                    expression = self._parse_statement()
+
+                end = self._match_text_seq("END")
+
+                if return_:
+                    expression = self.expression(exp.Return, this=expression)
+
+        return this, expression, begin, end
+
+    def _parse_procedure_body(self, create_token: Token, extend_props: t.Callable):
+        # The default is to treat both procedures and functions equally.
+        return self._parse_function_body(create_token, extend_props)
 
     def _parse_create(self) -> exp.Create | exp.Command:
         # Note: this can't be None because we've matched a statement parser
@@ -1493,33 +1536,12 @@ class Parser(metaclass=_Parser):
             elif temp_props:
                 properties = temp_props
 
-        if create_token.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
-            this = self._parse_user_defined_function(kind=create_token.token_type)
+        if create_token.token_type == TokenType.PROCEDURE:
+            this, expression, begin, end = self._parse_procedure_body(create_token, extend_props)
 
-            # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
-            extend_props(self._parse_properties())
+        elif create_token.token_type == TokenType.FUNCTION:
+            this, expression, begin, end = self._parse_function_body(create_token, extend_props)
 
-            expression = self._match(TokenType.ALIAS) and self._parse_heredoc()
-
-            if not expression:
-                if self._match(TokenType.COMMAND):
-                    expression = self._parse_as_command(self._prev)
-                else:
-                    begin = self._match(TokenType.BEGIN)
-                    return_ = self._match_text_seq("RETURN")
-
-                    if self._match(TokenType.STRING, advance=False):
-                        # Takes care of BigQuery's JavaScript UDF definitions that end in an OPTIONS property
-                        # # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement
-                        expression = self._parse_string()
-                        extend_props(self._parse_properties())
-                    else:
-                        expression = self._parse_statement()
-
-                    end = self._match_text_seq("END")
-
-                    if return_:
-                        expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
             this = self._parse_index(index=self._parse_id_var())
         elif create_token.token_type in self.DB_CREATABLES:
@@ -4980,10 +5002,12 @@ class Parser(metaclass=_Parser):
         return None
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
+        ...
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
+        ...
 
     def _parse_json_object(self, agg=False):
         star = self._parse_star()
@@ -6041,12 +6065,14 @@ class Parser(metaclass=_Parser):
         return True
 
     @t.overload
-    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression: ...
+    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression:
+        ...
 
     @t.overload
     def _replace_columns_with_dots(
         self, this: t.Optional[exp.Expression]
-    ) -> t.Optional[exp.Expression]: ...
+    ) -> t.Optional[exp.Expression]:
+        ...
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

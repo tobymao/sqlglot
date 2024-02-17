@@ -1,3 +1,4 @@
+import unittest
 from unittest import mock
 
 from sqlglot import (
@@ -9,6 +10,7 @@ from sqlglot import (
     parse,
     parse_one,
     transpile,
+    exp,
 )
 from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger
@@ -18,6 +20,159 @@ from tests.dialects.test_dialect import Validator
 class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
+
+    def test_while_statement(self):
+        # 1 statement
+        self.validate_identity("WHILE 1 < 2 DO\nSELECT 5;\nEND WHILE")
+        # 0 statements
+        self.validate_identity("WHILE 1 < 2 DO\nEND WHILE")
+        # Multiple statements
+        self.validate_identity("WHILE 1 < 2 DO\nSELECT 1;\nSELECT 2;\nEND WHILE")
+        # Multiple conditions
+        self.validate_identity("WHILE TRUE AND FALSE DO\nSELECT 1;\nSELECT 2;\nEND WHILE")
+        # Function call in condition
+        self.validate_identity("WHILE EXISTS(SELECT 5) DO\nSELECT 1;\nSELECT 2;\nEND WHILE")
+
+        # Make sure we can still have tables with the name of while (which is legal)
+        statement = """
+        SELECT * from while.while
+        """
+        result = self.parse_one(statement)
+        self.assertIsInstance(result, exp.Select)
+        from_ = result.args.get("from")
+        self.assertEqual(from_.this.this, exp.Identifier(this="while", quoted=False))
+        self.assertEqual(from_.this.db, "while")
+
+    def test_begin_block(self):
+        # 1 statement
+        self.validate_identity("BEGIN\nSELECT 1;\nEND")
+        # 0 statements
+        self.validate_identity("BEGIN\nEND")
+        # Recursive block
+        self.validate_identity("BEGIN\nBEGIN\nSELECT 1;\nSELECT 2;\nEND;\nEND")
+
+    def test_call_statement(self):
+        # Call with no arguments
+        self.validate_identity("CALL a.b()")
+        # Call with one literal argument
+        self.validate_identity("CALL a.b(1)")
+        # Call with multiple arguments
+        self.validate_identity("CALL a.b(1,2)")
+        # Call with identifier names and string literals
+        self.validate_identity("CALL a.b(id,'literal')")
+
+        # Make sure we can still have tables with the name of call (which is legal)
+        statement = """
+        SELECT * from call.call
+        """
+        result = self.parse_one(statement)
+        self.assertIsInstance(result, exp.Select)
+        from_ = result.args.get("from")
+        self.assertEqual(from_.this.this, exp.Identifier(this="call", quoted=False))
+        self.assertEqual(from_.this.db, "call")
+
+    def test_declare_statement(self):
+        # Declare statement of one variable, with type
+        self.validate_identity("DECLARE id STRING")
+        # Declare statement of two variable2, with type
+        self.validate_identity("DECLARE id1,id2 STRING")
+        # Declare statement with default literal value
+        self.validate_identity("DECLARE id DEFAULT 5")
+        # Declare statement with default identifier name
+        self.validate_identity("DECLARE id DEFAULT other_id")
+
+        # Make sure we can still have tables with the name of declare (which is legal)
+        statement = """
+        SELECT * from declare.declare
+        """
+        result = self.parse_one(statement)
+        self.assertIsInstance(result, exp.Select)
+        from_ = result.args.get("from")
+        self.assertEqual(from_.this.this, exp.Identifier(this="declare", quoted=False))
+        self.assertEqual(from_.this.db, "declare")
+
+    def test_set_statement(self):
+        # Assignment of one variable
+        self.validate_identity("SET x = 5")
+        # Assignment of two variables
+        self.validate_identity("SET (x, y) = (5, 6)")
+        # Make sure we can still have tables with the name of set (which is legal)
+        statement = """
+        SELECT * from set.set
+        """
+        result = self.parse_one(statement)
+        self.assertIsInstance(result, exp.Select)
+        from_ = result.args.get("from")
+        self.assertEqual(from_.this.this, exp.Identifier(this="set", quoted=False))
+        self.assertEqual(from_.this.db, "set")
+
+    @unittest.expectedFailure
+    def test_set_assignment_with_to(self):
+        # See bigquery.Parser._parse_set for explanation about this
+        with self.assertRaises(ParseError):
+            self.parse_one("SET X to 2")
+
+    def test_if_statement(self):
+        # Make sure the old way of parsing still works.
+        statement = "SELECT IF(1 < 2, 3, 4)"
+        result = self.validate_identity(statement)
+        self.assertIsInstance(result.expressions[0], exp.If)
+        # Now try a new block with empty statements.
+        statement = "IF 1 < 2 THEN\nEND IF"
+        result = self.validate_identity(statement)
+        self.assertIsInstance(result, exp.IfStatement)
+        # A block with a single statement
+        self.validate_identity("IF 1 < 2 THEN\nSELECT 1;\nEND IF")
+        # A block with a multiple statements
+        self.validate_identity("IF 1 < 2 THEN\nSELECT 1;\nSELECT 2;\nEND IF")
+        # An empty else block
+        self.validate_identity("IF 1 < 2 THEN\nSELECT 1;\nELSE\nEND IF")
+        # A single statement in else block
+        self.validate_identity("IF 1 < 2 THEN\nSELECT 1;\nELSE\nSELECT 1;\nEND IF")
+        # Compound condition in if statement
+        self.validate_identity("IF 1 < 2 AND id > 4 THEN\nSELECT 1;\nELSE\nSELECT 1;\nEND IF")
+        # Compound condition with parenthesis
+        self.validate_identity("IF (1 < 2 AND id > 4) THEN\nSELECT 1;\nELSE\nSELECT 1;\nEND IF")
+        # With else if condition
+        self.validate_identity("IF (1 < 2) THEN\nSELECT 1;\nELSEIF 2 < 3 THEN\nSELECT 2;\nEND IF")
+        # With empty else if block
+        self.validate_identity("IF (1 < 2) THEN\nSELECT 1;\nELSEIF 2 < 3 THEN\nEND IF")
+
+        merge_statement = """MERGE INTO dataset.Inventory AS T USING dataset.NewArrivals AS S ON FALSE WHEN NOT MATCHED AND product LIKE '%a%' THEN DELETE WHEN NOT MATCHED BY SOURCE AND product LIKE '%b%' THEN DELETE"""
+        # Containing a merge statement
+        self.validate_identity("IF (1 < 2) THEN\n" + merge_statement + ";" + "\nEND IF")
+        # After a merge statement
+        if_block = "IF 1 < 2 THEN\nSELECT 1;\nEND IF"
+        sql = merge_statement + ";" + if_block
+        statements = parse(sql, dialect=self.dialect)
+        self.assertEqual(len(statements), 2)
+        self.assertEqual(merge_statement, statements[0].sql(dialect=self.dialect))
+        self.assertEqual(if_block, statements[1].sql(dialect=self.dialect))
+
+        # Before a merge statement
+        sql = if_block + ";" + merge_statement
+        statements = parse(sql, dialect=self.dialect)
+        self.assertEqual(len(statements), 2)
+        self.assertEqual(if_block, statements[0].sql(dialect=self.dialect))
+        self.assertEqual(merge_statement, statements[1].sql(dialect=self.dialect))
+
+        # Make sure we can still have tables with the name of if (which is legal)
+        statement = """
+        SELECT * from if.if
+        """
+        result = self.parse_one(statement)
+        self.assertIsInstance(result, exp.Select)
+        from_ = result.args.get("from")
+        self.assertEqual(from_.this.this, exp.Identifier(this="if", quoted=False))
+        self.assertEqual(from_.this.db, "if")
+
+    @unittest.expectedFailure
+    def test_if_expression_in_if_statement(self):
+        # This fails due to how we implemented the backtracking - the parser can't associate the 'THEN'
+        # keyword to the correct if statement.
+        statement = "IF IF(1 > 2, true, false) THEN SELECT 1; END IF;"
+        result = self.validate_identity(statement, check_command_warning=True)
+        self.assertIsInstance(result, exp.IfStatement)
 
     def test_bigquery(self):
         self.validate_all(
@@ -40,7 +195,6 @@ class TestBigQuery(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
-
         table = parse_one("x-0._y.z", dialect="bigquery", into=exp.Table)
         self.assertEqual(table.catalog, "x-0")
         self.assertEqual(table.db, "_y")
@@ -59,6 +213,39 @@ class TestBigQuery(Validator):
 
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
+        # The original test lacked the AS operator:
+        # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_view_statement
+        # Due to a final check that attempts to determine if we have any leftover tokens, and if so parse everything
+        # as a command, we are adding this check to make sure that we get the correct type of expression in the end.
+        result = self.validate_identity(
+            "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id;",
+            "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
+        )
+        self.assertIsInstance(result, exp.Create)
+
+        statements = parse(
+            """
+        BEGIN
+          DECLARE id DEFAULT 1;
+          IF from_date IS NULL THEN SET x = 1;
+          END IF;
+        END
+        """,
+            read="bigquery",
+        )
+
+        self.assertEqual(len(statements), 1)
+        statement = statements[0]
+        self.assertEqual(
+            statement.sql(dialect="bigquery"),
+            "BEGIN\nDECLARE id DEFAULT 1;\nIF from_date IS NULL THEN\nSET x = 1;\nEND IF;\nEND",
+        )
+
+        with self.assertLogs(helper_logger):
+            self.validate_identity(
+                "SELECT * FROM t AS t(c1, c2)",
+                "SELECT * FROM t AS t",
+            )
 
         self.validate_identity("SELECT ARRAY_TO_STRING(list, '--') AS text")
         self.validate_identity("SELECT jsondoc['some_key']")
@@ -79,6 +266,42 @@ class TestBigQuery(Validator):
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 1)")
         self.validate_identity("ARRAY_AGG(x IGNORE NULLS)")
         self.validate_identity("ARRAY_AGG(DISTINCT x IGNORE NULLS HAVING MAX x ORDER BY x LIMIT 1)")
+
+        with self.assertRaises(TokenError):
+            transpile("'\\'", read="bigquery")
+
+        # Reference: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a INTERSECT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM a EXCEPT ALL SELECT * FROM b",
+                write="bigquery",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+        with self.assertRaises(ParseError):
+            transpile("SELECT * FROM UNNEST(x) AS x(y)", read="bigquery")
+
+        with self.assertRaises(ParseError):
+            transpile("DATE_ADD(x, day)", read="bigquery")
+
+        for_in_stmts = parse(
+            "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
+            read="bigquery",
+        )
+        self.assertEqual(len(for_in_stmts), 1)
+        for_in_stmt = for_in_stmts[0]
+        self.assertEqual(
+            for_in_stmt.sql(dialect="bigquery"),
+            "FOR record IN (SELECT word FROM shakespeare) DO\nSELECT record.word;\nEND FOR",
+        )
+
         self.validate_identity("SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT)")
         self.validate_identity("TIME('2008-12-25 15:30:00+08')")
         self.validate_identity("TIME('2008-12-25 15:30:00+08', 'America/Los_Angeles')")
@@ -128,7 +351,7 @@ class TestBigQuery(Validator):
         self.validate_identity("""CREATE TABLE x (a STRUCT<b STRING OPTIONS (description='b')>)""")
         self.validate_identity("CAST(x AS TIMESTAMP)")
         self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
-        self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
+        self.validate_identity("BEGIN DECLARE y INT64; END", "BEGIN\nDECLARE y INT64;\nEND")
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")
@@ -155,7 +378,8 @@ class TestBigQuery(Validator):
             "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
         )
         self.validate_identity(
-            "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count"
+            "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count; END FOR",
+            "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO\nSELECT record.word, record.word_count;\nEND FOR",
         )
         self.validate_identity(
             "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
@@ -1120,75 +1344,19 @@ WHERE
 
             self.assertIn("Named columns are not supported in table alias.", cm.output[0])
 
-        with self.assertLogs(helper_logger) as cm:
-            statements = parse(
-                """
-            BEGIN
-              DECLARE 1;
-              IF from_date IS NULL THEN SET x = 1;
-              END IF;
-            END
-            """,
-                read="bigquery",
-            )
-
-            for actual, expected in zip(
-                statements,
-                ("BEGIN DECLARE 1", "IF from_date IS NULL THEN SET x = 1", "END IF", "END"),
-            ):
-                self.assertEqual(actual.sql(dialect="bigquery"), expected)
-
-            self.assertIn("unsupported syntax", cm.output[0])
+        self.validate_identity(
+            """BEGIN\nDECLARE a;\nIF from_date IS NULL THEN\nSET x = 1;\nEND IF;\nEND"""
+        )
 
         with self.assertLogs(helper_logger) as cm:
-            statements = parse(
-                """
-                BEGIN CALL `project_id.dataset_id.stored_procedure_id`();
-                EXCEPTION WHEN ERROR THEN INSERT INTO `project_id.dataset_id.table_id` SELECT @@error.message, CURRENT_TIMESTAMP();
-                END
-                """,
-                read="bigquery",
+            self.validate_identity(
+                """BEGIN\nCALL `project_id.dataset_id.stored_procedure_id`();\nEXCEPTION WHEN ERROR THEN INSERT INTO `project_id.dataset_id.table_id` SELECT @@error.message, CURRENT_TIMESTAMP();\nEND"""
             )
-
-            expected_statements = (
-                "BEGIN CALL `project_id.dataset_id.stored_procedure_id`()",
-                "EXCEPTION WHEN ERROR THEN INSERT INTO `project_id.dataset_id.table_id` SELECT @@error.message, CURRENT_TIMESTAMP()",
-                "END",
-            )
-
-            for actual, expected in zip(statements, expected_statements):
-                self.assertEqual(actual.sql(dialect="bigquery"), expected)
-
             self.assertIn("unsupported syntax", cm.output[0])
 
-        with self.assertLogs(helper_logger):
-            statements = parse(
-                """
-                BEGIN
-                    DECLARE MY_VAR INT64 DEFAULT 1;
-                    SET MY_VAR = (SELECT 0);
-
-                    IF MY_VAR = 1 THEN SELECT 'TRUE';
-                    ELSEIF MY_VAR = 0 THEN SELECT 'FALSE';
-                    ELSE SELECT 'NULL';
-                    END IF;
-                END
-                """,
-                read="bigquery",
-            )
-
-            expected_statements = (
-                "BEGIN DECLARE MY_VAR INT64 DEFAULT 1",
-                "SET MY_VAR = (SELECT 0)",
-                "IF MY_VAR = 1 THEN SELECT 'TRUE'",
-                "ELSEIF MY_VAR = 0 THEN SELECT 'FALSE'",
-                "ELSE SELECT 'NULL'",
-                "END IF",
-                "END",
-            )
-
-            for actual, expected in zip(statements, expected_statements):
-                self.assertEqual(actual.sql(dialect="bigquery"), expected)
+        self.validate_identity(
+            "BEGIN\nDECLARE MY_VAR INT64 DEFAULT 1;\nSET MY_VAR = (SELECT 0);\nIF MY_VAR = 1 THEN\nSELECT 'TRUE';\nELSEIF MY_VAR = 0 THEN\nSELECT 'FALSE';\nELSE\nSELECT 'NULL';\nEND IF;\nEND"
+        )
 
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity(
@@ -1216,16 +1384,9 @@ WHERE
                 },
             )
 
-        with self.assertLogs(parser_logger) as cm:
-            for_in_stmts = parse(
-                "FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word; END FOR;",
-                read="bigquery",
-            )
-            self.assertEqual(
-                [s.sql(dialect="bigquery") for s in for_in_stmts],
-                ["FOR record IN (SELECT word FROM shakespeare) DO SELECT record.word", "END FOR"],
-            )
-            self.assertIn("'END FOR'", cm.output[0])
+        self.validate_identity(
+            "FOR record IN (SELECT word FROM shakespeare) DO\nSELECT record.word;\nEND FOR"
+        )
 
     def test_user_defined_functions(self):
         self.validate_identity(
@@ -1331,7 +1492,8 @@ OPTIONS (
             WHEN NOT MATCHED BY TARGET AND product LIKE '%a%'
             THEN DELETE
             WHEN NOT MATCHED BY SOURCE AND product LIKE '%b%'
-            THEN DELETE""",
+            THEN DELETE
+            """,
             write={
                 "bigquery": "MERGE INTO dataset.Inventory AS T USING dataset.NewArrivals AS S ON FALSE WHEN NOT MATCHED AND product LIKE '%a%' THEN DELETE WHEN NOT MATCHED BY SOURCE AND product LIKE '%b%' THEN DELETE",
                 "snowflake": "MERGE INTO dataset.Inventory AS T USING dataset.NewArrivals AS S ON FALSE WHEN NOT MATCHED AND product LIKE '%a%' THEN DELETE WHEN NOT MATCHED AND product LIKE '%b%' THEN DELETE",

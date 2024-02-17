@@ -3,8 +3,10 @@ from __future__ import annotations
 import logging
 import re
 import typing as t
+from dataclasses import dataclass
 
 from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
@@ -26,7 +28,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
 )
 from sqlglot.helper import seq_get, split_num_words
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import TokenType, Token
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
@@ -311,19 +313,24 @@ class BigQuery(Dialect):
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "ANY TYPE": TokenType.VARIANT,
-            "BEGIN": TokenType.COMMAND,
-            "BEGIN TRANSACTION": TokenType.BEGIN,
+            "BEGIN TRANSACTION": TokenType.BEGIN_TRANSACTION,
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
-            "DECLARE": TokenType.COMMAND,
-            "ELSEIF": TokenType.COMMAND,
-            "EXCEPTION": TokenType.COMMAND,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "MODEL": TokenType.MODEL,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
             "RECORD": TokenType.STRUCT,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
+            "EXCEPTION": TokenType.COMMAND,
+            "WHILE": TokenType.WHILE,
+            "END WHILE": TokenType.END_WHILE,
+            "END IF": TokenType.END_IF,
+            "ELSEIF": TokenType.ELSE_IF,
+            "CALL": TokenType.CALL,
+            "DECLARE": TokenType.DECLARE,
+            "END FOR": TokenType.END_FOR,
+            "DO": TokenType.DO,
         }
         KEYWORDS.pop("DIV")
         KEYWORDS.pop("VALUES")
@@ -405,6 +412,15 @@ class BigQuery(Dialect):
             TokenType.TABLE,
         }
 
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,
+            TokenType.VALUES,
+            TokenType.CALL,
+            TokenType.WHILE,
+            TokenType.DECLARE,
+            TokenType.DO,
+        }
+
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
             "NOT DETERMINISTIC": lambda self: self.expression(
@@ -428,6 +444,11 @@ class BigQuery(Dialect):
             TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
             TokenType.END: lambda self: self._parse_as_command(self._prev),
             TokenType.FOR: lambda self: self._parse_for_in(),
+            TokenType.WHILE: lambda self: self._parse_while(),
+            TokenType.CALL: lambda self: self._parse_call(),
+            TokenType.DECLARE: lambda self: self._parse_declare(),
+            TokenType.BEGIN: lambda self: self._parse_begin_block(),
+            TokenType.BEGIN_TRANSACTION: lambda self: self._parse_begin_transaction(),
         }
 
         BRACKET_OFFSETS = {
@@ -437,10 +458,265 @@ class BigQuery(Dialect):
             "SAFE_ORDINAL": (1, True),
         }
 
+        OPENING_TOKEN_TO_SHOULD_MERGE = {
+            TokenType.BEGIN: lambda previous: previous == TokenType.CREATE,
+            TokenType.THEN: lambda previous: (
+                previous.token_type == TokenType.VAR and previous.text == "IF"
+            )
+            or (previous.token_type == TokenType.WHEN),
+            TokenType.DO: lambda previous: previous.token_type in (TokenType.FOR, TokenType.WHILE),
+        }
+
+        OPENING_TOKEN_TO_CLOSING_TOKEN = {
+            TokenType.END: lambda stack_token: stack_token.token_type
+            in (TokenType.CREATE, TokenType.BEGIN, TokenType.WHEN),
+            TokenType.END_IF: lambda stack_token: stack_token.token_type == TokenType.VAR
+            and stack_token.text == "IF",
+            TokenType.END_WHILE: lambda stack_token: stack_token.token_type == TokenType.WHILE,
+            TokenType.END_FOR: lambda stack_token: stack_token.token_type == TokenType.FOR,
+        }
+
+        @staticmethod
+        def _is_opening_scope_token(token: Token, previous_chunk_token: t.Optional[Token]) -> bool:
+            # Merge statement has THEN tokens, but doesn't create a new scope.
+            if (
+                previous_chunk_token is not None
+                and previous_chunk_token.token_type == TokenType.MERGE
+            ):
+                return False
+            if token.token_type in (TokenType.BEGIN, TokenType.THEN, TokenType.DO):
+                return True
+            return False
+
+        @classmethod
+        def _should_merge_chunks(cls, previous_chunk_token: Token, cur_token: Token) -> bool:
+            return cls.OPENING_TOKEN_TO_SHOULD_MERGE.get(cur_token.token_type, lambda p: False)(
+                previous_chunk_token
+            )
+
+        @classmethod
+        def _is_closing_token(cls, stack_token: Token, cur_token: Token) -> bool:
+            return cls.OPENING_TOKEN_TO_CLOSING_TOKEN.get(cur_token.token_type, lambda s: False)(
+                stack_token
+            )
+
+        def _chunkify(self, raw_tokens):
+            chunks = [[]]
+            stack = []
+
+            for i, token in enumerate(raw_tokens):
+                if len(stack) > 0:
+                    chunks[-1].append(token)
+                    if self._is_closing_token(stack[-1], token):
+                        stack.pop()
+                    continue
+
+                if token.token_type == TokenType.SEMICOLON:
+                    if len(chunks[-1]) > 0:
+                        chunks.append([])
+                    continue
+
+                opening_token = None if len(chunks[-1]) == 0 else chunks[-1][0]
+                if not self._is_opening_scope_token(token, opening_token):
+                    chunks[-1].append(token)
+                    continue
+                # This is a bit tricky - some opening scope tokens (like BEGIN), are actually part
+                # of another scope (for example, CREATE PROCEDURE ... BEGIN) - we need to backtrack
+                # and merge.
+                for prev_token in chunks[-1][::-1]:
+                    if self._should_merge_chunks(prev_token, token):
+                        chunks[-1].append(token)
+                        stack.append(prev_token)
+                        break
+                else:
+                    chunks.append([token])
+                    stack.append(token)
+
+            # The stack should be empty here - raise an error if not.
+            if len(stack):
+                self.raise_error("Didn't close a scope.")
+            # We can have potentially the first and last chunks as empty - remove as necessary.
+            # This can happen due to the last token being a semicolon, or having an opening scope token
+            # as the first token.
+            if len(chunks[0]) == 0:
+                chunks = chunks[1:]
+            if len(chunks) > 0 and len(chunks[-1]) == 0:
+                chunks = chunks[:-1]
+            return chunks
+
+        @dataclass(frozen=True)
+        class BacktrackingInfo:
+            error_level: ErrorLevel
+            error_message_context: int
+            max_errors: int
+            dialect: Dialect
+            sql: str
+            errors: t.List[ParseError]
+            tokens: t.List[Token]
+            index: int
+            curr: t.Optional[Token]
+            next: t.Optional[Token]
+            prev: t.Optional[Token]
+            prev_comments: t.Optional[str]
+
+            @classmethod
+            def from_parser(cls, parser_instance: parser.Parser):
+                return cls(
+                    error_level=parser_instance.error_level,
+                    error_message_context=parser_instance.error_message_context,
+                    max_errors=parser_instance.max_errors,
+                    dialect=parser_instance.dialect,
+                    sql=parser_instance.sql,
+                    errors=parser_instance.errors.copy(),
+                    tokens=parser_instance._tokens.copy(),
+                    index=parser_instance._index,
+                    curr=parser_instance._curr,
+                    next=parser_instance._next,
+                    prev=parser_instance._prev,
+                    prev_comments=parser_instance._prev_comments,
+                )
+
+        def reset(self, context: t.Optional[BacktrackingInfo] = None):
+            if context is None:
+                return super().reset()
+
+            self.error_level = context.error_level
+            self.error_message_context = context.error_message_context
+            self.max_errors = context.max_errors
+            self.dialect = context.dialect
+            self.sql = context.sql
+            self.erros = context.errors
+            self._tokens = context.tokens
+            self._index = context.index
+            self._curr = context.curr
+            self._next = context.next
+            self._prev = context.prev
+            self._prev_comments = context.prev_comments
+
+        def _parse_begin_transaction(self):
+            return super()._parse_transaction()
+
+        def _parse_set(self, unset: bool = False, tag: bool = False) -> exp.Set | exp.Command:
+            # TODO: While this parses correctly set statements as described here:
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#set
+            # It also allows setting local variables with TO, for example, accepting invalid syntax.
+            # This needs to be resolved somehow.
+            set_ = self.expression(
+                exp.Set, expressions=self._parse_csv(self._parse_set_item), unset=unset, tag=tag
+            )
+
+            return set_
+
+        def _parse_declare(self):
+            # Based on this documentation:
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#declare
+            this = self.expression(exp.Tuple, expressions=self._parse_csv(self._parse_id_var))
+            vars_type = self._parse_types()
+            default_value = None
+            if self._match(TokenType.DEFAULT):
+                default_value = self._parse_expression()
+            return self.expression(
+                exp.Declare, this=this, vars_type=vars_type, default_value=default_value
+            )
+
+        def _parse_if(self) -> t.Optional[exp.Expression]:
+            # First, attempt to parse this as an if statement (not the ternary expression).
+            # If this fails, fall back to previous behavior.
+            # To do so, we need to back track - record current state so that we can reset if needed
+            context = self.BacktrackingInfo.from_parser(self)
+            conjunction = self._parse_conjunction()
+            if not self._match(TokenType.THEN):
+                # OK - fall back to previous behavior.
+                self.reset(context=context)
+                return super()._parse_if()
+            if_block, end_token = self._parse_statement_block(
+                [TokenType.END_IF, TokenType.ELSE, TokenType.ELSE_IF]
+            )
+            elseif_blocks = []
+            while end_token == TokenType.ELSE_IF:
+                condition = self._parse_conjunction()
+                self._match(TokenType.THEN)
+                elseif_block, end_token = self._parse_statement_block(
+                    [TokenType.ELSE_IF, TokenType.ELSE, TokenType.END_IF]
+                )
+                elseif = self.expression(exp.ElseIf, this=condition, block=elseif_block)
+                elseif_blocks.append(elseif)
+            else_block = []
+            if end_token == TokenType.ELSE:
+                else_block, _ = self._parse_statement_block([TokenType.END_IF])
+            return self.expression(
+                exp.IfStatement,
+                this=conjunction,
+                if_block=if_block,
+                elseif_blocks=elseif_blocks,
+                else_block=else_block,
+                else_=end_token == TokenType.ELSE,
+            )
+
+        def _parse_statement_block(self, end_tokens: t.Sequence[TokenType]):
+            body = []
+            matched_end_token = None
+            while self._curr:
+                found_end_token = False
+                for end_token in end_tokens:
+                    if self._match(end_token):
+                        matched_end_token = end_token
+                        found_end_token = True
+                        break
+                if found_end_token:
+                    break
+                body.append(self._parse_statement())
+            return body, matched_end_token
+
+        def _parse_begin_block(self):
+            this, end = self._parse_statement_block([TokenType.END])
+            return self.expression(exp.BeginBlock, this=this, end=end is not None)
+
+        def _parse_statement(self) -> t.Optional[exp.Expression]:
+            result = super()._parse_statement()
+            self._match(TokenType.SEMICOLON)
+            return result
+
+        def _parse_call(self):
+            this = self._parse_id_var()
+
+            while self._match(TokenType.DOT):
+                this = self.expression(exp.Dot, this=this, expression=self._parse_id_var())
+
+            call_args = []
+            if self._match(TokenType.L_PAREN):
+                call_args = self._parse_csv(self._parse_expression)
+                self._match(TokenType.R_PAREN)
+
+            return self.expression(exp.Call, this=this, call_args=call_args)
+
+        def _parse_while(self):
+            conjunction = self._parse_conjunction()
+            self._match(TokenType.DO)
+            body, end_token = self._parse_statement_block([TokenType.END_WHILE])
+            return self.expression(
+                exp.While, this=conjunction, body=body, end=end_token is not None
+            )
+
+        def _parse_procedure_body(self, create_token: Token, extend_props: t.Callable):
+            this = self._parse_user_defined_function(kind=create_token.token_type)
+
+            # exp.Properties.Location.POST_SCHEMA ("schema" here is the UDF's type signature)
+            extend_props(self._parse_properties())
+
+            # Big query stored procedures don't support alias,
+            # except for spark ones, which we do not support at the moment.
+            # Reference:
+            # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_procedure
+            begin = self._match(TokenType.BEGIN)
+            procedure_body, end_token = self._parse_statement_block([TokenType.END])
+            return this, procedure_body, begin, end_token is not None
+
         def _parse_for_in(self) -> exp.ForIn:
             this = self._parse_range()
             self._match_text_seq("DO")
-            return self.expression(exp.ForIn, this=this, expression=self._parse_statement())
+            expression, end_token = self._parse_statement_block([TokenType.END_FOR])
+            return self.expression(exp.ForIn, this=this, expression=expression)
 
         def _parse_table_part(self, schema: bool = False) -> t.Optional[exp.Expression]:
             this = super()._parse_table_part(schema=schema) or self._parse_number()
@@ -501,10 +777,12 @@ class BigQuery(Dialect):
             return table
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
+            ...
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
+            ...
 
         def _parse_json_object(self, agg=False):
             json_object = super()._parse_json_object()
@@ -897,3 +1175,61 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
+
+        def while_sql(self, expression: exp.While):
+            body = self._sql_statements_block(expression.args.get("body", []))
+            suffix = "\nEND WHILE" if body else "END WHILE"
+            return f"WHILE {self.sql(expression, 'this')} DO\n{body}{suffix}"
+
+        def call_sql(self, expression: exp.Call):
+            call_args = ""
+            if expression.args.get("call_args", []):
+                call_args = ",".join([self.sql(e) for e in expression.args.get("call_args", [])])
+            return f"CALL {self.sql(expression, 'this')}({call_args})"
+
+        def beginblock_sql(self, expression: exp.BeginBlock):
+            statements_sql = self._sql_statements_block(expression.args.get("this", []))
+            suffix = "\nEND" if statements_sql else "END"
+            return f"BEGIN\n{statements_sql}{suffix}"
+
+        def declare_sql(self, expression: exp.Declare):
+            comma_separated = ",".join([self.sql(e) for e in expression.args.get("this", [])])
+            result = f"DECLARE {comma_separated}"
+            if expression.args.get("vars_type", False):
+                result += f" {self.sql(expression, 'vars_type')}"
+            if expression.args.get("default_value", False):
+                result += f" DEFAULT {self.sql(expression, 'default_value')}"
+            return result
+
+        def elseif_sql(self, expression: exp.ElseIf):
+            body = self._sql_statements_block(expression.args.get("block", []))
+            if len(body) > 0:
+                body = f"\n{body}"
+            condition = self.sql(expression.args.get("this"))
+            return f"ELSEIF {condition} THEN{body}"
+
+        def ifstatement_sql(self, expression: exp.IfStatement):
+            if_body = self._sql_statements_block(expression.args.get("if_block", []))
+            if len(if_body) > 0:
+                if_body = f"\n{if_body}"
+            result = f"IF {self.sql(expression, 'this')} THEN{if_body}"
+            elseif_blocks = expression.args.get("elseif_blocks", [])
+            if len(elseif_blocks):
+                result += "\n"
+            for elseif in elseif_blocks:
+                result += self.sql(elseif)
+            if expression.args.get("else_", False):
+                else_body = self._sql_statements_block(expression.args.get("else_block"))
+                if len(else_body) > 0:
+                    else_body = f"\n{else_body}"
+                result += f"\nELSE{else_body}"
+            result += "\nEND IF"
+            return result
+
+        def forin_sql(self, expression: exp.ForIn) -> str:
+            this = self.sql(expression, "this")
+            expression_sql = self._sql_statements_block(expression.args.get("expression", []))
+            return f"FOR {this} DO\n{expression_sql}\nEND FOR"
+
+        def _sql_statements_block(self, block):
+            return "\n".join(f"{self.sql(statement)};" for statement in block)

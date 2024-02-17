@@ -194,10 +194,10 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.args["modes"][1], "ISOLATION LEVEL SERIALIZABLE")
         self.assertEqual(expression.sql(), "BEGIN")
 
-        expression = parse_one("BEGIN", read="bigquery")
+        expression = parse_one("BEGIN\nEND", read="bigquery")
         self.assertNotIsInstance(expression, exp.Transaction)
         self.assertIsNone(expression.expression)
-        self.assertEqual(expression.sql(), "BEGIN")
+        self.assertEqual(expression.sql(dialect="bigquery"), "BEGIN\nEND")
 
     def test_identify(self):
         expression = parse_one(

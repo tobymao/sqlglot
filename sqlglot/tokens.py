@@ -377,6 +377,15 @@ class TokenType(AutoName):
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
+    WHILE = auto()
+    END_WHILE = auto()
+    END_IF = auto()
+    ELSE_IF = auto()
+    CALL = auto()
+    DECLARE = auto()
+    END_FOR = auto()
+    BEGIN_TRANSACTION = auto()
+    DO = auto()
 
 
 _ALL_TOKEN_TYPES = list(TokenType)

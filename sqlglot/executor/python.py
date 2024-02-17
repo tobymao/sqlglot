@@ -150,8 +150,7 @@ class PythonExecutor:
                             types.append(type(ast.literal_eval(v)))
                         except (ValueError, SyntaxError):
                             types.append(str)
-                # handle '' in csv
-                context.set_row(tuple(t(v) if v else 0 for t, v in zip(types, row)))
+                context.set_row(tuple(t(v) for t, v in zip(types, row)))
                 yield context.table.reader
 
     def join(self, step, context):

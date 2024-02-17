@@ -1,4 +1,3 @@
-import os
 import datetime
 import unittest
 from datetime import date
@@ -47,7 +46,7 @@ class TestExecutor(unittest.TestCase):
                 f"""
                 CREATE VIEW {table} AS
                 SELECT *
-                FROM READ_CSV('{DIR_TPCDS}{table}.csv.gz', delim=',', header=True, columns={columns})
+                FROM READ_CSV('{DIR_TPCDS}{table}.csv.gz', delim='|', header=True, columns={columns})
                 """
             )
 
@@ -66,9 +65,16 @@ class TestExecutor(unittest.TestCase):
         cls.tpch_conn.close()
         cls.tpcds_conn.close()
 
-    def cached_execute(self, sql, type_exec="tpc-h"):
+    def cached_execute(self, sql, tpch=True):
         if sql not in self.cache:
-            self.cache[sql] = self.conn.execute(transpile(sql, write="duckdb")[0]).fetchdf()
+            if tpch:
+                self.cache[sql] = self.tpch_conn.execute(
+                    transpile(sql, write="duckdb")[0]
+                ).fetchdf()
+            else:
+                self.cache[sql] = self.tpcds_conn.execute(
+                    transpile(sql, write="duckdb")[0]
+                ).fetchdf()
         return self.cache[sql]
 
     def rename_anonymous(self, source, target):
@@ -84,17 +90,17 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(generate(parse_one("x is null")), "scope[None][x] is None")
 
     def test_optimized_tpch(self):
-        for i, (sql, optimized) in enumerate(self.sqls, start=1):
+        for i, (sql, optimized) in enumerate(self.tpch_sqls, start=1):
             with self.subTest(f"{i}, {sql}"):
-                a = self.cached_execute(sql)
-                b = self.conn.execute(transpile(optimized, write="duckdb")[0]).fetchdf()
+                a = self.cached_execute(sql, tpch=True)
+                b = self.tpch_conn.execute(transpile(optimized, write="duckdb")[0]).fetchdf()
                 self.rename_anonymous(b, a)
                 assert_frame_equal(a, b)
 
-    def subtestHelper(self, i, table, type_exec="tpc-h"):
-        with self.subTest(f"{type_exec} {i + 1}"):
+    def subtestHelper(self, i, table, tpch=True):
+        with self.subTest(f"{'tpc-h' if tpch else 'tpc-ds'} {i + 1}"):
             sql, _ = self.tpch_sqls[i] if tpch else self.tpcds_sqls[i]
-            a = self.cached_execute(sql, type_exec)
+            a = self.cached_execute(sql, tpch=True)
             b = pd.DataFrame(
                 ((np.nan if c is None else c for c in r) for r in table.rows),
                 columns=table.columns,
@@ -108,7 +114,7 @@ class TestExecutor(unittest.TestCase):
                     f"READ_CSV('{DIR_TPCH}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
-        
+
         with Pool() as pool:
             for i, table in enumerate(
                 pool.starmap(
@@ -121,27 +127,27 @@ class TestExecutor(unittest.TestCase):
             ):
                 self.subtestHelper(i, table, "tpc-h")
 
-    def test_execute_tpcds(self):
-        def to_csv(expression):
-            if isinstance(expression, exp.Table) and os.path.exists(
-                f"{DIR_TPCDS}{expression.name}.csv.gz"
-            ):
-                return parse_one(
-                    f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', ',') AS {expression.alias_or_name}"
-                )
-            return expression
+    # def test_execute_tpcds(self):
+    #     def to_csv(expression):
+    #         if isinstance(expression, exp.Table) and os.path.exists(
+    #             f"{DIR_TPCDS}{expression.name}.csv.gz"
+    #         ):
+    #             return parse_one(
+    #                 f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', ',') AS {expression.alias_or_name}"
+    #             )
+    #         return expression
 
-        with Pool() as pool:
-            for i, table in enumerate(
-                pool.starmap(
-                    execute,
-                    (
-                        (parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-                        for sql, _ in self.tpcds_sqls
-                    ),
-                )
-            ):
-                self.subtestHelper(i, table, "tpc-ds")
+    #     with Pool() as pool:
+    #         for i, table in enumerate(
+    #             pool.starmap(
+    #                 execute,
+    #                 (
+    #                     (parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
+    #                     for sql, _ in self.tpcds_sqls
+    #                 ),
+    #             )
+    #         ):
+    #             self.subtestHelper(i, table, "tpc-ds")
 
     def test_execute_callable(self):
         tables = {

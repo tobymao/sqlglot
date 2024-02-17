@@ -66,10 +66,10 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(generate(parse_one("x is null")), "scope[None][x] is None")
 
     def test_optimized_tpch(self):
-        for i, (sql, optimized) in enumerate(self.sqls[:20], start=1):
+        for i, (sql, optimized) in enumerate(self.sqls, start=1):
             with self.subTest(f"{i}, {sql}"):
                 a = self.cached_execute(sql)
-                b = self.conn.execute(optimized).fetchdf()
+                b = self.conn.execute(parse_one(optimized).sql(dialect="duckdb")).fetchdf()
                 self.rename_anonymous(b, a)
                 assert_frame_equal(a, b)
 

@@ -96,10 +96,7 @@ class TestExecutor(unittest.TestCase):
 
     def subtestHelper(self, i, table, type_exec="tpc-h"):
         with self.subTest(f"{type_exec} {i + 1}"):
-            if type_exec == "tpc-h":
-                sql, _ = self.tpch_sqls[i]
-            else:
-                sql, _ = self.tpcds_sqls[i]
+            sql, _ = self.tpch_sqls[i] if tpch else self.tpcds_sqls[i]
             a = self.cached_execute(sql, type_exec)
             b = pd.DataFrame(
                 ((np.nan if c is None else c for c in r) for r in table.rows),

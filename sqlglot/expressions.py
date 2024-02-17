@@ -4449,6 +4449,7 @@ class ArrayAll(Func):
     arg_types = {"this": True, "expression": True}
 
 
+# Represents Python's `any(f(x) for x in array)`, where `array` is `this` and `f` is `expression`
 class ArrayAny(Func):
     arg_types = {"this": True, "expression": True}
 

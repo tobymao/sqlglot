@@ -1559,6 +1559,7 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             read="snowflake",
         )
         assert isinstance(ast, exp.Create)
+        assert ast.kind == "STORAGE INTEGRATION"
         assert ast.this == exp.Table(this=exp.Identifier(this="s3_int"))
         assert ast.args["properties"].expressions[4] == exp.Property(
             this=exp.Identifier(this="STORAGE_ALLOWED_LOCATIONS"),

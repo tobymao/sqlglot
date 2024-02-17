@@ -38,19 +38,19 @@ class Generator(metaclass=_Generator):
     Generator converts a given syntax tree to the corresponding SQL string.
 
     Args:
-        pretty: Whether or not to format the produced SQL string.
+        pretty: Whether to format the produced SQL string.
             Default: False.
         identify: Determines when an identifier should be quoted. Possible values are:
             False (default): Never quote, except in cases where it's mandatory by the dialect.
             True or 'always': Always quote.
             'safe': Only quote identifiers that are case insensitive.
-        normalize: Whether or not to normalize identifiers to lowercase.
+        normalize: Whether to normalize identifiers to lowercase.
             Default: False.
-        pad: Determines the pad size in a formatted string.
+        pad: The pad size in a formatted string.
             Default: 2.
-        indent: Determines the indentation size in a formatted string.
+        indent: The indentation size in a formatted string.
             Default: 2.
-        normalize_functions: Whether or not to normalize all function names. Possible values are:
+        normalize_functions: How to normalize function names. Possible values are:
             "upper" or True (default): Convert names to uppercase.
             "lower": Convert names to lowercase.
             False: Disables function name normalization.
@@ -59,14 +59,14 @@ class Generator(metaclass=_Generator):
         max_unsupported: Maximum number of unsupported messages to include in a raised UnsupportedError.
             This is only relevant if unsupported_level is ErrorLevel.RAISE.
             Default: 3
-        leading_comma: Determines whether or not the comma is leading or trailing in select expressions.
+        leading_comma: Whether the comma is leading or trailing in select expressions.
             This is only relevant when generating in pretty mode.
             Default: False
         max_text_width: The max number of characters in a segment before creating new lines in pretty mode.
             The default is on the smaller end because the length only represents a segment and not the true
             line length.
             Default: 80
-        comments: Whether or not to preserve comments in the output SQL code.
+        comments: Whether to preserve comments in the output SQL code.
             Default: True
     """
 
@@ -140,15 +140,15 @@ class Generator(metaclass=_Generator):
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
     }
 
-    # Whether or not null ordering is supported in order by
+    # Whether null ordering is supported in order by
     # True: Full Support, None: No support, False: No support in window specifications
     NULL_ORDERING_SUPPORTED: t.Optional[bool] = True
 
-    # Whether or not ignore nulls is inside the agg or outside.
+    # Whether ignore nulls is inside the agg or outside.
     # FIRST(x IGNORE NULLS) OVER vs FIRST (x) IGNORE NULLS OVER
     IGNORE_NULLS_IN_FUNC = False
 
-    # Whether or not locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
+    # Whether locking reads (i.e. SELECT ... FOR UPDATE/SHARE) are supported
     LOCKING_READS_SUPPORTED = False
 
     # Always do union distinct or union all
@@ -157,25 +157,25 @@ class Generator(metaclass=_Generator):
     # Wrap derived values in parens, usually standard but spark doesn't support it
     WRAP_DERIVED_VALUES = True
 
-    # Whether or not create function uses an AS before the RETURN
+    # Whether create function uses an AS before the RETURN
     CREATE_FUNCTION_RETURN_AS = True
 
-    # Whether or not MERGE ... WHEN MATCHED BY SOURCE is allowed
+    # Whether MERGE ... WHEN MATCHED BY SOURCE is allowed
     MATCHED_BY_SOURCE = True
 
-    # Whether or not the INTERVAL expression works only with values like '1 day'
+    # Whether the INTERVAL expression works only with values like '1 day'
     SINGLE_STRING_INTERVAL = False
 
-    # Whether or not the plural form of date parts like day (i.e. "days") is supported in INTERVALs
+    # Whether the plural form of date parts like day (i.e. "days") is supported in INTERVALs
     INTERVAL_ALLOWS_PLURAL_FORM = True
 
-    # Whether or not limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
+    # Whether limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
-    # Whether or not limit and fetch allows expresions or just limits
+    # Whether limit and fetch allows expresions or just limits
     LIMIT_ONLY_LITERALS = False
 
-    # Whether or not a table is allowed to be renamed with a db
+    # Whether a table is allowed to be renamed with a db
     RENAME_TABLE_WITH_DB = True
 
     # The separator for grouping sets and rollups
@@ -184,105 +184,105 @@ class Generator(metaclass=_Generator):
     # The string used for creating an index on a table
     INDEX_ON = "ON"
 
-    # Whether or not join hints should be generated
+    # Whether join hints should be generated
     JOIN_HINTS = True
 
-    # Whether or not table hints should be generated
+    # Whether table hints should be generated
     TABLE_HINTS = True
 
-    # Whether or not query hints should be generated
+    # Whether query hints should be generated
     QUERY_HINTS = True
 
     # What kind of separator to use for query hints
     QUERY_HINT_SEP = ", "
 
-    # Whether or not comparing against booleans (e.g. x IS TRUE) is supported
+    # Whether comparing against booleans (e.g. x IS TRUE) is supported
     IS_BOOL_ALLOWED = True
 
-    # Whether or not to include the "SET" keyword in the "INSERT ... ON DUPLICATE KEY UPDATE" statement
+    # Whether to include the "SET" keyword in the "INSERT ... ON DUPLICATE KEY UPDATE" statement
     DUPLICATE_KEY_UPDATE_WITH_SET = True
 
-    # Whether or not to generate the limit as TOP <value> instead of LIMIT <value>
+    # Whether to generate the limit as TOP <value> instead of LIMIT <value>
     LIMIT_IS_TOP = False
 
-    # Whether or not to generate INSERT INTO ... RETURNING or INSERT INTO RETURNING ...
+    # Whether to generate INSERT INTO ... RETURNING or INSERT INTO RETURNING ...
     RETURNING_END = True
 
-    # Whether or not to generate the (+) suffix for columns used in old-style join conditions
+    # Whether to generate the (+) suffix for columns used in old-style join conditions
     COLUMN_JOIN_MARKS_SUPPORTED = False
 
-    # Whether or not to generate an unquoted value for EXTRACT's date part argument
+    # Whether to generate an unquoted value for EXTRACT's date part argument
     EXTRACT_ALLOWS_QUOTES = True
 
-    # Whether or not TIMETZ / TIMESTAMPTZ will be generated using the "WITH TIME ZONE" syntax
+    # Whether TIMETZ / TIMESTAMPTZ will be generated using the "WITH TIME ZONE" syntax
     TZ_TO_WITH_TIME_ZONE = False
 
-    # Whether or not the NVL2 function is supported
+    # Whether the NVL2 function is supported
     NVL2_SUPPORTED = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
     SELECT_KINDS: t.Tuple[str, ...] = ("STRUCT", "VALUE")
 
-    # Whether or not VALUES statements can be used as derived tables.
+    # Whether VALUES statements can be used as derived tables.
     # MySQL 5 and Redshift do not allow this, so when False, it will convert
     # SELECT * VALUES into SELECT UNION
     VALUES_AS_TABLE = True
 
-    # Whether or not the word COLUMN is included when adding a column with ALTER TABLE
+    # Whether the word COLUMN is included when adding a column with ALTER TABLE
     ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = True
 
     # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
     UNNEST_WITH_ORDINALITY = True
 
-    # Whether or not FILTER (WHERE cond) can be used for conditional aggregation
+    # Whether FILTER (WHERE cond) can be used for conditional aggregation
     AGGREGATE_FILTER_SUPPORTED = True
 
-    # Whether or not JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
+    # Whether JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
     SEMI_ANTI_JOIN_WITH_SIDE = True
 
-    # Whether or not to include the type of a computed column in the CREATE DDL
+    # Whether to include the type of a computed column in the CREATE DDL
     COMPUTED_COLUMN_WITH_TYPE = True
 
-    # Whether or not CREATE TABLE .. COPY .. is supported. False means we'll generate CLONE instead of COPY
+    # Whether CREATE TABLE .. COPY .. is supported. False means we'll generate CLONE instead of COPY
     SUPPORTS_TABLE_COPY = True
 
-    # Whether or not parentheses are required around the table sample's expression
+    # Whether parentheses are required around the table sample's expression
     TABLESAMPLE_REQUIRES_PARENS = True
 
-    # Whether or not a table sample clause's size needs to be followed by the ROWS keyword
+    # Whether a table sample clause's size needs to be followed by the ROWS keyword
     TABLESAMPLE_SIZE_IS_ROWS = True
 
     # The keyword(s) to use when generating a sample clause
     TABLESAMPLE_KEYWORDS = "TABLESAMPLE"
 
-    # Whether or not the TABLESAMPLE clause supports a method name, like BERNOULLI
+    # Whether the TABLESAMPLE clause supports a method name, like BERNOULLI
     TABLESAMPLE_WITH_METHOD = True
 
     # The keyword to use when specifying the seed of a sample clause
     TABLESAMPLE_SEED_KEYWORD = "SEED"
 
-    # Whether or not COLLATE is a function instead of a binary operator
+    # Whether COLLATE is a function instead of a binary operator
     COLLATE_IS_FUNC = False
 
-    # Whether or not data types support additional specifiers like e.g. CHAR or BYTE (oracle)
+    # Whether data types support additional specifiers like e.g. CHAR or BYTE (oracle)
     DATA_TYPE_SPECIFIERS_ALLOWED = False
 
-    # Whether or not conditions require booleans WHERE x = 0 vs WHERE x
+    # Whether conditions require booleans WHERE x = 0 vs WHERE x
     ENSURE_BOOLS = False
 
-    # Whether or not the "RECURSIVE" keyword is required when defining recursive CTEs
+    # Whether the "RECURSIVE" keyword is required when defining recursive CTEs
     CTE_RECURSIVE_KEYWORD_REQUIRED = True
 
-    # Whether or not CONCAT requires >1 arguments
+    # Whether CONCAT requires >1 arguments
     SUPPORTS_SINGLE_ARG_CONCAT = True
 
-    # Whether or not LAST_DAY function supports a date part argument
+    # Whether LAST_DAY function supports a date part argument
     LAST_DAY_SUPPORTS_DATE_PART = True
 
-    # Whether or not named columns are allowed in table aliases
+    # Whether named columns are allowed in table aliases
     SUPPORTS_TABLE_ALIAS_COLUMNS = True
 
-    # Whether or not UNPIVOT aliases are Identifiers (False means they're Literals)
+    # Whether UNPIVOT aliases are Identifiers (False means they're Literals)
     UNPIVOT_ALIASES_ARE_IDENTIFIERS = True
 
     # What delimiter to use for separating JSON key/value pairs
@@ -291,29 +291,29 @@ class Generator(metaclass=_Generator):
     # INSERT OVERWRITE TABLE x override
     INSERT_OVERWRITE = " OVERWRITE TABLE"
 
-    # Whether or not the SELECT .. INTO syntax is used instead of CTAS
+    # Whether the SELECT .. INTO syntax is used instead of CTAS
     SUPPORTS_SELECT_INTO = False
 
-    # Whether or not UNLOGGED tables can be created
+    # Whether UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
 
-    # Whether or not the CREATE TABLE LIKE statement is supported
+    # Whether the CREATE TABLE LIKE statement is supported
     SUPPORTS_CREATE_TABLE_LIKE = True
 
-    # Whether or not the LikeProperty needs to be specified inside of the schema clause
+    # Whether the LikeProperty needs to be specified inside of the schema clause
     LIKE_PROPERTY_INSIDE_SCHEMA = False
 
-    # Whether or not DISTINCT can be followed by multiple args in an AggFunc. If not, it will be
+    # Whether DISTINCT can be followed by multiple args in an AggFunc. If not, it will be
     # transpiled into a series of CASE-WHEN-ELSE, ultimately using a tuple conseisting of the args
     MULTI_ARG_DISTINCT = True
 
-    # Whether or not the JSON extraction operators expect a value of type JSON
+    # Whether the JSON extraction operators expect a value of type JSON
     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
 
-    # Whether or not bracketed keys like ["foo"] are supported in JSON paths
+    # Whether bracketed keys like ["foo"] are supported in JSON paths
     JSON_PATH_BRACKETED_KEY_SUPPORTED = True
 
-    # Whether or not to escape keys using single quotes in JSON paths
+    # Whether to escape keys using single quotes in JSON paths
     JSON_PATH_SINGLE_QUOTE_ESCAPE = False
 
     # The JSONPathPart expressions supported by this dialect
@@ -530,7 +530,7 @@ class Generator(metaclass=_Generator):
 
         Args:
             expression: The syntax tree.
-            copy: Whether or not to copy the expression. The generator performs mutations so
+            copy: Whether to copy the expression. The generator performs mutations so
                 it is safer to copy.
 
         Returns:

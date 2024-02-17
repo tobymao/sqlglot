@@ -11,13 +11,12 @@ from sqlglot.dialects.dialect import (
     json_extract_segments,
     json_path_key_only_name,
     no_pivot_sql,
-    parse_json_extract_path,
+    build_json_extract_path,
     rename_func,
     var_map_sql,
 )
 from sqlglot.errors import ParseError
 from sqlglot.helper import is_int, seq_get
-from sqlglot.parser import parse_var_map
 from sqlglot.tokens import Token, TokenType
 
 
@@ -26,9 +25,9 @@ def _lower_func(sql: str) -> str:
     return sql[:index].lower() + sql[index:]
 
 
-def _quantile_sql(self: ClickHouse.Generator, e: exp.Quantile) -> str:
-    quantile = e.args["quantile"]
-    args = f"({self.sql(e, 'this')})"
+def _quantile_sql(self: ClickHouse.Generator, expression: exp.Quantile) -> str:
+    quantile = expression.args["quantile"]
+    args = f"({self.sql(expression, 'this')})"
 
     if isinstance(quantile, exp.Array):
         func = self.func("quantiles", *quantile)
@@ -38,7 +37,7 @@ def _quantile_sql(self: ClickHouse.Generator, e: exp.Quantile) -> str:
     return func + args
 
 
-def _parse_count_if(args: t.List) -> exp.CountIf | exp.CombinedAggFunc:
+def _build_count_if(args: t.List) -> exp.CountIf | exp.CombinedAggFunc:
     if len(args) == 1:
         return exp.CountIf(this=seq_get(args, 0))
 
@@ -111,7 +110,7 @@ class ClickHouse(Dialect):
             **parser.Parser.FUNCTIONS,
             "ANY": exp.AnyValue.from_arg_list,
             "ARRAYSUM": exp.ArraySum.from_arg_list,
-            "COUNTIF": _parse_count_if,
+            "COUNTIF": _build_count_if,
             "DATE_ADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
@@ -124,10 +123,10 @@ class ClickHouse(Dialect):
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
-            "JSONEXTRACTSTRING": parse_json_extract_path(
+            "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
-            "MAP": parse_var_map,
+            "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "RANDCANONICAL": exp.Rand.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
@@ -417,9 +416,9 @@ class ClickHouse(Dialect):
             self, skip_join_token: bool = False, parse_bracket: bool = False
         ) -> t.Optional[exp.Join]:
             join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
-
             if join:
                 join.set("global", join.args.pop("method", None))
+
             return join
 
         def _parse_function(
@@ -597,12 +596,13 @@ class ClickHouse(Dialect):
             exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
             exp.Pivot: no_pivot_sql,
             exp.Quantile: _quantile_sql,
-            exp.RegexpLike: lambda self, e: f"match({self.format_args(e.this, e.expression)})",
+            exp.RegexpLike: lambda self, e: self.func("match", e.this, e.expression),
             exp.Rand: rename_func("randCanonical"),
             exp.Select: transforms.preprocess([transforms.eliminate_qualify]),
             exp.StartsWith: rename_func("startsWith"),
-            exp.StrPosition: lambda self,
-            e: f"position({self.format_args(e.this, e.args.get('substr'), e.args.get('position'))})",
+            exp.StrPosition: lambda self, e: self.func(
+                "position", e.this, e.args.get("substr"), e.args.get("position")
+            ),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
         }
@@ -652,6 +652,7 @@ class ClickHouse(Dialect):
                 this = expression.left
             else:
                 return default(expression)
+
             return prefix + self.func("has", arr.this.unnest(), this)
 
         def eq_sql(self, expression: exp.EQ) -> str:
@@ -663,7 +664,7 @@ class ClickHouse(Dialect):
         def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
             # Manually add a flag to make the search case-insensitive
             regex = self.func("CONCAT", "'(?i)'", expression.expression)
-            return f"match({self.format_args(expression.this, regex)})"
+            return self.func("match", expression.this, regex)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             # String is the standard ClickHouse type, every other variant is just an alias.
@@ -717,8 +718,9 @@ class ClickHouse(Dialect):
             return f"ON CLUSTER {self.sql(expression, 'this')}"
 
         def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
-            kind = self.sql(expression, "kind").upper()
-            if kind in self.ON_CLUSTER_TARGETS and locations.get(exp.Properties.Location.POST_NAME):
+            if expression.kind in self.ON_CLUSTER_TARGETS and locations.get(
+                exp.Properties.Location.POST_NAME
+            ):
                 this_name = self.sql(expression.this, "this")
                 this_properties = " ".join(
                     [self.sql(prop) for prop in locations[exp.Properties.Location.POST_NAME]]

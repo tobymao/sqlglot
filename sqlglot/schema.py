@@ -92,7 +92,7 @@ class Schema(abc.ABC):
         normalize: t.Optional[bool] = None,
     ) -> bool:
         """
-        Returns whether or not `column` appears in `table`'s schema.
+        Returns whether `column` appears in `table`'s schema.
 
         Args:
             table: the source table.
@@ -115,7 +115,7 @@ class Schema(abc.ABC):
 
     @property
     def empty(self) -> bool:
-        """Returns whether or not the schema is empty."""
+        """Returns whether the schema is empty."""
         return True
 
 
@@ -162,7 +162,7 @@ class AbstractMappingSchema:
 
         Args:
             table: the target table.
-            raise_on_missing: whether or not to raise in case the schema is not found.
+            raise_on_missing: whether to raise in case the schema is not found.
 
         Returns:
             The schema of the target table.

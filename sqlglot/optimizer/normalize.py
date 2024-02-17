@@ -76,7 +76,7 @@ def normalized(expression: exp.Expression, dnf: bool = False) -> bool:
 
     Args:
         expression: The expression to check if it's normalized.
-        dnf: Whether or not to check if the expression is in Disjunctive Normal Form (DNF).
+        dnf: Whether to check if the expression is in Disjunctive Normal Form (DNF).
             Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).
     """
     ancestor, root = (exp.And, exp.Or) if dnf else (exp.Or, exp.And)
@@ -99,7 +99,7 @@ def normalization_distance(expression: exp.Expression, dnf: bool = False) -> int
 
     Args:
         expression: The expression to compute the normalization distance for.
-        dnf: Whether or not to check if the expression is in Disjunctive Normal Form (DNF).
+        dnf: Whether to check if the expression is in Disjunctive Normal Form (DNF).
             Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).
 
     Returns:

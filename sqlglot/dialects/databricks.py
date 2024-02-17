@@ -3,11 +3,17 @@ from __future__ import annotations
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     date_delta_sql,
-    parse_date_delta,
+    build_date_delta,
     timestamptrunc_sql,
 )
 from sqlglot.dialects.spark import Spark
 from sqlglot.tokens import TokenType
+
+
+def _timestamp_diff(
+    self: Databricks.Generator, expression: exp.DatetimeDiff | exp.TimestampDiff
+) -> str:
+    return self.func("TIMESTAMPDIFF", expression.unit, expression.expression, expression.this)
 
 
 class Databricks(Spark):
@@ -19,10 +25,10 @@ class Databricks(Spark):
 
         FUNCTIONS = {
             **Spark.Parser.FUNCTIONS,
-            "DATEADD": parse_date_delta(exp.DateAdd),
-            "DATE_ADD": parse_date_delta(exp.DateAdd),
-            "DATEDIFF": parse_date_delta(exp.DateDiff),
-            "TIMESTAMPDIFF": parse_date_delta(exp.TimestampDiff),
+            "DATEADD": build_date_delta(exp.DateAdd),
+            "DATE_ADD": build_date_delta(exp.DateAdd),
+            "DATEDIFF": build_date_delta(exp.DateDiff),
+            "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
         }
 
         FACTOR = {
@@ -38,20 +44,16 @@ class Databricks(Spark):
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DatetimeAdd: lambda self, e: self.func(
-                "TIMESTAMPADD", e.text("unit"), e.expression, e.this
+                "TIMESTAMPADD", e.unit, e.expression, e.this
             ),
             exp.DatetimeSub: lambda self, e: self.func(
                 "TIMESTAMPADD",
-                e.text("unit"),
+                e.unit,
                 exp.Mul(this=e.expression, expression=exp.Literal.number(-1)),
                 e.this,
             ),
-            exp.DatetimeDiff: lambda self, e: self.func(
-                "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
-            ),
-            exp.TimestampDiff: lambda self, e: self.func(
-                "TIMESTAMPDIFF", e.text("unit"), e.expression, e.this
-            ),
+            exp.DatetimeDiff: _timestamp_diff,
+            exp.TimestampDiff: _timestamp_diff,
             exp.DatetimeTrunc: timestamptrunc_sql,
             exp.JSONExtract: lambda self, e: self.binary(e, ":"),
             exp.Select: transforms.preprocess(
@@ -75,6 +77,7 @@ class Databricks(Spark):
             ):
                 # only BIGINT generated identity constraints are supported
                 expression.set("kind", exp.DataType.build("bigint"))
+
             return super().columndef_sql(expression, sep)
 
         def generatedasidentitycolumnconstraint_sql(

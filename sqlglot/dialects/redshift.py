@@ -21,15 +21,15 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def _parse_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
-    def _parse_delta(args: t.List) -> E:
+def _build_date_delta(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
+    def _builder(args: t.List) -> E:
         expr = expr_type(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
         if expr_type is exp.TsOrDsAdd:
             expr.set("return_type", exp.DataType.build("TIMESTAMP"))
 
         return expr
 
-    return _parse_delta
+    return _builder
 
 
 class Redshift(Postgres):
@@ -55,10 +55,10 @@ class Redshift(Postgres):
                 unit=exp.var("month"),
                 return_type=exp.DataType.build("TIMESTAMP"),
             ),
-            "DATEADD": _parse_date_delta(exp.TsOrDsAdd),
-            "DATE_ADD": _parse_date_delta(exp.TsOrDsAdd),
-            "DATEDIFF": _parse_date_delta(exp.TsOrDsDiff),
-            "DATE_DIFF": _parse_date_delta(exp.TsOrDsDiff),
+            "DATEADD": _build_date_delta(exp.TsOrDsAdd),
+            "DATE_ADD": _build_date_delta(exp.TsOrDsAdd),
+            "DATEDIFF": _build_date_delta(exp.TsOrDsDiff),
+            "DATE_DIFF": _build_date_delta(exp.TsOrDsDiff),
             "GETDATE": exp.CurrentTimestamp.from_arg_list,
             "LISTAGG": exp.GroupConcat.from_arg_list,
             "STRTOL": exp.FromBase.from_arg_list,
@@ -192,7 +192,7 @@ class Redshift(Postgres):
             ),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
-            exp.DistKeyProperty: lambda self, e: f"DISTKEY({e.name})",
+            exp.DistKeyProperty: lambda self, e: self.func("DISTKEY", e.this),
             exp.DistStyleProperty: lambda self, e: self.naked_property(e),
             exp.FromBase: rename_func("STRTOL"),
             exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,

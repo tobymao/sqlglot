@@ -479,6 +479,13 @@ class DuckDB(Dialect):
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
 
+        def arrayany_sql(self, expression: exp.ArrayAny) -> str:
+            filtered = rename_func("LIST_FILTER")(self, expression)
+            filtered_not_empty = f"{filtered} <> []"
+            array_length = self.func("ARRAY_LENGTH", expression.this)
+            original_not_empty = f"{array_length} <> 0"
+            return f"({original_not_empty} AND {filtered_not_empty})"
+
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")
             if nano is not None:

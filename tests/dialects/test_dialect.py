@@ -2272,3 +2272,12 @@ SELECT
                 "tsql": "RAND()",
             },
         )
+
+    def test_array_any(self):
+        self.validate_all(
+            "ARRAY_ANY(arr, x -> pred)",
+            write={
+                "": "ARRAY_ANY(arr, x -> pred)",
+                "duckdb": "(ARRAY_LENGTH(arr) <> 0 AND LIST_FILTER(arr, x -> pred) <> [])",
+            },
+        )

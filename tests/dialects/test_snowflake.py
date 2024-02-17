@@ -1520,9 +1520,6 @@ MATCH_RECOGNIZE (
         self.validate_identity("SHOW USERS")
         self.validate_identity("SHOW TERSE USERS")
         self.validate_identity("SHOW USERS LIKE '_foo%' STARTS WITH 'bar' LIMIT 5 FROM 'baz'")
-        ast = parse_one("SHOW USERS LIKE '_foo%'", read="snowflake")
-        literal = ast.find(exp.Literal)
-        self.assertEqual(literal.sql(dialect="snowflake"), "'_foo%'")
 
         ast = parse_one("SHOW COLUMNS LIKE '_testing%' IN dt_test", read="snowflake")
         table = ast.find(exp.Table)

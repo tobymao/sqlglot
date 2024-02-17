@@ -30,30 +30,48 @@ DIR_TPCDS = FIXTURES_DIR + "/optimizer/tpc-ds/"
 class TestExecutor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.conn = duckdb.connect()
-
+        cls.tpch_conn = duckdb.connect()
+        cls.tpcds_conn = duckdb.connect()
+        
         for table, columns in TPCH_SCHEMA.items():
-            cls.conn.execute(
+            cls.tpch_conn.execute(
                 f"""
                 CREATE VIEW {table} AS
                 SELECT *
                 FROM READ_CSV('{DIR_TPCH}{table}.csv.gz', delim='|', header=True, columns={columns})
                 """
             )
-
+        
+        for table, columns in TPCDS_SCHEMA.items():
+            cls.tpcds_conn.execute(
+                f"""
+                CREATE VIEW {table} AS
+                SELECT *
+                FROM READ_CSV('{DIR_TPCDS}{table}.csv.gz', delim=',', header=True, columns={columns})
+                """
+            )
+        
         cls.cache = {}
-        cls.sqls = [
+        cls.tpch_sqls = [
             (sql, expected)
             for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")
+        ]
+        cls.tpcds_sqls = [
+            (sql, expected)
+            for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql")
         ]
 
     @classmethod
     def tearDownClass(cls):
-        cls.conn.close()
+        cls.tpch_conn.close()
+        cls.tpcds_conn.close()
 
-    def cached_execute(self, sql):
+    def cached_execute(self, sql, type_exec="tpch"):
         if sql not in self.cache:
-            self.cache[sql] = self.conn.execute(sql).fetchdf()
+            if type_exec == "tpch":
+                self.cache[sql] = self.tpch_conn.execute(sql).fetchdf()
+            else:
+                self.cache[sql] = self.tpcds_conn.execute(sql).fetchdf()
         return self.cache[sql]
 
     def rename_anonymous(self, source, target):
@@ -69,10 +87,10 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(generate(parse_one("x is null")), "scope[None][x] is None")
 
     def test_optimized_tpch(self):
-        for i, (sql, optimized) in enumerate(self.sqls[:20], start=1):
+        for i, (sql, optimized) in enumerate(self.tpch_sqls[:20], start=1):
             with self.subTest(f"{i}, {sql}"):
                 a = self.cached_execute(sql)
-                b = self.conn.execute(optimized).fetchdf()
+                b = self.tpch_conn.execute(optimized).fetchdf()
                 self.rename_anonymous(b, a)
                 assert_frame_equal(a, b)
 
@@ -83,20 +101,19 @@ class TestExecutor(unittest.TestCase):
                     f"READ_CSV('{DIR_TPCH}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
-
         with Pool() as pool:
             for i, table in enumerate(
                 pool.starmap(
                     execute,
                     (
                         (parse_one(sql).transform(to_csv).sql(pretty=True), TPCH_SCHEMA)
-                        for sql, _ in self.sqls
+                        for sql, _ in self.tpch_sqls
                     ),
                 )
             ):
                 with self.subTest(f"tpc-h {i + 1}"):
-                    sql, _ = self.sqls[i]
-                    a = self.cached_execute(sql)
+                    sql, _ = self.tpch_sqls[i]
+                    a = self.cached_execute(sql, "tpch")
                     b = pd.DataFrame(
                         ((np.nan if c is None else c for c in r) for r in table.rows),
                         columns=table.columns,
@@ -106,27 +123,26 @@ class TestExecutor(unittest.TestCase):
 
     def test_execute_tpcds(self):
         def to_csv(expression):
-            if isinstance(expression, exp.Table) and os.path.exists(
-                f"{DIR_TPCDS}{expression.name}.csv.gz"
-            ):
+            if isinstance(expression, exp.Table) and os.path.exists(f"{DIR_TPCDS}{expression.name}.csv.gz"):
                 return parse_one(
                     f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', ',') AS {expression.alias_or_name}"
                 )
             return expression
 
+        
         with Pool() as pool:
             for i, table in enumerate(
                 pool.starmap(
                     execute,
                     (
                         (parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-                        for sql, _ in self.sqls
+                        for sql, _ in self.tpcds_sqls
                     ),
                 )
             ):
                 with self.subTest(f"tpc-ds {i + 1}"):
-                    sql, _ = self.sqls[i]
-                    a = self.cached_execute(sql)
+                    sql, _ = self.tpcds_sqls[i]
+                    a = self.cached_execute(sql, "tpcds")
                     b = pd.DataFrame(
                         ((np.nan if c is None else c for c in r) for r in table.rows),
                         columns=table.columns,

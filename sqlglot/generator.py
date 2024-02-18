@@ -3417,8 +3417,8 @@ class Generator(metaclass=_Generator):
         if self.CAN_IMPLEMENT_ARRAY_ANY:
             filtered = exp.ArrayFilter(this=expression.this, expression=expression.expression)
             filtered_not_empty = exp.ArraySize(this=filtered).neq(0)
-            original_not_empty = exp.ArraySize(this=expression.this).neq(0)
-            return self.sql(exp.paren(original_not_empty.and_(filtered_not_empty)))
+            original_is_empty = exp.ArraySize(this=expression.this).eq(0)
+            return self.sql(exp.paren(original_is_empty.or_(filtered_not_empty)))
 
         from sqlglot.dialects import Dialect
 

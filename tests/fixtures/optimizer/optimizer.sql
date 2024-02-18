@@ -1381,8 +1381,8 @@ WHERE
   `_u_3`.`_u_4` IS NULL
   AND NOT `_u_0`.`_u_1` IS NULL
   AND (
-    SIZE(`_u_0`.`_u_2`) <> 0
-    AND SIZE(FILTER(`_u_0`.`_u_2`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
+    SIZE(`_u_0`.`_u_2`) = 0
+    OR SIZE(FILTER(`_u_0`.`_u_2`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
   )
 ORDER BY
   COUNT(DISTINCT `cs1`.`cs_order_number`)

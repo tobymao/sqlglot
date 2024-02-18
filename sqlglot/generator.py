@@ -2847,6 +2847,10 @@ class Generator(metaclass=_Generator):
         if enforced is not None:
             return f"{add_constraint} CHECK ({expression_}){' ENFORCED' if enforced else ''}"
 
+        unique = expression.args.get("unique")
+        if unique is not None:
+            return f"{add_constraint} UNIQUE ({self.format_args(*unique)})"
+
         return f"{add_constraint} {expression_}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:

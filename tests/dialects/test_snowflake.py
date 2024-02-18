@@ -520,6 +520,12 @@ WHERE
             },
         )
         self.validate_all(
+            "ALTER TABLE foo ADD CONSTRAINT c1 UNIQUE (email)",
+            write={
+                "snowflake": "ALTER TABLE foo ADD CONSTRAINT c1 UNIQUE (email)",
+            },
+        )
+        self.validate_all(
             "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
             write={
                 "snowflake": "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMPNTZ))",
@@ -1599,3 +1605,18 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
 
         expression = annotate_types(expression)
         self.assertEqual(expression.sql(dialect="snowflake"), "SELECT TRY_CAST(FOO() AS TEXT)")
+
+    def test_parse_alter_table(self):
+        """Assert that ALTER TABLE with UNIQUE column constraints can be parsed properly"""
+
+        # test parsing with single unique column
+        query = "ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (email)"
+        alter = parse_one(query, read="snowflake")
+        self.assertIsInstance(alter, exp.AlterTable)
+        self.assertEqual(query, alter.sql())
+
+        # test parsing with multiple unique columns
+        query = "ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (id, email)"
+        alter = parse_one(query, read="snowflake")
+        self.assertIsInstance(alter, exp.AlterTable)
+        self.assertEqual(query, alter.sql())

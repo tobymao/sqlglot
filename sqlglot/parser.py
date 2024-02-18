@@ -5386,10 +5386,12 @@ class Parser(metaclass=_Parser):
             if self._match_text_seq("CHECK"):
                 expression = self._parse_wrapped(self._parse_conjunction)
                 enforced = self._match_text_seq("ENFORCED") or False
-
                 return self.expression(
                     exp.AddConstraint, this=this, expression=expression, enforced=enforced
                 )
+            if self._match_text_seq("UNIQUE"):
+                unique = self._parse_wrapped_csv(self._parse_field)
+                return self.expression(exp.AddConstraint, this=this, unique=unique)
 
         if kind == TokenType.FOREIGN_KEY or self._match(TokenType.FOREIGN_KEY):
             expression = self._parse_foreign_key()

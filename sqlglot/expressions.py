@@ -3930,7 +3930,7 @@ class AlterTable(Expression):
 
 
 class AddConstraint(Expression):
-    arg_types = {"this": False, "expression": False, "enforced": False}
+    arg_types = {"this": False, "expression": False, "enforced": False, "unique": False}
 
 
 class DropPartition(Expression):

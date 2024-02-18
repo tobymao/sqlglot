@@ -346,6 +346,7 @@ class TokenType(AutoName):
     SOME = auto()
     SORT_BY = auto()
     START_WITH = auto()
+    STORAGE_INTEGRATION = auto()
     STRUCT = auto()
     TABLE_SAMPLE = auto()
     TEMPORARY = auto()

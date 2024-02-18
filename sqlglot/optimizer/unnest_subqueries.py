@@ -248,7 +248,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             key.replace(exp.to_identifier("_x"))
             parent_predicate = _replace(
                 parent_predicate,
-                f'({parent_predicate} AND ARRAY_ANY({nested}, "_x" -> {predicate}))',
+                f"({parent_predicate} AND ARRAY_ANY({nested}, _x -> {predicate}))",
             )
 
     parent_select.join(

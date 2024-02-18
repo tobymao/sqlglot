@@ -4483,6 +4483,7 @@ class ArrayOverlaps(Binary, Func):
 
 class ArraySize(Func):
     arg_types = {"this": True, "expression": False}
+    _sql_names = ["ARRAY_SIZE", "ARRAY_LENGTH"]
 
 
 class ArraySort(Func):
@@ -6419,7 +6420,7 @@ def to_column(sql_path: str | Column, **kwargs) -> Column:
 
 def alias_(
     expression: ExpOrStr,
-    alias: str | Identifier,
+    alias: t.Optional[str | Identifier],
     table: bool | t.Sequence[str | Identifier] = False,
     quoted: t.Optional[bool] = None,
     dialect: DialectType = None,

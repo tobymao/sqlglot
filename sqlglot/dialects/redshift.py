@@ -171,6 +171,7 @@ class Redshift(Postgres):
         TZ_TO_WITH_TIME_ZONE = True
         NVL2_SUPPORTED = True
         LAST_DAY_SUPPORTS_DATE_PART = False
+        CAN_IMPLEMENT_ARRAY_ANY = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,

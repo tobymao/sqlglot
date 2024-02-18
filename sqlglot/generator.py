@@ -319,6 +319,9 @@ class Generator(metaclass=_Generator):
     # The JSONPathPart expressions supported by this dialect
     SUPPORTED_JSON_PATH_PARTS = ALL_JSON_PATH_PARTS.copy()
 
+    # Whether any(f(x) for x in array) can be implemented by this dialect
+    CAN_IMPLEMENT_ARRAY_ANY = False
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -3409,6 +3412,21 @@ class Generator(metaclass=_Generator):
             self.unsupported("Date parts are not supported in LAST_DAY.")
 
         return self.func("LAST_DAY", expression.this)
+
+    def arrayany_sql(self, expression: exp.ArrayAny) -> str:
+        if self.CAN_IMPLEMENT_ARRAY_ANY:
+            filtered = exp.ArrayFilter(this=expression.this, expression=expression.expression)
+            filtered_not_empty = exp.ArraySize(this=filtered).neq(0)
+            original_not_empty = exp.ArraySize(this=expression.this).neq(0)
+            return self.sql(exp.paren(original_not_empty.and_(filtered_not_empty)))
+
+        from sqlglot.dialects import Dialect
+
+        # SQLGlot's executor supports ARRAY_ANY, so we don't wanna warn for the SQLGlot dialect
+        if self.dialect.__class__ != Dialect:
+            self.unsupported("ARRAY_ANY is unsupported")
+
+        return self.function_fallback_sql(expression)
 
     def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
         this = expression.this

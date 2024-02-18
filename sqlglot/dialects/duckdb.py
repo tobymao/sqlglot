@@ -219,7 +219,6 @@ class DuckDB(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAY_HAS": exp.ArrayContains.from_arg_list,
-            "ARRAY_LENGTH": exp.ArraySize.from_arg_list,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "DATEDIFF": _build_date_diff,
@@ -333,6 +332,7 @@ class DuckDB(Dialect):
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_CREATE_TABLE_LIKE = False
         MULTI_ARG_DISTINCT = False
+        CAN_IMPLEMENT_ARRAY_ANY = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -342,6 +342,7 @@ class DuckDB(Dialect):
                 if e.expressions and e.expressions[0].find(exp.Select)
                 else inline_array_sql(self, e)
             ),
+            exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
             exp.ArgMin: arg_max_or_min_no_count("ARG_MIN"),
@@ -478,13 +479,6 @@ class DuckDB(Dialect):
         # can be transpiled to DuckDB, so we explicitly override them accordingly
         PROPERTIES_LOCATION[exp.LikeProperty] = exp.Properties.Location.POST_SCHEMA
         PROPERTIES_LOCATION[exp.TemporaryProperty] = exp.Properties.Location.POST_CREATE
-
-        def arrayany_sql(self, expression: exp.ArrayAny) -> str:
-            filtered = rename_func("LIST_FILTER")(self, expression)
-            filtered_not_empty = f"{filtered} <> []"
-            array_length = self.func("ARRAY_LENGTH", expression.this)
-            original_not_empty = f"{array_length} <> 0"
-            return f"({original_not_empty} AND {filtered_not_empty})"
 
         def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
             nano = expression.args.get("nano")

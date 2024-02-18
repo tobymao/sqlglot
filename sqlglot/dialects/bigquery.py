@@ -13,6 +13,7 @@ from sqlglot.dialects.dialect import (
     date_add_interval_sql,
     datestrtodate_sql,
     build_formatted_time,
+    filter_array_using_unnest,
     if_sql,
     inline_array_sql,
     max_or_greatest,
@@ -530,6 +531,7 @@ class BigQuery(Dialect):
         NULL_ORDERING_SUPPORTED = False
         IGNORE_NULLS_IN_FUNC = True
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
+        CAN_IMPLEMENT_ARRAY_ANY = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -537,6 +539,7 @@ class BigQuery(Dialect):
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
             exp.ArrayContains: _array_contains_sql,
+            exp.ArrayFilter: filter_array_using_unnest,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CollateProperty: lambda self, e: (

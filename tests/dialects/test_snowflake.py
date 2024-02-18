@@ -1549,26 +1549,14 @@ MATCH_RECOGNIZE (
         self.assertEqual(users_exp.this, "USERS")
 
     def test_storage_integration(self):
-        ast = parse_one(
+        self.validate_identity(
             """CREATE STORAGE INTEGRATION s3_int
 TYPE=EXTERNAL_STAGE
 STORAGE_PROVIDER='S3'
 STORAGE_AWS_ROLE_ARN='arn:aws:iam::001234567890:role/myrole'
 ENABLED=TRUE
 STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
-            read="snowflake",
-        )
-        assert isinstance(ast, exp.Create)
-        assert ast.kind == "STORAGE INTEGRATION"
-        assert ast.this == exp.Table(this=exp.Identifier(this="s3_int"))
-        assert ast.args["properties"].expressions[4] == exp.Property(
-            this=exp.Identifier(this="STORAGE_ALLOWED_LOCATIONS"),
-            value=exp.Tuple(
-                expressions=[
-                    exp.Literal(this="s3://mybucket1/path1/", is_string=True),
-                    exp.Literal(this="s3://mybucket2/path2/", is_string=True),
-                ]
-            ),
+            pretty=True,
         )
 
     def test_swap(self):

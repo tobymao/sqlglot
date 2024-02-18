@@ -101,10 +101,7 @@ def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
             value = expr.this
         else:
             key = expr.name or expr.this.name
-            if isinstance(expr, exp.Bracket):
-                value = expr.expressions[0]
-            else:
-                value = expr.expression
+            value = expr.expression
 
         args.append(f"{self.sql(exp.Literal.string(key))}: {self.sql(value)}")
 

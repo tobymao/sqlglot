@@ -266,10 +266,7 @@ class Spark2(Hive):
             args = []
             for arg in expression.expressions:
                 if isinstance(arg, self.KEY_VALUE_DEFINITIONS):
-                    if isinstance(arg, exp.Bracket):
-                        args.append(exp.alias_(arg.this, arg.expressions[0].name))
-                    else:
-                        args.append(exp.alias_(arg.expression, arg.this.name))
+                    args.append(exp.alias_(arg.expression, arg.this.name))
                 else:
                     args.append(arg)
 

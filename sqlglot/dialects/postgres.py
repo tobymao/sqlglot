@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     bool_xor_sql,
     datestrtodate_sql,
     build_formatted_time,
+    filter_array_using_unnest,
     json_extract_segments,
     json_path_key_only_name,
     max_or_greatest,
@@ -401,6 +402,7 @@ class Postgres(Dialect):
         SUPPORTS_UNLOGGED_TABLES = True
         LIKE_PROPERTY_INSIDE_SCHEMA = True
         MULTI_ARG_DISTINCT = False
+        CAN_IMPLEMENT_ARRAY_ANY = True
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
@@ -430,6 +432,8 @@ class Postgres(Dialect):
             exp.ArrayContained: lambda self, e: self.binary(e, "<@"),
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
+            exp.ArrayFilter: filter_array_using_unnest,
+            exp.ArraySize: lambda self, e: self.func("ARRAY_LENGTH", e.this, e.expression or "1"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
             exp.CurrentDate: no_paren_current_date_sql,

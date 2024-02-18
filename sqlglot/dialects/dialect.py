@@ -1054,3 +1054,19 @@ def json_path_key_only_name(self: Generator, expression: exp.JSONPathKey) -> str
         self.unsupported("Unsupported wildcard in JSONPathKey expression")
 
     return expression.name
+
+
+def filter_array_using_unnest(self: Generator, expression: exp.ArrayFilter) -> str:
+    cond = expression.expression
+    if isinstance(cond, exp.Lambda) and len(cond.expressions) == 1:
+        alias = cond.expressions[0]
+        cond = cond.this
+    elif isinstance(cond, exp.Predicate):
+        alias = "_u"
+    else:
+        self.unsupported("Unsupported filter condition")
+        return ""
+
+    unnest = exp.Unnest(expressions=[expression.this])
+    filtered = exp.select(alias).from_(exp.alias_(unnest, None, table=[alias])).where(cond)
+    return self.sql(exp.Array(expressions=[filtered]))

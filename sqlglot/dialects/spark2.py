@@ -188,6 +188,7 @@ class Spark2(Hive):
     class Generator(Hive.Generator):
         QUERY_HINTS = True
         NVL2_SUPPORTED = True
+        CAN_IMPLEMENT_ARRAY_ANY = True
 
         PROPERTIES_LOCATION = {
             **Hive.Generator.PROPERTIES_LOCATION,

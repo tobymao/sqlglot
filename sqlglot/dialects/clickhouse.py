@@ -515,6 +515,7 @@ class ClickHouse(Dialect):
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
+        CAN_IMPLEMENT_ARRAY_ANY = True
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",
@@ -575,6 +576,8 @@ class ClickHouse(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: rename_func("any"),
             exp.ApproxDistinct: rename_func("uniq"),
+            exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
+            exp.ArraySize: rename_func("LENGTH"),
             exp.ArraySum: rename_func("arraySum"),
             exp.ArgMax: arg_max_or_min_no_count("argMax"),
             exp.ArgMin: arg_max_or_min_no_count("argMin"),

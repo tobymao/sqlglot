@@ -166,7 +166,7 @@ WHERE
   AND NOT x.a = _u_9.a
   AND ARRAY_ANY(_u_10.a, _x -> _x = x.a)
   AND (
-    x.a < _u_12.a AND ARRAY_ANY(_u_12._u_14, "_x" -> _x <> x.d)
+    x.a < _u_12.a AND ARRAY_ANY(_u_12._u_14, _x -> _x <> x.d)
   )
   AND NOT _u_15.a IS NULL
   AND x.a IN (

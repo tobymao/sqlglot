@@ -178,6 +178,7 @@ class Teradata(Dialect):
         QUERY_HINTS = False
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
+        CAN_IMPLEMENT_ARRAY_ANY = True
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
@@ -195,6 +196,7 @@ class Teradata(Dialect):
             **generator.Generator.TRANSFORMS,
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
+            exp.ArraySize: rename_func("CARDINALITY"),
             exp.Max: max_or_greatest,
             exp.Min: min_or_least,
             exp.Pow: lambda self, e: self.binary(e, "**"),

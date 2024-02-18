@@ -1311,3 +1311,79 @@ LEFT JOIN "_u_0" AS "_u_0"
   ON "C"."EMAIL_DOMAIN" = "_u_0"."DOMAIN"
 WHERE
   NOT "_u_0"."DOMAIN" IS NULL;
+
+# title: decorrelate subquery and transpile ArrayAny correctly when generating spark
+# execute: false
+# dialect: spark
+SELECT
+  COUNT(DISTINCT cs1.cs_order_number) AS `order count`,
+  SUM(cs1.cs_ext_ship_cost) AS `total shipping cost`,
+  SUM(cs1.cs_net_profit) AS `total net profit`
+FROM catalog_sales cs1, date_dim, customer_address, call_center
+WHERE
+  date_dim.d_date BETWEEN '2002-02-01' AND (CAST('2002-02-01' AS DATE) + INTERVAL 60 days)
+  AND cs1.cs_ship_date_sk = date_dim.d_date_sk
+  AND cs1.cs_ship_addr_sk = customer_address.ca_address_sk
+  AND customer_address.ca_state = 'GA'
+  AND cs1.cs_call_center_sk = call_center.cc_call_center_sk
+  AND call_center.cc_county IN (
+    'Williamson County', 'Williamson County', 'Williamson County', 'Williamson County', 'Williamson County'
+  )
+  AND EXISTS(
+    SELECT *
+    FROM catalog_sales cs2
+    WHERE cs1.cs_order_number = cs2.cs_order_number
+      AND cs1.cs_warehouse_sk <> cs2.cs_warehouse_sk)
+      AND NOT EXISTS(
+        SELECT *
+        FROM catalog_returns cr1
+        WHERE cs1.cs_order_number = cr1.cr_order_number
+      )
+    ORDER BY COUNT(DISTINCT cs1.cs_order_number
+  )
+LIMIT 100;
+WITH `_u_0` AS (
+  SELECT
+    `cs2`.`cs_order_number` AS `_u_1`,
+    COLLECT_LIST(`cs2`.`cs_warehouse_sk`) AS `_u_2`
+  FROM `catalog_sales` AS `cs2`
+  GROUP BY
+    `cs2`.`cs_order_number`
+), `_u_3` AS (
+  SELECT
+    `cr1`.`cr_order_number` AS `_u_4`
+  FROM `catalog_returns` AS `cr1`
+  GROUP BY
+    `cr1`.`cr_order_number`
+)
+SELECT
+  COUNT(DISTINCT `cs1`.`cs_order_number`) AS `order count`,
+  SUM(`cs1`.`cs_ext_ship_cost`) AS `total shipping cost`,
+  SUM(`cs1`.`cs_net_profit`) AS `total net profit`
+FROM `catalog_sales` AS `cs1`
+LEFT JOIN `_u_0` AS `_u_0`
+  ON `_u_0`.`_u_1` = `cs1`.`cs_order_number`
+LEFT JOIN `_u_3` AS `_u_3`
+  ON `_u_3`.`_u_4` = `cs1`.`cs_order_number`
+JOIN `call_center` AS `call_center`
+  ON `call_center`.`cc_call_center_sk` = `cs1`.`cs_call_center_sk`
+  AND `call_center`.`cc_county` IN ('Williamson County', 'Williamson County', 'Williamson County', 'Williamson County', 'Williamson County')
+JOIN `customer_address` AS `customer_address`
+  ON `cs1`.`cs_ship_addr_sk` = `customer_address`.`ca_address_sk`
+  AND `customer_address`.`ca_state` = 'GA'
+JOIN `date_dim` AS `date_dim`
+  ON `cs1`.`cs_ship_date_sk` = `date_dim`.`d_date_sk`
+  AND `date_dim`.`d_date` <= (
+    CAST(CAST('2002-02-01' AS DATE) AS TIMESTAMP) + INTERVAL '60' DAYS
+  )
+  AND `date_dim`.`d_date` >= '2002-02-01'
+WHERE
+  `_u_3`.`_u_4` IS NULL
+  AND NOT `_u_0`.`_u_1` IS NULL
+  AND (
+    SIZE(`_u_0`.`_u_2`) = 0
+    OR SIZE(FILTER(`_u_0`.`_u_2`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
+  )
+ORDER BY
+  COUNT(DISTINCT `cs1`.`cs_order_number`)
+LIMIT 100;

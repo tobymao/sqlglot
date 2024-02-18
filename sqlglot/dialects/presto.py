@@ -319,6 +319,7 @@ class Presto(Dialect):
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: lambda self, e: f"ARRAY[{self.expressions(e, flat=True)}]",
+            exp.ArrayAny: rename_func("ANY_MATCH"),
             exp.ArrayConcat: rename_func("CONCAT"),
             exp.ArrayContains: rename_func("CONTAINS"),
             exp.ArraySize: rename_func("CARDINALITY"),

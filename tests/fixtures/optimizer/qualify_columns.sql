@@ -355,9 +355,18 @@ SELECT * EXCEPT(a) FROM x;
 SELECT x.b AS b FROM x AS x;
 
 # execute: false
+SELECT * EXCEPT(x.a) FROM x AS x;
+SELECT x.b AS b FROM x AS x;
+
+# execute: false
 # note: this query would fail in the engine level because there are 0 selected columns
 SELECT * EXCEPT (a, b) FROM x;
-SELECT * EXCEPT (x.a, x.b) FROM x AS x;
+SELECT * EXCEPT (a, b) FROM x AS x;
+
+SELECT x.a, * EXCEPT (a)
+FROM x AS x
+LEFT JOIN x AS y USING (a);
+SELECT x.a AS a, x.b AS b, y.b AS b FROM x AS x LEFT JOIN x AS y ON x.a = y.a;
 
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.* EXCEPT (a) FROM x AS t1, x AS t2;
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.b AS b FROM x AS t1, x AS t2;

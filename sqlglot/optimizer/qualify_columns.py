@@ -164,12 +164,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> t.Dict[str, t.Any]:
 
             table = table or source_table
             conditions.append(
-                exp.condition(
-                    exp.EQ(
-                        this=exp.column(identifier, table=table),
-                        expression=exp.column(identifier, table=join_table),
-                    )
-                )
+                exp.column(identifier, table=table).eq(exp.column(identifier, table=join_table))
             )
 
             # Set all values in the dict to None, because we only care about the key ordering
@@ -449,10 +444,9 @@ def _expand_stars(
                     continue
 
             for name in columns:
+                if name in columns_to_exclude or name in coalesced_columns:
+                    continue
                 if name in using_column_tables and table in using_column_tables[name]:
-                    if name in coalesced_columns:
-                        continue
-
                     coalesced_columns.add(name)
                     tables = using_column_tables[name]
                     coalesce = [exp.column(name, table=table) for table in tables]
@@ -464,7 +458,7 @@ def _expand_stars(
                             copy=False,
                         )
                     )
-                elif name not in columns_to_exclude:
+                else:
                     alias_ = replace_columns.get(table_id, {}).get(name, name)
                     column = exp.column(name, table=table)
                     new_selections.append(

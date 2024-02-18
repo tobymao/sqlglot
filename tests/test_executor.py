@@ -100,7 +100,7 @@ class TestExecutor(unittest.TestCase):
     def subtestHelper(self, i, table, tpch=True):
         with self.subTest(f"{'tpc-h' if tpch else 'tpc-ds'} {i + 1}"):
             sql, _ = self.tpch_sqls[i] if tpch else self.tpcds_sqls[i]
-            a = self.cached_execute(sql, tpch=True)
+            a = self.cached_execute(sql, tpch=tpch)
             b = pd.DataFrame(
                 ((np.nan if c is None else c for c in r) for r in table.rows),
                 columns=table.columns,

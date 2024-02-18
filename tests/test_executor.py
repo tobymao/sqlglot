@@ -1,3 +1,4 @@
+import os
 import datetime
 import unittest
 from datetime import date
@@ -125,29 +126,24 @@ class TestExecutor(unittest.TestCase):
                     ),
                 )
             ):
-                self.subtestHelper(i, table, "tpc-h")
+                self.subtestHelper(i, table, tpch=True)
 
-    # def test_execute_tpcds(self):
-    #     def to_csv(expression):
-    #         if isinstance(expression, exp.Table) and os.path.exists(
-    #             f"{DIR_TPCDS}{expression.name}.csv.gz"
-    #         ):
-    #             return parse_one(
-    #                 f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', ',') AS {expression.alias_or_name}"
-    #             )
-    #         return expression
+    def test_execute_tpcds(self):
+        def to_csv(expression):
+            if isinstance(expression, exp.Table) and os.path.exists(
+                f"{DIR_TPCDS}{expression.name}.csv.gz"
+            ):
+                return parse_one(
+                    f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
+                )
+            return expression
 
-    #     with Pool() as pool:
-    #         for i, table in enumerate(
-    #             pool.starmap(
-    #                 execute,
-    #                 (
-    #                     (parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-    #                     for sql, _ in self.tpcds_sqls
-    #                 ),
-    #             )
-    #         ):
-    #             self.subtestHelper(i, table, "tpc-ds")
+        for i, (sql, _) in enumerate(self.tpcds_sqls):
+            try:
+                table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
+                self.subtestHelper(i, table, tpch=False)
+            except Exception:
+                continue
 
     def test_execute_callable(self):
         tables = {

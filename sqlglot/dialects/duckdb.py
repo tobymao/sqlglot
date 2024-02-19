@@ -313,6 +313,7 @@ class DuckDB(Dialect):
             return pivot_column_names(aggregations, dialect="duckdb")
 
     class Generator(generator.Generator):
+        PARAMETER_TOKEN = "$"
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False

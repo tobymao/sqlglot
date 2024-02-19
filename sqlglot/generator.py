@@ -2838,9 +2838,7 @@ class Generator(metaclass=_Generator):
         return f"DROP{exists}{expressions}"
 
     def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
-        expressions = self.expressions(expression)
-        expressions = f" {expressions}" if expressions else ""
-        return f"ADD{expressions}"
+        return f"ADD {self.expressions(expression)}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)

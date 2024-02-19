@@ -78,7 +78,6 @@ class Generator(metaclass=_Generator):
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
         exp.CharacterSetProperty: lambda self,
         e: f"{'DEFAULT ' if e.args.get('default') else ''}CHARACTER SET={self.sql(e, 'this')}",
-        exp.CheckColumnConstraint: lambda self, e: f"CHECK ({self.sql(e, 'this')})",
         exp.ClusteredColumnConstraint: lambda self,
         e: f"CLUSTERED ({self.expressions(e, 'this', indent=False)})",
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
@@ -2839,15 +2838,7 @@ class Generator(metaclass=_Generator):
         return f"DROP{exists}{expressions}"
 
     def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
-        this = self.sql(expression, "this")
-        expression_ = self.sql(expression, "expression")
-        add_constraint = f"ADD CONSTRAINT {this}" if this else "ADD"
-
-        enforced = expression.args.get("enforced")
-        if enforced is not None:
-            return f"{add_constraint} CHECK ({expression_}){' ENFORCED' if enforced else ''}"
-
-        return f"{add_constraint} {expression_}"
+        return f"ADD {self.expressions(expression)}"
 
     def distinct_sql(self, expression: exp.Distinct) -> str:
         this = self.expressions(expression, flat=True)
@@ -3295,6 +3286,10 @@ class Generator(metaclass=_Generator):
 
         self.unsupported("Unsupported index constraint option.")
         return ""
+
+    def checkcolumnconstraint_sql(self, expression: exp.CheckColumnConstraint) -> str:
+        enforced = " ENFORCED" if expression.args.get("enforced") else ""
+        return f"CHECK ({self.sql(expression, 'this')}){enforced}"
 
     def indexcolumnconstraint_sql(self, expression: exp.IndexColumnConstraint) -> str:
         kind = self.sql(expression, "kind")

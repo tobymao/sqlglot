@@ -40,6 +40,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (id, email)")
         self.validate_identity("RM @parquet_stage", check_command_warning=True)
         self.validate_identity("REMOVE @parquet_stage", check_command_warning=True)
         self.validate_identity("SELECT TIMESTAMP_FROM_PARTS(d, t)")

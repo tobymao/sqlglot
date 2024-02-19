@@ -137,7 +137,7 @@ class TestExecutor(unittest.TestCase):
                     f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
-    
+
         index = []
         for i, (sql, _) in enumerate(self.tpcds_sqls):
             try:

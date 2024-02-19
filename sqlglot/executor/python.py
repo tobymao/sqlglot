@@ -152,7 +152,7 @@ class PythonExecutor:
 
                 # We can't cast empty values ('') to non-string types, so we convert them to None instead
                 context.set_row(
-                    tuple(None if (v == "" and t is not str) else t(v) for t, v in zip(types, row))
+                    tuple(None if (t is not str and v == "") else t(v) for t, v in zip(types, row))
                 )
                 yield context.table.reader
 

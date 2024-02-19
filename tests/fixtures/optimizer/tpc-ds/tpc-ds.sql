@@ -9033,7 +9033,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 68
 --------------------------------------
-# execute: true
 SELECT c_last_name,
                c_first_name,
                ca_city,

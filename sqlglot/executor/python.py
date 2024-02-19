@@ -150,8 +150,10 @@ class PythonExecutor:
                         except (ValueError, SyntaxError):
                             types.append(str)
 
-                # for empty string, set None
-                context.set_row(tuple(None if v == "" else t(v) for t, v in zip(types, row)))
+                # for NULL values with type str, we convert them to None instead of casting
+                context.set_row(
+                    tuple(None if (v == "" and t is not str) else t(v) for t, v in zip(types, row))
+                )
                 yield context.table.reader
 
     def join(self, step, context):

@@ -355,6 +355,7 @@ class Generator(metaclass=_Generator):
     STRUCT_DELIMITER = ("<", ">")
 
     PARAMETER_TOKEN = "@"
+    NAMED_PLACEHOLDER_TOKEN = ":"
 
     PROPERTIES_LOCATION = {
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
@@ -2203,7 +2204,7 @@ class Generator(metaclass=_Generator):
         return f"@@{kind}{this}"
 
     def placeholder_sql(self, expression: exp.Placeholder) -> str:
-        return f":{expression.name}" if expression.name else "?"
+        return f"{self.NAMED_PLACEHOLDER_TOKEN}{expression.name}" if expression.name else "?"
 
     def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
         alias = self.sql(expression, "alias")

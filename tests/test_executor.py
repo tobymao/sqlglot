@@ -138,16 +138,11 @@ class TestExecutor(unittest.TestCase):
                 )
             return expression
 
-        index = []
-        for i, (sql, _) in enumerate(self.tpcds_sqls):
-            try:
-                table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-                self.subtestHelper(i, table, tpch=False)
-            except Exception as e:
-                print("Failed to execute query", i, e)
-                index.append(i)
-                continue
-        print(index)
+        index = [0, 2, 5, 20, 23, 24, 25, 28, 30, 31, 32, 36, 39, 42, 51, 53, 54, 55, 59, 64, 68, 70, 72, 81, 82, 83, 87, 91, 92]
+        for i in index:
+            sql, _ = self.tpcds_sqls[i]
+            table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
+            self.subtestHelper(i, table, tpch=False)
 
     def test_execute_callable(self):
         tables = {

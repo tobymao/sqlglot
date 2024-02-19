@@ -994,3 +994,10 @@ class TestDuckDB(Validator):
             read={"bigquery": "IS_INF(x)"},
             write={"bigquery": "IS_INF(x)", "duckdb": "ISINF(x)"},
         )
+
+    def test_parameter_token(self):
+        self.validate_all(
+            "SELECT $foo",
+            read={"bigquery": "SELECT @foo"},
+            write={"bigquery": "SELECT @foo", "duckdb": "SELECT $foo"},
+        )

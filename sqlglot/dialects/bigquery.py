@@ -858,3 +858,6 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
+
+        def placeholder_sql(self, expression: exp.Placeholder) -> str:
+            return f"@{expression.name}" if expression.name else "?"

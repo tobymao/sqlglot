@@ -532,6 +532,7 @@ class BigQuery(Dialect):
         IGNORE_NULLS_IN_FUNC = True
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
         CAN_IMPLEMENT_ARRAY_ANY = True
+        NAMED_PLACEHOLDER_TOKEN = "@"
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -858,6 +859,3 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
-
-        def placeholder_sql(self, expression: exp.Placeholder) -> str:
-            return f"@{expression.name}" if expression.name else "?"

@@ -314,6 +314,7 @@ class DuckDB(Dialect):
 
     class Generator(generator.Generator):
         PARAMETER_TOKEN = "$"
+        NAMED_PLACEHOLDER_TOKEN = "$"
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False
@@ -535,6 +536,3 @@ class DuckDB(Dialect):
             if isinstance(expression.parent, exp.UserDefinedFunction):
                 return self.sql(expression, "this")
             return super().columndef_sql(expression, sep)
-
-        def placeholder_sql(self, expression: exp.Placeholder) -> str:
-            return f"${expression.name}" if expression.name else "?"

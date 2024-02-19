@@ -93,6 +93,7 @@ class TestBigQuery(Validator):
         self.validate_identity("LOG(n, b)")
         self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
         self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
+        self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b))")
         self.validate_identity(
             "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
         )
@@ -122,6 +123,10 @@ class TestBigQuery(Validator):
         )
         self.validate_identity(
             """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
+        )
+        self.validate_identity(
+            "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
+            "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
         )
         self.validate_identity(
             "select array_contains([1, 2, 3], 1)",
@@ -601,12 +606,6 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT * FROM `my-project.my-dataset.my-table`",
             write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
-        )
-        self.validate_all(
-            "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
-            write={
-                "bigquery": "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
-            },
         )
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",

@@ -2091,19 +2091,19 @@
 <h6 id="arguments">Arguments:</h6>
 
 <ul>
-<li><strong>pretty:</strong>  Whether or not to format the produced SQL string.
+<li><strong>pretty:</strong>  Whether to format the produced SQL string.
 Default: False.</li>
 <li><strong>identify:</strong>  Determines when an identifier should be quoted. Possible values are:
 False (default): Never quote, except in cases where it's mandatory by the dialect.
 True or 'always': Always quote.
 'safe': Only quote identifiers that are case insensitive.</li>
-<li><strong>normalize:</strong>  Whether or not to normalize identifiers to lowercase.
+<li><strong>normalize:</strong>  Whether to normalize identifiers to lowercase.
 Default: False.</li>
-<li><strong>pad:</strong>  Determines the pad size in a formatted string.
+<li><strong>pad:</strong>  The pad size in a formatted string.
 Default: 2.</li>
-<li><strong>indent:</strong>  Determines the indentation size in a formatted string.
+<li><strong>indent:</strong>  The indentation size in a formatted string.
 Default: 2.</li>
-<li><strong>normalize_functions:</strong>  Whether or not to normalize all function names. Possible values are:
+<li><strong>normalize_functions:</strong>  How to normalize function names. Possible values are:
 "upper" or True (default): Convert names to uppercase.
 "lower": Convert names to lowercase.
 False: Disables function name normalization.</li>
@@ -2112,14 +2112,14 @@ Default ErrorLevel.WARN.</li>
 <li><strong>max_unsupported:</strong>  Maximum number of unsupported messages to include in a raised UnsupportedError.
 This is only relevant if unsupported_level is ErrorLevel.RAISE.
 Default: 3</li>
-<li><strong>leading_comma:</strong>  Determines whether or not the comma is leading or trailing in select expressions.
+<li><strong>leading_comma:</strong>  Whether the comma is leading or trailing in select expressions.
 This is only relevant when generating in pretty mode.
 Default: False</li>
 <li><strong>max_text_width:</strong>  The max number of characters in a segment before creating new lines in pretty mode.
 The default is on the smaller end because the length only represents a segment and not the true
 line length.
 Default: 80</li>
-<li><strong>comments:</strong>  Whether or not to preserve comments in the output SQL code.
+<li><strong>comments:</strong>  Whether to preserve comments in the output SQL code.
 Default: True</li>
 </ul>
 </div>
@@ -2212,6 +2212,7 @@ Default: True</li>
                 <dd id="Python.Generator.JSON_PATH_BRACKETED_KEY_SUPPORTED" class="variable"><a href="../generator.html#Generator.JSON_PATH_BRACKETED_KEY_SUPPORTED">JSON_PATH_BRACKETED_KEY_SUPPORTED</a></dd>
                 <dd id="Python.Generator.JSON_PATH_SINGLE_QUOTE_ESCAPE" class="variable"><a href="../generator.html#Generator.JSON_PATH_SINGLE_QUOTE_ESCAPE">JSON_PATH_SINGLE_QUOTE_ESCAPE</a></dd>
                 <dd id="Python.Generator.SUPPORTED_JSON_PATH_PARTS" class="variable"><a href="../generator.html#Generator.SUPPORTED_JSON_PATH_PARTS">SUPPORTED_JSON_PATH_PARTS</a></dd>
+                <dd id="Python.Generator.CAN_IMPLEMENT_ARRAY_ANY" class="variable"><a href="../generator.html#Generator.CAN_IMPLEMENT_ARRAY_ANY">CAN_IMPLEMENT_ARRAY_ANY</a></dd>
                 <dd id="Python.Generator.TYPE_MAPPING" class="variable"><a href="../generator.html#Generator.TYPE_MAPPING">TYPE_MAPPING</a></dd>
                 <dd id="Python.Generator.STAR_MAPPING" class="variable"><a href="../generator.html#Generator.STAR_MAPPING">STAR_MAPPING</a></dd>
                 <dd id="Python.Generator.TIME_PART_SINGULARS" class="variable"><a href="../generator.html#Generator.TIME_PART_SINGULARS">TIME_PART_SINGULARS</a></dd>
@@ -2536,6 +2537,7 @@ Default: True</li>
                 <dd id="Python.Generator.tsordstodate_sql" class="function"><a href="../generator.html#Generator.tsordstodate_sql">tsordstodate_sql</a></dd>
                 <dd id="Python.Generator.unixdate_sql" class="function"><a href="../generator.html#Generator.unixdate_sql">unixdate_sql</a></dd>
                 <dd id="Python.Generator.lastday_sql" class="function"><a href="../generator.html#Generator.lastday_sql">lastday_sql</a></dd>
+                <dd id="Python.Generator.arrayany_sql" class="function"><a href="../generator.html#Generator.arrayany_sql">arrayany_sql</a></dd>
 
             </div>
                                 </dl>

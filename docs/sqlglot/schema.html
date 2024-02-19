@@ -264,7 +264,7 @@
 </span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a>        <span class="n">normalize</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="sd">        Returns whether or not `column` appears in `table`&#39;s schema.</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="sd">        Returns whether `column` appears in `table`&#39;s schema.</span>
 </span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>
 </span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd">        Args:</span>
 </span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="sd">            table: the source table.</span>
@@ -287,7 +287,7 @@
 </span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a>
 </span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>    <span class="nd">@property</span>
 </span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether or not the schema is empty.&quot;&quot;&quot;</span>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the schema is empty.&quot;&quot;&quot;</span>
 </span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a>        <span class="k">return</span> <span class="kc">True</span>
 </span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>
 </span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>
@@ -334,7 +334,7 @@
 </span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>
 </span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a><span class="sd">        Args:</span>
 </span><span id="L-164"><a href="#L-164"><span class="linenos">164</span></a><span class="sd">            table: the target table.</span>
-</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a><span class="sd">            raise_on_missing: whether or not to raise in case the schema is not found.</span>
+</span><span id="L-165"><a href="#L-165"><span class="linenos">165</span></a><span class="sd">            raise_on_missing: whether to raise in case the schema is not found.</span>
 </span><span id="L-166"><a href="#L-166"><span class="linenos">166</span></a>
 </span><span id="L-167"><a href="#L-167"><span class="linenos">167</span></a><span class="sd">        Returns:</span>
 </span><span id="L-168"><a href="#L-168"><span class="linenos">168</span></a><span class="sd">            The schema of the target table.</span>
@@ -832,7 +832,7 @@
 </span><span id="Schema-93"><a href="#Schema-93"><span class="linenos"> 93</span></a>        <span class="n">normalize</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="Schema-94"><a href="#Schema-94"><span class="linenos"> 94</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="Schema-95"><a href="#Schema-95"><span class="linenos"> 95</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Schema-96"><a href="#Schema-96"><span class="linenos"> 96</span></a><span class="sd">        Returns whether or not `column` appears in `table`&#39;s schema.</span>
+</span><span id="Schema-96"><a href="#Schema-96"><span class="linenos"> 96</span></a><span class="sd">        Returns whether `column` appears in `table`&#39;s schema.</span>
 </span><span id="Schema-97"><a href="#Schema-97"><span class="linenos"> 97</span></a>
 </span><span id="Schema-98"><a href="#Schema-98"><span class="linenos"> 98</span></a><span class="sd">        Args:</span>
 </span><span id="Schema-99"><a href="#Schema-99"><span class="linenos"> 99</span></a><span class="sd">            table: the source table.</span>
@@ -855,7 +855,7 @@
 </span><span id="Schema-116"><a href="#Schema-116"><span class="linenos">116</span></a>
 </span><span id="Schema-117"><a href="#Schema-117"><span class="linenos">117</span></a>    <span class="nd">@property</span>
 </span><span id="Schema-118"><a href="#Schema-118"><span class="linenos">118</span></a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Schema-119"><a href="#Schema-119"><span class="linenos">119</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether or not the schema is empty.&quot;&quot;&quot;</span>
+</span><span id="Schema-119"><a href="#Schema-119"><span class="linenos">119</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the schema is empty.&quot;&quot;&quot;</span>
 </span><span id="Schema-120"><a href="#Schema-120"><span class="linenos">120</span></a>        <span class="k">return</span> <span class="kc">True</span>
 </span></pre></div>
 
@@ -1055,7 +1055,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 </span><span id="Schema.has_column-93"><a href="#Schema.has_column-93"><span class="linenos"> 93</span></a>        <span class="n">normalize</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="Schema.has_column-94"><a href="#Schema.has_column-94"><span class="linenos"> 94</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="Schema.has_column-95"><a href="#Schema.has_column-95"><span class="linenos"> 95</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="Schema.has_column-96"><a href="#Schema.has_column-96"><span class="linenos"> 96</span></a><span class="sd">        Returns whether or not `column` appears in `table`&#39;s schema.</span>
+</span><span id="Schema.has_column-96"><a href="#Schema.has_column-96"><span class="linenos"> 96</span></a><span class="sd">        Returns whether `column` appears in `table`&#39;s schema.</span>
 </span><span id="Schema.has_column-97"><a href="#Schema.has_column-97"><span class="linenos"> 97</span></a>
 </span><span id="Schema.has_column-98"><a href="#Schema.has_column-98"><span class="linenos"> 98</span></a><span class="sd">        Args:</span>
 </span><span id="Schema.has_column-99"><a href="#Schema.has_column-99"><span class="linenos"> 99</span></a><span class="sd">            table: the source table.</span>
@@ -1071,7 +1071,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 </span></pre></div>
 
 
-            <div class="docstring"><p>Returns whether or not <code>column</code> appears in <code>table</code>'s schema.</p>
+            <div class="docstring"><p>Returns whether <code>column</code> appears in <code>table</code>'s schema.</p>
 
 <h6 id="arguments">Arguments:</h6>
 
@@ -1125,12 +1125,12 @@ The added table must have the necessary number of qualifiers in its path to matc
     <a class="headerlink" href="#Schema.empty"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Schema.empty-117"><a href="#Schema.empty-117"><span class="linenos">117</span></a>    <span class="nd">@property</span>
 </span><span id="Schema.empty-118"><a href="#Schema.empty-118"><span class="linenos">118</span></a>    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="Schema.empty-119"><a href="#Schema.empty-119"><span class="linenos">119</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether or not the schema is empty.&quot;&quot;&quot;</span>
+</span><span id="Schema.empty-119"><a href="#Schema.empty-119"><span class="linenos">119</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the schema is empty.&quot;&quot;&quot;</span>
 </span><span id="Schema.empty-120"><a href="#Schema.empty-120"><span class="linenos">120</span></a>        <span class="k">return</span> <span class="kc">True</span>
 </span></pre></div>
 
 
-            <div class="docstring"><p>Returns whether or not the schema is empty.</p>
+            <div class="docstring"><p>Returns whether the schema is empty.</p>
 </div>
 
 
@@ -1190,7 +1190,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 </span><span id="AbstractMappingSchema-163"><a href="#AbstractMappingSchema-163"><span class="linenos">163</span></a>
 </span><span id="AbstractMappingSchema-164"><a href="#AbstractMappingSchema-164"><span class="linenos">164</span></a><span class="sd">        Args:</span>
 </span><span id="AbstractMappingSchema-165"><a href="#AbstractMappingSchema-165"><span class="linenos">165</span></a><span class="sd">            table: the target table.</span>
-</span><span id="AbstractMappingSchema-166"><a href="#AbstractMappingSchema-166"><span class="linenos">166</span></a><span class="sd">            raise_on_missing: whether or not to raise in case the schema is not found.</span>
+</span><span id="AbstractMappingSchema-166"><a href="#AbstractMappingSchema-166"><span class="linenos">166</span></a><span class="sd">            raise_on_missing: whether to raise in case the schema is not found.</span>
 </span><span id="AbstractMappingSchema-167"><a href="#AbstractMappingSchema-167"><span class="linenos">167</span></a>
 </span><span id="AbstractMappingSchema-168"><a href="#AbstractMappingSchema-168"><span class="linenos">168</span></a><span class="sd">        Returns:</span>
 </span><span id="AbstractMappingSchema-169"><a href="#AbstractMappingSchema-169"><span class="linenos">169</span></a><span class="sd">            The schema of the target table.</span>
@@ -1377,7 +1377,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 </span><span id="AbstractMappingSchema.find-163"><a href="#AbstractMappingSchema.find-163"><span class="linenos">163</span></a>
 </span><span id="AbstractMappingSchema.find-164"><a href="#AbstractMappingSchema.find-164"><span class="linenos">164</span></a><span class="sd">        Args:</span>
 </span><span id="AbstractMappingSchema.find-165"><a href="#AbstractMappingSchema.find-165"><span class="linenos">165</span></a><span class="sd">            table: the target table.</span>
-</span><span id="AbstractMappingSchema.find-166"><a href="#AbstractMappingSchema.find-166"><span class="linenos">166</span></a><span class="sd">            raise_on_missing: whether or not to raise in case the schema is not found.</span>
+</span><span id="AbstractMappingSchema.find-166"><a href="#AbstractMappingSchema.find-166"><span class="linenos">166</span></a><span class="sd">            raise_on_missing: whether to raise in case the schema is not found.</span>
 </span><span id="AbstractMappingSchema.find-167"><a href="#AbstractMappingSchema.find-167"><span class="linenos">167</span></a>
 </span><span id="AbstractMappingSchema.find-168"><a href="#AbstractMappingSchema.find-168"><span class="linenos">168</span></a><span class="sd">        Returns:</span>
 </span><span id="AbstractMappingSchema.find-169"><a href="#AbstractMappingSchema.find-169"><span class="linenos">169</span></a><span class="sd">            The schema of the target table.</span>
@@ -1409,7 +1409,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 
 <ul>
 <li><strong>table:</strong>  the target table.</li>
-<li><strong>raise_on_missing:</strong>  whether or not to raise in case the schema is not found.</li>
+<li><strong>raise_on_missing:</strong>  whether to raise in case the schema is not found.</li>
 </ul>
 
 <h6 id="returns">Returns:</h6>
@@ -2062,7 +2062,7 @@ The added table must have the necessary number of qualifiers in its path to matc
 </span></pre></div>
 
 
-            <div class="docstring"><p>Returns whether or not <code>column</code> appears in <code>table</code>'s schema.</p>
+            <div class="docstring"><p>Returns whether <code>column</code> appears in <code>table</code>'s schema.</p>
 
 <h6 id="arguments">Arguments:</h6>
 

@@ -54,8 +54,8 @@ class TestExecutor(unittest.TestCase):
 
         cls.cache = {}
         cls.tpch_sqls = [
-            (sql, expected)
-            for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")
+            (sql, expected, meta)
+            for _, (meta, sql, expected) in enumerate(load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql"))
         ]
         cls.tpcds_sqls = [
             (sql, expected, meta)
@@ -92,7 +92,7 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(generate(parse_one("x is null")), "scope[None][x] is None")
 
     def test_optimized_tpch(self):
-        for i, (sql, optimized) in enumerate(self.tpch_sqls, start=1):
+        for i, (sql, optimized, _) in enumerate(self.tpch_sqls, start=1):
             with self.subTest(f"{i}, {sql}"):
                 a = self.cached_execute(sql, tpch=True)
                 b = self.tpch_conn.execute(transpile(optimized, write="duckdb")[0]).fetchdf()
@@ -123,7 +123,7 @@ class TestExecutor(unittest.TestCase):
                     execute,
                     (
                         (parse_one(sql).transform(to_csv).sql(pretty=True), TPCH_SCHEMA)
-                        for sql, _ in self.tpch_sqls
+                        for sql, _, _ in self.tpch_sqls
                     ),
                 )
             ):

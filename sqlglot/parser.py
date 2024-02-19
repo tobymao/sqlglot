@@ -799,7 +799,9 @@ class Parser(metaclass=_Parser):
             exp.CharacterSetColumnConstraint, this=self._parse_var_or_string()
         ),
         "CHECK": lambda self: self.expression(
-            exp.CheckColumnConstraint, this=self._parse_wrapped(self._parse_conjunction)
+            exp.CheckColumnConstraint,
+            this=self._parse_wrapped(self._parse_conjunction),
+            enforced=self._match_text_seq("ENFORCED"),
         ),
         "COLLATE": lambda self: self.expression(
             exp.CollateColumnConstraint, this=self._parse_var()
@@ -5376,35 +5378,15 @@ class Parser(metaclass=_Parser):
             exp.DropPartition, expressions=self._parse_csv(self._parse_partition), exists=exists
         )
 
-    def _parse_add_constraint(self) -> exp.AddConstraint:
-        this = None
-        kind = self._prev.token_type
-
-        if kind == TokenType.CONSTRAINT:
-            this = self._parse_id_var()
-
-            if self._match_text_seq("CHECK"):
-                expression = self._parse_wrapped(self._parse_conjunction)
-                enforced = self._match_text_seq("ENFORCED") or False
-
-                return self.expression(
-                    exp.AddConstraint, this=this, expression=expression, enforced=enforced
-                )
-
-        if kind == TokenType.FOREIGN_KEY or self._match(TokenType.FOREIGN_KEY):
-            expression = self._parse_foreign_key()
-        elif kind == TokenType.PRIMARY_KEY or self._match(TokenType.PRIMARY_KEY):
-            expression = self._parse_primary_key()
-        else:
-            expression = None
-
-        return self.expression(exp.AddConstraint, this=this, expression=expression)
-
     def _parse_alter_table_add(self) -> t.List[exp.Expression]:
         index = self._index - 1
 
-        if self._match_set(self.ADD_CONSTRAINT_TOKENS):
-            return self._parse_csv(self._parse_add_constraint)
+        if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
+            return self._parse_csv(
+                lambda: self.expression(
+                    exp.AddConstraint, expressions=self._parse_csv(self._parse_constraint)
+                )
+            )
 
         self._retreat(index)
         if not self.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN and self._match_text_seq("ADD"):

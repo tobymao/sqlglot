@@ -1367,7 +1367,7 @@ class CharacterSetColumnConstraint(ColumnConstraintKind):
 
 
 class CheckColumnConstraint(ColumnConstraintKind):
-    pass
+    arg_types = {"this": True, "enforced": False}
 
 
 class ClusteredColumnConstraint(ColumnConstraintKind):
@@ -3930,7 +3930,7 @@ class AlterTable(Expression):
 
 
 class AddConstraint(Expression):
-    arg_types = {"this": False, "expression": False, "enforced": False}
+    arg_types = {"this": False, "expressions": False}
 
 
 class DropPartition(Expression):

@@ -2,7 +2,8 @@ import os
 import datetime
 import unittest
 from datetime import date
-from multiprocessing import Pool
+from multiprocessing import Pool 
+from concurrent.futures import ProcessPoolExecutor
 
 import duckdb
 import numpy as np
@@ -57,8 +58,8 @@ class TestExecutor(unittest.TestCase):
             for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-h/tpc-h.sql")
         ]
         cls.tpcds_sqls = [
-            (sql, expected)
-            for _, sql, expected in load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql")
+            (sql, expected, meta)
+            for _, (meta, sql, expected) in enumerate(load_sql_fixture_pairs("optimizer/tpc-ds/tpc-ds.sql"))
         ]
 
     @classmethod
@@ -100,7 +101,7 @@ class TestExecutor(unittest.TestCase):
 
     def subtestHelper(self, i, table, tpch=True):
         with self.subTest(f"{'tpc-h' if tpch else 'tpc-ds'} {i + 1}"):
-            sql, _ = self.tpch_sqls[i] if tpch else self.tpcds_sqls[i]
+            sql, _, _ = self.tpch_sqls[i] if tpch else self.tpcds_sqls[i]
             a = self.cached_execute(sql, tpch=tpch)
             b = pd.DataFrame(
                 ((np.nan if c is None else c for c in r) for r in table.rows),
@@ -132,21 +133,17 @@ class TestExecutor(unittest.TestCase):
         def to_csv(expression):
             if isinstance(expression, exp.Table) and os.path.exists(
                 f"{DIR_TPCDS}{expression.name}.csv.gz"
-            ):
+        ):
                 return parse_one(
                     f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
 
-        index = [
-            0,
-            2,
-            5,
-        ]
-        for i in index:
-            sql, _ = self.tpcds_sqls[i]
-            table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-            self.subtestHelper(i, table, tpch=False)
+        for i, (sql, _, meta) in enumerate(self.tpcds_sqls):
+            execute_status = meta.get("execute")
+            if execute_status == "true":
+                table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
+                self.subtestHelper(i, table, tpch=False)
 
     def test_execute_callable(self):
         tables = {

@@ -1,6 +1,7 @@
 --------------------------------------
 -- TPC-DS 1
 --------------------------------------
+# execute: true
 WITH customer_total_return
      AS (SELECT sr_customer_sk     AS ctr_customer_sk,
                 sr_store_sk        AS ctr_store_sk,
@@ -219,6 +220,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 3
 --------------------------------------
+# execute: true
 SELECT dt.d_year,
                item.i_brand_id          brand_id,
                item.i_brand             brand,
@@ -859,6 +861,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 6
 --------------------------------------
+# execute: true
 SELECT a.ca_state state,
                Count(*)   cnt
 FROM   customer_address a,

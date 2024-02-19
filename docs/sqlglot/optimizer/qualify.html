@@ -106,15 +106,15 @@
 </span><span id="L-48"><a href="#L-48"><span class="linenos">48</span></a><span class="sd">        db: Default database name for tables.</span>
 </span><span id="L-49"><a href="#L-49"><span class="linenos">49</span></a><span class="sd">        catalog: Default catalog name for tables.</span>
 </span><span id="L-50"><a href="#L-50"><span class="linenos">50</span></a><span class="sd">        schema: Schema to infer column names and types.</span>
-</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="sd">        expand_alias_refs: Whether or not to expand references to aliases.</span>
-</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="sd">        expand_stars: Whether or not to expand star queries. This is a necessary step</span>
+</span><span id="L-51"><a href="#L-51"><span class="linenos">51</span></a><span class="sd">        expand_alias_refs: Whether to expand references to aliases.</span>
+</span><span id="L-52"><a href="#L-52"><span class="linenos">52</span></a><span class="sd">        expand_stars: Whether to expand star queries. This is a necessary step</span>
 </span><span id="L-53"><a href="#L-53"><span class="linenos">53</span></a><span class="sd">            for most of the optimizer&#39;s rules to work; do not set to False unless you</span>
 </span><span id="L-54"><a href="#L-54"><span class="linenos">54</span></a><span class="sd">            know what you&#39;re doing!</span>
-</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="sd">        infer_schema: Whether or not to infer the schema if missing.</span>
-</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="sd">        isolate_tables: Whether or not to isolate table selects.</span>
-</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">        qualify_columns: Whether or not to qualify columns.</span>
-</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">        validate_qualify_columns: Whether or not to validate columns.</span>
-</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a><span class="sd">        quote_identifiers: Whether or not to run the quote_identifiers step.</span>
+</span><span id="L-55"><a href="#L-55"><span class="linenos">55</span></a><span class="sd">        infer_schema: Whether to infer the schema if missing.</span>
+</span><span id="L-56"><a href="#L-56"><span class="linenos">56</span></a><span class="sd">        isolate_tables: Whether to isolate table selects.</span>
+</span><span id="L-57"><a href="#L-57"><span class="linenos">57</span></a><span class="sd">        qualify_columns: Whether to qualify columns.</span>
+</span><span id="L-58"><a href="#L-58"><span class="linenos">58</span></a><span class="sd">        validate_qualify_columns: Whether to validate columns.</span>
+</span><span id="L-59"><a href="#L-59"><span class="linenos">59</span></a><span class="sd">        quote_identifiers: Whether to run the quote_identifiers step.</span>
 </span><span id="L-60"><a href="#L-60"><span class="linenos">60</span></a><span class="sd">            This step is necessary to ensure correctness for case sensitive queries.</span>
 </span><span id="L-61"><a href="#L-61"><span class="linenos">61</span></a><span class="sd">            But this flag is provided in case this step is performed at a later time.</span>
 </span><span id="L-62"><a href="#L-62"><span class="linenos">62</span></a><span class="sd">        identify: If True, quote all identifiers, else only necessary ones.</span>
@@ -195,15 +195,15 @@
 </span><span id="qualify-49"><a href="#qualify-49"><span class="linenos">49</span></a><span class="sd">        db: Default database name for tables.</span>
 </span><span id="qualify-50"><a href="#qualify-50"><span class="linenos">50</span></a><span class="sd">        catalog: Default catalog name for tables.</span>
 </span><span id="qualify-51"><a href="#qualify-51"><span class="linenos">51</span></a><span class="sd">        schema: Schema to infer column names and types.</span>
-</span><span id="qualify-52"><a href="#qualify-52"><span class="linenos">52</span></a><span class="sd">        expand_alias_refs: Whether or not to expand references to aliases.</span>
-</span><span id="qualify-53"><a href="#qualify-53"><span class="linenos">53</span></a><span class="sd">        expand_stars: Whether or not to expand star queries. This is a necessary step</span>
+</span><span id="qualify-52"><a href="#qualify-52"><span class="linenos">52</span></a><span class="sd">        expand_alias_refs: Whether to expand references to aliases.</span>
+</span><span id="qualify-53"><a href="#qualify-53"><span class="linenos">53</span></a><span class="sd">        expand_stars: Whether to expand star queries. This is a necessary step</span>
 </span><span id="qualify-54"><a href="#qualify-54"><span class="linenos">54</span></a><span class="sd">            for most of the optimizer&#39;s rules to work; do not set to False unless you</span>
 </span><span id="qualify-55"><a href="#qualify-55"><span class="linenos">55</span></a><span class="sd">            know what you&#39;re doing!</span>
-</span><span id="qualify-56"><a href="#qualify-56"><span class="linenos">56</span></a><span class="sd">        infer_schema: Whether or not to infer the schema if missing.</span>
-</span><span id="qualify-57"><a href="#qualify-57"><span class="linenos">57</span></a><span class="sd">        isolate_tables: Whether or not to isolate table selects.</span>
-</span><span id="qualify-58"><a href="#qualify-58"><span class="linenos">58</span></a><span class="sd">        qualify_columns: Whether or not to qualify columns.</span>
-</span><span id="qualify-59"><a href="#qualify-59"><span class="linenos">59</span></a><span class="sd">        validate_qualify_columns: Whether or not to validate columns.</span>
-</span><span id="qualify-60"><a href="#qualify-60"><span class="linenos">60</span></a><span class="sd">        quote_identifiers: Whether or not to run the quote_identifiers step.</span>
+</span><span id="qualify-56"><a href="#qualify-56"><span class="linenos">56</span></a><span class="sd">        infer_schema: Whether to infer the schema if missing.</span>
+</span><span id="qualify-57"><a href="#qualify-57"><span class="linenos">57</span></a><span class="sd">        isolate_tables: Whether to isolate table selects.</span>
+</span><span id="qualify-58"><a href="#qualify-58"><span class="linenos">58</span></a><span class="sd">        qualify_columns: Whether to qualify columns.</span>
+</span><span id="qualify-59"><a href="#qualify-59"><span class="linenos">59</span></a><span class="sd">        validate_qualify_columns: Whether to validate columns.</span>
+</span><span id="qualify-60"><a href="#qualify-60"><span class="linenos">60</span></a><span class="sd">        quote_identifiers: Whether to run the quote_identifiers step.</span>
 </span><span id="qualify-61"><a href="#qualify-61"><span class="linenos">61</span></a><span class="sd">            This step is necessary to ensure correctness for case sensitive queries.</span>
 </span><span id="qualify-62"><a href="#qualify-62"><span class="linenos">62</span></a><span class="sd">            But this flag is provided in case this step is performed at a later time.</span>
 </span><span id="qualify-63"><a href="#qualify-63"><span class="linenos">63</span></a><span class="sd">        identify: If True, quote all identifiers, else only necessary ones.</span>
@@ -264,15 +264,15 @@
 <li><strong>db:</strong>  Default database name for tables.</li>
 <li><strong>catalog:</strong>  Default catalog name for tables.</li>
 <li><strong>schema:</strong>  Schema to infer column names and types.</li>
-<li><strong>expand_alias_refs:</strong>  Whether or not to expand references to aliases.</li>
-<li><strong>expand_stars:</strong>  Whether or not to expand star queries. This is a necessary step
+<li><strong>expand_alias_refs:</strong>  Whether to expand references to aliases.</li>
+<li><strong>expand_stars:</strong>  Whether to expand star queries. This is a necessary step
 for most of the optimizer's rules to work; do not set to False unless you
 know what you're doing!</li>
-<li><strong>infer_schema:</strong>  Whether or not to infer the schema if missing.</li>
-<li><strong>isolate_tables:</strong>  Whether or not to isolate table selects.</li>
-<li><strong>qualify_columns:</strong>  Whether or not to qualify columns.</li>
-<li><strong>validate_qualify_columns:</strong>  Whether or not to validate columns.</li>
-<li><strong>quote_identifiers:</strong>  Whether or not to run the quote_identifiers step.
+<li><strong>infer_schema:</strong>  Whether to infer the schema if missing.</li>
+<li><strong>isolate_tables:</strong>  Whether to isolate table selects.</li>
+<li><strong>qualify_columns:</strong>  Whether to qualify columns.</li>
+<li><strong>validate_qualify_columns:</strong>  Whether to validate columns.</li>
+<li><strong>quote_identifiers:</strong>  Whether to run the quote_identifiers step.
 This step is necessary to ensure correctness for case sensitive queries.
 But this flag is provided in case this step is performed at a later time.</li>
 <li><strong>identify:</strong>  If True, quote all identifiers, else only necessary ones.</li>

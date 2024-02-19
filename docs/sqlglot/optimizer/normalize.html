@@ -146,7 +146,7 @@
 </span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>
 </span><span id="L-77"><a href="#L-77"><span class="linenos"> 77</span></a><span class="sd">    Args:</span>
 </span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a><span class="sd">        expression: The expression to check if it&#39;s normalized.</span>
-</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a><span class="sd">        dnf: Whether or not to check if the expression is in Disjunctive Normal Form (DNF).</span>
+</span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a><span class="sd">        dnf: Whether to check if the expression is in Disjunctive Normal Form (DNF).</span>
 </span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a><span class="sd">            Default: False, i.e. we check if it&#39;s in Conjunctive Normal Form (CNF).</span>
 </span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a>    <span class="n">ancestor</span><span class="p">,</span> <span class="n">root</span> <span class="o">=</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">And</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Or</span><span class="p">)</span> <span class="k">if</span> <span class="n">dnf</span> <span class="k">else</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Or</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">And</span><span class="p">)</span>
@@ -169,7 +169,7 @@
 </span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>
 </span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">    Args:</span>
 </span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd">        expression: The expression to compute the normalization distance for.</span>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">        dnf: Whether or not to check if the expression is in Disjunctive Normal Form (DNF).</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">        dnf: Whether to check if the expression is in Disjunctive Normal Form (DNF).</span>
 </span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="sd">            Default: False, i.e. we check if it&#39;s in Conjunctive Normal Form (CNF).</span>
 </span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>
 </span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">    Returns:</span>
@@ -387,7 +387,7 @@
 </span><span id="normalized-77"><a href="#normalized-77"><span class="linenos">77</span></a>
 </span><span id="normalized-78"><a href="#normalized-78"><span class="linenos">78</span></a><span class="sd">    Args:</span>
 </span><span id="normalized-79"><a href="#normalized-79"><span class="linenos">79</span></a><span class="sd">        expression: The expression to check if it&#39;s normalized.</span>
-</span><span id="normalized-80"><a href="#normalized-80"><span class="linenos">80</span></a><span class="sd">        dnf: Whether or not to check if the expression is in Disjunctive Normal Form (DNF).</span>
+</span><span id="normalized-80"><a href="#normalized-80"><span class="linenos">80</span></a><span class="sd">        dnf: Whether to check if the expression is in Disjunctive Normal Form (DNF).</span>
 </span><span id="normalized-81"><a href="#normalized-81"><span class="linenos">81</span></a><span class="sd">            Default: False, i.e. we check if it&#39;s in Conjunctive Normal Form (CNF).</span>
 </span><span id="normalized-82"><a href="#normalized-82"><span class="linenos">82</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="normalized-83"><a href="#normalized-83"><span class="linenos">83</span></a>    <span class="n">ancestor</span><span class="p">,</span> <span class="n">root</span> <span class="o">=</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">And</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Or</span><span class="p">)</span> <span class="k">if</span> <span class="n">dnf</span> <span class="k">else</span> <span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Or</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">And</span><span class="p">)</span>
@@ -418,7 +418,7 @@
 
 <ul>
 <li><strong>expression:</strong>  The expression to check if it's normalized.</li>
-<li><strong>dnf:</strong>  Whether or not to check if the expression is in Disjunctive Normal Form (DNF).
+<li><strong>dnf:</strong>  Whether to check if the expression is in Disjunctive Normal Form (DNF).
 Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).</li>
 </ul>
 </div>
@@ -450,7 +450,7 @@ Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).</li>
 </span><span id="normalization_distance-100"><a href="#normalization_distance-100"><span class="linenos">100</span></a>
 </span><span id="normalization_distance-101"><a href="#normalization_distance-101"><span class="linenos">101</span></a><span class="sd">    Args:</span>
 </span><span id="normalization_distance-102"><a href="#normalization_distance-102"><span class="linenos">102</span></a><span class="sd">        expression: The expression to compute the normalization distance for.</span>
-</span><span id="normalization_distance-103"><a href="#normalization_distance-103"><span class="linenos">103</span></a><span class="sd">        dnf: Whether or not to check if the expression is in Disjunctive Normal Form (DNF).</span>
+</span><span id="normalization_distance-103"><a href="#normalization_distance-103"><span class="linenos">103</span></a><span class="sd">        dnf: Whether to check if the expression is in Disjunctive Normal Form (DNF).</span>
 </span><span id="normalization_distance-104"><a href="#normalization_distance-104"><span class="linenos">104</span></a><span class="sd">            Default: False, i.e. we check if it&#39;s in Conjunctive Normal Form (CNF).</span>
 </span><span id="normalization_distance-105"><a href="#normalization_distance-105"><span class="linenos">105</span></a>
 </span><span id="normalization_distance-106"><a href="#normalization_distance-106"><span class="linenos">106</span></a><span class="sd">    Returns:</span>
@@ -482,7 +482,7 @@ Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).</li>
 
 <ul>
 <li><strong>expression:</strong>  The expression to compute the normalization distance for.</li>
-<li><strong>dnf:</strong>  Whether or not to check if the expression is in Disjunctive Normal Form (DNF).
+<li><strong>dnf:</strong>  Whether to check if the expression is in Disjunctive Normal Form (DNF).
 Default: False, i.e. we check if it's in Conjunctive Normal Form (CNF).</li>
 </ul>
 

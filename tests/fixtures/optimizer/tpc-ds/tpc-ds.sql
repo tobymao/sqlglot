@@ -2763,7 +2763,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 21
 --------------------------------------
-# execute: true
 SELECT
          *
 FROM    (
@@ -3896,7 +3895,6 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 32
 --------------------------------------
-# execute: true
 SELECT
        Sum(cs_ext_discount_amt) AS "excess discount amount"
 FROM   catalog_sales ,
@@ -4459,7 +4457,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 37
 --------------------------------------
-# execute: true
 SELECT
          i_item_id ,
          i_item_desc ,
@@ -4713,7 +4710,6 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 40
 --------------------------------------
-# execute: true
 SELECT
                 w_state ,
                 i_item_id ,
@@ -11034,7 +11030,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 82
 --------------------------------------
-# execute: true
 SELECT
          i_item_id ,
          i_item_desc ,
@@ -12102,7 +12097,6 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 92
 --------------------------------------
-# execute: true
 SELECT
          Sum(ws_ext_discount_amt) AS "Excess Discount Amount"
 FROM     web_sales ,

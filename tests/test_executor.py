@@ -137,13 +137,17 @@ class TestExecutor(unittest.TestCase):
                     f"READ_CSV('{DIR_TPCDS}{expression.name}.csv.gz', 'delimiter', '|') AS {expression.alias_or_name}"
                 )
             return expression
-
+    
+        index = []
         for i, (sql, _) in enumerate(self.tpcds_sqls):
             try:
                 table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
                 self.subtestHelper(i, table, tpch=False)
-            except Exception:
+            except Exception as e:
+                print("Failed to execute query", i, e)
+                index.append(i)
                 continue
+        print(index)
 
     def test_execute_callable(self):
         tables = {

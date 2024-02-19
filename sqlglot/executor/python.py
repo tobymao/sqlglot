@@ -142,7 +142,6 @@ class PythonExecutor:
             context = self.context({alias: table})
             yield context
             types = []
-
             for row in reader:
                 if not types:
                     for v in row:
@@ -150,7 +149,9 @@ class PythonExecutor:
                             types.append(type(ast.literal_eval(v)))
                         except (ValueError, SyntaxError):
                             types.append(str)
-                context.set_row(tuple(t(v) for t, v in zip(types, row)))
+
+                # for empty string, set default value instead of casting
+                context.set_row(tuple(t(v) if v else t() for t, v in zip(types, row)))
                 yield context.table.reader
 
     def join(self, step, context):

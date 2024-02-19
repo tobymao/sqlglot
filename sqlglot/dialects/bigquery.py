@@ -807,7 +807,7 @@ class BigQuery(Dialect):
 
         def array_sql(self, expression: exp.Array) -> str:
             first_arg = seq_get(expression.expressions, 0)
-            if isinstance(first_arg, exp.Subqueryable):
+            if isinstance(first_arg, exp.Query):
                 return f"ARRAY{self.wrap(self.sql(first_arg))}"
 
             return inline_array_sql(self, expression)

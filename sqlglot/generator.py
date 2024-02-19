@@ -630,7 +630,7 @@ class Generator(metaclass=_Generator):
         this_sql = self.indent(
             (
                 self.sql(expression)
-                if isinstance(expression, (exp.Select, exp.Union))
+                if isinstance(expression, exp.UNWRAPPED_QUERIES)
                 else self.sql(expression, "this")
             ),
             level=1,
@@ -1681,7 +1681,7 @@ class Generator(metaclass=_Generator):
         alias_node = expression.args.get("alias")
         column_names = alias_node and alias_node.columns
 
-        selects: t.List[exp.Subqueryable] = []
+        selects: t.List[exp.Query] = []
 
         for i, tup in enumerate(expression.expressions):
             row = tup.expressions
@@ -1697,10 +1697,8 @@ class Generator(metaclass=_Generator):
             # This may result in poor performance for large-cardinality `VALUES` tables, due to
             # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
             # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
-            subqueryable = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
-            return self.subquery_sql(
-                subqueryable.subquery(alias_node and alias_node.this, copy=False)
-            )
+            query = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
+            return self.subquery_sql(query.subquery(alias_node and alias_node.this, copy=False))
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
@@ -2326,7 +2324,7 @@ class Generator(metaclass=_Generator):
 
     def any_sql(self, expression: exp.Any) -> str:
         this = self.sql(expression, "this")
-        if isinstance(expression.this, exp.Subqueryable):
+        if isinstance(expression.this, exp.UNWRAPPED_QUERIES):
             this = self.wrap(this)
         return f"ANY {this}"
 

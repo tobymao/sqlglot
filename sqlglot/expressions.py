@@ -913,14 +913,138 @@ class Predicate(Condition):
 class DerivedTable(Expression):
     @property
     def selects(self) -> t.List[Expression]:
-        return self.this.selects if isinstance(self.this, Subqueryable) else []
+        return self.this.selects if isinstance(self.this, Query) else []
 
     @property
     def named_selects(self) -> t.List[str]:
         return [select.output_name for select in self.selects]
 
 
-class Unionable(Expression):
+class Query(Expression):
+    def subquery(self, alias: t.Optional[ExpOrStr] = None, copy: bool = True) -> Subquery:
+        """
+        Returns a `Subquery` that wraps around this query.
+
+        Example:
+            >>> subquery = Select().select("x").from_("tbl").subquery()
+            >>> Select().select("x").from_(subquery).sql()
+            'SELECT x FROM (SELECT x FROM tbl)'
+
+        Args:
+            alias: an optional alias for the subquery.
+            copy: if `False`, modify this expression instance in-place.
+        """
+        instance = maybe_copy(self, copy)
+        if not isinstance(alias, Expression):
+            alias = TableAlias(this=to_identifier(alias)) if alias else None
+
+        return Subquery(this=instance, alias=alias)
+
+    def limit(
+        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Select:
+        """
+        Adds a LIMIT clause to this query.
+
+        Example:
+            >>> select("1").union(select("1")).limit(1).sql()
+            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS _l_0 LIMIT 1'
+
+        Args:
+            expression: the SQL code string to parse.
+                This can also be an integer.
+                If a `Limit` instance is passed, it will be used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Limit`.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The limited query.
+        """
+        raise NotImplementedError
+
+    @property
+    def ctes(self) -> t.List[CTE]:
+        """Returns a list of all the CTEs attached to this query."""
+        with_ = self.args.get("with")
+        return with_.expressions if with_ else []
+
+    @property
+    def selects(self) -> t.List[Expression]:
+        """Returns the query's projections."""
+        raise NotImplementedError("Query objects must implement `selects`")
+
+    @property
+    def named_selects(self) -> t.List[str]:
+        """Returns the output names of the query's projections."""
+        raise NotImplementedError("Query objects must implement `named_selects`")
+
+    def select(
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Query:
+        """
+        Append to or set the SELECT expressions.
+
+        Example:
+            >>> Select().select("x", "y").sql()
+            'SELECT x, y'
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If an `Expression` instance is passed, it will be used as-is.
+            append: if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect: the dialect used to parse the input expressions.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified Query expression.
+        """
+        raise NotImplementedError("Query objects must implement `select`")
+
+    def with_(
+        self,
+        alias: ExpOrStr,
+        as_: ExpOrStr,
+        recursive: t.Optional[bool] = None,
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Query:
+        """
+        Append to or set the common table expressions.
+
+        Example:
+            >>> Select().with_("tbl2", as_="SELECT * FROM tbl").select("x").from_("tbl2").sql()
+            'WITH tbl2 AS (SELECT * FROM tbl) SELECT x FROM tbl2'
+
+        Args:
+            alias: the SQL code string to parse as the table name.
+                If an `Expression` instance is passed, this is used as-is.
+            as_: the SQL code string to parse as the table expression.
+                If an `Expression` instance is passed, it will be used as-is.
+            recursive: set the RECURSIVE part of the expression. Defaults to `False`.
+            append: if `True`, add to any existing expressions.
+                Otherwise, this resets the expressions.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified expression.
+        """
+        return _apply_cte_builder(
+            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
+        )
+
     def union(
         self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
     ) -> Union:
@@ -946,7 +1070,7 @@ class Unionable(Expression):
 
     def intersect(
         self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
-    ) -> Unionable:
+    ) -> Intersect:
         """
         Builds an INTERSECT expression.
 
@@ -969,7 +1093,7 @@ class Unionable(Expression):
 
     def except_(
         self, expression: ExpOrStr, distinct: bool = True, dialect: DialectType = None, **opts
-    ) -> Unionable:
+    ) -> Except:
         """
         Builds an EXCEPT expression.
 
@@ -991,7 +1115,7 @@ class Unionable(Expression):
         return except_(left=self, right=expression, distinct=distinct, dialect=dialect, **opts)
 
 
-class UDTF(DerivedTable, Unionable):
+class UDTF(DerivedTable):
     @property
     def selects(self) -> t.List[Expression]:
         alias = self.args.get("alias")
@@ -1017,23 +1141,23 @@ class Refresh(Expression):
 
 class DDL(Expression):
     @property
-    def ctes(self):
+    def ctes(self) -> t.List[CTE]:
+        """Returns a list of all the CTEs attached to this statement."""
         with_ = self.args.get("with")
-        if not with_:
-            return []
-        return with_.expressions
-
-    @property
-    def named_selects(self) -> t.List[str]:
-        if isinstance(self.expression, Subqueryable):
-            return self.expression.named_selects
-        return []
+        return with_.expressions if with_ else []
 
     @property
     def selects(self) -> t.List[Expression]:
-        if isinstance(self.expression, Subqueryable):
-            return self.expression.selects
-        return []
+        """If this statement contains a query (e.g. a CTAS), this returns the query's projections."""
+        return self.expression.selects if isinstance(self.expression, Query) else []
+
+    @property
+    def named_selects(self) -> t.List[str]:
+        """
+        If this statement contains a query (e.g. a CTAS), this returns the output
+        names of the query's projections.
+        """
+        return self.expression.named_selects if isinstance(self.expression, Query) else []
 
 
 class DML(Expression):
@@ -2445,96 +2569,6 @@ class Tuple(Expression):
         )
 
 
-class Subqueryable(Unionable):
-    def subquery(self, alias: t.Optional[ExpOrStr] = None, copy: bool = True) -> Subquery:
-        """
-        Convert this expression to an aliased expression that can be used as a Subquery.
-
-        Example:
-            >>> subquery = Select().select("x").from_("tbl").subquery()
-            >>> Select().select("x").from_(subquery).sql()
-            'SELECT x FROM (SELECT x FROM tbl)'
-
-        Args:
-            alias (str | Identifier): an optional alias for the subquery
-            copy (bool): if `False`, modify this expression instance in-place.
-
-        Returns:
-            Alias: the subquery
-        """
-        instance = maybe_copy(self, copy)
-        if not isinstance(alias, Expression):
-            alias = TableAlias(this=to_identifier(alias)) if alias else None
-
-        return Subquery(this=instance, alias=alias)
-
-    def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
-        raise NotImplementedError
-
-    @property
-    def ctes(self):
-        with_ = self.args.get("with")
-        if not with_:
-            return []
-        return with_.expressions
-
-    @property
-    def selects(self) -> t.List[Expression]:
-        raise NotImplementedError("Subqueryable objects must implement `selects`")
-
-    @property
-    def named_selects(self) -> t.List[str]:
-        raise NotImplementedError("Subqueryable objects must implement `named_selects`")
-
-    def select(
-        self,
-        *expressions: t.Optional[ExpOrStr],
-        append: bool = True,
-        dialect: DialectType = None,
-        copy: bool = True,
-        **opts,
-    ) -> Subqueryable:
-        raise NotImplementedError("Subqueryable objects must implement `select`")
-
-    def with_(
-        self,
-        alias: ExpOrStr,
-        as_: ExpOrStr,
-        recursive: t.Optional[bool] = None,
-        append: bool = True,
-        dialect: DialectType = None,
-        copy: bool = True,
-        **opts,
-    ) -> Subqueryable:
-        """
-        Append to or set the common table expressions.
-
-        Example:
-            >>> Select().with_("tbl2", as_="SELECT * FROM tbl").select("x").from_("tbl2").sql()
-            'WITH tbl2 AS (SELECT * FROM tbl) SELECT x FROM tbl2'
-
-        Args:
-            alias: the SQL code string to parse as the table name.
-                If an `Expression` instance is passed, this is used as-is.
-            as_: the SQL code string to parse as the table expression.
-                If an `Expression` instance is passed, it will be used as-is.
-            recursive: set the RECURSIVE part of the expression. Defaults to `False`.
-            append: if `True`, add to any existing expressions.
-                Otherwise, this resets the expressions.
-            dialect: the dialect used to parse the input expression.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The modified expression.
-        """
-        return _apply_cte_builder(
-            self, alias, as_, recursive=recursive, append=append, dialect=dialect, copy=copy, **opts
-        )
-
-
 QUERY_MODIFIERS = {
     "match": False,
     "laterals": False,
@@ -2638,7 +2672,7 @@ class Table(Expression):
         return col
 
 
-class Union(Subqueryable):
+class Union(Query):
     arg_types = {
         "with": False,
         "this": True,
@@ -2651,25 +2685,6 @@ class Union(Subqueryable):
     def limit(
         self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
     ) -> Select:
-        """
-        Set the LIMIT expression.
-
-        Example:
-            >>> select("1").union(select("1")).limit(1).sql()
-            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS _l_0 LIMIT 1'
-
-        Args:
-            expression: the SQL code string to parse.
-                This can also be an integer.
-                If a `Limit` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Limit`.
-            dialect: the dialect used to parse the input expression.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The limited subqueryable.
-        """
         return (
             select("*")
             .from_(self.subquery(alias="_l_0", copy=copy))
@@ -2684,25 +2699,6 @@ class Union(Subqueryable):
         copy: bool = True,
         **opts,
     ) -> Union:
-        """Append to or set the SELECT of the union recursively.
-
-        Example:
-            >>> from sqlglot import parse_one
-            >>> parse_one("select a from x union select a from y union select a from z").select("b").sql()
-            'SELECT a, b FROM x UNION SELECT a, b FROM y UNION SELECT a, b FROM z'
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
-            append: if `True`, add to any existing expressions.
-                Otherwise, this resets the expressions.
-            dialect: the dialect used to parse the input expressions.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            Union: the modified expression.
-        """
         this = self.copy() if copy else self
         this.this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
         this.expression.unnest().select(
@@ -2800,7 +2796,7 @@ class Lock(Expression):
     arg_types = {"update": True, "expressions": False, "wait": False}
 
 
-class Select(Subqueryable):
+class Select(Query):
     arg_types = {
         "with": False,
         "kind": False,
@@ -3011,25 +3007,6 @@ class Select(Subqueryable):
     def limit(
         self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
     ) -> Select:
-        """
-        Set the LIMIT expression.
-
-        Example:
-            >>> Select().from_("tbl").select("x").limit(10).sql()
-            'SELECT x FROM tbl LIMIT 10'
-
-        Args:
-            expression: the SQL code string to parse.
-                This can also be an integer.
-                If a `Limit` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Limit`.
-            dialect: the dialect used to parse the input expression.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            Select: the modified expression.
-        """
         return _apply_builder(
             expression=expression,
             instance=self,
@@ -3084,25 +3061,6 @@ class Select(Subqueryable):
         copy: bool = True,
         **opts,
     ) -> Select:
-        """
-        Append to or set the SELECT expressions.
-
-        Example:
-            >>> Select().select("x", "y").sql()
-            'SELECT x, y'
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If an `Expression` instance is passed, it will be used as-is.
-            append: if `True`, add to any existing expressions.
-                Otherwise, this resets the expressions.
-            dialect: the dialect used to parse the input expressions.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The modified Select expression.
-        """
         return _apply_list_builder(
             *expressions,
             instance=self,
@@ -3416,12 +3374,8 @@ class Select(Subqueryable):
             The new Create expression.
         """
         instance = maybe_copy(self, copy)
-        table_expression = maybe_parse(
-            table,
-            into=Table,
-            dialect=dialect,
-            **opts,
-        )
+        table_expression = maybe_parse(table, into=Table, dialect=dialect, **opts)
+
         properties_expression = None
         if properties:
             properties_expression = Properties.from_dict(properties)
@@ -3493,7 +3447,10 @@ class Select(Subqueryable):
         return self.expressions
 
 
-class Subquery(DerivedTable, Unionable):
+UNWRAPPED_QUERIES = (Select, Union)
+
+
+class Subquery(DerivedTable, Query):
     arg_types = {
         "this": True,
         "alias": False,
@@ -3502,9 +3459,7 @@ class Subquery(DerivedTable, Unionable):
     }
 
     def unnest(self):
-        """
-        Returns the first non subquery.
-        """
+        """Returns the first non subquery."""
         expression = self
         while isinstance(expression, Subquery):
             expression = expression.this
@@ -6943,7 +6898,7 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
 
 def expand(
     expression: Expression,
-    sources: t.Dict[str, Subqueryable],
+    sources: t.Dict[str, Query],
     dialect: DialectType = None,
     copy: bool = True,
 ) -> Expression:
@@ -6959,7 +6914,7 @@ def expand(
 
     Args:
         expression: The expression to expand.
-        sources: A dictionary of name to Subqueryables.
+        sources: A dictionary of name to Queries.
         dialect: The dialect of the sources dict.
         copy: Whether to copy the expression during transformation. Defaults to True.
 

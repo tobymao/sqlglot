@@ -1,7 +1,6 @@
 --------------------------------------
 -- TPC-DS 1
 --------------------------------------
-# execute: true
 WITH customer_total_return
      AS (SELECT sr_customer_sk     AS ctr_customer_sk,
                 sr_store_sk        AS ctr_store_sk,
@@ -926,6 +925,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 7
 --------------------------------------
+# execute: true
 SELECT i_item_id,
                Avg(ss_quantity)    agg1,
                Avg(ss_list_price)  agg2,
@@ -1249,6 +1249,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 9
 --------------------------------------
+# execute: true
 SELECT CASE
          WHEN (SELECT Count(*)
                FROM   store_sales
@@ -2762,6 +2763,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 21
 --------------------------------------
+# execute: true
 SELECT
          *
 FROM    (
@@ -3894,6 +3896,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 32
 --------------------------------------
+# execute: true
 SELECT
        Sum(cs_ext_discount_amt) AS "excess discount amount"
 FROM   catalog_sales ,
@@ -3954,6 +3957,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 33
 --------------------------------------
+# execute: true
 WITH ss
      AS (SELECT i_manufact_id,
                 Sum(ss_ext_sales_price) total_sales
@@ -4455,6 +4459,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 37
 --------------------------------------
+# execute: true
 SELECT
          i_item_id ,
          i_item_desc ,
@@ -4708,6 +4713,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 40
 --------------------------------------
+# execute: true
 SELECT
                 w_state ,
                 i_item_id ,
@@ -8024,7 +8030,6 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 65
 --------------------------------------
-# execute: true
 SELECT s_store_name,
                i_item_desc,
                sc.revenue,
@@ -9032,6 +9037,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 68
 --------------------------------------
+# execute: true
 SELECT c_last_name,
                c_first_name,
                ca_city,
@@ -9574,7 +9580,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 73
 --------------------------------------
-# execute: true
 SELECT c_last_name,
        c_first_name,
        c_salutation,
@@ -11029,6 +11034,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 82
 --------------------------------------
+# execute: true
 SELECT
          i_item_id ,
          i_item_desc ,
@@ -12096,6 +12102,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 92
 --------------------------------------
+# execute: true
 SELECT
          Sum(ws_ext_discount_amt) AS "Excess Discount Amount"
 FROM     web_sales ,

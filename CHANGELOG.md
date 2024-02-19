@@ -1,6 +1,28 @@
 Changelog
 =========
 
+## [v21.1.2] - 2024-02-19
+### :sparkles: New Features
+- [`b8cbf66`](https://github.com/tobymao/sqlglot/commit/b8cbf66471158371a27d9145b3b553b7a1384c9d) - **bigquery**: parse procedural EXCEPTION WHEN statement into a Command closes [#2981](https://github.com/tobymao/sqlglot/pull/2981) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`906ceee`](https://github.com/tobymao/sqlglot/commit/906ceee0946c547f83177916c3f8d6aeb23023a8) - **duckdb**: implement generation logic for exp.ArrayAny *(PR [#2984](https://github.com/tobymao/sqlglot/pull/2984) by [@georgesittas](https://github.com/georgesittas))*
+- [`92455e4`](https://github.com/tobymao/sqlglot/commit/92455e4d4e2c8d5a874a5050d9a38f943479cdca) - **snowflake**: create storage integration  *(PR [#2985](https://github.com/tobymao/sqlglot/pull/2985) by [@tekumara](https://github.com/tekumara))*
+- [`bedf6e9`](https://github.com/tobymao/sqlglot/commit/bedf6e9dabf9da25e1fff2f3c8ae22fbf7face0b) - improve transpilation support for ArrayAny *(PR [#2986](https://github.com/tobymao/sqlglot/pull/2986) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#2707](https://github.com/tobymao/sqlglot/issues/2707) opened by [@HuashiSCNU0303](https://github.com/HuashiSCNU0303)*
+
+### :bug: Bug Fixes
+- [`cc67ab2`](https://github.com/tobymao/sqlglot/commit/cc67ab2513c71a6b9574f8c3cf4c8ba2927d798f) - **tsql**: map StrPosition back to CHARINDEX fixes [#2968](https://github.com/tobymao/sqlglot/pull/2968) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`46f15ce`](https://github.com/tobymao/sqlglot/commit/46f15cef87de3159bc1d422b2620278e9e27ec16) - **postgres**: ensure json extraction can roundtrip unaltered *(PR [#2974](https://github.com/tobymao/sqlglot/pull/2974) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2971](https://github.com/tobymao/sqlglot/issues/2971) opened by [@l-vincent-l](https://github.com/l-vincent-l)*
+- [`7ee4fe7`](https://github.com/tobymao/sqlglot/commit/7ee4fe73b29234f2837a212b6c872efd7f5c30ea) - expand using with star except *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`5a34f3d`](https://github.com/tobymao/sqlglot/commit/5a34f3d5f652ac209fd122aa25e46d99d8e5cba6) - clean up tech debt in dialect implementations *(PR [#2977](https://github.com/tobymao/sqlglot/pull/2977) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`ae92789`](https://github.com/tobymao/sqlglot/commit/ae92789cdac4c4f0bb3d5f542bd9fe93aee4ea70) - rephrase some sentences in the FAQ section *(PR [#2980](https://github.com/tobymao/sqlglot/pull/2980) by [@georgesittas](https://github.com/georgesittas))*
+- [`22ed4d0`](https://github.com/tobymao/sqlglot/commit/22ed4d0a976dbba15962670873422e86874680b0) - cleanup kv defs from brackets *(PR [#2987](https://github.com/tobymao/sqlglot/pull/2987) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v21.1.1] - 2024-02-14
 ### :sparkles: New Features
 - [`1d0b3d3`](https://github.com/tobymao/sqlglot/commit/1d0b3d3a22ba5a8128505d636a2ff71d0ea03d03) - add support for multi-part interval addition syntax *(PR [#2970](https://github.com/tobymao/sqlglot/pull/2970) by [@georgesittas](https://github.com/georgesittas))*
@@ -2634,3 +2656,4 @@ Changelog
 [v21.0.2]: https://github.com/tobymao/sqlglot/compare/v21.0.1...v21.0.2
 [v21.1.0]: https://github.com/tobymao/sqlglot/compare/v21.0.2...v21.1.0
 [v21.1.1]: https://github.com/tobymao/sqlglot/compare/v21.1.0...v21.1.1
+[v21.1.2]: https://github.com/tobymao/sqlglot/compare/v21.1.1...v21.1.2

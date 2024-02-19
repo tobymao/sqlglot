@@ -62,15 +62,9 @@ class TestExecutor(unittest.TestCase):
         cls.tpcds_conn.close()
 
     def cached_execute(self, sql, tpch=True):
+        conn = self.tpch_conn if tpch else self.tpcds_conn
         if sql not in self.cache:
-            if tpch:
-                self.cache[sql] = self.tpch_conn.execute(
-                    transpile(sql, write="duckdb")[0]
-                ).fetchdf()
-            else:
-                self.cache[sql] = self.tpcds_conn.execute(
-                    transpile(sql, write="duckdb")[0]
-                ).fetchdf()
+            self.cache[sql] = conn.execute(transpile(sql, write="duckdb")[0]).fetchdf()
         return self.cache[sql]
 
     def rename_anonymous(self, source, target):

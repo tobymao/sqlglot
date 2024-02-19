@@ -150,7 +150,7 @@ class PythonExecutor:
                         except (ValueError, SyntaxError):
                             types.append(str)
 
-                # for NULL values with type str, we convert them to None instead of casting
+                # We can't cast empty values ('') to non-string types, so we convert them to None instead
                 context.set_row(
                     tuple(None if (v == "" and t is not str) else t(v) for t, v in zip(types, row))
                 )

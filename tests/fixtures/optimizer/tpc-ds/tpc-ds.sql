@@ -219,6 +219,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 3
 --------------------------------------
+# execute: true
 SELECT dt.d_year,
                item.i_brand_id          brand_id,
                item.i_brand             brand,
@@ -924,6 +925,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 7
 --------------------------------------
+# execute: true
 SELECT i_item_id,
                Avg(ss_quantity)    agg1,
                Avg(ss_list_price)  agg2,
@@ -1247,6 +1249,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 9
 --------------------------------------
+# execute: true
 SELECT CASE
          WHEN (SELECT Count(*)
                FROM   store_sales
@@ -3056,6 +3059,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 24
 --------------------------------------
+# execute: true
 WITH ssales
      AS (SELECT c_last_name,
                 c_first_name,
@@ -3158,6 +3162,7 @@ HAVING
 --------------------------------------
 -- TPC-DS 25
 --------------------------------------
+# execute: true
 SELECT i_item_id,
                i_item_desc,
                s_store_id,
@@ -3247,6 +3252,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 26
 --------------------------------------
+# execute: true
 SELECT i_item_id,
                Avg(cs_quantity)    agg1,
                Avg(cs_list_price)  agg2,
@@ -3527,6 +3533,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 29
 --------------------------------------
+# execute: true
 SELECT i_item_id,
                i_item_desc,
                s_store_id,
@@ -3948,6 +3955,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 33
 --------------------------------------
+# execute: true
 WITH ss
      AS (SELECT i_manufact_id,
                 Sum(ss_ext_sales_price) total_sales
@@ -5014,6 +5022,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 43
 --------------------------------------
+# execute: true
 SELECT s_store_name,
                s_store_id,
                Sum(CASE
@@ -6194,6 +6203,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 52
 --------------------------------------
+# execute: true
 SELECT dt.d_year,
                item.i_brand_id         brand_id,
                item.i_brand            brand,
@@ -6357,6 +6367,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 54
 --------------------------------------
+# execute: true
 WITH my_customers
      AS (SELECT DISTINCT c_customer_sk,
                          c_current_addr_sk
@@ -6493,6 +6504,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 55
 --------------------------------------
+# execute: true
 SELECT i_brand_id              brand_id,
                i_brand                 brand,
                Sum(ss_ext_sales_price) ext_price
@@ -6531,6 +6543,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 56
 --------------------------------------
+# execute: true
 WITH ss
      AS (SELECT i_item_id,
                 Sum(ss_ext_sales_price) total_sales
@@ -7231,6 +7244,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 60
 --------------------------------------
+# execute: true
 WITH ss
      AS (SELECT i_item_id,
                 Sum(ss_ext_sales_price) total_sales
@@ -9113,6 +9127,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 69
 --------------------------------------
+# execute: true
 SELECT cd_gender,
                cd_marital_status,
                cd_education_status,
@@ -9355,6 +9370,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 71
 --------------------------------------
+# execute: true
 SELECT i_brand_id     brand_id,
        i_brand        brand,
        t_hour,
@@ -11064,6 +11080,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 83
 --------------------------------------
+# execute: true
 WITH sr_items
      AS (SELECT i_item_id               item_id,
                 Sum(sr_return_quantity) sr_item_qty
@@ -11262,6 +11279,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 84
 --------------------------------------
+# execute: true
 SELECT c_customer_id   AS customer_id,
                c_last_name
                || ', '
@@ -11563,6 +11581,7 @@ FROM "cool_cust" AS "cool_cust";
 --------------------------------------
 -- TPC-DS 88
 --------------------------------------
+# execute: true
 select  *
 from
  (select count(*) h8_30_to_9
@@ -12140,6 +12159,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 93
 --------------------------------------
+# execute: true
 SELECT ss_customer_sk,
                Sum(act_sales) sumsales
 FROM   (SELECT ss_item_sk,

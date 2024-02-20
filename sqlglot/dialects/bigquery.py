@@ -448,9 +448,12 @@ class BigQuery(Dialect):
             return this
 
         def _parse_table_parts(
-            self, schema: bool = False, is_db_reference: bool = False
+            self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
         ) -> exp.Table:
-            table = super()._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
+            table = super()._parse_table_parts(
+                schema=schema, is_db_reference=is_db_reference, wildcard=True
+            )
+
             if isinstance(table.this, exp.Identifier) and "." in table.name:
                 catalog, db, this, *rest = (
                     t.cast(t.Optional[exp.Expression], exp.to_identifier(x))

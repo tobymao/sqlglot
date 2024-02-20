@@ -535,7 +535,7 @@ class Snowflake(Dialect):
             return table
 
         def _parse_table_parts(
-            self, schema: bool = False, is_db_reference: bool = False
+            self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
         ) -> exp.Table:
             # https://docs.snowflake.com/en/user-guide/querying-stage
             if self._match(TokenType.STRING, advance=False):

@@ -2805,7 +2805,9 @@ class Parser(metaclass=_Parser):
             or self._parse_placeholder()
         )
 
-    def _parse_table_parts(self, schema: bool = False, is_db_reference: bool = False) -> exp.Table:
+    def _parse_table_parts(
+        self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
+    ) -> exp.Table:
         catalog = None
         db = None
         table: t.Optional[exp.Expression | str] = self._parse_table_part(schema=schema)
@@ -2819,7 +2821,19 @@ class Parser(metaclass=_Parser):
             else:
                 catalog = db
                 db = table
+                # "" used for tsql FROM a..b case
                 table = self._parse_table_part(schema=schema) or ""
+
+        if (
+            wildcard
+            and self._is_connected()
+            and (isinstance(table, exp.Identifier) or not table)
+            and self._match(TokenType.STAR)
+        ):
+            if isinstance(table, exp.Identifier):
+                table.args["this"] += "*"
+            else:
+                table = exp.Identifier(this="*")
 
         if is_db_reference:
             catalog = db

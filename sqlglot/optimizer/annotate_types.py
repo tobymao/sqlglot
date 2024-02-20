@@ -521,7 +521,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 last_datatype = expr_type
                 break
 
-            last_datatype = self._maybe_coerce(last_datatype or expr.type, expr.type)
+            last_datatype = self._maybe_coerce(last_datatype or expr_type, expr_type)
 
         self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)
 

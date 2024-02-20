@@ -982,9 +982,12 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.selects[0].type.sql(), "ARRAY<INT>")
 
         schema = MappingSchema({"t": {"c": "STRUCT<`f` STRING>"}}, dialect="bigquery")
-        expression = annotate_types(parse_one("SELECT t.c FROM t"), schema=schema)
+        expression = annotate_types(parse_one("SELECT t.c, [t.c] FROM t"), schema=schema)
 
         self.assertEqual(expression.selects[0].type.sql(dialect="bigquery"), "STRUCT<`f` STRING>")
+        self.assertEqual(
+            expression.selects[1].type.sql(dialect="bigquery"), "ARRAY<STRUCT<`f` STRING>>"
+        )
 
         expression = annotate_types(
             parse_one("SELECT unnest(t.x) FROM t AS t", dialect="postgres"),

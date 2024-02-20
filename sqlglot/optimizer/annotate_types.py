@@ -514,6 +514,13 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         last_datatype = None
         for expr in expressions:
+            expr_type = expr.type
+
+            # Stop at the first nested data type found - we don't want to _maybe_coerce nested types
+            if expr_type.args.get("nested"):
+                last_datatype = expr_type
+                break
+
             last_datatype = self._maybe_coerce(last_datatype or expr.type, expr.type)
 
         self._set_type(expression, last_datatype or exp.DataType.Type.UNKNOWN)

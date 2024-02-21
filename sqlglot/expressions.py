@@ -1492,6 +1492,7 @@ class Delete(DML):
         "returning": False,
         "limit": False,
         "tables": False,  # Multiple-Table Syntax (MySQL)
+        "option": False,
     }
 
     def delete(
@@ -2556,7 +2557,18 @@ QUERY_MODIFIERS = {
     "sample": False,
     "settings": False,
     "format": False,
+    "option": False,
 }
+
+
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/option-clause-transact-sql?view=sql-server-ver16
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-query?view=sql-server-ver16
+class Option(Expression):
+    arg_types = {"option_type": True, "option_value": False, "requires_equals": False}
+
+
+class Options(Expression):
+    arg_types = {"options": False}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table?view=sql-server-ver16
@@ -2765,6 +2777,7 @@ class Update(Expression):
         "returning": False,
         "order": False,
         "limit": False,
+        "option": False,
     }
 
 
@@ -5554,7 +5567,14 @@ class Use(Expression):
 
 
 class Merge(Expression):
-    arg_types = {"this": True, "using": True, "on": True, "expressions": True, "with": False}
+    arg_types = {
+        "this": True,
+        "using": True,
+        "on": True,
+        "expressions": True,
+        "with": False,
+        "option": False,
+    }
 
 
 class When(Func):

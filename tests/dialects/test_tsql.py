@@ -1,10 +1,94 @@
 from sqlglot import exp, parse, parse_one
 from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
+from sqlglot.errors import ParseError
+
+import itertools
+import logging
 
 
 class TestTSQL(Validator):
     dialect = "tsql"
+
+    def test_tsql_option(self):
+        possible_options = [
+            "HASH GROUP",
+            "ORDER GROUP",
+            "CONCAT UNION",
+            "HASH UNION",
+            "MERGE UNION",
+            "LOOP JOIN",
+            "MERGE JOIN",
+            "HASH JOIN",
+            "DISABLE_OPTIMIZED_PLAN_FORCING",
+            "EXPAND VIEWS",
+            "FAST 15",
+            "FORCE ORDER",
+            "FORCE EXTERNALPUSHDOWN",
+            "DISABLE EXTERNALPUSHDOWN",
+            "FORCE SCALEOUTEXECUTION",
+            "DISABLE SCALEOUTEXECUTION",
+            "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX",
+            "KEEP PLAN",
+            "KEEPFIXED PLAN",
+            "MAX_GRANT_PERCENT = 5",
+            "MIN_GRANT_PERCENT = 10",
+            "MAXDOP 13",
+            "MAXRECURSION 8",
+            "NO_PERFORMANCE_SPOOL",
+            "OPTIMIZE FOR UNKNOWN",
+            "PARAMETERIZATION SIMPLE",
+            "PARAMETERIZATION FORCED",
+            "QUERYTRACEON 99",
+            "RECOMPILE",
+            "ROBUST PLAN",
+            "USE PLAN N'<xml_plan>'",
+        ]
+
+        possible_statements = [
+            "DELETE FROM Table1",
+            "SELECT * FROM Table1",
+            "SELECT * FROM Table1 WHERE id = 2",
+            "MERGE INTO Locations AS T USING locations_stage AS S ON T.LocationID = S.LocationID WHEN MATCHED THEN UPDATE SET LocationName = S.LocationName",
+            "UPDATE Customers SET ContactName = 'Alfred Schmidt', City = 'Frankfurt' WHERE CustomerID = 1",
+        ]
+
+        # We test at most 2 options - so first do a run with only 1 option, and afterwards do a cartesian product
+        # of all 2 options.
+        for statement, option in itertools.product(possible_statements, possible_options):
+            query = f"{statement} OPTION({option})"
+            result = self.validate_identity(query)
+            options = result.args.get("option")
+            self.assertIsInstance(options, exp.Options)
+            for actual_opt in options.args.get("options"):
+                self.assertIsInstance(actual_opt, exp.Option)
+
+        for statement, option1, option2 in itertools.product(
+            possible_statements, possible_options, possible_options
+        ):
+            query = f"{statement} OPTION({','.join([option1,option2])})"
+            result = self.validate_identity(query)
+            options = result.args.get("option")
+            self.assertIsInstance(options, exp.Options)
+            for actual_opt in options.args.get("options"):
+                self.assertIsInstance(actual_opt, exp.Option)
+
+        raising_queries = [
+            "DELETE FROM Table1 OPTION HASH GROUP",
+            "DELETE FROM Table1 OPTION(KEEPFIXED)",
+            "DELETE FROM Table1 OPTION(FAST 'abcd')",
+            "DELETE FROM Table1 OPTION(HASH GROUP HASH GROUP)",
+        ]
+        for query in raising_queries:
+            with self.assertRaises(ParseError, msg=f"When running '{query}'"):
+                self.parse_one(query)
+
+        logger = logging.getLogger("sqlglot")
+        with self.assertLogs(logger) as cm:
+            parse_one("ALTER TABLE table2 OPTION(HASH GROUP)")
+            self.assertEqual(len(cm.output), 1)
+            msg = cm.output[0]
+            self.assertIn("Falling back to parsing as a 'Command'", msg)
 
     def test_tsql(self):
         self.validate_identity("ROUND(x, 1, 0)")

@@ -615,7 +615,7 @@ class Resolver:
 
         node, _ = self.scope.selected_sources.get(table_name)
 
-        if isinstance(node, exp.UNWRAPPED_QUERIES):
+        if isinstance(node, exp.Query):
             while node and node.alias != table_name:
                 node = node.parent
 

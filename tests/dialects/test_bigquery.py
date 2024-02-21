@@ -94,6 +94,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
         self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
         self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b))")
+        self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b) LIMIT 10)")
         self.validate_identity(
             "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
         )

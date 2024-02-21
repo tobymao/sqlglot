@@ -2566,7 +2566,7 @@ class Generator(metaclass=_Generator):
         is_global = " GLOBAL" if expression.args.get("is_global") else ""
 
         if query:
-            in_sql = self.wrap(query)
+            in_sql = self.wrap(self.sql(query))
         elif unnest:
             in_sql = self.in_unnest_op(unnest)
         elif field:

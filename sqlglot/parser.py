@@ -3542,7 +3542,7 @@ class Parser(metaclass=_Parser):
             matched_l_paren = self._prev.token_type == TokenType.L_PAREN
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
 
-            if len(expressions) == 1 and isinstance(expressions[0], exp.UNWRAPPED_QUERIES):
+            if len(expressions) == 1 and isinstance(expressions[0], exp.Query):
                 this = self.expression(exp.In, this=this, query=expressions[0])
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)

@@ -942,7 +942,7 @@ class Query(Expression):
 
     def limit(
         self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
+    ) -> Query:
         """
         Adds a LIMIT clause to this query.
 
@@ -2699,7 +2699,7 @@ class Union(Query):
         copy: bool = True,
         **opts,
     ) -> Union:
-        this = self.copy() if copy else self
+        this = maybe_copy(self, copy)
         this.this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
         this.expression.unnest().select(
             *expressions, append=append, dialect=dialect, copy=False, **opts
@@ -3470,6 +3470,33 @@ class Subquery(DerivedTable, Query):
         while expression.same_parent and expression.is_wrapper:
             expression = t.cast(Subquery, expression.parent)
         return expression
+
+    def subquery(self, alias: t.Optional[ExpOrStr] = None, copy: bool = True) -> Subquery:
+        instance = maybe_copy(self, copy)
+        if not isinstance(alias, Expression):
+            alias = TableAlias(this=to_identifier(alias)) if alias else None
+
+        instance.set("alias", alias)
+        return instance
+
+    def select(
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Subquery:
+        this = maybe_copy(self, copy)
+        this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
+        return this
+
+    def limit(
+        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Subquery:
+        this = maybe_copy(self, copy)
+        this.unnest().limit(expression, dialect=dialect, copy=False, **opts)
+        return this
 
     @property
     def is_wrapper(self) -> bool:

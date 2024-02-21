@@ -874,11 +874,10 @@ class TSQL(Dialect):
                 if ctas_with:
                     ctas_with = ctas_with.pop()
 
-                subquery = ctas_expression
-                if isinstance(subquery, exp.UNWRAPPED_QUERIES):
-                    subquery = subquery.subquery()
+                if isinstance(ctas_expression, exp.Query):
+                    ctas_expression = ctas_expression.subquery()
 
-                select_into = exp.select("*").from_(exp.alias_(subquery, "temp", table=True))
+                select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
                 select_into.set("with", ctas_with)
 

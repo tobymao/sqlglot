@@ -501,6 +501,15 @@ class TestBuild(unittest.TestCase):
                 ),
                 "SELECT x FROM (SELECT x FROM tbl UNION SELECT x FROM bar) AS unioned",
             ),
+            (lambda: parse_one("(SELECT 1)").select("2"), "(SELECT 1, 2)"),
+            (lambda: parse_one("(SELECT 1)").limit(1), "(SELECT 1 LIMIT 1)"),
+            (lambda: parse_one("(SELECT 1 LIMIT 2)").limit(1), "(SELECT 1 LIMIT 1)"),
+            (lambda: parse_one("(SELECT 1)").subquery(), "(SELECT 1)"),
+            (lambda: parse_one("(SELECT 1)").subquery("alias"), "(SELECT 1) AS alias"),
+            (
+                lambda: parse_one("(select * from foo)").with_("foo", "select 1 as c"),
+                "WITH foo AS (SELECT 1 AS c) (SELECT * FROM foo)",
+            ),
             (
                 lambda: exp.update("tbl", {"x": None, "y": {"x": 1}}),
                 "UPDATE tbl SET x = NULL, y = MAP(ARRAY('x'), ARRAY(1))",

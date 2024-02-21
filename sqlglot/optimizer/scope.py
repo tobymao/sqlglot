@@ -615,7 +615,7 @@ def _is_derived_table(expression: exp.Subquery) -> bool:
     as it doesn't introduce a new scope. If an alias is present, it shadows all names
     under the Subquery, so that's one exception to this rule.
     """
-    return bool(expression.alias or (isinstance(expression.this, exp.UNWRAPPED_QUERIES)))
+    return bool(expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES))
 
 
 def _traverse_tables(scope):

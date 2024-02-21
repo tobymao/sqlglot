@@ -225,7 +225,7 @@ class Scope:
             SELECT * FROM x WHERE a IN (SELECT ...) <- that's a subquery
 
         Returns:
-            list[exp.Query]: subqueries
+            list[exp.Select | exp.Union]: subqueries
         """
         self._ensure_collected()
         return self._subqueries

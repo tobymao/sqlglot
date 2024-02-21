@@ -1512,7 +1512,6 @@ MATCH_RECOGNIZE (
 
         self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
 
-
         self.validate_identity("SHOW COLUMNS")
         self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
         self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN TABLE dt_test")
@@ -1608,6 +1607,22 @@ MATCH_RECOGNIZE (
         table = ast.find(exp.Table)
 
         self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
+
+    def test_show_sequences(self):
+        self.validate_identity("SHOW TERSE SEQUENCES")
+        self.validate_identity("SHOW SEQUENCES")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN ACCOUNT")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN DATABASE")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN DATABASE foo")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN SCHEMA")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN SCHEMA foo")
+        self.validate_identity(
+            "SHOW SEQUENCES LIKE '_foo%' IN foo",
+            "SHOW SEQUENCES LIKE '_foo%' IN SCHEMA foo",
+        )
+
+        ast = parse_one("SHOW SEQUENCES IN dt_test", read="snowflake")
+        self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
 
     def test_storage_integration(self):
         self.validate_identity(

@@ -1512,6 +1512,7 @@ MATCH_RECOGNIZE (
 
         self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
 
+
         self.validate_identity("SHOW COLUMNS")
         self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
         self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN TABLE dt_test")
@@ -1548,6 +1549,47 @@ MATCH_RECOGNIZE (
         users_exp = self.validate_identity("SHOW USERS")
         self.assertTrue(isinstance(users_exp, exp.Show))
         self.assertEqual(users_exp.this, "USERS")
+
+    def test_show_unique_keys(self):
+        self.validate_identity("SHOW UNIQUE KEYS")
+        self.validate_identity("SHOW UNIQUE KEYS IN ACCOUNT")
+        self.validate_identity("SHOW UNIQUE KEYS IN DATABASE")
+        self.validate_identity("SHOW UNIQUE KEYS IN DATABASE foo")
+        self.validate_identity("SHOW UNIQUE KEYS IN TABLE")
+        self.validate_identity("SHOW UNIQUE KEYS IN TABLE foo")
+        self.validate_identity(
+            'SHOW UNIQUE KEYS IN "TEST"."PUBLIC"."customers"',
+            'SHOW UNIQUE KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+        )
+        self.validate_identity(
+            'SHOW TERSE UNIQUE KEYS IN "TEST"."PUBLIC"."customers"',
+            'SHOW UNIQUE KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+        )
+        ast = parse_one('SHOW UNIQUE KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
+        table = ast.find(exp.Table)
+
+        self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
+
+    def test_show_imported_keys(self):
+        self.validate_identity("SHOW IMPORTED KEYS")
+        self.validate_identity("SHOW IMPORTED KEYS IN ACCOUNT")
+        self.validate_identity("SHOW IMPORTED KEYS IN DATABASE")
+        self.validate_identity("SHOW IMPORTED KEYS IN DATABASE foo")
+        self.validate_identity("SHOW IMPORTED KEYS IN TABLE")
+        self.validate_identity("SHOW IMPORTED KEYS IN TABLE foo")
+        self.validate_identity(
+            'SHOW IMPORTED KEYS IN "TEST"."PUBLIC"."customers"',
+            'SHOW IMPORTED KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+        )
+        self.validate_identity(
+            'SHOW TERSE IMPORTED KEYS IN "TEST"."PUBLIC"."customers"',
+            'SHOW IMPORTED KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+        )
+
+        ast = parse_one('SHOW IMPORTED KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
+        table = ast.find(exp.Table)
+
+        self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
 
     def test_storage_integration(self):
         self.validate_identity(

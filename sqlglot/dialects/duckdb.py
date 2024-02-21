@@ -536,3 +536,15 @@ class DuckDB(Dialect):
             if isinstance(expression.parent, exp.UserDefinedFunction):
                 return self.sql(expression, "this")
             return super().columndef_sql(expression, sep)
+
+        def join_sql(self, expression: exp.Join) -> str:
+            if (
+                expression.side == "LEFT"
+                and not expression.args.get("on")
+                and isinstance(expression.this, exp.Unnest)
+            ):
+                # Some dialects support `LEFT JOIN UNNEST(...)` without an explicit ON clause
+                # DuckDB doesn't, but we can just add a dummy ON clause that is always true
+                return super().join_sql(expression.on(exp.true()))
+
+            return super().join_sql(expression)

@@ -1576,11 +1576,11 @@ MATCH_RECOGNIZE (
         self.validate_identity("SHOW UNIQUE KEYS IN TABLE foo")
         self.validate_identity(
             'SHOW UNIQUE KEYS IN "TEST"."PUBLIC"."customers"',
-            'SHOW UNIQUE KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+            'SHOW UNIQUE KEYS IN SCHEMA "TEST"."PUBLIC"."customers"',
         )
         self.validate_identity(
             'SHOW TERSE UNIQUE KEYS IN "TEST"."PUBLIC"."customers"',
-            'SHOW UNIQUE KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+            'SHOW UNIQUE KEYS IN SCHEMA "TEST"."PUBLIC"."customers"',
         )
         ast = parse_one('SHOW UNIQUE KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
         table = ast.find(exp.Table)
@@ -1596,11 +1596,11 @@ MATCH_RECOGNIZE (
         self.validate_identity("SHOW IMPORTED KEYS IN TABLE foo")
         self.validate_identity(
             'SHOW IMPORTED KEYS IN "TEST"."PUBLIC"."customers"',
-            'SHOW IMPORTED KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+            'SHOW IMPORTED KEYS IN SCHEMA "TEST"."PUBLIC"."customers"',
         )
         self.validate_identity(
             'SHOW TERSE IMPORTED KEYS IN "TEST"."PUBLIC"."customers"',
-            'SHOW IMPORTED KEYS IN TABLE "TEST"."PUBLIC"."customers"',
+            'SHOW IMPORTED KEYS IN SCHEMA "TEST"."PUBLIC"."customers"',
         )
 
         ast = parse_one('SHOW IMPORTED KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")

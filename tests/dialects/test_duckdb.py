@@ -7,6 +7,9 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_identity(
+            "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
+        )
         struct_pack = parse_one('STRUCT_PACK("a b" := 1)', read="duckdb")
         self.assertIsInstance(struct_pack.expressions[0].this, exp.Identifier)
         self.assertEqual(struct_pack.sql(dialect="duckdb"), "{'a b': 1}")
@@ -1000,10 +1003,4 @@ class TestDuckDB(Validator):
             "SELECT $foo",
             read={"bigquery": "SELECT @foo"},
             write={"bigquery": "SELECT @foo", "duckdb": "SELECT $foo"},
-        )
-
-    def test_left_join_unnest(self):
-        self.validate_all(
-            "SELECT * FROM foo LEFT JOIN UNNEST(bar)",
-            write={"duckdb": "SELECT * FROM foo LEFT JOIN UNNEST(bar) ON 1"},
         )

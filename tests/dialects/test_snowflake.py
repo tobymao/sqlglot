@@ -1549,7 +1549,7 @@ MATCH_RECOGNIZE (
         self.assertTrue(isinstance(users_exp, exp.Show))
         self.assertEqual(users_exp.this, "USERS")
 
-    def show_views(self):
+    def test_show_views(self):
         self.validate_identity("SHOW TERSE VIEWS")
         self.validate_identity("SHOW VIEWS")
         self.validate_identity("SHOW VIEWS LIKE 'foo%'")

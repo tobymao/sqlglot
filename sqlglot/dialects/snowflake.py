@@ -432,6 +432,8 @@ class Snowflake(Dialect):
 
         FLATTEN_COLUMNS = ["SEQ", "KEY", "PATH", "INDEX", "VALUE", "THIS"]
 
+        SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
+
         def _parse_colon_get_path(
             self: parser.Parser, this: t.Optional[exp.Expression]
         ) -> t.Optional[exp.Expression]:
@@ -611,9 +613,7 @@ class Snowflake(Dialect):
                     if self._curr:
                         scope = self._parse_table_parts()
                 elif self._curr:
-                    scope_kind = (
-                        "SCHEMA" if this in {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES"} else "TABLE"
-                    )
+                    scope_kind = "SCHEMA" if this in self.SCHEMA_KINDS else "TABLE"
                     scope = self._parse_table_parts()
 
             return self.expression(

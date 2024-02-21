@@ -1550,6 +1550,24 @@ MATCH_RECOGNIZE (
         self.assertTrue(isinstance(users_exp, exp.Show))
         self.assertEqual(users_exp.this, "USERS")
 
+    def show_views(self):
+        self.validate_identity("SHOW TERSE VIEWS")
+        self.validate_identity("SHOW VIEWS")
+        self.validate_identity("SHOW VIEWS LIKE 'foo%'")
+        self.validate_identity("SHOW VIEWS IN ACCOUNT")
+        self.validate_identity("SHOW VIEWS IN DATABASE")
+        self.validate_identity("SHOW VIEWS IN DATABASE foo")
+        self.validate_identity("SHOW VIEWS IN SCHEMA foo")
+        self.validate_identity(
+            "SHOW VIEWS IN foo",
+            "SHOW VIEWS IN SCHEMA foo",
+        )
+
+        ast = parse_one("SHOW VIEWS IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
+        table = ast.find(exp.Table)
+        self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")
+
     def test_show_unique_keys(self):
         self.validate_identity("SHOW UNIQUE KEYS")
         self.validate_identity("SHOW UNIQUE KEYS IN ACCOUNT")

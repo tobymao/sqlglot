@@ -409,6 +409,8 @@ class Snowflake(Dialect):
             "TERSE OBJECTS": _show_parser("OBJECTS"),
             "TABLES": _show_parser("TABLES"),
             "TERSE TABLES": _show_parser("TABLES"),
+            "VIEWS": _show_parser("VIEWS"),
+            "TERSE VIEWS": _show_parser("VIEWS"),
             "PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "TERSE PRIMARY KEYS": _show_parser("PRIMARY KEYS"),
             "IMPORTED KEYS": _show_parser("IMPORTED KEYS"),
@@ -607,7 +609,7 @@ class Snowflake(Dialect):
                     if self._curr:
                         scope = self._parse_table_parts()
                 elif self._curr:
-                    scope_kind = "SCHEMA" if this in ("OBJECTS", "TABLES") else "TABLE"
+                    scope_kind = "SCHEMA" if this in {"OBJECTS", "TABLES", "VIEWS"} else "TABLE"
                     scope = self._parse_table_parts()
 
             return self.expression(

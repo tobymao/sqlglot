@@ -1001,3 +1001,9 @@ class TestDuckDB(Validator):
             read={"bigquery": "SELECT @foo"},
             write={"bigquery": "SELECT @foo", "duckdb": "SELECT $foo"},
         )
+
+    def test_left_join_unnest(self):
+        self.validate_all(
+            "SELECT * FROM foo LEFT JOIN UNNEST(bar)",
+            write={"duckdb": "SELECT * FROM foo LEFT JOIN UNNEST(bar) ON 1"},
+        )

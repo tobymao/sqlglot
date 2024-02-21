@@ -318,8 +318,8 @@ class BigQuery(Dialect):
 
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True
-
         LOG_DEFAULTS_TO_LN = True
+        SUPPORTS_IMPLICIT_UNNEST = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

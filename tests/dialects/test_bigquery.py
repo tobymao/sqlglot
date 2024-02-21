@@ -21,7 +21,6 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT x, 1 AS y GROUP BY 1 ORDER BY 1")
         self.validate_identity("SELECT * FROM x.*")
         self.validate_identity("SELECT * FROM x.y*")
-
         self.validate_identity("CASE A WHEN 90 THEN 'red' WHEN 50 THEN 'blue' ELSE 'green' END")
         self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
         self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
@@ -190,6 +189,26 @@ class TestBigQuery(Validator):
             r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
 
+        self.validate_all(
+            "SELECT results FROM Coordinates, Coordinates.position AS results",
+            write={
+                "bigquery": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS results",
+                "presto": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS _t(results)",
+                "redshift": "SELECT results FROM Coordinates, Coordinates.position AS results",
+            },
+        )
+        self.validate_all(
+            "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS results",
+            read={
+                "presto": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS _t(results)",
+                "redshift": "SELECT results FROM Coordinates AS c, c.position AS results",
+            },
+            write={
+                "bigquery": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS results",
+                "presto": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS _t(results)",
+                "redshift": "SELECT results FROM Coordinates AS c, c.position AS results",
+            },
+        )
         self.validate_all(
             "TIMESTAMP(x)",
             write={

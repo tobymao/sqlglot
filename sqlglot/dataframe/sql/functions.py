@@ -210,7 +210,7 @@ def sec(col: ColumnOrName) -> Column:
 
 
 def signum(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "SIGNUM")
+    return Column.invoke_expression_over_column(col, expression.Sign)
 
 
 def sin(col: ColumnOrName) -> Column:

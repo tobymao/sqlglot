@@ -942,7 +942,7 @@ class Query(Expression):
 
     def limit(
         self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Query:
+    ) -> Select:
         """
         Adds a LIMIT clause to this query.
 
@@ -960,9 +960,13 @@ class Query(Expression):
             opts: other options to use to parse the input expressions.
 
         Returns:
-            The limited query.
+            A limit Select expression.
         """
-        raise NotImplementedError
+        return (
+            select("*")
+            .from_(self.subquery(alias="_l_0", copy=copy))
+            .limit(expression, dialect=dialect, copy=False, **opts)
+        )
 
     @property
     def ctes(self) -> t.List[CTE]:
@@ -2682,15 +2686,6 @@ class Union(Query):
         **QUERY_MODIFIERS,
     }
 
-    def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
-        return (
-            select("*")
-            .from_(self.subquery(alias="_l_0", copy=copy))
-            .limit(expression, dialect=dialect, copy=False, **opts)
-        )
-
     def select(
         self,
         *expressions: t.Optional[ExpOrStr],
@@ -3489,13 +3484,6 @@ class Subquery(DerivedTable, Query):
     ) -> Subquery:
         this = maybe_copy(self, copy)
         this.unnest().select(*expressions, append=append, dialect=dialect, copy=False, **opts)
-        return this
-
-    def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Subquery:
-        this = maybe_copy(self, copy)
-        this.unnest().limit(expression, dialect=dialect, copy=False, **opts)
         return this
 
     @property

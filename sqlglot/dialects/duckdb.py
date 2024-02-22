@@ -81,15 +81,9 @@ def _build_date_diff(args: t.List) -> exp.Expression:
 
 def _build_range(args: t.List, is_end_exclusive: bool = False) -> exp.Expression:
     # Check https://duckdb.org/docs/sql/functions/nested.html#range-functions
-    # for the rules that follow
-
     if len(args) == 1:
-        # DuckDB allows the creation of ranges with only a single argument
-        # being the "stop", thus we must canonicalize the form
-        # Check https://duckdb.org/docs/sql/functions/nested.html#range-functions
-        start = exp.Literal.number("0")
-        stop = seq_get(args, 0)
-        args = [start, stop]
+        # DuckDB uses 0 as a default for the series' start when it's omitted
+        args.insert(0, exp.Literal.number("0"))
 
     gen_series = exp.GenerateSeries.from_arg_list(args)
     gen_series.args["is_end_exclusive"] = is_end_exclusive
@@ -570,16 +564,9 @@ class DuckDB(Dialect):
             return super().join_sql(expression)
 
         def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
-            is_end_exclusive = expression.args.get("is_end_exclusive")
-
-            # DuckDB has the following functions:
-            # - Generate_Series(a, b) -> generates [a, b]
-            # - Range(a, b) -> generates [a, b)
-            if is_end_exclusive:
-                start = expression.args.get("start")
-                end = expression.args.get("end")
-                step = expression.args.get("step")
-
-                return self.func("RANGE", start, end, step)
+            # GENERATE_SERIES(a, b) -> [a, b], RANGE(a, b) -> [a, b)
+            if expression.args.get("is_end_exclusive"):
+                expression.set("is_end_exclusive", None)
+                return rename_func("RANGE")(self, expression)
 
             return super().generateseries_sql(expression)

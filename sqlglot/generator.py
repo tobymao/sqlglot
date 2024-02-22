@@ -3456,8 +3456,5 @@ class Generator(metaclass=_Generator):
         ]
 
     def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
-        start = expression.args.get("start")
-        end = expression.args.get("end")
-        step = expression.args.get("step")
-
-        return self.func("GENERATE_SERIES", start, end, step)
+        expression.set("is_end_exclusive", None)
+        return self.function_fallback_sql(expression)

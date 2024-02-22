@@ -79,16 +79,19 @@ def _build_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
-def _build_range(args: t.List, is_end_exclusive: bool = False) -> exp.Expression:
-    # Check https://duckdb.org/docs/sql/functions/nested.html#range-functions
-    if len(args) == 1:
-        # DuckDB uses 0 as a default for the series' start when it's omitted
-        args.insert(0, exp.Literal.number("0"))
+def _build_generate_series(end_exclusive: bool = False) -> t.Callable[[t.List], exp.GenerateSeries]:
+    def _builder(args: t.List) -> exp.GenerateSeries:
+        # Check https://duckdb.org/docs/sql/functions/nested.html#range-functions
+        if len(args) == 1:
+            # DuckDB uses 0 as a default for the series' start when it's omitted
+            args.insert(0, exp.Literal.number("0"))
 
-    gen_series = exp.GenerateSeries.from_arg_list(args)
-    gen_series.args["is_end_exclusive"] = is_end_exclusive
+        gen_series = exp.GenerateSeries.from_arg_list(args)
+        gen_series.args["is_end_exclusive"] = end_exclusive
 
-    return gen_series
+        return gen_series
+
+    return _builder
 
 
 def _build_make_timestamp(args: t.List) -> exp.Expression:
@@ -279,8 +282,8 @@ class DuckDB(Dialect):
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),
-            "GENERATE_SERIES": lambda args: _build_range(args, False),
-            "RANGE": lambda args: _build_range(args, True),
+            "GENERATE_SERIES": _build_generate_series(),
+            "RANGE": _build_generate_series(end_exclusive=True),
         }
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()

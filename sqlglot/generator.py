@@ -3454,3 +3454,7 @@ class Generator(metaclass=_Generator):
             for value in values
             if value
         ]
+
+    def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
+        expression.set("is_end_exclusive", None)
+        return self.function_fallback_sql(expression)

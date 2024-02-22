@@ -4434,7 +4434,7 @@ class ToChar(Func):
 
 
 class GenerateSeries(Func):
-    arg_types = {"start": True, "end": True, "step": False}
+    arg_types = {"start": True, "end": True, "step": False, "is_end_exclusive": False}
 
 
 class ArrayAgg(AggFunc):

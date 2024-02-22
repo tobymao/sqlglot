@@ -1092,7 +1092,7 @@ WHERE
 
             self.assertIn("unsupported syntax", cm.output[0])
 
-        with self.assertLogs(helper_logger) as cm:
+        with self.assertLogs(helper_logger):
             statements = parse(
                 """
                 BEGIN

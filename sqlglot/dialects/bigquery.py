@@ -276,8 +276,8 @@ class BigQuery(Dialect):
                 not isinstance(parent, exp.UserDefinedFunction)
                 and not (
                     isinstance(parent, exp.Table)
-                    and not parent.meta.get("maybe_column")
                     and parent.db
+                    and not parent.meta.get("maybe_column")
                 )
                 and not expression.meta.get("is_table")
             ):

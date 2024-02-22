@@ -280,9 +280,9 @@ class TestFunctions(unittest.TestCase):
 
     def test_signum(self):
         col_str = SF.signum("cola")
-        self.assertEqual("SIGNUM(cola)", col_str.sql())
+        self.assertEqual("SIGN(cola)", col_str.sql())
         col = SF.signum(SF.col("cola"))
-        self.assertEqual("SIGNUM(cola)", col.sql())
+        self.assertEqual("SIGN(cola)", col.sql())
 
     def test_sin(self):
         col_str = SF.sin("cola")

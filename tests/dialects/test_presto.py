@@ -1142,3 +1142,18 @@ MATCH_RECOGNIZE (
                 "presto": "DATE_FORMAT(ts, '%y')",
             },
         )
+
+    def test_signum(self):
+        self.validate_all(
+            "SIGN(x)",
+            read={
+                "presto": "SIGN(x)",
+                "spark": "SIGNUM(x)",
+                "starrocks": "SIGN(x)",
+            },
+            write={
+                "presto": "SIGN(x)",
+                "spark": "SIGN(x)",
+                "starrocks": "SIGN(x)",
+            },
+        )

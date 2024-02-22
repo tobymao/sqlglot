@@ -5313,6 +5313,10 @@ class SHA2(Func):
     arg_types = {"this": True, "length": False}
 
 
+class Sign(Func):
+    _sql_names = ["SIGN", "SIGNUM"]
+
+
 class SortArray(Func):
     arg_types = {"this": True, "asc": False}
 

@@ -3466,14 +3466,6 @@ class Subquery(DerivedTable, Query):
             expression = t.cast(Subquery, expression.parent)
         return expression
 
-    def subquery(self, alias: t.Optional[ExpOrStr] = None, copy: bool = True) -> Subquery:
-        instance = maybe_copy(self, copy)
-        if not isinstance(alias, Expression):
-            alias = TableAlias(this=to_identifier(alias)) if alias else None
-
-        instance.set("alias", alias)
-        return instance
-
     def select(
         self,
         *expressions: t.Optional[ExpOrStr],

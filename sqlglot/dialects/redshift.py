@@ -214,7 +214,7 @@ class Redshift(Postgres):
                 self.unsupported(f"Unsupported number of arguments in UNNEST: {num_args}")
                 return ""
 
-            arg = self.sql(args[0])
+            arg = self.sql(seq_get(args, 0))
             alias = self.expressions(expression.args.get("alias"), key="columns")
             return f"{arg} AS {alias}" if alias else arg
 

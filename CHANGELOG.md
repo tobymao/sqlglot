@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v21.2.1] - 2024-02-22
+### :sparkles: New Features
+- [`2a88e40`](https://github.com/tobymao/sqlglot/commit/2a88e40da89fa083bbd8fd0174082fa8e677780a) - **bigquery**: support ELSE and ELSEIF procedural statements *(PR [#3011](https://github.com/tobymao/sqlglot/pull/3011) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3009](https://github.com/tobymao/sqlglot/issues/3009) opened by [@razvan-am](https://github.com/razvan-am)*
+- [`d2e15ed`](https://github.com/tobymao/sqlglot/commit/d2e15ed9b2ab2699f7105f73170b9d780293d432) - improve transpilation of Doris' MONTHS_ADD *(PR [#3012](https://github.com/tobymao/sqlglot/pull/3012) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`c23ac05`](https://github.com/tobymao/sqlglot/commit/c23ac05379e2aa5cb5681e26e2c0b8137300baa3) - bigquery group by order by rewriting with indices *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v21.2.0] - 2024-02-22
 ### :boom: BREAKING CHANGES
 - due to [`2940417`](https://github.com/tobymao/sqlglot/commit/2940417116761f821c913bf093759243db33c343) - simplify ADD CONSTRAINT handling *(PR [#2990](https://github.com/tobymao/sqlglot/pull/2990) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2685,3 +2695,4 @@ Changelog
 [v21.1.1]: https://github.com/tobymao/sqlglot/compare/v21.1.0...v21.1.1
 [v21.1.2]: https://github.com/tobymao/sqlglot/compare/v21.1.1...v21.1.2
 [v21.2.0]: https://github.com/tobymao/sqlglot/compare/v21.1.2...v21.2.0
+[v21.2.1]: https://github.com/tobymao/sqlglot/compare/v21.2.0...v21.2.1

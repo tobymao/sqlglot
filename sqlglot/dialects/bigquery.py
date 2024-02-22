@@ -268,10 +268,10 @@ class BigQuery(Dialect):
             while isinstance(parent, exp.Dot):
                 parent = parent.parent
 
-            # In BigQuery, CTEs are case-insensitive, but UDFs and table names are case-sensitive
-            # by default. The following check is essentially a heuristic to detect tables based
-            # on whether they are qualified. This should generally be correct, because tables in
-            # BigQuery must be qualified with at least a dataset, unless @@dataset_id is set.
+            # In BigQuery, CTEs are case-insensitive, but UDF and table names are case-sensitive
+            # by default. The following check uses a heuristic to detect tables based on whether
+            # they are qualified. This should generally be correct, because tables in BigQuery
+            # must be qualified with at least a dataset, unless @@dataset_id is set.
             if (
                 not isinstance(parent, exp.UserDefinedFunction)
                 and not (

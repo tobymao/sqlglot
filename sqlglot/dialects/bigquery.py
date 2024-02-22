@@ -271,12 +271,17 @@ class BigQuery(Dialect):
             while isinstance(parent, exp.Dot):
                 parent = parent.parent
 
-            # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
-            # The following check is essentially a heuristic to detect tables based on whether or
-            # not they're qualified. It also avoids normalizing UDFs, because they're case-sensitive.
+            # In BigQuery, CTEs are case-insensitive, but UDF and table names are case-sensitive
+            # by default. The following check uses a heuristic to detect tables based on whether
+            # they are qualified. This should generally be correct, because tables in BigQuery
+            # must be qualified with at least a dataset, unless @@dataset_id is set.
             if (
                 not isinstance(parent, exp.UserDefinedFunction)
-                and not (isinstance(parent, exp.Table) and parent.db)
+                and not (
+                    isinstance(parent, exp.Table)
+                    and parent.db
+                    and not parent.meta.get("maybe_column")
+                )
                 and not expression.meta.get("is_table")
             ):
                 expression.set("this", expression.this.lower())
@@ -321,8 +326,8 @@ class BigQuery(Dialect):
 
     class Parser(parser.Parser):
         PREFIXED_PIVOT_COLUMNS = True
-
         LOG_DEFAULTS_TO_LN = True
+        SUPPORTS_IMPLICIT_UNNEST = True
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

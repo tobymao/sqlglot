@@ -19,6 +19,16 @@ SELECT 1 FROM x.y.z AS z;
 SELECT 1 FROM y.z AS z, z.a;
 SELECT 1 FROM c.y.z AS z, z.a;
 
+# title: bigquery implicit unnest syntax, coordinates.position should be a column, not a table
+# dialect: bigquery
+SELECT results FROM Coordinates, coordinates.position AS results;
+SELECT results FROM c.db.Coordinates AS Coordinates, UNNEST(coordinates.position) AS results;
+
+# title: bigquery implicit unnest syntax, table is already qualified
+# dialect: bigquery
+SELECT results FROM db.coordinates, Coordinates.position AS results;
+SELECT results FROM c.db.coordinates AS coordinates, UNNEST(Coordinates.position) AS results;
+
 # title: single cte
 WITH a AS (SELECT 1 FROM z) SELECT 1 FROM a;
 WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a AS a;

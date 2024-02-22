@@ -191,6 +191,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.DateToDi,
             exp.Floor,
             exp.Levenshtein,
+            exp.Sign,
             exp.StrPosition,
             exp.TsOrDiToDi,
         },

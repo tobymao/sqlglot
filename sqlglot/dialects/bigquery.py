@@ -231,8 +231,8 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
     TIME_MAPPING = {
         "%D": "%m/%d/%y",
-        "%E*S": "%f",
-        "%E6S": "%f",
+        "%E*S": "%S.%f",
+        "%E6S": "%S.%f",
     }
 
     ESCAPE_SEQUENCES = {

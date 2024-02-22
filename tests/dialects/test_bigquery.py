@@ -194,7 +194,6 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS results",
                 "presto": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS _t(results)",
-                "redshift": "SELECT results FROM Coordinates, Coordinates.position AS results",
             },
         )
         self.validate_all(

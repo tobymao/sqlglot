@@ -228,8 +228,11 @@ class BigQuery(Dialect):
     # bigquery udfs are case sensitive
     NORMALIZE_FUNCTIONS = False
 
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
     TIME_MAPPING = {
         "%D": "%m/%d/%y",
+        "%E*S": "%f",
+        "%E6S": "%f",
     }
 
     ESCAPE_SEQUENCES = {

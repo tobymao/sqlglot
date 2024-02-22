@@ -176,14 +176,17 @@ class SQLite(Dialect):
 
         def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
             parent = expression.parent
+            alias = parent and parent.args.get("alias")
 
-            if parent:
-                alias = parent.args.get("alias")
+            if isinstance(alias, exp.TableAlias) and alias.columns:
+                column_alias = alias.columns[0]
+                alias.set("columns", None)
+                sql = self.sql(
+                    exp.select(exp.alias_("value", column_alias)).from_(expression).subquery()
+                )
+            else:
                 sql = super().generateseries_sql(expression)
-                if alias:
-                    first_column_ref = alias.columns[0]
-                    alias.args.get("columns").pop()
-                    return f"(SELECT value AS {self.sql(first_column_ref, 'this')} FROM {sql})"
+
             return sql
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:

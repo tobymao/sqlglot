@@ -87,7 +87,7 @@ def _build_generate_series(end_exclusive: bool = False) -> t.Callable[[t.List], 
             args.insert(0, exp.Literal.number("0"))
 
         gen_series = exp.GenerateSeries.from_arg_list(args)
-        gen_series.args["is_end_exclusive"] = end_exclusive
+        gen_series.set("is_end_exclusive", end_exclusive)
 
         return gen_series
 

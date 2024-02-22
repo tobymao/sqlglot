@@ -22,7 +22,7 @@ class TestBigQuery(Validator):
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
                 "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%f%z')",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
 

@@ -302,6 +302,7 @@ class BigQuery(Dialect):
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
             "DECLARE": TokenType.COMMAND,
+            "ELSEIF": TokenType.COMMAND,
             "EXCEPTION": TokenType.COMMAND,
             "FLOAT64": TokenType.DOUBLE,
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
@@ -410,6 +411,7 @@ class BigQuery(Dialect):
 
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
+            TokenType.ELSE: lambda self: self._parse_as_command(self._prev),
             TokenType.END: lambda self: self._parse_as_command(self._prev),
             TokenType.FOR: lambda self: self._parse_for_in(),
         }

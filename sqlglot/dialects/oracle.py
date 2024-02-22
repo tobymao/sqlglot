@@ -30,6 +30,11 @@ def _build_timetostr_or_tochar(args: t.List) -> exp.TimeToStr | exp.ToChar:
 
     return exp.ToChar.from_arg_list(args)
 
+def _build_addmonths(args: t.List) -> exp.AddMonths:
+    return exp.AddMonths(
+        this=seq_get(args, 0),
+        integer=seq_get(args, 1)
+    )
 
 class Oracle(Dialect):
     ALIAS_POST_TABLESAMPLE = True
@@ -77,6 +82,7 @@ class Oracle(Dialect):
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
+            "ADD_MONTHS": _build_addmonths
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {

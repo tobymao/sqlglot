@@ -5434,6 +5434,10 @@ class TimeStrToDate(Func):
     pass
 
 
+class AddMonths(Func):
+    arg_types = {"this": True, "integer": True}
+
+
 class TimeStrToTime(Func):
     pass
 

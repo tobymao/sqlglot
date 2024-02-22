@@ -2470,6 +2470,8 @@ class Parser(metaclass=_Parser):
                     table_as_column = table.to_column()
                     unnest = exp.Unnest(expressions=[table_as_column])
 
+                    # Table.to_column creates a parent Alias node that we want to convert to
+                    # a TableAlias and attach to the Unnest, so it matches the parser's output
                     if isinstance(table.args.get("alias"), exp.TableAlias):
                         table_as_column.replace(table_as_column.this)
                         exp.alias_(unnest, None, table=[table.args["alias"].this], copy=False)

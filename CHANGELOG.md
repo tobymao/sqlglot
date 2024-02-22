@@ -1,6 +1,33 @@
 Changelog
 =========
 
+## [v21.2.0] - 2024-02-22
+### :boom: BREAKING CHANGES
+- due to [`2940417`](https://github.com/tobymao/sqlglot/commit/2940417116761f821c913bf093759243db33c343) - simplify ADD CONSTRAINT handling *(PR [#2990](https://github.com/tobymao/sqlglot/pull/2990) by [@georgesittas](https://github.com/georgesittas))*:
+
+  simplify ADD CONSTRAINT handling (#2990)
+
+
+### :sparkles: New Features
+- [`7c48079`](https://github.com/tobymao/sqlglot/commit/7c4807918de53d18fbfe0295b2644f0ad46003a8) - support parameters in BigQuery / DuckDB *(PR [#2991](https://github.com/tobymao/sqlglot/pull/2991) by [@r1b](https://github.com/r1b))*
+- [`b7c2744`](https://github.com/tobymao/sqlglot/commit/b7c2744eba3df631b575e8ab35f29f46419f83ba) - **tests**: update test_executor with tpc-ds  *(PR [#2983](https://github.com/tobymao/sqlglot/pull/2983) by [@fool1280](https://github.com/fool1280))*
+- [`c433cad`](https://github.com/tobymao/sqlglot/commit/c433cad7df383e97308ceb946d7f1dc171a5d60b) - allow more leniant bigquery wildcard parsing *(PR [#2998](https://github.com/tobymao/sqlglot/pull/2998) by [@tobymao](https://github.com/tobymao))*
+- [`8607247`](https://github.com/tobymao/sqlglot/commit/860724732b70b5557221998a45c3c950b39d664a) - support LEFT JOIN UNNEST in duckdb *(PR [#2999](https://github.com/tobymao/sqlglot/pull/2999) by [@r1b](https://github.com/r1b))*
+- [`64e38ed`](https://github.com/tobymao/sqlglot/commit/64e38edb32f9a66a9503e75424d0545da3dbe5df) - add support for more Snowflake SHOW commands *(PR [#3002](https://github.com/tobymao/sqlglot/pull/3002) by [@DanCardin](https://github.com/DanCardin))*
+
+### :bug: Bug Fixes
+- [`bc18f56`](https://github.com/tobymao/sqlglot/commit/bc18f56a39e0034e2b285efd7a882a417c517a99) - **optimizer**: don't coerce nested arg types in annotate_by_args *(PR [#2997](https://github.com/tobymao/sqlglot/pull/2997) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2152](https://github.com/TobikoData/sqlmesh/issues/2152) opened by [@plaflamme](https://github.com/plaflamme)*
+- [`ccd8cc0`](https://github.com/tobymao/sqlglot/commit/ccd8cc01429d21653198edce079679e17dbb22f6) - doris to_char closes [#3001](https://github.com/tobymao/sqlglot/pull/3001) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`2940417`](https://github.com/tobymao/sqlglot/commit/2940417116761f821c913bf093759243db33c343) - simplify ADD CONSTRAINT handling *(PR [#2990](https://github.com/tobymao/sqlglot/pull/2990) by [@georgesittas](https://github.com/georgesittas))*
+- [`d2711f7`](https://github.com/tobymao/sqlglot/commit/d2711f717aac4a7b624225d31c7fa827f8287476) - clean up duplicative placeholder_sql implementations *(PR [#2993](https://github.com/tobymao/sqlglot/pull/2993) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`53efb58`](https://github.com/tobymao/sqlglot/commit/53efb587a642a171bdb4fb6ad4c33a83c4391908) - cleanup tests *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v21.1.2] - 2024-02-19
 ### :sparkles: New Features
 - [`b8cbf66`](https://github.com/tobymao/sqlglot/commit/b8cbf66471158371a27d9145b3b553b7a1384c9d) - **bigquery**: parse procedural EXCEPTION WHEN statement into a Command closes [#2981](https://github.com/tobymao/sqlglot/pull/2981) *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -2657,3 +2684,4 @@ Changelog
 [v21.1.0]: https://github.com/tobymao/sqlglot/compare/v21.0.2...v21.1.0
 [v21.1.1]: https://github.com/tobymao/sqlglot/compare/v21.1.0...v21.1.1
 [v21.1.2]: https://github.com/tobymao/sqlglot/compare/v21.1.1...v21.1.2
+[v21.2.0]: https://github.com/tobymao/sqlglot/compare/v21.1.2...v21.2.0

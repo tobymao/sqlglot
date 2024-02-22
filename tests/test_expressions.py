@@ -645,6 +645,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("TO_HEX(foo)", read="bigquery"), exp.Hex)
         self.assertIsInstance(parse_one("TO_HEX(MD5(foo))", read="bigquery"), exp.MD5)
         self.assertIsInstance(parse_one("TRANSFORM(a, b)", read="spark"), exp.Transform)
+        self.assertIsInstance(parse_one("ADD_MONTHS(a, b)"), exp.AddMonths)
 
     def test_column(self):
         column = parse_one("a.b.c.d")

@@ -26,6 +26,16 @@ class TestDoris(Validator):
                 "doris": "SELECT ARRAY_SUM(x -> x * x, ARRAY(2, 3))",
             },
         )
+        self.validate_all(
+            "MONTHS_ADD(d, n)",
+            read={
+                "oracle": "ADD_MONTHS(d, n)",
+            },
+            write={
+                "doris": "MONTHS_ADD(d, n)",
+                "oracle": "ADD_MONTHS(d, n)",
+            },
+        )
 
     def test_identity(self):
         self.validate_identity("COALECSE(a, b, c, d)")

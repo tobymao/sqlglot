@@ -1012,6 +1012,9 @@ class Parser(metaclass=_Parser):
     # If this is True and '(' is not found, the keyword will be treated as an identifier
     VALUES_FOLLOWED_BY_PAREN = True
 
+    # Whether implicit unnesting is supported, e.g. SELECT 1 FROM y.z AS z, z.a (Redshift)
+    SUPPORTS_IMPLICIT_UNNEST = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2450,6 +2453,33 @@ class Parser(metaclass=_Parser):
             alias=self._parse_table_alias() if parse_alias else None,
         )
 
+    def _implicit_unnests_to_explicit(self, this: E) -> E:
+        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
+
+        refs = {_norm(this.args["from"].this.copy(), dialect=self.dialect).alias_or_name}
+        for i, join in enumerate(this.args.get("joins") or []):
+            table = join.this
+            normalized_table = table.copy()
+            normalized_table.meta["maybe_column"] = True
+            normalized_table = _norm(normalized_table, dialect=self.dialect)
+
+            if isinstance(table, exp.Table) and not join.args.get("on"):
+                if normalized_table.parts[0].name in refs:
+                    table_as_column = table.to_column()
+                    unnest = exp.Unnest(expressions=[table_as_column])
+
+                    # Table.to_column creates a parent Alias node that we want to convert to
+                    # a TableAlias and attach to the Unnest, so it matches the parser's output
+                    if isinstance(table.args.get("alias"), exp.TableAlias):
+                        table_as_column.replace(table_as_column.this)
+                        exp.alias_(unnest, None, table=[table.args["alias"].this], copy=False)
+
+                    table.replace(unnest)
+
+            refs.add(normalized_table.alias_or_name)
+
+        return this
+
     def _parse_query_modifiers(
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
@@ -2478,6 +2508,10 @@ class Parser(metaclass=_Parser):
                                 offset.set("expressions", limit_by_expressions)
                         continue
                 break
+
+        if self.SUPPORTS_IMPLICIT_UNNEST and this and "from" in this.args:
+            this = self._implicit_unnests_to_explicit(this)
+
         return this
 
     def _parse_hint(self) -> t.Optional[exp.Hint]:

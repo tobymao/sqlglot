@@ -205,6 +205,7 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_tables.qualify_tables,
             db="db",
             catalog="c",
+            set_dialect=True,
         )
 
     def test_normalize(self):

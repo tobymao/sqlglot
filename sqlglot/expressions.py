@@ -960,7 +960,7 @@ class Query(Expression):
             opts: other options to use to parse the input expressions.
 
         Returns:
-            A limit Select expression.
+            A limited Select expression.
         """
         return (
             select("*")

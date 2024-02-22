@@ -21,6 +21,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT * FROM x.*")
         self.validate_identity("SELECT * FROM x.y*")
 
+        self.validate_identity("CASE A WHEN 90 THEN 'red' WHEN 50 THEN 'blue' ELSE 'green' END")
         self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
         self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
@@ -1090,6 +1091,35 @@ WHERE
                 self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
             self.assertIn("unsupported syntax", cm.output[0])
+
+        with self.assertLogs(helper_logger) as cm:
+            statements = parse(
+                """
+                BEGIN
+                    DECLARE MY_VAR INT64 DEFAULT 1;
+                    SET MY_VAR = (SELECT 0);
+
+                    IF MY_VAR = 1 THEN SELECT 'TRUE';
+                    ELSEIF MY_VAR = 0 THEN SELECT 'FALSE';
+                    ELSE SELECT 'NULL';
+                    END IF;
+                END
+                """,
+                read="bigquery",
+            )
+
+            expected_statements = (
+                "BEGIN DECLARE MY_VAR INT64 DEFAULT 1",
+                "SET MY_VAR = (SELECT 0)",
+                "IF MY_VAR = 1 THEN SELECT 'TRUE'",
+                "ELSEIF MY_VAR = 0 THEN SELECT 'FALSE'",
+                "ELSE SELECT 'NULL'",
+                "END IF",
+                "END",
+            )
+
+            for actual, expected in zip(statements, expected_statements):
+                self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity(

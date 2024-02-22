@@ -2456,11 +2456,20 @@ class Parser(metaclass=_Parser):
         )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:
-        refs = {this.args["from"].this.alias_or_name.lower()}
+        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
+
+        # The reason we ignore the special dialect-specific normalization rules here is because
+        # we want the lower/upper-casing to always be triggered. For example, BigQuery won't
+        # lowercase tables if they're qualified, but we do want to lowercase them here.
+        table = this.args["from"].this.copy()
+        refs = {_norm(table, dialect=self.dialect, ignore_dialect_rules=True).alias_or_name}
+
         for i, join in enumerate(this.args.get("joins") or []):
             table = join.this
+            normalized_table = _norm(table.copy(), dialect=self.dialect, ignore_dialect_rules=True)
+
             if isinstance(table, exp.Table) and not join.args.get("on"):
-                if table.parts[0].name.lower() in refs:
+                if normalized_table.parts[0].name in refs:
                     table_as_column = table.to_column()
                     unnest = exp.Unnest(expressions=[table_as_column])
 
@@ -2470,7 +2479,7 @@ class Parser(metaclass=_Parser):
 
                     table.replace(unnest)
 
-            refs.add(table.alias_or_name.lower())
+            refs.add(normalized_table.alias_or_name)
 
         return this
 

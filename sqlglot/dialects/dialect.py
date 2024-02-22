@@ -364,7 +364,7 @@ class Dialect(metaclass=_Dialect):
         # Does not currently take dialect state into account
         return hash(type(self))
 
-    def normalize_identifier(self, expression: E) -> E:
+    def normalize_identifier(self, expression: E, ignore_dialect_rules: bool = False) -> E:
         """
         Transforms an identifier in a way that resembles how it'd be resolved by this dialect.
 
@@ -382,6 +382,11 @@ class Dialect(metaclass=_Dialect):
 
         SQLGlot aims to understand and handle all of these different behaviors gracefully, so
         that it can analyze queries in the optimizer and successfully capture their semantics.
+
+        Args:
+            expression: The expression to normalize (returned as-is if not an Identifier).
+            ignore_dialect_rules: If this is `True`, any special normalization rules implemented for
+                this dialect will be ignored, i.e. we'll only make use of the normalization strategy.
         """
         if (
             isinstance(expression, exp.Identifier)

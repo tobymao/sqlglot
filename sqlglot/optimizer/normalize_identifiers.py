@@ -10,16 +10,20 @@ if t.TYPE_CHECKING:
 
 
 @t.overload
-def normalize_identifiers(expression: E, dialect: DialectType = None) -> E:
+def normalize_identifiers(
+    expression: E, dialect: DialectType = None, ignore_dialect_rules: bool = False
+) -> E:
     ...
 
 
 @t.overload
-def normalize_identifiers(expression: str, dialect: DialectType = None) -> exp.Identifier:
+def normalize_identifiers(
+    expression: str, dialect: DialectType = None, ignore_dialect_rules: bool = False
+) -> exp.Identifier:
     ...
 
 
-def normalize_identifiers(expression, dialect=None):
+def normalize_identifiers(expression, dialect=None, ignore_dialect_rules=False):
     """
     Normalize all unquoted identifiers to either lower or upper case, depending
     on the dialect. This essentially makes those identifiers case-insensitive.
@@ -46,6 +50,8 @@ def normalize_identifiers(expression, dialect=None):
     Args:
         expression: The expression to transform.
         dialect: The dialect to use in order to decide how to normalize identifiers.
+        ignore_dialect_rules: If this is `True`, any special normalization rules implemented for
+            this dialect will be ignored, i.e. we'll only make use of the normalization strategy.
 
     Returns:
         The transformed expression.
@@ -58,7 +64,7 @@ def normalize_identifiers(expression, dialect=None):
     def _normalize(node: E) -> E:
         if not node.meta.get("case_sensitive"):
             exp.replace_children(node, _normalize)
-            node = dialect.normalize_identifier(node)
+            node = dialect.normalize_identifier(node, ignore_dialect_rules=ignore_dialect_rules)
         return node
 
     return _normalize(expression)

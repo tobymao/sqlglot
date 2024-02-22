@@ -262,20 +262,20 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/querying-partitioned-tables#query_an_ingestion-time_partitioned_table
     PSEUDOCOLUMNS = {"_PARTITIONTIME", "_PARTITIONDATE"}
 
-    def normalize_identifier(self, expression: E) -> E:
+    def normalize_identifier(self, expression: E, ignore_dialect_rules: bool = False) -> E:
         if isinstance(expression, exp.Identifier):
             parent = expression.parent
             while isinstance(parent, exp.Dot):
                 parent = parent.parent
 
             # In BigQuery, CTEs aren't case-sensitive, but table names are (by default, at least).
-            # The following check is essentially a heuristic to detect tables based on whether or
-            # not they're qualified. It also avoids normalizing UDFs, because they're case-sensitive.
+            # The following check is essentially a heuristic to detect tables based on whether they
+            # are qualified. It also avoids normalizing UDFs, because they're case-sensitive.
             if (
                 not isinstance(parent, exp.UserDefinedFunction)
                 and not (isinstance(parent, exp.Table) and parent.db)
                 and not expression.meta.get("is_table")
-            ):
+            ) or ignore_dialect_rules:
                 expression.set("this", expression.this.lower())
 
         return expression

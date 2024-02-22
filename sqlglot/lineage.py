@@ -67,7 +67,7 @@ def lineage(
     column: str | exp.Column,
     sql: str | exp.Expression,
     schema: t.Optional[t.Dict | Schema] = None,
-    sources: t.Optional[t.Dict[str, str | exp.Subqueryable]] = None,
+    sources: t.Optional[t.Dict[str, str | exp.Query]] = None,
     dialect: DialectType = None,
     **kwargs,
 ) -> Node:
@@ -90,10 +90,7 @@ def lineage(
     if sources:
         expression = exp.expand(
             expression,
-            {
-                k: t.cast(exp.Subqueryable, maybe_parse(v, dialect=dialect))
-                for k, v in sources.items()
-            },
+            {k: t.cast(exp.Query, maybe_parse(v, dialect=dialect)) for k, v in sources.items()},
             dialect=dialect,
         )
 
@@ -182,7 +179,7 @@ def lineage(
             for subquery_scope in scope.subquery_scopes
         }
 
-        for subquery in find_all_in_scope(select, exp.Subqueryable):
+        for subquery in find_all_in_scope(select, exp.UNWRAPPED_QUERIES):
             subquery_scope = subquery_scopes[id(subquery)]
 
             for name in subquery.named_selects:

@@ -3454,3 +3454,10 @@ class Generator(metaclass=_Generator):
             for value in values
             if value
         ]
+
+    def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
+        start = expression.args.get("start")
+        end = expression.args.get("end")
+        step = expression.args.get("step")
+
+        return self.func("GENERATE_SERIES", start, end, step)

@@ -79,6 +79,24 @@ def _build_date_diff(args: t.List) -> exp.Expression:
     return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
+def _build_range(args: t.List, is_end_exclusive: bool = False) -> exp.Expression:
+    # Check https://duckdb.org/docs/sql/functions/nested.html#range-functions
+    # for the rules that follow
+
+    if len(args) == 1:
+        # DuckDB allows the creation of ranges with only a single argument
+        # being the "stop", thus we must canonicalize the form
+        # Check https://duckdb.org/docs/sql/functions/nested.html#range-functions
+        start = exp.Literal.number("0")
+        stop = seq_get(args, 0)
+        args = [start, stop]
+
+    gen_series = exp.GenerateSeries.from_arg_list(args)
+    gen_series.args["is_end_exclusive"] = is_end_exclusive
+
+    return gen_series
+
+
 def _build_make_timestamp(args: t.List) -> exp.Expression:
     if len(args) == 1:
         return exp.UnixToTime(this=seq_get(args, 0), scale=exp.UnixToTime.MICROS)
@@ -267,6 +285,8 @@ class DuckDB(Dialect):
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,
             "UNNEST": exp.Explode.from_arg_list,
             "XOR": binary_from_function(exp.BitwiseXor),
+            "GENERATE_SERIES": lambda args: _build_range(args, False),
+            "RANGE": lambda args: _build_range(args, True),
         }
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
@@ -548,3 +568,18 @@ class DuckDB(Dialect):
                 return super().join_sql(expression.on(exp.true()))
 
             return super().join_sql(expression)
+
+        def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
+            is_end_exclusive = expression.args.get("is_end_exclusive")
+
+            # DuckDB has the following functions:
+            # - Generate_Series(a, b) -> generates [a, b]
+            # - Range(a, b) -> generates [a, b)
+            if is_end_exclusive:
+                start = expression.args.get("start")
+                end = expression.args.get("end")
+                step = expression.args.get("step")
+
+                return self.func("RANGE", start, end, step)
+
+            return super().generateseries_sql(expression)

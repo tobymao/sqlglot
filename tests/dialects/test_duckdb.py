@@ -174,7 +174,6 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_identity("SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
         self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
@@ -624,6 +623,26 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT COUNT_IF(x)",
                 "bigquery": "SELECT COUNTIF(x)",
             },
+        )
+
+        self.validate_identity("SELECT * FROM RANGE(1, 5, 10)")
+        self.validate_identity("SELECT * FROM GENERATE_SERIES(2, 13, 4)")
+
+        self.validate_all(
+            "WITH t AS (SELECT i, i*i*i*i*i AS i5 FROM RANGE(1,5) t(i)) SELECT * FROM t",
+            write={
+                "sqlite": "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM (SELECT value AS i FROM GENERATE_SERIES(1, 5)) AS t) SELECT * FROM t",
+            },
+        )
+
+        self.validate_identity(
+            """SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC""",
+            """SELECT i FROM RANGE(0, 5) AS _(i) ORDER BY i ASC""",
+        )
+
+        self.validate_identity(
+            """SELECT i FROM GENERATE_SERIES(12) AS _(i) ORDER BY i ASC""",
+            """SELECT i FROM GENERATE_SERIES(0, 12) AS _(i) ORDER BY i ASC""",
         )
 
     def test_array_index(self):

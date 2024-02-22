@@ -92,6 +92,7 @@ class SQLite(Dialect):
         NVL2_SUPPORTED = False
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_CREATE_TABLE_LIKE = False
+        SUPPORTS_TABLE_ALIAS_COLUMNS = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
@@ -172,6 +173,18 @@ class SQLite(Dialect):
                 return self.func("DATE", expression.this)
 
             return super().cast_sql(expression)
+
+        def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
+            parent = expression.parent
+
+            if parent:
+                alias = parent.args.get("alias")
+                sql = super().generateseries_sql(expression)
+                if alias:
+                    first_column_ref = alias.columns[0]
+                    alias.args.get("columns").pop()
+                    return f"(SELECT value AS {self.sql(first_column_ref, 'this')} FROM {sql})"
+            return sql
 
         def datediff_sql(self, expression: exp.DateDiff) -> str:
             unit = expression.args.get("unit")

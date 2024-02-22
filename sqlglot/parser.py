@@ -936,8 +936,6 @@ class Parser(metaclass=_Parser):
         exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
     }
 
-    MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
-
     DDL_SELECT_TOKENS = {TokenType.SELECT, TokenType.WITH, TokenType.L_PAREN}
 
     PRE_VOLATILE_TOKENS = {TokenType.CREATE, TokenType.REPLACE, TokenType.UNIQUE}
@@ -2455,7 +2453,7 @@ class Parser(metaclass=_Parser):
     def _parse_query_modifiers(
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
-        if isinstance(this, self.MODIFIABLES):
+        if isinstance(this, (exp.Query, exp.Table)):
             for join in iter(self._parse_join, None):
                 this.append("joins", join)
             for lateral in iter(self._parse_lateral, None):
@@ -3544,7 +3542,7 @@ class Parser(metaclass=_Parser):
             matched_l_paren = self._prev.token_type == TokenType.L_PAREN
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
 
-            if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
+            if len(expressions) == 1 and isinstance(expressions[0], exp.Query):
                 this = self.expression(exp.In, this=this, query=expressions[0])
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
@@ -3975,7 +3973,7 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_query_modifiers(seq_get(expressions, 0))
 
-            if isinstance(this, exp.Subqueryable):
+            if isinstance(this, exp.UNWRAPPED_QUERIES):
                 this = self._parse_set_operations(
                     self._parse_subquery(this=this, parse_alias=False)
                 )

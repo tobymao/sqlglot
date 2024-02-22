@@ -138,7 +138,7 @@ class Scope:
                 and _is_derived_table(node)
             ):
                 self._derived_tables.append(node)
-            elif isinstance(node, exp.Subqueryable):
+            elif isinstance(node, exp.UNWRAPPED_QUERIES):
                 self._subqueries.append(node)
 
         self._collected = True
@@ -225,7 +225,7 @@ class Scope:
             SELECT * FROM x WHERE a IN (SELECT ...) <- that's a subquery
 
         Returns:
-            list[exp.Subqueryable]: subqueries
+            list[exp.Select | exp.Union]: subqueries
         """
         self._ensure_collected()
         return self._subqueries
@@ -486,8 +486,8 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     Returns:
         list[Scope]: scope instances
     """
-    if isinstance(expression, exp.Unionable) or (
-        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Unionable)
+    if isinstance(expression, exp.Query) or (
+        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Query)
     ):
         return list(_traverse_scope(Scope(expression)))
 
@@ -615,7 +615,7 @@ def _is_derived_table(expression: exp.Subquery) -> bool:
     as it doesn't introduce a new scope. If an alias is present, it shadows all names
     under the Subquery, so that's one exception to this rule.
     """
-    return bool(expression.alias or isinstance(expression.this, exp.Subqueryable))
+    return bool(expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES))
 
 
 def _traverse_tables(scope):
@@ -786,7 +786,7 @@ def walk_in_scope(expression, bfs=True, prune=None):
                 and _is_derived_table(node)
             )
             or isinstance(node, exp.UDTF)
-            or isinstance(node, exp.Subqueryable)
+            or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):
             crossed_scope_boundary = True
 

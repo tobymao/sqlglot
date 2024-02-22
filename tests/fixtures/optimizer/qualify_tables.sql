@@ -146,3 +146,7 @@ CREATE TABLE c.db.t1 AS (WITH cte AS (SELECT x FROM c.db.t2 AS t2) SELECT * FROM
 # title: insert statement with cte
 WITH cte AS (SELECT b FROM y) INSERT INTO s SELECT * FROM cte;
 WITH cte AS (SELECT b FROM c.db.y AS y) INSERT INTO c.db.s SELECT * FROM cte AS cte;
+
+# title: qualify wrapped query
+(SELECT x FROM t);
+(SELECT x FROM c.db.t AS t);

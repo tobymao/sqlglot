@@ -18,6 +18,14 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_all(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%f%z')",
+            },
+        )
+
         self.validate_identity("SELECT x, 1 AS y GROUP BY 1 ORDER BY 1")
         self.validate_identity("SELECT * FROM x.*")
         self.validate_identity("SELECT * FROM x.y*")

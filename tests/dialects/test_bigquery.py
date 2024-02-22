@@ -18,6 +18,7 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity("SELECT x, 1 AS y GROUP BY 1 ORDER BY 1")
         self.validate_identity("SELECT * FROM x.*")
         self.validate_identity("SELECT * FROM x.y*")
 

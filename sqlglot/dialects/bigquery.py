@@ -111,6 +111,8 @@ def _alias_ordered_group(expression: exp.Expression) -> exp.Expression:
             }
 
             for grouped in group.expressions:
+                if grouped.is_int:
+                    continue
                 alias = aliases.get(grouped)
                 if alias:
                     grouped.replace(exp.column(alias))

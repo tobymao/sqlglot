@@ -1399,6 +1399,10 @@ class ColumnDef(Expression):
     def constraints(self) -> t.List[ColumnConstraint]:
         return self.args.get("constraints") or []
 
+    @property
+    def kind(self) -> t.Optional[DataType]:
+        return self.args.get("kind")
+
 
 class AlterColumn(Expression):
     arg_types = {

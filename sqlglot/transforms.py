@@ -547,7 +547,7 @@ def move_partitioned_by_to_schema_columns(expression: exp.Expression) -> exp.Exp
         prop
         and prop.this
         and isinstance(prop.this, exp.Schema)
-        and all(isinstance(e, exp.ColumnDef) and e.args.get("kind") for e in prop.this.expressions)
+        and all(isinstance(e, exp.ColumnDef) and e.kind for e in prop.this.expressions)
     ):
         prop_this = exp.Tuple(
             expressions=[exp.to_identifier(e.this) for e in prop.this.expressions]

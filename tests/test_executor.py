@@ -129,11 +129,11 @@ class TestExecutor(unittest.TestCase):
 
         for i, (meta, sql, _) in enumerate(self.tpcds_sqls):
             try:
-                if string_to_bool(meta.get("execute")) == True and i + 1 != 13:
+                if string_to_bool(meta.get("execute")) and i + 1 != 13:
                     table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
                     self.subtestHelper(i, table, tpch=False)
                     print("Pass", i + 1)
-            except Exception as e:
+            except Exception:
                 continue
 
     def test_execute_callable(self):

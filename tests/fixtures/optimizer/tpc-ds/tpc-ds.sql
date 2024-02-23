@@ -3896,8 +3896,7 @@ ORDER BY
 
 --------------------------------------
 -- TPC-DS 32
---------------------------------------
-# execute: true
+-------------------------------------
 SELECT
        Sum(cs_ext_discount_amt) AS "excess discount amount"
 FROM   catalog_sales ,
@@ -4460,7 +4459,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 37
 --------------------------------------
-# execute: true
 SELECT
          i_item_id ,
          i_item_desc ,
@@ -11033,6 +11031,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 82
 --------------------------------------
+# execute: true
 SELECT
          i_item_id ,
          i_item_desc ,

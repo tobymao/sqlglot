@@ -207,7 +207,7 @@ def lineage(
             source = scope.sources.get(table)
 
             if isinstance(source, Scope):
-                reference = dict(scope.references).get(table)
+                selected_node, selected_source = scope.selected_sources.get(table, (None, None))
                 # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
                 to_node(
                     c.name,
@@ -215,7 +215,7 @@ def lineage(
                     scope_name=table,
                     upstream=node,
                     source_name=source_names.get(table) or source_name,
-                    alias=reference.name if reference else None,
+                    alias=selected_node.name if selected_node else None,
                 )
             else:
                 # The source is not a scope - we've reached the end of the line. At this point, if a source is not found

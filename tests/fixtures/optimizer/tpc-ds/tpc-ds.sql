@@ -860,6 +860,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 6
 --------------------------------------
+# execute: true
 SELECT a.ca_state state,
                Count(*)   cnt
 FROM   customer_address a,
@@ -2763,6 +2764,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 21
 --------------------------------------
+# execute: true
 SELECT
          *
 FROM    (

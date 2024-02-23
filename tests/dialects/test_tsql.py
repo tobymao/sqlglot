@@ -692,12 +692,7 @@ class TestTSQL(Validator):
             "SELECT * INTO foo.bar.baz FROM (SELECT * FROM a.b.c) AS temp",
             read={
                 "": "CREATE TABLE foo.bar.baz AS SELECT * FROM a.b.c",
-            },
-        )
-        self.validate_all(
-            "SELECT * INTO foo.bar.baz FROM (SELECT * FROM a.b.c) AS temp",
-            read={
-                "": "CREATE TABLE foo.bar.baz AS (SELECT * FROM a.b.c)",
+                "duckdb": "CREATE TABLE foo.bar.baz AS (SELECT * FROM a.b.c)",
             },
         )
         self.validate_all(

@@ -1014,6 +1014,22 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(exp.DataType.Type.USERDEFINED, expression.selects[0].type.this)
         self.assertEqual(expression.selects[0].type.sql(dialect="postgres"), "IPADDRESS")
 
+    def test_unnest_annotation(self):
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                SELECT a, a.b, a.b.c FROM x, UNNEST(x.a) AS a
+                """,
+                    read="bigquery",
+                )
+            ),
+            schema={"x": {"a": "ARRAY<STRUCT<b STRUCT<c int>>>"}},
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("STRUCT<b STRUCT<c int>>"))
+        self.assertEqual(expression.selects[1].type, exp.DataType.build("STRUCT<c int>"))
+        self.assertEqual(expression.selects[2].type, exp.DataType.build("int"))
+
     def test_recursive_cte(self):
         query = parse_one(
             """

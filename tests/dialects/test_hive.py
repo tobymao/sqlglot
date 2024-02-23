@@ -440,6 +440,9 @@ class TestHive(Validator):
         self.validate_identity(
             "SELECT key, value, GROUPING__ID, COUNT(*) FROM T1 GROUP BY key, value WITH ROLLUP"
         )
+        self.validate_identity(
+            "TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address = 'abc')"
+        )
 
         self.validate_all(
             "SELECT ${hiveconf:some_var}",

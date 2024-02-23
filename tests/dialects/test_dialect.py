@@ -2301,3 +2301,9 @@ SELECT
                 "tsql": UnsupportedError,
             },
         )
+
+    def test_truncate(self):
+        self.validate_identity("TRUNCATE TABLE table")
+        self.validate_identity("TRUNCATE TABLE db.schema.test")
+        self.validate_identity("TRUNCATE TABLE IF EXISTS db.schema.test")
+        self.validate_identity("TRUNCATE TABLE t1, t2, t3")

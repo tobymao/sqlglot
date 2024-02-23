@@ -321,6 +321,18 @@ class TestPostgres(Validator):
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
         )
 
+        self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY")
+        self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY")
+        self.validate_identity("TRUNCATE TABLE t1 CASCADE")
+        self.validate_identity("TRUNCATE TABLE t1 RESTRICT")
+        self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY CASCADE")
+        self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY RESTRICT")
+
+        self.validate_all(
+            "TRUNCATE TABLE ONLY t1, t2*, ONLY t3, t4, t5*",
+            write={"postgres": "TRUNCATE TABLE ONLY t1, t2, ONLY t3, t4, t5"},
+        )
+
         self.validate_all(
             "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
             read={

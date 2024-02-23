@@ -16,6 +16,7 @@ class TestSpark(Validator):
         self.validate_identity(
             "CREATE TABLE foo (col STRING) CLUSTERED BY (col) SORTED BY (col) INTO 10 BUCKETS"
         )
+        self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
 
         self.validate_all(
             "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",

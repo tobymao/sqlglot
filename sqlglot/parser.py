@@ -435,6 +435,7 @@ class Parser(metaclass=_Parser):
         TokenType.TABLE,
         TokenType.TIMESTAMP,
         TokenType.TIMESTAMPTZ,
+        TokenType.TRUNCATE,
         TokenType.WINDOW,
         TokenType.XOR,
         *TYPE_TOKENS,
@@ -625,6 +626,7 @@ class Parser(metaclass=_Parser):
         TokenType.SET: lambda self: self._parse_set(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.UPDATE: lambda self: self._parse_update(),
+        TokenType.TRUNCATE: lambda self: self._parse_truncate(),
         TokenType.USE: lambda self: self.expression(
             exp.Use,
             kind=self._match_texts(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"))
@@ -2912,6 +2914,9 @@ class Parser(metaclass=_Parser):
 
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table, this=bracket) if bracket else None
+
+        only = self._match_text_seq("ONLY")
+
         this = t.cast(
             exp.Expression,
             bracket
@@ -2919,6 +2924,9 @@ class Parser(metaclass=_Parser):
                 self._parse_table_parts(schema=schema, is_db_reference=is_db_reference)
             ),
         )
+
+        if only:
+            this.set("only", only)
 
         if schema:
             return self._parse_schema(this=this)
@@ -5911,3 +5919,50 @@ class Parser(metaclass=_Parser):
                     else:
                         column.replace(dot_or_id)
         return node
+
+    def _parse_truncate(self) -> t.Optional[exp.Truncate] | exp.Expression:
+        # Not to be confused with TRUNCATE(number, decimals) function call
+        if self._match(TokenType.L_PAREN):
+            return self._parse_function_call(anonymous=True)
+
+        # Clickhouse supports TRUNCATE DATABASE as well
+        is_database = self._match(TokenType.DATABASE)
+
+        self._match(TokenType.TABLE)
+
+        exists = self._parse_exists(not_=False)
+
+        def _parse_truncate_tables() -> t.Optional[exp.Expression]:
+            this = self._parse_table(schema=True, is_db_reference=is_database)
+
+            # Postgres has wildcard (table) suffix operator
+            self._match_text_seq("*")
+
+            return this
+
+        expressions = self._parse_csv(_parse_truncate_tables)
+
+        cluster = self._parse_id_var() if self._match_text_seq("ON", "CLUSTER") else None
+
+        if self._match_text_seq("RESTART", "IDENTITY"):
+            identity = "RESTART"
+        elif self._match_text_seq("CONTINUE", "IDENTITY"):
+            identity = "CONTINUE"
+        else:
+            identity = None
+
+        if self._match_text_seq("CASCADE") or self._match_text_seq("RESTRICT"):
+            option = self._prev.text
+        else:
+            option = None
+
+        return self.expression(
+            exp.Truncate,
+            expressions=expressions,
+            is_database=is_database,
+            exists=exists,
+            cluster=cluster,
+            identity=identity,
+            option=option,
+            partition=self._parse_partition(),
+        )

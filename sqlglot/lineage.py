@@ -19,7 +19,7 @@ class Node:
     source: exp.Expression
     downstream: t.List[Node] = field(default_factory=list)
     source_name: str = ""
-    alias: str = ""
+    reference_node_name: str = ""
 
     def walk(self) -> t.Iterator[Node]:
         yield self
@@ -113,7 +113,7 @@ def lineage(
         scope_name: t.Optional[str] = None,
         upstream: t.Optional[Node] = None,
         source_name: t.Optional[str] = None,
-        alias: t.Optional[str] = None,
+        reference_node_name: t.Optional[str] = None,
     ) -> Node:
         source_names = {
             dt.alias: dt.comments[0].split()[1]
@@ -152,7 +152,13 @@ def lineage(
                 raise ValueError(f"Could not find {column} in {scope.expression}")
 
             for s in scope.union_scopes:
-                to_node(index, scope=s, upstream=upstream, source_name=source_name, alias=alias)
+                to_node(
+                    index,
+                    scope=s,
+                    upstream=upstream,
+                    source_name=source_name,
+                    reference_node_name=reference_node_name,
+                )
 
             return upstream
 
@@ -171,7 +177,7 @@ def lineage(
             source=source,
             expression=select,
             source_name=source_name or "",
-            alias=alias or "",
+            reference_node_name=reference_node_name or "",
         )
 
         if upstream:
@@ -215,7 +221,7 @@ def lineage(
                     scope_name=table,
                     upstream=node,
                     source_name=source_names.get(table) or source_name,
-                    alias=selected_node.name if selected_node else None,
+                    reference_node_name=selected_node.name if selected_node else None,
                 )
             else:
                 # The source is not a scope - we've reached the end of the line. At this point, if a source is not found

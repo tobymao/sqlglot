@@ -5,6 +5,7 @@ from sqlglot import (
     ParseError,
     TokenError,
     UnsupportedError,
+    exp,
     parse,
     transpile,
 )
@@ -18,13 +19,7 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
-        self.validate_all(
-            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
-            write={
-                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
-            },
-        )
+        self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
 
         self.validate_identity("SELECT * FROM `my-project.my-dataset.my-table`")
         self.validate_identity("CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`")
@@ -209,6 +204,13 @@ class TestBigQuery(Validator):
             r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
 
+        self.validate_all(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
+            },
+        )
         self.validate_all(
             "SELECT results FROM Coordinates, Coordinates.position AS results",
             write={

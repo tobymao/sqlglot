@@ -69,7 +69,7 @@ class Databricks(Spark):
 
         def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
             constraint = expression.find(exp.GeneratedAsIdentityColumnConstraint)
-            kind = expression.args.get("kind")
+            kind = expression.kind
             if (
                 constraint
                 and isinstance(kind, exp.DataType)

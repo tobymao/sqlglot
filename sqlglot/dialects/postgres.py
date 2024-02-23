@@ -138,7 +138,9 @@ def _auto_increment_to_serial(expression: exp.Expression) -> exp.Expression:
 
 
 def _serial_to_generated(expression: exp.Expression) -> exp.Expression:
-    kind = expression.args.get("kind")
+    if not isinstance(expression, exp.ColumnDef):
+        return expression
+    kind = expression.kind
     if not kind:
         return expression
 

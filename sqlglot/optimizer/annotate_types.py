@@ -628,9 +628,5 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
     def _annotate_unnest(self, expression: exp.Unnest) -> exp.Unnest:
         self._annotate_args(expression)
         child = seq_get(expression.expressions, 0)
-
-        if child:
-            self._set_type(expression, seq_get(child.type.expressions, 0))
-        else:
-            self._set_type(expression, None)
+        self._set_type(expression, child and seq_get(child.type.expressions, 0))
         return expression

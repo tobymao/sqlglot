@@ -275,15 +275,16 @@ class BigQuery(Dialect):
             # by default. The following check uses a heuristic to detect tables based on whether
             # they are qualified. This should generally be correct, because tables in BigQuery
             # must be qualified with at least a dataset, unless @@dataset_id is set.
-            if (
-                not isinstance(parent, exp.UserDefinedFunction)
-                and not (
+            case_sensitive = (
+                isinstance(parent, exp.UserDefinedFunction)
+                or (
                     isinstance(parent, exp.Table)
                     and parent.db
-                    and not parent.meta.get("maybe_column")
+                    and (parent.meta.get("quoted_table") or not parent.meta.get("maybe_column"))
                 )
-                and not expression.meta.get("is_table")
-            ):
+                or expression.meta.get("is_table")
+            )
+            if not case_sensitive:
                 expression.set("this", expression.this.lower())
 
         return expression
@@ -468,7 +469,7 @@ class BigQuery(Dialect):
 
             if isinstance(table.this, exp.Identifier) and "." in table.name:
                 catalog, db, this, *rest = (
-                    t.cast(t.Optional[exp.Expression], exp.to_identifier(x))
+                    t.cast(t.Optional[exp.Expression], exp.to_identifier(x, quoted=True))
                     for x in split_num_words(table.name, ".", 3)
                 )
 
@@ -476,6 +477,7 @@ class BigQuery(Dialect):
                     this = exp.Dot.build(t.cast(t.List[exp.Expression], [this, *rest]))
 
                 table = exp.Table(this=this, db=db, catalog=catalog)
+                table.meta["quoted_table"] = True
 
             return table
 
@@ -777,6 +779,11 @@ class BigQuery(Dialect):
             "with",
             "within",
         }
+
+        def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
+            if expression.meta.get("quoted_table"):
+                expression.set("this", f"`{'.'.join(p.pop().name for p in expression.parts)}`")
+            return super().table_sql(expression, sep=sep)
 
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:
             this = expression.this if isinstance(expression.this, exp.TsOrDsToDate) else expression

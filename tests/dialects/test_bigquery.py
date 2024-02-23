@@ -26,6 +26,8 @@ class TestBigQuery(Validator):
             },
         )
 
+        self.validate_identity("SELECT * FROM `my-project.my-dataset.my-table`")
+        self.validate_identity("CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`")
         self.validate_identity("SELECT x, 1 AS y GROUP BY 1 ORDER BY 1")
         self.validate_identity("SELECT * FROM x.*")
         self.validate_identity("SELECT * FROM x.y*")
@@ -104,6 +106,14 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
         self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b))")
         self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b) LIMIT 10)")
+        self.validate_identity("CAST(x AS CHAR)", "CAST(x AS STRING)")
+        self.validate_identity("CAST(x AS NCHAR)", "CAST(x AS STRING)")
+        self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS STRING)")
+        self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("CAST(x AS RECORD)", "CAST(x AS STRUCT)")
+        self.validate_identity(
+            "SELECT * FROM `SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW`"
+        )
         self.validate_identity(
             "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
         )
@@ -187,10 +197,6 @@ class TestBigQuery(Validator):
             """SELECT PARSE_JSON('"foo"') AS json_data""",
         )
         self.validate_identity(
-            "CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`",
-            "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
-        )
-        self.validate_identity(
             "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
             "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
         )
@@ -208,6 +214,13 @@ class TestBigQuery(Validator):
             write={
                 "bigquery": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS results",
                 "presto": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS _t(results)",
+            },
+        )
+        self.validate_all(
+            "SELECT results FROM Coordinates, `Coordinates.position` AS results",
+            write={
+                "bigquery": "SELECT results FROM Coordinates, `Coordinates.position` AS results",
+                "presto": 'SELECT results FROM Coordinates, "Coordinates"."position" AS results',
             },
         )
         self.validate_all(
@@ -471,8 +484,8 @@ class TestBigQuery(Validator):
         self.validate_all(
             "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
             write={
-                "bigquery": "CREATE OR REPLACE TABLE a.b.c COPY a.b.d",
-                "snowflake": "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
+                "bigquery": "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
+                "snowflake": 'CREATE OR REPLACE TABLE "a"."b"."c" CLONE "a"."b"."d"',
             },
         )
         (
@@ -512,11 +525,6 @@ class TestBigQuery(Validator):
             ),
         )
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
-        self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
-        self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
         self.validate_all(
             'SELECT TIMESTAMP_ADD(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
             write={
@@ -622,19 +630,9 @@ class TestBigQuery(Validator):
                 "bigquery": "PARSE_TIMESTAMP('%Y.%m.%d %I:%M:%S%z', x)",
             },
         )
-        self.validate_all(
+        self.validate_identity(
             "CREATE TEMP TABLE foo AS SELECT 1",
-            write={"bigquery": "CREATE TEMPORARY TABLE foo AS SELECT 1"},
-        )
-        self.validate_all(
-            "SELECT * FROM `SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW`",
-            write={
-                "bigquery": "SELECT * FROM SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM `my-project.my-dataset.my-table`",
-            write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
+            "CREATE TEMPORARY TABLE foo AS SELECT 1",
         )
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",

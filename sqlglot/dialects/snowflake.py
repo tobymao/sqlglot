@@ -21,7 +21,7 @@ from sqlglot.dialects.dialect import (
     var_map_sql,
 )
 from sqlglot.expressions import Literal
-from sqlglot.helper import is_int, seq_get
+from sqlglot.helper import flatten, is_int, seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -66,7 +66,7 @@ def _build_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
 
     return exp.Struct(
         expressions=[
-            t.cast(exp.Condition, k).eq(v) for k, v in zip(expression.keys, expression.values)
+            exp.PropertyEQ(this=k, expression=v) for k, v in zip(expression.keys, expression.values)
         ]
     )
 
@@ -768,10 +768,6 @@ class Snowflake(Dialect):
                 "POSITION", e.args.get("substr"), e.this, e.args.get("position")
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-            exp.Struct: lambda self, e: self.func(
-                "OBJECT_CONSTRUCT",
-                *(arg for expression in e.expressions for arg in expression.flatten()),
-            ),
             exp.Stuff: rename_func("INSERT"),
             exp.TimestampDiff: lambda self, e: self.func(
                 "TIMESTAMPDIFF", e.unit, e.expression, e.this
@@ -947,3 +943,19 @@ class Snowflake(Dialect):
 
         def cluster_sql(self, expression: exp.Cluster) -> str:
             return f"CLUSTER BY ({self.expressions(expression, flat=True)})"
+
+        def struct_sql(self, expression: exp.Struct) -> str:
+            keys = []
+            values = []
+
+            for i, e in enumerate(expression.expressions):
+                if isinstance(e, exp.PropertyEQ):
+                    keys.append(
+                        exp.Literal.string(e.name) if isinstance(e.this, exp.Identifier) else e.this
+                    )
+                    values.append(e.expression)
+                else:
+                    keys.append(exp.Literal.string(f"_{i}"))
+                    values.append(e)
+
+            return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))

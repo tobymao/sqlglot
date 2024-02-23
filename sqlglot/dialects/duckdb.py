@@ -110,13 +110,13 @@ def _build_make_timestamp(args: t.List) -> exp.Expression:
 
 def _struct_sql(self: DuckDB.Generator, expression: exp.Struct) -> str:
     args: t.List[str] = []
-    for expr in expression.expressions:
-        if isinstance(expr, exp.Alias):
-            key = expr.alias
-            value = expr.this
-        else:
-            key = expr.name or expr.this.name
+    for i, expr in enumerate(expression.expressions):
+        if isinstance(expr, exp.PropertyEQ):
+            key = expr.name
             value = expr.expression
+        else:
+            key = f"_{i}"
+            value = expr
 
         args.append(f"{self.sql(exp.Literal.string(key))}: {self.sql(value)}")
 
@@ -161,13 +161,6 @@ def _rename_unless_within_group(
         if isinstance(expression.find_ancestor(exp.Select, exp.WithinGroup), exp.WithinGroup)
         else self.func(b, *flatten(expression.args.values()))
     )
-
-
-def _build_struct_pack(args: t.List) -> exp.Struct:
-    args_with_columns_as_identifiers = [
-        exp.PropertyEQ(this=arg.this.this, expression=arg.expression) for arg in args
-    ]
-    return exp.Struct.from_arg_list(args_with_columns_as_identifiers)
 
 
 class DuckDB(Dialect):
@@ -228,6 +221,8 @@ class DuckDB(Dialect):
             TokenType.TILDA: exp.RegexpLike,
         }
 
+        FUNCTIONS_WITH_ALIASED_ARGS = {*parser.Parser.FUNCTIONS_WITH_ALIASED_ARGS, "STRUCT_PACK"}
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAY_HAS": exp.ArrayContains.from_arg_list,
@@ -276,7 +271,7 @@ class DuckDB(Dialect):
             "STRING_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "STRING_TO_ARRAY": exp.Split.from_arg_list,
             "STRPTIME": build_formatted_time(exp.StrToTime, "duckdb"),
-            "STRUCT_PACK": _build_struct_pack,
+            "STRUCT_PACK": exp.Struct.from_arg_list,
             "STR_SPLIT": exp.Split.from_arg_list,
             "STR_SPLIT_REGEX": exp.RegexpSplit.from_arg_list,
             "TO_TIMESTAMP": exp.UnixToTime.from_arg_list,

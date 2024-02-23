@@ -10,9 +10,14 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
         )
-        struct_pack = parse_one('STRUCT_PACK("a b" := 1)', read="duckdb")
-        self.assertIsInstance(struct_pack.expressions[0].this, exp.Identifier)
-        self.assertEqual(struct_pack.sql(dialect="duckdb"), "{'a b': 1}")
+        self.validate_all(
+            'STRUCT_PACK("a b" := 1)',
+            write={
+                "duckdb": "{'a b': 1}",
+                "spark": "STRUCT(1 AS `a b`)",
+                "snowflake": "OBJECT_CONSTRUCT('a b', 1)",
+            },
+        )
 
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",
@@ -55,8 +60,21 @@ class TestDuckDB(Validator):
             exp.select("*").from_("t").offset(exp.select("5").subquery()).sql(dialect="duckdb"),
         )
 
-        for struct_value in ("{'a': 1}", "struct_pack(a := 1)"):
-            self.validate_all(struct_value, write={"presto": UnsupportedError})
+        self.validate_all(
+            "{'a': 1, 'b': '2'}", write={"presto": "CAST(ROW(1, '2') AS ROW(a INTEGER, b VARCHAR))"}
+        )
+        self.validate_all(
+            "struct_pack(a := 1, b := 2)",
+            write={"presto": "CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))"},
+        )
+
+        self.validate_all(
+            "struct_pack(a := 1, b := x)",
+            write={
+                "duckdb": "{'a': 1, 'b': x}",
+                "presto": UnsupportedError,
+            },
+        )
 
         for join_type in ("SEMI", "ANTI"):
             exists = "EXISTS" if join_type == "SEMI" else "NOT EXISTS"

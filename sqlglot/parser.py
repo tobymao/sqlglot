@@ -578,7 +578,7 @@ class Parser(metaclass=_Parser):
         exp.Column: lambda self: self._parse_column(),
         exp.Condition: lambda self: self._parse_conjunction(),
         exp.DataType: lambda self: self._parse_types(allow_identifiers=False),
-        exp.Expression: lambda self: self._parse_statement(),
+        exp.Expression: lambda self: self._parse_expression(),
         exp.From: lambda self: self._parse_from(),
         exp.Group: lambda self: self._parse_group(),
         exp.Having: lambda self: self._parse_having(),

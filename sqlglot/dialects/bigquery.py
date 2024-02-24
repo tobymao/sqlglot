@@ -784,8 +784,8 @@ class BigQuery(Dialect):
             # Depending on the context, `x.y` may not resolve to the same data source as `x`.`y`, so
             # we need to make sure the correct quoting is used in each case.
             #
-            # For example, if there is a CTE whose name clashes with a schema name, then the former
-            # will return a table in that schema, whereas the latter will return the CTE's y column:
+            # For example, if there is a CTE x that clashes with a schema name, then the former will
+            # return the table y in that schema, whereas the latter will return the CTE's y column:
             #
             # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x.y`   -> cross join
             # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x`.`y` -> implicit unnest

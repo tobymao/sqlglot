@@ -782,7 +782,9 @@ class BigQuery(Dialect):
 
         def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
             if expression.meta.get("quoted_table"):
-                expression.set("this", f"`{'.'.join(p.pop().name for p in expression.parts)}`")
+                fqn = f"{'.'.join(p.pop().name for p in expression.parts)}"
+                expression.set("this", exp.Identifier(this=fqn, quoted=True))
+
             return super().table_sql(expression, sep=sep)
 
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:

@@ -1535,8 +1535,8 @@ class Generator(metaclass=_Generator):
         expr = self.sql(expression, "expression")
         return f"{this} ({kind} => {expr})"
 
-    def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
-        table = ".".join(
+    def table_parts(self, expression: exp.Table) -> str:
+        return ".".join(
             self.sql(part)
             for part in (
                 expression.args.get("catalog"),
@@ -1546,6 +1546,8 @@ class Generator(metaclass=_Generator):
             if part is not None
         )
 
+    def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
+        table = self.table_parts(expression)
         version = self.sql(expression, "version")
         version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")

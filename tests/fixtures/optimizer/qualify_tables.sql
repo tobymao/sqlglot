@@ -29,6 +29,11 @@ SELECT results FROM c.db.Coordinates AS Coordinates, UNNEST(coordinates.position
 SELECT results FROM db.coordinates, Coordinates.position AS results;
 SELECT results FROM c.db.coordinates AS coordinates, UNNEST(Coordinates.position) AS results;
 
+# title: bigquery schema name clashes with CTE name - this is a join, not an implicit unnest
+# dialect: bigquery
+WITH Coordinates AS (SELECT [1, 2] AS position) SELECT results FROM Coordinates, `Coordinates.position` AS results;
+WITH Coordinates AS (SELECT [1, 2] AS position) SELECT results FROM Coordinates AS Coordinates, `c.Coordinates.position` AS results;
+
 # title: single cte
 WITH a AS (SELECT 1 FROM z) SELECT 1 FROM a;
 WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a AS a;

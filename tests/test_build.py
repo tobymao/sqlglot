@@ -94,6 +94,7 @@ class TestBuild(unittest.TestCase):
             (lambda: select("x").from_("tbl"), "SELECT x FROM tbl"),
             (lambda: select("x", "y").from_("tbl"), "SELECT x, y FROM tbl"),
             (lambda: select("x").select("y").from_("tbl"), "SELECT x, y FROM tbl"),
+            (lambda: select("comment", "begin"), "SELECT comment, begin"),
             (
                 lambda: select("x").select("y", append=False).from_("tbl"),
                 "SELECT y FROM tbl",

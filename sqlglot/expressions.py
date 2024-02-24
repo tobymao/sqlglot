@@ -3066,6 +3066,7 @@ class Select(Query):
             arg="expressions",
             append=append,
             dialect=dialect,
+            into=Expression,
             copy=copy,
             **opts,
         )

@@ -21,6 +21,7 @@ class TestBigQuery(Validator):
     def test_bigquery(self):
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql(), '"x"."y"."z"')
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
+        self.assertEqual(exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`")
 
         self.validate_identity("SELECT * FROM `my-project.my-dataset.my-table`")
         self.validate_identity("CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`")

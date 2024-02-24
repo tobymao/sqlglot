@@ -19,6 +19,27 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_all(
+            "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 as a, 'abc' AS b), STRUCT(str_col AS abc)",
+            write={
+                "bigquery": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
+                "duckdb": "SELECT {'_0': 1, '_1': 2, '_2': 3}, {}, {'_0': 'abc'}, {'_0': 1, '_1': t.str_col}, {'a': 1, 'b': 'abc'}, {'abc': str_col}",
+                "hive": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1, 'abc'), STRUCT(str_col)",
+                "spark2": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
+                "spark": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
+                "snowflake": "SELECT OBJECT_CONSTRUCT('_0', 1, '_1', 2, '_2', 3), OBJECT_CONSTRUCT(), OBJECT_CONSTRUCT('_0', 'abc'), OBJECT_CONSTRUCT('_0', 1, '_1', t.str_col), OBJECT_CONSTRUCT('a', 1, 'b', 'abc'), OBJECT_CONSTRUCT('abc', str_col)",
+                # fallback to unnamed without type inference
+                "trino": "SELECT ROW(1, 2, 3), ROW(), ROW('abc'), ROW(1, t.str_col), CAST(ROW(1, 'abc') AS ROW(a INTEGER, b VARCHAR)), ROW(str_col)",
+            },
+        )
+        self.validate_all(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
+            },
+        )
+
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql(), '"x"."y"."z"')
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
         self.assertEqual(exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`")
@@ -615,11 +636,11 @@ class TestBigQuery(Validator):
             read={"spark": "select posexplode_outer([])"},
         )
         self.validate_all(
-            "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+            "SELECT AS STRUCT ARRAY(SELECT AS STRUCT 1 AS b FROM x) AS y FROM z",
             write={
-                "": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
-                "bigquery": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
-                "duckdb": "SELECT {'y': ARRAY(SELECT {'b': b} FROM x)} FROM z",
+                "": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT 1 AS b FROM x) AS y FROM z",
+                "bigquery": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT 1 AS b FROM x) AS y FROM z",
+                "duckdb": "SELECT {'y': ARRAY(SELECT {'b': 1} FROM x)} FROM z",
             },
         )
         self.validate_all(

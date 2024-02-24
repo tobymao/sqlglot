@@ -275,6 +275,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Min: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Null: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.NULL),
         exp.Nullif: lambda self, e: self._annotate_by_args(e, "this", "expression"),
+        exp.PropertyEQ: lambda self, e: self._annotate_by_args(e, "expression"),
         exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
         exp.Struct: lambda self, e: self._annotate_by_args(e, "expressions", struct=True),
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),

@@ -372,15 +372,17 @@ WHERE
             write={"snowflake": "SELECT * FROM (VALUES (0)) AS foo(bar)"},
         )
         self.validate_all(
-            "OBJECT_CONSTRUCT(a, b, c, d)",
+            "OBJECT_CONSTRUCT('a', b, 'c', d)",
             read={
-                "": "STRUCT(a as b, c as d)",
+                "": "STRUCT(b as a, d as c)",
             },
             write={
                 "duckdb": "{'a': b, 'c': d}",
-                "snowflake": "OBJECT_CONSTRUCT(a, b, c, d)",
+                "snowflake": "OBJECT_CONSTRUCT('a', b, 'c', d)",
             },
         )
+        self.validate_identity("OBJECT_CONSTRUCT(a, b, c, d)")
+
         self.validate_all(
             "SELECT i, p, o FROM qt QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1",
             write={

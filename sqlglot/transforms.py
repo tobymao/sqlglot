@@ -560,6 +560,22 @@ def move_partitioned_by_to_schema_columns(expression: exp.Expression) -> exp.Exp
     return expression
 
 
+def struct_kv_to_alias(expression: exp.Expression) -> exp.Expression:
+    """
+    Convert struct arguments to aliases: STRUCT(1 AS y) .
+    """
+    if isinstance(expression, exp.Struct):
+        expression.set(
+            "expressions",
+            [
+                exp.alias_(e.expression, e.this) if isinstance(e, exp.PropertyEQ) else e
+                for e in expression.expressions
+            ],
+        )
+
+    return expression
+
+
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

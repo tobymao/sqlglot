@@ -129,6 +129,7 @@ class ClickHouse(Dialect):
             "MAP": parser.build_var_map,
             "MATCH": exp.RegexpLike.from_arg_list,
             "RANDCANONICAL": exp.Rand.from_arg_list,
+            "TUPLE": exp.Struct.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
         }

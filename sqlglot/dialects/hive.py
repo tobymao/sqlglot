@@ -631,3 +631,15 @@ class Hive(Dialect):
         def version_sql(self, expression: exp.Version) -> str:
             sql = super().version_sql(expression)
             return sql.replace("FOR ", "", 1)
+
+        def struct_sql(self, expression: exp.Struct) -> str:
+            values = []
+
+            for i, e in enumerate(expression.expressions):
+                if isinstance(e, exp.PropertyEQ):
+                    self.unsupported("Hive does not support named structs.")
+                    values.append(e.expression)
+                else:
+                    values.append(e)
+
+            return self.func("STRUCT", *values)

@@ -875,6 +875,8 @@ class Parser(metaclass=_Parser):
 
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
+    KEY_VALUE_DEFINITIONS = (exp.Alias, exp.EQ, exp.PropertyEQ, exp.Slice)
+
     FUNCTION_PARSERS = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
@@ -4112,6 +4114,9 @@ class Parser(metaclass=_Parser):
             alias = upper in self.FUNCTIONS_WITH_ALIASED_ARGS
             args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
+            if alias:
+                args = self._kv_to_prop_eq(args)
+
             if function and not anonymous:
                 if "dialect" in function.__code__.co_varnames:
                     func = function(args, dialect=self.dialect)
@@ -4131,6 +4136,26 @@ class Parser(metaclass=_Parser):
 
         self._match_r_paren(this)
         return self._parse_window(this)
+
+    def _kv_to_prop_eq(self, expressions: t.List[exp.Expression]) -> t.List[exp.Expression]:
+        transformed = []
+
+        for e in expressions:
+            if isinstance(e, self.KEY_VALUE_DEFINITIONS):
+                if isinstance(e, exp.Alias):
+                    e = self.expression(exp.PropertyEQ, this=e.args.get("alias"), expression=e.this)
+
+                if not isinstance(e, exp.PropertyEQ):
+                    e = self.expression(
+                        exp.PropertyEQ, this=exp.to_identifier(e.name), expression=e.expression
+                    )
+
+                if isinstance(e.this, exp.Column):
+                    e.this.replace(e.this.this)
+
+            transformed.append(e)
+
+        return transformed
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
         return self._parse_column_def(self._parse_id_var())
@@ -4544,7 +4569,7 @@ class Parser(metaclass=_Parser):
 
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
-            this = self.expression(exp.Struct, expressions=expressions)
+            this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
         elif not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:

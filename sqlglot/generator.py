@@ -462,8 +462,6 @@ class Generator(metaclass=_Generator):
     # Expressions that need to have all CTEs under them bubbled up to them
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
 
-    KEY_VALUE_DEFINITIONS = (exp.EQ, exp.PropertyEQ, exp.Slice)
-
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
@@ -2140,9 +2138,9 @@ class Generator(metaclass=_Generator):
                             self.sql(
                                 exp.Struct(
                                     expressions=[
-                                        exp.column(e.output_name).eq(
-                                            e.this if isinstance(e, exp.Alias) else e
-                                        )
+                                        exp.PropertyEQ(this=e.args.get("alias"), expression=e.this)
+                                        if isinstance(e, exp.Alias)
+                                        else e
                                         for e in expression.expressions
                                     ]
                                 )
@@ -3457,4 +3455,15 @@ class Generator(metaclass=_Generator):
 
     def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
         expression.set("is_end_exclusive", None)
+        return self.function_fallback_sql(expression)
+
+    def struct_sql(self, expression: exp.Struct) -> str:
+        expression.set(
+            "expressions",
+            [
+                exp.alias_(e.expression, e.this) if isinstance(e, exp.PropertyEQ) else e
+                for e in expression.expressions
+            ],
+        )
+
         return self.function_fallback_sql(expression)

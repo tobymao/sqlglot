@@ -42,7 +42,10 @@ def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Va
     alias = expression.args.get("alias")
     for tup in expression.find_all(exp.Tuple):
         field_aliases = alias.columns if alias else (f"_c{i}" for i in range(len(tup.expressions)))
-        expressions = [exp.alias_(fld, name) for fld, name in zip(tup.expressions, field_aliases)]
+        expressions = [
+            exp.PropertyEQ(this=exp.to_identifier(name), expression=fld)
+            for name, fld in zip(field_aliases, tup.expressions)
+        ]
         structs.append(exp.Struct(expressions=expressions))
 
     return self.unnest_sql(exp.Unnest(expressions=[exp.array(*structs, copy=False)]))
@@ -798,18 +801,6 @@ class BigQuery(Dialect):
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:
             this = expression.this if isinstance(expression.this, exp.TsOrDsToDate) else expression
             return self.func("FORMAT_DATE", self.format_time(expression), this.this)
-
-        def struct_sql(self, expression: exp.Struct) -> str:
-            args = []
-            for expr in expression.expressions:
-                if isinstance(expr, self.KEY_VALUE_DEFINITIONS):
-                    arg = f"{self.sql(expr, 'expression')} AS {expr.this.name}"
-                else:
-                    arg = self.sql(expr)
-
-                args.append(arg)
-
-            return self.func("STRUCT", *args)
 
         def eq_sql(self, expression: exp.EQ) -> str:
             # Operands of = cannot be NULL in BigQuery

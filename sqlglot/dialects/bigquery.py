@@ -782,7 +782,7 @@ class BigQuery(Dialect):
 
         def table_parts(self, expression: exp.Table) -> str:
             # Depending on the context, `x.y` may not resolve to the same data source as `x`.`y`, so
-            # we need to make sure the quotes are preserved in the first case.
+            # we need to make sure the correct quoting is used in each case.
             #
             # For example, if there is a CTE whose name clashes with a schema name, then the former
             # will return a table in that schema, whereas the latter will return the CTE's y column:

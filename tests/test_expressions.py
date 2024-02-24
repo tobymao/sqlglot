@@ -249,7 +249,7 @@ class TestExpressions(unittest.TestCase):
                 {"example.table": "`my-project.example.table`"},
                 dialect="bigquery",
             ).sql(),
-            'SELECT * FROM "my-project".example.table /* example.table */',
+            'SELECT * FROM "my-project"."example"."table" /* example.table */',
         )
 
     def test_expand(self):

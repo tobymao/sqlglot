@@ -275,15 +275,16 @@ class BigQuery(Dialect):
             # by default. The following check uses a heuristic to detect tables based on whether
             # they are qualified. This should generally be correct, because tables in BigQuery
             # must be qualified with at least a dataset, unless @@dataset_id is set.
-            if (
-                not isinstance(parent, exp.UserDefinedFunction)
-                and not (
+            case_sensitive = (
+                isinstance(parent, exp.UserDefinedFunction)
+                or (
                     isinstance(parent, exp.Table)
                     and parent.db
-                    and not parent.meta.get("maybe_column")
+                    and (parent.meta.get("quoted_table") or not parent.meta.get("maybe_column"))
                 )
-                and not expression.meta.get("is_table")
-            ):
+                or expression.meta.get("is_table")
+            )
+            if not case_sensitive:
                 expression.set("this", expression.this.lower())
 
         return expression
@@ -468,7 +469,7 @@ class BigQuery(Dialect):
 
             if isinstance(table.this, exp.Identifier) and "." in table.name:
                 catalog, db, this, *rest = (
-                    t.cast(t.Optional[exp.Expression], exp.to_identifier(x))
+                    t.cast(t.Optional[exp.Expression], exp.to_identifier(x, quoted=True))
                     for x in split_num_words(table.name, ".", 3)
                 )
 
@@ -476,6 +477,7 @@ class BigQuery(Dialect):
                     this = exp.Dot.build(t.cast(t.List[exp.Expression], [this, *rest]))
 
                 table = exp.Table(this=this, db=db, catalog=catalog)
+                table.meta["quoted_table"] = True
 
             return table
 
@@ -777,6 +779,21 @@ class BigQuery(Dialect):
             "with",
             "within",
         }
+
+        def table_parts(self, expression: exp.Table) -> str:
+            # Depending on the context, `x.y` may not resolve to the same data source as `x`.`y`, so
+            # we need to make sure the correct quoting is used in each case.
+            #
+            # For example, if there is a CTE x that clashes with a schema name, then the former will
+            # return the table y in that schema, whereas the latter will return the CTE's y column:
+            #
+            # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x.y`   -> cross join
+            # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x`.`y` -> implicit unnest
+            if expression.meta.get("quoted_table"):
+                table_parts = f"{'.'.join(p.name for p in expression.parts)}"
+                return self.sql(exp.Identifier(this=table_parts, quoted=True))
+
+            return super().table_parts(expression)
 
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:
             this = expression.this if isinstance(expression.this, exp.TsOrDsToDate) else expression

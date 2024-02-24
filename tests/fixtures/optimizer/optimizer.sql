@@ -820,7 +820,7 @@ SELECT
   `TOp_TeRmS`.`refresh_date` AS `day`,
   `TOp_TeRmS`.`term` AS `top_term`,
   `TOp_TeRmS`.`rank` AS `rank`
-FROM `bigquery-public-data`.`GooGle_tReNDs`.`TOp_TeRmS` AS `TOp_TeRmS`
+FROM `bigquery-public-data.GooGle_tReNDs.TOp_TeRmS` AS `TOp_TeRmS`
 WHERE
   `TOp_TeRmS`.`rank` = 1
   AND CAST(`TOp_TeRmS`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)

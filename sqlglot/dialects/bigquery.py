@@ -780,12 +780,20 @@ class BigQuery(Dialect):
             "within",
         }
 
-        def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
+        def table_parts(self, expression: exp.Table) -> str:
+            # Depending on the context, `x.y` may not resolve to the same data source as `x`.`y`, so
+            # we need to make sure the quotes are preserved in the first case.
+            #
+            # For example, if there is a CTE whose name clashes with a schema name, then the former
+            # will return a table in that schema, whereas the latter will return the CTE's y column:
+            #
+            # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x.y`   -> cross join
+            # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x`.`y` -> implicit unnest
             if expression.meta.get("quoted_table"):
                 fqn = f"{'.'.join(p.pop().name for p in expression.parts)}"
-                expression.set("this", exp.Identifier(this=fqn, quoted=True))
+                return self.sql(exp.Identifier(this=fqn, quoted=True))
 
-            return super().table_sql(expression, sep=sep)
+            return super().table_parts(expression)
 
         def timetostr_sql(self, expression: exp.TimeToStr) -> str:
             this = expression.this if isinstance(expression.this, exp.TsOrDsToDate) else expression

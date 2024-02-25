@@ -317,6 +317,7 @@ class TokenType(AutoName):
     PIVOT = auto()
     PLACEHOLDER = auto()
     PRAGMA = auto()
+    PREWHERE = auto()
     PRIMARY_KEY = auto()
     PROCEDURE = auto()
     PROPERTIES = auto()
@@ -721,6 +722,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "PERCENT": TokenType.PERCENT,
         "PIVOT": TokenType.PIVOT,
         "PRAGMA": TokenType.PRAGMA,
+        "PREWHERE": TokenType.PREWHERE,
         "PRIMARY KEY": TokenType.PRIMARY_KEY,
         "PROCEDURE": TokenType.PROCEDURE,
         "QUALIFY": TokenType.QUALIFY,

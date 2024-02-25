@@ -2074,6 +2074,7 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "connect"),
             self.sql(expression, "match"),
             *[self.sql(lateral) for lateral in expression.args.get("laterals") or []],
+            self.sql(expression, "prewhere"),
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
@@ -2258,6 +2259,10 @@ class Generator(metaclass=_Generator):
                 suffix = alias
 
         return f"UNNEST({args}){suffix}"
+
+    def prewhere_sql(self, expression: exp.PreWhere) -> str:
+        this = self.indent(self.sql(expression, "this"))
+        return f"{self.seg('PREWHERE')}{self.sep()}{this}"
 
     def where_sql(self, expression: exp.Where) -> str:
         this = self.indent(self.sql(expression, "this"))

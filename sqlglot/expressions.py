@@ -2583,6 +2583,7 @@ QUERY_MODIFIERS = {
     "joins": False,
     "connect": False,
     "pivots": False,
+    "prewhere": False,
     "where": False,
     "group": False,
     "having": False,
@@ -3568,6 +3569,10 @@ class WindowSpec(Expression):
         "end": False,
         "end_side": False,
     }
+
+
+class PreWhere(Expression):
+    pass
 
 
 class Where(Expression):

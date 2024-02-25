@@ -899,6 +899,7 @@ class Parser(metaclass=_Parser):
 
     QUERY_MODIFIER_PARSERS = {
         TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
+        TokenType.PREWHERE: lambda self: ("prewhere", self._parse_prewhere()),
         TokenType.WHERE: lambda self: ("where", self._parse_where()),
         TokenType.GROUP_BY: lambda self: ("group", self._parse_group()),
         TokenType.HAVING: lambda self: ("having", self._parse_having()),
@@ -3210,6 +3211,14 @@ class Parser(metaclass=_Parser):
 
     def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
         return [agg.alias for agg in aggregations]
+
+    def _parse_prewhere(self, skip_where_token: bool = False) -> t.Optional[exp.PreWhere]:
+        if not skip_where_token and not self._match(TokenType.PREWHERE):
+            return None
+
+        return self.expression(
+            exp.PreWhere, comments=self._prev_comments, this=self._parse_conjunction()
+        )
 
     def _parse_where(self, skip_where_token: bool = False) -> t.Optional[exp.Where]:
         if not skip_where_token and not self._match(TokenType.WHERE):

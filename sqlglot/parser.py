@@ -3350,7 +3350,9 @@ class Parser(metaclass=_Parser):
             return None
         return self.expression(exp_class, expressions=self._parse_csv(self._parse_ordered))
 
-    def _parse_ordered(self, parse_method: t.Optional[t.Callable] = None) -> t.Optional[exp.Ordered]:
+    def _parse_ordered(
+        self, parse_method: t.Optional[t.Callable] = None
+    ) -> t.Optional[exp.Ordered]:
         this = parse_method() if parse_method else self._parse_conjunction()
         if not this:
             return None

@@ -286,6 +286,13 @@ class TestOptimizer(unittest.TestCase):
             "SELECT `test`.`bar_bazfoo_$id` AS `bar_bazfoo_$id` FROM `test` AS `test`",
         )
 
+        qualified = optimizer.qualify.qualify(parse_one("WITH t AS (SELECT 1 AS c) (SELECT c FROM t)"))
+        self.assertIs(qualified.selects[0].parent, qualified.this)
+        self.assertEqual(
+            qualified.sql(),
+            'WITH "t" AS (SELECT 1 AS "c") (SELECT "t"."c" AS "c" FROM "t" AS "t")',
+        )
+
         self.check_file(
             "qualify_columns", qualify_columns, execute=True, schema=self.schema, set_dialect=True
         )

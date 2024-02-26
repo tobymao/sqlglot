@@ -1108,6 +1108,11 @@ class TestDialect(Validator):
         )
 
     def test_order_by(self):
+        self.validate_identity(
+            "SELECT c FROM t ORDER BY a, b,",
+            "SELECT c FROM t ORDER BY a, b",
+        )
+
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",
             write={

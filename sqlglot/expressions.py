@@ -1492,7 +1492,6 @@ class Delete(DML):
         "returning": False,
         "limit": False,
         "tables": False,  # Multiple-Table Syntax (MySQL)
-        "option": False,
     }
 
     def delete(
@@ -2777,7 +2776,6 @@ class Update(Expression):
         "returning": False,
         "order": False,
         "limit": False,
-        "option": False,
     }
 
 
@@ -5573,7 +5571,6 @@ class Merge(Expression):
         "on": True,
         "expressions": True,
         "with": False,
-        "option": False,
     }
 
 

@@ -2083,8 +2083,21 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "order"),
             *offset_limit_modifiers,
             *self.after_limit_modifiers(expression),
+            *self.sql(expression, "option"),
             sep="",
         )
+
+    def option_sql(self, expression: exp.Option):
+        option_type = self.sql(expression, "option_type")
+        option_value = self.sql(expression, "option_value")
+        if option_value:
+            optional_equal_sign = "= " if expression.args.get("requires_equals") else ""
+            return f"{option_type} {optional_equal_sign}{option_value}"
+        return option_type
+
+    def options_sql(self, expression: exp.Options):
+        options_sql = csv(*[self.sql(opt) for opt in expression.args.get("options", [])])
+        return f" OPTION({options_sql})"
 
     def offset_limit_modifiers(
         self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]

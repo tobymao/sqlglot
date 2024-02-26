@@ -442,6 +442,11 @@ class TSQL(Dialect):
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
 
+        QUERY_MODIFIER_PARSERS = {
+            **parser.Parser.QUERY_MODIFIER_PARSERS,
+            TokenType.OPTION: lambda self: ("option", self._parse_option()),
+        }
+
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "CHARINDEX": lambda args: exp.StrPosition(
@@ -495,103 +500,6 @@ class TSQL(Dialect):
         STATEMENT_PARSERS = {
             **parser.Parser.STATEMENT_PARSERS,
             TokenType.END: lambda self: self._parse_command(),
-        }
-
-        OPTION_PREFIX_TO_PARSE_FUNCTION = {
-            "LABEL": lambda self: self._generic_parse_option(
-                "LABEL",
-                [
-                    lambda: self._match(TokenType.EQ)
-                    and self._return_option_with_value("LABEL", self._parse_string())
-                ],
-            ),
-            "HASH": lambda self: self._generic_parse_option("HASH", ["GROUP", "UNION", "JOIN"]),
-            "ORDER": lambda self: self._generic_parse_option("ORDER", ["GROUP"]),
-            "CONCAT": lambda self: self._generic_parse_option("CONCAT", ["UNION"]),
-            "MERGE": lambda self: self._generic_parse_option("MERGE", ["UNION", "JOIN"]),
-            "LOOP": lambda self: self._generic_parse_option("LOOP", ["JOIN"]),
-            "DISABLE_OPTIMIZED_PLAN_FORCING": lambda self: self._generic_parse_option(
-                "DISABLE_OPTIMIZED_PLAN_FORCING", []
-            ),
-            "EXPAND": lambda self: self._generic_parse_option("EXPAND", ["VIEWS"]),
-            "FAST": lambda self: self._generic_parse_option(
-                "FAST", [lambda: self._return_option_with_value("FAST", self._parse_number())]
-            ),
-            "FORCE": lambda self: self._generic_parse_option(
-                "FORCE", ["ORDER", "EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"]
-            ),
-            "DISABLE": lambda self: self._generic_parse_option(
-                "DISABLE", ["EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"]
-            ),
-            "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX": lambda self: self._generic_parse_option(
-                "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX", []
-            ),
-            "KEEP": lambda self: self._generic_parse_option("KEEP", ["PLAN"]),
-            "KEEPFIXED": lambda self: self._generic_parse_option("KEEPFIXED", ["PLAN"]),
-            "MAX_GRANT_PERCENT": lambda self: self._generic_parse_option(
-                "MAX_GRANT_PERCENT",
-                [
-                    lambda: self._match(TokenType.EQ)
-                    and self._generic_parse_option(
-                        "MAX_GRANT_PERCENT",
-                        [
-                            lambda: self._return_option_with_value(
-                                "MAX_GRANT_PERCENT", self._parse_number(), requires_equals=True
-                            )
-                        ],
-                    )
-                ],
-            ),
-            "MIN_GRANT_PERCENT": lambda self: self._generic_parse_option(
-                "MIN_GRANT_PERCENT",
-                [
-                    lambda: self._match(TokenType.EQ)
-                    and self._generic_parse_option(
-                        "MIN_GRANT_PERCENT",
-                        [
-                            lambda: self._return_option_with_value(
-                                "MIN_GRANT_PERCENT", self._parse_number(), requires_equals=True
-                            )
-                        ],
-                    )
-                ],
-            ),
-            "MAXDOP": lambda self: self._generic_parse_option(
-                "MAXDOP", [lambda: self._return_option_with_value("MAXDOP", self._parse_number())]
-            ),
-            "MAXRECURSION": lambda self: self._generic_parse_option(
-                "MAXRECURSION",
-                [lambda: self._return_option_with_value("MAXRECURSION", self._parse_number())],
-            ),
-            "NO_PERFORMANCE_SPOOL": lambda self: self._generic_parse_option(
-                "NO_PERFORMANCE_SPOOL", []
-            ),
-            "OPTIMIZE": lambda self: self._generic_parse_option(
-                "OPTIMIZE",
-                [
-                    # There is still no support for the following syntax:
-                    # OPTIMIZE FOR ( @variable_name { UNKNOWN | = <literal_constant> } [ , ...n ] )
-                    lambda: self._match_text_seq("FOR")
-                    and self._generic_parse_option("OPTIMIZE FOR", ["UNKNOWN"])
-                ],
-            ),
-            "PARAMETERIZATION": lambda self: self._generic_parse_option(
-                "PARAMETERIZATION", ["SIMPLE", "FORCED"]
-            ),
-            "QUERYTRACEON": lambda self: self._generic_parse_option(
-                "QUERYTRACEON",
-                [lambda: self._return_option_with_value("QUERYTRACEON", self._parse_number())],
-            ),
-            "RECOMPILE": lambda self: self._generic_parse_option("RECOMPILE", []),
-            "ROBUST": lambda self: self._generic_parse_option("ROBUST", ["PLAN"]),
-            "USE": lambda self: self._generic_parse_option(
-                "USE",
-                [
-                    lambda: self._match_text_seq("PLAN")
-                    and self._return_option_with_value("USE PLAN", self._parse_string())
-                ],
-            ),
-            # No support yet for TABLE HINT
         }
 
         LOG_DEFAULTS_TO_LN = True
@@ -677,116 +585,6 @@ class TSQL(Dialect):
             returns = super()._parse_returns()
             returns.set("table", table)
             return returns
-
-        def _parse_table_alias(
-            self, alias_tokens: t.Optional[t.Collection[TokenType]] = None
-        ) -> t.Optional[exp.TableAlias]:
-            index = self._index
-            has_options_clause = False
-            if self._match(TokenType.OPTION):
-                has_options_clause = True
-            self._retreat(index)
-            # Current tokens are not an alias, but an option. This will be handled in the _parse_option function.
-            if has_options_clause:
-                return None
-            return super()._parse_table_alias(alias_tokens=alias_tokens)
-
-        def _return_option_with_value(
-            self,
-            option_type: t.Optional[exp.Expression],
-            option_value: t.Optional[t.Union[str, exp.Expression]],
-            requires_equals=False,
-        ) -> t.Optional[exp.Option]:
-            if isinstance(option_value, str):
-                option_value = self.expression(exp.Identifier, this=option_value)
-            return self.expression(
-                exp.Option,
-                option_type=option_type,
-                option_value=option_value if option_value is not None else None,
-                requires_equals=requires_equals,
-            )
-
-        def _generic_parse_option(
-            self, option_name: str, valid_continuations: t.List[t.Union[str, t.Callable]]
-        ) -> t.Optional[exp.Option]:
-            # Handle the special case of options with no continuations.
-            if not valid_continuations:
-                return self._return_option_with_value(
-                    self.expression(exp.Identifier, this=option_name), None
-                )
-
-            for valid_continuation in valid_continuations:
-                if callable(valid_continuation):
-                    res = valid_continuation()
-                    if res is not None:
-                        return res
-                elif isinstance(valid_continuation, str):
-                    if self._match_text_seq(valid_continuation):
-                        return self._return_option_with_value(
-                            self.expression(exp.Identifier, this=option_name), valid_continuation
-                        )
-                else:
-                    # Shouldn't happen.
-                    raise AssertionError(
-                        f"_generic_parse_option only accepts strings and callables as valid continuations, not '{valid_continuation}'"
-                    )
-            self.raise_error(f"Invalid {option_name} option")
-            return None
-
-        def _parse_single_option(self) -> t.Optional[exp.Expression]:
-            cur_prefix = self._curr.text.upper()
-            if cur_prefix in self.OPTION_PREFIX_TO_PARSE_FUNCTION:
-                self._match_text_seq(cur_prefix.upper())
-                return self.OPTION_PREFIX_TO_PARSE_FUNCTION[cur_prefix](self)
-            else:
-                self.raise_error("Invalid option type.")
-                return None
-
-        def _parse_option(self):
-            self._match_l_paren()
-            options = self._parse_csv(self._parse_single_option)
-            options = [opt for opt in options if opt is not None]
-            self._match_r_paren()
-            return self.expression(exp.Options, options=options)
-
-        def _parse_select(
-            self,
-            nested: bool = False,
-            table: bool = False,
-            parse_subquery_alias: bool = True,
-            parse_set_operation: bool = True,
-        ) -> t.Optional[exp.Expression]:
-            result = super()._parse_select(
-                nested=nested,
-                table=table,
-                parse_subquery_alias=parse_subquery_alias,
-                parse_set_operation=parse_set_operation,
-            )
-            if result is not None and self._match(TokenType.OPTION):
-                option = self._parse_option()
-                result.set("option", option)
-            return result
-
-        def _parse_merge(self) -> exp.Merge:
-            result = super()._parse_merge()
-            if result is not None and self._match(TokenType.OPTION):
-                option = self._parse_option()
-                result.set("option", option)
-            return result
-
-        def _parse_update(self) -> exp.Update:
-            result = super()._parse_update()
-            if result is not None and self._match(TokenType.OPTION):
-                option = self._parse_option()
-                result.set("option", option)
-            return result
-
-        def _parse_delete(self) -> exp.Delete:
-            result = super()._parse_delete()
-            if result is not None and self._match(TokenType.OPTION):
-                option = self._parse_option()
-                result.set("option", option)
-            return result
 
         def _parse_convert(
             self, strict: bool, safe: t.Optional[bool] = None
@@ -1185,36 +983,6 @@ class TSQL(Dialect):
                 identifier = f"#{identifier}"
 
             return identifier
-
-        def option_sql(self, expression: exp.Option):
-            option_type = self.sql(expression, "option_type")
-            option_value = self.sql(expression, "option_value")
-            if option_value:
-                optional_equal_sign = "= " if expression.args.get("requires_equals") else ""
-                return f"{option_type} {optional_equal_sign}{option_value}"
-            return option_type
-
-        def _add_option_sql(self, expression: exp.Expression):
-            option = expression.args.get("option", None)
-            if option is not None:
-                return f" OPTION({','.join([self.sql(opt) for opt in option.args['options']])})"
-            return ""
-
-        def delete_sql(self, expression: exp.Delete):
-            result = super().delete_sql(expression)
-            return f"{result}{self._add_option_sql(expression)}"
-
-        def select_sql(self, expression: exp.Select):
-            result = super().select_sql(expression)
-            return f"{result}{self._add_option_sql(expression)}"
-
-        def merge_sql(self, expression: exp.Merge):
-            result = super().merge_sql(expression)
-            return f"{result}{self._add_option_sql(expression)}"
-
-        def update_sql(self, expression: exp.Update):
-            result = super().update_sql(expression)
-            return f"{result}{self._add_option_sql(expression)}"
 
         def constraint_sql(self, expression: exp.Constraint) -> str:
             this = self.sql(expression, "this")

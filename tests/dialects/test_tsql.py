@@ -46,11 +46,12 @@ class TestTSQL(Validator):
         ]
 
         possible_statements = [
-            "DELETE FROM Table1",
+            # These should be un-commented once support for the OPTION clause is added for DELETE, MERGE and UPDATE
+            # "DELETE FROM Table1",
+            # "MERGE INTO Locations AS T USING locations_stage AS S ON T.LocationID = S.LocationID WHEN MATCHED THEN UPDATE SET LocationName = S.LocationName",
+            # "UPDATE Customers SET ContactName = 'Alfred Schmidt', City = 'Frankfurt' WHERE CustomerID = 1",
             "SELECT * FROM Table1",
             "SELECT * FROM Table1 WHERE id = 2",
-            "MERGE INTO Locations AS T USING locations_stage AS S ON T.LocationID = S.LocationID WHEN MATCHED THEN UPDATE SET LocationName = S.LocationName",
-            "UPDATE Customers SET ContactName = 'Alfred Schmidt', City = 'Frankfurt' WHERE CustomerID = 1",
         ]
 
         # We test at most 2 options - so first do a run with only 1 option, and afterwards do a cartesian product
@@ -66,7 +67,7 @@ class TestTSQL(Validator):
         for statement, option1, option2 in itertools.product(
             possible_statements, possible_options, possible_options
         ):
-            query = f"{statement} OPTION({','.join([option1,option2])})"
+            query = f"{statement} OPTION({', '.join([option1,option2])})"
             result = self.validate_identity(query)
             options = result.args.get("option")
             self.assertIsInstance(options, exp.Options)
@@ -74,10 +75,14 @@ class TestTSQL(Validator):
                 self.assertIsInstance(actual_opt, exp.Option)
 
         raising_queries = [
-            "DELETE FROM Table1 OPTION HASH GROUP",
-            "DELETE FROM Table1 OPTION(KEEPFIXED)",
-            "DELETE FROM Table1 OPTION(FAST 'abcd')",
-            "DELETE FROM Table1 OPTION(HASH GROUP HASH GROUP)",
+            # Missing parentheses
+            "SELECT * FROM Table1 OPTION HASH GROUP",
+            # Must be followed by 'PLAN"
+            "SELECT * FROM Table1 OPTION(KEEPFIXED)",
+            # Should expect a numeric literal
+            "SELECT * FROM Table1 OPTION(FAST 'abcd')",
+            # Missing commas
+            "SELECT * FROM Table1 OPTION(HASH GROUP HASH GROUP)",
         ]
         for query in raising_queries:
             with self.assertRaises(ParseError, msg=f"When running '{query}'"):

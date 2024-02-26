@@ -2261,8 +2261,7 @@ class Generator(metaclass=_Generator):
         return f"UNNEST({args}){suffix}"
 
     def prewhere_sql(self, expression: exp.PreWhere) -> str:
-        this = self.indent(self.sql(expression, "this"))
-        return f"{self.seg('PREWHERE')}{self.sep()}{this}"
+        return ""
 
     def where_sql(self, expression: exp.Where) -> str:
         this = self.indent(self.sql(expression, "this"))

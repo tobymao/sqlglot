@@ -9,7 +9,7 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
             write={
-                "": "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
+                "": "SELECT * FROM x WHERE z = 2",
                 "clickhouse": "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
             },
         )

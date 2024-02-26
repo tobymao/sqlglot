@@ -93,6 +93,7 @@ class ClickHouse(Dialect):
             "AGGREGATEFUNCTION": TokenType.AGGREGATEFUNCTION,
             "SIMPLEAGGREGATEFUNCTION": TokenType.SIMPLEAGGREGATEFUNCTION,
             "SYSTEM": TokenType.COMMAND,
+            "PREWHERE": TokenType.PREWHERE,
         }
 
         SINGLE_TOKENS = {
@@ -733,3 +734,7 @@ class ClickHouse(Dialect):
                 return f"{this_name}{self.sep()}{this_properties}{self.sep()}{this_schema}"
 
             return super().createable_sql(expression, locations)
+
+        def prewhere_sql(self, expression: exp.PreWhere) -> str:
+            this = self.indent(self.sql(expression, "this"))
+            return f"{self.seg('PREWHERE')}{self.sep()}{this}"

@@ -18,7 +18,8 @@ class Node:
     expression: exp.Expression
     source: exp.Expression
     downstream: t.List[Node] = field(default_factory=list)
-    alias: str = ""
+    source_name: str = ""
+    reference_node_name: str = ""
 
     def walk(self) -> t.Iterator[Node]:
         yield self
@@ -111,9 +112,10 @@ def lineage(
         scope: Scope,
         scope_name: t.Optional[str] = None,
         upstream: t.Optional[Node] = None,
-        alias: t.Optional[str] = None,
+        source_name: t.Optional[str] = None,
+        reference_node_name: t.Optional[str] = None,
     ) -> Node:
-        aliases = {
+        source_names = {
             dt.alias: dt.comments[0].split()[1]
             for dt in scope.derived_tables
             if dt.comments and dt.comments[0].startswith("source: ")
@@ -150,7 +152,13 @@ def lineage(
                 raise ValueError(f"Could not find {column} in {scope.expression}")
 
             for s in scope.union_scopes:
-                to_node(index, scope=s, upstream=upstream, alias=alias)
+                to_node(
+                    index,
+                    scope=s,
+                    upstream=upstream,
+                    source_name=source_name,
+                    reference_node_name=reference_node_name,
+                )
 
             return upstream
 
@@ -168,7 +176,8 @@ def lineage(
             name=f"{scope_name}.{column}" if scope_name else str(column),
             source=source,
             expression=select,
-            alias=alias or "",
+            source_name=source_name or "",
+            reference_node_name=reference_node_name or "",
         )
 
         if upstream:
@@ -204,13 +213,15 @@ def lineage(
             source = scope.sources.get(table)
 
             if isinstance(source, Scope):
+                selected_node, _ = scope.selected_sources.get(table, (None, None))
                 # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
                 to_node(
                     c.name,
                     scope=source,
                     scope_name=table,
                     upstream=node,
-                    alias=aliases.get(table) or alias,
+                    source_name=source_names.get(table) or source_name,
+                    reference_node_name=selected_node.name if selected_node else None,
                 )
             else:
                 # The source is not a scope - we've reached the end of the line. At this point, if a source is not found

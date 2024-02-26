@@ -25,21 +25,21 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "SELECT z.a AS a FROM (SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */) AS z /* source: z */",
         )
-        self.assertEqual(node.alias, "")
+        self.assertEqual(node.source_name, "")
 
         downstream = node.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
             "SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */",
         )
-        self.assertEqual(downstream.alias, "z")
+        self.assertEqual(downstream.source_name, "z")
 
         downstream = downstream.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
             "SELECT x.a AS a FROM x AS x",
         )
-        self.assertEqual(downstream.alias, "y")
+        self.assertEqual(downstream.source_name, "y")
         self.assertGreater(len(node.to_html()._repr_html_()), 1000)
 
     def test_lineage_sql_with_cte(self) -> None:
@@ -53,7 +53,8 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "WITH z AS (SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */) SELECT z.a AS a FROM z AS z",
         )
-        self.assertEqual(node.alias, "")
+        self.assertEqual(node.source_name, "")
+        self.assertEqual(node.reference_node_name, "")
 
         # Node containing expanded CTE expression
         downstream = node.downstream[0]
@@ -61,14 +62,16 @@ class TestLineage(unittest.TestCase):
             downstream.source.sql(),
             "SELECT y.a AS a FROM (SELECT x.a AS a FROM x AS x) AS y /* source: y */",
         )
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.source_name, "")
+        self.assertEqual(downstream.reference_node_name, "z")
 
         downstream = downstream.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
             "SELECT x.a AS a FROM x AS x",
         )
-        self.assertEqual(downstream.alias, "y")
+        self.assertEqual(downstream.source_name, "y")
+        self.assertEqual(downstream.reference_node_name, "")
 
     def test_lineage_source_with_cte(self) -> None:
         node = lineage(
@@ -81,21 +84,24 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "SELECT z.a AS a FROM (WITH y AS (SELECT x.a AS a FROM x AS x) SELECT y.a AS a FROM y AS y) AS z /* source: z */",
         )
-        self.assertEqual(node.alias, "")
+        self.assertEqual(node.source_name, "")
+        self.assertEqual(node.reference_node_name, "")
 
         downstream = node.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
             "WITH y AS (SELECT x.a AS a FROM x AS x) SELECT y.a AS a FROM y AS y",
         )
-        self.assertEqual(downstream.alias, "z")
+        self.assertEqual(downstream.source_name, "z")
+        self.assertEqual(downstream.reference_node_name, "")
 
         downstream = downstream.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
             "SELECT x.a AS a FROM x AS x",
         )
-        self.assertEqual(downstream.alias, "z")
+        self.assertEqual(downstream.source_name, "z")
+        self.assertEqual(downstream.reference_node_name, "y")
 
     def test_lineage_source_with_star(self) -> None:
         node = lineage(
@@ -106,14 +112,16 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "WITH y AS (SELECT * FROM x AS x) SELECT y.a AS a FROM y AS y",
         )
-        self.assertEqual(node.alias, "")
+        self.assertEqual(node.source_name, "")
+        self.assertEqual(node.reference_node_name, "")
 
         downstream = node.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
             "SELECT * FROM x AS x",
         )
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.source_name, "")
+        self.assertEqual(downstream.reference_node_name, "y")
 
     def test_lineage_external_col(self) -> None:
         node = lineage(
@@ -124,14 +132,16 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "WITH y AS (SELECT * FROM x AS x) SELECT a AS a FROM y AS y JOIN z AS z ON y.uid = z.uid",
         )
-        self.assertEqual(node.alias, "")
+        self.assertEqual(node.source_name, "")
+        self.assertEqual(node.reference_node_name, "")
 
         downstream = node.downstream[0]
         self.assertEqual(
             downstream.source.sql(),
             "?",
         )
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.source_name, "")
+        self.assertEqual(downstream.reference_node_name, "")
 
     def test_lineage_values(self) -> None:
         node = lineage(
@@ -143,17 +153,17 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "SELECT y.a AS a FROM (SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)) AS y /* source: y */",
         )
-        self.assertEqual(node.alias, "")
+        self.assertEqual(node.source_name, "")
 
         downstream = node.downstream[0]
         self.assertEqual(downstream.source.sql(), "SELECT t.a AS a FROM (VALUES (1), (2)) AS t(a)")
         self.assertEqual(downstream.expression.sql(), "t.a AS a")
-        self.assertEqual(downstream.alias, "y")
+        self.assertEqual(downstream.source_name, "y")
 
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.source.sql(), "(VALUES (1), (2)) AS t(a)")
         self.assertEqual(downstream.expression.sql(), "a")
-        self.assertEqual(downstream.alias, "y")
+        self.assertEqual(downstream.source_name, "y")
 
     def test_lineage_cte_name_appears_in_schema(self) -> None:
         schema = {"a": {"b": {"t1": {"c1": "int"}, "t2": {"c2": "int"}}}}
@@ -168,22 +178,22 @@ class TestLineage(unittest.TestCase):
             node.source.sql(),
             "WITH t1 AS (SELECT t2.c2 AS c2 FROM a.b.t2 AS t2), inter AS (SELECT t1.c2 AS c2 FROM t1 AS t1) SELECT inter.c2 AS c2 FROM inter AS inter",
         )
-        self.assertEqual(node.alias, "")
+        self.assertEqual(node.source_name, "")
 
         downstream = node.downstream[0]
         self.assertEqual(downstream.source.sql(), "SELECT t1.c2 AS c2 FROM t1 AS t1")
         self.assertEqual(downstream.expression.sql(), "t1.c2 AS c2")
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.source_name, "")
 
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.source.sql(), "SELECT t2.c2 AS c2 FROM a.b.t2 AS t2")
         self.assertEqual(downstream.expression.sql(), "t2.c2 AS c2")
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.source_name, "")
 
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.source.sql(), "a.b.t2 AS t2")
         self.assertEqual(downstream.expression.sql(), "a.b.t2 AS t2")
-        self.assertEqual(downstream.alias, "")
+        self.assertEqual(downstream.source_name, "")
 
         self.assertEqual(downstream.downstream, [])
 
@@ -280,9 +290,11 @@ class TestLineage(unittest.TestCase):
         downstream_a = node.downstream[0]
         self.assertEqual(downstream_a.name, "0")
         self.assertEqual(downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a")
+        self.assertEqual(downstream_a.reference_node_name, "dataset")
         downstream_b = node.downstream[1]
         self.assertEqual(downstream_b.name, "0")
         self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
+        self.assertEqual(downstream_b.reference_node_name, "dataset")
 
     def test_lineage_source_union(self) -> None:
         query = "SELECT x, created_at FROM dataset;"
@@ -306,12 +318,14 @@ class TestLineage(unittest.TestCase):
 
         downstream_a = node.downstream[0]
         self.assertEqual(downstream_a.name, "0")
-        self.assertEqual(downstream_a.alias, "dataset")
+        self.assertEqual(downstream_a.source_name, "dataset")
         self.assertEqual(downstream_a.source.sql(), "SELECT * FROM catalog.db.table_a AS table_a")
+        self.assertEqual(downstream_a.reference_node_name, "")
         downstream_b = node.downstream[1]
         self.assertEqual(downstream_b.name, "0")
-        self.assertEqual(downstream_b.alias, "dataset")
+        self.assertEqual(downstream_b.source_name, "dataset")
         self.assertEqual(downstream_b.source.sql(), "SELECT * FROM catalog.db.table_b AS table_b")
+        self.assertEqual(downstream_b.reference_node_name, "")
 
     def test_select_star(self) -> None:
         node = lineage("x", "SELECT x from (SELECT * from table_a)")

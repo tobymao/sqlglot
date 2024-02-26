@@ -484,12 +484,10 @@ class MySQL(Dialect):
             self._match(TokenType.EQ)
             return exp.Property(this=exp.var(name), value=self._parse_primary_or_var())
 
-        def _parse_table_option_eq(
-            self, option_parts: t.Optional[t.List[str]] = None
-        ) -> exp.Property:
+        def _parse_table_option_eq(self, *option_parts: str) -> exp.Property:
             name = self._prev.text.upper()
-            if option_parts and self._match_text_seq(option_parts):
-                name = f" {' '.join(option_parts)}"
+            if option_parts and self._match_text_seq(*option_parts):
+                name = f"{name} {' '.join(option_parts)}"
 
             self._match(TokenType.EQ)
             return self.expression(

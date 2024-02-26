@@ -923,101 +923,6 @@ class Parser(metaclass=_Parser):
         TokenType.START_WITH: lambda self: ("connect", self._parse_connect()),
     }
 
-    OPTION_PREFIX_TO_PARSE_FUNCTION = {
-        "LABEL": lambda self: self._generic_parse_option(
-            "LABEL",
-            [
-                lambda: self._match(TokenType.EQ)
-                and self._return_option_with_value("LABEL", self._parse_string())
-            ],
-        ),
-        "HASH": lambda self: self._generic_parse_option("HASH", ["GROUP", "UNION", "JOIN"]),
-        "ORDER": lambda self: self._generic_parse_option("ORDER", ["GROUP"]),
-        "CONCAT": lambda self: self._generic_parse_option("CONCAT", ["UNION"]),
-        "MERGE": lambda self: self._generic_parse_option("MERGE", ["UNION", "JOIN"]),
-        "LOOP": lambda self: self._generic_parse_option("LOOP", ["JOIN"]),
-        "DISABLE_OPTIMIZED_PLAN_FORCING": lambda self: self._generic_parse_option(
-            "DISABLE_OPTIMIZED_PLAN_FORCING", []
-        ),
-        "EXPAND": lambda self: self._generic_parse_option("EXPAND", ["VIEWS"]),
-        "FAST": lambda self: self._generic_parse_option(
-            "FAST", [lambda: self._return_option_with_value("FAST", self._parse_number())]
-        ),
-        "FORCE": lambda self: self._generic_parse_option(
-            "FORCE", ["ORDER", "EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"]
-        ),
-        "DISABLE": lambda self: self._generic_parse_option(
-            "DISABLE", ["EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"]
-        ),
-        "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX": lambda self: self._generic_parse_option(
-            "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX", []
-        ),
-        "KEEP": lambda self: self._generic_parse_option("KEEP", ["PLAN"]),
-        "KEEPFIXED": lambda self: self._generic_parse_option("KEEPFIXED", ["PLAN"]),
-        "MAX_GRANT_PERCENT": lambda self: self._generic_parse_option(
-            "MAX_GRANT_PERCENT",
-            [
-                lambda: self._match(TokenType.EQ)
-                and self._generic_parse_option(
-                    "MAX_GRANT_PERCENT",
-                    [
-                        lambda: self._return_option_with_value(
-                            "MAX_GRANT_PERCENT", self._parse_number(), requires_equals=True
-                        )
-                    ],
-                )
-            ],
-        ),
-        "MIN_GRANT_PERCENT": lambda self: self._generic_parse_option(
-            "MIN_GRANT_PERCENT",
-            [
-                lambda: self._match(TokenType.EQ)
-                and self._generic_parse_option(
-                    "MIN_GRANT_PERCENT",
-                    [
-                        lambda: self._return_option_with_value(
-                            "MIN_GRANT_PERCENT", self._parse_number(), requires_equals=True
-                        )
-                    ],
-                )
-            ],
-        ),
-        "MAXDOP": lambda self: self._generic_parse_option(
-            "MAXDOP", [lambda: self._return_option_with_value("MAXDOP", self._parse_number())]
-        ),
-        "MAXRECURSION": lambda self: self._generic_parse_option(
-            "MAXRECURSION",
-            [lambda: self._return_option_with_value("MAXRECURSION", self._parse_number())],
-        ),
-        "NO_PERFORMANCE_SPOOL": lambda self: self._generic_parse_option("NO_PERFORMANCE_SPOOL", []),
-        "OPTIMIZE": lambda self: self._generic_parse_option(
-            "OPTIMIZE",
-            [
-                # There is still no support for the following syntax:
-                # OPTIMIZE FOR ( @variable_name { UNKNOWN | = <literal_constant> } [ , ...n ] )
-                lambda: self._match_text_seq("FOR")
-                and self._generic_parse_option("OPTIMIZE FOR", ["UNKNOWN"])
-            ],
-        ),
-        "PARAMETERIZATION": lambda self: self._generic_parse_option(
-            "PARAMETERIZATION", ["SIMPLE", "FORCED"]
-        ),
-        "QUERYTRACEON": lambda self: self._generic_parse_option(
-            "QUERYTRACEON",
-            [lambda: self._return_option_with_value("QUERYTRACEON", self._parse_number())],
-        ),
-        "RECOMPILE": lambda self: self._generic_parse_option("RECOMPILE", []),
-        "ROBUST": lambda self: self._generic_parse_option("ROBUST", ["PLAN"]),
-        "USE": lambda self: self._generic_parse_option(
-            "USE",
-            [
-                lambda: self._match_text_seq("PLAN")
-                and self._return_option_with_value("USE PLAN", self._parse_string())
-            ],
-        ),
-        # No support yet for TABLE HINT
-    }
-
     SET_PARSERS = {
         "GLOBAL": lambda self: self._parse_set_item_assignment("GLOBAL"),
         "LOCAL": lambda self: self._parse_set_item_assignment("LOCAL"),
@@ -2577,64 +2482,21 @@ class Parser(metaclass=_Parser):
                 break
         return this
 
-    def _generic_parse_option(
-        self, option_name: str, valid_continuations: t.List[t.Union[str, t.Callable]]
-    ) -> t.Optional[exp.Option]:
-        # Handle the special case of options with no continuations.
-        if not valid_continuations:
-            return self._return_option_with_value(
-                self.expression(exp.Identifier, this=option_name), None
-            )
-
-        for valid_continuation in valid_continuations:
-            if callable(valid_continuation):
-                res = valid_continuation()
-                if res is not None:
-                    return res
-            elif isinstance(valid_continuation, str):
-                if self._match_text_seq(valid_continuation):
-                    return self._return_option_with_value(
-                        self.expression(exp.Identifier, this=option_name), valid_continuation
-                    )
-            else:
-                # Shouldn't happen.
-                self.raise_error(
-                    f"_generic_parse_option only accepts strings and callables as valid continuations, not '{valid_continuation}'"
-                )
-        self.raise_error(f"Invalid {option_name} option")
-        return None
-
     def _return_option_with_value(
         self,
-        option_type: t.Optional[exp.Expression],
-        option_value: t.Optional[t.Union[str, exp.Expression]],
-        requires_equals=False,
-    ) -> t.Optional[exp.Option]:
+        option_type: t.Optional[t.Union[exp.Expression, str]] = None,
+        option_value: t.Optional[t.Union[str, exp.Expression]] = None,
+    ) -> t.Optional[exp.QueryOption]:
+        option_type = self._prev.text.upper() if option_type is None else option_type
+        if isinstance(option_type, str):
+            option_type = self.expression(exp.Var, this=option_type)
         if isinstance(option_value, str):
-            option_value = self.expression(exp.Identifier, this=option_value)
+            option_value = self.expression(exp.Var, this=option_value)
         return self.expression(
-            exp.Option,
-            option_type=option_type,
-            option_value=option_value if option_value is not None else None,
-            requires_equals=requires_equals,
+            exp.QueryOption,
+            this=option_type,
+            expression=option_value if option_value is not None else None,
         )
-
-    def _parse_single_option(self) -> t.Optional[exp.Expression]:
-        cur_prefix = self._curr.text.upper()
-        if cur_prefix in self.OPTION_PREFIX_TO_PARSE_FUNCTION:
-            self._match_text_seq(cur_prefix.upper())
-            return self.OPTION_PREFIX_TO_PARSE_FUNCTION[cur_prefix](self)
-        else:
-            self.raise_error("Invalid option type.")
-            return None
-
-    def _parse_option(self):
-        self._match(TokenType.OPTION)
-        self._match_l_paren()
-        options = self._parse_csv(self._parse_single_option)
-        options = [opt for opt in options if opt is not None]
-        self._match_r_paren()
-        return self.expression(exp.Options, options=options)
 
     def _parse_hint(self) -> t.Optional[exp.Hint]:
         if self._match(TokenType.HINT):

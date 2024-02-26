@@ -43,6 +43,7 @@ class TestTSQL(Validator):
             "RECOMPILE",
             "ROBUST PLAN",
             "USE PLAN N'<xml_plan>'",
+            "LABEL = 'MyLabel'",
         ]
 
         possible_statements = [
@@ -59,20 +60,20 @@ class TestTSQL(Validator):
         for statement, option in itertools.product(possible_statements, possible_options):
             query = f"{statement} OPTION({option})"
             result = self.validate_identity(query)
-            options = result.args.get("option")
-            self.assertIsInstance(options, exp.Options)
-            for actual_opt in options.args.get("options"):
-                self.assertIsInstance(actual_opt, exp.Option)
+            options = result.args.get("options")
+            self.assertIsInstance(options, list, f"When parsing query {query}")
+            is_query_options = map(lambda o: isinstance(o, exp.QueryOption), options)
+            self.assertTrue(all(is_query_options), f"When parsing query {query}")
 
         for statement, option1, option2 in itertools.product(
             possible_statements, possible_options, possible_options
         ):
             query = f"{statement} OPTION({', '.join([option1,option2])})"
             result = self.validate_identity(query)
-            options = result.args.get("option")
-            self.assertIsInstance(options, exp.Options)
-            for actual_opt in options.args.get("options"):
-                self.assertIsInstance(actual_opt, exp.Option)
+            options = result.args.get("options")
+            self.assertIsInstance(options, list, f"When parsing query {query}")
+            is_query_options = map(lambda o: isinstance(o, exp.QueryOption), options)
+            self.assertTrue(all(is_query_options), f"When parsing query {query}")
 
         raising_queries = [
             # Missing parentheses

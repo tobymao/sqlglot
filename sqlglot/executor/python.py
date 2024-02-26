@@ -18,7 +18,7 @@ class PythonExecutor:
         self.env = {**ENV, **(env or {})}
         self.tables = tables or {}
 
-    def execute(self, plan):
+    def execute(self, plan, schema):
         finished = set()
         queue = set(plan.leaves)
         contexts = {}
@@ -31,7 +31,8 @@ class PythonExecutor:
                         name: table
                         for dep in node.dependencies
                         for name, table in contexts[dep].tables.items()
-                    }
+                    },
+                    schema
                 )
 
                 if isinstance(node, planner.Scan):
@@ -76,8 +77,8 @@ class PythonExecutor:
             return tuple()
         return tuple(self.generate(expression) for expression in expressions)
 
-    def context(self, tables):
-        return Context(tables, env=self.env)
+    def context(self, tables, schema):
+        return Context(tables, schema, env=self.env)
 
     def table(self, expressions):
         return Table(
@@ -239,7 +240,8 @@ class PythonExecutor:
 
         return table
 
-    def aggregate(self, step, context):
+    def aggregate(self, step, context, schema):
+        print(schema.get_column_type('catalog_sales', 'cs_sold_date_sk'))
         group_by = self.generate_tuple(step.group.values())
         aggregations = self.generate_tuple(step.aggregations)
         operands = self.generate_tuple(step.operands)

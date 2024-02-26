@@ -66,7 +66,7 @@ def execute(
             for column in table.columns:
                 py_type = type(table[0][column]).__name__
                 nested_set(schema, [*keys, column], PYTHON_TYPE_TO_SQLGLOT.get(py_type) or py_type)
-
+    schema_dict = {column: column_type for table in schema for column, column_type in schema[table].items()}
     schema = ensure_schema(schema, dialect=read)
 
     if tables_.supported_table_args and tables_.supported_table_args != schema.supported_table_args:
@@ -83,7 +83,7 @@ def execute(
     logger.debug("Logical Plan: %s", plan)
 
     now = time.time()
-    result = PythonExecutor(tables=tables_).execute(plan)
+    result = PythonExecutor(tables=tables_).execute(plan, schema_dict)
 
     logger.debug("Query finished: %f", time.time() - now)
 

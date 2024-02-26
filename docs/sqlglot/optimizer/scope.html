@@ -376,7 +376,7 @@
 </span><span id="L-138"><a href="#L-138"><span class="linenos">138</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 </span><span id="L-139"><a href="#L-139"><span class="linenos">139</span></a>            <span class="p">):</span>
 </span><span id="L-140"><a href="#L-140"><span class="linenos">140</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_derived_tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
-</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">):</span>
+</span><span id="L-141"><a href="#L-141"><span class="linenos">141</span></a>            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UNWRAPPED_QUERIES</span><span class="p">):</span>
 </span><span id="L-142"><a href="#L-142"><span class="linenos">142</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_subqueries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 </span><span id="L-143"><a href="#L-143"><span class="linenos">143</span></a>
 </span><span id="L-144"><a href="#L-144"><span class="linenos">144</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_collected</span> <span class="o">=</span> <span class="kc">True</span>
@@ -463,7 +463,7 @@
 </span><span id="L-225"><a href="#L-225"><span class="linenos">225</span></a><span class="sd">            SELECT * FROM x WHERE a IN (SELECT ...) &lt;- that&#39;s a subquery</span>
 </span><span id="L-226"><a href="#L-226"><span class="linenos">226</span></a>
 </span><span id="L-227"><a href="#L-227"><span class="linenos">227</span></a><span class="sd">        Returns:</span>
-</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">            list[exp.Subqueryable]: subqueries</span>
+</span><span id="L-228"><a href="#L-228"><span class="linenos">228</span></a><span class="sd">            list[exp.Select | exp.Union]: subqueries</span>
 </span><span id="L-229"><a href="#L-229"><span class="linenos">229</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="L-230"><a href="#L-230"><span class="linenos">230</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_collected</span><span class="p">()</span>
 </span><span id="L-231"><a href="#L-231"><span class="linenos">231</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subqueries</span>
@@ -724,8 +724,8 @@
 </span><span id="L-486"><a href="#L-486"><span class="linenos">486</span></a><span class="sd">    Returns:</span>
 </span><span id="L-487"><a href="#L-487"><span class="linenos">487</span></a><span class="sd">        list[Scope]: scope instances</span>
 </span><span id="L-488"><a href="#L-488"><span class="linenos">488</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Unionable</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
-</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a>        <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DDL</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Unionable</span><span class="p">)</span>
+</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Query</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a>        <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DDL</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Query</span><span class="p">)</span>
 </span><span id="L-491"><a href="#L-491"><span class="linenos">491</span></a>    <span class="p">):</span>
 </span><span id="L-492"><a href="#L-492"><span class="linenos">492</span></a>        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">_traverse_scope</span><span class="p">(</span><span class="n">Scope</span><span class="p">(</span><span class="n">expression</span><span class="p">)))</span>
 </span><span id="L-493"><a href="#L-493"><span class="linenos">493</span></a>
@@ -853,7 +853,7 @@
 </span><span id="L-615"><a href="#L-615"><span class="linenos">615</span></a><span class="sd">    as it doesn&#39;t introduce a new scope. If an alias is present, it shadows all names</span>
 </span><span id="L-616"><a href="#L-616"><span class="linenos">616</span></a><span class="sd">    under the Subquery, so that&#39;s one exception to this rule.</span>
 </span><span id="L-617"><a href="#L-617"><span class="linenos">617</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-618"><a href="#L-618"><span class="linenos">618</span></a>    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">alias</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">))</span>
+</span><span id="L-618"><a href="#L-618"><span class="linenos">618</span></a>    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">alias</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UNWRAPPED_QUERIES</span><span class="p">))</span>
 </span><span id="L-619"><a href="#L-619"><span class="linenos">619</span></a>
 </span><span id="L-620"><a href="#L-620"><span class="linenos">620</span></a>
 </span><span id="L-621"><a href="#L-621"><span class="linenos">621</span></a><span class="k">def</span> <span class="nf">_traverse_tables</span><span class="p">(</span><span class="n">scope</span><span class="p">):</span>
@@ -1024,7 +1024,7 @@
 </span><span id="L-786"><a href="#L-786"><span class="linenos">786</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 </span><span id="L-787"><a href="#L-787"><span class="linenos">787</span></a>            <span class="p">)</span>
 </span><span id="L-788"><a href="#L-788"><span class="linenos">788</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)</span>
-</span><span id="L-789"><a href="#L-789"><span class="linenos">789</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">)</span>
+</span><span id="L-789"><a href="#L-789"><span class="linenos">789</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UNWRAPPED_QUERIES</span><span class="p">)</span>
 </span><span id="L-790"><a href="#L-790"><span class="linenos">790</span></a>        <span class="p">):</span>
 </span><span id="L-791"><a href="#L-791"><span class="linenos">791</span></a>            <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="L-792"><a href="#L-792"><span class="linenos">792</span></a>
@@ -1322,7 +1322,7 @@
 </span><span id="Scope-139"><a href="#Scope-139"><span class="linenos">139</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 </span><span id="Scope-140"><a href="#Scope-140"><span class="linenos">140</span></a>            <span class="p">):</span>
 </span><span id="Scope-141"><a href="#Scope-141"><span class="linenos">141</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_derived_tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
-</span><span id="Scope-142"><a href="#Scope-142"><span class="linenos">142</span></a>            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">):</span>
+</span><span id="Scope-142"><a href="#Scope-142"><span class="linenos">142</span></a>            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UNWRAPPED_QUERIES</span><span class="p">):</span>
 </span><span id="Scope-143"><a href="#Scope-143"><span class="linenos">143</span></a>                <span class="bp">self</span><span class="o">.</span><span class="n">_subqueries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 </span><span id="Scope-144"><a href="#Scope-144"><span class="linenos">144</span></a>
 </span><span id="Scope-145"><a href="#Scope-145"><span class="linenos">145</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_collected</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1409,7 +1409,7 @@
 </span><span id="Scope-226"><a href="#Scope-226"><span class="linenos">226</span></a><span class="sd">            SELECT * FROM x WHERE a IN (SELECT ...) &lt;- that&#39;s a subquery</span>
 </span><span id="Scope-227"><a href="#Scope-227"><span class="linenos">227</span></a>
 </span><span id="Scope-228"><a href="#Scope-228"><span class="linenos">228</span></a><span class="sd">        Returns:</span>
-</span><span id="Scope-229"><a href="#Scope-229"><span class="linenos">229</span></a><span class="sd">            list[exp.Subqueryable]: subqueries</span>
+</span><span id="Scope-229"><a href="#Scope-229"><span class="linenos">229</span></a><span class="sd">            list[exp.Select | exp.Union]: subqueries</span>
 </span><span id="Scope-230"><a href="#Scope-230"><span class="linenos">230</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="Scope-231"><a href="#Scope-231"><span class="linenos">231</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_collected</span><span class="p">()</span>
 </span><span id="Scope-232"><a href="#Scope-232"><span class="linenos">232</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subqueries</span>
@@ -2183,7 +2183,7 @@ a list of the left and right child scopes.</li>
 </span><span id="Scope.subqueries-226"><a href="#Scope.subqueries-226"><span class="linenos">226</span></a><span class="sd">            SELECT * FROM x WHERE a IN (SELECT ...) &lt;- that&#39;s a subquery</span>
 </span><span id="Scope.subqueries-227"><a href="#Scope.subqueries-227"><span class="linenos">227</span></a>
 </span><span id="Scope.subqueries-228"><a href="#Scope.subqueries-228"><span class="linenos">228</span></a><span class="sd">        Returns:</span>
-</span><span id="Scope.subqueries-229"><a href="#Scope.subqueries-229"><span class="linenos">229</span></a><span class="sd">            list[exp.Subqueryable]: subqueries</span>
+</span><span id="Scope.subqueries-229"><a href="#Scope.subqueries-229"><span class="linenos">229</span></a><span class="sd">            list[exp.Select | exp.Union]: subqueries</span>
 </span><span id="Scope.subqueries-230"><a href="#Scope.subqueries-230"><span class="linenos">230</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="Scope.subqueries-231"><a href="#Scope.subqueries-231"><span class="linenos">231</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_collected</span><span class="p">()</span>
 </span><span id="Scope.subqueries-232"><a href="#Scope.subqueries-232"><span class="linenos">232</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subqueries</span>
@@ -2201,7 +2201,7 @@ a list of the left and right child scopes.</li>
 <h6 id="returns">Returns:</h6>
 
 <blockquote>
-  <p>list[exp.Subqueryable]: subqueries</p>
+  <p>list[exp.Select | exp.Union]: subqueries</p>
 </blockquote>
 </div>
 
@@ -2858,8 +2858,8 @@ table only becomes a selected source if it's included in a FROM or JOIN clause.<
 </span><span id="traverse_scope-487"><a href="#traverse_scope-487"><span class="linenos">487</span></a><span class="sd">    Returns:</span>
 </span><span id="traverse_scope-488"><a href="#traverse_scope-488"><span class="linenos">488</span></a><span class="sd">        list[Scope]: scope instances</span>
 </span><span id="traverse_scope-489"><a href="#traverse_scope-489"><span class="linenos">489</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="traverse_scope-490"><a href="#traverse_scope-490"><span class="linenos">490</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Unionable</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
-</span><span id="traverse_scope-491"><a href="#traverse_scope-491"><span class="linenos">491</span></a>        <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DDL</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Unionable</span><span class="p">)</span>
+</span><span id="traverse_scope-490"><a href="#traverse_scope-490"><span class="linenos">490</span></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Query</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+</span><span id="traverse_scope-491"><a href="#traverse_scope-491"><span class="linenos">491</span></a>        <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DDL</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Query</span><span class="p">)</span>
 </span><span id="traverse_scope-492"><a href="#traverse_scope-492"><span class="linenos">492</span></a>    <span class="p">):</span>
 </span><span id="traverse_scope-493"><a href="#traverse_scope-493"><span class="linenos">493</span></a>        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">_traverse_scope</span><span class="p">(</span><span class="n">Scope</span><span class="p">(</span><span class="n">expression</span><span class="p">)))</span>
 </span><span id="traverse_scope-494"><a href="#traverse_scope-494"><span class="linenos">494</span></a>
@@ -2997,7 +2997,7 @@ incomplete properties which is confusing.</p>
 </span><span id="walk_in_scope-787"><a href="#walk_in_scope-787"><span class="linenos">787</span></a>                <span class="ow">and</span> <span class="n">_is_derived_table</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
 </span><span id="walk_in_scope-788"><a href="#walk_in_scope-788"><span class="linenos">788</span></a>            <span class="p">)</span>
 </span><span id="walk_in_scope-789"><a href="#walk_in_scope-789"><span class="linenos">789</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UDTF</span><span class="p">)</span>
-</span><span id="walk_in_scope-790"><a href="#walk_in_scope-790"><span class="linenos">790</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">Subqueryable</span><span class="p">)</span>
+</span><span id="walk_in_scope-790"><a href="#walk_in_scope-790"><span class="linenos">790</span></a>            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">UNWRAPPED_QUERIES</span><span class="p">)</span>
 </span><span id="walk_in_scope-791"><a href="#walk_in_scope-791"><span class="linenos">791</span></a>        <span class="p">):</span>
 </span><span id="walk_in_scope-792"><a href="#walk_in_scope-792"><span class="linenos">792</span></a>            <span class="n">crossed_scope_boundary</span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="walk_in_scope-793"><a href="#walk_in_scope-793"><span class="linenos">793</span></a>

@@ -899,11 +899,11 @@ Default: 3</li>
                 <dd id="Spark.Parser.SCHEMA_UNNAMED_CONSTRAINTS" class="variable"><a href="../parser.html#Parser.SCHEMA_UNNAMED_CONSTRAINTS">SCHEMA_UNNAMED_CONSTRAINTS</a></dd>
                 <dd id="Spark.Parser.INVALID_FUNC_NAME_TOKENS" class="variable"><a href="../parser.html#Parser.INVALID_FUNC_NAME_TOKENS">INVALID_FUNC_NAME_TOKENS</a></dd>
                 <dd id="Spark.Parser.FUNCTIONS_WITH_ALIASED_ARGS" class="variable"><a href="../parser.html#Parser.FUNCTIONS_WITH_ALIASED_ARGS">FUNCTIONS_WITH_ALIASED_ARGS</a></dd>
+                <dd id="Spark.Parser.KEY_VALUE_DEFINITIONS" class="variable"><a href="../parser.html#Parser.KEY_VALUE_DEFINITIONS">KEY_VALUE_DEFINITIONS</a></dd>
                 <dd id="Spark.Parser.QUERY_MODIFIER_PARSERS" class="variable"><a href="../parser.html#Parser.QUERY_MODIFIER_PARSERS">QUERY_MODIFIER_PARSERS</a></dd>
                 <dd id="Spark.Parser.SET_PARSERS" class="variable"><a href="../parser.html#Parser.SET_PARSERS">SET_PARSERS</a></dd>
                 <dd id="Spark.Parser.SHOW_PARSERS" class="variable"><a href="../parser.html#Parser.SHOW_PARSERS">SHOW_PARSERS</a></dd>
                 <dd id="Spark.Parser.TYPE_LITERAL_PARSERS" class="variable"><a href="../parser.html#Parser.TYPE_LITERAL_PARSERS">TYPE_LITERAL_PARSERS</a></dd>
-                <dd id="Spark.Parser.MODIFIABLES" class="variable"><a href="../parser.html#Parser.MODIFIABLES">MODIFIABLES</a></dd>
                 <dd id="Spark.Parser.DDL_SELECT_TOKENS" class="variable"><a href="../parser.html#Parser.DDL_SELECT_TOKENS">DDL_SELECT_TOKENS</a></dd>
                 <dd id="Spark.Parser.PRE_VOLATILE_TOKENS" class="variable"><a href="../parser.html#Parser.PRE_VOLATILE_TOKENS">PRE_VOLATILE_TOKENS</a></dd>
                 <dd id="Spark.Parser.TRANSACTION_KIND" class="variable"><a href="../parser.html#Parser.TRANSACTION_KIND">TRANSACTION_KIND</a></dd>
@@ -933,6 +933,7 @@ Default: 3</li>
                 <dd id="Spark.Parser.UNION_MODIFIERS" class="variable"><a href="../parser.html#Parser.UNION_MODIFIERS">UNION_MODIFIERS</a></dd>
                 <dd id="Spark.Parser.NO_PAREN_IF_COMMANDS" class="variable"><a href="../parser.html#Parser.NO_PAREN_IF_COMMANDS">NO_PAREN_IF_COMMANDS</a></dd>
                 <dd id="Spark.Parser.JSON_ARROWS_REQUIRE_JSON_TYPE" class="variable"><a href="../parser.html#Parser.JSON_ARROWS_REQUIRE_JSON_TYPE">JSON_ARROWS_REQUIRE_JSON_TYPE</a></dd>
+                <dd id="Spark.Parser.SUPPORTS_IMPLICIT_UNNEST" class="variable"><a href="../parser.html#Parser.SUPPORTS_IMPLICIT_UNNEST">SUPPORTS_IMPLICIT_UNNEST</a></dd>
                 <dd id="Spark.Parser.error_level" class="variable"><a href="../parser.html#Parser.error_level">error_level</a></dd>
                 <dd id="Spark.Parser.error_message_context" class="variable"><a href="../parser.html#Parser.error_message_context">error_message_context</a></dd>
                 <dd id="Spark.Parser.max_errors" class="variable"><a href="../parser.html#Parser.max_errors">max_errors</a></dd>
@@ -1226,7 +1227,6 @@ Default: True</li>
                 <dd id="Spark.Generator.WITH_SEPARATED_COMMENTS" class="variable"><a href="../generator.html#Generator.WITH_SEPARATED_COMMENTS">WITH_SEPARATED_COMMENTS</a></dd>
                 <dd id="Spark.Generator.EXCLUDE_COMMENTS" class="variable"><a href="../generator.html#Generator.EXCLUDE_COMMENTS">EXCLUDE_COMMENTS</a></dd>
                 <dd id="Spark.Generator.UNWRAPPED_INTERVAL_VALUES" class="variable"><a href="../generator.html#Generator.UNWRAPPED_INTERVAL_VALUES">UNWRAPPED_INTERVAL_VALUES</a></dd>
-                <dd id="Spark.Generator.KEY_VALUE_DEFINITIONS" class="variable"><a href="../generator.html#Generator.KEY_VALUE_DEFINITIONS">KEY_VALUE_DEFINITIONS</a></dd>
                 <dd id="Spark.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
                 <dd id="Spark.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
                 <dd id="Spark.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
@@ -1328,6 +1328,7 @@ Default: True</li>
                 <dd id="Spark.Generator.withtablehint_sql" class="function"><a href="../generator.html#Generator.withtablehint_sql">withtablehint_sql</a></dd>
                 <dd id="Spark.Generator.indextablehint_sql" class="function"><a href="../generator.html#Generator.indextablehint_sql">indextablehint_sql</a></dd>
                 <dd id="Spark.Generator.historicaldata_sql" class="function"><a href="../generator.html#Generator.historicaldata_sql">historicaldata_sql</a></dd>
+                <dd id="Spark.Generator.table_parts" class="function"><a href="../generator.html#Generator.table_parts">table_parts</a></dd>
                 <dd id="Spark.Generator.table_sql" class="function"><a href="../generator.html#Generator.table_sql">table_sql</a></dd>
                 <dd id="Spark.Generator.tablesample_sql" class="function"><a href="../generator.html#Generator.tablesample_sql">tablesample_sql</a></dd>
                 <dd id="Spark.Generator.pivot_sql" class="function"><a href="../generator.html#Generator.pivot_sql">pivot_sql</a></dd>
@@ -1377,6 +1378,7 @@ Default: True</li>
                 <dd id="Spark.Generator.union_sql" class="function"><a href="../generator.html#Generator.union_sql">union_sql</a></dd>
                 <dd id="Spark.Generator.union_op" class="function"><a href="../generator.html#Generator.union_op">union_op</a></dd>
                 <dd id="Spark.Generator.unnest_sql" class="function"><a href="../generator.html#Generator.unnest_sql">unnest_sql</a></dd>
+                <dd id="Spark.Generator.prewhere_sql" class="function"><a href="../generator.html#Generator.prewhere_sql">prewhere_sql</a></dd>
                 <dd id="Spark.Generator.where_sql" class="function"><a href="../generator.html#Generator.where_sql">where_sql</a></dd>
                 <dd id="Spark.Generator.window_sql" class="function"><a href="../generator.html#Generator.window_sql">window_sql</a></dd>
                 <dd id="Spark.Generator.partition_by_sql" class="function"><a href="../generator.html#Generator.partition_by_sql">partition_by_sql</a></dd>
@@ -1530,6 +1532,7 @@ Default: True</li>
                 <dd id="Spark.Generator.unixdate_sql" class="function"><a href="../generator.html#Generator.unixdate_sql">unixdate_sql</a></dd>
                 <dd id="Spark.Generator.lastday_sql" class="function"><a href="../generator.html#Generator.lastday_sql">lastday_sql</a></dd>
                 <dd id="Spark.Generator.arrayany_sql" class="function"><a href="../generator.html#Generator.arrayany_sql">arrayany_sql</a></dd>
+                <dd id="Spark.Generator.generateseries_sql" class="function"><a href="../generator.html#Generator.generateseries_sql">generateseries_sql</a></dd>
 
             </div>
             <div><dt><a href="spark2.html#Spark2.Generator">sqlglot.dialects.spark2.Spark2.Generator</a></dt>

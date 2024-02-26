@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v22.0.1] - 2024-02-26
+### :bug: Bug Fixes
+- [`e2fc6e8`](https://github.com/tobymao/sqlglot/commit/e2fc6e88dc7ae52d956dd84721de197c6c698d90) - **optimizer**: fix parent mutation of new_projections in column qualifier *(PR [#3030](https://github.com/tobymao/sqlglot/pull/3030) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v22.0.0] - 2024-02-26
 ### :boom: BREAKING CHANGES
 - due to [`2507aa2`](https://github.com/tobymao/sqlglot/commit/2507aa2dbad3304304558565f266a7f94acd9e98) - consolidate Subqueryable and Unionable into Query expression *(PR [#2992](https://github.com/tobymao/sqlglot/pull/2992) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2744,3 +2749,4 @@ Changelog
 [v21.2.0]: https://github.com/tobymao/sqlglot/compare/v21.1.2...v21.2.0
 [v21.2.1]: https://github.com/tobymao/sqlglot/compare/v21.2.0...v21.2.1
 [v22.0.0]: https://github.com/tobymao/sqlglot/compare/v21.2.1...v22.0.0
+[v22.0.1]: https://github.com/tobymao/sqlglot/compare/v22.0.0...v22.0.1

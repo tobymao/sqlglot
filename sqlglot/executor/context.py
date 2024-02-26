@@ -19,7 +19,7 @@ class Context:
     evaluation of aggregation functions.
     """
 
-    def __init__(self, tables: t.Dict[str, Table], schema: t.Optional[t.Dict] = None, env: t.Optional[t.Dict] = None) -> None:
+    def __init__(self, tables: t.Dict[str, Table], env: t.Optional[t.Dict] = None, schema: t.Optional[t.Dict] = None) -> None:
         """
         Args
             tables: representing the scope of the current execution context.
@@ -36,6 +36,7 @@ class Context:
         return eval(code, self.env)
 
     def eval_tuple(self, codes):
+        print(self.row)
         return tuple(self.eval(code) for code in codes)
 
     @property

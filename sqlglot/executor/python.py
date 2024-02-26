@@ -77,8 +77,8 @@ class PythonExecutor:
             return tuple()
         return tuple(self.generate(expression) for expression in expressions)
 
-    def context(self, tables, schema):
-        return Context(tables, schema, env=self.env)
+    def context(self, tables, schema=None):
+        return Context(tables, env=self.env, schema=schema)
 
     def table(self, expressions):
         return Table(

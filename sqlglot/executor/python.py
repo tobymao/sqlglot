@@ -240,8 +240,7 @@ class PythonExecutor:
 
         return table
 
-    def aggregate(self, step, context, schema):
-        print(schema.get_column_type('catalog_sales', 'cs_sold_date_sk'))
+    def aggregate(self, step, context):
         group_by = self.generate_tuple(step.group.values())
         aggregations = self.generate_tuple(step.aggregations)
         operands = self.generate_tuple(step.operands)

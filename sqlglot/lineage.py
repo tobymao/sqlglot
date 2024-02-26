@@ -213,7 +213,7 @@ def lineage(
             source = scope.sources.get(table)
 
             if isinstance(source, Scope):
-                selected_node, selected_source = scope.selected_sources.get(table, (None, None))
+                selected_node, _ = scope.selected_sources.get(table, (None, None))
                 # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
                 to_node(
                     c.name,

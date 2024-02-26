@@ -793,7 +793,7 @@ class BigQuery(Dialect):
             # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x.y`   -> cross join
             # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x`.`y` -> implicit unnest
             if expression.meta.get("quoted_table"):
-                table_parts = f"{'.'.join(p.name for p in expression.parts)}"
+                table_parts = ".".join(p.name for p in expression.parts)
                 return self.sql(exp.Identifier(this=table_parts, quoted=True))
 
             return super().table_parts(expression)

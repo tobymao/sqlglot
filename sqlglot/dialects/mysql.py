@@ -408,6 +408,41 @@ class MySQL(Dialect):
             "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         }
 
+        TABLE_OPTION_PARSERS = {
+            **{
+                name: lambda self: self._parse_table_option_eq()
+                for name in (
+                    "ALGORITHM",
+                    "AUTOEXTEND_SIZE",
+                    "AUTO_INCREMENT",
+                    "AVG_ROW_LENGTH",
+                    "CHECKSUM",
+                    "COMMENT",
+                    "COMPRESSION",
+                    "CONNECTION",
+                    "DELAY_KEY_WRITE",
+                    "ENCRYPTION",
+                    "ENGINE",
+                    "ENGINE_ATTRIBUTE",
+                    "INSERT_METHOD",
+                    "KEY_BLOCK_SIZE",
+                    "LOCK",
+                    "MAX_ROWS",
+                    "MIN_ROWS",
+                    "PACK_KEYS",
+                    "PASSWORD",
+                    "ROW_FORMAT",
+                    "SECONDARY_ENGINE_ATTRIBUTE",
+                    "STATS_AUTO_RECALC",
+                    "STATS_PERSISTENT",
+                    "STATS_SAMPLE_PAGES",
+                )
+            },
+            "DEFAULT": lambda self: self._parse_default_table_option(),
+            "DATA": lambda self: self._parse_table_option_eq("DIRECTORY"),
+            "INDEX": lambda self: self._parse_table_option_eq("DIRECTORY"),
+        }
+
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "FULLTEXT",
@@ -436,6 +471,30 @@ class MySQL(Dialect):
         LOG_DEFAULTS_TO_LN = True
         STRING_ALIASES = True
         VALUES_FOLLOWED_BY_PAREN = False
+
+        def _parse_default_table_option(self) -> exp.Property:
+            if self._match(TokenType.CHARACTER_SET):
+                name = "DEFAULT CHARACTER SET"
+            elif self._match(TokenType.COLLATE):
+                name = "DEFAULT COLLATE"
+            else:
+                name = ""
+                self.raise_error("Invalid DEFAULT table option")
+
+            self._match(TokenType.EQ)
+            return exp.Property(this=exp.var(name), value=self._parse_primary_or_var())
+
+        def _parse_table_option_eq(
+            self, option_parts: t.Optional[t.List[str]] = None
+        ) -> exp.Property:
+            name = self._prev.text.upper()
+            if option_parts and self._match_text_seq(option_parts):
+                name = f" {' '.join(option_parts)}"
+
+            self._match(TokenType.EQ)
+            return self.expression(
+                exp.Property, this=exp.var(name), value=self._parse_primary_or_var()
+            )
 
         def _parse_primary_key_part(self) -> t.Optional[exp.Expression]:
             this = self._parse_id_var()

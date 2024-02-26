@@ -19,6 +19,21 @@ SELECT 1 FROM x.y.z AS z;
 SELECT 1 FROM y.z AS z, z.a;
 SELECT 1 FROM c.y.z AS z, z.a;
 
+# title: bigquery implicit unnest syntax, coordinates.position should be a column, not a table
+# dialect: bigquery
+SELECT results FROM Coordinates, coordinates.position AS results;
+SELECT results FROM c.db.Coordinates AS Coordinates, UNNEST(coordinates.position) AS results;
+
+# title: bigquery implicit unnest syntax, table is already qualified
+# dialect: bigquery
+SELECT results FROM db.coordinates, Coordinates.position AS results;
+SELECT results FROM c.db.coordinates AS coordinates, UNNEST(Coordinates.position) AS results;
+
+# title: bigquery schema name clashes with CTE name - this is a join, not an implicit unnest
+# dialect: bigquery
+WITH Coordinates AS (SELECT [1, 2] AS position) SELECT results FROM Coordinates, `Coordinates.position` AS results;
+WITH Coordinates AS (SELECT [1, 2] AS position) SELECT results FROM Coordinates AS Coordinates, `c.Coordinates.position` AS results;
+
 # title: single cte
 WITH a AS (SELECT 1 FROM z) SELECT 1 FROM a;
 WITH a AS (SELECT 1 FROM c.db.z AS z) SELECT 1 FROM a AS a;
@@ -146,3 +161,7 @@ CREATE TABLE c.db.t1 AS (WITH cte AS (SELECT x FROM c.db.t2 AS t2) SELECT * FROM
 # title: insert statement with cte
 WITH cte AS (SELECT b FROM y) INSERT INTO s SELECT * FROM cte;
 WITH cte AS (SELECT b FROM c.db.y AS y) INSERT INTO c.db.s SELECT * FROM cte AS cte;
+
+# title: qualify wrapped query
+(SELECT x FROM t);
+(SELECT x FROM c.db.t AS t);

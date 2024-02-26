@@ -191,6 +191,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.DateToDi,
             exp.Floor,
             exp.Levenshtein,
+            exp.Sign,
             exp.StrPosition,
             exp.TsOrDiToDi,
         },
@@ -262,6 +263,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.DateTrunc: lambda self, e: self._annotate_timeunit(e),
         exp.Distinct: lambda self, e: self._annotate_by_args(e, "expressions"),
         exp.Div: lambda self, e: self._annotate_div(e),
+        exp.Dot: lambda self, e: self._annotate_dot(e),
         exp.Explode: lambda self, e: self._annotate_explode(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
@@ -273,15 +275,17 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Min: lambda self, e: self._annotate_by_args(e, "this", "expressions"),
         exp.Null: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.NULL),
         exp.Nullif: lambda self, e: self._annotate_by_args(e, "this", "expression"),
+        exp.PropertyEQ: lambda self, e: self._annotate_by_args(e, "expression"),
         exp.Slice: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.UNKNOWN),
+        exp.Struct: lambda self, e: self._annotate_by_args(e, "expressions", struct=True),
         exp.Sum: lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True),
         exp.Timestamp: lambda self, e: self._annotate_with_type(
             e,
             exp.DataType.Type.TIMESTAMPTZ if e.args.get("with_tz") else exp.DataType.Type.TIMESTAMP,
         ),
         exp.TryCast: lambda self, e: self._annotate_with_type(e, e.args["to"]),
+        exp.Unnest: lambda self, e: self._annotate_unnest(e),
         exp.VarMap: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.MAP),
-        exp.Struct: lambda self, e: self._annotate_by_args(e, "expressions", struct=True),
     }
 
     NESTED_TYPES = {
@@ -380,8 +384,11 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                 source = scope.sources.get(col.table)
                 if isinstance(source, exp.Table):
                     self._set_type(col, self.schema.get_column_type(source, col))
-                elif source and col.table in selects and col.name in selects[col.table]:
-                    self._set_type(col, selects[col.table][col.name].type)
+                elif source:
+                    if col.table in selects and col.name in selects[col.table]:
+                        self._set_type(col, selects[col.table][col.name].type)
+                    elif isinstance(source.expression, exp.Unnest):
+                        self._set_type(col, source.expression.type)
 
             # Then (possibly) annotate the remaining expressions in the scope
             self._maybe_annotate(scope.expression)
@@ -601,7 +608,26 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
 
         return expression
 
+    def _annotate_dot(self, expression: exp.Dot) -> exp.Dot:
+        self._annotate_args(expression)
+        self._set_type(expression, None)
+        this_type = expression.this.type
+
+        if this_type and this_type.is_type(exp.DataType.Type.STRUCT):
+            for e in this_type.expressions:
+                if e.name == expression.expression.name:
+                    self._set_type(expression, e.kind)
+                    break
+
+        return expression
+
     def _annotate_explode(self, expression: exp.Explode) -> exp.Explode:
         self._annotate_args(expression)
         self._set_type(expression, seq_get(expression.this.type.expressions, 0))
+        return expression
+
+    def _annotate_unnest(self, expression: exp.Unnest) -> exp.Unnest:
+        self._annotate_args(expression)
+        child = seq_get(expression.expressions, 0)
+        self._set_type(expression, child and seq_get(child.type.expressions, 0))
         return expression

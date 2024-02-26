@@ -372,15 +372,17 @@ WHERE
             write={"snowflake": "SELECT * FROM (VALUES (0)) AS foo(bar)"},
         )
         self.validate_all(
-            "OBJECT_CONSTRUCT(a, b, c, d)",
+            "OBJECT_CONSTRUCT('a', b, 'c', d)",
             read={
-                "": "STRUCT(a as b, c as d)",
+                "": "STRUCT(b as a, d as c)",
             },
             write={
                 "duckdb": "{'a': b, 'c': d}",
-                "snowflake": "OBJECT_CONSTRUCT(a, b, c, d)",
+                "snowflake": "OBJECT_CONSTRUCT('a', b, 'c', d)",
             },
         )
+        self.validate_identity("OBJECT_CONSTRUCT(a, b, c, d)")
+
         self.validate_all(
             "SELECT i, p, o FROM qt QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1",
             write={
@@ -1462,26 +1464,22 @@ MATCH_RECOGNIZE (
                     pretty=True,
                 )
 
-    def test_show(self):
-        # Parsed as Show
-        self.validate_identity("SHOW PRIMARY KEYS")
-        self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")
-        self.validate_identity("SHOW PRIMARY KEYS IN DATABASE")
-        self.validate_identity("SHOW PRIMARY KEYS IN DATABASE foo")
-        self.validate_identity("SHOW PRIMARY KEYS IN TABLE")
-        self.validate_identity("SHOW PRIMARY KEYS IN TABLE foo")
-        self.validate_identity(
-            'SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"',
-            'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."customers"',
-        )
-        self.validate_identity(
-            'SHOW TERSE PRIMARY KEYS IN "TEST"."PUBLIC"."customers"',
-            'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."customers"',
-        )
+    def test_show_users(self):
+        self.validate_identity("SHOW USERS")
+        self.validate_identity("SHOW TERSE USERS")
+        self.validate_identity("SHOW USERS LIKE '_foo%' STARTS WITH 'bar' LIMIT 5 FROM 'baz'")
+
+    def test_show_schemas(self):
         self.validate_identity(
             "show terse schemas in database db1 starts with 'a' limit 10 from 'b'",
             "SHOW TERSE SCHEMAS IN DATABASE db1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
         )
+
+        ast = parse_one("SHOW SCHEMAS IN DATABASE db1", read="snowflake")
+        self.assertEqual(ast.args.get("scope_kind"), "DATABASE")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1")
+
+    def test_show_objects(self):
         self.validate_identity(
             "show terse objects in schema db1.schema1 starts with 'a' limit 10 from 'b'",
             "SHOW TERSE OBJECTS IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
@@ -1490,6 +1488,23 @@ MATCH_RECOGNIZE (
             "show terse objects in db1.schema1 starts with 'a' limit 10 from 'b'",
             "SHOW TERSE OBJECTS IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
         )
+
+        ast = parse_one("SHOW OBJECTS IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+
+    def test_show_columns(self):
+        self.validate_identity("SHOW COLUMNS")
+        self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
+        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN TABLE dt_test")
+        self.validate_identity("SHOW COLUMNS IN VIEW")
+        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN VIEW dt_test")
+
+        ast = parse_one("SHOW COLUMNS LIKE '_testing%' IN dt_test", read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "dt_test")
+        self.assertEqual(ast.find(exp.Literal).sql(dialect="snowflake"), "'_testing%'")
+
+    def test_show_tables(self):
         self.validate_identity(
             "SHOW TABLES LIKE 'line%' IN tpch.public",
             "SHOW TABLES LIKE 'line%' IN SCHEMA tpch.public",
@@ -1507,47 +1522,97 @@ MATCH_RECOGNIZE (
             "SHOW TERSE TABLES IN SCHEMA db1.schema1 STARTS WITH 'a' LIMIT 10 FROM 'b'",
         )
 
-        ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."customers"', read="snowflake")
-        table = ast.find(exp.Table)
-
-        self.assertEqual(table.sql(dialect="snowflake"), '"TEST"."PUBLIC"."customers"')
-
-        self.validate_identity("SHOW COLUMNS")
-        self.validate_identity("SHOW COLUMNS IN TABLE dt_test")
-        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN TABLE dt_test")
-        self.validate_identity("SHOW COLUMNS IN VIEW")
-        self.validate_identity("SHOW COLUMNS LIKE '_foo%' IN VIEW dt_test")
-
-        self.validate_identity("SHOW USERS")
-        self.validate_identity("SHOW TERSE USERS")
-        self.validate_identity("SHOW USERS LIKE '_foo%' STARTS WITH 'bar' LIMIT 5 FROM 'baz'")
-
-        ast = parse_one("SHOW COLUMNS LIKE '_testing%' IN dt_test", read="snowflake")
-        table = ast.find(exp.Table)
-        literal = ast.find(exp.Literal)
-
-        self.assertEqual(table.sql(dialect="snowflake"), "dt_test")
-
-        self.assertEqual(literal.sql(dialect="snowflake"), "'_testing%'")
-
-        ast = parse_one("SHOW SCHEMAS IN DATABASE db1", read="snowflake")
-        self.assertEqual(ast.args.get("scope_kind"), "DATABASE")
-        table = ast.find(exp.Table)
-        self.assertEqual(table.sql(dialect="snowflake"), "db1")
-
-        ast = parse_one("SHOW OBJECTS IN db1.schema1", read="snowflake")
-        self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
-        table = ast.find(exp.Table)
-        self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")
-
         ast = parse_one("SHOW TABLES IN db1.schema1", read="snowflake")
-        self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
-        table = ast.find(exp.Table)
-        self.assertEqual(table.sql(dialect="snowflake"), "db1.schema1")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
 
-        users_exp = self.validate_identity("SHOW USERS")
-        self.assertTrue(isinstance(users_exp, exp.Show))
-        self.assertEqual(users_exp.this, "USERS")
+    def test_show_primary_keys(self):
+        self.validate_identity("SHOW PRIMARY KEYS")
+        self.validate_identity("SHOW PRIMARY KEYS IN ACCOUNT")
+        self.validate_identity("SHOW PRIMARY KEYS IN DATABASE")
+        self.validate_identity("SHOW PRIMARY KEYS IN DATABASE foo")
+        self.validate_identity("SHOW PRIMARY KEYS IN TABLE")
+        self.validate_identity("SHOW PRIMARY KEYS IN TABLE foo")
+        self.validate_identity(
+            'SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."foo"',
+            'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."foo"',
+        )
+        self.validate_identity(
+            'SHOW TERSE PRIMARY KEYS IN "TEST"."PUBLIC"."foo"',
+            'SHOW PRIMARY KEYS IN TABLE "TEST"."PUBLIC"."foo"',
+        )
+
+        ast = parse_one('SHOW PRIMARY KEYS IN "TEST"."PUBLIC"."foo"', read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), '"TEST"."PUBLIC"."foo"')
+
+    def test_show_views(self):
+        self.validate_identity("SHOW TERSE VIEWS")
+        self.validate_identity("SHOW VIEWS")
+        self.validate_identity("SHOW VIEWS LIKE 'foo%'")
+        self.validate_identity("SHOW VIEWS IN ACCOUNT")
+        self.validate_identity("SHOW VIEWS IN DATABASE")
+        self.validate_identity("SHOW VIEWS IN DATABASE foo")
+        self.validate_identity("SHOW VIEWS IN SCHEMA foo")
+        self.validate_identity(
+            "SHOW VIEWS IN foo",
+            "SHOW VIEWS IN SCHEMA foo",
+        )
+
+        ast = parse_one("SHOW VIEWS IN db1.schema1", read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), "db1.schema1")
+
+    def test_show_unique_keys(self):
+        self.validate_identity("SHOW UNIQUE KEYS")
+        self.validate_identity("SHOW UNIQUE KEYS IN ACCOUNT")
+        self.validate_identity("SHOW UNIQUE KEYS IN DATABASE")
+        self.validate_identity("SHOW UNIQUE KEYS IN DATABASE foo")
+        self.validate_identity("SHOW UNIQUE KEYS IN TABLE")
+        self.validate_identity("SHOW UNIQUE KEYS IN TABLE foo")
+        self.validate_identity(
+            'SHOW UNIQUE KEYS IN "TEST"."PUBLIC"."foo"',
+            'SHOW UNIQUE KEYS IN SCHEMA "TEST"."PUBLIC"."foo"',
+        )
+        self.validate_identity(
+            'SHOW TERSE UNIQUE KEYS IN "TEST"."PUBLIC"."foo"',
+            'SHOW UNIQUE KEYS IN SCHEMA "TEST"."PUBLIC"."foo"',
+        )
+
+        ast = parse_one('SHOW UNIQUE KEYS IN "TEST"."PUBLIC"."foo"', read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), '"TEST"."PUBLIC"."foo"')
+
+    def test_show_imported_keys(self):
+        self.validate_identity("SHOW IMPORTED KEYS")
+        self.validate_identity("SHOW IMPORTED KEYS IN ACCOUNT")
+        self.validate_identity("SHOW IMPORTED KEYS IN DATABASE")
+        self.validate_identity("SHOW IMPORTED KEYS IN DATABASE foo")
+        self.validate_identity("SHOW IMPORTED KEYS IN TABLE")
+        self.validate_identity("SHOW IMPORTED KEYS IN TABLE foo")
+        self.validate_identity(
+            'SHOW IMPORTED KEYS IN "TEST"."PUBLIC"."foo"',
+            'SHOW IMPORTED KEYS IN SCHEMA "TEST"."PUBLIC"."foo"',
+        )
+        self.validate_identity(
+            'SHOW TERSE IMPORTED KEYS IN "TEST"."PUBLIC"."foo"',
+            'SHOW IMPORTED KEYS IN SCHEMA "TEST"."PUBLIC"."foo"',
+        )
+
+        ast = parse_one('SHOW IMPORTED KEYS IN "TEST"."PUBLIC"."foo"', read="snowflake")
+        self.assertEqual(ast.find(exp.Table).sql(dialect="snowflake"), '"TEST"."PUBLIC"."foo"')
+
+    def test_show_sequences(self):
+        self.validate_identity("SHOW TERSE SEQUENCES")
+        self.validate_identity("SHOW SEQUENCES")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN ACCOUNT")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN DATABASE")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN DATABASE foo")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN SCHEMA")
+        self.validate_identity("SHOW SEQUENCES LIKE '_foo%' IN SCHEMA foo")
+        self.validate_identity(
+            "SHOW SEQUENCES LIKE '_foo%' IN foo",
+            "SHOW SEQUENCES LIKE '_foo%' IN SCHEMA foo",
+        )
+
+        ast = parse_one("SHOW SEQUENCES IN dt_test", read="snowflake")
+        self.assertEqual(ast.args.get("scope_kind"), "SCHEMA")
 
     def test_storage_integration(self):
         self.validate_identity(

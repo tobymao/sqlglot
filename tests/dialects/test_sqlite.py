@@ -1,5 +1,7 @@
 from tests.dialects.test_dialect import Validator
 
+from sqlglot.helper import logger as helper_logger
+
 
 class TestSQLite(Validator):
     dialect = "sqlite"
@@ -76,6 +78,7 @@ class TestSQLite(Validator):
         self.validate_identity(
             """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
         )
+        self.validate_identity("SELECT * FROM GENERATE_SERIES(1, 5)")
 
         self.validate_all("SELECT LIKE(y, x)", write={"sqlite": "SELECT x LIKE y"})
         self.validate_all("SELECT GLOB('*y*', 'xyz')", write={"sqlite": "SELECT 'xyz' GLOB '*y*'"})
@@ -178,3 +181,12 @@ class TestSQLite(Validator):
             "CREATE TABLE foo (bar LONGVARCHAR)",
             write={"sqlite": "CREATE TABLE foo (bar TEXT)"},
         )
+
+    def test_warnings(self):
+        with self.assertLogs(helper_logger) as cm:
+            self.validate_identity(
+                "SELECT * FROM t AS t(c1, c2)",
+                "SELECT * FROM t AS t",
+            )
+
+            self.assertIn("Named columns are not supported in table alias.", cm.output[0])

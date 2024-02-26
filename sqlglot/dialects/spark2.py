@@ -263,14 +263,9 @@ class Spark2(Hive):
         CREATE_FUNCTION_RETURN_AS = False
 
         def struct_sql(self, expression: exp.Struct) -> str:
-            args = []
-            for arg in expression.expressions:
-                if isinstance(arg, self.KEY_VALUE_DEFINITIONS):
-                    args.append(exp.alias_(arg.expression, arg.this.name))
-                else:
-                    args.append(arg)
+            from sqlglot.generator import Generator
 
-            return self.func("STRUCT", *args)
+            return Generator.struct_sql(self, expression)
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
             if is_parse_json(expression.this):

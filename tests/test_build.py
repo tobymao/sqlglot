@@ -94,6 +94,7 @@ class TestBuild(unittest.TestCase):
             (lambda: select("x").from_("tbl"), "SELECT x FROM tbl"),
             (lambda: select("x", "y").from_("tbl"), "SELECT x, y FROM tbl"),
             (lambda: select("x").select("y").from_("tbl"), "SELECT x, y FROM tbl"),
+            (lambda: select("comment", "begin"), "SELECT comment, begin"),
             (
                 lambda: select("x").select("y", append=False).from_("tbl"),
                 "SELECT y FROM tbl",
@@ -500,6 +501,25 @@ class TestBuild(unittest.TestCase):
                     "x"
                 ),
                 "SELECT x FROM (SELECT x FROM tbl UNION SELECT x FROM bar) AS unioned",
+            ),
+            (lambda: parse_one("(SELECT 1)").select("2"), "(SELECT 1, 2)"),
+            (
+                lambda: parse_one("(SELECT 1)").limit(1),
+                "SELECT * FROM ((SELECT 1)) AS _l_0 LIMIT 1",
+            ),
+            (
+                lambda: parse_one("WITH t AS (SELECT 1) (SELECT 1)").limit(1),
+                "SELECT * FROM (WITH t AS (SELECT 1) (SELECT 1)) AS _l_0 LIMIT 1",
+            ),
+            (
+                lambda: parse_one("(SELECT 1 LIMIT 2)").limit(1),
+                "SELECT * FROM ((SELECT 1 LIMIT 2)) AS _l_0 LIMIT 1",
+            ),
+            (lambda: parse_one("(SELECT 1)").subquery(), "((SELECT 1))"),
+            (lambda: parse_one("(SELECT 1)").subquery("alias"), "((SELECT 1)) AS alias"),
+            (
+                lambda: parse_one("(select * from foo)").with_("foo", "select 1 as c"),
+                "WITH foo AS (SELECT 1 AS c) (SELECT * FROM foo)",
             ),
             (
                 lambda: exp.update("tbl", {"x": None, "y": {"x": 1}}),

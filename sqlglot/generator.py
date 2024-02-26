@@ -462,8 +462,6 @@ class Generator(metaclass=_Generator):
     # Expressions that need to have all CTEs under them bubbled up to them
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
 
-    KEY_VALUE_DEFINITIONS = (exp.EQ, exp.PropertyEQ, exp.Slice)
-
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
 
     __slots__ = (
@@ -630,7 +628,7 @@ class Generator(metaclass=_Generator):
         this_sql = self.indent(
             (
                 self.sql(expression)
-                if isinstance(expression, (exp.Select, exp.Union))
+                if isinstance(expression, exp.UNWRAPPED_QUERIES)
                 else self.sql(expression, "this")
             ),
             level=1,
@@ -1535,8 +1533,8 @@ class Generator(metaclass=_Generator):
         expr = self.sql(expression, "expression")
         return f"{this} ({kind} => {expr})"
 
-    def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
-        table = ".".join(
+    def table_parts(self, expression: exp.Table) -> str:
+        return ".".join(
             self.sql(part)
             for part in (
                 expression.args.get("catalog"),
@@ -1546,6 +1544,8 @@ class Generator(metaclass=_Generator):
             if part is not None
         )
 
+    def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
+        table = self.table_parts(expression)
         version = self.sql(expression, "version")
         version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")
@@ -1681,7 +1681,7 @@ class Generator(metaclass=_Generator):
         alias_node = expression.args.get("alias")
         column_names = alias_node and alias_node.columns
 
-        selects: t.List[exp.Subqueryable] = []
+        selects: t.List[exp.Query] = []
 
         for i, tup in enumerate(expression.expressions):
             row = tup.expressions
@@ -1697,10 +1697,8 @@ class Generator(metaclass=_Generator):
             # This may result in poor performance for large-cardinality `VALUES` tables, due to
             # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
             # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
-            subqueryable = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
-            return self.subquery_sql(
-                subqueryable.subquery(alias_node and alias_node.this, copy=False)
-            )
+            query = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
+            return self.subquery_sql(query.subquery(alias_node and alias_node.this, copy=False))
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
@@ -2076,6 +2074,7 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "connect"),
             self.sql(expression, "match"),
             *[self.sql(lateral) for lateral in expression.args.get("laterals") or []],
+            self.sql(expression, "prewhere"),
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
@@ -2140,9 +2139,9 @@ class Generator(metaclass=_Generator):
                             self.sql(
                                 exp.Struct(
                                     expressions=[
-                                        exp.column(e.output_name).eq(
-                                            e.this if isinstance(e, exp.Alias) else e
-                                        )
+                                        exp.PropertyEQ(this=e.args.get("alias"), expression=e.this)
+                                        if isinstance(e, exp.Alias)
+                                        else e
                                         for e in expression.expressions
                                     ]
                                 )
@@ -2261,6 +2260,9 @@ class Generator(metaclass=_Generator):
 
         return f"UNNEST({args}){suffix}"
 
+    def prewhere_sql(self, expression: exp.PreWhere) -> str:
+        return ""
+
     def where_sql(self, expression: exp.Where) -> str:
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('WHERE')}{self.sep()}{this}"
@@ -2326,7 +2328,7 @@ class Generator(metaclass=_Generator):
 
     def any_sql(self, expression: exp.Any) -> str:
         this = self.sql(expression, "this")
-        if isinstance(expression.this, exp.Subqueryable):
+        if isinstance(expression.this, exp.UNWRAPPED_QUERIES):
             this = self.wrap(this)
         return f"ANY {this}"
 
@@ -2568,7 +2570,7 @@ class Generator(metaclass=_Generator):
         is_global = " GLOBAL" if expression.args.get("is_global") else ""
 
         if query:
-            in_sql = self.wrap(query)
+            in_sql = self.wrap(self.sql(query))
         elif unnest:
             in_sql = self.in_unnest_op(unnest)
         elif field:
@@ -3454,3 +3456,18 @@ class Generator(metaclass=_Generator):
             for value in values
             if value
         ]
+
+    def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
+        expression.set("is_end_exclusive", None)
+        return self.function_fallback_sql(expression)
+
+    def struct_sql(self, expression: exp.Struct) -> str:
+        expression.set(
+            "expressions",
+            [
+                exp.alias_(e.expression, e.this) if isinstance(e, exp.PropertyEQ) else e
+                for e in expression.expressions
+            ],
+        )
+
+        return self.function_fallback_sql(expression)

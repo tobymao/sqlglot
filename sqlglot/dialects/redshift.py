@@ -70,6 +70,8 @@ class Redshift(Postgres):
             "SYSDATE": lambda self: self.expression(exp.CurrentTimestamp, transaction=True),
         }
 
+        SUPPORTS_IMPLICIT_UNNEST = True
+
         def _parse_table(
             self,
             schema: bool = False,
@@ -123,27 +125,6 @@ class Redshift(Postgres):
                 return self.expression(exp.ApproxDistinct, this=seq_get(func.this.expressions, 0))
             self._retreat(index)
             return None
-
-        def _parse_query_modifiers(
-            self, this: t.Optional[exp.Expression]
-        ) -> t.Optional[exp.Expression]:
-            this = super()._parse_query_modifiers(this)
-
-            if this:
-                refs = set()
-
-                for i, join in enumerate(this.args.get("joins", [])):
-                    refs.add(
-                        (
-                            this.args["from"] if i == 0 else this.args["joins"][i - 1]
-                        ).this.alias.lower()
-                    )
-
-                    table = join.this
-                    if isinstance(table, exp.Table) and not join.args.get("on"):
-                        if table.parts[0].name.lower() in refs:
-                            table.replace(table.to_column())
-            return this
 
     class Tokenizer(Postgres.Tokenizer):
         BIT_STRINGS = []
@@ -224,6 +205,18 @@ class Redshift(Postgres):
         TRANSFORMS.pop(exp.LastDay)
 
         RESERVED_KEYWORDS = {*Postgres.Generator.RESERVED_KEYWORDS, "snapshot", "type"}
+
+        def unnest_sql(self, expression: exp.Unnest) -> str:
+            args = expression.expressions
+            num_args = len(args)
+
+            if num_args > 1:
+                self.unsupported(f"Unsupported number of arguments in UNNEST: {num_args}")
+                return ""
+
+            arg = self.sql(seq_get(args, 0))
+            alias = self.expressions(expression.args.get("alias"), key="columns")
+            return f"{arg} AS {alias}" if alias else arg
 
         def with_properties(self, properties: exp.Properties) -> str:
             """Redshift doesn't have `WITH` as part of their with_properties so we remove it"""

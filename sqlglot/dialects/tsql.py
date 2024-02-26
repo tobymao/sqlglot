@@ -221,19 +221,17 @@ def qualify_derived_table_outputs(expression: exp.Expression) -> exp.Expression:
         # We keep track of the unaliased column projection indexes instead of the expressions
         # themselves, because the latter are going to be replaced by new nodes when the aliases
         # are added and hence we won't be able to reach these newly added Alias parents
-        subqueryable = expression.this
+        query = expression.this
         unaliased_column_indexes = (
-            i
-            for i, c in enumerate(subqueryable.selects)
-            if isinstance(c, exp.Column) and not c.alias
+            i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )
 
-        qualify_outputs(subqueryable)
+        qualify_outputs(query)
 
         # Preserve the quoting information of columns for newly added Alias nodes
-        subqueryable_selects = subqueryable.selects
+        query_selects = query.selects
         for select_index in unaliased_column_indexes:
-            alias = subqueryable_selects[select_index]
+            alias = query_selects[select_index]
             column = alias.this
             if isinstance(column.this, exp.Identifier):
                 alias.args["alias"].set("quoted", column.this.quoted)
@@ -876,11 +874,10 @@ class TSQL(Dialect):
                 if ctas_with:
                     ctas_with = ctas_with.pop()
 
-                subquery = ctas_expression
-                if isinstance(subquery, exp.Subqueryable):
-                    subquery = subquery.subquery()
+                if isinstance(ctas_expression, exp.UNWRAPPED_QUERIES):
+                    ctas_expression = ctas_expression.subquery()
 
-                select_into = exp.select("*").from_(exp.alias_(subquery, "temp", table=True))
+                select_into = exp.select("*").from_(exp.alias_(ctas_expression, "temp", table=True))
                 select_into.set("into", exp.Into(this=table))
                 select_into.set("with", ctas_with)
 

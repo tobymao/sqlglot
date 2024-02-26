@@ -612,12 +612,6 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "STRUCT(a = b, c = d)",
-            read={
-                "snowflake": "OBJECT_CONSTRUCT(a, b, c, d)",
-            },
-        )
-        self.validate_all(
             "MAP(a, b, c, d)",
             read={
                 "": "VAR_MAP(a, b, c, d)",

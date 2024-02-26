@@ -578,7 +578,7 @@ class Parser(metaclass=_Parser):
         exp.Column: lambda self: self._parse_column(),
         exp.Condition: lambda self: self._parse_conjunction(),
         exp.DataType: lambda self: self._parse_types(allow_identifiers=False),
-        exp.Expression: lambda self: self._parse_statement(),
+        exp.Expression: lambda self: self._parse_expression(),
         exp.From: lambda self: self._parse_from(),
         exp.Group: lambda self: self._parse_group(),
         exp.Having: lambda self: self._parse_having(),
@@ -875,6 +875,8 @@ class Parser(metaclass=_Parser):
 
     FUNCTIONS_WITH_ALIASED_ARGS = {"STRUCT"}
 
+    KEY_VALUE_DEFINITIONS = (exp.Alias, exp.EQ, exp.PropertyEQ, exp.Slice)
+
     FUNCTION_PARSERS = {
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CONVERT": lambda self: self._parse_convert(self.STRICT_CAST),
@@ -897,6 +899,7 @@ class Parser(metaclass=_Parser):
 
     QUERY_MODIFIER_PARSERS = {
         TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
+        TokenType.PREWHERE: lambda self: ("prewhere", self._parse_prewhere()),
         TokenType.WHERE: lambda self: ("where", self._parse_where()),
         TokenType.GROUP_BY: lambda self: ("group", self._parse_group()),
         TokenType.HAVING: lambda self: ("having", self._parse_having()),
@@ -935,8 +938,6 @@ class Parser(metaclass=_Parser):
     TYPE_LITERAL_PARSERS = {
         exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
     }
-
-    MODIFIABLES = (exp.Subquery, exp.Subqueryable, exp.Table)
 
     DDL_SELECT_TOKENS = {TokenType.SELECT, TokenType.WITH, TokenType.L_PAREN}
 
@@ -1013,6 +1014,9 @@ class Parser(metaclass=_Parser):
     # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
     # If this is True and '(' is not found, the keyword will be treated as an identifier
     VALUES_FOLLOWED_BY_PAREN = True
+
+    # Whether implicit unnesting is supported, e.g. SELECT 1 FROM y.z AS z, z.a (Redshift)
+    SUPPORTS_IMPLICIT_UNNEST = False
 
     __slots__ = (
         "error_level",
@@ -2452,10 +2456,37 @@ class Parser(metaclass=_Parser):
             alias=self._parse_table_alias() if parse_alias else None,
         )
 
+    def _implicit_unnests_to_explicit(self, this: E) -> E:
+        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
+
+        refs = {_norm(this.args["from"].this.copy(), dialect=self.dialect).alias_or_name}
+        for i, join in enumerate(this.args.get("joins") or []):
+            table = join.this
+            normalized_table = table.copy()
+            normalized_table.meta["maybe_column"] = True
+            normalized_table = _norm(normalized_table, dialect=self.dialect)
+
+            if isinstance(table, exp.Table) and not join.args.get("on"):
+                if normalized_table.parts[0].name in refs:
+                    table_as_column = table.to_column()
+                    unnest = exp.Unnest(expressions=[table_as_column])
+
+                    # Table.to_column creates a parent Alias node that we want to convert to
+                    # a TableAlias and attach to the Unnest, so it matches the parser's output
+                    if isinstance(table.args.get("alias"), exp.TableAlias):
+                        table_as_column.replace(table_as_column.this)
+                        exp.alias_(unnest, None, table=[table.args["alias"].this], copy=False)
+
+                    table.replace(unnest)
+
+            refs.add(normalized_table.alias_or_name)
+
+        return this
+
     def _parse_query_modifiers(
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
-        if isinstance(this, self.MODIFIABLES):
+        if isinstance(this, (exp.Query, exp.Table)):
             for join in iter(self._parse_join, None):
                 this.append("joins", join)
             for lateral in iter(self._parse_lateral, None):
@@ -2480,6 +2511,10 @@ class Parser(metaclass=_Parser):
                                 offset.set("expressions", limit_by_expressions)
                         continue
                 break
+
+        if self.SUPPORTS_IMPLICIT_UNNEST and this and "from" in this.args:
+            this = self._implicit_unnests_to_explicit(this)
+
         return this
 
     def _parse_hint(self) -> t.Optional[exp.Hint]:
@@ -3177,6 +3212,14 @@ class Parser(metaclass=_Parser):
     def _pivot_column_names(self, aggregations: t.List[exp.Expression]) -> t.List[str]:
         return [agg.alias for agg in aggregations]
 
+    def _parse_prewhere(self, skip_where_token: bool = False) -> t.Optional[exp.PreWhere]:
+        if not skip_where_token and not self._match(TokenType.PREWHERE):
+            return None
+
+        return self.expression(
+            exp.PreWhere, comments=self._prev_comments, this=self._parse_conjunction()
+        )
+
     def _parse_where(self, skip_where_token: bool = False) -> t.Optional[exp.Where]:
         if not skip_where_token and not self._match(TokenType.WHERE):
             return None
@@ -3544,7 +3587,7 @@ class Parser(metaclass=_Parser):
             matched_l_paren = self._prev.token_type == TokenType.L_PAREN
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
 
-            if len(expressions) == 1 and isinstance(expressions[0], exp.Subqueryable):
+            if len(expressions) == 1 and isinstance(expressions[0], exp.Query):
                 this = self.expression(exp.In, this=this, query=expressions[0])
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
@@ -3975,7 +4018,7 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_query_modifiers(seq_get(expressions, 0))
 
-            if isinstance(this, exp.Subqueryable):
+            if isinstance(this, exp.UNWRAPPED_QUERIES):
                 this = self._parse_set_operations(
                     self._parse_subquery(this=this, parse_alias=False)
                 )
@@ -4080,6 +4123,9 @@ class Parser(metaclass=_Parser):
             alias = upper in self.FUNCTIONS_WITH_ALIASED_ARGS
             args = self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
+            if alias:
+                args = self._kv_to_prop_eq(args)
+
             if function and not anonymous:
                 if "dialect" in function.__code__.co_varnames:
                     func = function(args, dialect=self.dialect)
@@ -4099,6 +4145,26 @@ class Parser(metaclass=_Parser):
 
         self._match_r_paren(this)
         return self._parse_window(this)
+
+    def _kv_to_prop_eq(self, expressions: t.List[exp.Expression]) -> t.List[exp.Expression]:
+        transformed = []
+
+        for e in expressions:
+            if isinstance(e, self.KEY_VALUE_DEFINITIONS):
+                if isinstance(e, exp.Alias):
+                    e = self.expression(exp.PropertyEQ, this=e.args.get("alias"), expression=e.this)
+
+                if not isinstance(e, exp.PropertyEQ):
+                    e = self.expression(
+                        exp.PropertyEQ, this=exp.to_identifier(e.name), expression=e.expression
+                    )
+
+                if isinstance(e.this, exp.Column):
+                    e.this.replace(e.this.this)
+
+            transformed.append(e)
+
+        return transformed
 
     def _parse_function_parameter(self) -> t.Optional[exp.Expression]:
         return self._parse_column_def(self._parse_id_var())
@@ -4512,7 +4578,7 @@ class Parser(metaclass=_Parser):
 
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs
         if bracket_kind == TokenType.L_BRACE:
-            this = self.expression(exp.Struct, expressions=expressions)
+            this = self.expression(exp.Struct, expressions=self._kv_to_prop_eq(expressions))
         elif not this or this.name.upper() == "ARRAY":
             this = self.expression(exp.Array, expressions=expressions)
         else:

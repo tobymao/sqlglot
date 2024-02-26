@@ -5,6 +5,7 @@ from sqlglot import (
     ParseError,
     TokenError,
     UnsupportedError,
+    exp,
     parse,
     transpile,
 )
@@ -18,9 +19,37 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_all(
+            "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 as a, 'abc' AS b), STRUCT(str_col AS abc)",
+            write={
+                "bigquery": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
+                "duckdb": "SELECT {'_0': 1, '_1': 2, '_2': 3}, {}, {'_0': 'abc'}, {'_0': 1, '_1': t.str_col}, {'a': 1, 'b': 'abc'}, {'abc': str_col}",
+                "hive": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1, 'abc'), STRUCT(str_col)",
+                "spark2": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
+                "spark": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",
+                "snowflake": "SELECT OBJECT_CONSTRUCT('_0', 1, '_1', 2, '_2', 3), OBJECT_CONSTRUCT(), OBJECT_CONSTRUCT('_0', 'abc'), OBJECT_CONSTRUCT('_0', 1, '_1', t.str_col), OBJECT_CONSTRUCT('a', 1, 'b', 'abc'), OBJECT_CONSTRUCT('abc', str_col)",
+                # fallback to unnamed without type inference
+                "trino": "SELECT ROW(1, 2, 3), ROW(), ROW('abc'), ROW(1, t.str_col), CAST(ROW(1, 'abc') AS ROW(a INTEGER, b VARCHAR)), ROW(str_col)",
+            },
+        )
+        self.validate_all(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
+            },
+        )
+
+        self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql(), '"x"."y"."z"')
+        self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
+        self.assertEqual(exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`")
+
+        self.validate_identity("SELECT * FROM `my-project.my-dataset.my-table`")
+        self.validate_identity("CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`")
+        self.validate_identity("SELECT x, 1 AS y GROUP BY 1 ORDER BY 1")
         self.validate_identity("SELECT * FROM x.*")
         self.validate_identity("SELECT * FROM x.y*")
-
+        self.validate_identity("CASE A WHEN 90 THEN 'red' WHEN 50 THEN 'blue' ELSE 'green' END")
         self.validate_identity("CREATE SCHEMA x DEFAULT COLLATE 'en'")
         self.validate_identity("CREATE TABLE x (y INT64) DEFAULT COLLATE 'en'")
         self.validate_identity("PARSE_JSON('{}', wide_number_mode => 'exact')")
@@ -93,6 +122,16 @@ class TestBigQuery(Validator):
         self.validate_identity("LOG(n, b)")
         self.validate_identity("SELECT COUNT(x RESPECT NULLS)")
         self.validate_identity("SELECT LAST_VALUE(x IGNORE NULLS) OVER y AS x")
+        self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b))")
+        self.validate_identity("SELECT ARRAY((SELECT AS STRUCT 1 AS a, 2 AS b) LIMIT 10)")
+        self.validate_identity("CAST(x AS CHAR)", "CAST(x AS STRING)")
+        self.validate_identity("CAST(x AS NCHAR)", "CAST(x AS STRING)")
+        self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS STRING)")
+        self.validate_identity("CAST(x AS TIMESTAMPTZ)", "CAST(x AS TIMESTAMP)")
+        self.validate_identity("CAST(x AS RECORD)", "CAST(x AS STRUCT)")
+        self.validate_identity(
+            "SELECT * FROM `SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW`"
+        )
         self.validate_identity(
             "SELECT * FROM test QUALIFY a IS DISTINCT FROM b WINDOW c AS (PARTITION BY d)"
         )
@@ -122,6 +161,10 @@ class TestBigQuery(Validator):
         )
         self.validate_identity(
             """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
+        )
+        self.validate_identity(
+            "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
+            "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
         )
         self.validate_identity(
             "select array_contains([1, 2, 3], 1)",
@@ -172,10 +215,6 @@ class TestBigQuery(Validator):
             """SELECT PARSE_JSON('"foo"') AS json_data""",
         )
         self.validate_identity(
-            "CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`",
-            "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
-        )
-        self.validate_identity(
             "SELECT * FROM UNNEST(x) WITH OFFSET EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET",
             "SELECT * FROM UNNEST(x) WITH OFFSET AS offset EXCEPT DISTINCT SELECT * FROM UNNEST(y) WITH OFFSET AS offset",
         )
@@ -188,6 +227,39 @@ class TestBigQuery(Validator):
             r"REGEXP_EXTRACT(svc_plugin_output, '\\\\\\((.*)')",
         )
 
+        self.validate_all(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+            write={
+                "bigquery": "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
+                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
+            },
+        )
+        self.validate_all(
+            "SELECT results FROM Coordinates, Coordinates.position AS results",
+            write={
+                "bigquery": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS results",
+                "presto": "SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS _t(results)",
+            },
+        )
+        self.validate_all(
+            "SELECT results FROM Coordinates, `Coordinates.position` AS results",
+            write={
+                "bigquery": "SELECT results FROM Coordinates, `Coordinates.position` AS results",
+                "presto": 'SELECT results FROM Coordinates, "Coordinates"."position" AS results',
+            },
+        )
+        self.validate_all(
+            "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS results",
+            read={
+                "presto": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS _t(results)",
+                "redshift": "SELECT results FROM Coordinates AS c, c.position AS results",
+            },
+            write={
+                "bigquery": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS results",
+                "presto": "SELECT results FROM Coordinates AS c, UNNEST(c.position) AS _t(results)",
+                "redshift": "SELECT results FROM Coordinates AS c, c.position AS results",
+            },
+        )
         self.validate_all(
             "TIMESTAMP(x)",
             write={
@@ -437,8 +509,8 @@ class TestBigQuery(Validator):
         self.validate_all(
             "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
             write={
-                "bigquery": "CREATE OR REPLACE TABLE a.b.c COPY a.b.d",
-                "snowflake": "CREATE OR REPLACE TABLE a.b.c CLONE a.b.d",
+                "bigquery": "CREATE OR REPLACE TABLE `a.b.c` COPY `a.b.d`",
+                "snowflake": 'CREATE OR REPLACE TABLE "a"."b"."c" CLONE "a"."b"."d"',
             },
         )
         (
@@ -478,11 +550,6 @@ class TestBigQuery(Validator):
             ),
         )
         self.validate_all("LEAST(x, y)", read={"sqlite": "MIN(x, y)"})
-        self.validate_all("CAST(x AS CHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS NCHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS NVARCHAR)", write={"bigquery": "CAST(x AS STRING)"})
-        self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"bigquery": "CAST(x AS TIMESTAMP)"})
-        self.validate_all("CAST(x AS RECORD)", write={"bigquery": "CAST(x AS STRUCT)"})
         self.validate_all(
             'SELECT TIMESTAMP_ADD(TIMESTAMP "2008-12-25 15:30:00+00", INTERVAL 10 MINUTE)',
             write={
@@ -569,11 +636,11 @@ class TestBigQuery(Validator):
             read={"spark": "select posexplode_outer([])"},
         )
         self.validate_all(
-            "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
+            "SELECT AS STRUCT ARRAY(SELECT AS STRUCT 1 AS b FROM x) AS y FROM z",
             write={
-                "": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
-                "bigquery": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT b FROM x) AS y FROM z",
-                "duckdb": "SELECT {'y': ARRAY(SELECT {'b': b} FROM x)} FROM z",
+                "": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT 1 AS b FROM x) AS y FROM z",
+                "bigquery": "SELECT AS STRUCT ARRAY(SELECT AS STRUCT 1 AS b FROM x) AS y FROM z",
+                "duckdb": "SELECT {'y': ARRAY(SELECT {'b': 1} FROM x)} FROM z",
             },
         )
         self.validate_all(
@@ -588,25 +655,9 @@ class TestBigQuery(Validator):
                 "bigquery": "PARSE_TIMESTAMP('%Y.%m.%d %I:%M:%S%z', x)",
             },
         )
-        self.validate_all(
+        self.validate_identity(
             "CREATE TEMP TABLE foo AS SELECT 1",
-            write={"bigquery": "CREATE TEMPORARY TABLE foo AS SELECT 1"},
-        )
-        self.validate_all(
-            "SELECT * FROM `SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW`",
-            write={
-                "bigquery": "SELECT * FROM SOME_PROJECT_ID.SOME_DATASET_ID.INFORMATION_SCHEMA.SOME_VIEW",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM `my-project.my-dataset.my-table`",
-            write={"bigquery": "SELECT * FROM `my-project`.`my-dataset`.`my-table`"},
-        )
-        self.validate_all(
-            "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
-            write={
-                "bigquery": "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
-            },
+            "CREATE TEMPORARY TABLE foo AS SELECT 1",
         )
         self.validate_all(
             "REGEXP_CONTAINS('foo', '.*')",
@@ -1090,6 +1141,35 @@ WHERE
                 self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
             self.assertIn("unsupported syntax", cm.output[0])
+
+        with self.assertLogs(helper_logger):
+            statements = parse(
+                """
+                BEGIN
+                    DECLARE MY_VAR INT64 DEFAULT 1;
+                    SET MY_VAR = (SELECT 0);
+
+                    IF MY_VAR = 1 THEN SELECT 'TRUE';
+                    ELSEIF MY_VAR = 0 THEN SELECT 'FALSE';
+                    ELSE SELECT 'NULL';
+                    END IF;
+                END
+                """,
+                read="bigquery",
+            )
+
+            expected_statements = (
+                "BEGIN DECLARE MY_VAR INT64 DEFAULT 1",
+                "SET MY_VAR = (SELECT 0)",
+                "IF MY_VAR = 1 THEN SELECT 'TRUE'",
+                "ELSEIF MY_VAR = 0 THEN SELECT 'FALSE'",
+                "ELSE SELECT 'NULL'",
+                "END IF",
+                "END",
+            )
+
+            for actual, expected in zip(statements, expected_statements):
+                self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity(

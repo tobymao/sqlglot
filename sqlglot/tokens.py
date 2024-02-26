@@ -317,6 +317,7 @@ class TokenType(AutoName):
     PIVOT = auto()
     PLACEHOLDER = auto()
     PRAGMA = auto()
+    PREWHERE = auto()
     PRIMARY_KEY = auto()
     PROCEDURE = auto()
     PROPERTIES = auto()

@@ -547,7 +547,7 @@ def move_partitioned_by_to_schema_columns(expression: exp.Expression) -> exp.Exp
         prop
         and prop.this
         and isinstance(prop.this, exp.Schema)
-        and all(isinstance(e, exp.ColumnDef) and e.args.get("kind") for e in prop.this.expressions)
+        and all(isinstance(e, exp.ColumnDef) and e.kind for e in prop.this.expressions)
     ):
         prop_this = exp.Tuple(
             expressions=[exp.to_identifier(e.this) for e in prop.this.expressions]
@@ -556,6 +556,22 @@ def move_partitioned_by_to_schema_columns(expression: exp.Expression) -> exp.Exp
         for e in prop.this.expressions:
             schema.append("expressions", e)
         prop.set("this", prop_this)
+
+    return expression
+
+
+def struct_kv_to_alias(expression: exp.Expression) -> exp.Expression:
+    """
+    Convert struct arguments to aliases: STRUCT(1 AS y) .
+    """
+    if isinstance(expression, exp.Struct):
+        expression.set(
+            "expressions",
+            [
+                exp.alias_(e.expression, e.this) if isinstance(e, exp.PropertyEQ) else e
+                for e in expression.expressions
+            ],
+        )
 
     return expression
 

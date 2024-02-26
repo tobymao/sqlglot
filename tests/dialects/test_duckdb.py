@@ -10,9 +10,14 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT * FROM x LEFT JOIN UNNEST(y)", "SELECT * FROM x LEFT JOIN UNNEST(y) ON TRUE"
         )
-        struct_pack = parse_one('STRUCT_PACK("a b" := 1)', read="duckdb")
-        self.assertIsInstance(struct_pack.expressions[0].this, exp.Identifier)
-        self.assertEqual(struct_pack.sql(dialect="duckdb"), "{'a b': 1}")
+        self.validate_all(
+            'STRUCT_PACK("a b" := 1)',
+            write={
+                "duckdb": "{'a b': 1}",
+                "spark": "STRUCT(1 AS `a b`)",
+                "snowflake": "OBJECT_CONSTRUCT('a b', 1)",
+            },
+        )
 
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",
@@ -55,8 +60,21 @@ class TestDuckDB(Validator):
             exp.select("*").from_("t").offset(exp.select("5").subquery()).sql(dialect="duckdb"),
         )
 
-        for struct_value in ("{'a': 1}", "struct_pack(a := 1)"):
-            self.validate_all(struct_value, write={"presto": UnsupportedError})
+        self.validate_all(
+            "{'a': 1, 'b': '2'}", write={"presto": "CAST(ROW(1, '2') AS ROW(a INTEGER, b VARCHAR))"}
+        )
+        self.validate_all(
+            "struct_pack(a := 1, b := 2)",
+            write={"presto": "CAST(ROW(1, 2) AS ROW(a INTEGER, b INTEGER))"},
+        )
+
+        self.validate_all(
+            "struct_pack(a := 1, b := x)",
+            write={
+                "duckdb": "{'a': 1, 'b': x}",
+                "presto": UnsupportedError,
+            },
+        )
 
         for join_type in ("SEMI", "ANTI"):
             exists = "EXISTS" if join_type == "SEMI" else "NOT EXISTS"
@@ -174,7 +192,6 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_identity("SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
         self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
@@ -624,6 +641,27 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT COUNT_IF(x)",
                 "bigquery": "SELECT COUNTIF(x)",
             },
+        )
+
+        self.validate_identity("SELECT * FROM RANGE(1, 5, 10)")
+        self.validate_identity("SELECT * FROM GENERATE_SERIES(2, 13, 4)")
+
+        self.validate_all(
+            "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM RANGE(1, 5) t(i)) SELECT * FROM t",
+            write={
+                "duckdb": "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM RANGE(1, 5) AS t(i)) SELECT * FROM t",
+                "sqlite": "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM (SELECT value AS i FROM GENERATE_SERIES(1, 5)) AS t) SELECT * FROM t",
+            },
+        )
+
+        self.validate_identity(
+            """SELECT i FROM RANGE(5) AS _(i) ORDER BY i ASC""",
+            """SELECT i FROM RANGE(0, 5) AS _(i) ORDER BY i ASC""",
+        )
+
+        self.validate_identity(
+            """SELECT i FROM GENERATE_SERIES(12) AS _(i) ORDER BY i ASC""",
+            """SELECT i FROM GENERATE_SERIES(0, 12) AS _(i) ORDER BY i ASC""",
         )
 
     def test_array_index(self):

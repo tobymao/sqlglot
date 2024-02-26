@@ -6,6 +6,21 @@ class TestClickhouse(Validator):
     dialect = "clickhouse"
 
     def test_clickhouse(self):
+        self.validate_all(
+            "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
+            write={
+                "": "SELECT * FROM x WHERE z = 2",
+                "clickhouse": "SELECT * FROM x PREWHERE y = 1 WHERE z = 2",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM x AS prewhere",
+            read={
+                "clickhouse": "SELECT * FROM x AS prewhere",
+                "duckdb": "SELECT * FROM x prewhere",
+            },
+        )
+
         self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
 
         string_types = [

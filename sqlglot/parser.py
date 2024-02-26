@@ -367,6 +367,7 @@ class Parser(metaclass=_Parser):
         TokenType.TEMPORARY,
         TokenType.TOP,
         TokenType.TRUE,
+        TokenType.TRUNCATE,
         TokenType.UNIQUE,
         TokenType.UNPIVOT,
         TokenType.UPDATE,
@@ -626,7 +627,7 @@ class Parser(metaclass=_Parser):
         TokenType.SET: lambda self: self._parse_set(),
         TokenType.UNCACHE: lambda self: self._parse_uncache(),
         TokenType.UPDATE: lambda self: self._parse_update(),
-        TokenType.TRUNCATE: lambda self: self._parse_truncate(),
+        TokenType.TRUNCATE: lambda self: self._parse_truncate_table(),
         TokenType.USE: lambda self: self.expression(
             exp.Use,
             kind=self._match_texts(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"))
@@ -2915,7 +2916,7 @@ class Parser(metaclass=_Parser):
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table, this=bracket) if bracket else None
 
-        only = self._match_text_seq("ONLY")
+        only = self._match(TokenType.ONLY)
 
         this = t.cast(
             exp.Expression,
@@ -2927,6 +2928,9 @@ class Parser(metaclass=_Parser):
 
         if only:
             this.set("only", only)
+
+        # Postgres supports a wildcard (table) suffix operator, which is a no-op in this context
+        self._match_text_seq("*")
 
         if schema:
             return self._parse_schema(this=this)
@@ -5920,10 +5924,13 @@ class Parser(metaclass=_Parser):
                         column.replace(dot_or_id)
         return node
 
-    def _parse_truncate(self) -> t.Optional[exp.Truncate] | exp.Expression:
+    def _parse_truncate_table(self) -> t.Optional[exp.TruncateTable] | exp.Expression:
+        start = self._prev
+
         # Not to be confused with TRUNCATE(number, decimals) function call
         if self._match(TokenType.L_PAREN):
-            return self._parse_function_call(anonymous=True)
+            self._retreat(self._index - 2)
+            return self._parse_function()
 
         # Clickhouse supports TRUNCATE DATABASE as well
         is_database = self._match(TokenType.DATABASE)
@@ -5932,17 +5939,12 @@ class Parser(metaclass=_Parser):
 
         exists = self._parse_exists(not_=False)
 
-        def _parse_truncate_tables() -> t.Optional[exp.Expression]:
-            this = self._parse_table(schema=True, is_db_reference=is_database)
+        def _parse_tables() -> t.Optional[exp.Expression]:
+            return self._parse_table(schema=True, is_db_reference=is_database)
 
-            # Postgres has wildcard (table) suffix operator
-            self._match_text_seq("*")
+        expressions = self._parse_csv(_parse_tables)
 
-            return this
-
-        expressions = self._parse_csv(_parse_truncate_tables)
-
-        cluster = self._parse_id_var() if self._match_text_seq("ON", "CLUSTER") else None
+        cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
         if self._match_text_seq("RESTART", "IDENTITY"):
             identity = "RESTART"
@@ -5956,13 +5958,19 @@ class Parser(metaclass=_Parser):
         else:
             option = None
 
+        partition = self._parse_partition()
+
+        # Fallback case
+        if self._curr:
+            return self._parse_as_command(start)
+
         return self.expression(
-            exp.Truncate,
+            exp.TruncateTable,
             expressions=expressions,
             is_database=is_database,
             exists=exists,
             cluster=cluster,
             identity=identity,
             option=option,
-            partition=self._parse_partition(),
+            partition=partition,
         )

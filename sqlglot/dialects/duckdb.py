@@ -197,6 +197,7 @@ class DuckDB(Dialect):
             "CHARACTER VARYING": TokenType.TEXT,
             "EXCLUDE": TokenType.EXCEPT,
             "LOGICAL": TokenType.BOOLEAN,
+            "ONLY": TokenType.ONLY,
             "PIVOT_WIDER": TokenType.PIVOT,
             "SIGNED": TokenType.INT,
             "STRING": TokenType.VARCHAR,

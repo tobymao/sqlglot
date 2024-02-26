@@ -3480,15 +3480,14 @@ class Generator(metaclass=_Generator):
 
         return f"{low} TO {high}"
 
-    def truncate_sql(self, expression: exp.Truncate) -> str:
+    def truncatetable_sql(self, expression: exp.TruncateTable) -> str:
         target = "DATABASE" if expression.args.get("is_database") else "TABLE"
-        tables = self.expressions(expression)
-        tables = f" {tables}"
+        tables = f" {self.expressions(expression)}"
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
 
         on_cluster = self.sql(expression, "cluster")
-        on_cluster = f" ON CLUSTER {on_cluster}" if on_cluster else ""
+        on_cluster = f" {on_cluster}" if on_cluster else ""
 
         identity = self.sql(expression, "identity")
         identity = f" {identity} IDENTITY" if identity else ""

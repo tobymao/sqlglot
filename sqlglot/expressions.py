@@ -1224,7 +1224,7 @@ class Create(DDL):
         return kind and kind.upper()
 
 
-class Truncate(Expression):
+class TruncateTable(Expression):
     arg_types = {
         "expressions": True,
         "is_database": False,
@@ -1922,7 +1922,7 @@ class Partition(Expression):
 
 
 class PartitionRange(Expression):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expression": True}
 
 
 class Fetch(Expression):

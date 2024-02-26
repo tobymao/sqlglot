@@ -196,6 +196,9 @@
                                             <a class="function" href="#Hive.Generator.version_sql">version_sql</a>
                                     </li>
                                     <li>
+                                            <a class="function" href="#Hive.Generator.struct_sql">struct_sql</a>
+                                    </li>
+                                    <li>
                                             <a class="variable" href="#Hive.Generator.SELECT_KINDS">SELECT_KINDS</a>
                                     </li>
                             </ul>
@@ -920,6 +923,18 @@
 </span><span id="L-631"><a href="#L-631"><span class="linenos">631</span></a>        <span class="k">def</span> <span class="nf">version_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Version</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="L-632"><a href="#L-632"><span class="linenos">632</span></a>            <span class="n">sql</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">version_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span><span id="L-633"><a href="#L-633"><span class="linenos">633</span></a>            <span class="k">return</span> <span class="n">sql</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;FOR &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="L-634"><a href="#L-634"><span class="linenos">634</span></a>
+</span><span id="L-635"><a href="#L-635"><span class="linenos">635</span></a>        <span class="k">def</span> <span class="nf">struct_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Struct</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-636"><a href="#L-636"><span class="linenos">636</span></a>            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="L-637"><a href="#L-637"><span class="linenos">637</span></a>
+</span><span id="L-638"><a href="#L-638"><span class="linenos">638</span></a>            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expressions</span><span class="p">):</span>
+</span><span id="L-639"><a href="#L-639"><span class="linenos">639</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">PropertyEQ</span><span class="p">):</span>
+</span><span id="L-640"><a href="#L-640"><span class="linenos">640</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="s2">&quot;Hive does not support named structs.&quot;</span><span class="p">)</span>
+</span><span id="L-641"><a href="#L-641"><span class="linenos">641</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="L-642"><a href="#L-642"><span class="linenos">642</span></a>                <span class="k">else</span><span class="p">:</span>
+</span><span id="L-643"><a href="#L-643"><span class="linenos">643</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</span><span id="L-644"><a href="#L-644"><span class="linenos">644</span></a>
+</span><span id="L-645"><a href="#L-645"><span class="linenos">645</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;STRUCT&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1424,6 +1439,18 @@
 </span><span id="Hive-632"><a href="#Hive-632"><span class="linenos">632</span></a>        <span class="k">def</span> <span class="nf">version_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Version</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="Hive-633"><a href="#Hive-633"><span class="linenos">633</span></a>            <span class="n">sql</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">version_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span><span id="Hive-634"><a href="#Hive-634"><span class="linenos">634</span></a>            <span class="k">return</span> <span class="n">sql</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;FOR &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="Hive-635"><a href="#Hive-635"><span class="linenos">635</span></a>
+</span><span id="Hive-636"><a href="#Hive-636"><span class="linenos">636</span></a>        <span class="k">def</span> <span class="nf">struct_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Struct</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="Hive-637"><a href="#Hive-637"><span class="linenos">637</span></a>            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Hive-638"><a href="#Hive-638"><span class="linenos">638</span></a>
+</span><span id="Hive-639"><a href="#Hive-639"><span class="linenos">639</span></a>            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expressions</span><span class="p">):</span>
+</span><span id="Hive-640"><a href="#Hive-640"><span class="linenos">640</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">PropertyEQ</span><span class="p">):</span>
+</span><span id="Hive-641"><a href="#Hive-641"><span class="linenos">641</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="s2">&quot;Hive does not support named structs.&quot;</span><span class="p">)</span>
+</span><span id="Hive-642"><a href="#Hive-642"><span class="linenos">642</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="Hive-643"><a href="#Hive-643"><span class="linenos">643</span></a>                <span class="k">else</span><span class="p">:</span>
+</span><span id="Hive-644"><a href="#Hive-644"><span class="linenos">644</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</span><span id="Hive-645"><a href="#Hive-645"><span class="linenos">645</span></a>
+</span><span id="Hive-646"><a href="#Hive-646"><span class="linenos">646</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;STRUCT&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -2323,12 +2350,12 @@ Default: 3</li>
                 <dd id="Hive.Parser.SCHEMA_UNNAMED_CONSTRAINTS" class="variable"><a href="../parser.html#Parser.SCHEMA_UNNAMED_CONSTRAINTS">SCHEMA_UNNAMED_CONSTRAINTS</a></dd>
                 <dd id="Hive.Parser.INVALID_FUNC_NAME_TOKENS" class="variable"><a href="../parser.html#Parser.INVALID_FUNC_NAME_TOKENS">INVALID_FUNC_NAME_TOKENS</a></dd>
                 <dd id="Hive.Parser.FUNCTIONS_WITH_ALIASED_ARGS" class="variable"><a href="../parser.html#Parser.FUNCTIONS_WITH_ALIASED_ARGS">FUNCTIONS_WITH_ALIASED_ARGS</a></dd>
+                <dd id="Hive.Parser.KEY_VALUE_DEFINITIONS" class="variable"><a href="../parser.html#Parser.KEY_VALUE_DEFINITIONS">KEY_VALUE_DEFINITIONS</a></dd>
                 <dd id="Hive.Parser.FUNCTION_PARSERS" class="variable"><a href="../parser.html#Parser.FUNCTION_PARSERS">FUNCTION_PARSERS</a></dd>
                 <dd id="Hive.Parser.QUERY_MODIFIER_PARSERS" class="variable"><a href="../parser.html#Parser.QUERY_MODIFIER_PARSERS">QUERY_MODIFIER_PARSERS</a></dd>
                 <dd id="Hive.Parser.SET_PARSERS" class="variable"><a href="../parser.html#Parser.SET_PARSERS">SET_PARSERS</a></dd>
                 <dd id="Hive.Parser.SHOW_PARSERS" class="variable"><a href="../parser.html#Parser.SHOW_PARSERS">SHOW_PARSERS</a></dd>
                 <dd id="Hive.Parser.TYPE_LITERAL_PARSERS" class="variable"><a href="../parser.html#Parser.TYPE_LITERAL_PARSERS">TYPE_LITERAL_PARSERS</a></dd>
-                <dd id="Hive.Parser.MODIFIABLES" class="variable"><a href="../parser.html#Parser.MODIFIABLES">MODIFIABLES</a></dd>
                 <dd id="Hive.Parser.DDL_SELECT_TOKENS" class="variable"><a href="../parser.html#Parser.DDL_SELECT_TOKENS">DDL_SELECT_TOKENS</a></dd>
                 <dd id="Hive.Parser.PRE_VOLATILE_TOKENS" class="variable"><a href="../parser.html#Parser.PRE_VOLATILE_TOKENS">PRE_VOLATILE_TOKENS</a></dd>
                 <dd id="Hive.Parser.TRANSACTION_KIND" class="variable"><a href="../parser.html#Parser.TRANSACTION_KIND">TRANSACTION_KIND</a></dd>
@@ -2359,6 +2386,7 @@ Default: 3</li>
                 <dd id="Hive.Parser.UNION_MODIFIERS" class="variable"><a href="../parser.html#Parser.UNION_MODIFIERS">UNION_MODIFIERS</a></dd>
                 <dd id="Hive.Parser.NO_PAREN_IF_COMMANDS" class="variable"><a href="../parser.html#Parser.NO_PAREN_IF_COMMANDS">NO_PAREN_IF_COMMANDS</a></dd>
                 <dd id="Hive.Parser.JSON_ARROWS_REQUIRE_JSON_TYPE" class="variable"><a href="../parser.html#Parser.JSON_ARROWS_REQUIRE_JSON_TYPE">JSON_ARROWS_REQUIRE_JSON_TYPE</a></dd>
+                <dd id="Hive.Parser.SUPPORTS_IMPLICIT_UNNEST" class="variable"><a href="../parser.html#Parser.SUPPORTS_IMPLICIT_UNNEST">SUPPORTS_IMPLICIT_UNNEST</a></dd>
                 <dd id="Hive.Parser.error_level" class="variable"><a href="../parser.html#Parser.error_level">error_level</a></dd>
                 <dd id="Hive.Parser.error_message_context" class="variable"><a href="../parser.html#Parser.error_message_context">error_message_context</a></dd>
                 <dd id="Hive.Parser.max_errors" class="variable"><a href="../parser.html#Parser.max_errors">max_errors</a></dd>
@@ -2608,6 +2636,18 @@ Default: 3</li>
 </span><span id="Hive.Generator-632"><a href="#Hive.Generator-632"><span class="linenos">632</span></a>        <span class="k">def</span> <span class="nf">version_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Version</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="Hive.Generator-633"><a href="#Hive.Generator-633"><span class="linenos">633</span></a>            <span class="n">sql</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">version_sql</span><span class="p">(</span><span class="n">expression</span><span class="p">)</span>
 </span><span id="Hive.Generator-634"><a href="#Hive.Generator-634"><span class="linenos">634</span></a>            <span class="k">return</span> <span class="n">sql</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;FOR &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="Hive.Generator-635"><a href="#Hive.Generator-635"><span class="linenos">635</span></a>
+</span><span id="Hive.Generator-636"><a href="#Hive.Generator-636"><span class="linenos">636</span></a>        <span class="k">def</span> <span class="nf">struct_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Struct</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="Hive.Generator-637"><a href="#Hive.Generator-637"><span class="linenos">637</span></a>            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Hive.Generator-638"><a href="#Hive.Generator-638"><span class="linenos">638</span></a>
+</span><span id="Hive.Generator-639"><a href="#Hive.Generator-639"><span class="linenos">639</span></a>            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expressions</span><span class="p">):</span>
+</span><span id="Hive.Generator-640"><a href="#Hive.Generator-640"><span class="linenos">640</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">PropertyEQ</span><span class="p">):</span>
+</span><span id="Hive.Generator-641"><a href="#Hive.Generator-641"><span class="linenos">641</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="s2">&quot;Hive does not support named structs.&quot;</span><span class="p">)</span>
+</span><span id="Hive.Generator-642"><a href="#Hive.Generator-642"><span class="linenos">642</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="Hive.Generator-643"><a href="#Hive.Generator-643"><span class="linenos">643</span></a>                <span class="k">else</span><span class="p">:</span>
+</span><span id="Hive.Generator-644"><a href="#Hive.Generator-644"><span class="linenos">644</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</span><span id="Hive.Generator-645"><a href="#Hive.Generator-645"><span class="linenos">645</span></a>
+</span><span id="Hive.Generator-646"><a href="#Hive.Generator-646"><span class="linenos">646</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;STRUCT&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -2774,7 +2814,7 @@ Default: True</li>
                                 <div class="attr variable">
             <span class="name">EXPRESSIONS_WITHOUT_NESTED_CTES</span>        =
 <input id="Hive.Generator.EXPRESSIONS_WITHOUT_NESTED_CTES-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Hive.Generator.EXPRESSIONS_WITHOUT_NESTED_CTES-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#Union">sqlglot.expressions.Union</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Select">sqlglot.expressions.Select</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Subquery">sqlglot.expressions.Subquery</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Insert">sqlglot.expressions.Insert</a>&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Hive.Generator.EXPRESSIONS_WITHOUT_NESTED_CTES-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#Subquery">sqlglot.expressions.Subquery</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Insert">sqlglot.expressions.Insert</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Select">sqlglot.expressions.Select</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#Union">sqlglot.expressions.Union</a>&#39;&gt;}</span>
 
         
     </div>
@@ -2787,7 +2827,7 @@ Default: True</li>
                                 <div class="attr variable">
             <span class="name">SUPPORTED_JSON_PATH_PARTS</span>        =
 <input id="Hive.Generator.SUPPORTED_JSON_PATH_PARTS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Hive.Generator.SUPPORTED_JSON_PATH_PARTS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#JSONPathKey">sqlglot.expressions.JSONPathKey</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathSubscript">sqlglot.expressions.JSONPathSubscript</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathRoot">sqlglot.expressions.JSONPathRoot</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathWildcard">sqlglot.expressions.JSONPathWildcard</a>&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Hive.Generator.SUPPORTED_JSON_PATH_PARTS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#JSONPathSubscript">sqlglot.expressions.JSONPathSubscript</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathRoot">sqlglot.expressions.JSONPathRoot</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathKey">sqlglot.expressions.JSONPathKey</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathWildcard">sqlglot.expressions.JSONPathWildcard</a>&#39;&gt;}</span>
 
         
     </div>
@@ -3029,6 +3069,34 @@ Default: True</li>
     
 
                             </div>
+                            <div id="Hive.Generator.struct_sql" class="classattr">
+                                        <input id="Hive.Generator.struct_sql-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">struct_sql</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#Struct">sqlglot.expressions.Struct</a></span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+                <label class="view-source-button" for="Hive.Generator.struct_sql-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#Hive.Generator.struct_sql"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Hive.Generator.struct_sql-636"><a href="#Hive.Generator.struct_sql-636"><span class="linenos">636</span></a>        <span class="k">def</span> <span class="nf">struct_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">Struct</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="Hive.Generator.struct_sql-637"><a href="#Hive.Generator.struct_sql-637"><span class="linenos">637</span></a>            <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="Hive.Generator.struct_sql-638"><a href="#Hive.Generator.struct_sql-638"><span class="linenos">638</span></a>
+</span><span id="Hive.Generator.struct_sql-639"><a href="#Hive.Generator.struct_sql-639"><span class="linenos">639</span></a>            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">expressions</span><span class="p">):</span>
+</span><span id="Hive.Generator.struct_sql-640"><a href="#Hive.Generator.struct_sql-640"><span class="linenos">640</span></a>                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">PropertyEQ</span><span class="p">):</span>
+</span><span id="Hive.Generator.struct_sql-641"><a href="#Hive.Generator.struct_sql-641"><span class="linenos">641</span></a>                    <span class="bp">self</span><span class="o">.</span><span class="n">unsupported</span><span class="p">(</span><span class="s2">&quot;Hive does not support named structs.&quot;</span><span class="p">)</span>
+</span><span id="Hive.Generator.struct_sql-642"><a href="#Hive.Generator.struct_sql-642"><span class="linenos">642</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span>
+</span><span id="Hive.Generator.struct_sql-643"><a href="#Hive.Generator.struct_sql-643"><span class="linenos">643</span></a>                <span class="k">else</span><span class="p">:</span>
+</span><span id="Hive.Generator.struct_sql-644"><a href="#Hive.Generator.struct_sql-644"><span class="linenos">644</span></a>                    <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</span><span id="Hive.Generator.struct_sql-645"><a href="#Hive.Generator.struct_sql-645"><span class="linenos">645</span></a>
+</span><span id="Hive.Generator.struct_sql-646"><a href="#Hive.Generator.struct_sql-646"><span class="linenos">646</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="s2">&quot;STRUCT&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                            </div>
                             <div id="Hive.Generator.SELECT_KINDS" class="classattr">
                                 <div class="attr variable">
             <span class="name">SELECT_KINDS</span><span class="annotation">: Tuple[str, ...]</span>        =
@@ -3103,7 +3171,6 @@ Default: True</li>
                 <dd id="Hive.Generator.WITH_SEPARATED_COMMENTS" class="variable"><a href="../generator.html#Generator.WITH_SEPARATED_COMMENTS">WITH_SEPARATED_COMMENTS</a></dd>
                 <dd id="Hive.Generator.EXCLUDE_COMMENTS" class="variable"><a href="../generator.html#Generator.EXCLUDE_COMMENTS">EXCLUDE_COMMENTS</a></dd>
                 <dd id="Hive.Generator.UNWRAPPED_INTERVAL_VALUES" class="variable"><a href="../generator.html#Generator.UNWRAPPED_INTERVAL_VALUES">UNWRAPPED_INTERVAL_VALUES</a></dd>
-                <dd id="Hive.Generator.KEY_VALUE_DEFINITIONS" class="variable"><a href="../generator.html#Generator.KEY_VALUE_DEFINITIONS">KEY_VALUE_DEFINITIONS</a></dd>
                 <dd id="Hive.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
                 <dd id="Hive.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
                 <dd id="Hive.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
@@ -3207,6 +3274,7 @@ Default: True</li>
                 <dd id="Hive.Generator.withtablehint_sql" class="function"><a href="../generator.html#Generator.withtablehint_sql">withtablehint_sql</a></dd>
                 <dd id="Hive.Generator.indextablehint_sql" class="function"><a href="../generator.html#Generator.indextablehint_sql">indextablehint_sql</a></dd>
                 <dd id="Hive.Generator.historicaldata_sql" class="function"><a href="../generator.html#Generator.historicaldata_sql">historicaldata_sql</a></dd>
+                <dd id="Hive.Generator.table_parts" class="function"><a href="../generator.html#Generator.table_parts">table_parts</a></dd>
                 <dd id="Hive.Generator.table_sql" class="function"><a href="../generator.html#Generator.table_sql">table_sql</a></dd>
                 <dd id="Hive.Generator.tablesample_sql" class="function"><a href="../generator.html#Generator.tablesample_sql">tablesample_sql</a></dd>
                 <dd id="Hive.Generator.pivot_sql" class="function"><a href="../generator.html#Generator.pivot_sql">pivot_sql</a></dd>
@@ -3256,6 +3324,7 @@ Default: True</li>
                 <dd id="Hive.Generator.union_sql" class="function"><a href="../generator.html#Generator.union_sql">union_sql</a></dd>
                 <dd id="Hive.Generator.union_op" class="function"><a href="../generator.html#Generator.union_op">union_op</a></dd>
                 <dd id="Hive.Generator.unnest_sql" class="function"><a href="../generator.html#Generator.unnest_sql">unnest_sql</a></dd>
+                <dd id="Hive.Generator.prewhere_sql" class="function"><a href="../generator.html#Generator.prewhere_sql">prewhere_sql</a></dd>
                 <dd id="Hive.Generator.where_sql" class="function"><a href="../generator.html#Generator.where_sql">where_sql</a></dd>
                 <dd id="Hive.Generator.window_sql" class="function"><a href="../generator.html#Generator.window_sql">window_sql</a></dd>
                 <dd id="Hive.Generator.partition_by_sql" class="function"><a href="../generator.html#Generator.partition_by_sql">partition_by_sql</a></dd>
@@ -3411,6 +3480,7 @@ Default: True</li>
                 <dd id="Hive.Generator.unixdate_sql" class="function"><a href="../generator.html#Generator.unixdate_sql">unixdate_sql</a></dd>
                 <dd id="Hive.Generator.lastday_sql" class="function"><a href="../generator.html#Generator.lastday_sql">lastday_sql</a></dd>
                 <dd id="Hive.Generator.arrayany_sql" class="function"><a href="../generator.html#Generator.arrayany_sql">arrayany_sql</a></dd>
+                <dd id="Hive.Generator.generateseries_sql" class="function"><a href="../generator.html#Generator.generateseries_sql">generateseries_sql</a></dd>
 
             </div>
                                 </dl>

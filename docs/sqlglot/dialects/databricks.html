@@ -247,7 +247,7 @@
 </span><span id="L-69"><a href="#L-69"><span class="linenos">69</span></a>
 </span><span id="L-70"><a href="#L-70"><span class="linenos">70</span></a>        <span class="k">def</span> <span class="nf">columndef_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ColumnDef</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="L-71"><a href="#L-71"><span class="linenos">71</span></a>            <span class="n">constraint</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">GeneratedAsIdentityColumnConstraint</span><span class="p">)</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kind&quot;</span><span class="p">)</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos">72</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">kind</span>
 </span><span id="L-73"><a href="#L-73"><span class="linenos">73</span></a>            <span class="k">if</span> <span class="p">(</span>
 </span><span id="L-74"><a href="#L-74"><span class="linenos">74</span></a>                <span class="n">constraint</span>
 </span><span id="L-75"><a href="#L-75"><span class="linenos">75</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">)</span>
@@ -334,7 +334,7 @@
 </span><span id="Databricks-70"><a href="#Databricks-70"><span class="linenos">70</span></a>
 </span><span id="Databricks-71"><a href="#Databricks-71"><span class="linenos">71</span></a>        <span class="k">def</span> <span class="nf">columndef_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ColumnDef</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="Databricks-72"><a href="#Databricks-72"><span class="linenos">72</span></a>            <span class="n">constraint</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">GeneratedAsIdentityColumnConstraint</span><span class="p">)</span>
-</span><span id="Databricks-73"><a href="#Databricks-73"><span class="linenos">73</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kind&quot;</span><span class="p">)</span>
+</span><span id="Databricks-73"><a href="#Databricks-73"><span class="linenos">73</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">kind</span>
 </span><span id="Databricks-74"><a href="#Databricks-74"><span class="linenos">74</span></a>            <span class="k">if</span> <span class="p">(</span>
 </span><span id="Databricks-75"><a href="#Databricks-75"><span class="linenos">75</span></a>                <span class="n">constraint</span>
 </span><span id="Databricks-76"><a href="#Databricks-76"><span class="linenos">76</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">)</span>
@@ -838,11 +838,11 @@ Default: 3</li>
                 <dd id="Databricks.Parser.SCHEMA_UNNAMED_CONSTRAINTS" class="variable"><a href="../parser.html#Parser.SCHEMA_UNNAMED_CONSTRAINTS">SCHEMA_UNNAMED_CONSTRAINTS</a></dd>
                 <dd id="Databricks.Parser.INVALID_FUNC_NAME_TOKENS" class="variable"><a href="../parser.html#Parser.INVALID_FUNC_NAME_TOKENS">INVALID_FUNC_NAME_TOKENS</a></dd>
                 <dd id="Databricks.Parser.FUNCTIONS_WITH_ALIASED_ARGS" class="variable"><a href="../parser.html#Parser.FUNCTIONS_WITH_ALIASED_ARGS">FUNCTIONS_WITH_ALIASED_ARGS</a></dd>
+                <dd id="Databricks.Parser.KEY_VALUE_DEFINITIONS" class="variable"><a href="../parser.html#Parser.KEY_VALUE_DEFINITIONS">KEY_VALUE_DEFINITIONS</a></dd>
                 <dd id="Databricks.Parser.QUERY_MODIFIER_PARSERS" class="variable"><a href="../parser.html#Parser.QUERY_MODIFIER_PARSERS">QUERY_MODIFIER_PARSERS</a></dd>
                 <dd id="Databricks.Parser.SET_PARSERS" class="variable"><a href="../parser.html#Parser.SET_PARSERS">SET_PARSERS</a></dd>
                 <dd id="Databricks.Parser.SHOW_PARSERS" class="variable"><a href="../parser.html#Parser.SHOW_PARSERS">SHOW_PARSERS</a></dd>
                 <dd id="Databricks.Parser.TYPE_LITERAL_PARSERS" class="variable"><a href="../parser.html#Parser.TYPE_LITERAL_PARSERS">TYPE_LITERAL_PARSERS</a></dd>
-                <dd id="Databricks.Parser.MODIFIABLES" class="variable"><a href="../parser.html#Parser.MODIFIABLES">MODIFIABLES</a></dd>
                 <dd id="Databricks.Parser.DDL_SELECT_TOKENS" class="variable"><a href="../parser.html#Parser.DDL_SELECT_TOKENS">DDL_SELECT_TOKENS</a></dd>
                 <dd id="Databricks.Parser.PRE_VOLATILE_TOKENS" class="variable"><a href="../parser.html#Parser.PRE_VOLATILE_TOKENS">PRE_VOLATILE_TOKENS</a></dd>
                 <dd id="Databricks.Parser.TRANSACTION_KIND" class="variable"><a href="../parser.html#Parser.TRANSACTION_KIND">TRANSACTION_KIND</a></dd>
@@ -872,6 +872,7 @@ Default: 3</li>
                 <dd id="Databricks.Parser.UNION_MODIFIERS" class="variable"><a href="../parser.html#Parser.UNION_MODIFIERS">UNION_MODIFIERS</a></dd>
                 <dd id="Databricks.Parser.NO_PAREN_IF_COMMANDS" class="variable"><a href="../parser.html#Parser.NO_PAREN_IF_COMMANDS">NO_PAREN_IF_COMMANDS</a></dd>
                 <dd id="Databricks.Parser.JSON_ARROWS_REQUIRE_JSON_TYPE" class="variable"><a href="../parser.html#Parser.JSON_ARROWS_REQUIRE_JSON_TYPE">JSON_ARROWS_REQUIRE_JSON_TYPE</a></dd>
+                <dd id="Databricks.Parser.SUPPORTS_IMPLICIT_UNNEST" class="variable"><a href="../parser.html#Parser.SUPPORTS_IMPLICIT_UNNEST">SUPPORTS_IMPLICIT_UNNEST</a></dd>
                 <dd id="Databricks.Parser.error_level" class="variable"><a href="../parser.html#Parser.error_level">error_level</a></dd>
                 <dd id="Databricks.Parser.error_message_context" class="variable"><a href="../parser.html#Parser.error_message_context">error_message_context</a></dd>
                 <dd id="Databricks.Parser.max_errors" class="variable"><a href="../parser.html#Parser.max_errors">max_errors</a></dd>
@@ -945,7 +946,7 @@ Default: 3</li>
 </span><span id="Databricks.Generator-70"><a href="#Databricks.Generator-70"><span class="linenos">70</span></a>
 </span><span id="Databricks.Generator-71"><a href="#Databricks.Generator-71"><span class="linenos">71</span></a>        <span class="k">def</span> <span class="nf">columndef_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ColumnDef</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="Databricks.Generator-72"><a href="#Databricks.Generator-72"><span class="linenos">72</span></a>            <span class="n">constraint</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">GeneratedAsIdentityColumnConstraint</span><span class="p">)</span>
-</span><span id="Databricks.Generator-73"><a href="#Databricks.Generator-73"><span class="linenos">73</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kind&quot;</span><span class="p">)</span>
+</span><span id="Databricks.Generator-73"><a href="#Databricks.Generator-73"><span class="linenos">73</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">kind</span>
 </span><span id="Databricks.Generator-74"><a href="#Databricks.Generator-74"><span class="linenos">74</span></a>            <span class="k">if</span> <span class="p">(</span>
 </span><span id="Databricks.Generator-75"><a href="#Databricks.Generator-75"><span class="linenos">75</span></a>                <span class="n">constraint</span>
 </span><span id="Databricks.Generator-76"><a href="#Databricks.Generator-76"><span class="linenos">76</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">)</span>
@@ -1041,7 +1042,7 @@ Default: True</li>
     <a class="headerlink" href="#Databricks.Generator.columndef_sql"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Databricks.Generator.columndef_sql-71"><a href="#Databricks.Generator.columndef_sql-71"><span class="linenos">71</span></a>        <span class="k">def</span> <span class="nf">columndef_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ColumnDef</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="Databricks.Generator.columndef_sql-72"><a href="#Databricks.Generator.columndef_sql-72"><span class="linenos">72</span></a>            <span class="n">constraint</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">GeneratedAsIdentityColumnConstraint</span><span class="p">)</span>
-</span><span id="Databricks.Generator.columndef_sql-73"><a href="#Databricks.Generator.columndef_sql-73"><span class="linenos">73</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;kind&quot;</span><span class="p">)</span>
+</span><span id="Databricks.Generator.columndef_sql-73"><a href="#Databricks.Generator.columndef_sql-73"><span class="linenos">73</span></a>            <span class="n">kind</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">kind</span>
 </span><span id="Databricks.Generator.columndef_sql-74"><a href="#Databricks.Generator.columndef_sql-74"><span class="linenos">74</span></a>            <span class="k">if</span> <span class="p">(</span>
 </span><span id="Databricks.Generator.columndef_sql-75"><a href="#Databricks.Generator.columndef_sql-75"><span class="linenos">75</span></a>                <span class="n">constraint</span>
 </span><span id="Databricks.Generator.columndef_sql-76"><a href="#Databricks.Generator.columndef_sql-76"><span class="linenos">76</span></a>                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">exp</span><span class="o">.</span><span class="n">DataType</span><span class="p">)</span>
@@ -1149,7 +1150,6 @@ Default: True</li>
                 <dd id="Databricks.Generator.WITH_SEPARATED_COMMENTS" class="variable"><a href="../generator.html#Generator.WITH_SEPARATED_COMMENTS">WITH_SEPARATED_COMMENTS</a></dd>
                 <dd id="Databricks.Generator.EXCLUDE_COMMENTS" class="variable"><a href="../generator.html#Generator.EXCLUDE_COMMENTS">EXCLUDE_COMMENTS</a></dd>
                 <dd id="Databricks.Generator.UNWRAPPED_INTERVAL_VALUES" class="variable"><a href="../generator.html#Generator.UNWRAPPED_INTERVAL_VALUES">UNWRAPPED_INTERVAL_VALUES</a></dd>
-                <dd id="Databricks.Generator.KEY_VALUE_DEFINITIONS" class="variable"><a href="../generator.html#Generator.KEY_VALUE_DEFINITIONS">KEY_VALUE_DEFINITIONS</a></dd>
                 <dd id="Databricks.Generator.SENTINEL_LINE_BREAK" class="variable"><a href="../generator.html#Generator.SENTINEL_LINE_BREAK">SENTINEL_LINE_BREAK</a></dd>
                 <dd id="Databricks.Generator.pretty" class="variable"><a href="../generator.html#Generator.pretty">pretty</a></dd>
                 <dd id="Databricks.Generator.identify" class="variable"><a href="../generator.html#Generator.identify">identify</a></dd>
@@ -1250,6 +1250,7 @@ Default: True</li>
                 <dd id="Databricks.Generator.withtablehint_sql" class="function"><a href="../generator.html#Generator.withtablehint_sql">withtablehint_sql</a></dd>
                 <dd id="Databricks.Generator.indextablehint_sql" class="function"><a href="../generator.html#Generator.indextablehint_sql">indextablehint_sql</a></dd>
                 <dd id="Databricks.Generator.historicaldata_sql" class="function"><a href="../generator.html#Generator.historicaldata_sql">historicaldata_sql</a></dd>
+                <dd id="Databricks.Generator.table_parts" class="function"><a href="../generator.html#Generator.table_parts">table_parts</a></dd>
                 <dd id="Databricks.Generator.table_sql" class="function"><a href="../generator.html#Generator.table_sql">table_sql</a></dd>
                 <dd id="Databricks.Generator.tablesample_sql" class="function"><a href="../generator.html#Generator.tablesample_sql">tablesample_sql</a></dd>
                 <dd id="Databricks.Generator.pivot_sql" class="function"><a href="../generator.html#Generator.pivot_sql">pivot_sql</a></dd>
@@ -1299,6 +1300,7 @@ Default: True</li>
                 <dd id="Databricks.Generator.union_sql" class="function"><a href="../generator.html#Generator.union_sql">union_sql</a></dd>
                 <dd id="Databricks.Generator.union_op" class="function"><a href="../generator.html#Generator.union_op">union_op</a></dd>
                 <dd id="Databricks.Generator.unnest_sql" class="function"><a href="../generator.html#Generator.unnest_sql">unnest_sql</a></dd>
+                <dd id="Databricks.Generator.prewhere_sql" class="function"><a href="../generator.html#Generator.prewhere_sql">prewhere_sql</a></dd>
                 <dd id="Databricks.Generator.where_sql" class="function"><a href="../generator.html#Generator.where_sql">where_sql</a></dd>
                 <dd id="Databricks.Generator.window_sql" class="function"><a href="../generator.html#Generator.window_sql">window_sql</a></dd>
                 <dd id="Databricks.Generator.partition_by_sql" class="function"><a href="../generator.html#Generator.partition_by_sql">partition_by_sql</a></dd>
@@ -1452,6 +1454,7 @@ Default: True</li>
                 <dd id="Databricks.Generator.unixdate_sql" class="function"><a href="../generator.html#Generator.unixdate_sql">unixdate_sql</a></dd>
                 <dd id="Databricks.Generator.lastday_sql" class="function"><a href="../generator.html#Generator.lastday_sql">lastday_sql</a></dd>
                 <dd id="Databricks.Generator.arrayany_sql" class="function"><a href="../generator.html#Generator.arrayany_sql">arrayany_sql</a></dd>
+                <dd id="Databricks.Generator.generateseries_sql" class="function"><a href="../generator.html#Generator.generateseries_sql">generateseries_sql</a></dd>
 
             </div>
             <div><dt><a href="spark.html#Spark.Generator">sqlglot.dialects.spark.Spark.Generator</a></dt>

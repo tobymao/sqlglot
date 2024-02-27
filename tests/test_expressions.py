@@ -313,6 +313,18 @@ class TestExpressions(unittest.TestCase):
             ).sql(),
             "SELECT * FROM (SELECT a FROM tbl1) WHERE b > 100",
         )
+        self.assertEqual(
+            exp.replace_placeholders(
+                parse_one("select * from foo WHERE x > ? AND y IS ?"), 0, False
+            ).sql(),
+            "SELECT * FROM foo WHERE x > 0 AND y IS FALSE",
+        )
+        self.assertEqual(
+            exp.replace_placeholders(
+                parse_one("select * from foo WHERE x > :int1 AND y IS :bool1"), int1=0, bool1=False
+            ).sql(),
+            "SELECT * FROM foo WHERE x > 0 AND y IS FALSE",
+        )
 
     def test_function_building(self):
         self.assertEqual(exp.func("max", 1).sql(), "MAX(1)")

@@ -17,7 +17,7 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
-OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Sequence[str] | str]]
+OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Union[t.Sequence[str], str]]]
 
 
 def build_var_map(args: t.List) -> exp.StarMap | exp.VarMap:

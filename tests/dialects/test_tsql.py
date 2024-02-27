@@ -87,7 +87,7 @@ class TestTSQL(Validator):
         ]
         for query in raising_queries:
             with self.assertRaises(ParseError, msg=f"When running '{query}'"):
-                self.parse_one(query, read="tsql")
+                self.parse_one(query)
 
         logger = logging.getLogger("sqlglot")
         with self.assertLogs(logger) as cm:

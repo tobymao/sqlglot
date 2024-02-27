@@ -944,13 +944,14 @@ class Parser(metaclass=_Parser):
     PRE_VOLATILE_TOKENS = {TokenType.CREATE, TokenType.REPLACE, TokenType.UNIQUE}
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
-    TRANSACTION_CHARACTERISTICS = {
-        "ISOLATION LEVEL REPEATABLE READ",
-        "ISOLATION LEVEL READ COMMITTED",
-        "ISOLATION LEVEL READ UNCOMMITTED",
-        "ISOLATION LEVEL SERIALIZABLE",
-        "READ WRITE",
-        "READ ONLY",
+    TRANSACTION_CHARACTERISTICS: t.Dict[str, t.Sequence[t.Sequence[str] | str]] = {
+        "ISOLATION": (
+            ("LEVEL", "REPEATABLE", "READ"),
+            ("LEVEL", "READ", "COMMITTED"),
+            ("LEVEL", "READ", "UNCOMITTED"),
+            ("LEVEL", "SERIALIZABLE"),
+        ),
+        "READ": ("WRITE", "ONLY"),
     }
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
@@ -2516,22 +2517,6 @@ class Parser(metaclass=_Parser):
             this = self._implicit_unnests_to_explicit(this)
 
         return this
-
-    def _return_option_with_value(
-        self,
-        option_type: t.Optional[t.Union[exp.Expression, str]] = None,
-        option_value: t.Optional[t.Union[str, exp.Expression]] = None,
-    ) -> t.Optional[exp.QueryOption]:
-        option_type = self._prev.text.upper() if option_type is None else option_type
-        if isinstance(option_type, str):
-            option_type = self.expression(exp.Var, this=option_type)
-        if isinstance(option_value, str):
-            option_value = self.expression(exp.Var, this=option_value)
-        return self.expression(
-            exp.QueryOption,
-            this=option_type,
-            expression=option_value if option_value is not None else None,
-        )
 
     def _parse_hint(self) -> t.Optional[exp.Hint]:
         if self._match(TokenType.HINT):
@@ -5692,11 +5677,29 @@ class Parser(metaclass=_Parser):
 
         return set_
 
-    def _parse_var_from_options(self, options: t.Collection[str]) -> t.Optional[exp.Var]:
-        for option in options:
-            if self._match_text_seq(*option.split(" ")):
-                return exp.var(option)
-        return None
+    def _parse_var_from_options(
+        self, options: t.Dict[str, t.Sequence[t.Sequence[str] | str]]
+    ) -> t.Optional[exp.Var]:
+        start = self._curr
+        if not start:
+            return None
+
+        option = start.text.upper()
+        continuations = options.get(option)
+
+        self._advance()
+        for keywords in continuations or []:
+            if isinstance(keywords, str):
+                keywords = (keywords,)
+
+            if self._match_text_seq(*keywords):
+                option = f"{option} {' '.join(keywords)}"
+                break
+        else:
+            if continuations:
+                self.raise_error(f"Unknown option {option}")
+
+        return exp.var(option)
 
     def _parse_as_command(self, start: Token) -> exp.Command:
         while self._curr:

@@ -1186,12 +1186,8 @@ class Tokenizer(metaclass=_Tokenizer):
             if self._peek.isdigit():
                 self._advance()
             elif self._peek == "." and not decimal:
-                after = self.peek(1)
-                if after.isdigit() or not (after.isalpha() or after == "_"):
-                    decimal = True
-                    self._advance()
-                else:
-                    return self._add(TokenType.VAR)
+                decimal = True
+                self._advance()
             elif self._peek in ("-", "+") and scientific == 1:
                 scientific += 1
                 self._advance()

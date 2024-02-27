@@ -46,6 +46,10 @@ class TestBigQuery(Validator):
         self.assertEqual(table.db, "_y")
         self.assertEqual(table.name, "z")
 
+        table = parse_one("x-0._y", dialect="bigquery", into=exp.Table)
+        self.assertEqual(table.db, "x-0")
+        self.assertEqual(table.name, "_y")
+
         self.validate_identity("SELECT * FROM x-0.y")
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql(), '"x"."y"."z"')
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")

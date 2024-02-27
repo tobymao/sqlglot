@@ -473,6 +473,19 @@ class BigQuery(Dialect):
                 schema=schema, is_db_reference=is_db_reference, wildcard=True
             )
 
+            # proj-1.db.tbl -- `1.` is tokenized as a float so we need to unravel it here
+            if not table.catalog:
+                if table.db:
+                    parts = table.db.split(".")
+                    if len(parts) == 2 and not table.args["db"].quoted:
+                        table.set("catalog", exp.Identifier(this=parts[0]))
+                        table.set("db", exp.Identifier(this=parts[1]))
+                else:
+                    parts = table.name.split(".")
+                    if len(parts) == 2 and not table.args["this"].quoted:
+                        table.set("db", exp.Identifier(this=parts[0]))
+                        table.set("this", exp.Identifier(this=parts[1]))
+
             if isinstance(table.this, exp.Identifier) and "." in table.name:
                 catalog, db, this, *rest = (
                     t.cast(t.Optional[exp.Expression], exp.to_identifier(x, quoted=True))

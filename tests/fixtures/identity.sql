@@ -196,10 +196,10 @@ SET LOCAL variable = value
 @"x"
 COMMIT
 USE db
-USE role x
-USE warehouse x
-USE database x
-USE schema x.y
+USE ROLE x
+USE WAREHOUSE x
+USE DATABASE x
+USE SCHEMA x.y
 NOT 1
 NOT NOT 1
 SELECT * FROM test

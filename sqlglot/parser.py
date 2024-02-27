@@ -17,6 +17,8 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
+OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Union[t.Sequence[str], str]]]
+
 
 def build_var_map(args: t.List) -> exp.StarMap | exp.VarMap:
     if len(args) == 1 and args[0].is_star:
@@ -630,8 +632,7 @@ class Parser(metaclass=_Parser):
         TokenType.TRUNCATE: lambda self: self._parse_truncate_table(),
         TokenType.USE: lambda self: self.expression(
             exp.Use,
-            kind=self._match_texts(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"))
-            and exp.var(self._prev.text),
+            kind=self._parse_var_from_options(self.USABLES, raise_unmatched=False),
             this=self._parse_table(schema=False),
         ),
     }
@@ -947,7 +948,7 @@ class Parser(metaclass=_Parser):
     PRE_VOLATILE_TOKENS = {TokenType.CREATE, TokenType.REPLACE, TokenType.UNIQUE}
 
     TRANSACTION_KIND = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
-    TRANSACTION_CHARACTERISTICS: t.Dict[str, t.Sequence[t.Sequence[str] | str]] = {
+    TRANSACTION_CHARACTERISTICS: OPTIONS_TYPE = {
         "ISOLATION": (
             ("LEVEL", "REPEATABLE", "READ"),
             ("LEVEL", "READ", "COMMITTED"),
@@ -956,6 +957,8 @@ class Parser(metaclass=_Parser):
         ),
         "READ": ("WRITE", "ONLY"),
     }
+
+    USABLES: OPTIONS_TYPE = dict.fromkeys(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"), tuple())
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
@@ -5691,7 +5694,7 @@ class Parser(metaclass=_Parser):
         return set_
 
     def _parse_var_from_options(
-        self, options: t.Dict[str, t.Sequence[t.Sequence[str] | str]]
+        self, options: OPTIONS_TYPE, raise_unmatched: bool = True
     ) -> t.Optional[exp.Var]:
         start = self._curr
         if not start:
@@ -5700,6 +5703,7 @@ class Parser(metaclass=_Parser):
         option = start.text.upper()
         continuations = options.get(option)
 
+        index = self._index
         self._advance()
         for keywords in continuations or []:
             if isinstance(keywords, str):
@@ -5709,8 +5713,12 @@ class Parser(metaclass=_Parser):
                 option = f"{option} {' '.join(keywords)}"
                 break
         else:
-            if continuations:
-                self.raise_error(f"Unknown option {option}")
+            if continuations or continuations is None:
+                if raise_unmatched:
+                    self.raise_error(f"Unknown option {option}")
+
+                self._retreat(index)
+                return None
 
         return exp.var(option)
 

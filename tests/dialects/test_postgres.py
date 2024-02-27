@@ -794,8 +794,8 @@ class TestPostgres(Validator):
             "CREATE INDEX index_ci_pipelines_on_project_idandrefandiddesc ON public.ci_pipelines USING btree(project_id, ref, id DESC)"
         )
         self.validate_identity(
-            "TRUNCATE TABLE ONLY t1, t2*, ONLY t3, t4, t5*",
-            "TRUNCATE TABLE ONLY t1, t2, ONLY t3, t4, t5",
+            "TRUNCATE TABLE ONLY t1, t2*, ONLY t3, t4, t5* RESTART IDENTITY CASCADE",
+            "TRUNCATE TABLE ONLY t1, t2, ONLY t3, t4, t5 RESTART IDENTITY CASCADE",
         )
 
         with self.assertRaises(ParseError):

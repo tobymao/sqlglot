@@ -66,10 +66,9 @@ BIT_TYPES = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
 # Unsupported options:
 # - OPTIMIZE FOR ( @variable_name { UNKNOWN | = <literal_constant> } [ , ...n ] )
 # - TABLE HINT
-OPTIONS: t.Dict[str, t.Sequence[t.Sequence[str] | str]] = {
-    **{
-        option: tuple()
-        for option in (
+OPTIONS: parser.OPTIONS_TYPE = {
+    **dict.fromkeys(
+        (
             "DISABLE_OPTIMIZED_PLAN_FORCING",
             "FAST",
             "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX",
@@ -81,8 +80,9 @@ OPTIONS: t.Dict[str, t.Sequence[t.Sequence[str] | str]] = {
             "NO_PERFORMANCE_SPOOL",
             "QUERYTRACEON",
             "RECOMPILE",
-        )
-    },
+        ),
+        tuple(),
+    ),
     "CONCAT": ("UNION",),
     "DISABLE": ("EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"),
     "EXPAND": ("VIEWS",),

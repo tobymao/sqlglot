@@ -416,8 +416,8 @@ class MySQL(Dialect):
             "SPATIAL",
         }
 
-        PROFILE_TYPES: t.Dict[str, t.Sequence[t.Sequence[str] | str]] = {
-            **{profile: tuple() for profile in ("ALL", "CPU", "IPC", "MEMORY", "SOURCE", "SWAPS")},
+        PROFILE_TYPES: parser.OPTIONS_TYPE = {
+            **dict.fromkeys(("ALL", "CPU", "IPC", "MEMORY", "SOURCE", "SWAPS"), tuple()),
             "BLOCK": ("IO",),
             "CONTEXT": ("SWITCHES",),
             "PAGE": ("FAULTS",),

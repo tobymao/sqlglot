@@ -2517,6 +2517,22 @@ class Parser(metaclass=_Parser):
 
         return this
 
+    def _return_option_with_value(
+        self,
+        option_type: t.Optional[t.Union[exp.Expression, str]] = None,
+        option_value: t.Optional[t.Union[str, exp.Expression]] = None,
+    ) -> t.Optional[exp.QueryOption]:
+        option_type = self._prev.text.upper() if option_type is None else option_type
+        if isinstance(option_type, str):
+            option_type = self.expression(exp.Var, this=option_type)
+        if isinstance(option_value, str):
+            option_value = self.expression(exp.Var, this=option_value)
+        return self.expression(
+            exp.QueryOption,
+            this=option_type,
+            expression=option_value if option_value is not None else None,
+        )
+
     def _parse_hint(self) -> t.Optional[exp.Hint]:
         if self._match(TokenType.HINT):
             hints = []

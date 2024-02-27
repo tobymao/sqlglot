@@ -391,6 +391,7 @@ class TestClickhouse(Validator):
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
+        self.validate_identity("WITH ['c'] AS field_names SELECT field_names")
         self.validate_identity("WITH SUM(bytes) AS foo SELECT foo FROM system.parts")
         self.validate_identity("WITH (SELECT foo) AS bar SELECT bar + 5")
         self.validate_identity("WITH test1 AS (SELECT i + 1, j + 1 FROM test1) SELECT * FROM test1")

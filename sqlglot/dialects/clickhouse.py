@@ -392,7 +392,7 @@ class ClickHouse(Dialect):
 
                 return self.expression(
                     exp.CTE,
-                    this=self._parse_field(),
+                    this=self._parse_conjunction(),
                     alias=self._parse_table_alias(),
                     scalar=True,
                 )

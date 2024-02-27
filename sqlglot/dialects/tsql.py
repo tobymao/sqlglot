@@ -894,7 +894,7 @@ class TSQL(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
-        def queryoption_sql(self, expression: exp.QueryOption):
+        def queryoption_sql(self, expression: exp.QueryOption) -> str:
             option_type = self.sql(expression, "this")
             option_value = self.sql(expression, "expression")
             if option_value:

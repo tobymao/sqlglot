@@ -469,13 +469,8 @@ impl<'a> TokenizerState<'a> {
             if self.peek_char.is_digit(10) {
                 self.advance(1)?;
             } else if self.peek_char == '.' && !decimal {
-                let after = self.peek(1)?;
-                if after.is_digit(10) || !(after.is_alphabetic() || after == '_') {
-                    decimal = true;
-                    self.advance(1)?;
-                } else {
-                    return self.add(self.token_types.var, None);
-                }
+                decimal = true;
+                self.advance(1)?;
             } else if (self.peek_char == '-' || self.peek_char == '+') && scientific == 1 {
                 scientific += 1;
                 self.advance(1)?;

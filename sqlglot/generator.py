@@ -2068,6 +2068,10 @@ class Generator(metaclass=_Generator):
             else []
         )
 
+        options = self.expressions(expression, key="options")
+        if options:
+            options = f" OPTION{self.wrap(options)}"
+
         return csv(
             *sqls,
             *[self.sql(join) for join in expression.args.get("joins") or []],
@@ -2082,8 +2086,12 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "order"),
             *offset_limit_modifiers,
             *self.after_limit_modifiers(expression),
+            options,
             sep="",
         )
+
+    def queryoption_sql(self, expression: exp.QueryOption) -> str:
+        return ""
 
     def offset_limit_modifiers(
         self, expression: exp.Expression, fetch: bool, limit: t.Optional[exp.Fetch | exp.Limit]

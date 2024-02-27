@@ -2599,7 +2599,14 @@ QUERY_MODIFIERS = {
     "sample": False,
     "settings": False,
     "format": False,
+    "options": False,
 }
+
+
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/option-clause-transact-sql?view=sql-server-ver16
+# https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-query?view=sql-server-ver16
+class QueryOption(Expression):
+    arg_types = {"this": True, "expression": False}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table?view=sql-server-ver16
@@ -5534,7 +5541,13 @@ class Use(Expression):
 
 
 class Merge(Expression):
-    arg_types = {"this": True, "using": True, "on": True, "expressions": True, "with": False}
+    arg_types = {
+        "this": True,
+        "using": True,
+        "on": True,
+        "expressions": True,
+        "with": False,
+    }
 
 
 class When(Func):

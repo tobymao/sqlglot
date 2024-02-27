@@ -682,9 +682,7 @@ class TSQL(Dialect):
             return self.expression(exp.UniqueColumnConstraint, this=this)
 
         def _parse_partition(self) -> t.Optional[exp.Partition]:
-            if not self._match_pair(TokenType.WITH, TokenType.L_PAREN) or not self._match_text_seq(
-                "PARTITIONS"
-            ):
+            if not self._match_text_seq("WITH", "(", "PARTITIONS"):
                 return None
 
             def parse_range():

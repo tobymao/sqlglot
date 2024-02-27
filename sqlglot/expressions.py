@@ -2322,6 +2322,10 @@ class LocationProperty(Property):
     arg_types = {"this": True}
 
 
+class LockProperty(Property):
+    arg_types = {"this": True}
+
+
 class LockingProperty(Property):
     arg_types = {
         "this": False,
@@ -2505,6 +2509,7 @@ class Properties(Expression):
         "FORMAT": FileFormatProperty,
         "LANGUAGE": LanguageProperty,
         "LOCATION": LocationProperty,
+        "LOCK": LockProperty,
         "PARTITIONED_BY": PartitionedByProperty,
         "RETURNS": ReturnsProperty,
         "ROW_FORMAT": RowFormatProperty,
@@ -3923,7 +3928,13 @@ class Rollback(Expression):
 
 
 class AlterTable(Expression):
-    arg_types = {"this": True, "actions": True, "exists": False, "only": False}
+    arg_types = {
+        "this": True,
+        "actions": True,
+        "exists": False,
+        "only": False,
+        "options": False,
+    }
 
 
 class AddConstraint(Expression):

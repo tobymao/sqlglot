@@ -5281,6 +5281,9 @@ class Parser(metaclass=_Parser):
     def _parse_var_or_string(self) -> t.Optional[exp.Expression]:
         return self._parse_var() or self._parse_string()
 
+    def _parse_primary_or_var(self) -> t.Optional[exp.Expression]:
+        return self._parse_primary() or self._parse_var(any_token=True)
+
     def _parse_null(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.NULL_TOKENS):
             return self.PRIMARY_PARSERS[TokenType.NULL](self, self._prev)
@@ -5299,16 +5302,12 @@ class Parser(metaclass=_Parser):
         return self._parse_placeholder()
 
     def _parse_parameter(self) -> exp.Parameter:
-        def _parse_parameter_part() -> t.Optional[exp.Expression]:
-            return (
-                self._parse_identifier() or self._parse_primary() or self._parse_var(any_token=True)
-            )
-
         self._match(TokenType.L_BRACE)
-        this = _parse_parameter_part()
-        expression = self._match(TokenType.COLON) and _parse_parameter_part()
+        this = self._parse_identifier() or self._parse_primary_or_var()
+        expression = self._match(TokenType.COLON) and (
+            self._parse_identifier() or self._parse_primary_or_var()
+        )
         self._match(TokenType.R_BRACE)
-
         return self.expression(exp.Parameter, this=this, expression=expression)
 
     def _parse_placeholder(self) -> t.Optional[exp.Expression]:
@@ -5551,6 +5550,7 @@ class Parser(metaclass=_Parser):
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:
             actions = ensure_list(parser(self))
+            options = self._parse_csv(self._parse_property)
 
             if not self._curr and actions:
                 return self.expression(
@@ -5559,6 +5559,7 @@ class Parser(metaclass=_Parser):
                     exists=exists,
                     actions=actions,
                     only=only,
+                    options=options,
                 )
 
         return self._parse_as_command(start)

@@ -470,7 +470,7 @@ impl<'a> TokenizerState<'a> {
                 self.advance(1)?;
             } else if self.peek_char == '.' && !decimal {
                 let after = self.peek(1)?;
-                if after.is_digit(10) || !after.is_alphabetic() {
+                if after.is_digit(10) || !(after.is_alphabetic() || after == '_') {
                     decimal = true;
                     self.advance(1)?;
                 } else {

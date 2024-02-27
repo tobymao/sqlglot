@@ -1187,7 +1187,7 @@ class Tokenizer(metaclass=_Tokenizer):
                 self._advance()
             elif self._peek == "." and not decimal:
                 after = self.peek(1)
-                if after.isdigit() or not after.isalpha():
+                if after.isdigit() or not (after.isalpha() or after == "_"):
                     decimal = True
                     self._advance()
                 else:

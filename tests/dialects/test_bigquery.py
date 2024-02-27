@@ -7,6 +7,7 @@ from sqlglot import (
     UnsupportedError,
     exp,
     parse,
+    parse_one,
     transpile,
 )
 from sqlglot.helper import logger as helper_logger
@@ -39,6 +40,11 @@ class TestBigQuery(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
+
+        table = parse_one("x-0._y.z", dialect="bigquery", into=exp.Table)
+        self.assertEqual(table.catalog, "x-0")
+        self.assertEqual(table.db, "_y")
+        self.assertEqual(table.name, "z")
 
         self.validate_identity("SELECT * FROM x-0.y")
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql(), '"x"."y"."z"')

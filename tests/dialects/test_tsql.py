@@ -91,7 +91,7 @@ class TestTSQL(Validator):
 
         logger = logging.getLogger("sqlglot")
         with self.assertLogs(logger) as cm:
-            parse_one("ALTER TABLE table2 OPTION(HASH GROUP)")
+            parse_one("ALTER TABLE table2 OPTION(HASH GROUP)", read="tsql")
             self.assertEqual(len(cm.output), 1)
             msg = cm.output[0]
             self.assertIn("Falling back to parsing as a 'Command'", msg)

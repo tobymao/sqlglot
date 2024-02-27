@@ -5939,10 +5939,9 @@ class Parser(metaclass=_Parser):
 
         exists = self._parse_exists(not_=False)
 
-        def _parse_tables() -> t.Optional[exp.Expression]:
-            return self._parse_table(schema=True, is_db_reference=is_database)
-
-        expressions = self._parse_csv(_parse_tables)
+        expressions = self._parse_csv(
+            lambda: self._parse_table(schema=True, is_db_reference=is_database)
+        )
 
         cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 

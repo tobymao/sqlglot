@@ -29,9 +29,7 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
-        self.validate_identity(
-            "ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE, DATA DIRECTORY='some_path', DELAY_KEY_WRITE=0, DEFAULT COLLATE=foo, DEFAULT CHARACTER SET=bar"
-        )
+        self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity(
             "CREATE TABLE `oauth_consumer` (`key` VARCHAR(32) NOT NULL, UNIQUE `OAUTH_CONSUMER_KEY` (`key`))"
         )

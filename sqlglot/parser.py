@@ -937,7 +937,6 @@ class Parser(metaclass=_Parser):
     }
 
     SHOW_PARSERS: t.Dict[str, t.Callable] = {}
-    TABLE_OPTION_PARSERS: t.Dict[str, t.Callable[..., exp.Expression]] = {}
 
     TYPE_LITERAL_PARSERS = {
         exp.DataType.Type.JSON: lambda self, this, _: self.expression(exp.ParseJSON, this=this),
@@ -5535,24 +5534,6 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("TO")
         return self.expression(exp.RenameTable, this=self._parse_table(schema=True))
 
-    def _parse_table_options(self) -> t.Optional[t.List[exp.Expression]]:
-        if not self._curr or not self.TABLE_OPTION_PARSERS:
-            return None
-
-        options = []
-        while self._match_texts(self.TABLE_OPTION_PARSERS):
-            index = self._index - 1
-
-            parser = self.TABLE_OPTION_PARSERS[self._prev.text.upper()]
-            if parser is None:
-                self._retreat(index)
-                break
-
-            options.append(parser(self))
-            self._match(TokenType.COMMA)
-
-        return options
-
     def _parse_alter(self) -> exp.AlterTable | exp.Command:
         start = self._prev
 
@@ -5569,7 +5550,7 @@ class Parser(metaclass=_Parser):
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:
             actions = ensure_list(parser(self))
-            options = self._parse_table_options()
+            options = self._parse_csv(self._parse_property)
 
             if not self._curr and actions:
                 return self.expression(

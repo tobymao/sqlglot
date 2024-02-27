@@ -388,6 +388,7 @@ class Generator(metaclass=_Generator):
         exp.LanguageProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LikeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LocationProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.LockProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LockingProperty: exp.Properties.Location.POST_ALIAS,
         exp.LogProperty: exp.Properties.Location.POST_NAME,
         exp.MaterializedProperty: exp.Properties.Location.POST_CREATE,

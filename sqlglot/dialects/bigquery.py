@@ -449,8 +449,11 @@ class BigQuery(Dialect):
             if isinstance(this, exp.Identifier):
                 table_name = this.name
                 while self._match(TokenType.DASH, advance=False) and self._next:
-                    self._advance(2)
-                    table_name += f"-{self._prev.text}"
+                    text = ""
+                    while self._curr and self._curr.token_type != TokenType.DOT:
+                        self._advance()
+                        text += self._prev.text
+                    table_name += text
 
                 this = exp.Identifier(this=table_name, quoted=this.args.get("quoted"))
             elif isinstance(this, exp.Literal):

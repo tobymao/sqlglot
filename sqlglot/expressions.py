@@ -6951,7 +6951,7 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
         if isinstance(node, Placeholder):
             if node.name:
                 new_name = kwargs.get(node.name)
-                if new_name:
+                if new_name is not None:
                     return convert(new_name)
             else:
                 try:

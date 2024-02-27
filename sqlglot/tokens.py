@@ -302,6 +302,7 @@ class TokenType(AutoName):
     OBJECT_IDENTIFIER = auto()
     OFFSET = auto()
     ON = auto()
+    ONLY = auto()
     OPERATOR = auto()
     ORDER_BY = auto()
     ORDER_SIBLINGS_BY = auto()
@@ -354,6 +355,7 @@ class TokenType(AutoName):
     TOP = auto()
     THEN = auto()
     TRUE = auto()
+    TRUNCATE = auto()
     UNCACHE = auto()
     UNION = auto()
     UNNEST = auto()
@@ -754,6 +756,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "TEMPORARY": TokenType.TEMPORARY,
         "THEN": TokenType.THEN,
         "TRUE": TokenType.TRUE,
+        "TRUNCATE": TokenType.TRUNCATE,
         "UNION": TokenType.UNION,
         "UNKNOWN": TokenType.UNKNOWN,
         "UNNEST": TokenType.UNNEST,
@@ -862,7 +865,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "GRANT": TokenType.COMMAND,
         "OPTIMIZE": TokenType.COMMAND,
         "PREPARE": TokenType.COMMAND,
-        "TRUNCATE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
         "USER-DEFINED": TokenType.USERDEFINED,
         "FOR VERSION": TokenType.VERSION_SNAPSHOT,

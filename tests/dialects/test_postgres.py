@@ -82,6 +82,7 @@ class TestPostgres(Validator):
         self.validate_identity("CAST(1 AS DECIMAL) / CAST(2 AS DECIMAL) * -100")
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_USER")
+        self.validate_identity("SELECT * FROM ONLY t1")
         self.validate_identity(
             """LAST_VALUE("col1") OVER (ORDER BY "col2" RANGE BETWEEN INTERVAL '1 DAY' PRECEDING AND '1 month' FOLLOWING)"""
         )
@@ -320,6 +321,7 @@ class TestPostgres(Validator):
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
         )
+        self.validate_identity("SELECT * FROM t1*", "SELECT * FROM t1")
 
         self.validate_all(
             "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
@@ -653,6 +655,12 @@ class TestPostgres(Validator):
         self.validate_identity("CREATE TABLE t (c CHAR(2) UNIQUE NOT NULL) INHERITS (t1)")
         self.validate_identity("CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)")
         self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'")
+        self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY")
+        self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY")
+        self.validate_identity("TRUNCATE TABLE t1 CASCADE")
+        self.validate_identity("TRUNCATE TABLE t1 RESTRICT")
+        self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY CASCADE")
+        self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY RESTRICT")
         self.validate_identity(
             "CREATE TABLE cust_part3 PARTITION OF customers FOR VALUES WITH (MODULUS 3, REMAINDER 2)"
         )
@@ -784,6 +792,10 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "CREATE INDEX index_ci_pipelines_on_project_idandrefandiddesc ON public.ci_pipelines USING btree(project_id, ref, id DESC)"
+        )
+        self.validate_identity(
+            "TRUNCATE TABLE ONLY t1, t2*, ONLY t3, t4, t5* RESTART IDENTITY CASCADE",
+            "TRUNCATE TABLE ONLY t1, t2, ONLY t3, t4, t5 RESTART IDENTITY CASCADE",
         )
 
         with self.assertRaises(ParseError):

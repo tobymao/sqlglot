@@ -281,6 +281,7 @@ class Postgres(Dialect):
             "TEMP": TokenType.TEMPORARY,
             "CSTRING": TokenType.PSEUDO_TYPE,
             "OID": TokenType.OBJECT_IDENTIFIER,
+            "ONLY": TokenType.ONLY,
             "OPERATOR": TokenType.OPERATOR,
             "REGCLASS": TokenType.OBJECT_IDENTIFIER,
             "REGCOLLATION": TokenType.OBJECT_IDENTIFIER,

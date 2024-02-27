@@ -741,6 +741,26 @@ class TSQL(Dialect):
 
             return self.expression(exp.UniqueColumnConstraint, this=this)
 
+        def _parse_partition(self) -> t.Optional[exp.Partition]:
+            if not self._match_text_seq("WITH", "(", "PARTITIONS"):
+                return None
+
+            def parse_range():
+                low = self._parse_bitwise()
+                high = self._parse_bitwise() if self._match_text_seq("TO") else None
+
+                return (
+                    self.expression(exp.PartitionRange, this=low, expression=high) if high else low
+                )
+
+            partition = self.expression(
+                exp.Partition, expressions=self._parse_wrapped_csv(parse_range)
+            )
+
+            self._match_r_paren()
+
+            return partition
+
     class Generator(generator.Generator):
         LIMIT_IS_TOP = True
         QUERY_HINTS = False
@@ -1058,3 +1078,6 @@ class TSQL(Dialect):
                 this_sql = self.sql(this)
             expression_sql = self.sql(expression, "expression")
             return self.func(name, this_sql, expression_sql if expression_sql else None)
+
+        def partition_sql(self, expression: exp.Partition) -> str:
+            return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"

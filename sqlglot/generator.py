@@ -1546,6 +1546,7 @@ class Generator(metaclass=_Generator):
 
     def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
         table = self.table_parts(expression)
+        only = "ONLY " if expression.args.get("only") else ""
         version = self.sql(expression, "version")
         version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")
@@ -1572,7 +1573,7 @@ class Generator(metaclass=_Generator):
         if when:
             table = f"{table} {when}"
 
-        return f"{table}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
+        return f"{only}{table}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
         self,
@@ -3479,3 +3480,29 @@ class Generator(metaclass=_Generator):
         )
 
         return self.function_fallback_sql(expression)
+
+    def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
+        low = self.sql(expression, "this")
+        high = self.sql(expression, "expression")
+
+        return f"{low} TO {high}"
+
+    def truncatetable_sql(self, expression: exp.TruncateTable) -> str:
+        target = "DATABASE" if expression.args.get("is_database") else "TABLE"
+        tables = f" {self.expressions(expression)}"
+
+        exists = " IF EXISTS" if expression.args.get("exists") else ""
+
+        on_cluster = self.sql(expression, "cluster")
+        on_cluster = f" {on_cluster}" if on_cluster else ""
+
+        identity = self.sql(expression, "identity")
+        identity = f" {identity} IDENTITY" if identity else ""
+
+        option = self.sql(expression, "option")
+        option = f" {option}" if option else ""
+
+        partition = self.sql(expression, "partition")
+        partition = f" {partition}" if partition else ""
+
+        return f"TRUNCATE {target}{exists}{tables}{on_cluster}{identity}{option}{partition}"

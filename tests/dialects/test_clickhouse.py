@@ -149,6 +149,9 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "CREATE MATERIALIZED VIEW test_view (id UInt8) TO db.table1 AS SELECT * FROM test_data"
         )
+        self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
+        self.validate_identity("TRUNCATE DATABASE db")
+        self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
 
         self.validate_all(
             "SELECT arrayJoin([1,2,3])",

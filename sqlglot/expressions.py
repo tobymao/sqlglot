@@ -1224,6 +1224,19 @@ class Create(DDL):
         return kind and kind.upper()
 
 
+class TruncateTable(Expression):
+    arg_types = {
+        "expressions": True,
+        "is_database": False,
+        "exists": False,
+        "only": False,
+        "cluster": False,
+        "identity": False,
+        "option": False,
+        "partition": False,
+    }
+
+
 # https://docs.snowflake.com/en/sql-reference/sql/create-clone
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_clone_statement
 # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_copy
@@ -1906,6 +1919,10 @@ class LoadData(Expression):
 
 class Partition(Expression):
     arg_types = {"expressions": True}
+
+
+class PartitionRange(Expression):
+    arg_types = {"this": True, "expression": True}
 
 
 class Fetch(Expression):
@@ -2640,6 +2657,7 @@ class Table(Expression):
         "pattern": False,
         "ordinality": False,
         "when": False,
+        "only": False,
     }
 
     @property

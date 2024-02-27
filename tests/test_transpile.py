@@ -768,7 +768,6 @@ FROM base""",
             "SET -v",
             "SET @user OFF",
             "SHOW TABLES",
-            "TRUNCATE TABLE x",
             "VACUUM FREEZE my_table",
         ):
             with self.subTest(sql):

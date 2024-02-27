@@ -458,6 +458,8 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         )
 
     def test_scope(self):
+        self.assertIn("table", build_scope(parse_one("(SELECT col FROM table)")).sources)
+
         sql = """
         WITH q AS (
           SELECT x.b FROM x

@@ -621,19 +621,23 @@ def _is_derived_table(expression: exp.Subquery) -> bool:
 def _traverse_tables(scope):
     sources = {}
 
+    scope_expression = scope.expression
+    if isinstance(scope_expression, exp.Subquery):
+        scope_expression = scope_expression.unnest()
+
     # Traverse FROMs, JOINs, and LATERALs in the order they are defined
     expressions = []
-    from_ = scope.expression.args.get("from")
+    from_ = scope_expression.args.get("from")
     if from_:
         expressions.append(from_.this)
 
-    for join in scope.expression.args.get("joins") or []:
+    for join in scope_expression.args.get("joins") or []:
         expressions.append(join.this)
 
-    if isinstance(scope.expression, exp.Table):
-        expressions.append(scope.expression)
+    if isinstance(scope_expression, exp.Table):
+        expressions.append(scope_expression)
 
-    expressions.extend(scope.expression.args.get("laterals") or [])
+    expressions.extend(scope_expression.args.get("laterals") or [])
 
     for expression in expressions:
         if isinstance(expression, exp.Table):
@@ -654,7 +658,7 @@ def _traverse_tables(scope):
                 sources[source_name] = expression
 
             # Make sure to not include the joins twice
-            if expression is not scope.expression:
+            if expression is not scope_expression:
                 expressions.extend(join.this for join in expression.args.get("joins") or [])
 
             continue

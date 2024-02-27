@@ -63,74 +63,40 @@ DEFAULT_START_DATE = datetime.date(1900, 1, 1)
 
 BIT_TYPES = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
 
-OPTION_PREFIX_TO_PARSE_FUNCTION = {
-    "LABEL": lambda self: self._generic_parse_option(
-        [
-            lambda: self._match(TokenType.EQ)
-            and self._return_option_with_value("LABEL", self._parse_primary())
-        ],
-    ),
-    "HASH": lambda self: self._generic_parse_option(["GROUP", "UNION", "JOIN"]),
-    "ORDER": lambda self: self._generic_parse_option(["GROUP"]),
-    "CONCAT": lambda self: self._generic_parse_option(["UNION"]),
-    "MERGE": lambda self: self._generic_parse_option(["UNION", "JOIN"]),
-    "LOOP": lambda self: self._generic_parse_option(["JOIN"]),
-    "DISABLE_OPTIMIZED_PLAN_FORCING": lambda self: self._generic_parse_option([]),
-    "EXPAND": lambda self: self._generic_parse_option(["VIEWS"]),
-    "FAST": lambda self: self._generic_parse_option(
-        [lambda: self._return_option_with_value("FAST", self._parse_number())]
-    ),
-    "FORCE": lambda self: self._generic_parse_option(
-        ["ORDER", "EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"]
-    ),
-    "DISABLE": lambda self: self._generic_parse_option(["EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"]),
-    "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX": lambda self: self._generic_parse_option([]),
-    "KEEP": lambda self: self._generic_parse_option(["PLAN"]),
-    "KEEPFIXED": lambda self: self._generic_parse_option(["PLAN"]),
-    "MAX_GRANT_PERCENT": lambda self: self._generic_parse_option(
-        [
-            lambda: self._match(TokenType.EQ)
-            and self._generic_parse_option(
-                [lambda: self._return_option_with_value("MAX_GRANT_PERCENT", self._parse_number())],
-            )
-        ],
-    ),
-    "MIN_GRANT_PERCENT": lambda self: self._generic_parse_option(
-        [
-            lambda: self._match(TokenType.EQ)
-            and self._generic_parse_option(
-                [lambda: self._return_option_with_value("MIN_GRANT_PERCENT", self._parse_number())],
-            )
-        ],
-    ),
-    "MAXDOP": lambda self: self._generic_parse_option(
-        [lambda: self._return_option_with_value("MAXDOP", self._parse_number())]
-    ),
-    "MAXRECURSION": lambda self: self._generic_parse_option(
-        [lambda: self._return_option_with_value("MAXRECURSION", self._parse_number())],
-    ),
-    "NO_PERFORMANCE_SPOOL": lambda self: self._generic_parse_option([]),
-    "OPTIMIZE": lambda self: self._generic_parse_option(
-        [
-            # There is still no support for the following syntax:
-            # OPTIMIZE FOR ( @variable_name { UNKNOWN | = <literal_constant> } [ , ...n ] )
-            lambda: self._match_text_seq("FOR")
-            and self._generic_parse_option(["UNKNOWN"], "OPTIMIZE FOR")
-        ],
-    ),
-    "PARAMETERIZATION": lambda self: self._generic_parse_option(["SIMPLE", "FORCED"]),
-    "QUERYTRACEON": lambda self: self._generic_parse_option(
-        [lambda: self._return_option_with_value("QUERYTRACEON", self._parse_number())],
-    ),
-    "RECOMPILE": lambda self: self._generic_parse_option([]),
-    "ROBUST": lambda self: self._generic_parse_option(["PLAN"]),
-    "USE": lambda self: self._generic_parse_option(
-        [
-            lambda: self._match_text_seq("PLAN")
-            and self._return_option_with_value("USE PLAN", self._parse_primary())
-        ],
-    ),
-    # No support yet for TABLE HINT
+# Unsupported options:
+# - OPTIMIZE FOR ( @variable_name { UNKNOWN | = <literal_constant> } [ , ...n ] )
+# - TABLE HINT
+OPTIONS: t.Dict[str, t.Sequence[t.Sequence[str] | str]] = {
+    **{
+        option: tuple()
+        for option in (
+            "DISABLE_OPTIMIZED_PLAN_FORCING",
+            "FAST",
+            "IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX",
+            "LABEL",
+            "MAXDOP",
+            "MAXRECURSION",
+            "MAX_GRANT_PERCENT",
+            "MIN_GRANT_PERCENT",
+            "NO_PERFORMANCE_SPOOL",
+            "QUERYTRACEON",
+            "RECOMPILE",
+        )
+    },
+    "CONCAT": ("UNION",),
+    "DISABLE": ("EXTERNALPUSHDOWN", "SCALEOUTEXECUTION"),
+    "EXPAND": ("VIEWS",),
+    "FORCE": ("EXTERNALPUSHDOWN", "ORDER", "SCALEOUTEXECUTION"),
+    "HASH": ("GROUP", "JOIN", "UNION"),
+    "KEEP": ("PLAN",),
+    "KEEPFIXED": ("PLAN",),
+    "LOOP": ("JOIN",),
+    "MERGE": ("JOIN", "UNION"),
+    "OPTIMIZE": (("FOR", "UNKNOWN"),),
+    "ORDER": ("GROUP",),
+    "PARAMETERIZATION": ("FORCED", "SIMPLE"),
+    "ROBUST": ("PLAN",),
+    "USE": ("PLAN",),
 }
 
 OPTIONS_THAT_REQUIRE_EQUAL = ("MAX_GRANT_PERCENT", "MIN_GRANT_PERCENT", "LABEL")
@@ -511,10 +477,14 @@ class TSQL(Dialect):
 
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
+        LOG_DEFAULTS_TO_LN = True
+        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
+        STRING_ALIASES = True
+        NO_PAREN_IF_COMMANDS = False
 
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
-            TokenType.OPTION: lambda self: ("options", self._parse_option()),
+            TokenType.OPTION: lambda self: ("options", self._parse_options()),
         }
 
         FUNCTIONS = {
@@ -572,48 +542,23 @@ class TSQL(Dialect):
             TokenType.END: lambda self: self._parse_command(),
         }
 
-        LOG_DEFAULTS_TO_LN = True
+        def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:
+            if not self._match(TokenType.OPTION):
+                return None
 
-        ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
-        STRING_ALIASES = True
-        NO_PAREN_IF_COMMANDS = False
+            def _parse_option() -> t.Optional[exp.Expression]:
+                option = self._parse_var_from_options(OPTIONS)
+                if not option:
+                    return None
 
-        def _generic_parse_option(
-            self,
-            valid_continuations: t.List[t.Union[str, t.Callable]],
-            option_type: t.Optional[str] = None,
-        ) -> t.Optional[exp.QueryOption]:
-            # Handle the special case of options with no continuations.
-            option_type = self._prev.text.upper() if option_type is None else option_type
-            if not valid_continuations:
-                return self._return_option_with_value(
-                    self.expression(exp.Var, this=option_type), None
+                self._match(TokenType.EQ)
+                return self.expression(
+                    exp.QueryOption,
+                    this=option,
+                    expression=self._parse_primary() or self._parse_var(any_token=True),
                 )
 
-            for valid_continuation in valid_continuations:
-                if callable(valid_continuation):
-                    res = valid_continuation()
-                    if res is not None:
-                        return res
-                elif isinstance(valid_continuation, str):
-                    if self._match_text_seq(valid_continuation):
-                        return self._return_option_with_value(
-                            self.expression(exp.Var, this=option_type), valid_continuation
-                        )
-            self.raise_error(f"Invalid {option_type} option")
-            return None
-
-        def _parse_option(self):
-            self._match(TokenType.OPTION)
-            return self._parse_wrapped_csv(self._parse_single_option)
-
-        def _parse_single_option(self) -> t.Optional[exp.Expression]:
-            cur_prefix = self._curr.text.upper()
-            if cur_prefix in OPTION_PREFIX_TO_PARSE_FUNCTION:
-                self._match_text_seq(cur_prefix.upper())
-                return OPTION_PREFIX_TO_PARSE_FUNCTION[cur_prefix](self)
-            self.raise_error("Invalid option type.")
-            return None
+            return self._parse_wrapped_csv(_parse_option)
 
         def _parse_projections(self) -> t.List[exp.Expression]:
             """
@@ -893,12 +838,12 @@ class TSQL(Dialect):
         }
 
         def queryoption_sql(self, expression: exp.QueryOption) -> str:
-            option_type = self.sql(expression, "this")
-            option_value = self.sql(expression, "expression")
-            if option_value:
-                optional_equal_sign = "= " if option_type in OPTIONS_THAT_REQUIRE_EQUAL else ""
-                return f"{option_type} {optional_equal_sign}{option_value}"
-            return option_type
+            option = self.sql(expression, "this")
+            value = self.sql(expression, "expression")
+            if value:
+                optional_equal_sign = "= " if option in OPTIONS_THAT_REQUIRE_EQUAL else ""
+                return f"{option} {optional_equal_sign}{value}"
+            return option
 
         def lateral_op(self, expression: exp.Lateral) -> str:
             cross_apply = expression.args.get("cross_apply")

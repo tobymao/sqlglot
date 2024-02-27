@@ -391,6 +391,11 @@ class MySQL(Dialect):
             "WARNINGS": _show_parser("WARNINGS"),
         }
 
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "LOCK": lambda self: self._parse_property_assignment(exp.LockProperty),
+        }
+
         SET_PARSERS = {
             **parser.Parser.SET_PARSERS,
             "PERSIST": lambda self: self._parse_set_item_assignment("PERSIST"),

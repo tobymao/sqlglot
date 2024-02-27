@@ -388,6 +388,7 @@ class Generator(metaclass=_Generator):
         exp.LanguageProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LikeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LocationProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.LockProperty: exp.Properties.Location.POST_SCHEMA,
         exp.LockingProperty: exp.Properties.Location.POST_ALIAS,
         exp.LogProperty: exp.Properties.Location.POST_NAME,
         exp.MaterializedProperty: exp.Properties.Location.POST_CREATE,
@@ -2833,7 +2834,9 @@ class Generator(metaclass=_Generator):
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         only = " ONLY" if expression.args.get("only") else ""
-        return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')} {actions}"
+        options = self.expressions(expression, key="options")
+        options = f", {options}" if options else ""
+        return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')} {actions}{options}"
 
     def add_column_sql(self, expression: exp.AlterTable) -> str:
         if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:

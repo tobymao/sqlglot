@@ -29,6 +29,7 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (a BIGINT, INDEX USING BTREE (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, FULLTEXT INDEX (b))")
         self.validate_identity("CREATE TABLE foo (a BIGINT, SPATIAL INDEX (b))")
+        self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity(
             "CREATE TABLE `oauth_consumer` (`key` VARCHAR(32) NOT NULL, UNIQUE `OAUTH_CONSUMER_KEY` (`key`))"
         )
@@ -68,6 +69,26 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CREATE OR REPLACE VIEW my_view AS SELECT column1 AS `boo`, column2 AS `foo` FROM my_table WHERE column3 = 'some_value' UNION SELECT q.* FROM fruits_table, JSON_TABLE(Fruits, '$[*]' COLUMNS(id VARCHAR(255) PATH '$.$id', value VARCHAR(255) PATH '$.value')) AS q",
         )
+        self.validate_identity(
+            "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
+            "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
+        )
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE KEY d (b), KEY e (b))",
+            "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
+        )
+        self.validate_identity(
+            "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",
+            "CREATE TABLE test (ts DATETIME, ts_tz TIMESTAMP, ts_ltz TIMESTAMP)",
+        )
+        self.validate_identity(
+            "ALTER TABLE test_table ALTER COLUMN test_column SET DATA TYPE LONGTEXT",
+            "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
+            "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
+        )
 
         self.validate_all(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
@@ -76,12 +97,6 @@ class TestMySQL(Validator):
                 "mysql": "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
                 "spark": "CREATE TABLE z (a INT) COMMENT 'x'",
                 "sqlite": "CREATE TABLE z (a INTEGER)",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
-            write={
-                "mysql": "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
             },
         )
         self.validate_all(
@@ -96,33 +111,9 @@ class TestMySQL(Validator):
                 "sqlite": "CREATE TABLE x (id INTEGER NOT NULL)",
             },
         )
-        self.validate_all(
-            "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
-            write={
-                "mysql": "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE KEY d (b), KEY e (b))",
-            write={
-                "mysql": "CREATE TABLE IF NOT EXISTS industry_info (a BIGINT(20) NOT NULL AUTO_INCREMENT, b BIGINT(20) NOT NULL, c VARCHAR(1000), PRIMARY KEY (a), UNIQUE d (b), INDEX e (b))",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",
-            write={
-                "mysql": "CREATE TABLE test (ts DATETIME, ts_tz TIMESTAMP, ts_ltz TIMESTAMP)",
-            },
-        )
-        self.validate_all(
-            "ALTER TABLE test_table ALTER COLUMN test_column SET DATA TYPE LONGTEXT",
-            write={
-                "mysql": "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
-            },
-        )
-        self.validate_identity("ALTER TABLE test_table ALTER COLUMN test_column SET DEFAULT 1")
 
     def test_identity(self):
+        self.validate_identity("ALTER TABLE test_table ALTER COLUMN test_column SET DEFAULT 1")
         self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:00.0000')")
         self.validate_identity("SELECT @var1 := 1, @var2")
         self.validate_identity("UNLOCK TABLES")

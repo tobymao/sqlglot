@@ -416,16 +416,11 @@ class MySQL(Dialect):
             "SPATIAL",
         }
 
-        PROFILE_TYPES = {
-            "ALL",
-            "BLOCK IO",
-            "CONTEXT SWITCHES",
-            "CPU",
-            "IPC",
-            "MEMORY",
-            "PAGE FAULTS",
-            "SOURCE",
-            "SWAPS",
+        PROFILE_TYPES: t.Dict[str, t.Sequence[t.Sequence[str] | str]] = {
+            **{profile: tuple() for profile in ("ALL", "CPU", "IPC", "MEMORY", "SOURCE", "SWAPS")},
+            "BLOCK": ("IO",),
+            "CONTEXT": ("SWITCHES",),
+            "PAGE": ("FAULTS",),
         }
 
         TYPE_TOKENS = {

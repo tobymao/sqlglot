@@ -2091,7 +2091,7 @@ class Generator(metaclass=_Generator):
             sep="",
         )
 
-    def queryoption_sql(self, expression: exp.QueryOption):
+    def queryoption_sql(self, expression: exp.QueryOption) -> str:
         return ""
 
     def offset_limit_modifiers(

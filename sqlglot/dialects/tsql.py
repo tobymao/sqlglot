@@ -553,9 +553,7 @@ class TSQL(Dialect):
 
                 self._match(TokenType.EQ)
                 return self.expression(
-                    exp.QueryOption,
-                    this=option,
-                    expression=self._parse_primary() or self._parse_var(any_token=True),
+                    exp.QueryOption, this=option, expression=self._parse_primary_or_var()
                 )
 
             return self._parse_wrapped_csv(_parse_option)

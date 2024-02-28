@@ -4641,6 +4641,11 @@ class ConcatWs(Concat):
     _sql_names = ["CONCAT_WS"]
 
 
+# https://docs.oracle.com/cd/B13789_01/server.101/b10759/operators004.htm#i1035022
+class ConnectByRoot(Func):
+    pass
+
+
 class Count(AggFunc):
     arg_types = {"this": False, "expressions": False}
     is_var_len_args = True

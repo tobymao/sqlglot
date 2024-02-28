@@ -3648,6 +3648,10 @@ class Boolean(Condition):
 class DataTypeParam(Expression):
     arg_types = {"this": True, "expression": False}
 
+    @property
+    def name(self) -> str:
+        return self.this.name
+
 
 class DataType(Expression):
     arg_types = {
@@ -4439,6 +4443,11 @@ class ToArray(Func):
 # https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_CHAR-number.html
 class ToChar(Func):
     arg_types = {"this": True, "format": False, "nlsparam": False}
+
+
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax
+class Convert(Func):
+    arg_types = {"this": True, "expression": True, "style": False}
 
 
 class GenerateSeries(Func):

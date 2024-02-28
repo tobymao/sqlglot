@@ -1041,12 +1041,6 @@ class Tokenizer(metaclass=_Tokenizer):
     def _text(self) -> str:
         return self.sql[self._start : self._current]
 
-    def peek(self, i: int = 0) -> str:
-        i = self._current + i
-        if i < self.size:
-            return self.sql[i]
-        return ""
-
     def _add(self, token_type: TokenType, text: t.Optional[str] = None) -> None:
         self._prev_token_line = self._line
 

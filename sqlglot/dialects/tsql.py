@@ -18,7 +18,6 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     trim_sql,
 )
-from sqlglot.expressions import DataType
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -456,7 +455,6 @@ class TSQL(Dialect):
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,
             "NTEXT": TokenType.TEXT,
-            "NVARCHAR(MAX)": TokenType.TEXT,
             "PRINT": TokenType.COMMAND,
             "PROC": TokenType.PROCEDURE,
             "REAL": TokenType.FLOAT,
@@ -467,7 +465,6 @@ class TSQL(Dialect):
             "TOP": TokenType.TOP,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "UPDATE STATISTICS": TokenType.COMMAND,
-            "VARCHAR(MAX)": TokenType.TEXT,
             "XML": TokenType.XML,
             "OUTPUT": TokenType.RETURNING,
             "SYSTEM_USER": TokenType.CURRENT_USER,
@@ -518,19 +515,7 @@ class TSQL(Dialect):
             "TIMEFROMPARTS": _build_timefromparts,
         }
 
-        JOIN_HINTS = {
-            "LOOP",
-            "HASH",
-            "MERGE",
-            "REMOTE",
-        }
-
-        VAR_LENGTH_DATATYPES = {
-            DataType.Type.NVARCHAR,
-            DataType.Type.VARCHAR,
-            DataType.Type.CHAR,
-            DataType.Type.NCHAR,
-        }
+        JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}
 
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
@@ -632,48 +617,13 @@ class TSQL(Dialect):
         def _parse_convert(
             self, strict: bool, safe: t.Optional[bool] = None
         ) -> t.Optional[exp.Expression]:
-            to = self._parse_types()
+            this = self._parse_types()
             self._match(TokenType.COMMA)
-            this = self._parse_conjunction()
-
-            if not to or not this:
-                return None
-
-            # Retrieve length of datatype and override to default if not specified
-            if seq_get(to.expressions, 0) is None and to.this in self.VAR_LENGTH_DATATYPES:
-                to = exp.DataType.build(to.this, expressions=[exp.Literal.number(30)], nested=False)
-
-            # Check whether a conversion with format is applicable
-            if self._match(TokenType.COMMA):
-                format_val = self._parse_number()
-                format_val_name = format_val.name if format_val else ""
-
-                if format_val_name not in TSQL.CONVERT_FORMAT_MAPPING:
-                    raise ValueError(
-                        f"CONVERT function at T-SQL does not support format style {format_val_name}"
-                    )
-
-                format_norm = exp.Literal.string(TSQL.CONVERT_FORMAT_MAPPING[format_val_name])
-
-                # Check whether the convert entails a string to date format
-                if to.this == DataType.Type.DATE:
-                    return self.expression(exp.StrToDate, this=this, format=format_norm)
-                # Check whether the convert entails a string to datetime format
-                elif to.this == DataType.Type.DATETIME:
-                    return self.expression(exp.StrToTime, this=this, format=format_norm)
-                # Check whether the convert entails a date to string format
-                elif to.this in self.VAR_LENGTH_DATATYPES:
-                    return self.expression(
-                        exp.Cast if strict else exp.TryCast,
-                        to=to,
-                        this=self.expression(exp.TimeToStr, this=this, format=format_norm),
-                        safe=safe,
-                    )
-                elif to.this == DataType.Type.TEXT:
-                    return self.expression(exp.TimeToStr, this=this, format=format_norm)
-
-            # Entails a simple cast without any format requirement
-            return self.expression(exp.Cast if strict else exp.TryCast, this=this, to=to, safe=safe)
+            args = [this, *self._parse_csv(self._parse_conjunction)]
+            convert = exp.Convert.from_arg_list(args)
+            convert.set("safe", safe)
+            convert.set("strict", strict)
+            return convert
 
         def _parse_user_defined_function(
             self, kind: t.Optional[TokenType] = None
@@ -804,6 +754,9 @@ class TSQL(Dialect):
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
         }
 
+        TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)
+        TYPE_MAPPING.pop(exp.DataType.Type.NVARCHAR)
+
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
@@ -854,6 +807,12 @@ class TSQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def convert_sql(self, expression: exp.Convert) -> str:
+            name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"
+            return self.func(
+                name, expression.this, expression.expression, expression.args.get("style")
+            )
 
         def queryoption_sql(self, expression: exp.QueryOption) -> str:
             option = self.sql(expression, "this")

@@ -460,6 +460,13 @@ class Generator(metaclass=_Generator):
         exp.Paren,
     )
 
+    PARAMETERIZABLE_TEXT_TYPES = {
+        exp.DataType.Type.NVARCHAR,
+        exp.DataType.Type.VARCHAR,
+        exp.DataType.Type.CHAR,
+        exp.DataType.Type.NCHAR,
+    }
+
     # Expressions that need to have all CTEs under them bubbled up to them
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.Set[t.Type[exp.Expression]] = set()
 
@@ -3462,13 +3469,6 @@ class Generator(metaclass=_Generator):
 
         return expression
 
-    def _ensure_string_if_null(self, values: t.List[exp.Expression]) -> t.List[exp.Expression]:
-        return [
-            exp.func("COALESCE", exp.cast(value, "text"), exp.Literal.string(""))
-            for value in values
-            if value
-        ]
-
     def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
         expression.set("is_end_exclusive", None)
         return self.function_fallback_sql(expression)
@@ -3509,3 +3509,47 @@ class Generator(metaclass=_Generator):
         partition = f" {partition}" if partition else ""
 
         return f"TRUNCATE {target}{exists}{tables}{on_cluster}{identity}{option}{partition}"
+
+    # This transpiles T-SQL's CONVERT function
+    # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16
+    def convert_sql(self, expression: exp.Convert) -> str:
+        to = expression.this
+        value = expression.expression
+        style = expression.args.get("style")
+        safe = expression.args.get("safe")
+        strict = expression.args.get("strict")
+
+        if not to or not value:
+            return ""
+
+        # Retrieve length of datatype and override to default if not specified
+        if not seq_get(to.expressions, 0) and to.this in self.PARAMETERIZABLE_TEXT_TYPES:
+            to = exp.DataType.build(to.this, expressions=[exp.Literal.number(30)], nested=False)
+
+        transformed: t.Optional[exp.Expression] = None
+        cast = exp.Cast if strict else exp.TryCast
+
+        # Check whether a conversion with format (T-SQL calls this 'style') is applicable
+        if isinstance(style, exp.Literal) and style.is_int:
+            from sqlglot.dialects.tsql import TSQL
+
+            style_value = style.name
+            converted_style = TSQL.CONVERT_FORMAT_MAPPING.get(style_value)
+            if not converted_style:
+                self.unsupported(f"Unsupported T-SQL 'style' value: {style_value}")
+
+            fmt = exp.Literal.string(converted_style)
+
+            if to.this == exp.DataType.Type.DATE:
+                transformed = exp.StrToDate(this=value, format=fmt)
+            elif to.this == exp.DataType.Type.DATETIME:
+                transformed = exp.StrToTime(this=value, format=fmt)
+            elif to.this in self.PARAMETERIZABLE_TEXT_TYPES:
+                transformed = cast(this=exp.TimeToStr(this=value, format=fmt), to=to, safe=safe)
+            elif to.this == exp.DataType.Type.TEXT:
+                transformed = exp.TimeToStr(this=value, format=fmt)
+
+        if not transformed:
+            transformed = cast(this=value, to=to, safe=safe)
+
+        return self.sql(transformed)

@@ -346,3 +346,10 @@ class TestLineage(unittest.TestCase):
             "with _data as (select [struct(1 as a, 2 as b)] as col) select b from _data cross join unnest(col)",
         )
         self.assertEqual(node.name, "b")
+
+    def test_lineage_normalize(self) -> None:
+        node = lineage("a", "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")
+        self.assertEqual(node.name, "A")
+
+        with self.assertRaises(sqlglot.errors.SqlglotError):
+            lineage('"a"', "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")

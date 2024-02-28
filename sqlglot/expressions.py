@@ -2463,7 +2463,7 @@ class StabilityProperty(Property):
 
 
 class TemporaryProperty(Property):
-    arg_types = {}
+    arg_types = {"this": False}
 
 
 class TransformModelProperty(Property):

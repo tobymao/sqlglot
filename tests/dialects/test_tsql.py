@@ -283,7 +283,7 @@ class TestTSQL(Validator):
             "CONVERT(INT, CONVERT(NUMERIC, '444.75'))",
             write={
                 "mysql": "CAST(CAST('444.75' AS DECIMAL) AS SIGNED)",
-                "tsql": "CAST(CAST('444.75' AS NUMERIC) AS INTEGER)",
+                "tsql": "CONVERT(INTEGER, CONVERT(NUMERIC, '444.75'))",
             },
         )
         self.validate_all(
@@ -597,7 +597,7 @@ class TestTSQL(Validator):
             "CAST(x as NCHAR(1))",
             write={
                 "spark": "CAST(x AS CHAR(1))",
-                "tsql": "CAST(x AS CHAR(1))",
+                "tsql": "CAST(x AS NCHAR(1))",
             },
         )
 
@@ -605,7 +605,7 @@ class TestTSQL(Validator):
             "CAST(x as NVARCHAR(2))",
             write={
                 "spark": "CAST(x AS VARCHAR(2))",
-                "tsql": "CAST(x AS VARCHAR(2))",
+                "tsql": "CAST(x AS NVARCHAR(2))",
             },
         )
 
@@ -826,11 +826,6 @@ class TestTSQL(Validator):
         )
 
     def test_transaction(self):
-        # BEGIN { TRAN | TRANSACTION }
-        #    [ { transaction_name | @tran_name_variable }
-        #    [ WITH MARK [ 'description' ] ]
-        #    ]
-        # [ ; ]
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_all("BEGIN TRAN", write={"tsql": "BEGIN TRANSACTION"})
         self.validate_identity("BEGIN TRANSACTION transaction_name")
@@ -838,8 +833,6 @@ class TestTSQL(Validator):
         self.validate_identity("BEGIN TRANSACTION transaction_name WITH MARK 'description'")
 
     def test_commit(self):
-        # COMMIT [ { TRAN | TRANSACTION }  [ transaction_name | @tran_name_variable ] ] [ WITH ( DELAYED_DURABILITY = { OFF | ON } ) ] [ ; ]
-
         self.validate_all("COMMIT", write={"tsql": "COMMIT TRANSACTION"})
         self.validate_all("COMMIT TRAN", write={"tsql": "COMMIT TRANSACTION"})
         self.validate_identity("COMMIT TRANSACTION")
@@ -854,11 +847,6 @@ class TestTSQL(Validator):
         )
 
     def test_rollback(self):
-        # Applies to SQL Server and Azure SQL Database
-        # ROLLBACK { TRAN | TRANSACTION }
-        #     [ transaction_name | @tran_name_variable
-        #     | savepoint_name | @savepoint_variable ]
-        # [ ; ]
         self.validate_all("ROLLBACK", write={"tsql": "ROLLBACK TRANSACTION"})
         self.validate_all("ROLLBACK TRAN", write={"tsql": "ROLLBACK TRANSACTION"})
         self.validate_identity("ROLLBACK TRANSACTION")
@@ -978,7 +966,7 @@ WHERE
 
         expected_sqls = [
             "CREATE PROC [dbo].[transform_proc] AS DECLARE @CurrentDate VARCHAR(20)",
-            "SET @CurrentDate = CAST(FORMAT(GETDATE(), 'yyyy-MM-dd HH:mm:ss') AS VARCHAR(20))",
+            "SET @CurrentDate = CONVERT(VARCHAR(20), GETDATE(), 120)",
             "CREATE TABLE [target_schema].[target_table] (a INTEGER) WITH (DISTRIBUTION=REPLICATE, HEAP)",
         ]
 
@@ -1157,155 +1145,173 @@ WHERE
             },
         )
 
-    def test_convert_date_format(self):
+    def test_convert(self):
         self.validate_all(
             "CONVERT(NVARCHAR(200), x)",
             write={
                 "spark": "CAST(x AS VARCHAR(200))",
+                "tsql": "CONVERT(NVARCHAR(200), x)",
             },
         )
         self.validate_all(
             "CONVERT(NVARCHAR, x)",
             write={
                 "spark": "CAST(x AS VARCHAR(30))",
+                "tsql": "CONVERT(NVARCHAR, x)",
             },
         )
         self.validate_all(
             "CONVERT(NVARCHAR(MAX), x)",
             write={
                 "spark": "CAST(x AS STRING)",
+                "tsql": "CONVERT(NVARCHAR(MAX), x)",
             },
         )
         self.validate_all(
             "CONVERT(VARCHAR(200), x)",
             write={
                 "spark": "CAST(x AS VARCHAR(200))",
+                "tsql": "CONVERT(VARCHAR(200), x)",
             },
         )
         self.validate_all(
             "CONVERT(VARCHAR, x)",
             write={
                 "spark": "CAST(x AS VARCHAR(30))",
+                "tsql": "CONVERT(VARCHAR, x)",
             },
         )
         self.validate_all(
             "CONVERT(VARCHAR(MAX), x)",
             write={
                 "spark": "CAST(x AS STRING)",
+                "tsql": "CONVERT(VARCHAR(MAX), x)",
             },
         )
         self.validate_all(
             "CONVERT(CHAR(40), x)",
             write={
                 "spark": "CAST(x AS CHAR(40))",
+                "tsql": "CONVERT(CHAR(40), x)",
             },
         )
         self.validate_all(
             "CONVERT(CHAR, x)",
             write={
                 "spark": "CAST(x AS CHAR(30))",
+                "tsql": "CONVERT(CHAR, x)",
             },
         )
         self.validate_all(
             "CONVERT(NCHAR(40), x)",
             write={
                 "spark": "CAST(x AS CHAR(40))",
+                "tsql": "CONVERT(NCHAR(40), x)",
             },
         )
         self.validate_all(
             "CONVERT(NCHAR, x)",
             write={
                 "spark": "CAST(x AS CHAR(30))",
+                "tsql": "CONVERT(NCHAR, x)",
             },
         )
         self.validate_all(
             "CONVERT(VARCHAR, x, 121)",
             write={
                 "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(30))",
+                "tsql": "CONVERT(VARCHAR, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(VARCHAR(40), x, 121)",
             write={
                 "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(40))",
+                "tsql": "CONVERT(VARCHAR(40), x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(VARCHAR(MAX), x, 121)",
             write={
-                "spark": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS STRING)",
+                "tsql": "CONVERT(VARCHAR(MAX), x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(NVARCHAR, x, 121)",
             write={
                 "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(30))",
+                "tsql": "CONVERT(NVARCHAR, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(NVARCHAR(40), x, 121)",
             write={
                 "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(40))",
+                "tsql": "CONVERT(NVARCHAR(40), x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(NVARCHAR(MAX), x, 121)",
             write={
-                "spark": "DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "spark": "CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS STRING)",
+                "tsql": "CONVERT(NVARCHAR(MAX), x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(DATE, x, 121)",
             write={
                 "spark": "TO_DATE(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "tsql": "CONVERT(DATE, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(DATETIME, x, 121)",
             write={
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "tsql": "CONVERT(DATETIME2, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(DATETIME2, x, 121)",
             write={
                 "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "tsql": "CONVERT(DATETIME2, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(INT, x)",
             write={
                 "spark": "CAST(x AS INT)",
+                "tsql": "CONVERT(INTEGER, x)",
             },
         )
         self.validate_all(
             "CONVERT(INT, x, 121)",
             write={
                 "spark": "CAST(x AS INT)",
+                "tsql": "CONVERT(INTEGER, x, 121)",
             },
         )
         self.validate_all(
             "TRY_CONVERT(NVARCHAR, x, 121)",
             write={
                 "spark": "TRY_CAST(DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS') AS VARCHAR(30))",
+                "tsql": "TRY_CONVERT(NVARCHAR, x, 121)",
             },
         )
         self.validate_all(
             "TRY_CONVERT(INT, x)",
             write={
                 "spark": "TRY_CAST(x AS INT)",
+                "tsql": "TRY_CONVERT(INTEGER, x)",
             },
         )
         self.validate_all(
             "TRY_CAST(x AS INT)",
             write={
                 "spark": "TRY_CAST(x AS INT)",
-            },
-        )
-        self.validate_all(
-            "CAST(x AS INT)",
-            write={
-                "spark": "CAST(x AS INT)",
+                "tsql": "TRY_CAST(x AS INTEGER)",
             },
         )
         self.validate_all(
@@ -1313,6 +1319,7 @@ WHERE
             write={
                 "mysql": "SELECT CAST(DATE_FORMAT(testdb.dbo.test.x, '%Y-%m-%d %T') AS CHAR(10)) AS y FROM testdb.dbo.test",
                 "spark": "SELECT CAST(DATE_FORMAT(testdb.dbo.test.x, 'yyyy-MM-dd HH:mm:ss') AS VARCHAR(10)) AS y FROM testdb.dbo.test",
+                "tsql": "SELECT CONVERT(VARCHAR(10), testdb.dbo.test.x, 120) AS y FROM testdb.dbo.test",
             },
         )
         self.validate_all(
@@ -1320,12 +1327,14 @@ WHERE
             write={
                 "mysql": "SELECT CAST(y.x AS CHAR(10)) AS z FROM testdb.dbo.test AS y",
                 "spark": "SELECT CAST(y.x AS VARCHAR(10)) AS z FROM testdb.dbo.test AS y",
+                "tsql": "SELECT CONVERT(VARCHAR(10), y.x) AS z FROM testdb.dbo.test AS y",
             },
         )
         self.validate_all(
             "SELECT CAST((SELECT x FROM y) AS VARCHAR) AS test",
             write={
                 "spark": "SELECT CAST((SELECT x FROM y) AS STRING) AS test",
+                "tsql": "SELECT CAST((SELECT x FROM y) AS VARCHAR) AS test",
             },
         )
 
@@ -1721,7 +1730,7 @@ FROM OPENJSON(@json) WITH (
     Date DATETIME2 '$.Order.Date',
     Customer VARCHAR(200) '$.AccountNumber',
     Quantity INTEGER '$.Item.Quantity',
-    [Order] VARCHAR(MAX) AS JSON
+    [Order] NVARCHAR(MAX) AS JSON
 )"""
             },
             pretty=True,

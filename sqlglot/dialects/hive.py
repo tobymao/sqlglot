@@ -609,9 +609,8 @@ class Hive(Dialect):
             return self.properties(properties, prefix=self.seg("TBLPROPERTIES"))
 
         def datatype_sql(self, expression: exp.DataType) -> str:
-            if (
-                expression.this in (exp.DataType.Type.VARCHAR, exp.DataType.Type.NVARCHAR)
-                and not expression.expressions
+            if expression.this in self.PARAMETERIZABLE_TEXT_TYPES and (
+                not expression.expressions or expression.expressions[0].name == "MAX"
             ):
                 expression = exp.DataType.build("text")
             elif expression.is_type(exp.DataType.Type.TEXT) and expression.expressions:

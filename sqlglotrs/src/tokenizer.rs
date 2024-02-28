@@ -178,15 +178,6 @@ impl<'a> TokenizerState<'a> {
         Ok(())
     }
 
-    fn peek(&self, i: usize) -> Result<char, TokenizerError> {
-        let index = self.current + i;
-        if index < self.size {
-            self.char_at(index)
-        } else {
-            Ok('\0')
-        }
-    }
-
     fn chars(&self, size: usize) -> String {
         let start = self.current - 1;
         let end = start + size;

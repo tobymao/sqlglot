@@ -93,6 +93,14 @@ class Oracle(Dialect):
             "XMLTABLE": lambda self: self._parse_xml_table(),
         }
 
+        PROPERTY_PARSERS = {
+            **parser.Parser.PROPERTY_PARSERS,
+            "GLOBAL": lambda self: self._match_text_seq("TEMPORARY")
+            and self.expression(exp.TemporaryProperty, this="GLOBAL"),
+            "PRIVATE": lambda self: self._match_text_seq("TEMPORARY")
+            and self.expression(exp.TemporaryProperty, this="PRIVATE"),
+        }
+
         QUERY_MODIFIER_PARSERS = {
             **parser.Parser.QUERY_MODIFIER_PARSERS,
             TokenType.ORDER_SIBLINGS_BY: lambda self: ("order", self._parse_order()),
@@ -207,6 +215,7 @@ class Oracle(Dialect):
             exp.Substring: rename_func("SUBSTR"),
             exp.Table: lambda self, e: self.table_sql(e, sep=" "),
             exp.TableSample: lambda self, e: self.tablesample_sql(e, sep=" "),
+            exp.TemporaryProperty: lambda _, e: f"{e.name or 'GLOBAL'} TEMPORARY",
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,

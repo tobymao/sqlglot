@@ -1,4 +1,4 @@
-from sqlglot import exp, parse_one
+from sqlglot import exp
 from sqlglot.errors import UnsupportedError
 from tests.dialects.test_dialect import Validator
 
@@ -7,11 +7,11 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
-        self.validate_identity("REGEXP_REPLACE('source', 'search')")
-        parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol", dialect="oracle").assert_is(
-            exp.AlterTable
-        )
+        self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.AlterTable)
 
+        self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")
+        self.validate_identity("CREATE PRIVATE TEMPORARY TABLE t AS SELECT * FROM orders")
+        self.validate_identity("REGEXP_REPLACE('source', 'search')")
         self.validate_identity("TIMESTAMP(3) WITH TIME ZONE")
         self.validate_identity("CURRENT_TIMESTAMP(precision)")
         self.validate_identity("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol")

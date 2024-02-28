@@ -482,7 +482,7 @@ class BigQuery(Dialect):
                         table.set("db", exp.Identifier(this=parts[1]))
                 else:
                     parts = table.name.split(".")
-                    if len(parts) == 2 and not table.args["this"].quoted:
+                    if len(parts) == 2 and not table.this.quoted:
                         table.set("db", exp.Identifier(this=parts[0]))
                         table.set("this", exp.Identifier(this=parts[1]))
 

@@ -7,6 +7,13 @@ class TestOracle(Validator):
     dialect = "oracle"
 
     def test_oracle(self):
+        self.validate_all(
+            "SELECT CONNECT_BY_ROOT x y",
+            write={
+                "": "SELECT CONNECT_BY_ROOT(x) AS y",
+                "oracle": "SELECT CONNECT_BY_ROOT x AS y",
+            },
+        )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.AlterTable)
 
         self.validate_identity("CREATE GLOBAL TEMPORARY TABLE t AS SELECT * FROM orders")

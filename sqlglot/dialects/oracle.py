@@ -66,6 +66,26 @@ class Oracle(Dialect):
         "FF6": "%f",  # only 6 digits are supported in python formats
     }
 
+    class Tokenizer(tokens.Tokenizer):
+        VAR_SINGLE_TOKENS = {"@", "$", "#"}
+
+        KEYWORDS = {
+            **tokens.Tokenizer.KEYWORDS,
+            "(+)": TokenType.JOIN_MARKER,
+            "BINARY_DOUBLE": TokenType.DOUBLE,
+            "BINARY_FLOAT": TokenType.FLOAT,
+            "COLUMNS": TokenType.COLUMN,
+            "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
+            "MINUS": TokenType.EXCEPT,
+            "NVARCHAR2": TokenType.NVARCHAR,
+            "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
+            "SAMPLE": TokenType.TABLE_SAMPLE,
+            "START": TokenType.BEGIN,
+            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
+            "TOP": TokenType.TOP,
+            "VARCHAR2": TokenType.VARCHAR,
+        }
+
     class Parser(parser.Parser):
         ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
         WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
@@ -91,6 +111,13 @@ class Oracle(Dialect):
                 order=self._parse_order(),
             ),
             "XMLTABLE": lambda self: self._parse_xml_table(),
+        }
+
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "CONNECT_BY_ROOT": lambda self: self.expression(
+                exp.ConnectByRoot, this=self._parse_column()
+            ),
         }
 
         PROPERTY_PARSERS = {
@@ -198,6 +225,7 @@ class Oracle(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ConnectByRoot: lambda self, e: f"CONNECT_BY_ROOT {self.sql(e, 'this')}",
             exp.DateStrToDate: lambda self, e: self.func(
                 "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
             ),
@@ -251,23 +279,3 @@ class Oracle(Dialect):
             if len(expression.args.get("actions", [])) > 1:
                 return f"ADD ({actions})"
             return f"ADD {actions}"
-
-    class Tokenizer(tokens.Tokenizer):
-        VAR_SINGLE_TOKENS = {"@", "$", "#"}
-
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-            "(+)": TokenType.JOIN_MARKER,
-            "BINARY_DOUBLE": TokenType.DOUBLE,
-            "BINARY_FLOAT": TokenType.FLOAT,
-            "COLUMNS": TokenType.COLUMN,
-            "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
-            "MINUS": TokenType.EXCEPT,
-            "NVARCHAR2": TokenType.NVARCHAR,
-            "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
-            "SAMPLE": TokenType.TABLE_SAMPLE,
-            "START": TokenType.BEGIN,
-            "SYSDATE": TokenType.CURRENT_TIMESTAMP,
-            "TOP": TokenType.TOP,
-            "VARCHAR2": TokenType.VARCHAR,
-        }

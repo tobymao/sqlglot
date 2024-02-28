@@ -661,6 +661,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DROP": TokenType.DROP,
         "ELSE": TokenType.ELSE,
         "END": TokenType.END,
+        "ENUM": TokenType.ENUM,
         "ESCAPE": TokenType.ESCAPE,
         "EXCEPT": TokenType.EXCEPT,
         "EXECUTE": TokenType.EXECUTE,

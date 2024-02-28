@@ -854,3 +854,4 @@ SELECT values AS values FROM t WHERE values + 1 > 3
 SELECT truncate
 SELECT only
 TRUNCATE(a, b)
+SELECT enum

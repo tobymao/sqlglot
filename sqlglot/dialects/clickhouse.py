@@ -68,7 +68,6 @@ class ClickHouse(Dialect):
             "DATE32": TokenType.DATE32,
             "DATETIME64": TokenType.DATETIME64,
             "DICTIONARY": TokenType.DICTIONARY,
-            "ENUM": TokenType.ENUM,
             "ENUM8": TokenType.ENUM8,
             "ENUM16": TokenType.ENUM16,
             "FINAL": TokenType.FINAL,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import typing as t
 from dataclasses import dataclass, field
 
@@ -10,6 +11,8 @@ from sqlglot.optimizer import Scope, build_scope, find_all_in_scope, qualify
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
+
+logger = logging.getLogger("sqlglot")
 
 
 @dataclass(frozen=True)
@@ -189,7 +192,10 @@ def lineage(
         }
 
         for subquery in find_all_in_scope(select, exp.UNWRAPPED_QUERIES):
-            subquery_scope = subquery_scopes[id(subquery)]
+            subquery_scope = subquery_scopes.get(id(subquery))
+            if not subquery_scope:
+                logger.warning(f"Unknown subquery scope: {subquery.sql(dialect=dialect)}")
+                continue
 
             for name in subquery.named_selects:
                 to_node(name, scope=subquery_scope, upstream=node)

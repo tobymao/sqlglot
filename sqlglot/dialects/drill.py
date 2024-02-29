@@ -156,6 +156,3 @@ class Drill(Dialect):
             exp.TsOrDiToDi: lambda self,
             e: f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)",
         }
-
-        def normalize_func(self, name: str) -> str:
-            return name if exp.SAFE_IDENTIFIER_RE.match(name) else f"`{name}`"

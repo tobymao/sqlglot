@@ -4158,6 +4158,8 @@ class Parser(metaclass=_Parser):
 
                 this = func
             else:
+                if token_type == TokenType.IDENTIFIER:
+                    this = exp.Identifier(this=this, quoted=True)
                 this = self.expression(exp.Anonymous, this=this, expressions=args)
 
         if isinstance(this, exp.Expression):

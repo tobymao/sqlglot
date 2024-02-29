@@ -25,6 +25,7 @@ WHERE
   AND x.a > ALL (SELECT y.c FROM y WHERE y.a = x.a)
   AND x.a > (SELECT COUNT(*) as d FROM y WHERE y.a = x.a)
   AND x.a = SUM(SELECT 1)  -- invalid statement left alone
+  AND x.a IN (SELECT max(y.b) AS b FROM y GROUP BY y.a)
 ;
 SELECT
   *
@@ -155,6 +156,20 @@ LEFT JOIN (
     y.a
 ) AS _u_21
   ON _u_21._u_22 = x.a
+LEFT JOIN (
+  SELECT
+    _q.b
+  FROM (
+    SELECT
+      MAX(y.b) AS b
+    FROM y
+    GROUP BY
+      y.a
+  ) AS _q
+  GROUP BY
+    _q.b
+) AS _u_24
+  ON x.a = _u_24.b
 WHERE
   x.a = _u_0.a
   AND NOT _u_1.a IS NULL
@@ -212,6 +227,7 @@ WHERE
   AND x.a > COALESCE(_u_21.d, 0)
   AND x.a = SUM(SELECT
     1) /* invalid statement left alone */
+  AND NOT _u_24.b IS NULL
 ;
 SELECT
   CAST((

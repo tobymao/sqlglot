@@ -1047,7 +1047,6 @@ WITH "_u_0" AS (
     "lineitem"."l_orderkey" AS "l_orderkey"
   FROM "lineitem" AS "lineitem"
   GROUP BY
-    "lineitem"."l_orderkey",
     "lineitem"."l_orderkey"
   HAVING
     SUM("lineitem"."l_quantity") > 300

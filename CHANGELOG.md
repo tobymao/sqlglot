@@ -1,6 +1,17 @@
 Changelog
 =========
 
+## [v22.1.1] - 2024-02-29
+### :sparkles: New Features
+- [`1e25ec9`](https://github.com/tobymao/sqlglot/commit/1e25ec984510a1ffee76956b0dcb15bcd84f5d44) - **test**: handle NULL value in TPC-DS  *(PR [#3052](https://github.com/tobymao/sqlglot/pull/3052) by [@fool1280](https://github.com/fool1280))*
+- [`ad21b6b`](https://github.com/tobymao/sqlglot/commit/ad21b6b47716d394ca6b8fb3b82d58b887d5adb3) - **test**: add more passing tpc-ds test *(PR [#3053](https://github.com/tobymao/sqlglot/pull/3053) by [@fool1280](https://github.com/fool1280))*
+
+### :bug: Bug Fixes
+- [`08249af`](https://github.com/tobymao/sqlglot/commit/08249af50351a24277e1f3f1574629eb5c68d3a5) - Hive UnixToTime regression, README stale results *(PR [#3055](https://github.com/tobymao/sqlglot/pull/3055) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`39b3813`](https://github.com/tobymao/sqlglot/commit/39b381341fe697ae54f5d3a438b4035447fe552a) - **redshift**: don't pop recursive cte table columns *(commit by [@tobymao](https://github.com/tobymao))*
+- [`6a9501f`](https://github.com/tobymao/sqlglot/commit/6a9501f7407be3682ce3b9cc73b7340ad9a0c2e8) - ensure UDF identifier quotes are preserved *(PR [#3057](https://github.com/tobymao/sqlglot/pull/3057) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v22.1.0] - 2024-02-29
 ### :sparkles: New Features
 - [`6393979`](https://github.com/tobymao/sqlglot/commit/63939796b39c69b25adfc6f224ccd4761f23cb66) - **oracle**: connect_by_root closes [#3050](https://github.com/tobymao/sqlglot/pull/3050) *(commit by [@tobymao](https://github.com/tobymao))*
@@ -2788,3 +2799,4 @@ Changelog
 [v22.0.1]: https://github.com/tobymao/sqlglot/compare/v22.0.0...v22.0.1
 [v22.0.2]: https://github.com/tobymao/sqlglot/compare/v22.0.1...v22.0.2
 [v22.1.0]: https://github.com/tobymao/sqlglot/compare/v22.0.2...v22.1.0
+[v22.1.1]: https://github.com/tobymao/sqlglot/compare/v22.1.0...v22.1.1

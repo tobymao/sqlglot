@@ -96,7 +96,7 @@ sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read="duckdb", write="hive")
 ```
 
 ```sql
-'SELECT FROM_UNIXTIME(1618088028295 / 1000)'
+'SELECT FROM_UNIXTIME(1618088028295 / POW(10, 3))'
 ```
 
 SQLGlot can even translate custom time formats:
@@ -206,9 +206,9 @@ sqlglot.transpile("SELECT foo( FROM bar")
 ```
 
 ```
-sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
+sqlglot.errors.ParseError: Expecting ). Line 1, Col: 20.
   select foo( FROM bar
-              ~~~~
+                   ~~~
 ```
 
 Structured syntax errors are accessible for programmatic use:
@@ -225,10 +225,10 @@ except sqlglot.errors.ParseError as e:
 [{
   'description': 'Expecting )',
   'line': 1,
-  'col': 16,
-  'start_context': 'SELECT foo( ',
-  'highlight': 'FROM',
-  'end_context': ' bar',
+  'col': 20,
+  'start_context': 'SELECT foo( FROM',
+  'highlight': 'bar',
+  'end_context': '',
   'into_expression': None,
 }]
 ```

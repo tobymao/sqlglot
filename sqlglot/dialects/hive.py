@@ -140,6 +140,15 @@ def _str_to_unix_sql(self: Hive.Generator, expression: exp.StrToUnix) -> str:
     return self.func("UNIX_TIMESTAMP", expression.this, time_format("hive")(self, expression))
 
 
+def _unix_to_time_sql(self: Hive.Generator, expression: exp.UnixToTime) -> str:
+    timestamp = self.sql(expression, "this")
+    scale = expression.args.get("scale")
+    if scale in (None, exp.UnixToTime.SECONDS):
+        return rename_func("FROM_UNIXTIME")(self, expression)
+
+    return f"FROM_UNIXTIME({timestamp} / POW(10, {scale}))"
+
+
 def _str_to_date_sql(self: Hive.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
@@ -536,7 +545,7 @@ class Hive(Dialect):
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, time_format("hive")(self, e)
             ),
-            exp.UnixToTime: rename_func("FROM_UNIXTIME"),
+            exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
             exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),

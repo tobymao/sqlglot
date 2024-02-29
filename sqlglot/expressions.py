@@ -4008,6 +4008,10 @@ class Overlaps(Binary):
 
 class Dot(Binary):
     @property
+    def is_star(self) -> bool:
+        return self.expression.is_star
+
+    @property
     def name(self) -> str:
         return self.expression.name
 
@@ -4401,6 +4405,10 @@ class Transform(Func):
 class Anonymous(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
+
+    @property
+    def name(self) -> str:
+        return self.this if isinstance(self.this, str) else self.this.name
 
 
 class AnonymousAggFunc(AggFunc):

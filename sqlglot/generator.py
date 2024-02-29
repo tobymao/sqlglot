@@ -2629,7 +2629,7 @@ class Generator(metaclass=_Generator):
         return f"REFERENCES {this}{expressions}{options}"
 
     def anonymous_sql(self, expression: exp.Anonymous) -> str:
-        return self.func(expression.name, *expression.expressions)
+        return self.func(self.sql(expression, "this"), *expression.expressions)
 
     def paren_sql(self, expression: exp.Paren) -> str:
         if isinstance(expression.unnest(), exp.Select):

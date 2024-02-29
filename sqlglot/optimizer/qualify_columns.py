@@ -404,7 +404,7 @@ def _expand_stars(
             tables = list(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
-        elif expression.is_star:
+        elif expression.is_star and not isinstance(expression, exp.Dot):
             tables = [expression.table]
             _add_except_columns(expression.this, tables, except_columns)
             _add_replace_columns(expression.this, tables, replace_columns)
@@ -437,7 +437,7 @@ def _expand_stars(
 
                 if pivot_columns:
                     new_selections.extend(
-                        exp.alias_(exp.column(name, table=pivot.alias), name, copy=False)
+                        alias(exp.column(name, table=pivot.alias), name, copy=False)
                         for name in pivot_columns
                         if name not in columns_to_exclude
                     )

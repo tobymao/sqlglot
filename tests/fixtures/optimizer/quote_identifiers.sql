@@ -29,3 +29,7 @@ SELECT "dual" FROM "t";
 # dialect: snowflake
 SELECT * FROM t AS dual;
 SELECT * FROM "t" AS "dual";
+
+# dialect: bigquery
+SELECT `p.d.udf`(data).* FROM `p.d.t`;
+SELECT `p.d.udf`(`data`).* FROM `p.d.t`;

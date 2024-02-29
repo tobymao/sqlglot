@@ -358,6 +358,23 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_concat.sql(dialect="presto"))
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_safe_concat.sql())
 
+        anon_unquoted_str = parse_one("anonymous(x, y)")
+        self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS x,y")
+
+        anon_unquoted_identifier = exp.Anonymous(
+            this=exp.to_identifier("anonymous"), expressions=[exp.column("x"), exp.column("y")]
+        )
+        self.assertEqual(optimizer.simplify.gen(anon_unquoted_identifier), "ANONYMOUS x,y")
+
+        anon_quoted = parse_one('"anonymous"(x, y)')
+        self.assertEqual(optimizer.simplify.gen(anon_quoted), '"anonymous" x,y')
+
+        with self.assertRaises(ValueError) as e:
+            invalid_anonymous = exp.Anonymous(this=5)
+            optimizer.simplify.gen(invalid_anonymous)
+
+        self.assertIn("Anonymous.this expects a str or an Identifier, got 'int'.", str(e.exception))
+
     def test_unnest_subqueries(self):
         self.check_file(
             "unnest_subqueries",

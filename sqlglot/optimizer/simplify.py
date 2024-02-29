@@ -1221,7 +1221,15 @@ GEN_MAP = {
 
 def _anonymous(e: exp.Anonymous) -> str:
     this = e.this
-    name = this.upper() if isinstance(this, str) or not this.quoted else f'"{this}"'
+    if isinstance(this, str):
+        name = this.upper()
+    elif isinstance(this, exp.Identifier):
+        name = f'"{this.name}"' if this.quoted else this.name.upper()
+    else:
+        raise ValueError(
+            f"Anonymous.this expects a str or an Identifier, got '{this.__class__.__name__}'."
+        )
+
     return f"{name} {','.join(gen(e) for e in e.expressions)}"
 
 

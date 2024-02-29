@@ -120,6 +120,8 @@ def _pop_table_column_aliases(derived_tables: t.List[exp.CTE | exp.Subquery]) ->
     For example, `col1` and `col2` will be dropped in SELECT ... FROM (SELECT ...) AS foo(col1, col2)
     """
     for derived_table in derived_tables:
+        if isinstance(derived_table.parent, exp.With) and derived_table.parent.recursive:
+            continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
             table_alias.args.pop("columns", None)

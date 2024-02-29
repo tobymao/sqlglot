@@ -333,6 +333,10 @@ WITH cte AS (SELECT 1 AS x) SELECT cte.a AS a FROM cte AS cte(a);
 WITH cte(x, y) AS (SELECT 1, 2) SELECT cte.* FROM cte AS cte(a);
 WITH cte AS (SELECT 1 AS x, 2 AS y) SELECT cte.a AS a, cte.y AS y FROM cte AS cte(a);
 
+-- Cannot pop table column aliases for recursive ctes (redshift).
+WITH RECURSIVE cte(x) AS (SELECT 1), cte2(y) AS (SELECT 2) SELECT * FROM cte, cte2;
+WITH RECURSIVE cte(x) AS (SELECT 1 AS x), cte2(y) AS (SELECT 2 AS y) SELECT cte.x AS x, cte2.y AS y FROM cte AS cte, cte2 AS cte2;
+
 # execute: false
 WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FROM player;
 WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player AS player;

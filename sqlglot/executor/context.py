@@ -78,7 +78,8 @@ class Context:
     def sort(self, key) -> None:
         def sort_key(row: t.Tuple) -> t.Tuple:
             self.set_row(row)
-            return self.eval_tuple(key)
+            eval_result = self.eval_tuple(key)
+            return tuple((t is None, t) for t in eval_result)
 
         self.table.rows.sort(key=sort_key)
 

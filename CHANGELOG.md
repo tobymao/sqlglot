@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v22.1.0] - 2024-02-29
+### :sparkles: New Features
+- [`6393979`](https://github.com/tobymao/sqlglot/commit/63939796b39c69b25adfc6f224ccd4761f23cb66) - **oracle**: connect_by_root closes [#3050](https://github.com/tobymao/sqlglot/pull/3050) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`bd0a40d`](https://github.com/tobymao/sqlglot/commit/bd0a40dde2ab2ad168ada0d5bae0c99fba9d762f) - normalize column for lineage and raise if cannot find closes [#3049](https://github.com/tobymao/sqlglot/pull/3049) *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v22.0.2] - 2024-02-28
 ### :sparkles: New Features
 - [`51f8d58`](https://github.com/tobymao/sqlglot/commit/51f8d5897b18e6f7c0bc66881a3e36c8842ff2ff) - **tsql**: add support for OPTION clause, select only *(PR [#3025](https://github.com/tobymao/sqlglot/pull/3025) by [@nadav-botanica](https://github.com/nadav-botanica))*
@@ -2779,3 +2787,4 @@ Changelog
 [v22.0.0]: https://github.com/tobymao/sqlglot/compare/v21.2.1...v22.0.0
 [v22.0.1]: https://github.com/tobymao/sqlglot/compare/v22.0.0...v22.0.1
 [v22.0.2]: https://github.com/tobymao/sqlglot/compare/v22.0.1...v22.0.2
+[v22.1.0]: https://github.com/tobymao/sqlglot/compare/v22.0.2...v22.1.0

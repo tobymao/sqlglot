@@ -443,7 +443,7 @@ class Dialect(metaclass=_Dialect):
             identify: If set to `False`, the quotes will only be added if the identifier is deemed
                 "unsafe", with respect to its characters and this dialect's normalization strategy.
         """
-        if isinstance(expression, exp.Identifier):
+        if isinstance(expression, exp.Identifier) and not isinstance(expression.parent, exp.Func):
             name = expression.this
             expression.set(
                 "quoted",

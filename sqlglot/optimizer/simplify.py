@@ -1185,7 +1185,7 @@ def gen(expression: t.Any) -> str:
 GEN_MAP = {
     exp.Add: lambda e: _binary(e, "+"),
     exp.And: lambda e: _binary(e, "AND"),
-    exp.Anonymous: lambda e: f"{e.this.upper()} {','.join(gen(e) for e in e.expressions)}",
+    exp.Anonymous: lambda e: _anonymous(e),
     exp.Between: lambda e: f"{gen(e.this)} BETWEEN {gen(e.args.get('low'))} AND {gen(e.args.get('high'))}",
     exp.Boolean: lambda e: "TRUE" if e.this else "FALSE",
     exp.Bracket: lambda e: f"{gen(e.this)}[{gen(e.expressions)}]",
@@ -1217,6 +1217,20 @@ GEN_MAP = {
     exp.Table: lambda e: gen(e.args.values()),
     exp.Var: lambda e: e.name,
 }
+
+
+def _anonymous(e: exp.Anonymous) -> str:
+    this = e.this
+    if isinstance(this, str):
+        name = this.upper()
+    elif isinstance(this, exp.Identifier):
+        name = f'"{this.name}"' if this.quoted else this.name.upper()
+    else:
+        raise ValueError(
+            f"Anonymous.this expects a str or an Identifier, got '{this.__class__.__name__}'."
+        )
+
+    return f"{name} {','.join(gen(e) for e in e.expressions)}"
 
 
 def _binary(e: exp.Binary, op: str) -> str:

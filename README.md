@@ -202,12 +202,12 @@ When the parser detects an error in the syntax, it raises a ParseError:
 
 ```python
 import sqlglot
-sqlglot.transpile("SELECT foo FROM(SELECT baz FROM t")
+sqlglot.transpile("SELECT foo FROM (SELECT baz FROM t")
 ```
 
 ```
 sqlglot.errors.ParseError: Expecting ). Line 1, Col: 33.
-  SELECT foo FROM(SELECT baz FROM t
+  SELECT foo FROM (SELECT baz FROM t
                                   ~
 ```
 
@@ -216,7 +216,7 @@ Structured syntax errors are accessible for programmatic use:
 ```python
 import sqlglot
 try:
-    sqlglot.transpile("SELECT foo FROM(SELECT baz FROM t")
+    sqlglot.transpile("SELECT foo FROM (SELECT baz FROM t")
 except sqlglot.errors.ParseError as e:
     print(e.errors)
 ```
@@ -226,7 +226,7 @@ except sqlglot.errors.ParseError as e:
   'description': 'Expecting )',
   'line': 1,
   'col': 33,
-  'start_context': 'SELECT foo FROM(SELECT baz FROM ',
+  'start_context': 'SELECT foo FROM (SELECT baz FROM ',
   'highlight': 't',
   'end_context': '',
   'into_expression': None

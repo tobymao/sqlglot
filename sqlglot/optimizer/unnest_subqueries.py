@@ -94,8 +94,20 @@ def unnest(select, parent_select, next_alias_name):
     else:
         _replace(predicate, join_key_not_null)
 
+    group = select.args.get("group")
+
+    if group:
+        if {value.this} != set(group.expressions):
+            select = (
+                exp.select(exp.column(value.alias, "_q"))
+                .from_(select.subquery("_q", copy=False), copy=False)
+                .group_by(exp.column(value.alias, "_q"), copy=False)
+            )
+    else:
+        select = select.group_by(value.this, copy=False)
+
     parent_select.join(
-        select.group_by(value.this, copy=False),
+        select,
         on=column.eq(join_key),
         join_type="LEFT",
         join_alias=alias,

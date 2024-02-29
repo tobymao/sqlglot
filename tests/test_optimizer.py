@@ -370,8 +370,8 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(optimizer.simplify.gen(anon_quoted), '"anonymous" x,y')
 
         with self.assertRaises(ValueError) as e:
-            invalid_anonymous = exp.Anonymous(this=5)
-            optimizer.simplify.gen(invalid_anonymous)
+            anon_invalid = exp.Anonymous(this=5)
+            optimizer.simplify.gen(anon_invalid)
 
         self.assertIn("Anonymous.this expects a str or an Identifier, got 'int'.", str(e.exception))
 

@@ -98,7 +98,7 @@ SELECT * FROM ((c.db.a AS foo CROSS JOIN c.db.b AS bar) CROSS JOIN c.db.c AS baz
 SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1);
 SELECT * FROM (c.db.tbl1 AS tbl1 CROSS JOIN (SELECT * FROM c.db.tbl2 AS tbl2) AS t1);
 
-# title: wrapped join with subquery with alias, parentheses can't be omitted because of alias
+# title: wrapped join with subquery with alias, parentheses cant be omitted because of alias
 SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1) AS t2;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 CROSS JOIN (SELECT * FROM c.db.tbl2 AS tbl2) AS t1) AS t2;
 
@@ -110,7 +110,7 @@ SELECT * FROM c.db.a AS a LEFT JOIN (c.db.b AS b INNER JOIN c.db.c AS c ON c.id 
 SELECT * FROM a LEFT JOIN b INNER JOIN c ON c.id = b.id ON b.id = a.id;
 SELECT * FROM c.db.a AS a LEFT JOIN c.db.b AS b INNER JOIN c.db.c AS c ON c.id = b.id ON b.id = a.id;
 
-# title: parentheses can't be omitted because alias shadows inner table names
+# title: parentheses cant be omitted because alias shadows inner table names
 SELECT t.a FROM (tbl AS tbl) AS t;
 SELECT t.a FROM (SELECT * FROM c.db.tbl AS tbl) AS t;
 

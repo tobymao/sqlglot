@@ -557,6 +557,10 @@ SELECT x.a + x.b AS f, (x.a + x.b) * x.b AS _col_1 FROM x AS x;
 SELECT x.a + x.b AS f, f, f + 5 FROM x;
 SELECT x.a + x.b AS f, x.a + x.b AS _col_1, x.a + x.b + 5 AS _col_2 FROM x AS x;
 
+# title: expand double agg if window func
+SELECT a, SUM(b) AS c, SUM(c) OVER(PARTITION BY a) AS d from x group by 1 ORDER BY a;
+SELECT x.a AS a, SUM(x.b) AS c, SUM(SUM(x.b)) OVER (PARTITION BY x.a) AS d FROM x AS x GROUP BY x.a ORDER BY a;
+
 --------------------------------------
 -- Wrapped tables / join constructs
 --------------------------------------

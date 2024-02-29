@@ -216,7 +216,13 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
             table = resolver.get_table(column.name) if resolve_table and not column.table else None
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
             double_agg = (
-                (alias_expr.find(exp.AggFunc) and column.find_ancestor(exp.AggFunc))
+                (
+                    alias_expr.find(exp.AggFunc)
+                    and (
+                        column.find_ancestor(exp.AggFunc)
+                        and not isinstance(column.find_ancestor(exp.Window, exp.Select), exp.Window)
+                    )
+                )
                 if alias_expr
                 else False
             )

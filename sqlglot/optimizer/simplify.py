@@ -1220,7 +1220,8 @@ GEN_MAP = {
 
 
 def _anonymous(e: exp.Anonymous) -> str:
-    name = e.this.upper() if isinstance(e.this, str) else e.sql()
+    this = e.this
+    name = this.upper() if isinstance(this, str) or not this.quoted else f'"{this}"'
     return f"{name} {','.join(gen(e) for e in e.expressions)}"
 
 

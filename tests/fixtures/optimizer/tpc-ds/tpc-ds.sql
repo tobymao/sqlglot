@@ -1453,6 +1453,7 @@ WHERE
 --------------------------------------
 -- TPC-DS 10
 --------------------------------------
+# execute: true
 SELECT cd_gender,
                cd_marital_status,
                cd_education_status,
@@ -8029,6 +8030,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 65
 --------------------------------------
+# execute: true
 SELECT s_store_name,
                i_item_desc,
                sc.revenue,

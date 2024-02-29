@@ -96,7 +96,7 @@ sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read="duckdb", write="hive")
 ```
 
 ```sql
-'SELECT FROM_UNIXTIME(1618088028295 / 1000)'
+'SELECT FROM_UNIXTIME(1618088028295 / POW(10, 3))'
 ```
 
 SQLGlot can even translate custom time formats:
@@ -202,13 +202,13 @@ When the parser detects an error in the syntax, it raises a ParseError:
 
 ```python
 import sqlglot
-sqlglot.transpile("SELECT foo( FROM bar")
+sqlglot.transpile("SELECT foo FROM (SELECT baz FROM t")
 ```
 
 ```
-sqlglot.errors.ParseError: Expecting ). Line 1, Col: 13.
-  select foo( FROM bar
-              ~~~~
+sqlglot.errors.ParseError: Expecting ). Line 1, Col: 33.
+  SELECT foo FROM (SELECT baz FROM t
+                                  ~
 ```
 
 Structured syntax errors are accessible for programmatic use:
@@ -216,7 +216,7 @@ Structured syntax errors are accessible for programmatic use:
 ```python
 import sqlglot
 try:
-    sqlglot.transpile("SELECT foo( FROM bar")
+    sqlglot.transpile("SELECT foo FROM (SELECT baz FROM t")
 except sqlglot.errors.ParseError as e:
     print(e.errors)
 ```
@@ -225,11 +225,11 @@ except sqlglot.errors.ParseError as e:
 [{
   'description': 'Expecting )',
   'line': 1,
-  'col': 16,
-  'start_context': 'SELECT foo( ',
-  'highlight': 'FROM',
-  'end_context': ' bar',
-  'into_expression': None,
+  'col': 33,
+  'start_context': 'SELECT foo FROM (SELECT baz FROM ',
+  'highlight': 't',
+  'end_context': '',
+  'into_expression': None
 }]
 ```
 

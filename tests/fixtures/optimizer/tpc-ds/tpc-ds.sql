@@ -1453,6 +1453,7 @@ WHERE
 --------------------------------------
 -- TPC-DS 10
 --------------------------------------
+# execute: true
 SELECT cd_gender,
                cd_marital_status,
                cd_education_status,
@@ -2765,6 +2766,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 21
 --------------------------------------
+# execute: true
 SELECT
          *
 FROM    (

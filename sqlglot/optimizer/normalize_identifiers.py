@@ -10,13 +10,11 @@ if t.TYPE_CHECKING:
 
 
 @t.overload
-def normalize_identifiers(expression: E, dialect: DialectType = None) -> E:
-    ...
+def normalize_identifiers(expression: E, dialect: DialectType = None) -> E: ...
 
 
 @t.overload
-def normalize_identifiers(expression: str, dialect: DialectType = None) -> exp.Identifier:
-    ...
+def normalize_identifiers(expression: str, dialect: DialectType = None) -> exp.Identifier: ...
 
 
 def normalize_identifiers(expression, dialect=None):

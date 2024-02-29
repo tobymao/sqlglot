@@ -140,12 +140,10 @@ class DataFrame:
         return cte, name
 
     @t.overload
-    def _ensure_list_of_columns(self, cols: t.Collection[ColumnOrLiteral]) -> t.List[Column]:
-        ...
+    def _ensure_list_of_columns(self, cols: t.Collection[ColumnOrLiteral]) -> t.List[Column]: ...
 
     @t.overload
-    def _ensure_list_of_columns(self, cols: ColumnOrLiteral) -> t.List[Column]:
-        ...
+    def _ensure_list_of_columns(self, cols: ColumnOrLiteral) -> t.List[Column]: ...
 
     def _ensure_list_of_columns(self, cols):
         return Column.ensure_cols(ensure_list(cols))

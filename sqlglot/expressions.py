@@ -548,12 +548,10 @@ class Expression(metaclass=_Expression):
         return new_node
 
     @t.overload
-    def replace(self, expression: E) -> E:
-        ...
+    def replace(self, expression: E) -> E: ...
 
     @t.overload
-    def replace(self, expression: None) -> None:
-        ...
+    def replace(self, expression: None) -> None: ...
 
     def replace(self, expression):
         """
@@ -5623,8 +5621,7 @@ def maybe_parse(
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts,
-) -> E:
-    ...
+) -> E: ...
 
 
 @t.overload
@@ -5636,8 +5633,7 @@ def maybe_parse(
     prefix: t.Optional[str] = None,
     copy: bool = False,
     **opts,
-) -> E:
-    ...
+) -> E: ...
 
 
 def maybe_parse(
@@ -5689,13 +5685,11 @@ def maybe_parse(
 
 
 @t.overload
-def maybe_copy(instance: None, copy: bool = True) -> None:
-    ...
+def maybe_copy(instance: None, copy: bool = True) -> None: ...
 
 
 @t.overload
-def maybe_copy(instance: E, copy: bool = True) -> E:
-    ...
+def maybe_copy(instance: E, copy: bool = True) -> E: ...
 
 
 def maybe_copy(instance, copy=True):
@@ -6318,15 +6312,13 @@ SAFE_IDENTIFIER_RE: t.Pattern[str] = re.compile(r"^[_a-zA-Z][\w]*$")
 
 
 @t.overload
-def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None:
-    ...
+def to_identifier(name: None, quoted: t.Optional[bool] = None, copy: bool = True) -> None: ...
 
 
 @t.overload
 def to_identifier(
     name: str | Identifier, quoted: t.Optional[bool] = None, copy: bool = True
-) -> Identifier:
-    ...
+) -> Identifier: ...
 
 
 def to_identifier(name, quoted=None, copy=True):
@@ -6398,13 +6390,11 @@ def to_interval(interval: str | Literal) -> Interval:
 
 
 @t.overload
-def to_table(sql_path: str | Table, **kwargs) -> Table:
-    ...
+def to_table(sql_path: str | Table, **kwargs) -> Table: ...
 
 
 @t.overload
-def to_table(sql_path: None, **kwargs) -> None:
-    ...
+def to_table(sql_path: None, **kwargs) -> None: ...
 
 
 def to_table(

@@ -206,9 +206,9 @@ sqlglot.transpile("SELECT foo FROM (SELECT baz FROM t")
 ```
 
 ```
-sqlglot.errors.ParseError: Expecting ). Line 1, Col: 33.
+sqlglot.errors.ParseError: Expecting ). Line 1, Col: 34.
   SELECT foo FROM (SELECT baz FROM t
-                                  ~
+                                   ~
 ```
 
 Structured syntax errors are accessible for programmatic use:
@@ -225,7 +225,7 @@ except sqlglot.errors.ParseError as e:
 [{
   'description': 'Expecting )',
   'line': 1,
-  'col': 33,
+  'col': 34,
   'start_context': 'SELECT foo FROM (SELECT baz FROM ',
   'highlight': 't',
   'end_context': '',

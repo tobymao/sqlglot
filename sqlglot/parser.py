@@ -647,15 +647,15 @@ class Parser(metaclass=_Parser):
     }
 
     STRING_PARSERS = {
-        TokenType.STRING: lambda self, token: self.expression(
-            exp.Literal, this=token.text, is_string=True
+        TokenType.HEREDOC_STRING: lambda self, token: self.expression(
+            exp.RawString, this=token.text
         ),
         TokenType.NATIONAL_STRING: lambda self, token: self.expression(
             exp.National, this=token.text
         ),
         TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, this=token.text),
-        TokenType.HEREDOC_STRING: lambda self, token: self.expression(
-            exp.RawString, this=token.text
+        TokenType.STRING: lambda self, token: self.expression(
+            exp.Literal, this=token.text, is_string=True
         ),
         TokenType.UNICODE_STRING: lambda self, token: self.expression(
             exp.UnicodeString,
@@ -665,25 +665,25 @@ class Parser(metaclass=_Parser):
     }
 
     NUMERIC_PARSERS = {
+        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
+        TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
+        TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
         TokenType.NUMBER: lambda self, token: self.expression(
             exp.Literal, this=token.text, is_string=False
         ),
-        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
-        TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
-        TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
     }
 
     PRIMARY_PARSERS = {
         **STRING_PARSERS,
         **NUMERIC_PARSERS,
-        TokenType.STAR: lambda self, _: self.expression(
-            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
-        ),
+        TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
         TokenType.NULL: lambda self, _: self.expression(exp.Null),
         TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
         TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
-        TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
+        TokenType.STAR: lambda self, _: self.expression(
+            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
+        ),
     }
 
     PLACEHOLDER_PARSERS = {

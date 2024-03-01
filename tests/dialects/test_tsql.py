@@ -271,6 +271,7 @@ class TestTSQL(Validator):
             'SELECT "x"."y" FROM foo',
             "SELECT [x].[y] FROM foo",
         )
+        self.validate_identity("SELECT TOP 0x10 FROM t", "SELECT TOP (0x10) FROM t")
 
         self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",

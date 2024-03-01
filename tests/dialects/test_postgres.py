@@ -167,6 +167,9 @@ class TestPostgres(Validator):
             "SELECT 'Dianne''s horse'",
         )
         self.validate_identity(
+            "COMMENT ON TABLE mytable IS $$doc this$$", "COMMENT ON TABLE mytable IS 'doc this'"
+        )
+        self.validate_identity(
             "UPDATE MYTABLE T1 SET T1.COL = 13",
             "UPDATE MYTABLE AS T1 SET T1.COL = 13",
         )

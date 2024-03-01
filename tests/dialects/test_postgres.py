@@ -11,6 +11,7 @@ class TestPostgres(Validator):
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")
+
         expr = parse_one(
             "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)", read="postgres"
         )
@@ -924,3 +925,31 @@ class TestPostgres(Validator):
         """See https://github.com/tobymao/sqlglot/pull/2404 for details."""
         self.assertIsInstance(parse_one("'thomas' ~ '.*thomas.*'", read="postgres"), exp.Binary)
         self.assertIsInstance(parse_one("'thomas' ~* '.*thomas.*'", read="postgres"), exp.Binary)
+
+    def test_unnest_json_array(self):
+        trino_input = """
+            WITH t(boxcrate) AS (
+              SELECT JSON '[{"boxes": [{"name": "f1", "type": "plant", "color": "red"}]}]'
+            )
+            SELECT
+              JSON_EXTRACT_SCALAR(boxes,'$.name')  AS name,
+              JSON_EXTRACT_SCALAR(boxes,'$.type')  AS type,
+              JSON_EXTRACT_SCALAR(boxes,'$.color') AS color
+            FROM t
+            CROSS JOIN UNNEST(CAST(boxcrate AS array(json))) AS x(tbox)
+            CROSS JOIN UNNEST(CAST(json_extract(tbox, '$.boxes') AS array(json))) AS y(boxes)
+        """
+
+        expected_postgres = """WITH t(boxcrate) AS (
+  SELECT
+    CAST('[{"boxes": [{"name": "f1", "type": "plant", "color": "red"}]}]' AS JSON)
+)
+SELECT
+  JSON_EXTRACT_PATH_TEXT(boxes, 'name') AS name,
+  JSON_EXTRACT_PATH_TEXT(boxes, 'type') AS type,
+  JSON_EXTRACT_PATH_TEXT(boxes, 'color') AS color
+FROM t
+CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(boxcrate AS JSON)) AS x(tbox)
+CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) AS y(boxes)"""
+
+        self.validate_all(expected_postgres, read={"trino": trino_input}, pretty=True)

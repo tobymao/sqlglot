@@ -2,7 +2,7 @@ import unittest
 
 from sqlglot import exp, parse_one
 from sqlglot.diff import Insert, Keep, Move, Remove, Update, diff
-from sqlglot.expressions import Join, to_identifier
+from sqlglot.expressions import Join, to_table
 
 
 class TestDiff(unittest.TestCase):
@@ -18,7 +18,6 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff(parse_one("SELECT a, b, c"), parse_one("SELECT a, c")),
             [
-                Remove(to_identifier("b", quoted=False)),  # the Identifier node
                 Remove(parse_one("b")),  # the Column node
             ],
         )
@@ -26,7 +25,6 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff(parse_one("SELECT a, b"), parse_one("SELECT a, b, c")),
             [
-                Insert(to_identifier("c", quoted=False)),  # the Identifier node
                 Insert(parse_one("c")),  # the Column node
             ],
         )
@@ -38,9 +36,39 @@ class TestDiff(unittest.TestCase):
             ),
             [
                 Update(
-                    to_identifier("table_one", quoted=False),
-                    to_identifier("table_two", quoted=False),
-                ),  # the Identifier node
+                    to_table("table_one", quoted=False),
+                    to_table("table_two", quoted=False),
+                ),  # the Table node
+            ],
+        )
+
+    def test_lambda(self):
+        self._validate_delta_only(
+            diff(parse_one("SELECT a, b, c, x(a -> a)"), parse_one("SELECT a, b, c, x(b -> b)")),
+            [
+                Update(
+                    exp.Lambda(this=exp.to_identifier("a"), expressions=[exp.to_identifier("a")]),
+                    exp.Lambda(this=exp.to_identifier("b"), expressions=[exp.to_identifier("b")]),
+                ),
+            ],
+        )
+
+    def test_udf(self):
+        self._validate_delta_only(
+            diff(parse_one('SELECT a, b, "my.udf1"()'), parse_one('SELECT a, b, "my.udf2"()')),
+            [
+                Insert(parse_one('"my.udf2"()')),
+                Remove(parse_one('"my.udf1"()')),
+            ],
+        )
+        self._validate_delta_only(
+            diff(
+                parse_one('SELECT a, b, "my.udf"(x, y, z)'),
+                parse_one('SELECT a, b, "my.udf"(x, y, w)'),
+            ),
+            [
+                Insert(exp.column("w")),
+                Remove(exp.column("z")),
             ],
         )
 
@@ -95,7 +123,6 @@ class TestDiff(unittest.TestCase):
             diff(parse_one(expr_src), parse_one(expr_tgt)),
             [
                 Remove(parse_one("LOWER(c) AS c")),  # the Alias node
-                Remove(to_identifier("c", quoted=False)),  # the Identifier node
                 Remove(parse_one("LOWER(c)")),  # the Lower node
                 Remove(parse_one("'filter'")),  # the Literal node
                 Insert(parse_one("'different_filter'")),  # the Literal node
@@ -162,9 +189,7 @@ class TestDiff(unittest.TestCase):
         self._validate_delta_only(
             diff(expr_src, expr_tgt),
             [
-                Insert(expression=exp.to_identifier("b")),
                 Insert(expression=exp.to_column("tbl.b")),
-                Insert(expression=exp.to_identifier("tbl")),
             ],
         )
 

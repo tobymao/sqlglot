@@ -85,6 +85,7 @@ WHERE
         self.validate_identity(
             "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
         )
+        self.validate_identity("x:from", "GET_PATH(x, 'from')")
         self.validate_identity(
             "value:values::string",
             "CAST(GET_PATH(value, 'values') AS TEXT)",

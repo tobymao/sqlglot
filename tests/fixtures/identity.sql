@@ -643,6 +643,7 @@ DROP MATERIALIZED VIEW x.y.z
 CACHE TABLE x
 CACHE LAZY TABLE x
 CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value')
+CACHE LAZY TABLE x OPTIONS(N'storageLevel' = 'value')
 CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS SELECT 1
 CACHE LAZY TABLE x OPTIONS('storageLevel' = 'value') AS WITH a AS (SELECT 1) SELECT a.* FROM a
 CACHE LAZY TABLE x AS WITH a AS (SELECT 1) SELECT a.* FROM a
@@ -708,6 +709,7 @@ COMMENT ON COLUMN my_schema.my_table.my_column IS 'Employee ID number'
 COMMENT ON DATABASE my_database IS 'Development Database'
 COMMENT ON PROCEDURE my_proc(integer, integer) IS 'Runs a report'
 COMMENT ON TABLE my_schema.my_table IS 'Employee Information'
+COMMENT ON TABLE my_schema.my_table IS N'National String'
 WITH a AS (SELECT 1) INSERT INTO b SELECT * FROM a
 WITH a AS (SELECT * FROM b) UPDATE a SET col = 1
 WITH a AS (SELECT * FROM b) CREATE TABLE b AS SELECT * FROM a

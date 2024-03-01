@@ -646,36 +646,44 @@ class Parser(metaclass=_Parser):
         TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt, this=self._parse_unary()),
     }
 
-    PRIMARY_PARSERS = {
-        TokenType.STRING: lambda self, token: self.expression(
-            exp.Literal, this=token.text, is_string=True
+    STRING_PARSERS = {
+        TokenType.HEREDOC_STRING: lambda self, token: self.expression(
+            exp.RawString, this=token.text
         ),
-        TokenType.NUMBER: lambda self, token: self.expression(
-            exp.Literal, this=token.text, is_string=False
-        ),
-        TokenType.STAR: lambda self, _: self.expression(
-            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
-        ),
-        TokenType.NULL: lambda self, _: self.expression(exp.Null),
-        TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
-        TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
-        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
-        TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
-        TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
-        TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
         TokenType.NATIONAL_STRING: lambda self, token: self.expression(
             exp.National, this=token.text
         ),
         TokenType.RAW_STRING: lambda self, token: self.expression(exp.RawString, this=token.text),
-        TokenType.HEREDOC_STRING: lambda self, token: self.expression(
-            exp.RawString, this=token.text
+        TokenType.STRING: lambda self, token: self.expression(
+            exp.Literal, this=token.text, is_string=True
         ),
         TokenType.UNICODE_STRING: lambda self, token: self.expression(
             exp.UnicodeString,
             this=token.text,
             escape=self._match_text_seq("UESCAPE") and self._parse_string(),
         ),
+    }
+
+    NUMERIC_PARSERS = {
+        TokenType.BIT_STRING: lambda self, token: self.expression(exp.BitString, this=token.text),
+        TokenType.BYTE_STRING: lambda self, token: self.expression(exp.ByteString, this=token.text),
+        TokenType.HEX_STRING: lambda self, token: self.expression(exp.HexString, this=token.text),
+        TokenType.NUMBER: lambda self, token: self.expression(
+            exp.Literal, this=token.text, is_string=False
+        ),
+    }
+
+    PRIMARY_PARSERS = {
+        **STRING_PARSERS,
+        **NUMERIC_PARSERS,
+        TokenType.INTRODUCER: lambda self, token: self._parse_introducer(token),
+        TokenType.NULL: lambda self, _: self.expression(exp.Null),
+        TokenType.TRUE: lambda self, _: self.expression(exp.Boolean, this=True),
+        TokenType.FALSE: lambda self, _: self.expression(exp.Boolean, this=False),
         TokenType.SESSION_PARAMETER: lambda self, _: self._parse_session_parameter(),
+        TokenType.STAR: lambda self, _: self.expression(
+            exp.Star, **{"except": self._parse_except(), "replace": self._parse_replace()}
+        ),
     }
 
     PLACEHOLDER_PARSERS = {
@@ -5242,16 +5250,16 @@ class Parser(metaclass=_Parser):
         return None
 
     def _parse_string(self) -> t.Optional[exp.Expression]:
-        if self._match_set((TokenType.STRING, TokenType.RAW_STRING)):
-            return self.PRIMARY_PARSERS[self._prev.token_type](self, self._prev)
+        if self._match_set(self.STRING_PARSERS):
+            return self.STRING_PARSERS[self._prev.token_type](self, self._prev)
         return self._parse_placeholder()
 
     def _parse_string_as_identifier(self) -> t.Optional[exp.Identifier]:
         return exp.to_identifier(self._match(TokenType.STRING) and self._prev.text, quoted=True)
 
     def _parse_number(self) -> t.Optional[exp.Expression]:
-        if self._match(TokenType.NUMBER):
-            return self.PRIMARY_PARSERS[TokenType.NUMBER](self, self._prev)
+        if self._match_set(self.NUMERIC_PARSERS):
+            return self.NUMERIC_PARSERS[self._prev.token_type](self, self._prev)
         return self._parse_placeholder()
 
     def _parse_identifier(self) -> t.Optional[exp.Expression]:

@@ -119,12 +119,17 @@ def diff(
     return ChangeDistiller(**kwargs).diff(source_copy, target_copy, matchings=matchings_copy)
 
 
-LEAF_EXPRESSION_TYPES = (
+# The expression types for which Update edits are allowed.
+UPDATABLE_EXPRESSION_TYPES = (
     exp.Boolean,
     exp.DataType,
-    exp.Identifier,
     exp.Literal,
+    exp.Table,
+    exp.Column,
+    exp.Lambda,
 )
+
+IGNORED_LEAF_EXPRESSION_TYPES = (exp.Identifier,)
 
 
 class ChangeDistiller:
@@ -152,8 +157,16 @@ class ChangeDistiller:
 
         self._source = source
         self._target = target
-        self._source_index = {id(n): n for n, *_ in self._source.bfs()}
-        self._target_index = {id(n): n for n, *_ in self._target.bfs()}
+        self._source_index = {
+            id(n): n
+            for n, *_ in self._source.bfs()
+            if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
+        }
+        self._target_index = {
+            id(n): n
+            for n, *_ in self._target.bfs()
+            if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
+        }
         self._unmatched_source_nodes = set(self._source_index) - set(pre_matched_nodes)
         self._unmatched_target_nodes = set(self._target_index) - set(pre_matched_nodes.values())
         self._bigram_histo_cache: t.Dict[int, t.DefaultDict[str, int]] = {}
@@ -170,7 +183,10 @@ class ChangeDistiller:
         for kept_source_node_id, kept_target_node_id in matching_set:
             source_node = self._source_index[kept_source_node_id]
             target_node = self._target_index[kept_target_node_id]
-            if not isinstance(source_node, LEAF_EXPRESSION_TYPES) or source_node == target_node:
+            if (
+                not isinstance(source_node, UPDATABLE_EXPRESSION_TYPES)
+                or source_node == target_node
+            ):
                 edit_script.extend(
                     self._generate_move_edits(source_node, target_node, matching_set)
                 )
@@ -307,17 +323,16 @@ def _get_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
     has_child_exprs = False
 
     for _, node in expression.iter_expressions():
-        has_child_exprs = True
-        yield from _get_leaves(node)
+        if not isinstance(node, IGNORED_LEAF_EXPRESSION_TYPES):
+            has_child_exprs = True
+            yield from _get_leaves(node)
 
     if not has_child_exprs:
         yield expression
 
 
 def _is_same_type(source: exp.Expression, target: exp.Expression) -> bool:
-    if type(source) is type(target) and (
-        not isinstance(source, exp.Identifier) or type(source.parent) is type(target.parent)
-    ):
+    if type(source) is type(target):
         if isinstance(source, exp.Join):
             return source.args.get("side") == target.args.get("side")
 
@@ -343,7 +358,11 @@ def _expression_only_args(expression: exp.Expression) -> t.List[exp.Expression]:
     if expression:
         for a in expression.args.values():
             args.extend(ensure_list(a))
-    return [a for a in args if isinstance(a, exp.Expression)]
+    return [
+        a
+        for a in args
+        if isinstance(a, exp.Expression) and not isinstance(a, IGNORED_LEAF_EXPRESSION_TYPES)
+    ]
 
 
 def _lcs(

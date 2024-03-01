@@ -438,7 +438,7 @@ class Snowflake(Dialect):
             self: parser.Parser, this: t.Optional[exp.Expression]
         ) -> t.Optional[exp.Expression]:
             while True:
-                path = self._parse_bitwise()
+                path = self._parse_bitwise() or self._parse_var(any_token=True)
 
                 # The cast :: operator has a lower precedence than the extraction operator :, so
                 # we rearrange the AST appropriately to avoid casting the 2nd argument of GET_PATH

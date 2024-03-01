@@ -1861,7 +1861,7 @@ class Generator(metaclass=_Generator):
         ]
 
         args_sql = ", ".join(self.sql(e) for e in args)
-        args_sql = f"({args_sql})" if any(top and not e.is_number for e in args) else args_sql
+        args_sql = f"({args_sql})" if top and any(not e.is_number for e in args) else args_sql
         expressions = self.expressions(expression, flat=True)
         expressions = f" BY {expressions}" if expressions else ""
 

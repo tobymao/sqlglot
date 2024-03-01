@@ -647,6 +647,7 @@ class TestPresto(Validator):
             """JSON '"foo"'""",
             write={
                 "bigquery": """PARSE_JSON('"foo"')""",
+                "postgres": """CAST('"foo"' AS JSON)""",
                 "presto": """JSON_PARSE('"foo"')""",
                 "snowflake": """PARSE_JSON('"foo"')""",
             },

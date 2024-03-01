@@ -852,3 +852,6 @@ class TestParser(unittest.TestCase):
         ):
             with self.subTest(dialect):
                 self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
+
+    def test_distinct_from(self):
+        self.assertIsInstance(parse_one("a IS DISTINCT FROM b OR c IS DISTINCT FROM d"), exp.Or)

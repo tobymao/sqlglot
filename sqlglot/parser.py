@@ -3597,7 +3597,7 @@ class Parser(metaclass=_Parser):
 
         if self._match_text_seq("DISTINCT", "FROM"):
             klass = exp.NullSafeEQ if negate else exp.NullSafeNEQ
-            return self.expression(klass, this=this, expression=self._parse_conjunction())
+            return self.expression(klass, this=this, expression=self._parse_bitwise())
 
         expression = self._parse_null() or self._parse_boolean()
         if not expression:

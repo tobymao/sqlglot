@@ -730,7 +730,7 @@ TBLPROPERTIES (
         for dialect in Dialects:
             with self.subTest(f"Transpiling query with CLUSTER/DISTRIBUTE/SORT BY to {dialect}"):
                 name = dialect.value
-                if name in ("", "hive", "spark", "spark2"):
+                if name in ("", "databricks", "hive", "spark", "spark2"):
                     self.assertEqual(query.sql(name), with_modifiers)
                 else:
                     self.assertEqual(query.sql(name), without_modifiers)

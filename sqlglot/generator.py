@@ -2103,7 +2103,7 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
-            *self.after_having_modifiers(expression),
+            *[gen(self, expression) for gen in self.AFTER_HAVING_MODIFIER_TRANSFORMS.values()],
             self.sql(expression, "order"),
             *offset_limit_modifiers,
             *self.after_limit_modifiers(expression),
@@ -2121,9 +2121,6 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "offset") if fetch else self.sql(limit),
             self.sql(limit) if fetch else self.sql(expression, "offset"),
         ]
-
-    def after_having_modifiers(self, expression: exp.Expression) -> t.List[str]:
-        return [gen(self, expression) for gen in self.AFTER_HAVING_MODIFIER_TRANSFORMS.values()]
 
     def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:
         locks = self.expressions(expression, key="locks", sep=" ")

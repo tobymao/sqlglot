@@ -377,7 +377,6 @@ class Snowflake(Dialect):
             **parser.Parser.RANGE_PARSERS,
             TokenType.LIKE_ANY: parser.binary_range_parser(exp.LikeAny),
             TokenType.ILIKE_ANY: parser.binary_range_parser(exp.ILikeAny),
-            TokenType.COLON: lambda self, this: self._parse_colon_get_path(this),
         }
 
         ALTER_PARSERS = {
@@ -434,35 +433,35 @@ class Snowflake(Dialect):
 
         SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
 
-        def _parse_colon_get_path(
-            self: parser.Parser, this: t.Optional[exp.Expression]
-        ) -> t.Optional[exp.Expression]:
-            while True:
-                path = self._parse_bitwise() or self._parse_var(any_token=True)
+        def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
+            this = super()._parse_column_ops(this)
+
+            casts = []
+            json_path = []
+
+            while self._match(TokenType.COLON):
+                path = super()._parse_column_ops(self._parse_field(any_token=True))
 
                 # The cast :: operator has a lower precedence than the extraction operator :, so
                 # we rearrange the AST appropriately to avoid casting the 2nd argument of GET_PATH
-                if isinstance(path, exp.Cast):
-                    target_type = path.to
+                while isinstance(path, exp.Cast):
+                    casts.append(path.to)
                     path = path.this
-                else:
-                    target_type = None
 
-                if isinstance(path, exp.Expression):
-                    path = exp.Literal.string(path.sql(dialect="snowflake"))
+                if path:
+                    json_path.append(path.sql(dialect="snowflake", copy=False))
 
-                # The extraction operator : is left-associative
+            if json_path:
                 this = self.expression(
-                    exp.JSONExtract, this=this, expression=self.dialect.to_json_path(path)
+                    exp.JSONExtract,
+                    this=this,
+                    expression=self.dialect.to_json_path(exp.Literal.string(".".join(json_path))),
                 )
 
-                if target_type:
-                    this = exp.cast(this, target_type)
+                while casts:
+                    this = self.expression(exp.Cast, this=this, to=casts.pop())
 
-                if not self._match(TokenType.COLON):
-                    break
-
-            return self._parse_range(this)
+            return this
 
         # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
         # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts

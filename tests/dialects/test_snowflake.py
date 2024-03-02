@@ -85,10 +85,14 @@ WHERE
         self.validate_identity(
             "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
         )
+        self.validate_identity(
+            "SELECT a:from::STRING, a:from || ' test' ",
+            "SELECT CAST(GET_PATH(a, 'from') AS TEXT), GET_PATH(a, 'from') || ' test'",
+        )
         self.validate_identity("x:from", "GET_PATH(x, 'from')")
         self.validate_identity(
-            "value:values::string",
-            "CAST(GET_PATH(value, 'values') AS TEXT)",
+            "value:values::string::int",
+            "CAST(CAST(GET_PATH(value, 'values') AS TEXT) AS INT)",
         )
         self.validate_identity(
             """SELECT GET_PATH(PARSE_JSON('{"y": [{"z": 1}]}'), 'y[0]:z')""",
@@ -132,7 +136,11 @@ WHERE
         )
         self.validate_identity(
             "v:attr[0]:name",
-            "GET_PATH(GET_PATH(v, 'attr[0]'), 'name')",
+            "GET_PATH(v, 'attr[0].name')",
+        )
+        self.validate_identity(
+            "a.x:from.b:c.d::int",
+            "CAST(GET_PATH(a.x, 'from.b.c.d') AS INT)",
         )
         self.validate_identity(
             """SELECT PARSE_JSON('{"food":{"fruit":"banana"}}'):food.fruit::VARCHAR""",
@@ -560,9 +568,9 @@ WHERE
         self.validate_all(
             '''SELECT PARSE_JSON('{"a": {"b c": "foo"}}'):a:"b c"''',
             write={
-                "duckdb": """SELECT JSON('{"a": {"b c": "foo"}}') -> '$.a' -> '$."b c"'""",
-                "mysql": """SELECT JSON_EXTRACT(JSON_EXTRACT('{"a": {"b c": "foo"}}', '$.a'), '$."b c"')""",
-                "snowflake": """SELECT GET_PATH(GET_PATH(PARSE_JSON('{"a": {"b c": "foo"}}'), 'a'), '["b c"]')""",
+                "duckdb": """SELECT JSON('{"a": {"b c": "foo"}}') -> '$.a."b c"'""",
+                "mysql": """SELECT JSON_EXTRACT('{"a": {"b c": "foo"}}', '$.a."b c"')""",
+                "snowflake": """SELECT GET_PATH(PARSE_JSON('{"a": {"b c": "foo"}}'), 'a["b c"]')""",
             },
         )
         self.validate_all(

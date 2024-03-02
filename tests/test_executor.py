@@ -704,6 +704,7 @@ class TestExecutor(unittest.TestCase):
             ("STRUCT('foo', 'bar', null, null)", {"foo": "bar"}),
             ("ROUND(1.5)", 2),
             ("ROUND(1.2)", 1),
+            ("ROUND(1.2345, 2)", 1.23),
             ("ROUND(NULL)", None),
         ]:
             with self.subTest(sql):

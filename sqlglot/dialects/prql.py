@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens, transforms
+from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.tokens import TokenType
 
 
 class PRQL(Dialect):
-
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ["`"]
 

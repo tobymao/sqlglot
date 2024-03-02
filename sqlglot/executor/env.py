@@ -212,6 +212,7 @@ ENV = {
     "ORDERED": ordered,
     "POW": pow,
     "RIGHT": null_if_any(lambda this, e: this[-e:]),
+    "ROUND": null_if_any(lambda this, decimals=None, truncate=None: round(this)),
     "STRPOSITION": str_position,
     "SUB": null_if_any(lambda e, this: e - this),
     "SUBSTRING": substring,

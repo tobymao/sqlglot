@@ -143,6 +143,16 @@ def to_node(
         )
     )
 
+    if isinstance(scope.expression, exp.Subquery):
+        for source in scope.subquery_scopes:
+            return to_node(
+                column,
+                scope=source,
+                dialect=dialect,
+                upstream=upstream,
+                source_name=source_name,
+                reference_node_name=reference_node_name,
+            )
     if isinstance(scope.expression, exp.Union):
         upstream = upstream or Node(name="UNION", source=scope.expression, expression=select)
 

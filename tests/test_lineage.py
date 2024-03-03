@@ -269,6 +269,41 @@ class TestLineage(unittest.TestCase):
         node = node.downstream[0]
         self.assertEqual(node.name, "z.a")
 
+        node = lineage(
+            "a",
+            """
+            WITH foo AS (
+              SELECT
+                1 AS a
+            ), bar AS (
+              (
+                SELECT
+                  a + 1 AS a
+                FROM foo
+              )
+            )
+            (
+              SELECT
+                a + b AS a
+              FROM bar
+              CROSS JOIN (
+                SELECT
+                  2 AS b
+              ) AS baz
+            )
+            """,
+        )
+        self.assertEqual(node.name, "a")
+        self.assertEqual(len(node.downstream), 2)
+        a, b = sorted(node.downstream, key=lambda n: n.name)
+        self.assertEqual(a.name, "bar.a")
+        self.assertEqual(len(a.downstream), 1)
+        self.assertEqual(b.name, "baz.b")
+        self.assertEqual(b.downstream, [])
+
+        node = a.downstream[0]
+        self.assertEqual(node.name, "foo.a")
+
     def test_lineage_cte_union(self) -> None:
         query = """
         WITH dataset AS (

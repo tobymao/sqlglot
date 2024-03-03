@@ -118,6 +118,7 @@ class Step:
         if joins:
             join = Join.from_joins(joins, ctes)
             join.name = step.name
+            join.source_name = step.name
             join.add_dependency(step)
             step = join
 
@@ -331,7 +332,7 @@ class Join(Step):
     @classmethod
     def from_joins(
         cls, joins: t.Iterable[exp.Join], ctes: t.Optional[t.Dict[str, Step]] = None
-    ) -> Step:
+    ) -> Join:
         step = Join()
 
         for join in joins:
@@ -349,10 +350,11 @@ class Join(Step):
 
     def __init__(self) -> None:
         super().__init__()
+        self.source_name: t.Optional[str] = None
         self.joins: t.Dict[str, t.Dict[str, t.List[str] | exp.Expression]] = {}
 
     def _to_s(self, indent: str) -> t.List[str]:
-        lines = []
+        lines = [f"{indent}Source: {self.source_name or self.name}"]
         for name, join in self.joins.items():
             lines.append(f"{indent}{name}: {join['side'] or 'INNER'}")
             join_key = ", ".join(str(key) for key in t.cast(list, join.get("join_key") or []))
@@ -423,7 +425,7 @@ class SetOperation(Step):
     @classmethod
     def from_expression(
         cls, expression: exp.Expression, ctes: t.Optional[t.Dict[str, Step]] = None
-    ) -> Step:
+    ) -> SetOperation:
         assert isinstance(expression, exp.Union)
 
         left = Step.from_expression(expression.left, ctes)

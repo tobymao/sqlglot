@@ -157,7 +157,7 @@ class PythonExecutor:
                 yield context.table.reader
 
     def join(self, step, context):
-        source = step.name
+        source = step.source_name
 
         source_table = context.tables[source]
         source_context = self.context({source: source_table})

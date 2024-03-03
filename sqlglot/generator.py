@@ -350,6 +350,18 @@ class Generator(metaclass=_Generator):
         "YEARS": "YEAR",
     }
 
+    AFTER_HAVING_MODIFIER_TRANSFORMS = {
+        "cluster": lambda self, e: self.sql(e, "cluster"),
+        "distribute": lambda self, e: self.sql(e, "distribute"),
+        "qualify": lambda self, e: self.sql(e, "qualify"),
+        "sort": lambda self, e: self.sql(e, "sort"),
+        "windows": lambda self, e: (
+            self.seg("WINDOW ") + self.expressions(e, key="windows", flat=True)
+            if e.args.get("windows")
+            else ""
+        ),
+    }
+
     TOKEN_MAPPING: t.Dict[TokenType, str] = {}
 
     STRUCT_DELIMITER = ("<", ">")
@@ -2097,7 +2109,7 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "where"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
-            *self.after_having_modifiers(expression),
+            *[gen(self, expression) for gen in self.AFTER_HAVING_MODIFIER_TRANSFORMS.values()],
             self.sql(expression, "order"),
             *offset_limit_modifiers,
             *self.after_limit_modifiers(expression),
@@ -2114,19 +2126,6 @@ class Generator(metaclass=_Generator):
         return [
             self.sql(expression, "offset") if fetch else self.sql(limit),
             self.sql(limit) if fetch else self.sql(expression, "offset"),
-        ]
-
-    def after_having_modifiers(self, expression: exp.Expression) -> t.List[str]:
-        return [
-            self.sql(expression, "qualify"),
-            (
-                self.seg("WINDOW ") + self.expressions(expression, key="windows", flat=True)
-                if expression.args.get("windows")
-                else ""
-            ),
-            self.sql(expression, "distribute"),
-            self.sql(expression, "sort"),
-            self.sql(expression, "cluster"),
         ]
 
     def after_limit_modifiers(self, expression: exp.Expression) -> t.List[str]:

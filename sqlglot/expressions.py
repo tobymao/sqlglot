@@ -1605,7 +1605,7 @@ class TitleColumnConstraint(ColumnConstraintKind):
 
 
 class UniqueColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": False, "index_type": False}
+    arg_types = {"this": False, "index_type": False, "on_conflict": False}
 
 
 class UppercaseColumnConstraint(ColumnConstraintKind):
@@ -1883,8 +1883,8 @@ class OnConflict(Expression):
     arg_types = {
         "duplicate": False,
         "expressions": False,
-        "nothing": False,
-        "key": False,
+        "action": False,
+        "conflict_keys": False,
         "constraint": False,
     }
 

@@ -1099,6 +1099,11 @@ WHERE
             write={"snowflake": "CREATE TABLE a (b INT)"},
         )
 
+        self.validate_all("CREATE SEQUENCE seq1 START WITH 1")
+        seq = parse_one("CREATE SEQUENCE seq1 START WITH 1", read="snowflake")
+
+        self.assertIsInstance(seq, exp.Create)
+
     def test_user_defined_functions(self):
         self.validate_all(
             "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS $$ SELECT 1 $$",

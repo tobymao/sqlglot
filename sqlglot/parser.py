@@ -966,6 +966,11 @@ class Parser(metaclass=_Parser):
         "READ": ("WRITE", "ONLY"),
     }
 
+    CONFLICT_ACTIONS: OPTIONS_TYPE = dict.fromkeys(
+        ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK", "UPDATE"), tuple()
+    )
+    CONFLICT_ACTIONS["DO"] = ("NOTHING", "UPDATE")
+
     USABLES: OPTIONS_TYPE = dict.fromkeys(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"), tuple())
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
@@ -2112,31 +2117,31 @@ class Parser(metaclass=_Parser):
         if not conflict and not duplicate:
             return None
 
-        nothing = None
-        expressions = None
-        key = None
+        conflict_keys = None
         constraint = None
 
         if conflict:
             if self._match_text_seq("ON", "CONSTRAINT"):
                 constraint = self._parse_id_var()
-            else:
-                key = self._parse_csv(self._parse_value)
+            elif self._match(TokenType.L_PAREN):
+                conflict_keys = self._parse_csv(self._parse_id_var)
+                self._match_r_paren()
 
-        self._match_text_seq("DO")
-        if self._match_text_seq("NOTHING"):
-            nothing = True
-        else:
-            self._match(TokenType.UPDATE)
+        action = self._parse_var_from_options(
+            self.CONFLICT_ACTIONS,
+        )
+        if self._prev.token_type == TokenType.UPDATE:
             self._match(TokenType.SET)
             expressions = self._parse_csv(self._parse_equality)
+        else:
+            expressions = None
 
         return self.expression(
             exp.OnConflict,
             duplicate=duplicate,
             expressions=expressions,
-            nothing=nothing,
-            key=key,
+            action=action,
+            conflict_keys=conflict_keys,
             constraint=constraint,
         )
 
@@ -4417,9 +4422,7 @@ class Parser(metaclass=_Parser):
         self._match_text_seq("LENGTH")
         return self.expression(exp.InlineLengthColumnConstraint, this=self._parse_bitwise())
 
-    def _parse_not_constraint(
-        self,
-    ) -> t.Optional[exp.Expression]:
+    def _parse_not_constraint(self) -> t.Optional[exp.Expression]:
         if self._match_text_seq("NULL"):
             return self.expression(exp.NotNullColumnConstraint)
         if self._match_text_seq("CASESPECIFIC"):
@@ -4447,16 +4450,21 @@ class Parser(metaclass=_Parser):
         if not self._match(TokenType.CONSTRAINT):
             return self._parse_unnamed_constraint(constraints=self.SCHEMA_UNNAMED_CONSTRAINTS)
 
-        this = self._parse_id_var()
-        expressions = []
+        return self.expression(
+            exp.Constraint,
+            this=self._parse_id_var(),
+            expressions=self._parse_unnamed_constraints(),
+        )
 
+    def _parse_unnamed_constraints(self) -> t.List[exp.Expression]:
+        constraints = []
         while True:
             constraint = self._parse_unnamed_constraint() or self._parse_function()
             if not constraint:
                 break
-            expressions.append(constraint)
+            constraints.append(constraint)
 
-        return self.expression(exp.Constraint, this=this, expressions=expressions)
+        return constraints
 
     def _parse_unnamed_constraint(
         self, constraints: t.Optional[t.Collection[str]] = None
@@ -4478,6 +4486,7 @@ class Parser(metaclass=_Parser):
             exp.UniqueColumnConstraint,
             this=self._parse_schema(self._parse_id_var(any_token=False)),
             index_type=self._match(TokenType.USING) and self._advance_any() and self._prev.text,
+            on_conflict=self._parse_on_conflict(),
         )
 
     def _parse_key_constraint_options(self) -> t.List[str]:

@@ -1516,6 +1516,9 @@ class Parser(metaclass=_Parser):
             elif create_token.token_type == TokenType.SEQUENCE:
                 if self._match_texts("START") or self._match(TokenType.START_WITH):
                     seq_start = self.expression(exp.Start, this=self._parse_number())
+                if self._match_texts("INCREMENT"):
+                    self._match_texts("BY")
+                    seq_increment = self.expression(exp.Increment, this=self._parse_number())
 
             shallow = self._match_text_seq("SHALLOW")
 

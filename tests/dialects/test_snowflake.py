@@ -1099,12 +1099,13 @@ WHERE
             write={"snowflake": "CREATE TABLE a (b INT)"},
         )
 
-        self.validate_identity("CREATE SEQUENCE seq1 START WITH 1")
+        self.validate_identity("CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 2")
         self.assertIsInstance(
-            parse_one("CREATE SEQUENCE seq1 START 1", read="snowflake"), exp.Create
+            parse_one("CREATE SEQUENCE seq1 START 1 INCREMENT 2", read="snowflake"), exp.Create
         )
         self.assertIsInstance(
-            parse_one("CREATE SEQUENCE seq1 START WITH 1", read="snowflake"), exp.Create
+            parse_one("CREATE SEQUENCE seq1 WITH START WITH 1 INCREMENT BY 2", read="snowflake"),
+            exp.Create,
         )
 
     def test_user_defined_functions(self):
@@ -1117,7 +1118,7 @@ WHERE
         self.validate_all(
             "CREATE FUNCTION a() RETURNS TABLE (b INT) AS 'SELECT 1'",
             write={
-                "snowflake": "CREATE FUNCTION a() RETURNS TABLE (b INT) AS 'SELECT 1'",
+                "snowflake": "CREATE FUNCTION a() RETURNS TABL  E (b INT) AS 'SELECT 1'",
                 "bigquery": "CREATE TABLE FUNCTION a() RETURNS TABLE <b INT64> AS SELECT 1",
             },
         )

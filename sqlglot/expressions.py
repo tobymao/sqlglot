@@ -3622,7 +3622,7 @@ class Star(Expression):
 
 
 class Increment(Expression):
-    arg_types = {"increment": True}
+    arg_types = {"this": True}
 
 
 class Start(Expression):

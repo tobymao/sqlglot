@@ -138,6 +138,13 @@ class _Dialect(type):
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
+        if enum not in ("", "databricks", "hive", "spark", "spark2"):
+            modifier_transforms = klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS.copy()
+            for modifier in ("cluster", "distribute", "sort"):
+                modifier_transforms.pop(modifier, None)
+
+            klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS = modifier_transforms
+
         if not klass.SUPPORTS_SEMI_ANTI_JOIN:
             klass.parser_class.TABLE_ALIAS_TOKENS = klass.parser_class.TABLE_ALIAS_TOKENS | {
                 TokenType.ANTI,

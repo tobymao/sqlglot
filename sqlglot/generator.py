@@ -869,7 +869,9 @@ class Generator(metaclass=_Generator):
         this = f" {this}" if this else ""
         index_type = expression.args.get("index_type")
         index_type = f" USING {index_type}" if index_type else ""
-        return f"UNIQUE{this}{index_type}"
+        on_conflict = self.sql(expression, "on_conflict")
+        on_conflict = f" {on_conflict}" if on_conflict else ""
+        return f"UNIQUE{this}{index_type}{on_conflict}"
 
     def createable_sql(self, expression: exp.Create, locations: t.DefaultDict) -> str:
         return self.sql(expression, "this")
@@ -1457,14 +1459,15 @@ class Generator(metaclass=_Generator):
         where = self.sql(expression, "where")
         where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
-        conflict = self.sql(expression, "conflict")
+        on_conflict = self.sql(expression, "conflict")
+        on_conflict = f" {on_conflict}" if on_conflict else ""
         by_name = " BY NAME" if expression.args.get("by_name") else ""
         returning = self.sql(expression, "returning")
 
         if self.RETURNING_END:
-            expression_sql = f"{expression_sql}{conflict}{returning}"
+            expression_sql = f"{expression_sql}{on_conflict}{returning}"
         else:
-            expression_sql = f"{returning}{expression_sql}{conflict}"
+            expression_sql = f"{returning}{expression_sql}{on_conflict}"
 
         sql = f"INSERT{alternative}{ignore}{this}{by_name}{exists}{partition_sql}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
@@ -1496,17 +1499,20 @@ class Generator(metaclass=_Generator):
 
     def onconflict_sql(self, expression: exp.OnConflict) -> str:
         conflict = "ON DUPLICATE KEY" if expression.args.get("duplicate") else "ON CONFLICT"
+
         constraint = self.sql(expression, "constraint")
-        if constraint:
-            constraint = f"ON CONSTRAINT {constraint}"
-        key = self.expressions(expression, key="key", flat=True)
-        do = "" if expression.args.get("duplicate") else " DO "
-        nothing = "NOTHING" if expression.args.get("nothing") else ""
+        constraint = f" ON CONSTRAINT {constraint}" if constraint else ""
+
+        conflict_keys = self.expressions(expression, key="conflict_keys", flat=True)
+        conflict_keys = f"({conflict_keys}) " if conflict_keys else " "
+        action = self.sql(expression, "action")
+
         expressions = self.expressions(expression, flat=True)
-        set_keyword = "SET " if self.DUPLICATE_KEY_UPDATE_WITH_SET else ""
         if expressions:
-            expressions = f"UPDATE {set_keyword}{expressions}"
-        return f"{self.seg(conflict)} {constraint}{key}{do}{nothing}{expressions}"
+            set_keyword = "SET " if self.DUPLICATE_KEY_UPDATE_WITH_SET else ""
+            expressions = f" {set_keyword}{expressions}"
+
+        return f"{conflict}{constraint}{conflict_keys}{action}{expressions}"
 
     def returning_sql(self, expression: exp.Returning) -> str:
         return f"{self.seg('RETURNING')} {self.expressions(expression, flat=True)}"

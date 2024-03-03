@@ -702,6 +702,10 @@ class TestExecutor(unittest.TestCase):
             ("ARRAY_JOIN(['hello', null ,'world'], ' ', ',')", "hello , world"),
             ("ARRAY_JOIN(['', null ,'world'], ' ', ',')", " , world"),
             ("STRUCT('foo', 'bar', null, null)", {"foo": "bar"}),
+            ("ROUND(1.5)", 2),
+            ("ROUND(1.2)", 1),
+            ("ROUND(1.2345, 2)", 1.23),
+            ("ROUND(NULL)", None),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")

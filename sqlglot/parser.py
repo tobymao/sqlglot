@@ -2127,9 +2127,7 @@ class Parser(metaclass=_Parser):
                 conflict_keys = self._parse_csv(self._parse_id_var)
                 self._match_r_paren()
 
-        action = self._parse_var_from_options(
-            self.CONFLICT_ACTIONS,
-        )
+        action = self._parse_var_from_options(self.CONFLICT_ACTIONS)
         if self._prev.token_type == TokenType.UPDATE:
             self._match(TokenType.SET)
             expressions = self._parse_csv(self._parse_equality)

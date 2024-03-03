@@ -1214,6 +1214,8 @@ class Create(DDL):
         "begin": False,
         "end": False,
         "clone": False,
+        "start": False,
+        "increment": False,
     }
 
     @property
@@ -3617,6 +3619,14 @@ class Star(Expression):
     @property
     def output_name(self) -> str:
         return self.name
+
+
+class Increment(Expression):
+    arg_types = {"increment": True}
+
+
+class Start(Expression):
+    arg_types = {"this": True}
 
 
 class Parameter(Condition):

@@ -1434,6 +1434,8 @@ class Parser(metaclass=_Parser):
         begin = None
         end = None
         clone = None
+        seq_start = None
+        seq_increment = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:
             nonlocal properties
@@ -1511,6 +1513,9 @@ class Parser(metaclass=_Parser):
             elif create_token.token_type == TokenType.VIEW:
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
+            elif create_token.token_type == TokenType.SEQUENCE:
+                if self._match_texts("START") or self._match(TokenType.START_WITH):
+                    seq_start = self.expression(exp.Start, this=self._parse_number())
 
             shallow = self._match_text_seq("SHALLOW")
 
@@ -1538,6 +1543,8 @@ class Parser(metaclass=_Parser):
             begin=begin,
             end=end,
             clone=clone,
+            start=seq_start,
+            increment=seq_increment,
         )
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:
@@ -4860,12 +4867,10 @@ class Parser(metaclass=_Parser):
         return None
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
-        ...
+    def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
 
     @t.overload
-    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
-        ...
+    def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
 
     def _parse_json_object(self, agg=False):
         star = self._parse_star()
@@ -5923,14 +5928,12 @@ class Parser(metaclass=_Parser):
         return True
 
     @t.overload
-    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression:
-        ...
+    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression: ...
 
     @t.overload
     def _replace_columns_with_dots(
         self, this: t.Optional[exp.Expression]
-    ) -> t.Optional[exp.Expression]:
-        ...
+    ) -> t.Optional[exp.Expression]: ...
 
     def _replace_columns_with_dots(self, this):
         if isinstance(this, exp.Dot):

@@ -1099,10 +1099,13 @@ WHERE
             write={"snowflake": "CREATE TABLE a (b INT)"},
         )
 
-        self.validate_all("CREATE SEQUENCE seq1 START WITH 1")
-        seq = parse_one("CREATE SEQUENCE seq1 START WITH 1", read="snowflake")
-
-        self.assertIsInstance(seq, exp.Create)
+        self.validate_identity("CREATE SEQUENCE seq1 START WITH 1")
+        self.assertIsInstance(
+            parse_one("CREATE SEQUENCE seq1 START 1", read="snowflake"), exp.Create
+        )
+        self.assertIsInstance(
+            parse_one("CREATE SEQUENCE seq1 START WITH 1", read="snowflake"), exp.Create
+        )
 
     def test_user_defined_functions(self):
         self.validate_all(

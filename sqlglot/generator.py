@@ -1451,6 +1451,7 @@ class Generator(metaclass=_Generator):
         return f"{sql})"
 
     def insert_sql(self, expression: exp.Insert) -> str:
+        hint = self.sql(expression, "hint")
         overwrite = expression.args.get("overwrite")
 
         if isinstance(expression.this, exp.Directory):
@@ -1481,7 +1482,7 @@ class Generator(metaclass=_Generator):
         else:
             expression_sql = f"{returning}{expression_sql}{on_conflict}"
 
-        sql = f"INSERT{alternative}{ignore}{this}{by_name}{exists}{partition_sql}{where}{expression_sql}"
+        sql = f"INSERT{hint}{alternative}{ignore}{this}{by_name}{exists}{partition_sql}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:

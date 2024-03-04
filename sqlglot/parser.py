@@ -2061,6 +2061,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_insert(self) -> exp.Insert:
         comments = ensure_list(self._prev_comments)
+        hint = self._parse_hint()
         overwrite = self._match(TokenType.OVERWRITE)
         ignore = self._match(TokenType.IGNORE)
         local = self._match_text_seq("LOCAL")
@@ -2087,6 +2088,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Insert,
             comments=comments,
+            hint=hint,
             this=this,
             by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),

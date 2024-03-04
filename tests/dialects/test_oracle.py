@@ -210,6 +210,8 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT /*+ LEADING(e j) */ * FROM employees e, departments d, job_history j WHERE e.department_id = d.department_id AND e.hire_date = j.start_date"
         )
+        self.validate_identity("INSERT /*+ APPEND */ INTO IAP_TBL (id, col1) VALUES (2, 'test2')")
+        self.validate_identity("INSERT /*+ APPEND_VALUES */ INTO dest_table VALUES (i, 'Value')")
 
     def test_xml_table(self):
         self.validate_identity("XMLTABLE('x')")

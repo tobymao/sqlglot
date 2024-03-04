@@ -293,6 +293,7 @@ class TestRedshift(Validator):
         )
 
     def test_identity(self):
+        self.validate_identity("LISTAGG(DISTINCT foo, ', ')")
         self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")
         self.validate_identity("SELECT DATEADD(DAY, 1, 'today')")
         self.validate_identity("SELECT * FROM #x")

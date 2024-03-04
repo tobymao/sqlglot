@@ -153,6 +153,7 @@ class Redshift(Postgres):
         NVL2_SUPPORTED = True
         LAST_DAY_SUPPORTS_DATE_PART = False
         CAN_IMPLEMENT_ARRAY_ANY = False
+        MULTI_ARG_DISTINCT = True
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,

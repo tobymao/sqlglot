@@ -48,6 +48,9 @@
                                     <li>
                                             <a class="variable" href="#Trino.Generator.SELECT_KINDS">SELECT_KINDS</a>
                                     </li>
+                                    <li>
+                                            <a class="variable" href="#Trino.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS">AFTER_HAVING_MODIFIER_TRANSFORMS</a>
+                                    </li>
                             </ul>
 
                         </li>
@@ -605,7 +608,7 @@ Default: True</li>
                                 <div class="attr variable">
             <span class="name">SUPPORTED_JSON_PATH_PARTS</span>        =
 <input id="Trino.Generator.SUPPORTED_JSON_PATH_PARTS-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
-            <label class="view-value-button pdoc-button" for="Trino.Generator.SUPPORTED_JSON_PATH_PARTS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#JSONPathRoot">sqlglot.expressions.JSONPathRoot</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathKey">sqlglot.expressions.JSONPathKey</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathSubscript">sqlglot.expressions.JSONPathSubscript</a>&#39;&gt;}</span>
+            <label class="view-value-button pdoc-button" for="Trino.Generator.SUPPORTED_JSON_PATH_PARTS-view-value"></label><span class="default_value">{&lt;class &#39;<a href="../expressions.html#JSONPathKey">sqlglot.expressions.JSONPathKey</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathSubscript">sqlglot.expressions.JSONPathSubscript</a>&#39;&gt;, &lt;class &#39;<a href="../expressions.html#JSONPathRoot">sqlglot.expressions.JSONPathRoot</a>&#39;&gt;}</span>
 
         
     </div>
@@ -622,6 +625,18 @@ Default: True</li>
         
     </div>
     <a class="headerlink" href="#Trino.Generator.SELECT_KINDS"></a>
+    
+    
+
+                            </div>
+                            <div id="Trino.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">AFTER_HAVING_MODIFIER_TRANSFORMS</span>        =
+<span class="default_value">{&#39;qualify&#39;: &lt;function Generator.&lt;lambda&gt;&gt;, &#39;windows&#39;: &lt;function Generator.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Trino.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS"></a>
     
     
 
@@ -831,7 +846,6 @@ Default: True</li>
                 <dd id="Trino.Generator.matchrecognize_sql" class="function"><a href="../generator.html#Generator.matchrecognize_sql">matchrecognize_sql</a></dd>
                 <dd id="Trino.Generator.query_modifiers" class="function"><a href="../generator.html#Generator.query_modifiers">query_modifiers</a></dd>
                 <dd id="Trino.Generator.queryoption_sql" class="function"><a href="../generator.html#Generator.queryoption_sql">queryoption_sql</a></dd>
-                <dd id="Trino.Generator.after_having_modifiers" class="function"><a href="../generator.html#Generator.after_having_modifiers">after_having_modifiers</a></dd>
                 <dd id="Trino.Generator.after_limit_modifiers" class="function"><a href="../generator.html#Generator.after_limit_modifiers">after_limit_modifiers</a></dd>
                 <dd id="Trino.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
                 <dd id="Trino.Generator.schema_sql" class="function"><a href="../generator.html#Generator.schema_sql">schema_sql</a></dd>

@@ -114,6 +114,9 @@
                                     <li>
                                             <a class="variable" href="#Python.Generator.SELECT_KINDS">SELECT_KINDS</a>
                                     </li>
+                                    <li>
+                                            <a class="variable" href="#Python.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS">AFTER_HAVING_MODIFIER_TRANSFORMS</a>
+                                    </li>
                             </ul>
 
                         </li>
@@ -362,7 +365,7 @@
 </span><span id="L-157"><a href="#L-157"><span class="linenos">157</span></a>                <span class="k">yield</span> <span class="n">context</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">reader</span>
 </span><span id="L-158"><a href="#L-158"><span class="linenos">158</span></a>
 </span><span id="L-159"><a href="#L-159"><span class="linenos">159</span></a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
-</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>        <span class="n">source</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span>
+</span><span id="L-160"><a href="#L-160"><span class="linenos">160</span></a>        <span class="n">source</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">source_name</span>
 </span><span id="L-161"><a href="#L-161"><span class="linenos">161</span></a>
 </span><span id="L-162"><a href="#L-162"><span class="linenos">162</span></a>        <span class="n">source_table</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
 </span><span id="L-163"><a href="#L-163"><span class="linenos">163</span></a>        <span class="n">source_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">({</span><span class="n">source</span><span class="p">:</span> <span class="n">source_table</span><span class="p">})</span>
@@ -822,7 +825,7 @@
 </span><span id="PythonExecutor-158"><a href="#PythonExecutor-158"><span class="linenos">158</span></a>                <span class="k">yield</span> <span class="n">context</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">reader</span>
 </span><span id="PythonExecutor-159"><a href="#PythonExecutor-159"><span class="linenos">159</span></a>
 </span><span id="PythonExecutor-160"><a href="#PythonExecutor-160"><span class="linenos">160</span></a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
-</span><span id="PythonExecutor-161"><a href="#PythonExecutor-161"><span class="linenos">161</span></a>        <span class="n">source</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span>
+</span><span id="PythonExecutor-161"><a href="#PythonExecutor-161"><span class="linenos">161</span></a>        <span class="n">source</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">source_name</span>
 </span><span id="PythonExecutor-162"><a href="#PythonExecutor-162"><span class="linenos">162</span></a>
 </span><span id="PythonExecutor-163"><a href="#PythonExecutor-163"><span class="linenos">163</span></a>        <span class="n">source_table</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
 </span><span id="PythonExecutor-164"><a href="#PythonExecutor-164"><span class="linenos">164</span></a>        <span class="n">source_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">({</span><span class="n">source</span><span class="p">:</span> <span class="n">source_table</span><span class="p">})</span>
@@ -1352,7 +1355,7 @@
     </div>
     <a class="headerlink" href="#PythonExecutor.join"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="PythonExecutor.join-160"><a href="#PythonExecutor.join-160"><span class="linenos">160</span></a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
-</span><span id="PythonExecutor.join-161"><a href="#PythonExecutor.join-161"><span class="linenos">161</span></a>        <span class="n">source</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span>
+</span><span id="PythonExecutor.join-161"><a href="#PythonExecutor.join-161"><span class="linenos">161</span></a>        <span class="n">source</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">source_name</span>
 </span><span id="PythonExecutor.join-162"><a href="#PythonExecutor.join-162"><span class="linenos">162</span></a>
 </span><span id="PythonExecutor.join-163"><a href="#PythonExecutor.join-163"><span class="linenos">163</span></a>        <span class="n">source_table</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
 </span><span id="PythonExecutor.join-164"><a href="#PythonExecutor.join-164"><span class="linenos">164</span></a>        <span class="n">source_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">({</span><span class="n">source</span><span class="p">:</span> <span class="n">source_table</span><span class="p">})</span>
@@ -2158,6 +2161,18 @@ Default: True</li>
     
 
                             </div>
+                            <div id="Python.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS" class="classattr">
+                                <div class="attr variable">
+            <span class="name">AFTER_HAVING_MODIFIER_TRANSFORMS</span>        =
+<span class="default_value">{&#39;qualify&#39;: &lt;function Generator.&lt;lambda&gt;&gt;, &#39;windows&#39;: &lt;function Generator.&lt;lambda&gt;&gt;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.Generator.AFTER_HAVING_MODIFIER_TRANSFORMS"></a>
+    
+    
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
@@ -2380,7 +2395,6 @@ Default: True</li>
                 <dd id="Python.Generator.query_modifiers" class="function"><a href="../generator.html#Generator.query_modifiers">query_modifiers</a></dd>
                 <dd id="Python.Generator.queryoption_sql" class="function"><a href="../generator.html#Generator.queryoption_sql">queryoption_sql</a></dd>
                 <dd id="Python.Generator.offset_limit_modifiers" class="function"><a href="../generator.html#Generator.offset_limit_modifiers">offset_limit_modifiers</a></dd>
-                <dd id="Python.Generator.after_having_modifiers" class="function"><a href="../generator.html#Generator.after_having_modifiers">after_having_modifiers</a></dd>
                 <dd id="Python.Generator.after_limit_modifiers" class="function"><a href="../generator.html#Generator.after_limit_modifiers">after_limit_modifiers</a></dd>
                 <dd id="Python.Generator.select_sql" class="function"><a href="../generator.html#Generator.select_sql">select_sql</a></dd>
                 <dd id="Python.Generator.schema_sql" class="function"><a href="../generator.html#Generator.schema_sql">schema_sql</a></dd>

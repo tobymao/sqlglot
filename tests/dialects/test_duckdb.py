@@ -1,5 +1,6 @@
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
+from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
 
 
@@ -7,6 +8,13 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        query = "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT t.col['b'] FROM _data, UNNEST(_data.col) AS t(col) WHERE t.col['a'] = 1"
+        expr = annotate_types(self.validate_identity(query))
+        self.assertEqual(
+            expr.sql(dialect="bigquery"),
+            "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT col.b FROM _data, UNNEST(_data.col) AS col WHERE col.a = 1",
+        )
+
         self.validate_all(
             'STRUCT_PACK("a b" := 1)',
             write={
@@ -128,13 +136,6 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": """SELECT JSON('{"fruit": {"foo": "banana"}}') -> '$.fruit' -> '$.foo'""",
                 "snowflake": """SELECT GET_PATH(GET_PATH(PARSE_JSON('{"fruit": {"foo": "banana"}}'), 'fruit'), 'foo')""",
-            },
-        )
-        self.validate_all(
-            "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT (SELECT col['b'] FROM UNNEST(col) AS t(col) WHERE col['a'] = 1) FROM _data",
-            write={
-                "bigquery": "WITH _data AS (SELECT [STRUCT(1 AS a, 2 AS b), STRUCT(2 AS a, 3 AS b)] AS col) SELECT (SELECT col.b FROM UNNEST(col) AS col WHERE col.a = 1) FROM _data",
-                "duckdb": "WITH _data AS (SELECT [{'a': 1, 'b': 2}, {'a': 2, 'b': 3}] AS col) SELECT (SELECT col['b'] FROM UNNEST(col) AS t(col) WHERE col['a'] = 1) FROM _data",
             },
         )
         self.validate_all(

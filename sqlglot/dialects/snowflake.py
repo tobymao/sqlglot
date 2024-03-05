@@ -670,6 +670,7 @@ class Snowflake(Dialect):
             "RENAME": TokenType.REPLACE,
             "RM": TokenType.COMMAND,
             "SAMPLE": TokenType.TABLE_SAMPLE,
+            "SEQUENCE": TokenType.SEQUENCE,
             "SQL_DOUBLE": TokenType.DOUBLE,
             "SQL_VARCHAR": TokenType.VARCHAR,
             "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,

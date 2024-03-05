@@ -291,6 +291,7 @@ class Parser(metaclass=_Parser):
         TokenType.VIEW,
         TokenType.MODEL,
         TokenType.DICTIONARY,
+        TokenType.SEQUENCE,
         TokenType.STORAGE_INTEGRATION,
     }
 
@@ -1438,6 +1439,8 @@ class Parser(metaclass=_Parser):
         begin = None
         end = None
         clone = None
+        seq_start = None
+        seq_increment = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:
             nonlocal properties
@@ -1515,6 +1518,12 @@ class Parser(metaclass=_Parser):
             elif create_token.token_type == TokenType.VIEW:
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
+            elif create_token.token_type == TokenType.SEQUENCE:
+                if self._match_texts("START") or self._match(TokenType.START_WITH):
+                    seq_start = self.expression(exp.Start, this=self._parse_number())
+                if self._match_texts("INCREMENT"):
+                    self._match_texts("BY")
+                    seq_increment = self.expression(exp.Increment, this=self._parse_number())
 
             shallow = self._match_text_seq("SHALLOW")
 
@@ -1542,6 +1551,8 @@ class Parser(metaclass=_Parser):
             begin=begin,
             end=end,
             clone=clone,
+            start=seq_start,
+            increment=seq_increment,
         )
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:

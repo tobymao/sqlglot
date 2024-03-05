@@ -340,6 +340,7 @@ class TokenType(AutoName):
     SELECT = auto()
     SEMI = auto()
     SEPARATOR = auto()
+    SEQUENCE = auto()
     SERDE_PROPERTIES = auto()
     SET = auto()
     SETTINGS = auto()

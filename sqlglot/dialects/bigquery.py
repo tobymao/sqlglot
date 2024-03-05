@@ -495,7 +495,7 @@ class BigQuery(Dialect):
                 if rest and this:
                     this = exp.Dot.build(t.cast(t.List[exp.Expression], [this, *rest]))
 
-                table = exp.Table(this=this, db=db, catalog=catalog)
+                table = exp.Table(this=this, db=db, catalog=catalog or table.args.get("db"))
                 table.meta["quoted_table"] = True
 
             return table

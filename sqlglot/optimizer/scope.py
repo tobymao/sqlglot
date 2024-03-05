@@ -132,11 +132,7 @@ class Scope:
                 self._udtfs.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
-            elif (
-                isinstance(node, exp.Subquery)
-                and isinstance(parent, (exp.From, exp.Join, exp.Subquery))
-                and _is_derived_table(node)
-            ):
+            elif _is_derived_table(node) and isinstance(parent, (exp.From, exp.Join, exp.Subquery)):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.UNWRAPPED_QUERIES):
                 self._subqueries.append(node)
@@ -615,7 +611,9 @@ def _is_derived_table(expression: exp.Subquery) -> bool:
     as it doesn't introduce a new scope. If an alias is present, it shadows all names
     under the Subquery, so that's one exception to this rule.
     """
-    return bool(expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES))
+    return isinstance(expression, exp.Subquery) and bool(
+        expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES)
+    )
 
 
 def _traverse_tables(scope):
@@ -719,7 +717,7 @@ def _traverse_udtfs(scope):
 
     sources = {}
     for expression in expressions:
-        if isinstance(expression, exp.Subquery) and _is_derived_table(expression):
+        if _is_derived_table(expression):
             top = None
             for child_scope in _traverse_scope(
                 scope.branch(
@@ -780,11 +778,7 @@ def walk_in_scope(expression, bfs=True, prune=None):
             continue
         if (
             isinstance(node, exp.CTE)
-            or (
-                isinstance(node, exp.Subquery)
-                and isinstance(parent, (exp.From, exp.Join, exp.Subquery))
-                and _is_derived_table(node)
-            )
+            or (_is_derived_table(node) and isinstance(parent, (exp.From, exp.Join, exp.Subquery)))
             or isinstance(node, exp.UDTF)
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):

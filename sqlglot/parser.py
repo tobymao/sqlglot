@@ -4053,10 +4053,14 @@ class Parser(metaclass=_Parser):
                 this = self._parse_set_operations(
                     self._parse_subquery(this=this, parse_alias=False)
                 )
+            elif isinstance(this, exp.Subquery):
+                this = self._parse_subquery(
+                    this=self._parse_set_operations(this), parse_alias=False
+                )
             elif len(expressions) > 1:
                 this = self.expression(exp.Tuple, expressions=expressions)
             else:
-                this = self.expression(exp.Paren, this=self._parse_set_operations(this))
+                this = self.expression(exp.Paren, this=this)
 
             if this:
                 this.add_comments(comments)

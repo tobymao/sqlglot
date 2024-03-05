@@ -580,8 +580,8 @@ SELECT * FROM ((SELECT * FROM tbl));
 SELECT * FROM ((SELECT * FROM tbl AS tbl) AS _q_0);
 
 # execute: false
-SELECT * FROM ((SELECT c FROM t1) JOIN t2);
-SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _q_0, t2 AS t2);
+SELECT * FROM ((SELECT c FROM t1) CROSS JOIN t2);
+SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _q_0 CROSS JOIN t2 AS t2);
 
 # execute: false
 SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c);

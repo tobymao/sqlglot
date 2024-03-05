@@ -9,7 +9,7 @@ assignees: ''
 
 **Before you file an issue**
 - Make sure you specify the "read" dialect eg. `parse_one(sql, read="spark")`
-- Make sure you specify the "write" dialect eg. `ast.sql(dialect="duckdb")` or `transpile(ast, read="bigquery", write="duckdb")`
+- Make sure you specify the "write" dialect eg. `ast.sql(dialect="duckdb")`
 - Check if the issue still exists on main
 
 **Fully reproducible code snippet**

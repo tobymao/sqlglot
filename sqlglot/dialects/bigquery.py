@@ -847,10 +847,10 @@ class BigQuery(Dialect):
             return inline_array_sql(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
-            this = self.sql(expression, "this")
+            this = expression.this
             expressions = expression.expressions
 
-            if len(expressions) == 1:
+            if len(expressions) == 1 and this and this.is_type(exp.DataType.Type.STRUCT):
                 arg = expressions[0]
                 if arg.type is None:
                     from sqlglot.optimizer.annotate_types import annotate_types
@@ -858,10 +858,10 @@ class BigQuery(Dialect):
                     arg = annotate_types(arg)
 
                 if arg.type and arg.type.this in exp.DataType.TEXT_TYPES:
-                    # BQ doesn't support bracket syntax with string values
-                    return f"{this}.{arg.name}"
+                    # BQ doesn't support bracket syntax with string values for structs
+                    return f"{self.sql(this)}.{arg.name}"
 
-            expressions_sql = ", ".join(self.sql(e) for e in expressions)
+            expressions_sql = self.expressions(expression, flat=True)
             offset = expression.args.get("offset")
 
             if offset == 0:
@@ -874,7 +874,7 @@ class BigQuery(Dialect):
             if expression.args.get("safe"):
                 expressions_sql = f"SAFE_{expressions_sql}"
 
-            return f"{this}[{expressions_sql}]"
+            return f"{self.sql(this)}[{expressions_sql}]"
 
         def in_unnest_op(self, expression: exp.Unnest) -> str:
             return self.sql(expression)

@@ -972,7 +972,13 @@ class Generator(metaclass=_Generator):
         clone = self.sql(expression, "clone")
         clone = f" {clone}" if clone else ""
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
+        start = self.sql(expression, "start")
+        start = f" {start}" if start else ""
+
+        increment = self.sql(expression, "increment")
+        increment = f" {increment}" if increment else ""
+
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{start}{increment}"
         return self.prepend_ctes(expression, expression_sql)
 
     def clone_sql(self, expression: exp.Clone) -> str:
@@ -1559,6 +1565,14 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         expr = self.sql(expression, "expression")
         return f"{this} ({kind} => {expr})"
+
+    def start_sql(self, expression: exp.Start) -> str:
+        this = self.sql(expression, "this")
+        return f"START WITH {this}"
+
+    def increment_sql(self, expression: exp.Increment) -> str:
+        this = self.sql(expression, "this")
+        return f"INCREMENT BY {this}"
 
     def table_parts(self, expression: exp.Table) -> str:
         return ".".join(

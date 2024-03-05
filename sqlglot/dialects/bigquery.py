@@ -486,16 +486,16 @@ class BigQuery(Dialect):
                         table.set("db", exp.Identifier(this=parts[0]))
                         table.set("this", exp.Identifier(this=parts[1]))
 
-            if isinstance(table.this, exp.Identifier) and "." in table.name:
+            if any("." in p.name for p in table.parts):
                 catalog, db, this, *rest = (
-                    t.cast(t.Optional[exp.Expression], exp.to_identifier(x, quoted=True))
-                    for x in split_num_words(table.name, ".", 3)
+                    exp.to_identifier(p, quoted=True)
+                    for p in split_num_words(".".join(p.name for p in table.parts), ".", 3)
                 )
 
                 if rest and this:
-                    this = exp.Dot.build(t.cast(t.List[exp.Expression], [this, *rest]))
+                    this = exp.Dot.build([this, *rest])  # type: ignore
 
-                table = exp.Table(this=this, db=db, catalog=catalog or table.args.get("db"))
+                table = exp.Table(this=this, db=db, catalog=catalog)
                 table.meta["quoted_table"] = True
 
             return table

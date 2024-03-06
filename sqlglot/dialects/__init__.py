@@ -61,6 +61,7 @@ dialect implementations in order to understand how their various components can 
 ----
 """
 
+from sqlglot.dialects.athena import Athena
 from sqlglot.dialects.bigquery import BigQuery
 from sqlglot.dialects.clickhouse import ClickHouse
 from sqlglot.dialects.databricks import Databricks

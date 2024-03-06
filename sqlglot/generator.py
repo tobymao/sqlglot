@@ -435,6 +435,7 @@ class Generator(metaclass=_Generator):
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
         exp.TransformModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,
+        exp.UnloggedProperty: exp.Properties.Location.POST_CREATE,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -969,16 +970,54 @@ class Generator(metaclass=_Generator):
             " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
         )
 
+        data_type = self.sql(expression, "data_type")
+        data_type = f" AS {data_type}" if data_type else ""
         clone = self.sql(expression, "clone")
         clone = f" {clone}" if clone else ""
-
         start = self.sql(expression, "start")
-        start = f" {start}" if start else ""
-
+        start = f" START WITH {start}" if start else ""
         increment = self.sql(expression, "increment")
-        increment = f" {increment}" if increment else ""
+        increment = f" INCREMENT BY {increment}" if increment else ""
+        minvalue = self.sql(expression, "minvalue")
+        minvalue = f" MINVALUE {minvalue}" if minvalue else ""
+        maxvalue = self.sql(expression, "maxvalue")
+        maxvalue = f" MAXVALUE {maxvalue}" if maxvalue else ""
+        owned = self.sql(expression, "owned")
+        owned = f" OWNED BY {owned}" if owned else ""
+        sharing = self.sql(expression, "sharing")
+        sharing = f" SHARING={sharing}" if sharing else ""
+        sharing = self.sql(expression, "sharing")
+        sharing = f" SHARING={sharing}" if sharing else ""
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{start}{increment}"
+        cache = expression.args.get("cache")
+        if cache is None:
+            cache_str = ""
+        elif cache.this == "":
+            cache_str = " CACHE"
+        else:
+            cache_str = f" CACHE {cache}"
+
+        comment = self.sql(expression, "comment")
+        comment = f" COMMENT={comment}" if comment else ""
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+
+        sequence_options = "".join(
+            (
+                data_type,
+                start,
+                increment,
+                minvalue,
+                maxvalue,
+                sharing,
+                cache_str,
+                options,
+                comment,
+                owned,
+            )
+        )
+
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{sequence_options}"
         return self.prepend_ctes(expression, expression_sql)
 
     def clone_sql(self, expression: exp.Clone) -> str:
@@ -1424,6 +1463,9 @@ class Generator(metaclass=_Generator):
 
         return f"PARTITION OF {this}{for_values_or_default}"
 
+    def unloggedproperty_sql(self, expression: exp.UnloggedProperty) -> str:
+        return "UNLOGGED"
+
     def lockingproperty_sql(self, expression: exp.LockingProperty) -> str:
         kind = expression.args.get("kind")
         this = f" {self.sql(expression, 'this')}" if expression.this else ""
@@ -1565,14 +1607,6 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         expr = self.sql(expression, "expression")
         return f"{this} ({kind} => {expr})"
-
-    def start_sql(self, expression: exp.Start) -> str:
-        this = self.sql(expression, "this")
-        return f"START WITH {this}"
-
-    def increment_sql(self, expression: exp.Increment) -> str:
-        this = self.sql(expression, "this")
-        return f"INCREMENT BY {this}"
 
     def table_parts(self, expression: exp.Table) -> str:
         return ".".join(

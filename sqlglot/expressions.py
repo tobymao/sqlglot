@@ -1214,8 +1214,17 @@ class Create(DDL):
         "begin": False,
         "end": False,
         "clone": False,
-        "start": False,
+        "data_type": False,
         "increment": False,
+        "minvalue": False,
+        "maxvalue": False,
+        "cache": False,
+        "cycle": False,
+        "start": False,
+        "owned": False,
+        "options": False,
+        "comment": False,
+        "sharing": False,
     }
 
     @property
@@ -2475,6 +2484,10 @@ class TransientProperty(Property):
     arg_types = {"this": False}
 
 
+class UnloggedProperty(Property):
+    arg_types = {"this": False}
+
+
 class VolatileProperty(Property):
     arg_types = {"this": False}
 
@@ -3620,14 +3633,6 @@ class Star(Expression):
     @property
     def output_name(self) -> str:
         return self.name
-
-
-class Increment(Expression):
-    arg_types = {"this": True}
-
-
-class Start(Expression):
-    arg_types = {"this": True}
 
 
 class Parameter(Condition):

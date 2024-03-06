@@ -2312,3 +2312,30 @@ SELECT
         self.validate_identity("TRUNCATE TABLE db.schema.test")
         self.validate_identity("TRUNCATE TABLE IF EXISTS db.schema.test")
         self.validate_identity("TRUNCATE TABLE t1, t2, t3")
+
+    def test_create_sequence(self):
+        self.validate_identity("CREATE SEQUENCE seq")
+        self.validate_identity(
+            "CREATE TEMPORARY SEQUENCE seq AS SMALLINT START WITH 3 INCREMENT BY 2 MINVALUE 1 MAXVALUE 10 CACHE 1 NO CYCLE OWNED BY table.col"
+        )
+        self.validate_identity(
+            "CREATE SEQUENCE seq START WITH 1 NO MINVALUE NO MAXVALUE CYCLE NO CACHE"
+        )
+        self.validate_identity("CREATE OR REPLACE TEMPORARY SEQUENCE seq INCREMENT BY 1 NO CYCLE")
+        self.validate_identity(
+            "CREATE OR REPLACE SEQUENCE IF NOT EXISTS seq ORDER COMMENT='test comment'"
+        )
+        self.validate_identity(
+            "CREATE SEQUENCE schema.seq SHARING=METADATA NOORDER NOKEEP SCALE EXTEND SHARD EXTEND SESSION"
+        )
+        self.validate_identity(
+            "CREATE SEQUENCE schema.seq SHARING=DATA ORDER KEEP NOSCALE NOSHARD GLOBAL"
+        )
+        self.validate_identity(
+            """CREATE TEMPORARY SEQUENCE seq AS BIGINT INCREMENT 2 MINVALUE 1 CACHE 1 NOMAXVALUE NO CYCLE OWNED BY NONE""",
+            """CREATE TEMPORARY SEQUENCE seq AS BIGINT INCREMENT BY 2 MINVALUE 1 CACHE 1 NOMAXVALUE NO CYCLE"""
+        )
+        self.validate_identity(
+            """CREATE TEMPORARY SEQUENCE seq START 1""",
+            """CREATE TEMPORARY SEQUENCE seq START WITH 1"""
+        )

@@ -434,6 +434,7 @@ class Parser(metaclass=_Parser):
         TokenType.VAR,
         TokenType.LEFT,
         TokenType.RIGHT,
+        TokenType.SEQUENCE,
         TokenType.DATE,
         TokenType.DATETIME,
         TokenType.TABLE,
@@ -800,6 +801,7 @@ class Parser(metaclass=_Parser):
         ),
         "TTL": lambda self: self._parse_ttl(),
         "USING": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
+        "UNLOGGED": lambda self: self.expression(exp.UnloggedProperty),
         "VOLATILE": lambda self: self._parse_volatile_property(),
         "WITH": lambda self: self._parse_with_property(),
     }
@@ -971,6 +973,31 @@ class Parser(metaclass=_Parser):
         ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK", "UPDATE"), tuple()
     )
     CONFLICT_ACTIONS["DO"] = ("NOTHING", "UPDATE")
+
+    CREATE_SEQUENCE: OPTIONS_TYPE = {
+        "SCALE": (("EXTEND"), ("NOEXTEND")),
+        "SHARD": (("EXTEND"), ("NOEXTEND")),
+        "NO": (("CYCLE"), ("CACHE"), ("MAXVALUE"), ("MINVALUE")),
+        **dict.fromkeys(
+            (
+                "SESSION",
+                "GLOBAL",
+                "NOSHARD",
+                "KEEP",
+                "NOKEEP",
+                "ORDER",
+                "NOORDER",
+                "NOCACHE",
+                "CYCLE",
+                "NOCYCLE",
+                "NOMINVALUE",
+                "NOMAXVALUE",
+                "NOSCALE",
+                "NOSHARD",
+            ),
+            tuple(),
+        ),
+    }
 
     USABLES: OPTIONS_TYPE = dict.fromkeys(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"), tuple())
 
@@ -1415,6 +1442,7 @@ class Parser(metaclass=_Parser):
             or self._match_pair(TokenType.OR, TokenType.REPLACE)
             or self._match_pair(TokenType.OR, TokenType.ALTER)
         )
+
         unique = self._match(TokenType.UNIQUE)
 
         if self._match_pair(TokenType.TABLE, TokenType.FUNCTION, advance=False):
@@ -1431,6 +1459,9 @@ class Parser(metaclass=_Parser):
             if not properties or not create_token:
                 return self._parse_as_command(start)
 
+        if create_token.token_type == TokenType.SEQUENCE:
+            return self._parse_create_sequence(replace, properties)
+
         exists = self._parse_exists(not_=True)
         this = None
         expression: t.Optional[exp.Expression] = None
@@ -1439,8 +1470,6 @@ class Parser(metaclass=_Parser):
         begin = None
         end = None
         clone = None
-        seq_start = None
-        seq_increment = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:
             nonlocal properties
@@ -1518,12 +1547,6 @@ class Parser(metaclass=_Parser):
             elif create_token.token_type == TokenType.VIEW:
                 if self._match_text_seq("WITH", "NO", "SCHEMA", "BINDING"):
                     no_schema_binding = True
-            elif create_token.token_type == TokenType.SEQUENCE:
-                if self._match_texts("START") or self._match(TokenType.START_WITH):
-                    seq_start = self.expression(exp.Start, this=self._parse_number())
-                if self._match_texts("INCREMENT"):
-                    self._match_texts("BY")
-                    seq_increment = self.expression(exp.Increment, this=self._parse_number())
 
             shallow = self._match_text_seq("SHALLOW")
 
@@ -1551,9 +1574,54 @@ class Parser(metaclass=_Parser):
             begin=begin,
             end=end,
             clone=clone,
-            start=seq_start,
-            increment=seq_increment,
         )
+
+    def _parse_create_sequence(self, replace, properties) -> exp.Create | exp.Command:
+        exists = self._parse_exists(not_=True)
+        this = self._parse_table(schema=True)
+
+        seq = exp.Create(
+            this=this,
+            exists=exists,
+            replace=replace,
+            kind="SEQUENCE",
+            properties=properties,
+        )
+
+        options = []
+
+        while self._curr:
+            if self._match_text_seq("AS"):
+                seq.set("data_type", self._parse_types())
+            elif self._match_text_seq("INCREMENT"):
+                self._match_text_seq("BY")
+                seq.set("increment", self._parse_term())
+            elif self._match_text_seq("MINVALUE"):
+                seq.set("minvalue", self._parse_term())
+            elif self._match_text_seq("MAXVALUE"):
+                seq.set("maxvalue", self._parse_term())
+            elif self._match(TokenType.START_WITH) or self._match_text_seq("START"):
+                seq.set("start", self._parse_term())
+            elif self._match_text_seq("CACHE"):
+                # T-SQL allows empty CACHE which is initialized dynamically
+                seq.set("cache", self._parse_term() or exp.Var(this=""))
+            elif self._match_text_seq("OWNED", "BY"):
+                owned = None if self._match_text_seq("NONE") else self._parse_column()
+                seq.set("owned", owned)
+            elif self._match_text_seq("COMMENT", "="):
+                seq.set("comment", self._parse_string())
+            elif self._match_text_seq("SHARING", "="):
+                seq.set(
+                    "sharing",
+                    self._prev.text if self._match_texts(("METADATA", "DATA", "NONE")) else None,
+                )
+            else:
+                opt = self._parse_var_from_options(self.CREATE_SEQUENCE)
+                if opt:
+                    options.append(opt)
+
+        seq.set("options", options if options else None)
+        return seq
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:
         # only used for teradata currently
@@ -1635,7 +1703,6 @@ class Parser(metaclass=_Parser):
                 prop = self._parse_property_before()
             else:
                 prop = self._parse_property()
-
             if not prop:
                 break
             for p in ensure_list(prop):

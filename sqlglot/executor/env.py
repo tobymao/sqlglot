@@ -226,6 +226,7 @@ ENV = {
     "CURRENTTIME": datetime.datetime.now,
     "CURRENTDATE": datetime.date.today,
     "STRFTIME": null_if_any(lambda fmt, arg: datetime.datetime.fromisoformat(arg).strftime(fmt)),
+    "STRTOTIME": null_if_any(lambda arg, format: datetime.datetime.strptime(arg, format)),
     "TRIM": null_if_any(lambda this, e=None: this.strip(e)),
     "STRUCT": lambda *args: {
         args[x]: args[x + 1]

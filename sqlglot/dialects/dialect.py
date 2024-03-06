@@ -31,6 +31,7 @@ class Dialects(str, Enum):
 
     DIALECT = ""
 
+    ATHENA = "athena"
     BIGQUERY = "bigquery"
     CLICKHOUSE = "clickhouse"
     DATABRICKS = "databricks"

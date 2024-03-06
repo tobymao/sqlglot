@@ -710,6 +710,14 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}")
                 self.assertEqual(result.rows, [(expected,)])
+                
+        for sql, expected in [
+            ("TO_TIMESTAMP('2013-04-05 01:02:03')", datetime.datetime(2013, 4, 5, 1, 2, 3)),
+            ("TO_TIMESTAMP(1659981729)", datetime.datetime(2022, 8, 8, 18, 2, 9)),
+        ]:
+            with self.subTest(sql):
+                result = execute(f"SELECT {sql}", read="snowflake")
+                self.assertEqual(result.rows, [(expected,)])
 
     def test_case_sensitivity(self):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})

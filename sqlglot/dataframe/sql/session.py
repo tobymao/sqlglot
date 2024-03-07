@@ -12,7 +12,7 @@ from sqlglot.dataframe.sql.readwriter import DataFrameReader
 from sqlglot.dataframe.sql.types import StructType
 from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
 from sqlglot.helper import classproperty
-from sqlglot.optimizer import optimize as optimize_func
+from sqlglot.optimizer import optimize
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 
 if t.TYPE_CHECKING:
@@ -111,7 +111,7 @@ class SparkSession:
     ) -> exp.Expression:
         dialect = dialect or self.dialect
         quote_identifiers(expression, dialect=dialect)
-        return optimize_func(expression, dialect=dialect)
+        return optimize(expression, dialect=dialect)
 
     def sql(self, sqlQuery: str) -> DataFrame:
         expression = self._optimize(sqlglot.parse_one(sqlQuery, read=self.dialect))

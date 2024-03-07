@@ -513,8 +513,6 @@ def _traverse_scope(scope):
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
-    elif isinstance(scope.expression, exp.DDL):
-        yield from _traverse_ddl(scope)
     else:
         logger.warning(
             "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
@@ -728,18 +726,6 @@ def _traverse_udtfs(scope):
             scope.table_scopes.append(top)
 
     scope.sources.update(sources)
-
-
-def _traverse_ddl(scope):
-    yield from _traverse_ctes(scope)
-
-    query_scope = scope.branch(
-        scope.expression.expression, scope_type=ScopeType.DERIVED_TABLE, sources=scope.sources
-    )
-    query_scope._collect()
-    query_scope._ctes = scope.ctes + query_scope._ctes
-
-    yield from _traverse_scope(query_scope)
 
 
 def walk_in_scope(expression, bfs=True, prune=None):

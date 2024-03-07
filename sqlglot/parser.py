@@ -1432,7 +1432,7 @@ class Parser(metaclass=_Parser):
             and self._match(TokenType.EXISTS)
         )
 
-    def _parse_create(self) -> exp.Create | exp.Command:
+    def _parse_create(self) -> exp.Expression:
         # Note: this can't be None because we've matched a statement parser
         start = self._prev
         comments = self._prev_comments
@@ -1459,9 +1459,6 @@ class Parser(metaclass=_Parser):
             if not properties or not create_token:
                 return self._parse_as_command(start)
 
-        if create_token.token_type == TokenType.SEQUENCE:
-            return self._parse_create_sequence(replace, properties)
-
         exists = self._parse_exists(not_=True)
         this = None
         expression: t.Optional[exp.Expression] = None
@@ -1470,6 +1467,7 @@ class Parser(metaclass=_Parser):
         begin = None
         end = None
         clone = None
+        sequence_opts = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:
             nonlocal properties
@@ -1510,6 +1508,12 @@ class Parser(metaclass=_Parser):
         elif create_token.token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(
                 schema=True, is_db_reference=create_token.token_type == TokenType.SCHEMA
+            )
+
+            sequence_opts = (
+                self._parse_sequence_properties()
+                if create_token.token_type == TokenType.SEQUENCE
+                else None
             )
 
             # exp.Properties.Location.POST_NAME
@@ -1574,19 +1578,11 @@ class Parser(metaclass=_Parser):
             begin=begin,
             end=end,
             clone=clone,
+            sequence_opts=sequence_opts,
         )
 
-    def _parse_create_sequence(self, replace, properties) -> exp.Create | exp.Command:
-        exists = self._parse_exists(not_=True)
-        this = self._parse_table(schema=True)
-
-        seq = exp.Create(
-            this=this,
-            exists=exists,
-            replace=replace,
-            kind="SEQUENCE",
-            properties=properties,
-        )
+    def _parse_sequence_properties(self) -> exp.SequenceProperties:
+        seq = exp.SequenceProperties()
 
         options = []
 
@@ -1595,30 +1591,38 @@ class Parser(metaclass=_Parser):
                 seq.set("data_type", self._parse_types())
             elif self._match_text_seq("INCREMENT"):
                 self._match_text_seq("BY")
+                self._match_text_seq("=")
                 seq.set("increment", self._parse_term())
             elif self._match_text_seq("MINVALUE"):
                 seq.set("minvalue", self._parse_term())
             elif self._match_text_seq("MAXVALUE"):
                 seq.set("maxvalue", self._parse_term())
             elif self._match(TokenType.START_WITH) or self._match_text_seq("START"):
+                self._match_text_seq("=")
                 seq.set("start", self._parse_term())
             elif self._match_text_seq("CACHE"):
                 # T-SQL allows empty CACHE which is initialized dynamically
-                seq.set("cache", self._parse_term() or exp.Var(this=""))
+                cache: t.Optional[exp.Expression | bool] = self._parse_term()
+                if cache and not isinstance(cache, exp.Literal):
+                    self._retreat(self._index - 1)
+                    cache = True
+                seq.set("cache", cache)
             elif self._match_text_seq("OWNED", "BY"):
-                owned = None if self._match_text_seq("NONE") else self._parse_column()
+                # "OWNED BY NONE" is the default
+                owned = self._prev.text if self._match_text_seq("NONE") else self._parse_column()
                 seq.set("owned", owned)
-            elif self._match_text_seq("COMMENT", "="):
-                seq.set("comment", self._parse_string())
+            elif self._match_text_seq("COMMENT"):
+                seq.set("comment", self._parse_property_assignment(exp.SchemaCommentProperty))
             elif self._match_text_seq("SHARING", "="):
                 seq.set(
-                    "sharing",
-                    self._prev.text if self._match_texts(("METADATA", "DATA", "NONE")) else None,
+                    "sharing", self._match_texts(("METADATA", "DATA", "NONE")) and self._prev.text
                 )
             else:
                 opt = self._parse_var_from_options(self.CREATE_SEQUENCE)
                 if opt:
                     options.append(opt)
+                else:
+                    break
 
         seq.set("options", options if options else None)
         return seq

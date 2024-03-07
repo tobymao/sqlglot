@@ -657,7 +657,7 @@ class TSQL(Dialect):
 
             return this
 
-        def _parse_create(self) -> exp.Create | exp.Command:
+        def _parse_create(self) -> exp.Expression:
             create = super()._parse_create()
 
             if isinstance(create, exp.Create):

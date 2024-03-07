@@ -1214,6 +1214,18 @@ class Create(DDL):
         "begin": False,
         "end": False,
         "clone": False,
+        "sequence_opts": False,
+    }
+
+    @property
+    def kind(self) -> t.Optional[str]:
+        kind = self.args.get("kind")
+        return kind and kind.upper()
+
+
+class SequenceProperties(Expression):
+    arg_types = {
+        "properties": False,
         "data_type": False,
         "increment": False,
         "minvalue": False,
@@ -1226,11 +1238,6 @@ class Create(DDL):
         "comment": False,
         "sharing": False,
     }
-
-    @property
-    def kind(self) -> t.Optional[str]:
-        kind = self.args.get("kind")
-        return kind and kind.upper()
 
 
 class TruncateTable(Expression):
@@ -2485,7 +2492,7 @@ class TransientProperty(Property):
 
 
 class UnloggedProperty(Property):
-    arg_types = {"this": False}
+    arg_types = {}
 
 
 class VolatileProperty(Property):

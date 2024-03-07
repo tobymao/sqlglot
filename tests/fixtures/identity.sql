@@ -858,3 +858,4 @@ SELECT truncate
 SELECT only
 TRUNCATE(a, b)
 SELECT enum
+SELECT unlogged

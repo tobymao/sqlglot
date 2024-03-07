@@ -134,6 +134,7 @@ class Generator(metaclass=_Generator):
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda *_: "TRANSIENT",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
+        exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.VolatileProperty: lambda *_: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
@@ -970,10 +971,17 @@ class Generator(metaclass=_Generator):
             " WITH NO SCHEMA BINDING" if expression.args.get("no_schema_binding") else ""
         )
 
-        data_type = self.sql(expression, "data_type")
-        data_type = f" AS {data_type}" if data_type else ""
         clone = self.sql(expression, "clone")
         clone = f" {clone}" if clone else ""
+
+        sequence_opts = self.sql(expression, "sequence_opts")
+
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{sequence_opts}"
+        return self.prepend_ctes(expression, expression_sql)
+
+    def sequenceproperties_sql(self, expression: exp.SequenceProperties) -> str:
+        data_type = self.sql(expression, "data_type")
+        data_type = f" AS {data_type}" if data_type else ""
         start = self.sql(expression, "start")
         start = f" START WITH {start}" if start else ""
         increment = self.sql(expression, "increment")
@@ -992,13 +1000,13 @@ class Generator(metaclass=_Generator):
         cache = expression.args.get("cache")
         if cache is None:
             cache_str = ""
-        elif cache.this == "":
+        elif cache is True:
             cache_str = " CACHE"
         else:
             cache_str = f" CACHE {cache}"
 
         comment = self.sql(expression, "comment")
-        comment = f" COMMENT={comment}" if comment else ""
+        comment = f" {comment}" if comment else ""
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
 
@@ -1017,8 +1025,7 @@ class Generator(metaclass=_Generator):
             )
         )
 
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{sequence_options}"
-        return self.prepend_ctes(expression, expression_sql)
+        return f"{sequence_options}"
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
@@ -1462,9 +1469,6 @@ class Generator(metaclass=_Generator):
             for_values_or_default = " DEFAULT"
 
         return f"PARTITION OF {this}{for_values_or_default}"
-
-    def unloggedproperty_sql(self, expression: exp.UnloggedProperty) -> str:
-        return "UNLOGGED"
 
     def lockingproperty_sql(self, expression: exp.LockingProperty) -> str:
         kind = expression.args.get("kind")

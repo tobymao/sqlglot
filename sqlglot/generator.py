@@ -2953,9 +2953,7 @@ class Generator(metaclass=_Generator):
             r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
 
         if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
-            if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(
-                *exp.DataType.FLOAT_TYPES
-            ):
+            if not l.is_type(*exp.DataType.REAL_TYPES) and not r.is_type(*exp.DataType.REAL_TYPES):
                 l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
 
         elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):

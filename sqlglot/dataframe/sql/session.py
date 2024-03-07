@@ -12,6 +12,8 @@ from sqlglot.dataframe.sql.readwriter import DataFrameReader
 from sqlglot.dataframe.sql.types import StructType
 from sqlglot.dataframe.sql.util import get_column_mapping_from_schema_input
 from sqlglot.helper import classproperty
+from sqlglot.optimizer import optimize
+from sqlglot.optimizer.qualify_columns import quote_identifiers
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import ColumnLiterals, SchemaInput
@@ -104,8 +106,15 @@ class SparkSession:
         sel_expression = exp.Select(**select_kwargs)
         return DataFrame(self, sel_expression)
 
+    def _optimize(
+        self, expression: exp.Expression, dialect: t.Optional[Dialect] = None
+    ) -> exp.Expression:
+        dialect = dialect or self.dialect
+        quote_identifiers(expression, dialect=dialect)
+        return optimize(expression, dialect=dialect)
+
     def sql(self, sqlQuery: str) -> DataFrame:
-        expression = sqlglot.parse_one(sqlQuery, read=self.dialect)
+        expression = self._optimize(sqlglot.parse_one(sqlQuery, read=self.dialect))
         if isinstance(expression, exp.Select):
             df = DataFrame(self, expression)
             df = df._convert_leaf_to_cte()

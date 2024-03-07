@@ -1719,6 +1719,11 @@ class TestDialect(Validator):
             with self.subTest(f"{expression.__class__.__name__} {dialect} -> {expected}"):
                 self.assertEqual(expected, expression.sql(dialect=dialect))
 
+        self.assertEqual(
+            parse_one("CAST(x AS DECIMAL) / y", read="mysql").sql(dialect="postgres"),
+            "CAST(x AS DECIMAL) / NULLIF(y, 0)",
+        )
+
     def test_limit(self):
         self.validate_all(
             "SELECT * FROM data LIMIT 10, 20",

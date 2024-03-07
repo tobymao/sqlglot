@@ -3778,24 +3778,37 @@ class DataType(Expression):
     TEXT_TYPES = {
         Type.CHAR,
         Type.NCHAR,
-        Type.VARCHAR,
         Type.NVARCHAR,
         Type.TEXT,
+        Type.VARCHAR,
     }
 
     INTEGER_TYPES = {
-        Type.INT,
-        Type.TINYINT,
-        Type.SMALLINT,
         Type.BIGINT,
+        Type.BIT,
+        Type.INT,
         Type.INT128,
         Type.INT256,
-        Type.BIT,
+        Type.MEDIUMINT,
+        Type.SMALLINT,
+        Type.TINYINT,
+        Type.UBIGINT,
+        Type.UINT,
+        Type.UINT128,
+        Type.UINT256,
+        Type.UMEDIUMINT,
+        Type.USMALLINT,
+        Type.UTINYINT,
     }
 
     FLOAT_TYPES = {
-        Type.FLOAT,
+        Type.BIGDECIMAL,
+        Type.DECIMAL,
         Type.DOUBLE,
+        Type.FLOAT,
+        Type.MONEY,
+        Type.SMALLMONEY,
+        Type.UDECIMAL,
     }
 
     NUMERIC_TYPES = {
@@ -3804,18 +3817,18 @@ class DataType(Expression):
     }
 
     TEMPORAL_TYPES = {
-        Type.TIME,
-        Type.TIMETZ,
-        Type.TIMESTAMP,
-        Type.TIMESTAMPTZ,
-        Type.TIMESTAMPLTZ,
-        Type.TIMESTAMP_S,
-        Type.TIMESTAMP_MS,
-        Type.TIMESTAMP_NS,
         Type.DATE,
         Type.DATE32,
         Type.DATETIME,
         Type.DATETIME64,
+        Type.TIME,
+        Type.TIMESTAMP,
+        Type.TIMESTAMPLTZ,
+        Type.TIMESTAMPTZ,
+        Type.TIMESTAMP_MS,
+        Type.TIMESTAMP_NS,
+        Type.TIMESTAMP_S,
+        Type.TIMETZ,
     }
 
     @classmethod

@@ -667,6 +667,14 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expressions[0].type.this, exp.DataType.Type.BIGINT)
         self.assertEqual(expressions[1].type.this, exp.DataType.Type.DOUBLE)
 
+        expressions = annotate_types(
+            parse_one("SELECT SUM(2 / 3), CAST(2 AS DECIMAL) / 3", dialect="mysql")
+        ).expressions
+
+        self.assertEqual(expressions[0].type.this, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expressions[0].this.type.this, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expressions[1].type.this, exp.DataType.Type.DECIMAL)
+
     def test_bracket_annotation(self):
         expression = annotate_types(parse_one("SELECT A[:]")).expressions[0]
 

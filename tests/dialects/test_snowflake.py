@@ -678,6 +678,7 @@ WHERE
             write={
                 "spark": "ARRAY_JOIN(x, '')",
                 "snowflake": "ARRAY_TO_STRING(x, '')",
+                "duckdb": "ARRAY_TO_STRING(x, '')",
             },
         )
         self.validate_all(

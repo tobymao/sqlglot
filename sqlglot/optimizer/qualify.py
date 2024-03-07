@@ -70,6 +70,8 @@ def qualify(
 
     original = expression
     expression = extract_ddl_query(expression)
+    ddl = original is not expression
+
     expression = normalize_identifiers(expression, dialect=dialect)
     expression = qualify_tables(expression, db=db, catalog=catalog, schema=schema)
 
@@ -94,7 +96,7 @@ def qualify(
     if validate_qualify_columns:
         validate_qualify_columns_func(expression)
 
-    if isinstance(original, exp.DDL) and isinstance(original.expression, exp.Query):
+    if ddl:
         original.set("expression", expression)
         expression = original
 

@@ -2,6 +2,10 @@
 WITH cte AS (SELECT b FROM y) CREATE TABLE s AS SELECT * FROM cte;
 CREATE TABLE s AS WITH cte AS (SELECT y.b AS b FROM y AS y) SELECT cte.b AS b FROM cte AS cte;
 
+# title: Create with CTE, query also has CTE
+WITH cte1 AS (SELECT b FROM y) CREATE TABLE s AS WITH cte2 AS (SELECT b FROM cte1) SELECT * FROM cte2;
+CREATE TABLE s AS WITH cte1 AS (SELECT y.b AS b FROM y AS y), cte2 AS (SELECT cte1.b AS b FROM cte1 AS cte1) SELECT cte2.b AS b FROM cte2 AS cte2;
+
 # title: Create without CTE
 CREATE TABLE foo AS SELECT a FROM tbl;
 CREATE TABLE foo AS SELECT tbl.a AS a FROM tbl AS tbl;

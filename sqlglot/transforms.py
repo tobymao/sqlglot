@@ -590,10 +590,14 @@ def extract_ddl_query(expression: exp.Expression) -> exp.Expression:
         ddl_with = expression.args.get("with")
         expression = query
         if ddl_with:
-            for cte in ddl_with.pop().expressions:
-                query.with_(cte.alias, cte.this, copy=False)
+            ddl_with.pop()
 
-            query.args["with"].set("recursive", ddl_with.recursive)
+            query_ctes = query.ctes
+            if not query_ctes:
+                query.set("with", ddl_with)
+            else:
+                query.args["with"].set("recursive", ddl_with.recursive)
+                query.args["with"].set("expressions", [*ddl_with.expressions, *query_ctes])
 
     return expression
 

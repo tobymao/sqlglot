@@ -18,8 +18,6 @@ from sqlglot.dataframe.sql.transforms import replace_id_value
 from sqlglot.dataframe.sql.util import get_tables_from_expression_with_join
 from sqlglot.dataframe.sql.window import Window
 from sqlglot.helper import ensure_list, object_to_dict, seq_get
-from sqlglot.optimizer import optimize as optimize_func
-from sqlglot.optimizer.qualify_columns import quote_identifiers
 
 if t.TYPE_CHECKING:
     from sqlglot.dataframe.sql._typing import (
@@ -308,9 +306,8 @@ class DataFrame:
         for expression_type, select_expression in select_expressions:
             select_expression = select_expression.transform(replace_id_value, replacement_mapping)
             if optimize:
-                quote_identifiers(select_expression, dialect=dialect)
                 select_expression = t.cast(
-                    exp.Select, optimize_func(select_expression, dialect=dialect)
+                    exp.Select, self.spark._optimize(select_expression, dialect=dialect)
                 )
 
             select_expression = df._replace_cte_names_with_hashes(select_expression)

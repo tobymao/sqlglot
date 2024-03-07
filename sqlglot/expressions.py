@@ -3802,10 +3802,14 @@ class DataType(Expression):
     }
 
     FLOAT_TYPES = {
-        Type.BIGDECIMAL,
-        Type.DECIMAL,
         Type.DOUBLE,
         Type.FLOAT,
+    }
+
+    REAL_TYPES = {
+        *FLOAT_TYPES,
+        Type.BIGDECIMAL,
+        Type.DECIMAL,
         Type.MONEY,
         Type.SMALLMONEY,
         Type.UDECIMAL,
@@ -3813,7 +3817,7 @@ class DataType(Expression):
 
     NUMERIC_TYPES = {
         *INTEGER_TYPES,
-        *FLOAT_TYPES,
+        *REAL_TYPES,
     }
 
     TEMPORAL_TYPES = {

@@ -298,7 +298,9 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "qualify_columns", qualify_columns, execute=True, schema=self.schema, set_dialect=True
         )
-        self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
+        self.check_file(
+            "qualify_columns_ddl", qualify_columns, schema=self.schema, set_dialect=True
+        )
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})

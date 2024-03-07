@@ -32,6 +32,7 @@ setup(
             "duckdb>=0.6",
             "mypy",
             "pandas",
+            "pandas-stubs",
             "pyspark",
             "python-dateutil",
             "pdoc",

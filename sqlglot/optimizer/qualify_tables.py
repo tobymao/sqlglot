@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import DialectType
 from sqlglot.helper import csv_reader, name_sequence
 from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import Schema
+from sqlglot.transforms import extract_ddl_query
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -60,7 +61,7 @@ def qualify_tables(
             if isinstance(node, exp.Table):
                 _qualify(node)
 
-    for scope in traverse_scope(expression):
+    for scope in traverse_scope(extract_ddl_query(expression)):
         for derived_table in itertools.chain(scope.ctes, scope.derived_tables):
             if isinstance(derived_table, exp.Subquery):
                 unnested = derived_table.unnest()

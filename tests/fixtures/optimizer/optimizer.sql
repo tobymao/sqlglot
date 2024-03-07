@@ -32,17 +32,18 @@ FROM (
               )
          WHERE object_pointstext IS NOT NULL
      );
-CREATE OR REPLACE TEMPORARY VIEW `latest_boo` AS
-SELECT
-  TRIM(SPLIT(`_q_1`.`points`, ':')[0]) AS `points_type`,
-  TRIM(SPLIT(`_q_1`.`points`, ':')[1]) AS `points_value`
-FROM (
+CREATE OR REPLACE TEMPORARY VIEW latest_boo AS
+WITH `_q_1` AS (
   SELECT
     EXPLODE_OUTER(SPLIT(`boo`.`object_pointstext`, ',')) AS `points`
   FROM `boo` AS `boo`
   WHERE
     NOT `boo`.`object_pointstext` IS NULL
-) AS `_q_1`;
+)
+SELECT
+  TRIM(SPLIT(`_q_1`.`points`, ':')[0]) AS `points_type`,
+  TRIM(SPLIT(`_q_1`.`points`, ':')[1]) AS `points_value`
+FROM `_q_1` AS `_q_1`;
 
 # title: Union in CTE
 WITH cte AS (

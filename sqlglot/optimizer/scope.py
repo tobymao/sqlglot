@@ -8,7 +8,7 @@ from enum import Enum, auto
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import ensure_collection, find_new_name
+from sqlglot.helper import ensure_collection, find_new_name, seq_get
 
 logger = logging.getLogger("sqlglot")
 
@@ -122,7 +122,8 @@ class Scope:
         for node, parent, _ in self.walk(bfs=False):
             if node is self.expression:
                 continue
-            elif isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
+
+            if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
                 self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
                 self._tables.append(node)
@@ -477,17 +478,12 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
         ('SELECT a FROM (SELECT a FROM x) AS y', ['y'])
 
     Args:
-        expression (exp.Expression): expression to traverse
+        expression: Expression to traverse
 
     Returns:
-        list[Scope]: scope instances
+        A list of the created scope instances
     """
-    if isinstance(expression, exp.Query) or (
-        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Query)
-    ):
-        return list(_traverse_scope(Scope(expression)))
-
-    return []
+    return list(_traverse_scope(Scope(expression))) if isinstance(expression, exp.Query) else []
 
 
 def build_scope(expression: exp.Expression) -> t.Optional[Scope]:
@@ -495,14 +491,12 @@ def build_scope(expression: exp.Expression) -> t.Optional[Scope]:
     Build a scope tree.
 
     Args:
-        expression (exp.Expression): expression to build the scope tree for
+        expression: Expression to build the scope tree for.
+
     Returns:
-        Scope: root scope
+        The root scope
     """
-    scopes = traverse_scope(expression)
-    if scopes:
-        return scopes[-1]
-    return None
+    return seq_get(traverse_scope(expression), -1)
 
 
 def _traverse_scope(scope):

@@ -1228,7 +1228,6 @@ class SequenceProperties(Expression):
         "minvalue": False,
         "maxvalue": False,
         "cache": False,
-        "cycle": False,
         "start": False,
         "owned": False,
         "options": False,

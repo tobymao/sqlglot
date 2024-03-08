@@ -14,7 +14,6 @@ from sqlglot.optimizer.qualify_columns import (
 )
 from sqlglot.optimizer.qualify_tables import qualify_tables
 from sqlglot.schema import Schema, ensure_schema
-from sqlglot.transforms import extract_ddl_query
 
 
 def qualify(
@@ -67,11 +66,6 @@ def qualify(
         only the child will be qualified and that will be part of the final DDL expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
-
-    original = expression
-    expression = extract_ddl_query(expression)
-    ddl = original is not expression
-
     expression = normalize_identifiers(expression, dialect=dialect)
     expression = qualify_tables(expression, db=db, catalog=catalog, schema=schema)
 
@@ -95,9 +89,5 @@ def qualify(
 
     if validate_qualify_columns:
         validate_qualify_columns_func(expression)
-
-    if ddl:
-        original.set("expression", expression)
-        expression = original
 
     return expression

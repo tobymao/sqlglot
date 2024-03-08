@@ -32,7 +32,7 @@ FROM (
               )
          WHERE object_pointstext IS NOT NULL
      );
-CREATE OR REPLACE TEMPORARY VIEW latest_boo AS
+CREATE OR REPLACE TEMPORARY VIEW `latest_boo` AS
 WITH `_q_1` AS (
   SELECT
     EXPLODE_OUTER(SPLIT(`boo`.`object_pointstext`, ',')) AS `points`

@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.errors import SqlglotError
 from sqlglot.optimizer import Scope, build_scope, find_all_in_scope, normalize_identifiers, qualify
-from sqlglot.transforms import extract_ddl_query
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -107,7 +106,7 @@ def lineage(
         **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore
     )
 
-    scope = build_scope(extract_ddl_query(qualified))
+    scope = build_scope(qualified)
 
     if not scope:
         raise SqlglotError("Cannot build lineage, sql must be SELECT")

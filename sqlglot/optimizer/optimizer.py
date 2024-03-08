@@ -20,7 +20,6 @@ from sqlglot.optimizer.qualify_columns import quote_identifiers
 from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 from sqlglot.schema import ensure_schema
-from sqlglot.transforms import extract_ddl_query
 
 RULES = (
     qualify,
@@ -70,8 +69,7 @@ def optimize(
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
 
     Returns:
-        The optimized expression. If the original expression is a DDL with a `Query` child, then
-        only the child will be optimized and that will be part of the final DDL expression.
+        The optimized expression.
     """
     schema = ensure_schema(schema or sqlglot.schema, dialect=dialect)
     possible_kwargs = {
@@ -84,9 +82,7 @@ def optimize(
         **kwargs,
     }
 
-    original = exp.maybe_parse(expression, dialect=dialect, copy=True)
-    optimized = extract_ddl_query(original)
-
+    optimized = exp.maybe_parse(expression, dialect=dialect, copy=True)
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
         rule_params = rule.__code__.co_varnames
@@ -94,9 +90,5 @@ def optimize(
             param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
         }
         optimized = rule(optimized, **rule_kwargs)
-
-    if isinstance(original, exp.DDL) and isinstance(original.expression, exp.Query):
-        original.set("expression", optimized)
-        optimized = original
 
     return optimized

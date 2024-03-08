@@ -574,34 +574,6 @@ def struct_kv_to_alias(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def extract_ddl_query(expression: exp.Expression) -> exp.Expression:
-    """
-    Extracts the query of a given DDL expression. If the latter has CTEs attached to it,
-    they are removed from it and attached to the query.
-
-    Example:
-        >>> import sqlglot
-        >>> ddl = sqlglot.parse_one("WITH cte AS (SELECT 1 AS c) INSERT INTO t SELECT c FROM cte")
-        >>> ddl.transform(extract_ddl_query).sql()
-        'WITH cte AS (SELECT 1 AS c) SELECT c FROM cte'
-    """
-    query = expression.expression
-    if isinstance(expression, exp.DDL) and isinstance(query, exp.Query):
-        ddl_with = expression.args.get("with")
-        expression = query
-        if ddl_with:
-            ddl_with.pop()
-
-            query_ctes = query.ctes
-            if not query_ctes:
-                query.set("with", ddl_with)
-            else:
-                query.args["with"].set("recursive", ddl_with.recursive)
-                query.args["with"].set("expressions", [*ddl_with.expressions, *query_ctes])
-
-    return expression
-
-
 def preprocess(
     transforms: t.List[t.Callable[[exp.Expression], exp.Expression]],
 ) -> t.Callable[[Generator, exp.Expression], str]:

@@ -561,9 +561,7 @@ def move_partitioned_by_to_schema_columns(expression: exp.Expression) -> exp.Exp
 
 
 def struct_kv_to_alias(expression: exp.Expression) -> exp.Expression:
-    """
-    Convert struct arguments to aliases: STRUCT(1 AS y) .
-    """
+    """Converts struct arguments to aliases, e.g. STRUCT(1 AS y)."""
     if isinstance(expression, exp.Struct):
         expression.set(
             "expressions",

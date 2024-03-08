@@ -388,3 +388,28 @@ class TestLineage(unittest.TestCase):
 
         with self.assertRaises(sqlglot.errors.SqlglotError):
             lineage('"a"', "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")
+
+    def test_ddl_lineage(self) -> None:
+        sql = """
+        INSERT /*+ HINT1 */
+        INTO target (x, y)
+        SELECT subq.x, subq.y
+        FROM (
+          SELECT /*+ HINT2 */
+            t.x AS x,
+            TO_DATE('2023-12-19', 'YYYY-MM-DD') AS y
+          FROM s.t t
+          WHERE 1 = 1 AND y = TO_DATE('2023-12-19', 'YYYY-MM-DD')
+        ) subq
+        """
+
+        node = lineage("y", sql, dialect="oracle")
+
+        self.assertEqual(node.name, "Y")
+        self.assertEqual(node.expression.sql(dialect="oracle"), "SUBQ.Y AS Y")
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.name, "SUBQ.Y")
+        self.assertEqual(
+            downstream.expression.sql(dialect="oracle"), "TO_DATE('2023-12-19', 'YYYY-MM-DD') AS Y"
+        )

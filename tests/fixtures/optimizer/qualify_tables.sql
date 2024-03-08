@@ -159,6 +159,7 @@ CREATE TABLE t1 AS (WITH cte AS (SELECT x FROM t2) SELECT * FROM cte);
 CREATE TABLE c.db.t1 AS (WITH cte AS (SELECT x FROM c.db.t2 AS t2) SELECT * FROM cte AS cte);
 
 # title: insert statement with cte
+# dialect: spark
 WITH cte AS (SELECT b FROM y) INSERT INTO s SELECT * FROM cte;
 WITH cte AS (SELECT b FROM c.db.y AS y) INSERT INTO c.db.s SELECT * FROM cte AS cte;
 

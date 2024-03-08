@@ -248,17 +248,38 @@ class Expression(metaclass=_Expression):
         return self._meta
 
     def __deepcopy__(self, memo):
-        copy = self.__class__(**deepcopy(self.args))
-        if self.comments is not None:
-            copy.comments = deepcopy(self.comments)
+        root = self.__class__()
+        stack = [(self, root)]
 
-        if self._type is not None:
-            copy._type = self._type.copy()
+        while stack:
+            node, copy = stack.pop()
 
-        if self._meta is not None:
-            copy._meta = deepcopy(self._meta)
+            if node.comments is not None:
+                copy.comments = deepcopy(node.comments)
+            if node._type is not None:
+                copy._type = deepcopy(node._type)
+            if node._meta is not None:
+                copy._meta = deepcopy(node._meta)
+            if node._hash is not None:
+                copy._hash = node._hash
 
-        return copy
+            for k, vs in node.args.items():
+                if hasattr(vs, "parent"):
+                    stack.append((vs, vs.__class__()))
+                    copy.set(k, stack[-1][-1])
+                elif type(vs) is list:
+                    copy.args[k] = []
+
+                    for v in vs:
+                        if hasattr(v, "parent"):
+                            stack.append((v, v.__class__()))
+                            copy.append(k, stack[-1][-1])
+                        else:
+                            copy.append(k, v)
+                else:
+                    copy.set(k, vs)
+
+        return root
 
     def copy(self):
         """
@@ -289,7 +310,7 @@ class Expression(metaclass=_Expression):
             arg_key (str): name of the list expression arg
             value (Any): value to append to the list
         """
-        if not isinstance(self.args.get(arg_key), list):
+        if type(self.args.get(arg_key)) is not list:
             self.args[arg_key] = []
         self.args[arg_key].append(value)
         self._set_parent(arg_key, value)

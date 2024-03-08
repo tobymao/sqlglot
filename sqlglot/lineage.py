@@ -28,10 +28,7 @@ class Node:
         yield self
 
         for d in self.downstream:
-            if isinstance(d, Node):
-                yield from d.walk()
-            else:
-                yield d
+            yield from d.walk()
 
     def to_html(self, dialect: DialectType = None, **opts) -> GraphHTML:
         nodes = {}

@@ -453,6 +453,7 @@ class Generator(metaclass=_Generator):
         exp.Insert,
         exp.Join,
         exp.Select,
+        exp.Union,
         exp.Update,
         exp.Where,
         exp.With,
@@ -1146,10 +1147,7 @@ class Generator(metaclass=_Generator):
         )
 
     def except_sql(self, expression: exp.Except) -> str:
-        return self.prepend_ctes(
-            expression,
-            self.set_operation(expression, self.except_op(expression)),
-        )
+        return self.set_operations(expression)
 
     def except_op(self, expression: exp.Except) -> str:
         return f"EXCEPT{'' if expression.args.get('distinct') else ' ALL'}"
@@ -1492,10 +1490,7 @@ class Generator(metaclass=_Generator):
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
-        return self.prepend_ctes(
-            expression,
-            self.set_operation(expression, self.intersect_op(expression)),
-        )
+        return self.set_operations(expression)
 
     def intersect_op(self, expression: exp.Intersect) -> str:
         return f"INTERSECT{'' if expression.args.get('distinct') else ' ALL'}"
@@ -2256,11 +2251,32 @@ class Generator(metaclass=_Generator):
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
+    def set_operations(self, expression: exp.Union) -> str:
+        sqls: t.List[str] = []
+        stack: t.List[t.Union[str, exp.Expression]] = [expression]
+
+        while stack:
+            node = stack.pop()
+
+            if isinstance(node, exp.Union):
+                stack.append(node.expression)
+                stack.append(
+                    self.maybe_comment(
+                        getattr(self, f"{node.key}_op")(node),
+                        expression=node.this,
+                        comments=node.comments,
+                    )
+                )
+                stack.append(node.this)
+            else:
+                sqls.append(self.sql(node))
+
+        this = self.sep().join(sqls)
+        this = self.query_modifiers(expression, this)
+        return self.prepend_ctes(expression, this)
+
     def union_sql(self, expression: exp.Union) -> str:
-        return self.prepend_ctes(
-            expression,
-            self.set_operation(expression, self.union_op(expression)),
-        )
+        return self.set_operations(expression)
 
     def union_op(self, expression: exp.Union) -> str:
         kind = " DISTINCT" if self.EXPLICIT_UNION else ""
@@ -3171,13 +3187,6 @@ class Generator(metaclass=_Generator):
         if not property_name:
             self.unsupported(f"Unsupported property {expression.__class__.__name__}")
         return f"{property_name} {self.sql(expression, 'this')}"
-
-    def set_operation(self, expression: exp.Union, op: str) -> str:
-        this = self.maybe_comment(self.sql(expression, "this"), comments=expression.comments)
-        op = self.seg(op)
-        return self.query_modifiers(
-            expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}"
-        )
 
     def tag_sql(self, expression: exp.Tag) -> str:
         return f"{expression.args.get('prefix')}{self.sql(expression.this)}{expression.args.get('postfix')}"

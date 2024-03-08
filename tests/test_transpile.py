@@ -428,7 +428,8 @@ FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
             """SELECT
   'hotel1' AS hotel,
   *
-FROM dw_1_dw_1_1.exactonline_1.transactionlines /*
+FROM dw_1_dw_1_1.exactonline_1.transactionlines
+/*
     UNION ALL
     SELECT
       'Thon Partner Hotel Jølster' AS hotel,

@@ -1005,18 +1005,7 @@ class Generator(metaclass=_Generator):
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
 
-        sequence_options = "".join(
-            (
-                start,
-                increment,
-                minvalue,
-                maxvalue,
-                cache_str,
-                options,
-                owned,
-            )
-        )
-        return sequence_options.lstrip()
+        return f"{start}{increment}{minvalue}{maxvalue}{cache_str}{options}{owned}".lstrip()
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")

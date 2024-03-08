@@ -8,7 +8,7 @@ from enum import Enum, auto
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import ensure_collection, find_new_name
+from sqlglot.helper import ensure_collection, find_new_name, seq_get
 
 logger = logging.getLogger("sqlglot")
 
@@ -122,7 +122,8 @@ class Scope:
         for node, parent, _ in self.walk(bfs=False):
             if node is self.expression:
                 continue
-            elif isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
+
+            if isinstance(node, exp.Column) and not isinstance(node.this, exp.Star):
                 self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
                 self._tables.append(node)
@@ -477,14 +478,28 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
         ('SELECT a FROM (SELECT a FROM x) AS y', ['y'])
 
     Args:
-        expression (exp.Expression): expression to traverse
+        expression: Expression to traverse
 
     Returns:
-        list[Scope]: scope instances
+        A list of the created scope instances
     """
-    if isinstance(expression, exp.Query) or (
-        isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Query)
-    ):
+    if isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Query):
+        # We ignore the DDL expression and build a scope for its query instead
+        ddl_with = expression.args.get("with")
+        expression = expression.expression
+
+        # If the DDL has CTEs attached, we need to add them to the query, or
+        # prepend them if the query itself already has CTEs attached to it
+        if ddl_with:
+            ddl_with.pop()
+            query_ctes = expression.ctes
+            if not query_ctes:
+                expression.set("with", ddl_with)
+            else:
+                expression.args["with"].set("recursive", ddl_with.recursive)
+                expression.args["with"].set("expressions", [*ddl_with.expressions, *query_ctes])
+
+    if isinstance(expression, exp.Query):
         return list(_traverse_scope(Scope(expression)))
 
     return []
@@ -495,14 +510,12 @@ def build_scope(expression: exp.Expression) -> t.Optional[Scope]:
     Build a scope tree.
 
     Args:
-        expression (exp.Expression): expression to build the scope tree for
+        expression: Expression to build the scope tree for.
+
     Returns:
-        Scope: root scope
+        The root scope
     """
-    scopes = traverse_scope(expression)
-    if scopes:
-        return scopes[-1]
-    return None
+    return seq_get(traverse_scope(expression), -1)
 
 
 def _traverse_scope(scope):
@@ -519,8 +532,6 @@ def _traverse_scope(scope):
         yield from _traverse_tables(scope)
     elif isinstance(scope.expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
-    elif isinstance(scope.expression, exp.DDL):
-        yield from _traverse_ddl(scope)
     else:
         logger.warning(
             "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
@@ -734,18 +745,6 @@ def _traverse_udtfs(scope):
             scope.table_scopes.append(top)
 
     scope.sources.update(sources)
-
-
-def _traverse_ddl(scope):
-    yield from _traverse_ctes(scope)
-
-    query_scope = scope.branch(
-        scope.expression.expression, scope_type=ScopeType.DERIVED_TABLE, sources=scope.sources
-    )
-    query_scope._collect()
-    query_scope._ctes = scope.ctes + query_scope._ctes
-
-    yield from _traverse_scope(query_scope)
 
 
 def walk_in_scope(expression, bfs=True, prune=None):

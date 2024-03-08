@@ -483,8 +483,8 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     Returns:
         A list of the created scope instances
     """
-    # We ignore the DDL expression and build a scope for its query instead
     if isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Query):
+        # We ignore the DDL expression and build a scope for its query instead
         ddl_with = expression.args.get("with")
         expression = expression.expression
 

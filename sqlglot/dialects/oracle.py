@@ -97,7 +97,7 @@ class Oracle(Dialect):
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
-            "TO_NUMBER": lambda args: exp.ToNumber.from_arg_list(args)
+            "TO_NUMBER": lambda args: exp.ToNumber.from_arg_list(args),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {

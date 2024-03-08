@@ -741,6 +741,7 @@ class Parser(metaclass=_Parser):
         "FALLBACK": lambda self, **kwargs: self._parse_fallback(**kwargs),
         "FORMAT": lambda self: self._parse_property_assignment(exp.FileFormatProperty),
         "FREESPACE": lambda self: self._parse_freespace(),
+        "GLOBAL": lambda self: self.expression(exp.GlobalProperty),
         "HEAP": lambda self: self.expression(exp.HeapProperty),
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
@@ -784,6 +785,7 @@ class Parser(metaclass=_Parser):
         "SETTINGS": lambda self: self.expression(
             exp.SettingsProperty, expressions=self._parse_csv(self._parse_set_item)
         ),
+        "SHARING": lambda self: self._parse_property_assignment(exp.SharingProperty),
         "SORTKEY": lambda self: self._parse_sortkey(),
         "SOURCE": lambda self: self._parse_dict_property(this="SOURCE"),
         "STABLE": lambda self: self.expression(
@@ -1432,7 +1434,7 @@ class Parser(metaclass=_Parser):
             and self._match(TokenType.EXISTS)
         )
 
-    def _parse_create(self) -> exp.Expression:
+    def _parse_create(self) -> exp.Create | exp.Command:
         # Note: this can't be None because we've matched a statement parser
         start = self._prev
         comments = self._prev_comments
@@ -1510,12 +1512,6 @@ class Parser(metaclass=_Parser):
                 schema=True, is_db_reference=create_token.token_type == TokenType.SCHEMA
             )
 
-            sequence_opts = (
-                self._parse_sequence_properties()
-                if create_token.token_type == TokenType.SEQUENCE
-                else None
-            )
-
             # exp.Properties.Location.POST_NAME
             self._match(TokenType.COMMA)
             extend_props(self._parse_properties(before=True))
@@ -1530,7 +1526,14 @@ class Parser(metaclass=_Parser):
                 # exp.Properties.Location.POST_ALIAS
                 extend_props(self._parse_properties())
 
-            expression = self._parse_ddl_select()
+            expression = (
+                self._parse_type()
+                if create_token.token_type == TokenType.SEQUENCE
+                else self._parse_ddl_select()
+            )
+
+            if create_token.token_type == TokenType.SEQUENCE:
+                extend_props(self._parse_properties())
 
             if create_token.token_type == TokenType.TABLE:
                 # exp.Properties.Location.POST_EXPRESSION
@@ -1581,15 +1584,14 @@ class Parser(metaclass=_Parser):
             sequence_opts=sequence_opts,
         )
 
-    def _parse_sequence_properties(self) -> exp.SequenceProperties:
+    def _parse_sequence_properties(self) -> t.Optional[exp.SequenceProperties]:
         seq = exp.SequenceProperties()
 
         options = []
+        index = self._index
 
         while self._curr:
-            if self._match_text_seq("AS"):
-                seq.set("data_type", self._parse_types())
-            elif self._match_text_seq("INCREMENT"):
+            if self._match_text_seq("INCREMENT"):
                 self._match_text_seq("BY")
                 self._match_text_seq("=")
                 seq.set("increment", self._parse_term())
@@ -1602,30 +1604,21 @@ class Parser(metaclass=_Parser):
                 seq.set("start", self._parse_term())
             elif self._match_text_seq("CACHE"):
                 # T-SQL allows empty CACHE which is initialized dynamically
-                cache: t.Optional[exp.Expression | bool] = self._parse_term()
-                if cache and not isinstance(cache, exp.Literal):
-                    self._retreat(self._index - 1)
-                    cache = True
+                cache: t.Optional[exp.Expression | bool] = self._parse_number() or True
                 seq.set("cache", cache)
             elif self._match_text_seq("OWNED", "BY"):
                 # "OWNED BY NONE" is the default
-                owned = self._prev.text if self._match_text_seq("NONE") else self._parse_column()
+                owned = None if self._match_text_seq("NONE") else self._parse_column()
                 seq.set("owned", owned)
-            elif self._match_text_seq("COMMENT"):
-                seq.set("comment", self._parse_property_assignment(exp.SchemaCommentProperty))
-            elif self._match_text_seq("SHARING", "="):
-                seq.set(
-                    "sharing", self._match_texts(("METADATA", "DATA", "NONE")) and self._prev.text
-                )
             else:
-                opt = self._parse_var_from_options(self.CREATE_SEQUENCE)
+                opt = self._parse_var_from_options(self.CREATE_SEQUENCE, raise_unmatched=False)
                 if opt:
                     options.append(opt)
                 else:
                     break
 
         seq.set("options", options if options else None)
-        return seq
+        return None if self._index == index else seq
 
     def _parse_property_before(self) -> t.Optional[exp.Expression]:
         # only used for teradata currently
@@ -1670,7 +1663,8 @@ class Parser(metaclass=_Parser):
 
         if not self._match(TokenType.EQ):
             self._retreat(index)
-            return None
+            seq_properties = self._parse_sequence_properties()
+            return seq_properties or None
 
         return self.expression(
             exp.Property,
@@ -2559,7 +2553,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _implicit_unnests_to_explicit(self, this: E) -> E:
-        from sqlglot.optimizer.normalize_identifiers import normalize_identifiers as _norm
+        from sqlglot.optimizer.normalize_identifiers import (
+            normalize_identifiers as _norm,
+        )
 
         refs = {_norm(this.args["from"].this.copy(), dialect=self.dialect).alias_or_name}
         for i, join in enumerate(this.args.get("joins") or []):

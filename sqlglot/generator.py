@@ -91,6 +91,7 @@ class Generator(metaclass=_Generator):
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
+        exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
         exp.InheritsProperty: lambda self, e: f"INHERITS ({self.expressions(e, flat=True)})",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
@@ -123,6 +124,7 @@ class Generator(metaclass=_Generator):
         exp.SetConfigProperty: lambda self, e: self.sql(e, "this"),
         exp.SetProperty: lambda _, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
+        exp.SharingProperty: lambda self, e: f"SHARING={self.sql(e, 'this')}",
         exp.SqlReadWriteProperty: lambda _, e: e.name,
         exp.SqlSecurityProperty: lambda _,
         e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
@@ -393,6 +395,7 @@ class Generator(metaclass=_Generator):
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
+        exp.GlobalProperty: exp.Properties.Location.POST_CREATE,
         exp.HeapProperty: exp.Properties.Location.POST_WITH,
         exp.InheritsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.InputModelProperty: exp.Properties.Location.POST_SCHEMA,
@@ -427,6 +430,8 @@ class Generator(metaclass=_Generator):
         exp.SettingsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.POST_CREATE,
         exp.SetConfigProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.SharingProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
@@ -974,16 +979,12 @@ class Generator(metaclass=_Generator):
         clone = self.sql(expression, "clone")
         clone = f" {clone}" if clone else ""
 
-        sequence_opts = self.sql(expression, "sequence_opts")
-
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{sequence_opts}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
         return self.prepend_ctes(expression, expression_sql)
 
     def sequenceproperties_sql(self, expression: exp.SequenceProperties) -> str:
-        data_type = self.sql(expression, "data_type")
-        data_type = f" AS {data_type}" if data_type else ""
         start = self.sql(expression, "start")
-        start = f" START WITH {start}" if start else ""
+        start = f"START WITH {start}" if start else ""
         increment = self.sql(expression, "increment")
         increment = f" INCREMENT BY {increment}" if increment else ""
         minvalue = self.sql(expression, "minvalue")
@@ -992,10 +993,6 @@ class Generator(metaclass=_Generator):
         maxvalue = f" MAXVALUE {maxvalue}" if maxvalue else ""
         owned = self.sql(expression, "owned")
         owned = f" OWNED BY {owned}" if owned else ""
-        sharing = self.sql(expression, "sharing")
-        sharing = f" SHARING={sharing}" if sharing else ""
-        sharing = self.sql(expression, "sharing")
-        sharing = f" SHARING={sharing}" if sharing else ""
 
         cache = expression.args.get("cache")
         if cache is None:
@@ -1005,27 +1002,21 @@ class Generator(metaclass=_Generator):
         else:
             cache_str = f" CACHE {cache}"
 
-        comment = self.sql(expression, "comment")
-        comment = f" {comment}" if comment else ""
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
 
         sequence_options = "".join(
             (
-                data_type,
                 start,
                 increment,
                 minvalue,
                 maxvalue,
-                sharing,
                 cache_str,
                 options,
-                comment,
                 owned,
             )
         )
-
-        return f"{sequence_options}"
+        return sequence_options.lstrip()
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")

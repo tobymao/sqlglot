@@ -1225,8 +1225,6 @@ class Create(DDL):
 
 class SequenceProperties(Expression):
     arg_types = {
-        "properties": False,
-        "data_type": False,
         "increment": False,
         "minvalue": False,
         "maxvalue": False,
@@ -1235,8 +1233,7 @@ class SequenceProperties(Expression):
         "start": False,
         "owned": False,
         "options": False,
-        "comment": False,
-        "sharing": False,
+        # "comment": False,
     }
 
 
@@ -2272,6 +2269,10 @@ class FreespaceProperty(Property):
     arg_types = {"this": True, "percent": False}
 
 
+class GlobalProperty(Property):
+    arg_types = {}
+
+
 class InheritsProperty(Property):
     arg_types = {"expressions": True}
 
@@ -2453,6 +2454,10 @@ class SerdeProperties(Property):
 
 class SetProperty(Property):
     arg_types = {"multi": True}
+
+
+class SharingProperty(Property):
+    arg_types = {"this": False}
 
 
 class SetConfigProperty(Property):

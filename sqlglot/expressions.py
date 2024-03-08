@@ -1233,7 +1233,6 @@ class SequenceProperties(Expression):
         "start": False,
         "owned": False,
         "options": False,
-        # "comment": False,
     }
 
 

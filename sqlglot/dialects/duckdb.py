@@ -227,8 +227,8 @@ class DuckDB(Dialect):
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
             "ARRAY_HAS": exp.ArrayContains.from_arg_list,
-            "ARRAY_SORT": exp.SortArray.from_arg_list,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
+            "ARRAY_SORT": exp.SortArray.from_arg_list,
             "DATEDIFF": _build_date_diff,
             "DATE_DIFF": _build_date_diff,
             "DATE_TRUNC": date_trunc_to_time,

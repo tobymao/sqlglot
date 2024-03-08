@@ -349,11 +349,12 @@ class Expression(metaclass=_Expression):
             return self.parent.depth + 1
         return 0
 
-    def iter_expressions(self) -> t.Iterator[t.Tuple[str, Expression]]:
+    def iter_expressions(self, reverse: bool = False) -> t.Iterator[t.Tuple[str, Expression]]:
         """Yields the key and expression for all arguments, exploding list args."""
-        for k, vs in self.args.items():
+        # need to materialize tuple due to python 3.7
+        for k, vs in reversed(tuple(self.args.items())) if reverse else self.args.items():
             if type(vs) is list:
-                for v in vs:
+                for v in reversed(vs) if reverse else vs:
                     if hasattr(v, "parent"):
                         yield k, v
             else:
@@ -452,13 +453,18 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        parent = parent or self.parent
-        yield self, parent, key
-        if prune and prune(self, parent, key):
-            return
+        stack = [(self, parent or self.parent, key)]
 
-        for k, v in self.iter_expressions():
-            yield from v.dfs(self, k, prune)
+        while stack:
+            node, parent, key = stack.pop()
+
+            yield node, parent, key
+
+            if prune and prune(node, parent, key):
+                continue
+
+            for k, v in node.iter_expressions(reverse=True):
+                stack.append((v, node, k))
 
     def bfs(self, prune=None):
         """

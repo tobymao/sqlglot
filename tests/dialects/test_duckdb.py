@@ -666,13 +666,6 @@ class TestDuckDB(Validator):
             """SELECT i FROM GENERATE_SERIES(0, 12) AS _(i) ORDER BY i ASC""",
         )
 
-        self.validate_all(
-            "SELECT ARRAY_TO_STRING(fruits, ',') AS all_fruits FROM t",
-            read={
-                "snowflake": "SELECT ARRAY_TO_STRING(fruits, ',') AS all_fruits FROM t",
-            },
-        )
-
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

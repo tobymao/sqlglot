@@ -675,6 +675,9 @@ WHERE
         )
         self.validate_all(
             "ARRAY_TO_STRING(x, '')",
+            read={
+                "duckdb": "ARRAY_TO_STRING(x, '')",
+            },
             write={
                 "spark": "ARRAY_JOIN(x, '')",
                 "snowflake": "ARRAY_TO_STRING(x, '')",

@@ -714,6 +714,7 @@ class TestExecutor(unittest.TestCase):
         for sql, expected in [
             ("TO_TIMESTAMP('2013-04-05 01:02:03')", datetime.datetime(2013, 4, 5, 1, 2, 3)),
             ("TO_TIMESTAMP(1659981729)", datetime.datetime(2022, 8, 8, 18, 2, 9)),
+            ("TO_TIMESTAMP('08/03/2024 12:34:56', 'DD/MM/YYYY HH24:MI:SS')", datetime.datetime(2024, 3, 8, 12, 34, 56)),
         ]:
             with self.subTest(sql):
                 result = execute(f"SELECT {sql}", read="snowflake")

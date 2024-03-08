@@ -62,8 +62,7 @@ def qualify(
         identify: If True, quote all identifiers, else only necessary ones.
 
     Returns:
-        The qualified expression. If the original expression is a DDL with a `Query` child, then
-        only the child will be qualified and that will be part of the final DDL expression.
+        The qualified expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
     expression = normalize_identifiers(expression, dialect=dialect)

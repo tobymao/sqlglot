@@ -1601,8 +1601,7 @@ class Parser(metaclass=_Parser):
                 seq.set("cache", self._parse_number() or True)
             elif self._match_text_seq("OWNED", "BY"):
                 # "OWNED BY NONE" is the default
-                owned = None if self._match_text_seq("NONE") else self._parse_column()
-                seq.set("owned", owned)
+                seq.set("owned", None if self._match_text_seq("NONE") else self._parse_column())
             else:
                 opt = self._parse_var_from_options(self.CREATE_SEQUENCE, raise_unmatched=False)
                 if opt:

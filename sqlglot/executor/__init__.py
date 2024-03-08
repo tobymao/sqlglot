@@ -32,6 +32,7 @@ def execute(
     sql: str | Expression,
     schema: t.Optional[t.Dict | Schema] = None,
     read: DialectType = None,
+    dialect: DialectType = None,
     tables: t.Optional[t.Dict] = None,
 ) -> Table:
     """
@@ -45,11 +46,13 @@ def execute(
             2. {db: {table: {col: type}}}
             3. {catalog: {db: {table: {col: type}}}}
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
+        dialect: the SQL dialect (alias for read).
         tables: additional tables to register.
 
     Returns:
         Simple columnar data structure.
     """
+    read = read or dialect
     tables_ = ensure_tables(tables, dialect=read)
 
     if not schema:

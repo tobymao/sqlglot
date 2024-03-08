@@ -1214,7 +1214,6 @@ class Create(DDL):
         "begin": False,
         "end": False,
         "clone": False,
-        "sequence_opts": False,
     }
 
     @property

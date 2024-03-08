@@ -1469,7 +1469,6 @@ class Parser(metaclass=_Parser):
         begin = None
         end = None
         clone = None
-        sequence_opts = None
 
         def extend_props(temp_props: t.Optional[exp.Properties]) -> None:
             nonlocal properties
@@ -1581,7 +1580,6 @@ class Parser(metaclass=_Parser):
             begin=begin,
             end=end,
             clone=clone,
-            sequence_opts=sequence_opts,
         )
 
     def _parse_sequence_properties(self) -> t.Optional[exp.SequenceProperties]:

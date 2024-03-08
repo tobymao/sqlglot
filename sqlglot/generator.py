@@ -91,6 +91,7 @@ class Generator(metaclass=_Generator):
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
+        exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
         exp.InheritsProperty: lambda self, e: f"INHERITS ({self.expressions(e, flat=True)})",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
@@ -123,6 +124,7 @@ class Generator(metaclass=_Generator):
         exp.SetConfigProperty: lambda self, e: self.sql(e, "this"),
         exp.SetProperty: lambda _, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
+        exp.SharingProperty: lambda self, e: f"SHARING={self.sql(e, 'this')}",
         exp.SqlReadWriteProperty: lambda _, e: e.name,
         exp.SqlSecurityProperty: lambda _,
         e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
@@ -134,6 +136,7 @@ class Generator(metaclass=_Generator):
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda *_: "TRANSIENT",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
+        exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.VolatileProperty: lambda *_: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
@@ -392,6 +395,7 @@ class Generator(metaclass=_Generator):
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
+        exp.GlobalProperty: exp.Properties.Location.POST_CREATE,
         exp.HeapProperty: exp.Properties.Location.POST_WITH,
         exp.InheritsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.InputModelProperty: exp.Properties.Location.POST_SCHEMA,
@@ -426,6 +430,8 @@ class Generator(metaclass=_Generator):
         exp.SettingsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.POST_CREATE,
         exp.SetConfigProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.SharingProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
@@ -435,6 +441,7 @@ class Generator(metaclass=_Generator):
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
         exp.TransformModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,
+        exp.UnloggedProperty: exp.Properties.Location.POST_CREATE,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -973,14 +980,33 @@ class Generator(metaclass=_Generator):
         clone = self.sql(expression, "clone")
         clone = f" {clone}" if clone else ""
 
-        start = self.sql(expression, "start")
-        start = f" {start}" if start else ""
-
-        increment = self.sql(expression, "increment")
-        increment = f" {increment}" if increment else ""
-
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{start}{increment}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
         return self.prepend_ctes(expression, expression_sql)
+
+    def sequenceproperties_sql(self, expression: exp.SequenceProperties) -> str:
+        start = self.sql(expression, "start")
+        start = f"START WITH {start}" if start else ""
+        increment = self.sql(expression, "increment")
+        increment = f" INCREMENT BY {increment}" if increment else ""
+        minvalue = self.sql(expression, "minvalue")
+        minvalue = f" MINVALUE {minvalue}" if minvalue else ""
+        maxvalue = self.sql(expression, "maxvalue")
+        maxvalue = f" MAXVALUE {maxvalue}" if maxvalue else ""
+        owned = self.sql(expression, "owned")
+        owned = f" OWNED BY {owned}" if owned else ""
+
+        cache = expression.args.get("cache")
+        if cache is None:
+            cache_str = ""
+        elif cache is True:
+            cache_str = " CACHE"
+        else:
+            cache_str = f" CACHE {cache}"
+
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+
+        return f"{start}{increment}{minvalue}{maxvalue}{cache_str}{options}{owned}".lstrip()
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
@@ -1560,14 +1586,6 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         expr = self.sql(expression, "expression")
         return f"{this} ({kind} => {expr})"
-
-    def start_sql(self, expression: exp.Start) -> str:
-        this = self.sql(expression, "this")
-        return f"START WITH {this}"
-
-    def increment_sql(self, expression: exp.Increment) -> str:
-        this = self.sql(expression, "this")
-        return f"INCREMENT BY {this}"
 
     def table_parts(self, expression: exp.Table) -> str:
         return ".".join(

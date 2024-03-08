@@ -740,8 +740,7 @@ class TestPostgres(Validator):
             check_command_warning=True,
         )
         self.validate_identity(
-            "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
-            check_command_warning=True,
+            "CREATE UNLOGGED TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp"
         )
         self.validate_identity(
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path TO 'public'",

@@ -103,6 +103,13 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
+            "TO_NUMBER(x)",
+            write={
+                "doris": "CAST(x AS FLOAT)",
+                "oracle": "TO_NUMBER(x)",
+            },
+        )
+        self.validate_all(
             "SELECT TO_CHAR(TIMESTAMP '1999-12-01 10:00:00')",
             write={
                 "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')",

@@ -231,27 +231,50 @@ def to_node(
 
     for c in source_columns:
         table = c.table
-        source = scope.sources.get(table)
+        table_source = scope.sources.get(table)
 
-        if isinstance(source, Scope):
+        if isinstance(table_source, Scope):
             selected_node, _ = scope.selected_sources.get(table, (None, None))
             # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
             to_node(
                 c.name,
-                scope=source,
+                scope=table_source,
                 dialect=dialect,
                 scope_name=table,
                 upstream=node,
                 source_name=source_names.get(table) or source_name,
                 reference_node_name=selected_node.name if selected_node else None,
             )
+        elif source:
+            # Find all tables that went into creating this one to list their lineage nodes.
+            source_tables = set(find_all_in_scope(source, exp.Table))
+            for st in source_tables:
+                table = st.name
+                table_source = scope.sources.get(table)
+
+                if isinstance(table_source, Scope):
+                    selected_node, _ = scope.selected_sources.get(table, (None, None))
+                    # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
+                    to_node(
+                        table,
+                        scope=table_source,
+                        dialect=dialect,
+                        scope_name=table,
+                        upstream=node,
+                        source_name=source_names.get(table) or source_name,
+                        reference_node_name=selected_node.name if selected_node else None,
+                    )
         else:
             # The source is not a scope - we've reached the end of the line. At this point, if a source is not found
             # it means this column's lineage is unknown. This can happen if the definition of a source used in a query
             # is not passed into the `sources` map.
-            source = source or exp.Placeholder()
-            node.downstream.append(Node(name=c.sql(), source=source, expression=source))
-
+            node.downstream.append(
+                Node(
+                    name=c.sql(),
+                    source=table_source or exp.Placeholder(),
+                    expression=source,
+                )
+            )
     return node
 
 

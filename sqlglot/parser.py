@@ -984,7 +984,6 @@ class Parser(metaclass=_Parser):
             (
                 "SESSION",
                 "GLOBAL",
-                "NOSHARD",
                 "KEEP",
                 "NOKEEP",
                 "ORDER",

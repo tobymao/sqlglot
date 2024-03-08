@@ -105,7 +105,7 @@ class TestOracle(Validator):
         self.validate_all(
             "TO_NUMBER(x)",
             write={
-                "doris": "CAST(x AS FLOAT)",
+                "doris": "CAST(x AS DOUBLE)",
                 "oracle": "TO_NUMBER(x)",
             },
         )

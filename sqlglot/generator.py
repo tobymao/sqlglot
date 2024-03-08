@@ -3250,7 +3250,7 @@ class Generator(metaclass=_Generator):
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
         if expression.args.get("format"):
             self.unsupported("Format argument unsupported for TO_NUMBER function")
-        return self.sql(exp.cast(expression.this, "float"))
+        return self.sql(exp.cast(expression.this, "double"))
 
     def dictproperty_sql(self, expression: exp.DictProperty) -> str:
         this = self.sql(expression, "this")

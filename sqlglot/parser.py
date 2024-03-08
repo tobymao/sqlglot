@@ -1657,8 +1657,7 @@ class Parser(metaclass=_Parser):
 
         if not self._match(TokenType.EQ):
             self._retreat(index)
-            seq_properties = self._parse_sequence_properties()
-            return seq_properties or None
+            return self._parse_sequence_properties()
 
         return self.expression(
             exp.Property,

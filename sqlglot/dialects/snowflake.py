@@ -327,7 +327,6 @@ class Snowflake(Dialect):
                 end=exp.Sub(this=seq_get(args, 1), expression=exp.Literal.number(1)),
                 step=seq_get(args, 2),
             ),
-            "ARRAY_TO_STRING": exp.ArrayJoin.from_arg_list,
             "BITXOR": binary_from_function(exp.BitwiseXor),
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BOOLXOR": binary_from_function(exp.Xor),

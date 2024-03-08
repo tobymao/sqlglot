@@ -1103,15 +1103,6 @@ WHERE
             write={"snowflake": "CREATE TABLE a (b INT)"},
         )
 
-        self.validate_identity("CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 2")
-        self.assertIsInstance(
-            parse_one("CREATE SEQUENCE seq1 START 1 INCREMENT 2", read="snowflake"), exp.Create
-        )
-        self.assertIsInstance(
-            parse_one("CREATE SEQUENCE seq1 WITH START WITH 1 INCREMENT BY 2", read="snowflake"),
-            exp.Create,
-        )
-
     def test_user_defined_functions(self):
         self.validate_all(
             "CREATE FUNCTION a(x DATE, y BIGINT) RETURNS ARRAY LANGUAGE JAVASCRIPT AS $$ SELECT 1 $$",

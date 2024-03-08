@@ -1214,14 +1214,24 @@ class Create(DDL):
         "begin": False,
         "end": False,
         "clone": False,
-        "start": False,
-        "increment": False,
     }
 
     @property
     def kind(self) -> t.Optional[str]:
         kind = self.args.get("kind")
         return kind and kind.upper()
+
+
+class SequenceProperties(Expression):
+    arg_types = {
+        "increment": False,
+        "minvalue": False,
+        "maxvalue": False,
+        "cache": False,
+        "start": False,
+        "owned": False,
+        "options": False,
+    }
 
 
 class TruncateTable(Expression):
@@ -2256,6 +2266,10 @@ class FreespaceProperty(Property):
     arg_types = {"this": True, "percent": False}
 
 
+class GlobalProperty(Property):
+    arg_types = {}
+
+
 class InheritsProperty(Property):
     arg_types = {"expressions": True}
 
@@ -2439,6 +2453,10 @@ class SetProperty(Property):
     arg_types = {"multi": True}
 
 
+class SharingProperty(Property):
+    arg_types = {"this": False}
+
+
 class SetConfigProperty(Property):
     arg_types = {"this": True}
 
@@ -2473,6 +2491,10 @@ class TransformModelProperty(Property):
 
 class TransientProperty(Property):
     arg_types = {"this": False}
+
+
+class UnloggedProperty(Property):
+    arg_types = {}
 
 
 class VolatileProperty(Property):
@@ -3620,14 +3642,6 @@ class Star(Expression):
     @property
     def output_name(self) -> str:
         return self.name
-
-
-class Increment(Expression):
-    arg_types = {"this": True}
-
-
-class Start(Expression):
-    arg_types = {"this": True}
 
 
 class Parameter(Condition):

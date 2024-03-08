@@ -1598,8 +1598,7 @@ class Parser(metaclass=_Parser):
                 seq.set("start", self._parse_term())
             elif self._match_text_seq("CACHE"):
                 # T-SQL allows empty CACHE which is initialized dynamically
-                cache: t.Optional[exp.Expression | bool] = self._parse_number() or True
-                seq.set("cache", cache)
+                seq.set("cache", self._parse_number() or True)
             elif self._match_text_seq("OWNED", "BY"):
                 # "OWNED BY NONE" is the default
                 owned = None if self._match_text_seq("NONE") else self._parse_column()

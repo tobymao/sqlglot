@@ -1524,14 +1524,11 @@ class Parser(metaclass=_Parser):
                 # exp.Properties.Location.POST_ALIAS
                 extend_props(self._parse_properties())
 
-            expression = (
-                self._parse_type()
-                if create_token.token_type == TokenType.SEQUENCE
-                else self._parse_ddl_select()
-            )
-
             if create_token.token_type == TokenType.SEQUENCE:
+                expression = self._parse_types()
                 extend_props(self._parse_properties())
+            else:
+                expression = self._parse_ddl_select()
 
             if create_token.token_type == TokenType.TABLE:
                 # exp.Properties.Location.POST_EXPRESSION

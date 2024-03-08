@@ -977,9 +977,9 @@ class Parser(metaclass=_Parser):
     CONFLICT_ACTIONS["DO"] = ("NOTHING", "UPDATE")
 
     CREATE_SEQUENCE: OPTIONS_TYPE = {
-        "SCALE": (("EXTEND"), ("NOEXTEND")),
-        "SHARD": (("EXTEND"), ("NOEXTEND")),
-        "NO": (("CYCLE"), ("CACHE"), ("MAXVALUE"), ("MINVALUE")),
+        "SCALE": ("EXTEND", "NOEXTEND"),
+        "SHARD": ("EXTEND", "NOEXTEND"),
+        "NO": ("CYCLE", "CACHE", "MAXVALUE", "MINVALUE"),
         **dict.fromkeys(
             (
                 "SESSION",

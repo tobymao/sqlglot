@@ -438,7 +438,22 @@ class Scope:
         for child_scope in itertools.chain(
             self.cte_scopes, self.union_scopes, self.table_scopes, self.subquery_scopes
         ):
-            yield from child_scope.traverse()
+            if child_scope.is_union:
+                stack = [(False, child_scope)]
+                scopes = []
+                while stack:
+                    is_right_tree, scope = stack.pop()
+                    if isinstance(scope.expression, exp.Union):
+                        left, right = scope.union_scopes
+                        stack.extend([(True, right), (False, left)])
+                        scopes.append(scope)
+                    else:
+                        yield from scope.traverse()
+                        if is_right_tree:
+                            yield scopes.pop()
+            else:
+                yield from child_scope.traverse()
+
         yield self
 
     def ref_count(self):

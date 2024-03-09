@@ -363,6 +363,9 @@ class TestOptimizer(unittest.TestCase):
         anon_unquoted_str = parse_one("anonymous(x, y)")
         self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS x,y")
 
+        query = parse_one("SELECT x FROM t")
+        self.assertEqual(optimizer.simplify.gen(query), optimizer.simplify.gen(query.copy()))
+
         anon_unquoted_identifier = exp.Anonymous(
             this=exp.to_identifier("anonymous"), expressions=[exp.column("x"), exp.column("y")]
         )

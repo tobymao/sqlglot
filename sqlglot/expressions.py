@@ -277,7 +277,7 @@ class Expression(metaclass=_Expression):
                         else:
                             copy.append(k, v)
                 else:
-                    copy.set(k, vs)
+                    copy.args[k] = vs
 
         return root
 

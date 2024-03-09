@@ -3251,8 +3251,7 @@ class Generator(metaclass=_Generator):
         return self.sql(exp.cast(expression.this, "text"))
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
-        if not self.SUPPORTS_TO_NUMBER:
-            self.unsupported("Unsupported TO_NUMBER function, converting to a CAST as DOUBLE")
+        self.unsupported("Unsupported TO_NUMBER function, converting to a CAST as DOUBLE")
         return self.sql(exp.cast(expression.this, "double"))
 
     def dictproperty_sql(self, expression: exp.DictProperty) -> str:

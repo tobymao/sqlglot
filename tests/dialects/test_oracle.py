@@ -107,6 +107,7 @@ class TestOracle(Validator):
             write={
                 "doris": "CAST(x AS DOUBLE)",
                 "oracle": "TO_NUMBER(x)",
+                "snowflake": "TO_NUMBER(x)",
             },
         )
         self.validate_all(

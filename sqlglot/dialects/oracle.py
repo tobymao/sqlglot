@@ -97,7 +97,6 @@ class Oracle(Dialect):
             "TO_CHAR": _build_timetostr_or_tochar,
             "TO_TIMESTAMP": build_formatted_time(exp.StrToTime, "oracle"),
             "TO_DATE": build_formatted_time(exp.StrToDate, "oracle"),
-            "TO_NUMBER": lambda args: exp.ToNumber.from_arg_list(args),
         }
 
         FUNCTION_PARSERS: t.Dict[str, t.Callable] = {
@@ -247,7 +246,6 @@ class Oracle(Dialect):
             exp.TemporaryProperty: lambda _, e: f"{e.name or 'GLOBAL'} TEMPORARY",
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
-            exp.ToNumber: lambda self, e: self.function_fallback_sql(e),
             exp.Trim: trim_sql,
             exp.UnixToTime: lambda self,
             e: f"TO_DATE('1970-01-01', 'YYYY-MM-DD') + ({self.sql(e, 'this')} / 86400)",

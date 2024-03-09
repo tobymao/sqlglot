@@ -4462,8 +4462,10 @@ class ToChar(Func):
     arg_types = {"this": True, "format": False, "nlsparam": False}
 
 
+# https://docs.snowflake.com/en/sql-reference/functions/to_decimal
+# https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/TO_NUMBER.html
 class ToNumber(Func):
-    arg_types = {"this": True, "format": False, "nlsparam": False}
+    arg_types = {"this": True, "format": False, "precision": False, "scale": False}
 
 
 # https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql?view=sql-server-ver16#syntax

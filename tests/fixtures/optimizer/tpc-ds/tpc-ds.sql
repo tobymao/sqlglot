@@ -5337,6 +5337,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 46
 --------------------------------------
+# execute: true
 SELECT c_last_name,
                c_first_name,
                ca_city,
@@ -5923,6 +5924,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 50
 --------------------------------------
+# execute: true
 SELECT s_store_name,
                s_company_id,
                s_street_number,

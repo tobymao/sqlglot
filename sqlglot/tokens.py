@@ -857,6 +857,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "DATEMULTIRANGE": TokenType.DATEMULTIRANGE,
         "UNIQUE": TokenType.UNIQUE,
         "STRUCT": TokenType.STRUCT,
+        "SEQUENCE": TokenType.SEQUENCE,
         "VARIANT": TokenType.VARIANT,
         "ALTER": TokenType.ALTER,
         "ANALYZE": TokenType.COMMAND,

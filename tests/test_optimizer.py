@@ -298,7 +298,9 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "qualify_columns", qualify_columns, execute=True, schema=self.schema, set_dialect=True
         )
-        self.check_file("qualify_columns_ddl", qualify_columns, schema=self.schema)
+        self.check_file(
+            "qualify_columns_ddl", qualify_columns, schema=self.schema, set_dialect=True
+        )
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
@@ -360,6 +362,9 @@ class TestOptimizer(unittest.TestCase):
 
         anon_unquoted_str = parse_one("anonymous(x, y)")
         self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS x,y")
+
+        query = parse_one("SELECT x FROM t")
+        self.assertEqual(optimizer.simplify.gen(query), optimizer.simplify.gen(query.copy()))
 
         anon_unquoted_identifier = exp.Anonymous(
             this=exp.to_identifier("anonymous"), expressions=[exp.column("x"), exp.column("y")]
@@ -666,6 +671,14 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
         self.assertEqual(expressions[0].type.this, exp.DataType.Type.BIGINT)
         self.assertEqual(expressions[1].type.this, exp.DataType.Type.DOUBLE)
+
+        expressions = annotate_types(
+            parse_one("SELECT SUM(2 / 3), CAST(2 AS DECIMAL) / 3", dialect="mysql")
+        ).expressions
+
+        self.assertEqual(expressions[0].type.this, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expressions[0].this.type.this, exp.DataType.Type.DOUBLE)
+        self.assertEqual(expressions[1].type.this, exp.DataType.Type.DECIMAL)
 
     def test_bracket_annotation(self):
         expression = annotate_types(parse_one("SELECT A[:]")).expressions[0]

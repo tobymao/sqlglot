@@ -428,7 +428,8 @@ FROM dw_1_dw_1_1.exactonline_2.transactionlines""",
             """SELECT
   'hotel1' AS hotel,
   *
-FROM dw_1_dw_1_1.exactonline_1.transactionlines /*
+FROM dw_1_dw_1_1.exactonline_1.transactionlines
+/*
     UNION ALL
     SELECT
       'Thon Partner Hotel Jølster' AS hotel,
@@ -758,7 +759,6 @@ FROM base""",
             "CALL catalog.system.iceberg_procedure_name(named_arg_1 => 'arg_1', named_arg_2 => 'arg_2')",
             "COMMENT ON ACCESS METHOD gin IS 'GIN index access method'",
             "CREATE OR REPLACE STAGE",
-            "CREATE SET GLOBAL TEMPORARY TABLE a, NO BEFORE JOURNAL, NO AFTER JOURNAL, MINIMUM DATABLOCKSIZE, BLOCKCOMPRESSION=NEVER (a INT)",
             "EXECUTE statement",
             "EXPLAIN SELECT * FROM x",
             "GRANT INSERT ON foo TO bla",

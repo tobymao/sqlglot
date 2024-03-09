@@ -10,11 +10,13 @@ import logging
 import time
 import typing as t
 
+from sqlglot import exp
 from sqlglot.errors import ExecuteError
 from sqlglot.executor.python import PythonExecutor
 from sqlglot.executor.table import Table, ensure_tables
 from sqlglot.helper import dict_depth
 from sqlglot.optimizer import optimize
+from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.planner import Plan
 from sqlglot.schema import ensure_schema, flatten_schema, nested_get, nested_set
 
@@ -26,15 +28,11 @@ if t.TYPE_CHECKING:
     from sqlglot.schema import Schema
 
 
-PYTHON_TYPE_TO_SQLGLOT = {
-    "dict": "MAP",
-}
-
-
 def execute(
     sql: str | Expression,
     schema: t.Optional[t.Dict | Schema] = None,
     read: DialectType = None,
+    dialect: DialectType = None,
     tables: t.Optional[t.Dict] = None,
 ) -> Table:
     """
@@ -48,11 +46,13 @@ def execute(
             2. {db: {table: {col: type}}}
             3. {catalog: {db: {table: {col: type}}}}
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
+        dialect: the SQL dialect (alias for read).
         tables: additional tables to register.
 
     Returns:
         Simple columnar data structure.
     """
+    read = read or dialect
     tables_ = ensure_tables(tables, dialect=read)
 
     if not schema:
@@ -64,8 +64,9 @@ def execute(
             assert table is not None
 
             for column in table.columns:
-                py_type = type(table[0][column]).__name__
-                nested_set(schema, [*keys, column], PYTHON_TYPE_TO_SQLGLOT.get(py_type) or py_type)
+                value = table[0][column]
+                column_type = annotate_types(exp.convert(value)).type or type(value).__name__
+                nested_set(schema, [*keys, column], column_type)
 
     schema = ensure_schema(schema, dialect=read)
 

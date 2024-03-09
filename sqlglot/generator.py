@@ -91,6 +91,7 @@ class Generator(metaclass=_Generator):
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
+        exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
         exp.InheritsProperty: lambda self, e: f"INHERITS ({self.expressions(e, flat=True)})",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
@@ -123,6 +124,7 @@ class Generator(metaclass=_Generator):
         exp.SetConfigProperty: lambda self, e: self.sql(e, "this"),
         exp.SetProperty: lambda _, e: f"{'MULTI' if e.args.get('multi') else ''}SET",
         exp.SettingsProperty: lambda self, e: f"SETTINGS{self.seg('')}{(self.expressions(e))}",
+        exp.SharingProperty: lambda self, e: f"SHARING={self.sql(e, 'this')}",
         exp.SqlReadWriteProperty: lambda _, e: e.name,
         exp.SqlSecurityProperty: lambda _,
         e: f"SQL SECURITY {'DEFINER' if e.args.get('definer') else 'INVOKER'}",
@@ -134,6 +136,7 @@ class Generator(metaclass=_Generator):
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda *_: "TRANSIENT",
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
+        exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.VolatileProperty: lambda *_: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
@@ -392,6 +395,7 @@ class Generator(metaclass=_Generator):
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
+        exp.GlobalProperty: exp.Properties.Location.POST_CREATE,
         exp.HeapProperty: exp.Properties.Location.POST_WITH,
         exp.InheritsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.InputModelProperty: exp.Properties.Location.POST_SCHEMA,
@@ -426,6 +430,8 @@ class Generator(metaclass=_Generator):
         exp.SettingsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.POST_CREATE,
         exp.SetConfigProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.SharingProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_CREATE,
@@ -435,6 +441,7 @@ class Generator(metaclass=_Generator):
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,
         exp.TransformModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,
+        exp.UnloggedProperty: exp.Properties.Location.POST_CREATE,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -453,6 +460,7 @@ class Generator(metaclass=_Generator):
         exp.Insert,
         exp.Join,
         exp.Select,
+        exp.Union,
         exp.Update,
         exp.Where,
         exp.With,
@@ -972,14 +980,33 @@ class Generator(metaclass=_Generator):
         clone = self.sql(expression, "clone")
         clone = f" {clone}" if clone else ""
 
-        start = self.sql(expression, "start")
-        start = f" {start}" if start else ""
-
-        increment = self.sql(expression, "increment")
-        increment = f" {increment}" if increment else ""
-
-        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}{start}{increment}"
+        expression_sql = f"CREATE{modifiers} {kind}{exists_sql} {this}{properties_sql}{expression_sql}{postexpression_props_sql}{index_sql}{no_schema_binding}{clone}"
         return self.prepend_ctes(expression, expression_sql)
+
+    def sequenceproperties_sql(self, expression: exp.SequenceProperties) -> str:
+        start = self.sql(expression, "start")
+        start = f"START WITH {start}" if start else ""
+        increment = self.sql(expression, "increment")
+        increment = f" INCREMENT BY {increment}" if increment else ""
+        minvalue = self.sql(expression, "minvalue")
+        minvalue = f" MINVALUE {minvalue}" if minvalue else ""
+        maxvalue = self.sql(expression, "maxvalue")
+        maxvalue = f" MAXVALUE {maxvalue}" if maxvalue else ""
+        owned = self.sql(expression, "owned")
+        owned = f" OWNED BY {owned}" if owned else ""
+
+        cache = expression.args.get("cache")
+        if cache is None:
+            cache_str = ""
+        elif cache is True:
+            cache_str = " CACHE"
+        else:
+            cache_str = f" CACHE {cache}"
+
+        options = self.expressions(expression, key="options", flat=True, sep=" ")
+        options = f" {options}" if options else ""
+
+        return f"{start}{increment}{minvalue}{maxvalue}{cache_str}{options}{owned}".lstrip()
 
     def clone_sql(self, expression: exp.Clone) -> str:
         this = self.sql(expression, "this")
@@ -1146,10 +1173,7 @@ class Generator(metaclass=_Generator):
         )
 
     def except_sql(self, expression: exp.Except) -> str:
-        return self.prepend_ctes(
-            expression,
-            self.set_operation(expression, self.except_op(expression)),
-        )
+        return self.set_operations(expression)
 
     def except_op(self, expression: exp.Except) -> str:
         return f"EXCEPT{'' if expression.args.get('distinct') else ' ALL'}"
@@ -1492,10 +1516,7 @@ class Generator(metaclass=_Generator):
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
-        return self.prepend_ctes(
-            expression,
-            self.set_operation(expression, self.intersect_op(expression)),
-        )
+        return self.set_operations(expression)
 
     def intersect_op(self, expression: exp.Intersect) -> str:
         return f"INTERSECT{'' if expression.args.get('distinct') else ' ALL'}"
@@ -1565,14 +1586,6 @@ class Generator(metaclass=_Generator):
         kind = self.sql(expression, "kind")
         expr = self.sql(expression, "expression")
         return f"{this} ({kind} => {expr})"
-
-    def start_sql(self, expression: exp.Start) -> str:
-        this = self.sql(expression, "this")
-        return f"START WITH {this}"
-
-    def increment_sql(self, expression: exp.Increment) -> str:
-        this = self.sql(expression, "this")
-        return f"INCREMENT BY {this}"
 
     def table_parts(self, expression: exp.Table) -> str:
         return ".".join(
@@ -2256,11 +2269,32 @@ class Generator(metaclass=_Generator):
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
+    def set_operations(self, expression: exp.Union) -> str:
+        sqls: t.List[str] = []
+        stack: t.List[t.Union[str, exp.Expression]] = [expression]
+
+        while stack:
+            node = stack.pop()
+
+            if isinstance(node, exp.Union):
+                stack.append(node.expression)
+                stack.append(
+                    self.maybe_comment(
+                        getattr(self, f"{node.key}_op")(node),
+                        expression=node.this,
+                        comments=node.comments,
+                    )
+                )
+                stack.append(node.this)
+            else:
+                sqls.append(self.sql(node))
+
+        this = self.sep().join(sqls)
+        this = self.query_modifiers(expression, this)
+        return self.prepend_ctes(expression, this)
+
     def union_sql(self, expression: exp.Union) -> str:
-        return self.prepend_ctes(
-            expression,
-            self.set_operation(expression, self.union_op(expression)),
-        )
+        return self.set_operations(expression)
 
     def union_op(self, expression: exp.Union) -> str:
         kind = " DISTINCT" if self.EXPLICIT_UNION else ""
@@ -2953,9 +2987,7 @@ class Generator(metaclass=_Generator):
             r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
 
         if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
-            if not l.is_type(*exp.DataType.FLOAT_TYPES) and not r.is_type(
-                *exp.DataType.FLOAT_TYPES
-            ):
+            if not l.is_type(*exp.DataType.REAL_TYPES) and not r.is_type(*exp.DataType.REAL_TYPES):
                 l.replace(exp.cast(l.copy(), to=exp.DataType.Type.DOUBLE))
 
         elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
@@ -3173,13 +3205,6 @@ class Generator(metaclass=_Generator):
         if not property_name:
             self.unsupported(f"Unsupported property {expression.__class__.__name__}")
         return f"{property_name} {self.sql(expression, 'this')}"
-
-    def set_operation(self, expression: exp.Union, op: str) -> str:
-        this = self.maybe_comment(self.sql(expression, "this"), comments=expression.comments)
-        op = self.seg(op)
-        return self.query_modifiers(
-            expression, f"{this}{op}{self.sep()}{self.sql(expression, 'expression')}"
-        )
 
     def tag_sql(self, expression: exp.Tag) -> str:
         return f"{expression.args.get('prefix')}{self.sql(expression.this)}{expression.args.get('postfix')}"

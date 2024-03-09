@@ -248,17 +248,38 @@ class Expression(metaclass=_Expression):
         return self._meta
 
     def __deepcopy__(self, memo):
-        copy = self.__class__(**deepcopy(self.args))
-        if self.comments is not None:
-            copy.comments = deepcopy(self.comments)
+        root = self.__class__()
+        stack = [(self, root)]
 
-        if self._type is not None:
-            copy._type = self._type.copy()
+        while stack:
+            node, copy = stack.pop()
 
-        if self._meta is not None:
-            copy._meta = deepcopy(self._meta)
+            if node.comments is not None:
+                copy.comments = deepcopy(node.comments)
+            if node._type is not None:
+                copy._type = deepcopy(node._type)
+            if node._meta is not None:
+                copy._meta = deepcopy(node._meta)
+            if node._hash is not None:
+                copy._hash = node._hash
 
-        return copy
+            for k, vs in node.args.items():
+                if hasattr(vs, "parent"):
+                    stack.append((vs, vs.__class__()))
+                    copy.set(k, stack[-1][-1])
+                elif type(vs) is list:
+                    copy.args[k] = []
+
+                    for v in vs:
+                        if hasattr(v, "parent"):
+                            stack.append((v, v.__class__()))
+                            copy.append(k, stack[-1][-1])
+                        else:
+                            copy.append(k, v)
+                else:
+                    copy.args[k] = vs
+
+        return root
 
     def copy(self):
         """
@@ -289,7 +310,7 @@ class Expression(metaclass=_Expression):
             arg_key (str): name of the list expression arg
             value (Any): value to append to the list
         """
-        if not isinstance(self.args.get(arg_key), list):
+        if type(self.args.get(arg_key)) is not list:
             self.args[arg_key] = []
         self.args[arg_key].append(value)
         self._set_parent(arg_key, value)
@@ -328,11 +349,12 @@ class Expression(metaclass=_Expression):
             return self.parent.depth + 1
         return 0
 
-    def iter_expressions(self) -> t.Iterator[t.Tuple[str, Expression]]:
+    def iter_expressions(self, reverse: bool = False) -> t.Iterator[t.Tuple[str, Expression]]:
         """Yields the key and expression for all arguments, exploding list args."""
-        for k, vs in self.args.items():
+        # need to materialize tuple due to python 3.7
+        for k, vs in reversed(tuple(self.args.items())) if reverse else self.args.items():
             if type(vs) is list:
-                for v in vs:
+                for v in reversed(vs) if reverse else vs:
                     if hasattr(v, "parent"):
                         yield k, v
             else:
@@ -431,13 +453,18 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        parent = parent or self.parent
-        yield self, parent, key
-        if prune and prune(self, parent, key):
-            return
+        stack = [(self, parent or self.parent, key)]
 
-        for k, v in self.iter_expressions():
-            yield from v.dfs(self, k, prune)
+        while stack:
+            node, parent, key = stack.pop()
+
+            yield node, parent, key
+
+            if prune and prune(node, parent, key):
+                continue
+
+            for k, v in node.iter_expressions(reverse=True):
+                stack.append((v, node, k))
 
     def bfs(self, prune=None):
         """
@@ -1214,14 +1241,24 @@ class Create(DDL):
         "begin": False,
         "end": False,
         "clone": False,
-        "start": False,
-        "increment": False,
     }
 
     @property
     def kind(self) -> t.Optional[str]:
         kind = self.args.get("kind")
         return kind and kind.upper()
+
+
+class SequenceProperties(Expression):
+    arg_types = {
+        "increment": False,
+        "minvalue": False,
+        "maxvalue": False,
+        "cache": False,
+        "start": False,
+        "owned": False,
+        "options": False,
+    }
 
 
 class TruncateTable(Expression):
@@ -2256,6 +2293,10 @@ class FreespaceProperty(Property):
     arg_types = {"this": True, "percent": False}
 
 
+class GlobalProperty(Property):
+    arg_types = {}
+
+
 class InheritsProperty(Property):
     arg_types = {"expressions": True}
 
@@ -2439,6 +2480,10 @@ class SetProperty(Property):
     arg_types = {"multi": True}
 
 
+class SharingProperty(Property):
+    arg_types = {"this": False}
+
+
 class SetConfigProperty(Property):
     arg_types = {"this": True}
 
@@ -2473,6 +2518,10 @@ class TransformModelProperty(Property):
 
 class TransientProperty(Property):
     arg_types = {"this": False}
+
+
+class UnloggedProperty(Property):
+    arg_types = {}
 
 
 class VolatileProperty(Property):
@@ -3622,14 +3671,6 @@ class Star(Expression):
         return self.name
 
 
-class Increment(Expression):
-    arg_types = {"this": True}
-
-
-class Start(Expression):
-    arg_types = {"this": True}
-
-
 class Parameter(Condition):
     arg_types = {"this": True, "expression": False}
 
@@ -3778,44 +3819,61 @@ class DataType(Expression):
     TEXT_TYPES = {
         Type.CHAR,
         Type.NCHAR,
-        Type.VARCHAR,
         Type.NVARCHAR,
         Type.TEXT,
+        Type.VARCHAR,
     }
 
     INTEGER_TYPES = {
-        Type.INT,
-        Type.TINYINT,
-        Type.SMALLINT,
         Type.BIGINT,
+        Type.BIT,
+        Type.INT,
         Type.INT128,
         Type.INT256,
-        Type.BIT,
+        Type.MEDIUMINT,
+        Type.SMALLINT,
+        Type.TINYINT,
+        Type.UBIGINT,
+        Type.UINT,
+        Type.UINT128,
+        Type.UINT256,
+        Type.UMEDIUMINT,
+        Type.USMALLINT,
+        Type.UTINYINT,
     }
 
     FLOAT_TYPES = {
-        Type.FLOAT,
         Type.DOUBLE,
+        Type.FLOAT,
+    }
+
+    REAL_TYPES = {
+        *FLOAT_TYPES,
+        Type.BIGDECIMAL,
+        Type.DECIMAL,
+        Type.MONEY,
+        Type.SMALLMONEY,
+        Type.UDECIMAL,
     }
 
     NUMERIC_TYPES = {
         *INTEGER_TYPES,
-        *FLOAT_TYPES,
+        *REAL_TYPES,
     }
 
     TEMPORAL_TYPES = {
-        Type.TIME,
-        Type.TIMETZ,
-        Type.TIMESTAMP,
-        Type.TIMESTAMPTZ,
-        Type.TIMESTAMPLTZ,
-        Type.TIMESTAMP_S,
-        Type.TIMESTAMP_MS,
-        Type.TIMESTAMP_NS,
         Type.DATE,
         Type.DATE32,
         Type.DATETIME,
         Type.DATETIME64,
+        Type.TIME,
+        Type.TIMESTAMP,
+        Type.TIMESTAMPLTZ,
+        Type.TIMESTAMPTZ,
+        Type.TIMESTAMP_MS,
+        Type.TIMESTAMP_NS,
+        Type.TIMESTAMP_S,
+        Type.TIMETZ,
     }
 
     @classmethod
@@ -4509,6 +4567,7 @@ class ArrayFilter(Func):
 
 class ArrayJoin(Func):
     arg_types = {"this": True, "expression": True, "null": False}
+    _sql_names = ["ARRAY_JOIN", "ARRAY_TO_STRING"]
 
 
 class ArrayOverlaps(Binary, Func):

@@ -605,6 +605,10 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             self._set_type(expression, exp.DataType.Type.BIGINT)
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
+            if expression.type and expression.type.this not in exp.DataType.REAL_TYPES:
+                self._set_type(
+                    expression, self._maybe_coerce(expression.type, exp.DataType.Type.DOUBLE)
+                )
 
         return expression
 

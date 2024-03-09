@@ -79,7 +79,7 @@ class TestDataframeSession(DataFrameSQLValidator):
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"}, dialect="spark")
         df = self.spark.sql(query).groupBy(F.col("cola")).agg(F.sum("colb"))
         self.assertEqual(
-            "WITH t38189 AS (SELECT cola, colb FROM table), t42330 AS (SELECT cola, colb FROM t38189) SELECT cola, SUM(colb) FROM t42330 GROUP BY cola",
+            "WITH t26614 AS (SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`), t23454 AS (SELECT cola, colb FROM t26614) SELECT cola, SUM(colb) FROM t23454 GROUP BY cola",
             df.sql(pretty=False, optimize=False)[0],
         )
 
@@ -87,14 +87,14 @@ class TestDataframeSession(DataFrameSQLValidator):
         query = "CREATE TABLE new_table AS WITH t1 AS (SELECT cola, colb FROM table) SELECT cola, colb, FROM t1"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"}, dialect="spark")
         df = self.spark.sql(query)
-        expected = "CREATE TABLE new_table AS SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`"
+        expected = "CREATE TABLE `new_table` AS SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`"
         self.compare_sql(df, expected)
 
     def test_sql_insert(self):
         query = "WITH t1 AS (SELECT cola, colb FROM table) INSERT INTO new_table SELECT cola, colb FROM t1"
         sqlglot.schema.add_table("table", {"cola": "string", "colb": "string"}, dialect="spark")
         df = self.spark.sql(query)
-        expected = "INSERT INTO new_table SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`"
+        expected = "INSERT INTO `new_table` SELECT `table`.`cola` AS `cola`, `table`.`colb` AS `colb` FROM `table` AS `table`"
         self.compare_sql(df, expected)
 
     def test_session_create_builder_patterns(self):

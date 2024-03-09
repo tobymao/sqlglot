@@ -34,3 +34,10 @@ class TestSessionFunc(DataFrameValidator):
             .agg(SF.countDistinct(SF.col("employee_id")))
         )
         self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)
+
+    def test_nameless_column(self):
+        query = "SELECT MAX(age) FROM employee"
+        df = self.spark.sql(query)
+        dfs = self.sqlglot.sql(query)
+        # Spark will alias the column to `max(age)` while sqlglot will alias to `_col_0` so their schemas will differ
+        self.compare_spark_with_sqlglot(df, dfs, skip_schema_compare=True)

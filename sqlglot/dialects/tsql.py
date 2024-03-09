@@ -862,12 +862,12 @@ class TSQL(Dialect):
 
             return rename_func("DATETIMEFROMPARTS")(self, expression)
 
-        def set_operation(self, expression: exp.Union, op: str) -> str:
+        def set_operations(self, expression: exp.Union) -> str:
             limit = expression.args.get("limit")
             if limit:
                 return self.sql(expression.limit(limit.pop(), copy=False))
 
-            return super().set_operation(expression, op)
+            return super().set_operations(expression)
 
         def setitem_sql(self, expression: exp.SetItem) -> str:
             this = expression.this

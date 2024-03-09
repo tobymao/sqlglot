@@ -23,7 +23,18 @@ class TestDuckDB(Validator):
                 "snowflake": "OBJECT_CONSTRUCT('a b', 1)",
             },
         )
-
+        self.validate_all(
+            "ARRAY_TO_STRING(arr, delim)",
+            read={
+                "snowflake": "ARRAY_TO_STRING(arr, delim)",
+                "spark": "ARRAY_JOIN(arr, delim)",
+            },
+            write={
+                "duckdb": "ARRAY_TO_STRING(arr, delim)",
+                "snowflake": "ARRAY_TO_STRING(arr, delim)",
+                "spark": "ARRAY_JOIN(arr, delim)",
+            },
+        )
         self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",
             write={

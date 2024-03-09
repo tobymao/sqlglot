@@ -22,6 +22,9 @@ class TestExpressions(unittest.TestCase):
                 pass
 
     def test_eq(self):
+        query = parse_one("SELECT x FROM t")
+        self.assertEqual(query, query.copy())
+
         self.assertNotEqual(exp.to_identifier("a"), exp.to_identifier("A"))
 
         self.assertEqual(

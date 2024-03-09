@@ -264,6 +264,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 4
 --------------------------------------
+# execute: true
 WITH year_total
      AS (SELECT c_customer_id                       customer_id,
                 c_first_name                        customer_first_name,
@@ -1628,6 +1629,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 11
 --------------------------------------
+# execute: true
 WITH year_total
      AS (SELECT c_customer_id                                customer_id,
                 c_first_name                                 customer_first_name

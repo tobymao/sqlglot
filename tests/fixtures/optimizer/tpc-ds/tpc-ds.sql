@@ -9833,6 +9833,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 75
 --------------------------------------
+# execute: true
 WITH all_sales
      AS (SELECT d_year,
                 i_brand_id,
@@ -10037,6 +10038,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 76
 --------------------------------------
+# execute: true
 SELECT channel,
                col_name,
                d_year,

@@ -11,10 +11,6 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL
 
 
-def _tonumber_sql(self, expression: exp.ToNumber) -> str:
-    if expression.args.get("format"):
-        self.unsupported("Format argument unsupported for TO_NUMBER function")
-    return self.sql(exp.cast(expression.this, "double"))
 
 
 class Doris(MySQL):
@@ -43,6 +39,7 @@ class Doris(MySQL):
         }
 
         LAST_DAY_SUPPORTS_DATE_PART = False
+        SUPPORTS_TO_NUMBER = False
 
         TIMESTAMP_FUNC_TYPES = set()
 
@@ -72,7 +69,6 @@ class Doris(MySQL):
             exp.TimestampTrunc: lambda self, e: self.func(
                 "DATE_TRUNC", e.this, "'" + e.text("unit") + "'"
             ),
-            exp.ToNumber: _tonumber_sql,
             exp.UnixToStr: lambda self, e: self.func(
                 "FROM_UNIXTIME", e.this, time_format("doris")(self, e)
             ),

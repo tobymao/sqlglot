@@ -106,8 +106,20 @@ class TestOracle(Validator):
             "TO_NUMBER(x)",
             write={
                 "doris": "CAST(x AS DOUBLE)",
+                "presto": "CAST(x AS DOUBLE)",
+                "duckdb": "CAST(x AS DOUBLE)",
+                "hive": "CAST(x AS DOUBLE)",
+                "mysql": "CAST(x AS DOUBLE)",
+                "starrocks": "CAST(x AS DOUBLE)",
+                "tableau": "CAST(x AS DOUBLE)",
                 "oracle": "TO_NUMBER(x)",
                 "snowflake": "TO_NUMBER(x)",
+                "spark2": "TO_NUMBER(x)",
+                "databricks": "TO_NUMBER(x)",
+                "drill": "TO_NUMBER(x)",
+                "postgres": "TO_NUMBER(x)",
+                "redshift": "TO_NUMBER(x)",
+                "teradata": "TO_NUMBER(x)",
             },
         )
         self.validate_all(

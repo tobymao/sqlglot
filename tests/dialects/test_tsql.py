@@ -357,6 +357,12 @@ class TestTSQL(Validator):
         )
         self.validate_identity("HASHBYTES('MD2', 'x')")
         self.validate_identity("LOG(n, b)")
+        self.validate_all(
+            "TO_NUMBER(x)",
+            write={
+                "tsql": "CAST(x AS FLOAT)",
+            },
+        )
 
     def test_option(self):
         possible_options = [

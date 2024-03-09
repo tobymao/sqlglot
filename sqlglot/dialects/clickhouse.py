@@ -517,6 +517,7 @@ class ClickHouse(Dialect):
         TABLESAMPLE_KEYWORDS = "SAMPLE"
         LAST_DAY_SUPPORTS_DATE_PART = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        SUPPORTS_TO_NUMBER = False
 
         STRING_TYPE_MAPPING = {
             exp.DataType.Type.CHAR: "String",

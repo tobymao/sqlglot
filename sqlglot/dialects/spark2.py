@@ -189,6 +189,7 @@ class Spark2(Hive):
         QUERY_HINTS = True
         NVL2_SUPPORTED = True
         CAN_IMPLEMENT_ARRAY_ANY = True
+        SUPPORTS_TO_NUMBER = True
 
         PROPERTIES_LOCATION = {
             **Hive.Generator.PROPERTIES_LOCATION,
@@ -251,6 +252,7 @@ class Spark2(Hive):
             exp.WithinGroup: transforms.preprocess(
                 [transforms.remove_within_group_for_percentiles]
             ),
+            exp.ToNumber: lambda self, e: self.function_fallback_sql(e),
         }
         TRANSFORMS.pop(exp.ArrayJoin)
         TRANSFORMS.pop(exp.ArraySort)

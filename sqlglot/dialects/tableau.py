@@ -13,6 +13,8 @@ class Tableau(Dialect):
         JOIN_HINTS = False
         TABLE_HINTS = False
         QUERY_HINTS = False
+        SUPPORTS_TO_NUMBER = False
+
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

@@ -724,6 +724,8 @@ class TSQL(Dialect):
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         SUPPORTS_SELECT_INTO = True
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
+        SUPPORTS_TO_NUMBER = False
+
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,

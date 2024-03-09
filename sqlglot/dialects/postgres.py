@@ -501,6 +501,7 @@ class Postgres(Dialect):
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
+            exp.ToNumber: lambda self, e: self.function_fallback_sql(e),
         }
 
         PROPERTIES_LOCATION = {

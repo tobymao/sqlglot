@@ -8139,6 +8139,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 66
 --------------------------------------
+# execute: true
 SELECT w_warehouse_name,
                w_warehouse_sq_ft,
                w_city,
@@ -9045,6 +9046,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 68
 --------------------------------------
+# execute: true
 SELECT c_last_name,
                c_first_name,
                ca_city,
@@ -9587,6 +9589,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 73
 --------------------------------------
+# execute: true
 SELECT c_last_name,
        c_first_name,
        c_salutation,
@@ -12424,6 +12427,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 97
 --------------------------------------
+# execute: true
 WITH ssci
      AS (SELECT ss_customer_sk customer_sk,
                 ss_item_sk     item_sk

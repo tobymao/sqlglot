@@ -317,6 +317,7 @@ class TokenType(AutoName):
     PERCENT = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()
+    POSITIONAL = auto()
     PRAGMA = auto()
     PREWHERE = auto()
     PRIMARY_KEY = auto()

@@ -15,7 +15,6 @@ class Tableau(Dialect):
         QUERY_HINTS = False
         SUPPORTS_TO_NUMBER = False
 
-
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.Coalesce: rename_func("IFNULL"),

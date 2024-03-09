@@ -322,7 +322,7 @@ class Generator(metaclass=_Generator):
     CAN_IMPLEMENT_ARRAY_ANY = False
 
     # Whether the function TO_NUMBER is supported
-    SUPPORTS_TO_NUMBER =True
+    SUPPORTS_TO_NUMBER = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",

@@ -726,7 +726,6 @@ class TSQL(Dialect):
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_TO_NUMBER = False
 
-
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
             exp.Insert,

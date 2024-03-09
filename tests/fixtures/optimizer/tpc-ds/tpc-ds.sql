@@ -9673,6 +9673,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 74
 --------------------------------------
+# execute: true
 WITH year_total
      AS (SELECT c_customer_id    customer_id,
                 c_first_name     customer_first_name,

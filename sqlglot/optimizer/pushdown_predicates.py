@@ -77,13 +77,13 @@ def pushdown(condition, sources, scope_ref_count, dialect, join_index=None):
         pushdown_dnf(predicates, sources, scope_ref_count)
 
 
-def pushdown_cnf(predicates, scope, scope_ref_count, join_index=None):
+def pushdown_cnf(predicates, sources, scope_ref_count, join_index=None):
     """
     If the predicates are in CNF like form, we can simply replace each block in the parent.
     """
     join_index = join_index or {}
     for predicate in predicates:
-        for node in nodes_for_predicate(predicate, scope, scope_ref_count).values():
+        for node in nodes_for_predicate(predicate, sources, scope_ref_count).values():
             if isinstance(node, exp.Join):
                 name = node.alias_or_name
                 predicate_tables = exp.column_table_names(predicate, name)
@@ -103,7 +103,7 @@ def pushdown_cnf(predicates, scope, scope_ref_count, join_index=None):
                     node.where(inner_predicate, copy=False)
 
 
-def pushdown_dnf(predicates, scope, scope_ref_count):
+def pushdown_dnf(predicates, sources, scope_ref_count):
     """
     If the predicates are in DNF form, we can only push down conditions that are in all blocks.
     Additionally, we can't remove predicates from their original form.
@@ -127,7 +127,7 @@ def pushdown_dnf(predicates, scope, scope_ref_count):
     # pushdown all predicates to their respective nodes
     for table in sorted(pushdown_tables):
         for predicate in predicates:
-            nodes = nodes_for_predicate(predicate, scope, scope_ref_count)
+            nodes = nodes_for_predicate(predicate, sources, scope_ref_count)
 
             if table not in nodes:
                 continue

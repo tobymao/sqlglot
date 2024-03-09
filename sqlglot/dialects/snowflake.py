@@ -30,7 +30,7 @@ if t.TYPE_CHECKING:
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
 def _build_to_timestamp(
-    args: t.List, toTime: t.Optional[bool] = False
+    args: t.List, to_time: t.Optional[bool] = False
 ) -> t.Union[exp.StrToTime, exp.UnixToTime, exp.TimeStrToTime]:
     if len(args) == 2:
         first_arg, second_arg = args
@@ -361,8 +361,8 @@ class Snowflake(Dialect):
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
-            "TO_TIMESTAMP": lambda args: _build_to_timestamp(args, toTime=False),
-            "TO_TIME": lambda args: _build_to_timestamp(args, toTime=True),
+            "TO_TIMESTAMP": lambda args: _build_to_timestamp(args, to_time=False),
+            "TO_TIME": lambda args: _build_to_timestamp(args, to_time=True),
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
         }

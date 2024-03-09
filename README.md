@@ -150,7 +150,7 @@ sql = """
 */
 SELECT
   tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
-  CAST(x AS INT), # comment 3
+  CAST(x AS SIGNED), # comment 3
   y               -- comment 4
 FROM
   bar /* comment 5 */,
@@ -367,7 +367,9 @@ diff(parse_one("SELECT a + b, c, d"), parse_one("SELECT c, a - b, d"))
       this=Identifier(this=a, quoted=False)),
     expression=Column(
       this=Identifier(this=b, quoted=False)))),
-  Keep(source=Identifier(this=d, quoted=False), target=Identifier(this=d, quoted=False)),
+  Keep(
+    source=Column(this=Identifier(this=a, quoted=False)),
+    target=Column(this=Identifier(this=a, quoted=False))),
   ...
 ]
 ```
@@ -492,6 +494,7 @@ make docs-serve
 ```
 make style  # Only linter checks
 make unit   # Only unit tests
+make test   # Unit and integration tests
 make check  # Full test suite & linter checks
 ```
 

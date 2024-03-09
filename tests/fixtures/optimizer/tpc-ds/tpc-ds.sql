@@ -10416,6 +10416,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 78
 --------------------------------------
+# execute: true
 WITH ws
      AS (SELECT d_year                 AS ws_sold_year,
                 ws_item_sk,
@@ -10918,6 +10919,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 81
 --------------------------------------
+# execute: true
 WITH customer_total_return
      AS (SELECT cr_returning_customer_sk   AS ctr_customer_sk,
                 ca_state                   AS ctr_state,

@@ -522,6 +522,7 @@ def _traverse_scope(scope):
     if isinstance(scope.expression, exp.Select):
         yield from _traverse_select(scope)
     elif isinstance(scope.expression, exp.Union):
+        yield from _traverse_ctes(scope)
         yield from _traverse_union(scope)
         return
     elif isinstance(scope.expression, exp.Subquery):
@@ -551,35 +552,34 @@ def _traverse_select(scope):
 def _traverse_union(scope):
     prev_scope = None
     union_scope_stack = [scope]
-    expression_stack = [scope.expression.left, scope.expression.right]
+    expression_stack = [scope.expression.right, scope.expression.left]
 
     while expression_stack:
         expression = expression_stack.pop()
+        union_scope = union_scope_stack[-1]
+
+        new_scope = union_scope.branch(
+            expression,
+            outer_columns=union_scope.outer_columns,
+            scope_type=ScopeType.UNION,
+        )
 
         if isinstance(expression, exp.Union):
-            union_scope = Scope(expression, parent=seq_get(union_scope_stack, -1))
-            yield from _traverse_ctes(union_scope)
+            yield from _traverse_ctes(new_scope)
 
-            union_scope_stack.append(union_scope)
+            union_scope_stack.append(new_scope)
             expression_stack.extend([expression.right, expression.left])
             continue
 
-        union_scope = union_scope_stack[-1]
-        for scope in _traverse_scope(
-            union_scope.branch(
-                expression,
-                outer_columns=union_scope.outer_columns,
-                scope_type=ScopeType.UNION,
-            )
-        ):
+        for scope in _traverse_scope(new_scope):
             yield scope
 
         if prev_scope:
             union_scope_stack.pop()
             union_scope.union_scopes = [prev_scope, scope]
-            yield union_scope
-
             prev_scope = union_scope
+
+            yield union_scope
         else:
             prev_scope = scope
 

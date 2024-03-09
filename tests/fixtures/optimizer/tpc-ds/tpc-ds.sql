@@ -2373,7 +2373,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 16
 --------------------------------------
-# execute: true
 SELECT
          Count(DISTINCT cs_order_number) AS "order count" ,
          Sum(cs_ext_ship_cost)           AS "total shipping cost" ,
@@ -2771,7 +2770,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 21
 --------------------------------------
-# execute: true
 SELECT
          *
 FROM    (

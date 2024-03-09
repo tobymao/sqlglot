@@ -4136,6 +4136,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 34
 --------------------------------------
+# execute: true
 SELECT c_last_name,
        c_first_name,
        c_salutation,
@@ -4718,6 +4719,7 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 40
 --------------------------------------
+# execute: true
 SELECT
                 w_state ,
                 i_item_id ,

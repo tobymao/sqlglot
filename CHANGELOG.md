@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v22.3.1] - 2024-03-09
+### :sparkles: New Features
+- [`80b2320`](https://github.com/tobymao/sqlglot/commit/80b23201f9668a5845002c1c21b0a394003847f9) - no recursion dfs *(PR [#3105](https://github.com/tobymao/sqlglot/pull/3105) by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`fa84e2c`](https://github.com/tobymao/sqlglot/commit/fa84e2c2d9ae349033039ec649decc371561e421) - copy all arg keys, including those set to None *(PR [#3108](https://github.com/tobymao/sqlglot/pull/3108) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v22.3.0] - 2024-03-08
 ### :sparkles: New Features
 - [`46c9c2c`](https://github.com/tobymao/sqlglot/commit/46c9c2c35ea5132995cb07a99b94d18d959e6172) - **snowflake**: parse CREATE SEQUENCE *(PR [#3072](https://github.com/tobymao/sqlglot/pull/3072) by [@tekumara](https://github.com/tekumara))*
@@ -2870,3 +2878,4 @@ Changelog
 [v22.2.0]: https://github.com/tobymao/sqlglot/compare/v22.1.1...v22.2.0
 [v22.2.1]: https://github.com/tobymao/sqlglot/compare/v22.2.0...v22.2.1
 [v22.3.0]: https://github.com/tobymao/sqlglot/compare/v22.2.1...v22.3.0
+[v22.3.1]: https://github.com/tobymao/sqlglot/compare/v22.3.0...v22.3.1

@@ -3598,3 +3598,38 @@ class Generator(metaclass=_Generator):
             transformed = cast(this=value, to=to, safe=safe)
 
         return self.sql(transformed)
+
+    def excludeelement_sql(self, expression: exp.ExcludeElement) -> str:
+        this = self.sql(expression, "this")
+
+        opclass = self.sql(expression, "opclass")
+        opclass = f" {opclass}" if opclass else ""
+        order = self.sql(expression, "order")
+        order = f" {order}" if order else ""
+        nulls = self.sql(expression, "nulls")
+        nulls = f" NULLS {nulls}" if nulls else ""
+
+        operator = self.sql(expression, "operator")
+        operator = f" {operator}" if operator else ""
+
+        return f"{this}{opclass}{order}{nulls} WITH{operator}"
+
+    def excludeconstraint_sql(self, expression: exp.ExcludeConstraint) -> str:
+        using = self.sql(expression, "using")
+        using = f" USING {using}" if using else ""
+
+        exclude_elems = self.expressions(expression, "exclude_elems", flat=True)
+        exclude_elems = f"{exclude_elems}" if exclude_elems else None
+
+        kind = self.sql(expression, "kind")
+        kind_sql = f" {kind}" if kind else ""
+
+        index_params = self.expressions(expression, "index_params", flat=True)
+        if kind == "INCLUDE":
+            index_params = f"({index_params})"
+        index_params = f" {index_params}" if index_params else ""
+
+        predicate = self.sql(expression, "predicate")
+        predicate = f" WHERE ({predicate})" if predicate else ""
+
+        return f"EXCLUDE{using} ({exclude_elems}){kind_sql}{index_params}{predicate}"

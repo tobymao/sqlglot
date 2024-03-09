@@ -838,6 +838,7 @@ class Parser(metaclass=_Parser):
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),
         "ENCODE": lambda self: self.expression(exp.EncodeColumnConstraint, this=self._parse_var()),
+        "EXCLUDE": lambda self: self._parse_exclude(),
         "FOREIGN KEY": lambda self: self._parse_foreign_key(),
         "FORMAT": lambda self: self.expression(
             exp.DateFormatColumnConstraint, this=self._parse_var_or_string()
@@ -877,7 +878,15 @@ class Parser(metaclass=_Parser):
         "RENAME": lambda self: self._parse_alter_table_rename(),
     }
 
-    SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE", "PERIOD"}
+    SCHEMA_UNNAMED_CONSTRAINTS = {
+        "CHECK",
+        "FOREIGN KEY",
+        "LIKE",
+        "PRIMARY KEY",
+        "UNIQUE",
+        "PERIOD",
+        "EXCLUDE",
+    }
 
     NO_PAREN_FUNCTION_PARSERS = {
         "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
@@ -1009,6 +1018,7 @@ class Parser(metaclass=_Parser):
     HISTORICAL_DATA_KIND = {"TIMESTAMP", "OFFSET", "STATEMENT", "STREAM"}
 
     OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS"}
+
     OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
 
     TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
@@ -2843,7 +2853,6 @@ class Parser(metaclass=_Parser):
         this = self._parse_conjunction()
         if self._match_texts(self.OPCLASS_FOLLOW_KEYWORDS, advance=False):
             return this
-
         if not self._match_set(self.OPTYPE_FOLLOW_TOKENS, advance=False):
             return self.expression(exp.Opclass, this=this, expression=self._parse_table_parts())
 
@@ -6093,4 +6102,65 @@ class Parser(metaclass=_Parser):
             identity=identity,
             option=option,
             partition=partition,
+        )
+
+    def _parse_exclude_element(self) -> exp.ExcludeElement:
+        this = self._parse_expression() if self._match(TokenType.L_PAREN) else self._parse_column()
+
+        opclass = None
+        if not self._match_texts(self.OPCLASS_FOLLOW_KEYWORDS, advance=False) and not self._match(
+            TokenType.WITH, advance=False
+        ):
+            opclass = self._parse_var(any_token=True)
+
+        order = self._prev.text if self._match_set((TokenType.ASC, TokenType.DESC)) else None
+
+        nulls = (
+            self._prev.text
+            if self._match_text_seq("NULLS", "FIRST") or self._match_text_seq("NULLS", "LAST")
+            else None
+        )
+
+        self._match(TokenType.WITH)
+
+        operator = self._parse_var(any_token=True)
+
+        return self.expression(
+            exp.ExcludeElement,
+            this=this,
+            opclass=opclass,
+            order=order,
+            nulls=nulls,
+            operator=operator,
+        )
+
+    def _parse_exclude(self) -> exp.ExcludeConstraint:
+        using = self._parse_var(any_token=True) if self._match(TokenType.USING) else None
+
+        self._match_l_paren()
+        exclude_elems = self._parse_csv(self._parse_exclude_element)
+        self._match_r_paren()
+
+        kind = None
+        index_params = None
+        if self._match_text_seq("INCLUDE"):
+            kind = self._prev.text
+            index_params = self._parse_wrapped_id_vars()
+        elif self._match_text_seq("WITH"):
+            kind = self._prev.text
+            index_params = self._parse_csv(self._parse_conjunction)
+        elif self._match_text_seq("USING", "INDEX", "TABLESPACE"):
+            kind = "USING INDEX TABLESPACE"
+            index_params = [self._parse_id_var()]
+
+        predicate = (
+            self._parse_wrapped(self._parse_conjunction) if self._match(TokenType.WHERE) else None
+        )
+
+        return exp.ExcludeConstraint(
+            using=using,
+            exclude_elems=exclude_elems,
+            kind=kind,
+            index_params=index_params,
+            predicate=predicate,
         )

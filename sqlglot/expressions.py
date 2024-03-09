@@ -1580,6 +1580,27 @@ class EncodeColumnConstraint(ColumnConstraintKind):
     pass
 
 
+# https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-EXCLUDE
+class ExcludeConstraint(Expression):
+    arg_types = {
+        "using": False,
+        "exclude_elems": True,
+        "kind": False,
+        "index_params": False,
+        "predicate": False,
+    }
+
+
+class ExcludeElement(Expression):
+    arg_types = {
+        "this": True,
+        "opclass": False,
+        "order": False,
+        "nulls": False,
+        "operator": True,
+    }
+
+
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
     arg_types = {

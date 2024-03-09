@@ -481,8 +481,12 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
 
     def test_scope(self):
         many_unions = parse_one(" UNION ALL ".join(["SELECT x FROM t"] * 10000))
-        self.assertEqual(
-            len(list(build_scope(many_unions).traverse())), len(traverse_scope(many_unions))
+        scopes_using_traverse = list(build_scope(many_unions).traverse())
+        scopes_using_traverse_scope = traverse_scope(many_unions)
+        self.assertEqual(len(scopes_using_traverse), len(scopes_using_traverse_scope))
+        assert all(
+            x.expression is y.expression
+            for x, y in zip(scopes_using_traverse, scopes_using_traverse_scope)
         )
 
         sql = """

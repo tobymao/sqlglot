@@ -650,6 +650,7 @@ def build_formatted_time(
                 seq_get(args, 1)
                 or (Dialect[dialect].TIME_FORMAT if default is True else default or None)
             ),
+            to_time=seq_get(args, 2),
         )
 
     return _builder

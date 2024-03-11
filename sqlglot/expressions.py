@@ -1582,7 +1582,7 @@ class EncodeColumnConstraint(ColumnConstraintKind):
 
 # https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-EXCLUDE
 class ExcludeColumnConstraint(ColumnConstraintKind):
-    arg_types = {"this": True}
+    pass
 
 
 class WithOperator(Expression):

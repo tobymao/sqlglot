@@ -37,6 +37,7 @@ class Doris(MySQL):
         }
 
         LAST_DAY_SUPPORTS_DATE_PART = False
+        SUPPORTS_TO_NUMBER = False
 
         TIMESTAMP_FUNC_TYPES = set()
 

@@ -785,6 +785,7 @@ class Snowflake(Dialect):
             exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
             exp.Xor: rename_func("BOOLXOR"),
+            exp.ToNumber: lambda self, e: self.function_fallback_sql(e),
         }
 
         SUPPORTED_JSON_PATH_PARTS = {

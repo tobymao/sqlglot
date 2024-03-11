@@ -794,7 +794,7 @@ class Parser(metaclass=_Parser):
         ),
         "STORED": lambda self: self._parse_stored(),
         "SYSTEM_VERSIONING": lambda self: self._parse_system_versioning_property(),
-        "TBLPROPERTIES": lambda self: self._parse_wrapped_csv(self._parse_property),
+        "TBLPROPERTIES": lambda self: self._parse_wrapped_properties(),
         "TEMP": lambda self: self.expression(exp.TemporaryProperty),
         "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty),
         "TO": lambda self: self._parse_to_table(),
@@ -867,7 +867,7 @@ class Parser(metaclass=_Parser):
         "UNIQUE": lambda self: self._parse_unique(),
         "UPPERCASE": lambda self: self.expression(exp.UppercaseColumnConstraint),
         "WITH": lambda self: self.expression(
-            exp.Properties, expressions=self._parse_wrapped_csv(self._parse_property)
+            exp.Properties, expressions=self._parse_wrapped_properties()
         ),
     }
 
@@ -1650,6 +1650,9 @@ class Parser(metaclass=_Parser):
 
         return None
 
+    def _parse_wrapped_properties(self) -> t.List[exp.Expression]:
+        return self._parse_wrapped_csv(self._parse_property)
+
     def _parse_property(self) -> t.Optional[exp.Expression]:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
@@ -1751,7 +1754,7 @@ class Parser(metaclass=_Parser):
         self,
     ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
         if self._match(TokenType.L_PAREN, advance=False):
-            return self._parse_wrapped_csv(self._parse_property)
+            return self._parse_wrapped_properties()
 
         if self._match_text_seq("JOURNAL"):
             return self._parse_withjournaltable()
@@ -2251,7 +2254,7 @@ class Parser(metaclass=_Parser):
             serde_properties = None
             if self._match(TokenType.SERDE_PROPERTIES):
                 serde_properties = self.expression(
-                    exp.SerdeProperties, expressions=self._parse_wrapped_csv(self._parse_property)
+                    exp.SerdeProperties, expressions=self._parse_wrapped_properties()
                 )
 
             return self.expression(
@@ -2872,9 +2875,7 @@ class Parser(metaclass=_Parser):
 
         include = self._parse_wrapped_id_vars() if self._match_text_seq("INCLUDE") else None
         partition_by = self._parse_partition_by()
-        with_storage = (
-            self._parse_csv(self._parse_conjunction) if self._match(TokenType.WITH) else None
-        )
+        with_storage = self._match(TokenType.WITH) and self._parse_wrapped_properties()
         tablespace = (
             self._parse_var(any_token=True)
             if self._match_text_seq("USING", "INDEX", "TABLESPACE")

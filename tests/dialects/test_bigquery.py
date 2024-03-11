@@ -1052,12 +1052,6 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
-            "TO_NUMBER(x)",
-            write={
-                "bigquery": "CAST(x AS FLOAT64)",
-            },
-        )
-        self.validate_all(
             """SELECT
   `u`.`harness_user_email` AS `harness_user_email`,
   `d`.`harness_user_id` AS `harness_user_id`,

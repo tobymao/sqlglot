@@ -6151,7 +6151,8 @@ class Parser(metaclass=_Parser):
             index_params = self._parse_csv(self._parse_conjunction)
         elif self._match_text_seq("USING", "INDEX", "TABLESPACE"):
             kind = "USING INDEX TABLESPACE"
-            index_params = [self._parse_id_var()]
+            tablespace = self._parse_id_var()
+            index_params = [tablespace] if tablespace else None
 
         predicate = (
             self._parse_wrapped(self._parse_conjunction) if self._match(TokenType.WHERE) else None

@@ -3619,7 +3619,6 @@ class Generator(metaclass=_Generator):
         using = f" USING {using}" if using else ""
 
         exclude_elems = self.expressions(expression, "exclude_elems", flat=True)
-        exclude_elems = f"{exclude_elems}"
 
         kind = self.sql(expression, "kind")
         kind_sql = f" {kind}" if kind else ""

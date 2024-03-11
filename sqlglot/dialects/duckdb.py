@@ -356,7 +356,6 @@ class DuckDB(Dialect):
                 if e.expressions and e.expressions[0].find(exp.Select)
                 else inline_array_sql(self, e)
             ),
-            exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),

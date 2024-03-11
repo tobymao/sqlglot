@@ -436,7 +436,6 @@ class Postgres(Dialect):
             exp.ArrayContains: lambda self, e: self.binary(e, "@>"),
             exp.ArrayOverlaps: lambda self, e: self.binary(e, "&&"),
             exp.ArrayFilter: filter_array_using_unnest,
-            exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
             exp.ArraySize: lambda self, e: self.func("ARRAY_LENGTH", e.this, e.expression or "1"),
             exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
             exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),

@@ -207,6 +207,7 @@ class Teradata(Dialect):
             e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
+            exp.ToNumber: lambda self, e: self.function_fallback_sql(e),
         }
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:

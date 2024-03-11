@@ -346,6 +346,7 @@ class DuckDB(Dialect):
         SUPPORTS_CREATE_TABLE_LIKE = False
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        SUPPORTS_TO_NUMBER = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

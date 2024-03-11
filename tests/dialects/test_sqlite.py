@@ -148,6 +148,12 @@ class TestSQLite(Validator):
             read={"snowflake": "LEAST(x, y, z)"},
             write={"snowflake": "LEAST(x, y, z)"},
         )
+        self.validate_all(
+            "TO_NUMBER(x)",
+            write={
+                "sqlite": "CAST(x AS REAL)",
+            },
+        )
 
     def test_datediff(self):
         self.validate_all(

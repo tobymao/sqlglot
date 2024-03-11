@@ -109,4 +109,5 @@ class PRQL(Dialect):
             )
 
     class Generator(generator.Generator):
+        SUPPORTS_TO_NUMBER = False
         pass

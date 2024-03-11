@@ -103,6 +103,26 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
+            "TO_NUMBER(x)",
+            write={
+                "doris": "CAST(x AS DOUBLE)",
+                "presto": "CAST(x AS DOUBLE)",
+                "duckdb": "CAST(x AS DOUBLE)",
+                "hive": "CAST(x AS DOUBLE)",
+                "mysql": "CAST(x AS DOUBLE)",
+                "starrocks": "CAST(x AS DOUBLE)",
+                "tableau": "CAST(x AS DOUBLE)",
+                "oracle": "TO_NUMBER(x)",
+                "snowflake": "TO_NUMBER(x)",
+                "spark2": "TO_NUMBER(x)",
+                "databricks": "TO_NUMBER(x)",
+                "drill": "TO_NUMBER(x)",
+                "postgres": "TO_NUMBER(x)",
+                "redshift": "TO_NUMBER(x)",
+                "teradata": "TO_NUMBER(x)",
+            },
+        )
+        self.validate_all(
             "SELECT TO_CHAR(TIMESTAMP '1999-12-01 10:00:00')",
             write={
                 "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')",

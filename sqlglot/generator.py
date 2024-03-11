@@ -1220,7 +1220,7 @@ class Generator(metaclass=_Generator):
         include = self.expressions(expression, key="include", flat=True)
         if include:
             include = f" INCLUDE ({include})"
-        with_storage = self.expressions(expression, "with_storage", flat=True)
+        with_storage = self.expressions(expression, key="with_storage", flat=True)
         with_storage = f" WITH {with_storage}" if with_storage else ""
         tablespace = self.sql(expression, "tablespace")
         tablespace = f" USING INDEX TABLESPACE {tablespace}" if tablespace else ""

@@ -435,26 +435,21 @@ class Scope:
         Yields:
             Scope: scope instances in depth-first-search post-order
         """
-        for child_scope in itertools.chain(
-            self.cte_scopes, self.union_scopes, self.table_scopes, self.subquery_scopes
-        ):
-            if child_scope.is_union:
-                stack = [(False, child_scope)]
-                scopes = []
-                while stack:
-                    is_right_tree, scope = stack.pop()
-                    if isinstance(scope.expression, exp.Union):
-                        left, right = scope.union_scopes
-                        stack.extend([(True, right), (False, left)])
-                        scopes.append(scope)
-                    else:
-                        yield from scope.traverse()
-                        if is_right_tree:
-                            yield scopes.pop()
-            else:
-                yield from child_scope.traverse()
+        stack = [self]
+        result = []
+        while stack:
+            scope = stack.pop()
+            result.append(scope)
+            stack.extend(
+                itertools.chain(
+                    scope.cte_scopes,
+                    scope.union_scopes,
+                    scope.table_scopes,
+                    scope.subquery_scopes,
+                )
+            )
 
-        yield self
+        yield from reversed(result)
 
     def ref_count(self):
         """

@@ -3,7 +3,13 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
-from sqlglot.dialects.dialect import Dialect, max_or_greatest, min_or_least, rename_func
+from sqlglot.dialects.dialect import (
+    Dialect,
+    max_or_greatest,
+    min_or_least,
+    rename_func,
+    to_number_with_nls_param,
+)
 from sqlglot.tokens import TokenType
 
 
@@ -206,6 +212,7 @@ class Teradata(Dialect):
             exp.StrToDate: lambda self,
             e: f"CAST({self.sql(e, 'this')} AS DATE FORMAT {self.format_time(e)})",
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
+            exp.ToNumber: to_number_with_nls_param,
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
         }
 

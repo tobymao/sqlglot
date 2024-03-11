@@ -507,8 +507,9 @@ class Parser(metaclass=_Parser):
     }
 
     JOIN_METHODS = {
-        TokenType.NATURAL,
         TokenType.ASOF,
+        TokenType.NATURAL,
+        TokenType.POSITIONAL,
     }
 
     JOIN_SIDES = {

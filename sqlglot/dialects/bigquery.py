@@ -566,6 +566,7 @@ class BigQuery(Dialect):
         IGNORE_NULLS_IN_FUNC = True
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
         CAN_IMPLEMENT_ARRAY_ANY = True
+        SUPPORTS_TO_NUMBER = False
         NAMED_PLACEHOLDER_TOKEN = "@"
 
         TRANSFORMS = {

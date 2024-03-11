@@ -324,6 +324,9 @@ class Generator(metaclass=_Generator):
     # Whether any(f(x) for x in array) can be implemented by this dialect
     CAN_IMPLEMENT_ARRAY_ANY = False
 
+    # Whether the function TO_NUMBER is supported
+    SUPPORTS_TO_NUMBER = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -3271,6 +3274,18 @@ class Generator(metaclass=_Generator):
             self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
 
         return self.sql(exp.cast(expression.this, "text"))
+
+    def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        if not self.SUPPORTS_TO_NUMBER:
+            self.unsupported("Unsupported TO_NUMBER function")
+            return self.sql(exp.cast(expression.this, "double"))
+
+        fmt = expression.args.get("format")
+        if not fmt:
+            self.unsupported("Conversion format is required for TO_NUMBER")
+            return self.sql(exp.cast(expression.this, "double"))
+
+        return self.func("TO_NUMBER", expression.this, fmt)
 
     def dictproperty_sql(self, expression: exp.DictProperty) -> str:
         this = self.sql(expression, "this")

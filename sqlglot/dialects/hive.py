@@ -431,6 +431,7 @@ class Hive(Dialect):
         NVL2_SUPPORTED = False
         LAST_DAY_SUPPORTS_DATE_PART = False
         JSON_PATH_SINGLE_QUOTE_ESCAPE = True
+        SUPPORTS_TO_NUMBER = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Insert,

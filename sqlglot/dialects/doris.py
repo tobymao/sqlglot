@@ -27,7 +27,7 @@ class Doris(MySQL):
         }
 
     class Generator(MySQL.Generator):
-        CAST_MAPPING = {}
+        LAST_DAY_SUPPORTS_DATE_PART = False
 
         TYPE_MAPPING = {
             **MySQL.Generator.TYPE_MAPPING,
@@ -36,8 +36,7 @@ class Doris(MySQL):
             exp.DataType.Type.TIMESTAMPTZ: "DATETIME",
         }
 
-        LAST_DAY_SUPPORTS_DATE_PART = False
-
+        CAST_MAPPING = {}
         TIMESTAMP_FUNC_TYPES = set()
 
         TRANSFORMS = {

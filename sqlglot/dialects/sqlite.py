@@ -93,6 +93,7 @@ class SQLite(Dialect):
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_CREATE_TABLE_LIKE = False
         SUPPORTS_TABLE_ALIAS_COLUMNS = False
+        SUPPORTS_TO_NUMBER = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

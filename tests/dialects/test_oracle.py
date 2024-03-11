@@ -103,6 +103,59 @@ class TestOracle(Validator):
             },
         )
         self.validate_all(
+            "TO_NUMBER(expr, fmt, nlsparam)",
+            read={
+                "teradata": "TO_NUMBER(expr, fmt, nlsparam)",
+            },
+            write={
+                "oracle": "TO_NUMBER(expr, fmt, nlsparam)",
+                "teradata": "TO_NUMBER(expr, fmt, nlsparam)",
+            },
+        )
+        self.validate_all(
+            "TO_NUMBER(x)",
+            write={
+                "bigquery": "CAST(x AS FLOAT64)",
+                "doris": "CAST(x AS DOUBLE)",
+                "drill": "CAST(x AS DOUBLE)",
+                "duckdb": "CAST(x AS DOUBLE)",
+                "hive": "CAST(x AS DOUBLE)",
+                "mysql": "CAST(x AS DOUBLE)",
+                "oracle": "TO_NUMBER(x)",
+                "postgres": "CAST(x AS DOUBLE PRECISION)",
+                "presto": "CAST(x AS DOUBLE)",
+                "redshift": "CAST(x AS DOUBLE PRECISION)",
+                "snowflake": "TO_NUMBER(x)",
+                "spark": "CAST(x AS DOUBLE)",
+                "spark2": "CAST(x AS DOUBLE)",
+                "starrocks": "CAST(x AS DOUBLE)",
+                "tableau": "CAST(x AS DOUBLE)",
+                "teradata": "TO_NUMBER(x)",
+            },
+        )
+        self.validate_all(
+            "TO_NUMBER(x, fmt)",
+            read={
+                "databricks": "TO_NUMBER(x, fmt)",
+                "drill": "TO_NUMBER(x, fmt)",
+                "postgres": "TO_NUMBER(x, fmt)",
+                "snowflake": "TO_NUMBER(x, fmt)",
+                "spark": "TO_NUMBER(x, fmt)",
+                "redshift": "TO_NUMBER(x, fmt)",
+                "teradata": "TO_NUMBER(x, fmt)",
+            },
+            write={
+                "databricks": "TO_NUMBER(x, fmt)",
+                "drill": "TO_NUMBER(x, fmt)",
+                "oracle": "TO_NUMBER(x, fmt)",
+                "postgres": "TO_NUMBER(x, fmt)",
+                "snowflake": "TO_NUMBER(x, fmt)",
+                "spark": "TO_NUMBER(x, fmt)",
+                "redshift": "TO_NUMBER(x, fmt)",
+                "teradata": "TO_NUMBER(x, fmt)",
+            },
+        )
+        self.validate_all(
             "SELECT TO_CHAR(TIMESTAMP '1999-12-01 10:00:00')",
             write={
                 "oracle": "SELECT TO_CHAR(CAST('1999-12-01 10:00:00' AS TIMESTAMP), 'YYYY-MM-DD HH24:MI:SS')",

@@ -213,6 +213,7 @@ class TestDuckDB(Validator):
             parse_one("a // b", read="duckdb").assert_is(exp.IntDiv).sql(dialect="duckdb"), "a // b"
         )
 
+        self.validate_identity("SELECT df1.*, df2.* FROM df1 POSITIONAL JOIN df2")
         self.validate_identity("MAKE_TIMESTAMP(1992, 9, 20, 13, 34, 27.123456)")
         self.validate_identity("MAKE_TIMESTAMP(1667810584123456)")
         self.validate_identity("SELECT EPOCH_MS(10) AS t")

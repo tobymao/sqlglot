@@ -199,6 +199,7 @@ class DuckDB(Dialect):
             "LOGICAL": TokenType.BOOLEAN,
             "ONLY": TokenType.ONLY,
             "PIVOT_WIDER": TokenType.PIVOT,
+            "POSITIONAL": TokenType.POSITIONAL,
             "SIGNED": TokenType.INT,
             "STRING": TokenType.VARCHAR,
             "UBIGINT": TokenType.UBIGINT,
@@ -345,6 +346,7 @@ class DuckDB(Dialect):
         SUPPORTS_CREATE_TABLE_LIKE = False
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        SUPPORTS_TO_NUMBER = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

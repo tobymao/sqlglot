@@ -6,9 +6,6 @@ from sqlglot import exp, generator, parser, tokens
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import TokenType
 
-if t.TYPE_CHECKING:
-    pass
-
 
 class PRQL(Dialect):
     class Tokenizer(tokens.Tokenizer):

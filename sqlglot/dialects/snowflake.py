@@ -360,8 +360,13 @@ class Snowflake(Dialect):
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
-            "TO_TIMESTAMP": lambda args: _build_to_timestamp(args, to_time=False),
-            "TO_TIME": lambda args: _build_to_timestamp(args, to_time=True),
+            "TO_NUMBER": lambda args: exp.ToNumber(
+                this=seq_get(args, 0),
+                format=seq_get(args, 1),
+                precision=seq_get(args, 2),
+                scale=seq_get(args, 3),
+            ),
+            "TO_TIMESTAMP": _build_to_timestamp,
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
         }
@@ -811,6 +816,15 @@ class Snowflake(Dialect):
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def tonumber_sql(self, expression: exp.ToNumber) -> str:
+            return self.func(
+                "TO_NUMBER",
+                expression.this,
+                expression.args.get("format"),
+                expression.args.get("precision"),
+                expression.args.get("scale"),
+            )
 
         def timestampfromparts_sql(self, expression: exp.TimestampFromParts) -> str:
             milli = expression.args.get("milli")

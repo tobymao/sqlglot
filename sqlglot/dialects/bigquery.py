@@ -576,6 +576,7 @@ class BigQuery(Dialect):
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: filter_array_using_unnest,
+            exp.ArrayJoin: rename_func("ARRAY_TO_STRING"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
             exp.CollateProperty: lambda self, e: (

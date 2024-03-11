@@ -68,7 +68,7 @@ def lineage(
     column: str | exp.Column,
     sql: str | exp.Expression,
     schema: t.Optional[t.Dict | Schema] = None,
-    sources: t.Optional[t.Dict[str, str | exp.Query]] = None,
+    sources: t.Optional[t.Mapping[str, str | exp.Query]] = None,
     dialect: DialectType = None,
     **kwargs,
 ) -> Node:

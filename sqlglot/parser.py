@@ -880,12 +880,12 @@ class Parser(metaclass=_Parser):
 
     SCHEMA_UNNAMED_CONSTRAINTS = {
         "CHECK",
+        "EXCLUDE",
         "FOREIGN KEY",
         "LIKE",
+        "PERIOD",
         "PRIMARY KEY",
         "UNIQUE",
-        "PERIOD",
-        "EXCLUDE",
     }
 
     NO_PAREN_FUNCTION_PARSERS = {
@@ -2853,6 +2853,7 @@ class Parser(metaclass=_Parser):
         this = self._parse_conjunction()
         if self._match_texts(self.OPCLASS_FOLLOW_KEYWORDS, advance=False):
             return this
+
         if not self._match_set(self.OPTYPE_FOLLOW_TOKENS, advance=False):
             return self.expression(exp.Opclass, this=this, expression=self._parse_table_parts())
 

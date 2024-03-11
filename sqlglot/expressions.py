@@ -1581,24 +1581,12 @@ class EncodeColumnConstraint(ColumnConstraintKind):
 
 
 # https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-EXCLUDE
-class ExcludeConstraint(Expression):
-    arg_types = {
-        "using": False,
-        "exclude_elems": True,
-        "kind": False,
-        "index_params": False,
-        "predicate": False,
-    }
+class ExcludeColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": True}
 
 
-class ExcludeElement(Expression):
-    arg_types = {
-        "this": True,
-        "opclass": False,
-        "order": False,
-        "nulls": False,
-        "operator": True,
-    }
+class WithOperator(Expression):
+    arg_types = {"this": True, "op": True}
 
 
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
@@ -1875,14 +1863,22 @@ class Index(Expression):
     arg_types = {
         "this": False,
         "table": False,
-        "using": False,
-        "where": False,
-        "columns": False,
         "unique": False,
         "primary": False,
         "amp": False,  # teradata
+        "params": False,
+    }
+
+
+class IndexParameters(Expression):
+    arg_types = {
+        "using": False,
         "include": False,
-        "partition_by": False,  # teradata
+        "columns": False,
+        "with_storage": False,
+        "partition_by": False,
+        "tablespace": False,
+        "where": False,
     }
 
 

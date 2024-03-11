@@ -134,13 +134,13 @@ class TestPostgres(Validator):
             "CREATE TABLE t (vid INT NOT NULL, CONSTRAINT ht_vid_nid_fid_idx EXCLUDE (INT4RANGE(vid, nid) WITH &&, INT4RANGE(fid, fid, '[]') WITH &&))"
         )
         self.validate_identity(
-            "CREATE TABLE t (i INT, PRIMARY KEY (i), EXCLUDE USING gist (col varchar_pattern_ops DESC NULLS FIRST WITH &&) WITH (sp1 = 1, sp2 = 2))"
+            "CREATE TABLE t (i INT, PRIMARY KEY (i), EXCLUDE USING gist(col varchar_pattern_ops DESC NULLS LAST WITH &&) WITH (sp1 = 1, sp2 = 2))"
         )
         self.validate_identity(
-            "CREATE TABLE t (i INT, EXCLUDE USING btree (INT4RANGE(vid, nid, '[]') ASC NULLS LAST WITH &&) INCLUDE (col1, col2))"
+            "CREATE TABLE t (i INT, EXCLUDE USING btree(INT4RANGE(vid, nid, '[]') ASC NULLS FIRST WITH &&) INCLUDE (col1, col2))"
         )
         self.validate_identity(
-            "CREATE TABLE t (i INT, EXCLUDE USING gin (col1 WITH &&, col2 WITH ||) USING INDEX TABLESPACE tablespace WHERE (id > 5))"
+            "CREATE TABLE t (i INT, EXCLUDE USING gin(col1 WITH &&, col2 WITH ||) USING INDEX TABLESPACE tablespace WHERE (id > 5))"
         )
         self.validate_identity(
             "SELECT c.oid, n.nspname, c.relname "

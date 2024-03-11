@@ -838,6 +838,9 @@ class Parser(metaclass=_Parser):
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),
         "ENCODE": lambda self: self.expression(exp.EncodeColumnConstraint, this=self._parse_var()),
+        "EXCLUDE": lambda self: self.expression(
+            exp.ExcludeColumnConstraint, this=self._parse_index_params()
+        ),
         "FOREIGN KEY": lambda self: self._parse_foreign_key(),
         "FORMAT": lambda self: self.expression(
             exp.DateFormatColumnConstraint, this=self._parse_var_or_string()
@@ -877,7 +880,15 @@ class Parser(metaclass=_Parser):
         "RENAME": lambda self: self._parse_alter_table_rename(),
     }
 
-    SCHEMA_UNNAMED_CONSTRAINTS = {"CHECK", "FOREIGN KEY", "LIKE", "PRIMARY KEY", "UNIQUE", "PERIOD"}
+    SCHEMA_UNNAMED_CONSTRAINTS = {
+        "CHECK",
+        "EXCLUDE",
+        "FOREIGN KEY",
+        "LIKE",
+        "PERIOD",
+        "PRIMARY KEY",
+        "UNIQUE",
+    }
 
     NO_PAREN_FUNCTION_PARSERS = {
         "ANY": lambda self: self.expression(exp.Any, this=self._parse_bitwise()),
@@ -1008,7 +1019,8 @@ class Parser(metaclass=_Parser):
     CLONE_KEYWORDS = {"CLONE", "COPY"}
     HISTORICAL_DATA_KIND = {"TIMESTAMP", "OFFSET", "STATEMENT", "STREAM"}
 
-    OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS"}
+    OPCLASS_FOLLOW_KEYWORDS = {"ASC", "DESC", "NULLS", "WITH"}
+
     OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
 
     TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
@@ -2841,6 +2853,7 @@ class Parser(metaclass=_Parser):
 
     def _parse_opclass(self) -> t.Optional[exp.Expression]:
         this = self._parse_conjunction()
+
         if self._match_texts(self.OPCLASS_FOLLOW_KEYWORDS, advance=False):
             return this
 
@@ -2848,6 +2861,37 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.Opclass, this=this, expression=self._parse_table_parts())
 
         return this
+
+    def _parse_index_params(self) -> exp.IndexParameters:
+        using = self._parse_var(any_token=True) if self._match(TokenType.USING) else None
+
+        if self._match(TokenType.L_PAREN, advance=False):
+            columns = self._parse_wrapped_csv(self._parse_with_operator)
+        else:
+            columns = None
+
+        include = self._parse_wrapped_id_vars() if self._match_text_seq("INCLUDE") else None
+        partition_by = self._parse_partition_by()
+        with_storage = (
+            self._parse_csv(self._parse_conjunction) if self._match(TokenType.WITH) else None
+        )
+        tablespace = (
+            self._parse_var(any_token=True)
+            if self._match_text_seq("USING", "INDEX", "TABLESPACE")
+            else None
+        )
+        where = self._parse_where()
+
+        return self.expression(
+            exp.IndexParameters,
+            using=using,
+            columns=columns,
+            include=include,
+            partition_by=partition_by,
+            where=where,
+            with_storage=with_storage,
+            tablespace=tablespace,
+        )
 
     def _parse_index(
         self,
@@ -2872,27 +2916,16 @@ class Parser(metaclass=_Parser):
             index = self._parse_id_var()
             table = None
 
-        using = self._parse_var(any_token=True) if self._match(TokenType.USING) else None
-
-        if self._match(TokenType.L_PAREN, advance=False):
-            columns = self._parse_wrapped_csv(lambda: self._parse_ordered(self._parse_opclass))
-        else:
-            columns = None
-
-        include = self._parse_wrapped_id_vars() if self._match_text_seq("INCLUDE") else None
+        params = self._parse_index_params()
 
         return self.expression(
             exp.Index,
             this=index,
             table=table,
-            using=using,
-            columns=columns,
             unique=unique,
             primary=primary,
             amp=amp,
-            include=include,
-            partition_by=self._parse_partition_by(),
-            where=self._parse_where(),
+            params=params,
         )
 
     def _parse_table_hints(self) -> t.Optional[t.List[exp.Expression]]:
@@ -6094,3 +6127,13 @@ class Parser(metaclass=_Parser):
             option=option,
             partition=partition,
         )
+
+    def _parse_with_operator(self) -> t.Optional[exp.Expression]:
+        this = self._parse_ordered(self._parse_opclass)
+
+        if not self._match(TokenType.WITH):
+            return this
+
+        op = self._parse_var(any_token=True)
+
+        return self.expression(exp.WithOperator, this=this, op=op)

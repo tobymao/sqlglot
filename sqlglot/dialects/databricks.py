@@ -63,7 +63,6 @@ class Databricks(Spark):
                 ]
             ),
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
-            exp.ToNumber: lambda self, e: self.function_fallback_sql(e),
         }
 
         TRANSFORMS.pop(exp.TryCast)

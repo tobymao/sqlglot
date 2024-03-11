@@ -1079,3 +1079,12 @@ def filter_array_using_unnest(self: Generator, expression: exp.ArrayFilter) -> s
     unnest = exp.Unnest(expressions=[expression.this])
     filtered = exp.select(alias).from_(exp.alias_(unnest, None, table=[alias])).where(cond)
     return self.sql(exp.Array(expressions=[filtered]))
+
+
+def to_number_with_nls_param(self, expression: exp.ToNumber) -> str:
+    return self.func(
+        "TO_NUMBER",
+        expression.this,
+        expression.args.get("format"),
+        expression.args.get("nlsparam"),
+    )

@@ -89,6 +89,7 @@ class Generator(metaclass=_Generator):
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
+        exp.ExcludeColumnConstraint: lambda self, e: f"EXCLUDE {self.sql(e, 'this').lstrip()}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
         exp.GlobalProperty: lambda *_: "GLOBAL",
@@ -140,6 +141,7 @@ class Generator(metaclass=_Generator):
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
         exp.VolatileProperty: lambda *_: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
+        exp.WithOperator: lambda self, e: f"{self.sql(e, 'this')} WITH {self.sql(e, 'op')}",
     }
 
     # Whether null ordering is supported in order by
@@ -1210,17 +1212,9 @@ class Generator(metaclass=_Generator):
 
         return f" /*+ {self.expressions(expression, sep=self.QUERY_HINT_SEP).strip()} */"
 
-    def index_sql(self, expression: exp.Index) -> str:
-        unique = "UNIQUE " if expression.args.get("unique") else ""
-        primary = "PRIMARY " if expression.args.get("primary") else ""
-        amp = "AMP " if expression.args.get("amp") else ""
-        name = self.sql(expression, "this")
-        name = f"{name} " if name else ""
-        table = self.sql(expression, "table")
-        table = f"{self.INDEX_ON} {table}" if table else ""
+    def indexparameters_sql(self, expression: exp.IndexParameters) -> str:
         using = self.sql(expression, "using")
         using = f" USING {using}" if using else ""
-        index = "INDEX " if not table else ""
         columns = self.expressions(expression, key="columns", flat=True)
         columns = f"({columns})" if columns else ""
         partition_by = self.expressions(expression, key="partition_by", flat=True)
@@ -1229,7 +1223,26 @@ class Generator(metaclass=_Generator):
         include = self.expressions(expression, key="include", flat=True)
         if include:
             include = f" INCLUDE ({include})"
-        return f"{unique}{primary}{amp}{index}{name}{table}{using}{columns}{include}{partition_by}{where}"
+        with_storage = self.expressions(expression, key="with_storage", flat=True)
+        with_storage = f" WITH {with_storage}" if with_storage else ""
+        tablespace = self.sql(expression, "tablespace")
+        tablespace = f" USING INDEX TABLESPACE {tablespace}" if tablespace else ""
+
+        return f"{using}{columns}{include}{with_storage}{tablespace}{partition_by}{where}"
+
+    def index_sql(self, expression: exp.Index) -> str:
+        unique = "UNIQUE " if expression.args.get("unique") else ""
+        primary = "PRIMARY " if expression.args.get("primary") else ""
+        amp = "AMP " if expression.args.get("amp") else ""
+        name = self.sql(expression, "this")
+        name = f"{name} " if name else ""
+        table = self.sql(expression, "table")
+        table = f"{self.INDEX_ON} {table}" if table else ""
+
+        index = "INDEX " if not table else ""
+
+        params = self.sql(expression, "params")
+        return f"{unique}{primary}{amp}{index}{name}{table}{params}"
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name

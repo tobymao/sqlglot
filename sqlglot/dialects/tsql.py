@@ -761,6 +761,7 @@ class TSQL(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.AnyValue: any_value_to_max_sql,
+            exp.ArrayToString: rename_func("STRING_AGG"),
             exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),

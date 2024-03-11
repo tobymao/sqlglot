@@ -203,6 +203,7 @@ class Spark2(Hive):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySum: lambda self,
             e: f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)",
+            exp.ArrayToString: rename_func("ARRAY_JOIN"),
             exp.AtTimeZone: lambda self, e: self.func(
                 "FROM_UTC_TIMESTAMP", e.this, e.args.get("zone")
             ),
@@ -252,7 +253,6 @@ class Spark2(Hive):
                 [transforms.remove_within_group_for_percentiles]
             ),
         }
-        TRANSFORMS.pop(exp.ArrayJoin)
         TRANSFORMS.pop(exp.ArraySort)
         TRANSFORMS.pop(exp.ILike)
         TRANSFORMS.pop(exp.Left)

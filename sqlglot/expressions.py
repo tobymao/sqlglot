@@ -4577,9 +4577,9 @@ class ArrayFilter(Func):
     _sql_names = ["FILTER", "ARRAY_FILTER"]
 
 
-class ArrayJoin(Func):
+class ArrayToString(Func):
     arg_types = {"this": True, "expression": True, "null": False}
-    _sql_names = ["ARRAY_JOIN", "ARRAY_TO_STRING"]
+    _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
 class ArrayOverlaps(Binary, Func):

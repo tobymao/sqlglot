@@ -971,10 +971,10 @@ def array_join(
 ) -> Column:
     if null_replacement is not None:
         return Column.invoke_expression_over_column(
-            col, expression.ArrayJoin, expression=lit(delimiter), null=lit(null_replacement)
+            col, expression.ArrayToString, expression=lit(delimiter), null=lit(null_replacement)
         )
     return Column.invoke_expression_over_column(
-        col, expression.ArrayJoin, expression=lit(delimiter)
+        col, expression.ArrayToString, expression=lit(delimiter)
     )
 
 

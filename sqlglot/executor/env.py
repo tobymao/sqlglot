@@ -106,6 +106,13 @@ def cast(this, to):
             return this
         if isinstance(this, str):
             return datetime.date.fromisoformat(this)
+    if to == exp.DataType.Type.TIME:
+        if isinstance(this, datetime.datetime):
+            return this.time()
+        if isinstance(this, datetime.time):
+            return this
+        if isinstance(this, str):
+            return datetime.time.fromisoformat(this)
     if to in (exp.DataType.Type.DATETIME, exp.DataType.Type.TIMESTAMP):
         if isinstance(this, datetime.datetime):
             return this

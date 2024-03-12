@@ -717,6 +717,9 @@ class Parser(metaclass=_Parser):
         "ALGORITHM": lambda self: self._parse_property_assignment(exp.AlgorithmProperty),
         "AUTO": lambda self: self._parse_auto_property(),
         "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
+        "BACKUP": lambda self: self.expression(
+            exp.BackupProperty, this=self._parse_var(any_token=True)
+        ),
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
         "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
         "CHARACTER SET": lambda self, **kwargs: self._parse_character_set(**kwargs),

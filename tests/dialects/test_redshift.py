@@ -464,6 +464,10 @@ FROM (
                 "": "INSERT INTO t(a, b) SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
             },
         )
+        self.validate_identity("CREATE TABLE table_backup BACKUP NO AS SELECT * FROM event")
+        self.validate_identity("CREATE TABLE table_backup BACKUP YES AS SELECT * FROM event")
+        self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP NO")
+        self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP YES")
 
     def test_create_table_like(self):
         self.validate_identity(

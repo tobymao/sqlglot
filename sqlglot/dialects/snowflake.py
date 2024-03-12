@@ -35,7 +35,7 @@ def _build_timestamp(name: str, kind: exp.DataType.Type) -> t.Callable[[t.List],
         if isinstance(value, exp.Literal):
             int_value = is_int(value.this)
 
-            # Converts calls like `TO_TIME(01:02:03')` into casts
+            # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return exp.cast(value, kind)
 

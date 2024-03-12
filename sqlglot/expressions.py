@@ -2230,6 +2230,10 @@ class AutoRefreshProperty(Property):
     arg_types = {"this": True}
 
 
+class BackupProperty(Property):
+    arg_types = {"this": True}
+
+
 class BlockCompressionProperty(Property):
     arg_types = {
         "autotemp": False,

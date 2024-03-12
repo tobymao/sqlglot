@@ -14,3 +14,7 @@ class TestAthena(Validator):
             some_function(1)""",
             check_command_warning=True,
         )
+
+        self.validate_identity(
+            "CREATE TABLE IF NOT EXISTS t (name STRING) LOCATION 's3://bucket/tmp/mytable/' TBLPROPERTIES ('table_type'='iceberg', 'FORMAT'='parquet')"
+        )

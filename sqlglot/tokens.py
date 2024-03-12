@@ -135,6 +135,7 @@ class TokenType(AutoName):
     LONGBLOB = auto()
     TINYBLOB = auto()
     TINYTEXT = auto()
+    NAME = auto()
     BINARY = auto()
     VARBINARY = auto()
     JSON = auto()

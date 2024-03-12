@@ -29,38 +29,33 @@ if t.TYPE_CHECKING:
 
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
-def _build_to_timestamp(
-    args: t.List, to_time: t.Optional[bool] = False
-) -> t.Union[exp.StrToTime, exp.UnixToTime, exp.TimeStrToTime]:
+def _build_to_timestamp(args: t.List) -> t.Union[exp.StrToTime, exp.UnixToTime, exp.TimeStrToTime]:
     if len(args) == 2:
         first_arg, second_arg = args
         if second_arg.is_string:
             # case: <string_expr> [ , <format> ]
             return build_formatted_time(exp.StrToTime, "snowflake")(args)
-        else:
-            expression = exp.UnixToTime(this=first_arg, scale=second_arg)
+        return exp.UnixToTime(this=first_arg, scale=second_arg)
 
-    else:
-        from sqlglot.optimizer.simplify import simplify_literals
+    from sqlglot.optimizer.simplify import simplify_literals
 
-        # The first argument might be an expression like 40 * 365 * 86400, so we try to
-        # reduce it using `simplify_literals` first and then check if it's a Literal.
-        first_arg = seq_get(args, 0)
-        if not isinstance(simplify_literals(first_arg, root=True), Literal):
-            # case: <variant_expr> or other expressions such as columns
-            expression = exp.TimeStrToTime.from_arg_list(args)
-        elif first_arg.is_string:
-            if is_int(first_arg.this):
-                # case: <integer>
-                expression = exp.UnixToTime.from_arg_list(args)
-            else:
-                # case: <date_expr>
-                return build_formatted_time(exp.StrToTime, "snowflake", default=True)(args)
-        else:
-            # case: <numeric_expr>
-            expression = exp.UnixToTime.from_arg_list(args)
-    expression.set("to_time", to_time)
-    return expression
+    # The first argument might be an expression like 40 * 365 * 86400, so we try to
+    # reduce it using `simplify_literals` first and then check if it's a Literal.
+    first_arg = seq_get(args, 0)
+    if not isinstance(simplify_literals(first_arg, root=True), Literal):
+        # case: <variant_expr> or other expressions such as columns
+        return exp.TimeStrToTime.from_arg_list(args)
+
+    if first_arg.is_string:
+        if is_int(first_arg.this):
+            # case: <integer>
+            return exp.UnixToTime.from_arg_list(args)
+
+        # case: <date_expr>
+        return build_formatted_time(exp.StrToTime, "snowflake", default=True)(args)
+
+    # case: <numeric_expr>
+    return exp.UnixToTime.from_arg_list(args)
 
 
 def _build_object_construct(args: t.List) -> t.Union[exp.StarMap, exp.Struct]:
@@ -369,8 +364,7 @@ class Snowflake(Dialect):
                 precision=seq_get(args, 2),
                 scale=seq_get(args, 3),
             ),
-            "TO_TIMESTAMP": lambda args: _build_to_timestamp(args, to_time=False),
-            "TO_TIME": lambda args: _build_to_timestamp(args, to_time=True),
+            "TO_TIMESTAMP": _build_to_timestamp,
             "TO_VARCHAR": exp.ToChar.from_arg_list,
             "ZEROIFNULL": _build_if_from_zeroifnull,
         }

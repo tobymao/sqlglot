@@ -216,7 +216,7 @@ ENV = {
     "STRPOSITION": str_position,
     "SUB": null_if_any(lambda e, this: e - this),
     "SUBSTRING": substring,
-    "TIMESTRTOTIME": null_if_any(lambda arg: datetime.datetime.fromisoformat(arg).time() if False else datetime.datetime.fromisoformat(arg)),
+    "TIMESTRTOTIME": null_if_any(lambda arg: datetime.datetime.fromisoformat(arg)),
     "UPPER": null_if_any(lambda arg: arg.upper()),
     "YEAR": null_if_any(lambda arg: arg.year),
     "MONTH": null_if_any(lambda arg: arg.month),
@@ -226,12 +226,12 @@ ENV = {
     "CURRENTTIME": datetime.datetime.now,
     "CURRENTDATE": datetime.date.today,
     "STRFTIME": null_if_any(lambda fmt, arg: datetime.datetime.fromisoformat(arg).strftime(fmt)),
-    "STRTOTIME": null_if_any(lambda arg, format: datetime.datetime.strptime(arg, format).time() if False else datetime.datetime.strptime(arg, format)),
+    "STRTOTIME": null_if_any(lambda arg, format: datetime.datetime.strptime(arg, format)),
     "TRIM": null_if_any(lambda this, e=None: this.strip(e)),
     "STRUCT": lambda *args: {
         args[x]: args[x + 1]
         for x in range(0, len(args), 2)
         if (args[x + 1] is not None and args[x] is not None)
     },
-    "UNIXTOTIME": null_if_any(lambda arg: datetime.datetime.utcfromtimestamp(arg).time() if False else datetime.datetime.utcfromtimestamp(arg)),
+    "UNIXTOTIME": null_if_any(lambda arg: datetime.datetime.utcfromtimestamp(arg)),
 }

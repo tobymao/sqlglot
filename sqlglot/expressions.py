@@ -5491,7 +5491,7 @@ class StrToDate(Func):
 
 
 class StrToTime(Func):
-    arg_types = {"this": True, "format": True, "zone": False, "to_time": False}
+    arg_types = {"this": True, "format": True, "zone": False}
 
 
 # Spark allows unix_timestamp()
@@ -5633,7 +5633,7 @@ class UnixToStr(Func):
 # https://prestodb.io/docs/current/functions/datetime.html
 # presto has weird zone/hours/minutes
 class UnixToTime(Func):
-    arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False, "to_time": False}
+    arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False}
 
     SECONDS = Literal.number(0)
     DECIS = Literal.number(1)

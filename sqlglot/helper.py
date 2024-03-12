@@ -53,11 +53,13 @@ def seq_get(seq: t.Sequence[T], index: int) -> t.Optional[T]:
 
 
 @t.overload
-def ensure_list(value: t.Collection[T]) -> t.List[T]: ...
+def ensure_list(value: t.Collection[T]) -> t.List[T]:
+    ...
 
 
 @t.overload
-def ensure_list(value: T) -> t.List[T]: ...
+def ensure_list(value: T) -> t.List[T]:
+    ...
 
 
 def ensure_list(value):
@@ -79,11 +81,13 @@ def ensure_list(value):
 
 
 @t.overload
-def ensure_collection(value: t.Collection[T]) -> t.Collection[T]: ...
+def ensure_collection(value: t.Collection[T]) -> t.Collection[T]:
+    ...
 
 
 @t.overload
-def ensure_collection(value: T) -> t.Collection[T]: ...
+def ensure_collection(value: T) -> t.Collection[T]:
+    ...
 
 
 def ensure_collection(value):

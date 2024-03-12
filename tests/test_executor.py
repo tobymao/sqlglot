@@ -706,17 +706,17 @@ class TestExecutor(unittest.TestCase):
             ("ROUND(1.2)", 1),
             ("ROUND(1.2345, 2)", 1.23),
             ("ROUND(NULL)", None),
-            ("TO_TIMESTAMP('2013-04-05 01:02:03')", datetime.datetime(2013, 4, 5, 1, 2, 3)),
-            ("TO_TIMESTAMP(1659981729)", datetime.datetime(2022, 8, 8, 18, 2, 9)),
-            ("TO_TIMESTAMP('08/03/2024 12:34:56', 'DD/MM/YYYY HH24:MI:SS')", datetime.datetime(2024, 3, 8, 12, 34, 56)),
-            ("TO_TIMESTAMP('27/01/2024', 'DD/MM/YYYY')", datetime.datetime(2024, 1, 27)),
-            ('TO_TIMESTAMP(40 * 365 * 86400)', datetime.datetime(2009, 12, 22, 00, 00, 00)),
+            ("UNIXTOTIME(1659981729)", datetime.datetime(2022, 8, 8, 18, 2, 9)),
+            ("TIMESTRTOTIME('2013-04-05 01:02:03')", datetime.datetime(2013, 4, 5, 1, 2, 3)),
+            ("UNIXTOTIME(40 * 365 * 86400)", datetime.datetime(2009, 12, 22, 00, 00, 00)),
+            (
+                "STRTOTIME('08/03/2024 12:34:56', '%d/%m/%Y %H:%M:%S')",
+                datetime.datetime(2024, 3, 8, 12, 34, 56),
+            ),
+            ("STRTOTIME('27/01/2024', '%d/%m/%Y')", datetime.datetime(2024, 1, 27)),
         ]:
             with self.subTest(sql):
-                if isinstance(expected, datetime.datetime):
-                    result = execute(f"SELECT {sql}", read="snowflake")
-                else:
-                    result = execute(f"SELECT {sql}")
+                result = execute(f"SELECT {sql}")
                 self.assertEqual(result.rows, [(expected,)])
 
     def test_case_sensitivity(self):

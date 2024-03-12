@@ -501,10 +501,12 @@ class BigQuery(Dialect):
             return table
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
+        def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject:
+            ...
 
         @t.overload
-        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg: ...
+        def _parse_json_object(self, agg: Lit[True]) -> exp.JSONObjectAgg:
+            ...
 
         def _parse_json_object(self, agg=False):
             json_object = super()._parse_json_object()

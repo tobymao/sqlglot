@@ -258,6 +258,7 @@ class Parser(metaclass=_Parser):
         TokenType.IPV6,
         TokenType.UNKNOWN,
         TokenType.NULL,
+        TokenType.NAME,
         *ENUM_TYPE_TOKENS,
         *NESTED_TYPE_TOKENS,
         *AGGREGATE_TYPE_TOKENS,

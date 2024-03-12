@@ -3787,6 +3787,7 @@ class DataType(Expression):
         MEDIUMINT = auto()
         MEDIUMTEXT = auto()
         MONEY = auto()
+        NAME = auto()
         NCHAR = auto()
         NESTED = auto()
         NULL = auto()
@@ -3843,6 +3844,7 @@ class DataType(Expression):
         Type.NVARCHAR,
         Type.TEXT,
         Type.VARCHAR,
+        Type.NAME,
     }
 
     INTEGER_TYPES = {

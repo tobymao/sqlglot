@@ -278,6 +278,7 @@ class Postgres(Dialect):
             "REVOKE": TokenType.COMMAND,
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
+            "NAME": TokenType.NAME,
             "TEMP": TokenType.TEMPORARY,
             "CSTRING": TokenType.PSEUDO_TYPE,
             "OID": TokenType.OBJECT_IDENTIFIER,

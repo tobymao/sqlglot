@@ -608,7 +608,16 @@ class TestPostgres(Validator):
                 "postgres": "x / y ^ z",
             },
         )
-
+        self.validate_all(
+            "CAST(x AS NAME)",
+            read={
+                "redshift": "CAST(x AS NAME)",
+            },
+            write={
+                "postgres": "CAST(x AS NAME)",
+                "redshift": "CAST(x AS NAME)",
+            },
+        )
         self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)
 
     def test_ddl(self):

@@ -73,6 +73,7 @@ class Generator(metaclass=_Generator):
     TRANSFORMS: t.Dict[t.Type[exp.Expression], t.Callable[..., str]] = {
         **JSON_PATH_PART_TRANSFORMS,
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
+        exp.BackupProperty: lambda self, e: f"BACKUP {self.sql(e, 'this')}",
         exp.CaseSpecificColumnConstraint: lambda _,
         e: f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC",
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
@@ -381,6 +382,7 @@ class Generator(metaclass=_Generator):
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
         exp.AutoIncrementProperty: exp.Properties.Location.POST_SCHEMA,
         exp.AutoRefreshProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.BackupProperty: exp.Properties.Location.POST_SCHEMA,
         exp.BlockCompressionProperty: exp.Properties.Location.POST_NAME,
         exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ChecksumProperty: exp.Properties.Location.POST_NAME,

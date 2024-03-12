@@ -1,6 +1,39 @@
 Changelog
 =========
 
+## [v22.4.0] - 2024-03-12
+### :boom: BREAKING CHANGES
+- due to [`b1c8cac`](https://github.com/tobymao/sqlglot/commit/b1c8cace6ed3e58657726fa5617a6df63d91f737) - traverse union scopes iteratively *(PR [#3112](https://github.com/tobymao/sqlglot/pull/3112) by [@georgesittas](https://github.com/georgesittas))*:
+
+  traverse union scopes iteratively (#3112)
+
+
+### :sparkles: New Features
+- [`88033da`](https://github.com/tobymao/sqlglot/commit/88033dad05550cde05dcb86cce61a621c071382c) - **test**: add more passing tpcds tests *(PR [#3110](https://github.com/tobymao/sqlglot/pull/3110) by [@fool1280](https://github.com/fool1280))*
+- [`804af34`](https://github.com/tobymao/sqlglot/commit/804af347a7cefac251b78fdcb8ff35b63c249d82) - **duckdb**: add support for positional joins *(PR [#3111](https://github.com/tobymao/sqlglot/pull/3111) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3109](https://github.com/tobymao/sqlglot/issues/3109) opened by [@dylanscott](https://github.com/dylanscott)*
+- [`c4e7bbf`](https://github.com/tobymao/sqlglot/commit/c4e7bbfd3d88f3efb1fea806f85091dbe32379cf) - improve transpilation of TO_NUMBER *(commit by [@codeDing18](https://github.com/codeDing18))*
+- [`80d484c`](https://github.com/tobymao/sqlglot/commit/80d484c428329fb53c905fff9f86ea0ee7bcef3b) - **postgres**: generate StrToDate *(PR [#3124](https://github.com/tobymao/sqlglot/pull/3124) by [@georgesittas](https://github.com/georgesittas))*
+- [`09708f5`](https://github.com/tobymao/sqlglot/commit/09708f571bb7b62e96bbfba363b00714243d1a17) - Adding EXCLUDE constraint support *(PR [#3116](https://github.com/tobymao/sqlglot/pull/3116) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3097](https://github.com/tobymao/sqlglot/issues/3097) opened by [@dezhin](https://github.com/dezhin)*
+- [`9b25a8e`](https://github.com/tobymao/sqlglot/commit/9b25a8e3788c4cc7a299c703fe5b4086fe86015d) - Adding BACKUP property *(PR [#3127](https://github.com/tobymao/sqlglot/pull/3127) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3125](https://github.com/tobymao/sqlglot/issues/3125) opened by [@hsheth2](https://github.com/hsheth2)*
+- [`0ea849b`](https://github.com/tobymao/sqlglot/commit/0ea849b35bd3dd980c4f851d3ea7b5bc628e6fb5) - Adding NAME data type in Postgres/Redshift *(PR [#3128](https://github.com/tobymao/sqlglot/pull/3128) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3123](https://github.com/tobymao/sqlglot/issues/3123) opened by [@hsheth2](https://github.com/hsheth2)*
+
+### :bug: Bug Fixes
+- [`c333017`](https://github.com/tobymao/sqlglot/commit/c333017fe49c0645cdaa3a75d0a7cc6a5b46dddc) - correctly generate ArrayJoin in various dialects *(PR [#3120](https://github.com/tobymao/sqlglot/pull/3120) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3119](https://github.com/tobymao/sqlglot/issues/3119) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`12d72a6`](https://github.com/tobymao/sqlglot/commit/12d72a6ff6534919979f77a5f045aa9d947d9a09) - make the lineage sources dict type covariant *(PR [#3122](https://github.com/tobymao/sqlglot/pull/3122) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3121](https://github.com/tobymao/sqlglot/issues/3121) opened by [@rexledesma](https://github.com/rexledesma)*
+- [`b1c8cac`](https://github.com/tobymao/sqlglot/commit/b1c8cace6ed3e58657726fa5617a6df63d91f737) - traverse union scopes iteratively *(PR [#3112](https://github.com/tobymao/sqlglot/pull/3112) by [@georgesittas](https://github.com/georgesittas))*
+- [`94b5a2f`](https://github.com/tobymao/sqlglot/commit/94b5a2fcba3c41d38734f045b7f1d5d4735e4828) - **athena**: Fix CREATE TABLE properties, STRING data type *(PR [#3129](https://github.com/tobymao/sqlglot/pull/3129) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3126](https://github.com/tobymao/sqlglot/issues/3126) opened by [@matthias-Q](https://github.com/matthias-Q)*
+
+### :recycle: Refactors
+- [`0ce9ef1`](https://github.com/tobymao/sqlglot/commit/0ce9ef12d9c030b145d7a7a7432bfc188d6c179a) - improve parsing of storage provider setting in index params *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v22.3.1] - 2024-03-09
 ### :sparkles: New Features
 - [`80b2320`](https://github.com/tobymao/sqlglot/commit/80b23201f9668a5845002c1c21b0a394003847f9) - no recursion dfs *(PR [#3105](https://github.com/tobymao/sqlglot/pull/3105) by [@tobymao](https://github.com/tobymao))*
@@ -2879,3 +2912,4 @@ Changelog
 [v22.2.1]: https://github.com/tobymao/sqlglot/compare/v22.2.0...v22.2.1
 [v22.3.0]: https://github.com/tobymao/sqlglot/compare/v22.2.1...v22.3.0
 [v22.3.1]: https://github.com/tobymao/sqlglot/compare/v22.3.0...v22.3.1
+[v22.4.0]: https://github.com/tobymao/sqlglot/compare/v22.3.1...v22.4.0

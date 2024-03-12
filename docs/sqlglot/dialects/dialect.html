@@ -504,6 +504,9 @@
             <li>
                     <a class="function" href="#filter_array_using_unnest">filter_array_using_unnest</a>
             </li>
+            <li>
+                    <a class="function" href="#to_number_with_nls_param">to_number_with_nls_param</a>
+            </li>
     </ul>
 
 
@@ -1608,6 +1611,15 @@
 </span><span id="L-1079"><a href="#L-1079"><span class="linenos">1079</span></a>    <span class="n">unnest</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">Unnest</span><span class="p">(</span><span class="n">expressions</span><span class="o">=</span><span class="p">[</span><span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">])</span>
 </span><span id="L-1080"><a href="#L-1080"><span class="linenos">1080</span></a>    <span class="n">filtered</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">alias</span><span class="p">)</span><span class="o">.</span><span class="n">from_</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">alias_</span><span class="p">(</span><span class="n">unnest</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="p">[</span><span class="n">alias</span><span class="p">]))</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
 </span><span id="L-1081"><a href="#L-1081"><span class="linenos">1081</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">expressions</span><span class="o">=</span><span class="p">[</span><span class="n">filtered</span><span class="p">]))</span>
+</span><span id="L-1082"><a href="#L-1082"><span class="linenos">1082</span></a>
+</span><span id="L-1083"><a href="#L-1083"><span class="linenos">1083</span></a>
+</span><span id="L-1084"><a href="#L-1084"><span class="linenos">1084</span></a><span class="k">def</span> <span class="nf">to_number_with_nls_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ToNumber</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="L-1085"><a href="#L-1085"><span class="linenos">1085</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span>
+</span><span id="L-1086"><a href="#L-1086"><span class="linenos">1086</span></a>        <span class="s2">&quot;TO_NUMBER&quot;</span><span class="p">,</span>
+</span><span id="L-1087"><a href="#L-1087"><span class="linenos">1087</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span>
+</span><span id="L-1088"><a href="#L-1088"><span class="linenos">1088</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;format&quot;</span><span class="p">),</span>
+</span><span id="L-1089"><a href="#L-1089"><span class="linenos">1089</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nlsparam&quot;</span><span class="p">),</span>
+</span><span id="L-1090"><a href="#L-1090"><span class="linenos">1090</span></a>    <span class="p">)</span>
 </span></pre></div>
 
 
@@ -5181,6 +5193,30 @@ that it can analyze queries in the optimizer and successfully capture their sema
 </span><span id="filter_array_using_unnest-1080"><a href="#filter_array_using_unnest-1080"><span class="linenos">1080</span></a>    <span class="n">unnest</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">Unnest</span><span class="p">(</span><span class="n">expressions</span><span class="o">=</span><span class="p">[</span><span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">])</span>
 </span><span id="filter_array_using_unnest-1081"><a href="#filter_array_using_unnest-1081"><span class="linenos">1081</span></a>    <span class="n">filtered</span> <span class="o">=</span> <span class="n">exp</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">alias</span><span class="p">)</span><span class="o">.</span><span class="n">from_</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">alias_</span><span class="p">(</span><span class="n">unnest</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="p">[</span><span class="n">alias</span><span class="p">]))</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cond</span><span class="p">)</span>
 </span><span id="filter_array_using_unnest-1082"><a href="#filter_array_using_unnest-1082"><span class="linenos">1082</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="n">exp</span><span class="o">.</span><span class="n">Array</span><span class="p">(</span><span class="n">expressions</span><span class="o">=</span><span class="p">[</span><span class="n">filtered</span><span class="p">]))</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="to_number_with_nls_param">
+                            <input id="to_number_with_nls_param-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">to_number_with_nls_param</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">expression</span><span class="p">:</span> <span class="n"><a href="../expressions.html#ToNumber">sqlglot.expressions.ToNumber</a></span></span><span class="return-annotation">) -> <span class="nb">str</span>:</span></span>
+
+                <label class="view-source-button" for="to_number_with_nls_param-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#to_number_with_nls_param"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="to_number_with_nls_param-1085"><a href="#to_number_with_nls_param-1085"><span class="linenos">1085</span></a><span class="k">def</span> <span class="nf">to_number_with_nls_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">exp</span><span class="o">.</span><span class="n">ToNumber</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="to_number_with_nls_param-1086"><a href="#to_number_with_nls_param-1086"><span class="linenos">1086</span></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span>
+</span><span id="to_number_with_nls_param-1087"><a href="#to_number_with_nls_param-1087"><span class="linenos">1087</span></a>        <span class="s2">&quot;TO_NUMBER&quot;</span><span class="p">,</span>
+</span><span id="to_number_with_nls_param-1088"><a href="#to_number_with_nls_param-1088"><span class="linenos">1088</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">this</span><span class="p">,</span>
+</span><span id="to_number_with_nls_param-1089"><a href="#to_number_with_nls_param-1089"><span class="linenos">1089</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;format&quot;</span><span class="p">),</span>
+</span><span id="to_number_with_nls_param-1090"><a href="#to_number_with_nls_param-1090"><span class="linenos">1090</span></a>        <span class="n">expression</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nlsparam&quot;</span><span class="p">),</span>
+</span><span id="to_number_with_nls_param-1091"><a href="#to_number_with_nls_param-1091"><span class="linenos">1091</span></a>    <span class="p">)</span>
 </span></pre></div>
 
 

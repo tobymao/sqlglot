@@ -265,7 +265,7 @@
 <span class="s2">*/</span>
 <span class="s2">SELECT</span>
 <span class="s2">  tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,</span>
-<span class="s2">  CAST(x AS INT), # comment 3</span>
+<span class="s2">  CAST(x AS SIGNED), # comment 3</span>
 <span class="s2">  y               -- comment 4</span>
 <span class="s2">FROM</span>
 <span class="s2">  bar /* comment 5 */,</span>
@@ -499,7 +499,9 @@
       <span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
     <span class="n">expression</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span>
       <span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)))),</span>
-  <span class="n">Keep</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">target</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+  <span class="n">Keep</span><span class="p">(</span>
+    <span class="n">source</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
+    <span class="n">target</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">Identifier</span><span class="p">(</span><span class="n">this</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">quoted</span><span class="o">=</span><span class="kc">False</span><span class="p">))),</span>
   <span class="o">...</span>
 <span class="p">]</span>
 </code></pre>
@@ -627,6 +629,7 @@
 
 <pre><code>make style  # Only linter checks
 make unit   # Only unit tests
+make test   # Unit and integration tests
 make check  # Full test suite &amp; linter checks
 </code></pre>
 

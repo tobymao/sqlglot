@@ -26,13 +26,20 @@ class TestDuckDB(Validator):
         self.validate_all(
             "ARRAY_TO_STRING(arr, delim)",
             read={
+                "bigquery": "ARRAY_TO_STRING(arr, delim)",
+                "postgres": "ARRAY_TO_STRING(arr, delim)",
+                "presto": "ARRAY_JOIN(arr, delim)",
                 "snowflake": "ARRAY_TO_STRING(arr, delim)",
                 "spark": "ARRAY_JOIN(arr, delim)",
             },
             write={
+                "bigquery": "ARRAY_TO_STRING(arr, delim)",
                 "duckdb": "ARRAY_TO_STRING(arr, delim)",
+                "postgres": "ARRAY_TO_STRING(arr, delim)",
+                "presto": "ARRAY_JOIN(arr, delim)",
                 "snowflake": "ARRAY_TO_STRING(arr, delim)",
                 "spark": "ARRAY_JOIN(arr, delim)",
+                "tsql": "STRING_AGG(arr, delim)",
             },
         )
         self.validate_all(

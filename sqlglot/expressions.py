@@ -1580,6 +1580,15 @@ class EncodeColumnConstraint(ColumnConstraintKind):
     pass
 
 
+# https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-EXCLUDE
+class ExcludeColumnConstraint(ColumnConstraintKind):
+    pass
+
+
+class WithOperator(Expression):
+    arg_types = {"this": True, "op": True}
+
+
 class GeneratedAsIdentityColumnConstraint(ColumnConstraintKind):
     # this: True -> ALWAYS, this: False -> BY DEFAULT
     arg_types = {
@@ -1854,14 +1863,22 @@ class Index(Expression):
     arg_types = {
         "this": False,
         "table": False,
-        "using": False,
-        "where": False,
-        "columns": False,
         "unique": False,
         "primary": False,
         "amp": False,  # teradata
+        "params": False,
+    }
+
+
+class IndexParameters(Expression):
+    arg_types = {
+        "using": False,
         "include": False,
-        "partition_by": False,  # teradata
+        "columns": False,
+        "with_storage": False,
+        "partition_by": False,
+        "tablespace": False,
+        "where": False,
     }
 
 
@@ -2210,6 +2227,10 @@ class AutoIncrementProperty(Property):
 
 # https://docs.aws.amazon.com/prescriptive-guidance/latest/materialized-views-redshift/refreshing-materialized-views.html
 class AutoRefreshProperty(Property):
+    arg_types = {"this": True}
+
+
+class BackupProperty(Property):
     arg_types = {"this": True}
 
 
@@ -3766,6 +3787,7 @@ class DataType(Expression):
         MEDIUMINT = auto()
         MEDIUMTEXT = auto()
         MONEY = auto()
+        NAME = auto()
         NCHAR = auto()
         NESTED = auto()
         NULL = auto()
@@ -3822,6 +3844,7 @@ class DataType(Expression):
         Type.NVARCHAR,
         Type.TEXT,
         Type.VARCHAR,
+        Type.NAME,
     }
 
     INTEGER_TYPES = {
@@ -4577,9 +4600,9 @@ class ArrayFilter(Func):
     _sql_names = ["FILTER", "ARRAY_FILTER"]
 
 
-class ArrayJoin(Func):
+class ArrayToString(Func):
     arg_types = {"this": True, "expression": True, "null": False}
-    _sql_names = ["ARRAY_JOIN", "ARRAY_TO_STRING"]
+    _sql_names = ["ARRAY_TO_STRING", "ARRAY_JOIN"]
 
 
 class ArrayOverlaps(Binary, Func):

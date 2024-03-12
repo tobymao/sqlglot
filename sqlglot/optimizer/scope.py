@@ -38,11 +38,11 @@ class Scope:
                 SELECT c FROM x LATERAL VIEW EXPLODE (a) AS c;
             The LATERAL VIEW EXPLODE gets x as a source.
         cte_sources (dict[str, Scope]): Sources from CTES
-        outer_column_list (list[str]): If this is a derived table or CTE, and the outer query
-            defines a column list of it's alias of this scope, this is that list of columns.
+        outer_columns (list[str]): If this is a derived table or CTE, and the outer query
+            defines a column list for the alias of this scope, this is that list of columns.
             For example:
                 SELECT * FROM (SELECT ...) AS y(col1, col2)
-            The inner query would have `["col1", "col2"]` for its `outer_column_list`
+            The inner query would have `["col1", "col2"]` for its `outer_columns`
         parent (Scope): Parent scope
         scope_type (ScopeType): Type of this scope, relative to it's parent
         subquery_scopes (list[Scope]): List of all child scopes for subqueries
@@ -58,7 +58,7 @@ class Scope:
         self,
         expression,
         sources=None,
-        outer_column_list=None,
+        outer_columns=None,
         parent=None,
         scope_type=ScopeType.ROOT,
         lateral_sources=None,
@@ -70,7 +70,7 @@ class Scope:
         self.cte_sources = cte_sources or {}
         self.sources.update(self.lateral_sources)
         self.sources.update(self.cte_sources)
-        self.outer_column_list = outer_column_list or []
+        self.outer_columns = outer_columns or []
         self.parent = parent
         self.scope_type = scope_type
         self.subquery_scopes = []
@@ -435,11 +435,21 @@ class Scope:
         Yields:
             Scope: scope instances in depth-first-search post-order
         """
-        for child_scope in itertools.chain(
-            self.cte_scopes, self.union_scopes, self.table_scopes, self.subquery_scopes
-        ):
-            yield from child_scope.traverse()
-        yield self
+        stack = [self]
+        result = []
+        while stack:
+            scope = stack.pop()
+            result.append(scope)
+            stack.extend(
+                itertools.chain(
+                    scope.cte_scopes,
+                    scope.union_scopes,
+                    scope.table_scopes,
+                    scope.subquery_scopes,
+                )
+            )
+
+        yield from reversed(result)
 
     def ref_count(self):
         """
@@ -522,7 +532,9 @@ def _traverse_scope(scope):
     if isinstance(scope.expression, exp.Select):
         yield from _traverse_select(scope)
     elif isinstance(scope.expression, exp.Union):
+        yield from _traverse_ctes(scope)
         yield from _traverse_union(scope)
+        return
     elif isinstance(scope.expression, exp.Subquery):
         if scope.is_root:
             yield from _traverse_select(scope)
@@ -548,30 +560,38 @@ def _traverse_select(scope):
 
 
 def _traverse_union(scope):
-    yield from _traverse_ctes(scope)
+    prev_scope = None
+    union_scope_stack = [scope]
+    expression_stack = [scope.expression.right, scope.expression.left]
 
-    # The last scope to be yield should be the top most scope
-    left = None
-    for left in _traverse_scope(
-        scope.branch(
-            scope.expression.left,
-            outer_column_list=scope.outer_column_list,
+    while expression_stack:
+        expression = expression_stack.pop()
+        union_scope = union_scope_stack[-1]
+
+        new_scope = union_scope.branch(
+            expression,
+            outer_columns=union_scope.outer_columns,
             scope_type=ScopeType.UNION,
         )
-    ):
-        yield left
 
-    right = None
-    for right in _traverse_scope(
-        scope.branch(
-            scope.expression.right,
-            outer_column_list=scope.outer_column_list,
-            scope_type=ScopeType.UNION,
-        )
-    ):
-        yield right
+        if isinstance(expression, exp.Union):
+            yield from _traverse_ctes(new_scope)
 
-    scope.union_scopes = [left, right]
+            union_scope_stack.append(new_scope)
+            expression_stack.extend([expression.right, expression.left])
+            continue
+
+        for scope in _traverse_scope(new_scope):
+            yield scope
+
+        if prev_scope:
+            union_scope_stack.pop()
+            union_scope.union_scopes = [prev_scope, scope]
+            prev_scope = union_scope
+
+            yield union_scope
+        else:
+            prev_scope = scope
 
 
 def _traverse_ctes(scope):
@@ -595,7 +615,7 @@ def _traverse_ctes(scope):
             scope.branch(
                 cte.this,
                 cte_sources=sources,
-                outer_column_list=cte.alias_column_names,
+                outer_columns=cte.alias_column_names,
                 scope_type=ScopeType.CTE,
             )
         ):
@@ -690,7 +710,7 @@ def _traverse_tables(scope):
             scope.branch(
                 expression,
                 lateral_sources=lateral_sources,
-                outer_column_list=expression.alias_column_names,
+                outer_columns=expression.alias_column_names,
                 scope_type=scope_type,
             )
         ):
@@ -734,7 +754,7 @@ def _traverse_udtfs(scope):
                 scope.branch(
                     expression,
                     scope_type=ScopeType.DERIVED_TABLE,
-                    outer_column_list=expression.alias_column_names,
+                    outer_columns=expression.alias_column_names,
                 )
             ):
                 yield child_scope

@@ -278,6 +278,7 @@ class Postgres(Dialect):
             "REVOKE": TokenType.COMMAND,
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
+            "NAME": TokenType.NAME,
             "TEMP": TokenType.TEMPORARY,
             "CSTRING": TokenType.PSEUDO_TYPE,
             "OID": TokenType.OBJECT_IDENTIFIER,
@@ -484,6 +485,7 @@ class Postgres(Dialect):
                 ]
             ),
             exp.StrPosition: str_position_sql,
+            exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.StructExtract: struct_extract_sql,
             exp.Substring: _substring_sql,

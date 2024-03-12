@@ -1,4 +1,4 @@
-from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot import ParseError, UnsupportedError, exp, transpile
 from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
@@ -12,27 +12,12 @@ class TestPostgres(Validator):
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")
 
-        expr = parse_one(
-            "SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)", read="postgres"
-        )
+        expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
         unnest.assert_is(exp.Unnest)
 
         alter_table_only = """ALTER TABLE ONLY "Album" ADD CONSTRAINT "FK_AlbumArtistId" FOREIGN KEY ("ArtistId") REFERENCES "Artist" ("ArtistId") ON DELETE NO ACTION ON UPDATE NO ACTION"""
-        expr = parse_one(alter_table_only, read="postgres")
-
-        # Checks that user-defined types are parsed into DataType instead of Identifier
-        parse_one("CREATE TABLE t (a udt)", read="postgres").this.expressions[0].args[
-            "kind"
-        ].assert_is(exp.DataType)
-
-        # Checks that OID is parsed into a DataType (ObjectIdentifier)
-        self.assertIsInstance(
-            parse_one("CREATE TABLE public.propertydata (propertyvalue oid)", read="postgres").find(
-                exp.DataType
-            ),
-            exp.ObjectIdentifier,
-        )
+        expr = self.parse_one(alter_table_only)
 
         self.assertIsInstance(expr, exp.AlterTable)
         self.assertEqual(expr.sql(dialect="postgres"), alter_table_only)
@@ -105,9 +90,6 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "SELECT SUM(x) OVER a, SUM(y) OVER b FROM c WINDOW a AS (PARTITION BY d), b AS (PARTITION BY e)"
-        )
-        self.validate_identity(
-            "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"
         )
         self.validate_identity(
             "SELECT CASE WHEN SUBSTRING('abcdefg' FROM 1) IN ('ab') THEN 1 ELSE 0 END"
@@ -518,15 +500,6 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            "CREATE TABLE x (a UUID, b BYTEA)",
-            write={
-                "duckdb": "CREATE TABLE x (a UUID, b BLOB)",
-                "presto": "CREATE TABLE x (a UUID, b VARBINARY)",
-                "hive": "CREATE TABLE x (a UUID, b BINARY)",
-                "spark": "CREATE TABLE x (a UUID, b BINARY)",
-            },
-        )
-        self.validate_all(
             "SELECT * FROM x FETCH 1 ROW",
             write={
                 "postgres": "SELECT * FROM x FETCH FIRST 1 ROWS ONLY",
@@ -635,11 +608,30 @@ class TestPostgres(Validator):
                 "postgres": "x / y ^ z",
             },
         )
-
-        self.assertIsInstance(parse_one("id::UUID", read="postgres"), exp.Cast)
+        self.validate_all(
+            "CAST(x AS NAME)",
+            read={
+                "redshift": "CAST(x AS NAME)",
+            },
+            write={
+                "postgres": "CAST(x AS NAME)",
+                "redshift": "CAST(x AS NAME)",
+            },
+        )
+        self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)
 
     def test_ddl(self):
-        expr = parse_one("CREATE TABLE t (x INTERVAL day)", read="postgres")
+        # Checks that user-defined types are parsed into DataType instead of Identifier
+        self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(
+            exp.DataType
+        )
+
+        # Checks that OID is parsed into a DataType (ObjectIdentifier)
+        self.assertIsInstance(
+            self.parse_one("CREATE TABLE p.t (c oid)").find(exp.DataType), exp.ObjectIdentifier
+        )
+
+        expr = self.parse_one("CREATE TABLE t (x INTERVAL day)")
         cdef = expr.find(exp.ColumnDef)
         cdef.args["kind"].assert_is(exp.DataType)
         self.assertEqual(expr.sql(dialect="postgres"), "CREATE TABLE t (x INTERVAL DAY)")
@@ -666,6 +658,21 @@ class TestPostgres(Validator):
         self.validate_identity("TRUNCATE TABLE t1 RESTRICT")
         self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY CASCADE")
         self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY RESTRICT")
+        self.validate_identity(
+            "CREATE TABLE t (vid INT NOT NULL, CONSTRAINT ht_vid_nid_fid_idx EXCLUDE (INT4RANGE(vid, nid) WITH &&, INT4RANGE(fid, fid, '[]') WITH &&))"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (i INT, PRIMARY KEY (i), EXCLUDE USING gist(col varchar_pattern_ops DESC NULLS LAST WITH &&) WITH (sp1=1, sp2=2))"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (i INT, EXCLUDE USING btree(INT4RANGE(vid, nid, '[]') ASC NULLS FIRST WITH &&) INCLUDE (col1, col2))"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (i INT, EXCLUDE USING gin(col1 WITH &&, col2 WITH ||) USING INDEX TABLESPACE tablespace WHERE (id > 5))"
+        )
+        self.validate_identity(
+            "CREATE TABLE A (LIKE B INCLUDING CONSTRAINT INCLUDING COMPRESSION EXCLUDING COMMENTS)"
+        )
         self.validate_identity(
             "CREATE TABLE cust_part3 PARTITION OF customers FOR VALUES WITH (MODULUS 3, REMAINDER 2)"
         )
@@ -802,6 +809,16 @@ class TestPostgres(Validator):
             "TRUNCATE TABLE ONLY t1, t2, ONLY t3, t4, t5 RESTART IDENTITY CASCADE",
         )
 
+        self.validate_all(
+            "CREATE TABLE x (a UUID, b BYTEA)",
+            write={
+                "duckdb": "CREATE TABLE x (a UUID, b BLOB)",
+                "presto": "CREATE TABLE x (a UUID, b VARBINARY)",
+                "hive": "CREATE TABLE x (a UUID, b BINARY)",
+                "spark": "CREATE TABLE x (a UUID, b BINARY)",
+            },
+        )
+
         with self.assertRaises(ParseError):
             transpile("CREATE TABLE products (price DECIMAL CHECK price > 0)", read="postgres")
         with self.assertRaises(ParseError):
@@ -856,7 +873,7 @@ class TestPostgres(Validator):
             )
 
     def test_operator(self):
-        expr = parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3", read="postgres")
+        expr = self.parse_one("1 OPERATOR(+) 2 OPERATOR(*) 3")
 
         expr.left.assert_is(exp.Operator)
         expr.left.left.assert_is(exp.Literal)
@@ -925,8 +942,8 @@ class TestPostgres(Validator):
 
     def test_regexp_binary(self):
         """See https://github.com/tobymao/sqlglot/pull/2404 for details."""
-        self.assertIsInstance(parse_one("'thomas' ~ '.*thomas.*'", read="postgres"), exp.Binary)
-        self.assertIsInstance(parse_one("'thomas' ~* '.*thomas.*'", read="postgres"), exp.Binary)
+        self.assertIsInstance(self.parse_one("'thomas' ~ '.*thomas.*'"), exp.Binary)
+        self.assertIsInstance(self.parse_one("'thomas' ~* '.*thomas.*'"), exp.Binary)
 
     def test_unnest_json_array(self):
         trino_input = """

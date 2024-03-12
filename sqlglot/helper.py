@@ -317,8 +317,16 @@ def find_new_name(taken: t.Collection[str], base: str) -> str:
 
 
 def is_int(text: str) -> bool:
+    return is_type(text, int)
+
+
+def is_float(text: str) -> bool:
+    return is_type(text, float)
+
+
+def is_type(text: str, target_type: t.Type) -> bool:
     try:
-        int(text)
+        target_type(text)
         return True
     except ValueError:
         return False

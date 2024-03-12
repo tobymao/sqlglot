@@ -1,7 +1,7 @@
 import os
 import datetime
 import unittest
-from datetime import date
+from datetime import date, time
 from multiprocessing import Pool
 
 import duckdb
@@ -640,6 +640,7 @@ class TestExecutor(unittest.TestCase):
             ("CAST(1 AS TEXT)", "1"),
             ("CAST('1' AS LONG)", 1),
             ("CAST('1.1' AS FLOAT)", 1.1),
+            ("CAST('12:05:01' AS TIME)", time(12, 5, 1)),
             ("COALESCE(NULL)", None),
             ("COALESCE(NULL, NULL)", None),
             ("COALESCE(NULL, 'b')", "b"),

@@ -40,6 +40,12 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT TO_TIMESTAMP(123.4)").selects[0].assert_is(exp.Anonymous)
+        self.validate_identity("SELECT TO_TIME(x) FROM t")
+        self.validate_identity("SELECT TO_TIMESTAMP(x) FROM t")
+        self.validate_identity("SELECT TO_TIMESTAMP_NTZ(x) FROM t")
+        self.validate_identity("SELECT TO_TIMESTAMP_LTZ(x) FROM t")
+        self.validate_identity("SELECT TO_TIMESTAMP_TZ(x) FROM t")
         self.validate_identity("TO_DECIMAL(expr, fmt, precision, scale)")
         self.validate_identity("ALTER TABLE authors ADD CONSTRAINT c1 UNIQUE (id, email)")
         self.validate_identity("RM @parquet_stage", check_command_warning=True)
@@ -197,10 +203,6 @@ WHERE
         self.validate_identity(
             "SELECT {fn CEILING(5.3)}",
             "SELECT CEIL(5.3)",
-        )
-        self.validate_identity(
-            "SELECT TO_TIMESTAMP(x) FROM t",
-            "SELECT CAST(x AS TIMESTAMPNTZ) FROM t",
         )
         self.validate_identity(
             "CAST(x AS BYTEINT)",
@@ -632,9 +634,16 @@ WHERE
         self.validate_all(
             "SELECT TO_TIMESTAMP('2013-04-05 01:02:03')",
             write={
-                "bigquery": "SELECT PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', '2013-04-05 01:02:03')",
-                "snowflake": "SELECT TO_TIMESTAMP('2013-04-05 01:02:03', 'yyyy-mm-DD hh24:mi:ss')",
-                "spark": "SELECT TO_TIMESTAMP('2013-04-05 01:02:03', 'yyyy-MM-dd HH:mm:ss')",
+                "bigquery": "SELECT CAST('2013-04-05 01:02:03' AS DATETIME)",
+                "snowflake": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMPNTZ)",
+                "spark": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIME('12:05:00')",
+            write={
+                "bigquery": "SELECT CAST('12:05:00' AS TIME)",
+                "snowflake": "SELECT CAST('12:05:00' AS TIME)",
             },
         )
         self.validate_all(

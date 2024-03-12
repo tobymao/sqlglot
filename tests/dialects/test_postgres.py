@@ -609,10 +609,13 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            "SELECT pgc.relname::CHARACTER VARYING AS textin FROM pg_class pgc WHERE pgc.relname <> 'my_table'::name",
+            "CAST(x AS NAME)",
+            read={
+                "redshift": "CAST(x AS NAME)",
+            },
             write={
-                "postgres": "SELECT CAST(pgc.relname AS VARCHAR) AS textin FROM pg_class AS pgc WHERE pgc.relname <> CAST('my_table' AS NAME)",
-                "redshift": "SELECT CAST(pgc.relname AS VARCHAR) AS textin FROM pg_class AS pgc WHERE pgc.relname <> CAST('my_table' AS NAME)",
+                "postgres": "CAST(x AS NAME)",
+                "redshift": "CAST(x AS NAME)",
             },
         )
         self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)

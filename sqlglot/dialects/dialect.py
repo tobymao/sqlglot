@@ -112,9 +112,14 @@ class _Dialect(type):
 
         klass.INVERSE_ESCAPE_SEQUENCES = {v: k for k, v in klass.ESCAPE_SEQUENCES.items()}
 
-        klass.tokenizer_class = getattr(klass, "Tokenizer", Tokenizer)
-        klass.parser_class = getattr(klass, "Parser", Parser)
-        klass.generator_class = getattr(klass, "Generator", Generator)
+        base = seq_get(bases, 0)
+        base_tokenizer = (getattr(base, "tokenizer_class", Tokenizer),)
+        base_parser = (getattr(base, "parser_class", Parser),)
+        base_generator = (getattr(base, "generator_class", Generator),)
+
+        klass.tokenizer_class = getattr(klass, "Tokenizer", type("Tokenizer", base_tokenizer, {}))
+        klass.parser_class = getattr(klass, "Parser", type("Parser", base_parser, {}))
+        klass.generator_class = getattr(klass, "Generator", type("Generator", base_generator, {}))
 
         klass.QUOTE_START, klass.QUOTE_END = list(klass.tokenizer_class._QUOTES.items())[0]
         klass.IDENTIFIER_START, klass.IDENTIFIER_END = list(

@@ -27,7 +27,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     timestrtotime_sql,
 )
-from sqlglot.helper import flatten, seq_get
+from sqlglot.helper import flatten, seq_get, apply_index_offset
 from sqlglot.tokens import TokenType
 
 
@@ -571,3 +571,17 @@ class DuckDB(Dialect):
                 return rename_func("RANGE")(self, expression)
 
             return super().generateseries_sql(expression)
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            this = self.sql(expression, "this")
+            expressions = apply_index_offset(
+                expression.this,
+                expression.expressions,
+                self.dialect.INDEX_OFFSET - expression.args.get("offset", 0),
+            )
+            expressions_sql = ", ".join(self.sql(e) for e in expressions)
+
+            if isinstance(expression.this, exp.Array):
+                this = f"({this})"
+
+            return f"{this}[{expressions_sql}]"

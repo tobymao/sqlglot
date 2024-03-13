@@ -6621,7 +6621,7 @@ def subquery(
     **opts,
 ) -> Select:
     """
-    Build a subquery expression.
+    Build a subquery expression that's selected from.
 
     Example:
         >>> subquery('select x from tbl', 'bar').select('x').sql()

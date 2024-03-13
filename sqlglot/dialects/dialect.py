@@ -117,9 +117,13 @@ class _Dialect(type):
         base_parser = (getattr(base, "parser_class", Parser),)
         base_generator = (getattr(base, "generator_class", Generator),)
 
-        klass.tokenizer_class = getattr(klass, "Tokenizer", type("Tokenizer", base_tokenizer, {}))
-        klass.parser_class = getattr(klass, "Parser", type("Parser", base_parser, {}))
-        klass.generator_class = getattr(klass, "Generator", type("Generator", base_generator, {}))
+        klass.tokenizer_class = klass.__dict__.get(
+            "Tokenizer", type("Tokenizer", base_tokenizer, {})
+        )
+        klass.parser_class = klass.__dict__.get("Parser", type("Parser", base_parser, {}))
+        klass.generator_class = klass.__dict__.get(
+            "Generator", type("Generator", base_generator, {})
+        )
 
         klass.QUOTE_START, klass.QUOTE_END = list(klass.tokenizer_class._QUOTES.items())[0]
         klass.IDENTIFIER_START, klass.IDENTIFIER_END = list(

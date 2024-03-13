@@ -1762,6 +1762,7 @@ class Drop(Expression):
     arg_types = {
         "this": False,
         "kind": False,
+        "expressions": False,
         "exists": False,
         "temporary": False,
         "materialized": False,
@@ -2315,6 +2316,10 @@ class FreespaceProperty(Property):
 
 
 class GlobalProperty(Property):
+    arg_types = {}
+
+
+class IcebergProperty(Property):
     arg_types = {}
 
 
@@ -3838,6 +3843,18 @@ class DataType(Expression):
         XML = auto()
         YEAR = auto()
 
+    STRUCT_TYPES = {
+        Type.NESTED,
+        Type.OBJECT,
+        Type.STRUCT,
+    }
+
+    NESTED_TYPES = {
+        *STRUCT_TYPES,
+        Type.ARRAY,
+        Type.MAP,
+    }
+
     TEXT_TYPES = {
         Type.CHAR,
         Type.NCHAR,
@@ -4685,7 +4702,13 @@ class Case(Func):
 
 
 class Cast(Func):
-    arg_types = {"this": True, "to": True, "format": False, "safe": False}
+    arg_types = {
+        "this": True,
+        "to": True,
+        "format": False,
+        "safe": False,
+        "action": False,
+    }
 
     @property
     def name(self) -> str:

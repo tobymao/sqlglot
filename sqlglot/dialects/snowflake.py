@@ -91,14 +91,6 @@ def _build_if_from_nullifzero(args: t.List) -> exp.If:
     return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
 
 
-def _datatype_sql(self: Snowflake.Generator, expression: exp.DataType) -> str:
-    if expression.is_type("array"):
-        return "ARRAY"
-    elif expression.is_type("map"):
-        return "OBJECT"
-    return self.datatype_sql(expression)
-
-
 def _regexpilike_sql(self: Snowflake.Generator, expression: exp.RegexpILike) -> str:
     flag = expression.text("flag")
 
@@ -248,6 +240,25 @@ def _unqualify_unpivot_columns(expression: exp.Expression) -> exp.Expression:
     """
     if isinstance(expression, exp.Pivot) and expression.unpivot:
         expression = transforms.unqualify_columns(expression)
+
+    return expression
+
+
+def _flatten_structured_types_unless_iceberg(expression: exp.Expression) -> exp.Expression:
+    assert isinstance(expression, exp.Create)
+
+    def _flatten_structured_type(expression: exp.DataType) -> exp.DataType:
+        if expression.this in exp.DataType.NESTED_TYPES:
+            expression.set("expressions", None)
+        return expression
+
+    props = expression.args.get("properties")
+    if isinstance(expression.this, exp.Schema) and not (props and props.find(exp.IcebergProperty)):
+        for schema_expression in expression.this.expressions:
+            if isinstance(schema_expression, exp.ColumnDef):
+                column_type = schema_expression.kind
+                if isinstance(column_type, exp.DataType):
+                    column_type.transform(_flatten_structured_type, copy=False)
 
     return expression
 
@@ -707,6 +718,7 @@ class Snowflake(Dialect):
         LIMIT_ONLY_LITERALS = True
         JSON_KEY_VALUE_PAIR_SEP = ","
         INSERT_OVERWRITE = " OVERWRITE INTO"
+        STRUCT_DELIMITER = ("(", ")")
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -719,10 +731,10 @@ class Snowflake(Dialect):
                 "CONVERT_TIMEZONE", e.args.get("zone"), e.this
             ),
             exp.BitwiseXor: rename_func("BITXOR"),
+            exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DataType: _datatype_sql,
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
@@ -800,6 +812,8 @@ class Snowflake(Dialect):
 
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
+            exp.DataType.Type.NESTED: "OBJECT",
+            exp.DataType.Type.STRUCT: "OBJECT",
             exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 
@@ -813,6 +827,18 @@ class Snowflake(Dialect):
             exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def datatype_sql(self, expression: exp.DataType) -> str:
+            expressions = expression.expressions
+            if (
+                expressions
+                and expression.is_type(*exp.DataType.STRUCT_TYPES)
+                and any(isinstance(field_type, exp.DataType) for field_type in expressions)
+            ):
+                # The correct syntax is OBJECT [ (<key> <value_type [NOT NULL] [, ...]) ]
+                return "OBJECT"
+
+            return super().datatype_sql(expression)
 
         def tonumber_sql(self, expression: exp.ToNumber) -> str:
             return self.func(

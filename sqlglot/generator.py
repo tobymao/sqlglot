@@ -95,6 +95,7 @@ class Generator(metaclass=_Generator):
         exp.ExternalProperty: lambda *_: "EXTERNAL",
         exp.GlobalProperty: lambda *_: "GLOBAL",
         exp.HeapProperty: lambda *_: "HEAP",
+        exp.IcebergProperty: lambda *_: "ICEBERG",
         exp.InheritsProperty: lambda self, e: f"INHERITS ({self.expressions(e, flat=True)})",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
@@ -405,6 +406,7 @@ class Generator(metaclass=_Generator):
         exp.GlobalProperty: exp.Properties.Location.POST_CREATE,
         exp.HeapProperty: exp.Properties.Location.POST_WITH,
         exp.InheritsProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
         exp.InputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.IsolatedLoadingProperty: exp.Properties.Location.POST_NAME,
         exp.JournalProperty: exp.Properties.Location.POST_NAME,
@@ -1168,6 +1170,8 @@ class Generator(metaclass=_Generator):
 
     def drop_sql(self, expression: exp.Drop) -> str:
         this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
@@ -1175,9 +1179,7 @@ class Generator(metaclass=_Generator):
         cascade = " CASCADE" if expression.args.get("cascade") else ""
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
-        return (
-            f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{cascade}{constraints}{purge}"
-        )
+        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{expressions}{cascade}{constraints}{purge}"
 
     def except_sql(self, expression: exp.Except) -> str:
         return self.set_operations(expression)
@@ -2799,7 +2801,9 @@ class Generator(metaclass=_Generator):
         format_sql = f" FORMAT {format_sql}" if format_sql else ""
         to_sql = self.sql(expression, "to")
         to_sql = f" {to_sql}" if to_sql else ""
-        return f"{safe_prefix or ''}CAST({self.sql(expression, 'this')} AS{to_sql}{format_sql})"
+        action = self.sql(expression, "action")
+        action = f" {action}" if action else ""
+        return f"{safe_prefix or ''}CAST({self.sql(expression, 'this')} AS{to_sql}{format_sql}{action})"
 
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")

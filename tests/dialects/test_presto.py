@@ -63,7 +63,7 @@ class TestPresto(Validator):
                 "duckdb": "CAST(a AS INT[])",
                 "presto": "CAST(a AS ARRAY(INTEGER))",
                 "spark": "CAST(a AS ARRAY<INT>)",
-                "snowflake": "CAST(a AS ARRAY)",
+                "snowflake": "CAST(a AS ARRAY(INT))",
             },
         )
         self.validate_all(
@@ -82,18 +82,17 @@ class TestPresto(Validator):
                 "duckdb": "CAST([1, 2] AS BIGINT[])",
                 "presto": "CAST(ARRAY[1, 2] AS ARRAY(BIGINT))",
                 "spark": "CAST(ARRAY(1, 2) AS ARRAY<BIGINT>)",
-                "snowflake": "CAST([1, 2] AS ARRAY)",
+                "snowflake": "CAST([1, 2] AS ARRAY(BIGINT))",
             },
         )
         self.validate_all(
-            "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INT,INT))",
+            "CAST(MAP(ARRAY['key'], ARRAY[1]) AS MAP(VARCHAR, INT))",
             write={
-                "bigquery": "CAST(MAP([1], [1]) AS MAP<INT64, INT64>)",
-                "duckdb": "CAST(MAP([1], [1]) AS MAP(INT, INT))",
-                "presto": "CAST(MAP(ARRAY[1], ARRAY[1]) AS MAP(INTEGER, INTEGER))",
-                "hive": "CAST(MAP(1, 1) AS MAP<INT, INT>)",
-                "spark": "CAST(MAP_FROM_ARRAYS(ARRAY(1), ARRAY(1)) AS MAP<INT, INT>)",
-                "snowflake": "CAST(OBJECT_CONSTRUCT(1, 1) AS OBJECT)",
+                "duckdb": "CAST(MAP(['key'], [1]) AS MAP(TEXT, INT))",
+                "presto": "CAST(MAP(ARRAY['key'], ARRAY[1]) AS MAP(VARCHAR, INTEGER))",
+                "hive": "CAST(MAP('key', 1) AS MAP<STRING, INT>)",
+                "snowflake": "CAST(OBJECT_CONSTRUCT('key', 1) AS MAP(VARCHAR, INT))",
+                "spark": "CAST(MAP_FROM_ARRAYS(ARRAY('key'), ARRAY(1)) AS MAP<STRING, INT>)",
             },
         )
         self.validate_all(
@@ -104,7 +103,7 @@ class TestPresto(Validator):
                 "presto": "CAST(MAP(ARRAY['a', 'b', 'c'], ARRAY[ARRAY[1], ARRAY[2], ARRAY[3]]) AS MAP(VARCHAR, ARRAY(INTEGER)))",
                 "hive": "CAST(MAP('a', ARRAY(1), 'b', ARRAY(2), 'c', ARRAY(3)) AS MAP<STRING, ARRAY<INT>>)",
                 "spark": "CAST(MAP_FROM_ARRAYS(ARRAY('a', 'b', 'c'), ARRAY(ARRAY(1), ARRAY(2), ARRAY(3))) AS MAP<STRING, ARRAY<INT>>)",
-                "snowflake": "CAST(OBJECT_CONSTRUCT('a', [1], 'b', [2], 'c', [3]) AS OBJECT)",
+                "snowflake": "CAST(OBJECT_CONSTRUCT('a', [1], 'b', [2], 'c', [3]) AS MAP(VARCHAR, ARRAY(INT)))",
             },
         )
         self.validate_all(

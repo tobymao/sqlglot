@@ -571,3 +571,9 @@ class DuckDB(Dialect):
                 return rename_func("RANGE")(self, expression)
 
             return super().generateseries_sql(expression)
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            if isinstance(expression.this, exp.Array):
+                expression.this.replace(exp.paren(expression.this))
+
+            return super().bracket_sql(expression)

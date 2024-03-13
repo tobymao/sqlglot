@@ -699,7 +699,19 @@ class TestDuckDB(Validator):
                 },
             )
             self.validate_identity(
-                "[x.STRING_SPLIT(' ')[1] FOR x IN ['1', '2', 3] IF x.CONTAINS('1')]"
+                "[x.STRING_SPLIT(' ')[i] FOR x IN ['1', '2', 3] IF x.CONTAINS('1')]"
+            )
+            self.validate_identity(
+                """SELECT LIST_VALUE(1)[i]""",
+                """SELECT ([1])[i]""",
+            )
+            self.validate_identity(
+                """{'x': LIST_VALUE(1)[i]}""",
+                """{'x': ([1])[i]}""",
+            )
+            self.validate_identity(
+                """SELECT LIST_APPLY(RANGE(1, 4), i -> {'f1': LIST_VALUE(1, 2, 3)[i], 'f2': LIST_VALUE(1, 2, 3)[i]})""",
+                """SELECT LIST_APPLY(RANGE(1, 4), i -> {'f1': ([1, 2, 3])[i], 'f2': ([1, 2, 3])[i]})""",
             )
 
             self.assertEqual(
@@ -708,8 +720,6 @@ class TestDuckDB(Validator):
                     "WARNING:sqlglot:Applying array index offset (-1)",
                     "WARNING:sqlglot:Applying array index offset (1)",
                     "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (1)",
-                    "WARNING:sqlglot:Applying array index offset (-1)",
                     "WARNING:sqlglot:Applying array index offset (1)",
                 ],
             )

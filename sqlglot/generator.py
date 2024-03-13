@@ -1170,6 +1170,8 @@ class Generator(metaclass=_Generator):
 
     def drop_sql(self, expression: exp.Drop) -> str:
         this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
@@ -1177,9 +1179,7 @@ class Generator(metaclass=_Generator):
         cascade = " CASCADE" if expression.args.get("cascade") else ""
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
-        return (
-            f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{cascade}{constraints}{purge}"
-        )
+        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{expressions}{cascade}{constraints}{purge}"
 
     def except_sql(self, expression: exp.Except) -> str:
         return self.set_operations(expression)

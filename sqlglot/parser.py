@@ -1432,13 +1432,22 @@ class Parser(metaclass=_Parser):
         if not kind:
             return self._parse_as_command(start)
 
+        if_exists = exists or self._parse_exists()
+        table = self._parse_table_parts(
+            schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
+        )
+
+        if self._match(TokenType.L_PAREN, advance=False):
+            expressions = self._parse_wrapped_csv(self._parse_types)
+        else:
+            expressions = None
+
         return self.expression(
             exp.Drop,
             comments=start.comments,
-            exists=exists or self._parse_exists(),
-            this=self._parse_table(
-                schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
-            ),
+            exists=if_exists,
+            this=table,
+            expressions=expressions,
             kind=kind,
             temporary=temporary,
             materialized=materialized,

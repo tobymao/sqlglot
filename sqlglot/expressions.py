@@ -1762,6 +1762,7 @@ class Drop(Expression):
     arg_types = {
         "this": False,
         "kind": False,
+        "expressions": False,
         "exists": False,
         "temporary": False,
         "materialized": False,

@@ -663,6 +663,13 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SELECT CAST(STRUCT(1) AS STRUCT<INT64>)",
+            write={
+                "bigquery": "SELECT CAST(STRUCT(1) AS STRUCT<INT64>)",
+                "snowflake": "SELECT CAST(OBJECT_CONSTRUCT('_0', 1) AS OBJECT)",
+            },
+        )
+        self.validate_all(
             "cast(x as date format 'MM/DD/YYYY')",
             write={
                 "bigquery": "PARSE_DATE('%m/%d/%Y', x)",

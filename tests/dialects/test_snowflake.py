@@ -40,6 +40,11 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
+        self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
+        self.validate_identity("SELECT CAST([1, 2, 3] AS ARRAY(INT))")
+        self.validate_identity("SELECT CAST(obj AS OBJECT(x CHAR) RENAME FIELDS)")
+        self.validate_identity("SELECT CAST(obj AS OBJECT(x CHAR, y VARCHAR) ADD FIELDS)")
         self.validate_identity("SELECT TO_TIMESTAMP(123.4)").selects[0].assert_is(exp.Anonymous)
         self.validate_identity("SELECT TO_TIME(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP(x) FROM t")
@@ -1069,6 +1074,9 @@ WHERE
         self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity(
+            "DROP function my_udf (OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN)))"
+        )
+        self.validate_identity(
             "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))"
         )
         self.validate_identity(
@@ -1082,6 +1090,17 @@ WHERE
         )
         self.validate_identity(
             "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL, PRIMARY KEY (ID), FOREIGN KEY (CITY_CODE) REFERENCES EXAMPLE_DB.DEMO.CITIES (CITY_CODE))"
+        )
+        self.validate_identity(
+            "CREATE ICEBERG TABLE my_iceberg_table (amount ARRAY(INT)) CATALOG='SNOWFLAKE' EXTERNAL_VOLUME='my_external_volume' BASE_LOCATION='my/relative/path/from/extvol'"
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE FUNCTION my_udf(location OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN))) RETURNS VARCHAR AS $$ SELECT 'foo' $$",
+            "CREATE OR REPLACE FUNCTION my_udf(location OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN))) RETURNS VARCHAR AS ' SELECT \\'foo\\' '",
+        )
+        self.validate_identity(
+            "CREATE OR REPLACE FUNCTION my_udtf(foo BOOLEAN) RETURNS TABLE(col1 ARRAY(INT)) AS $$ WITH t AS (SELECT CAST([1, 2, 3] AS ARRAY(INT)) AS c) SELECT c FROM t $$",
+            "CREATE OR REPLACE FUNCTION my_udtf(foo BOOLEAN) RETURNS TABLE (col1 ARRAY(INT)) AS ' WITH t AS (SELECT CAST([1, 2, 3] AS ARRAY(INT)) AS c) SELECT c FROM t '",
         )
 
         self.validate_all(

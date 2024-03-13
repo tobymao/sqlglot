@@ -144,6 +144,7 @@ class Parser(metaclass=_Parser):
 
     STRUCT_TYPE_TOKENS = {
         TokenType.NESTED,
+        TokenType.OBJECT,
         TokenType.STRUCT,
     }
 
@@ -748,6 +749,7 @@ class Parser(metaclass=_Parser):
         "FREESPACE": lambda self: self._parse_freespace(),
         "GLOBAL": lambda self: self.expression(exp.GlobalProperty),
         "HEAP": lambda self: self.expression(exp.HeapProperty),
+        "ICEBERG": lambda self: self.expression(exp.IcebergProperty),
         "IMMUTABLE": lambda self: self.expression(
             exp.StabilityProperty, this=exp.Literal.string("IMMUTABLE")
         ),
@@ -1017,6 +1019,8 @@ class Parser(metaclass=_Parser):
     }
 
     USABLES: OPTIONS_TYPE = dict.fromkeys(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"), tuple())
+
+    CAST_ACTIONS: OPTIONS_TYPE = dict.fromkeys(("RENAME", "ADD"), ("FIELDS",))
 
     INSERT_ALTERNATIVES = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
@@ -1428,13 +1432,22 @@ class Parser(metaclass=_Parser):
         if not kind:
             return self._parse_as_command(start)
 
+        if_exists = exists or self._parse_exists()
+        table = self._parse_table_parts(
+            schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
+        )
+
+        if self._match(TokenType.L_PAREN, advance=False):
+            expressions = self._parse_wrapped_csv(self._parse_types)
+        else:
+            expressions = None
+
         return self.expression(
             exp.Drop,
             comments=start.comments,
-            exists=exists or self._parse_exists(),
-            this=self._parse_table(
-                schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
-            ),
+            exists=if_exists,
+            this=table,
+            expressions=expressions,
             kind=kind,
             temporary=temporary,
             materialized=materialized,
@@ -4860,7 +4873,12 @@ class Parser(metaclass=_Parser):
                 to = self.expression(exp.CharacterSet, this=self._parse_var_or_string())
 
         return self.expression(
-            exp.Cast if strict else exp.TryCast, this=this, to=to, format=fmt, safe=safe
+            exp.Cast if strict else exp.TryCast,
+            this=this,
+            to=to,
+            format=fmt,
+            safe=safe,
+            action=self._parse_var_from_options(self.CAST_ACTIONS, raise_unmatched=False),
         )
 
     def _parse_string_agg(self) -> exp.Expression:

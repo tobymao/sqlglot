@@ -40,6 +40,11 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
+        self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
+        self.validate_identity("SELECT CAST([1, 2, 3] AS ARRAY(INT))")
+        self.validate_identity("SELECT CAST(obj AS OBJECT(x CHAR) RENAME FIELDS)")
+        self.validate_identity("SELECT CAST(obj AS OBJECT(x CHAR, y VARCHAR) ADD FIELDS)")
         self.validate_identity("SELECT TO_TIMESTAMP(123.4)").selects[0].assert_is(exp.Anonymous)
         self.validate_identity("SELECT TO_TIME(x) FROM t")
         self.validate_identity("SELECT TO_TIMESTAMP(x) FROM t")
@@ -1082,6 +1087,9 @@ WHERE
         )
         self.validate_identity(
             "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL, PRIMARY KEY (ID), FOREIGN KEY (CITY_CODE) REFERENCES EXAMPLE_DB.DEMO.CITIES (CITY_CODE))"
+        )
+        self.validate_identity(
+            "CREATE ICEBERG TABLE my_iceberg_table (amount ARRAY(INT)) CATALOG='SNOWFLAKE' EXTERNAL_VOLUME='my_external_volume' BASE_LOCATION='my/relative/path/from/extvol'"
         )
 
         self.validate_all(

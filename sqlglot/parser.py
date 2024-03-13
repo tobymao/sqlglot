@@ -4316,7 +4316,7 @@ class Parser(metaclass=_Parser):
 
                 if not isinstance(e, exp.PropertyEQ):
                     e = self.expression(
-                        exp.PropertyEQ, this=exp.to_identifier(e.name), expression=e.expression
+                        exp.PropertyEQ, this=exp.to_identifier(e.this.name), expression=e.expression
                     )
 
                 if isinstance(e.this, exp.Column):
@@ -4735,9 +4735,9 @@ class Parser(metaclass=_Parser):
             lambda: self._parse_bracket_key_value(is_map=bracket_kind == TokenType.L_BRACE)
         )
 
-        if not self._match(TokenType.R_BRACKET) and bracket_kind == TokenType.L_BRACKET:
+        if bracket_kind == TokenType.L_BRACKET and not self._match(TokenType.R_BRACKET):
             self.raise_error("Expected ]")
-        elif not self._match(TokenType.R_BRACE) and bracket_kind == TokenType.L_BRACE:
+        elif bracket_kind == TokenType.L_BRACE and not self._match(TokenType.R_BRACE):
             self.raise_error("Expected }")
 
         # https://duckdb.org/docs/sql/data_types/struct.html#creating-structs

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp, generator, parser, tokens
+from sqlglot import exp, parser, tokens
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import TokenType
 
@@ -104,6 +104,3 @@ class PRQL(Dialect):
             return self.expression(
                 exp.From, comments=self._prev_comments, this=self._parse_table(joins=joins)
             )
-
-    class Generator(generator.Generator):
-        pass

@@ -614,6 +614,8 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("LEAST(a, b)"), exp.Least)
         self.assertIsInstance(parse_one("LIKE(x, y)"), exp.Like)
         self.assertIsInstance(parse_one("LN(a)"), exp.Ln)
+        self.assertIsInstance(parse_one("LOG(b, n)"), exp.Log)
+        self.assertIsInstance(parse_one("LOG2(a)"), exp.Log)
         self.assertIsInstance(parse_one("LOG10(a)"), exp.Log)
         self.assertIsInstance(parse_one("MAX(a)"), exp.Max)
         self.assertIsInstance(parse_one("MIN(a)"), exp.Min)

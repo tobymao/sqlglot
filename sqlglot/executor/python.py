@@ -398,7 +398,7 @@ def _lambda_sql(self, e: exp.Lambda) -> str:
         lambda n: (
             exp.var(n.name) if isinstance(n, exp.Identifier) and n.name.lower() in names else n
         )
-    )
+    ).assert_is(exp.Lambda)
 
     return f"lambda {self.expressions(e, flat=True)}: {self.sql(e, 'this')}"
 

@@ -536,7 +536,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(
             {
                 node.sql()
-                for node, *_ in walk_in_scope(expression.find(exp.Where))
+                for node in walk_in_scope(expression.find(exp.Where))
                 if isinstance(node, exp.Column)
             },
             {"s.b"},

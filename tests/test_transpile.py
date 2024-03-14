@@ -715,7 +715,10 @@ FROM base""",
 
             self.validate("x[x - 1]", "x[x - 1]", write="presto", identity=False)
             self.validate(
-                "x[array_size(y) - 1]", "x[CARDINALITY(y) - 1 + 1]", write="presto", identity=False
+                "x[array_size(y) - 1]",
+                "x[(CARDINALITY(y) - 1) + 1]",
+                write="presto",
+                identity=False,
             )
             self.validate("x[3 - 1]", "x[3]", write="presto", identity=False)
             self.validate("MAP(a, b)[0]", "MAP(a, b)[0]", write="presto", identity=False)

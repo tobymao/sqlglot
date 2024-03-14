@@ -464,7 +464,7 @@ def ensure_bools(expression: exp.Expression) -> exp.Expression:
         ):
             node.replace(node.neq(0))
 
-    for node, *_ in expression.walk():
+    for node in expression.walk():
         ensure_bools(node, _ensure_bool)
 
     return expression

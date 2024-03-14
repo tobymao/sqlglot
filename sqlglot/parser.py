@@ -3254,9 +3254,6 @@ class Parser(metaclass=_Parser):
     def _parse_pivots(self) -> t.Optional[t.List[exp.Pivot]]:
         return list(iter(self._parse_pivot, None)) or None
 
-    def _parse_joins(self) -> t.Optional[t.List[exp.Join]]:
-        return list(iter(self._parse_join, None)) or None
-
     # https://duckdb.org/docs/sql/statements/pivot
     def _parse_simplified_pivot(self) -> exp.Pivot:
         def _parse_on() -> t.Optional[exp.Expression]:
@@ -4127,11 +4124,20 @@ class Parser(metaclass=_Parser):
             else:
                 field = self._parse_field(anonymous_func=True, any_token=True)
 
-            if isinstance(field, exp.Func):
+            if isinstance(field, exp.Func) and this:
                 # bigquery allows function calls like x.y.count(...)
                 # SAFE.SUBSTR(...)
                 # https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-reference#function_call_rules
-                this = self._replace_columns_with_dots(this)
+                this = exp.replace_tree(
+                    this,
+                    lambda n: (
+                        self.expression(exp.Dot, this=n.args.get("table"), expression=n.this)
+                        if n.table
+                        else n.this
+                    )
+                    if isinstance(n, exp.Column)
+                    else n,
+                )
 
             if op:
                 this = op(self, this, field)
@@ -6062,26 +6068,6 @@ class Parser(metaclass=_Parser):
             self._retreat(index)
 
         return True
-
-    @t.overload
-    def _replace_columns_with_dots(self, this: exp.Expression) -> exp.Expression: ...
-
-    @t.overload
-    def _replace_columns_with_dots(
-        self, this: t.Optional[exp.Expression]
-    ) -> t.Optional[exp.Expression]: ...
-
-    def _replace_columns_with_dots(self, this):
-        if isinstance(this, exp.Dot):
-            exp.replace_children(this, self._replace_columns_with_dots)
-        elif isinstance(this, exp.Column):
-            exp.replace_children(this, self._replace_columns_with_dots)
-            table = this.args.get("table")
-            this = (
-                self.expression(exp.Dot, this=table, expression=this.this) if table else this.this
-            )
-
-        return this
 
     def _replace_lambda(
         self, node: t.Optional[exp.Expression], lambda_variables: t.Set[str]

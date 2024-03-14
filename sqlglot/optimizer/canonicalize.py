@@ -16,16 +16,17 @@ def canonicalize(expression: exp.Expression) -> exp.Expression:
     Args:
         expression: The expression to canonicalize.
     """
-    exp.replace_children(expression, canonicalize)
 
-    expression = add_text_to_concat(expression)
-    expression = replace_date_funcs(expression)
-    expression = coerce_type(expression)
-    expression = remove_redundant_casts(expression)
-    expression = ensure_bools(expression, _replace_int_predicate)
-    expression = remove_ascending_order(expression)
+    def _canonicalize(expression: exp.Expression) -> exp.Expression:
+        expression = add_text_to_concat(expression)
+        expression = replace_date_funcs(expression)
+        expression = coerce_type(expression)
+        expression = remove_redundant_casts(expression)
+        expression = ensure_bools(expression, _replace_int_predicate)
+        expression = remove_ascending_order(expression)
+        return expression
 
-    return expression
+    return exp.replace_tree(expression, _canonicalize)
 
 
 def add_text_to_concat(node: exp.Expression) -> exp.Expression:
@@ -169,7 +170,7 @@ def _replace_cast(node: exp.Expression, to: exp.DataType.Type) -> None:
 # with y as (select true as x) select x = 0 FROM y -- illegal presto query
 def _replace_int_predicate(expression: exp.Expression) -> None:
     if isinstance(expression, exp.Coalesce):
-        for _, child in expression.iter_expressions():
+        for child in expression.iter_expressions():
             _replace_int_predicate(child)
     elif expression.type and expression.type.this in exp.DataType.INTEGER_TYPES:
         expression.replace(expression.neq(0))

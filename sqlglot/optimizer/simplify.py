@@ -63,14 +63,14 @@ def simplify(
             group.meta[FINAL] = True
 
             for e in expression.selects:
-                for node, *_ in e.walk():
+                for node in e.walk():
                     if node in groups:
                         e.meta[FINAL] = True
                         break
 
             having = expression.args.get("having")
             if having:
-                for node, *_ in having.walk():
+                for node in having.walk():
                     if node in groups:
                         having.meta[FINAL] = True
                         break
@@ -431,7 +431,7 @@ def propagate_constants(expression, root=True):
         and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
     ):
         constant_mapping = {}
-        for expr, *_ in walk_in_scope(expression, prune=lambda node, *_: isinstance(node, exp.If)):
+        for expr in walk_in_scope(expression, prune=lambda node: isinstance(node, exp.If)):
             if isinstance(expr, exp.EQ):
                 l, r = expr.left, expr.right
 

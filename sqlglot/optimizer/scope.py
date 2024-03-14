@@ -119,7 +119,7 @@ class Scope:
         self._raw_columns = []
         self._join_hints = []
 
-        for node, parent, _ in self.walk(bfs=False):
+        for node in self.walk(bfs=False):
             if node is self.expression:
                 continue
 
@@ -133,7 +133,9 @@ class Scope:
                 self._udtfs.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
-            elif _is_derived_table(node) and isinstance(parent, (exp.From, exp.Join, exp.Subquery)):
+            elif _is_derived_table(node) and isinstance(
+                node.parent, (exp.From, exp.Join, exp.Subquery)
+            ):
                 self._derived_tables.append(node)
             elif isinstance(node, exp.UNWRAPPED_QUERIES):
                 self._subqueries.append(node)
@@ -786,18 +788,21 @@ def walk_in_scope(expression, bfs=True, prune=None):
     # Whenever we set it to True, we exclude a subtree from traversal.
     crossed_scope_boundary = False
 
-    for node, parent, key in expression.walk(
-        bfs=bfs, prune=lambda *args: crossed_scope_boundary or (prune and prune(*args))
+    for node in expression.walk(
+        bfs=bfs, prune=lambda n: crossed_scope_boundary or (prune and prune(n))
     ):
         crossed_scope_boundary = False
 
-        yield node, parent, key
+        yield node
 
         if node is expression:
             continue
         if (
             isinstance(node, exp.CTE)
-            or (_is_derived_table(node) and isinstance(parent, (exp.From, exp.Join, exp.Subquery)))
+            or (
+                _is_derived_table(node)
+                and isinstance(node.parent, (exp.From, exp.Join, exp.Subquery))
+            )
             or isinstance(node, exp.UDTF)
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):
@@ -825,7 +830,7 @@ def find_all_in_scope(expression, expression_types, bfs=True):
     Yields:
         exp.Expression: nodes
     """
-    for expression, *_ in walk_in_scope(expression, bfs=bfs):
+    for expression in walk_in_scope(expression, bfs=bfs):
         if isinstance(expression, tuple(ensure_collection(expression_types))):
             yield expression
 

@@ -2883,7 +2883,7 @@ class Generator(metaclass=_Generator):
             # Remove db from tables
             expression = expression.transform(
                 lambda n: exp.table_(n.this) if isinstance(n, exp.Table) else n
-            )
+            ).assert_is(exp.RenameTable)
         this = self.sql(expression, "this")
         return f"RENAME TO {this}"
 

@@ -119,7 +119,9 @@ class DataFrame:
                 self._create_hash_from_expression(cte.this), quoted=old_name_id.args["quoted"]
             )
             replacement_mapping[old_name_id] = new_hashed_id
-            expression = expression.transform(replace_id_value, replacement_mapping)
+            expression = expression.transform(replace_id_value, replacement_mapping).assert_is(
+                exp.Select
+            )
         return expression
 
     def _create_cte_from_expression(
@@ -304,7 +306,9 @@ class DataFrame:
         replacement_mapping: t.Dict[exp.Identifier, exp.Identifier] = {}
 
         for expression_type, select_expression in select_expressions:
-            select_expression = select_expression.transform(replace_id_value, replacement_mapping)
+            select_expression = select_expression.transform(
+                replace_id_value, replacement_mapping
+            ).assert_is(exp.Select)
             if optimize:
                 select_expression = t.cast(
                     exp.Select, self.spark._optimize(select_expression, dialect=dialect)

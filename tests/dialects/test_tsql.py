@@ -273,6 +273,18 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
+            "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY",
+            read={
+                "duckdb": "SELECT * FROM t LIMIT 10 OFFSET 5",
+                "sqlite": "SELECT * FROM t LIMIT 5, 10",
+                "tsql": "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY",
+            },
+            write={
+                "duckdb": "SELECT * FROM t ORDER BY (SELECT NULL) NULLS FIRST LIMIT 10 OFFSET 5",
+                "sqlite": "SELECT * FROM t ORDER BY (SELECT NULL) LIMIT 10 OFFSET 5",
+            },
+        )
+        self.validate_all(
             "SELECT CAST([a].[b] AS SMALLINT) FROM foo",
             write={
                 "tsql": "SELECT CAST([a].[b] AS SMALLINT) FROM foo",

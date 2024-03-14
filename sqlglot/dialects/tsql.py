@@ -328,6 +328,21 @@ def _json_extract_sql(
     return self.func("ISNULL", json_query, json_value)
 
 
+def _replace_limit_with_offset_fetch(expression: exp.Expression) -> exp.Expression:
+    limit = expression.args.get("limit")
+    if (
+        isinstance(expression, exp.Select)
+        and isinstance(limit, exp.Limit)
+        and expression.args.get("offset")
+    ):
+        limit.replace(exp.Fetch(direction="NEXT", count=limit.expression))
+
+        if not expression.args.get("order"):
+            expression.order_by(exp.select(exp.null()).subquery(), copy=False)
+
+    return expression
+
+
 class TSQL(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
@@ -785,6 +800,7 @@ class TSQL(Dialect):
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,
+                    _replace_limit_with_offset_fetch,
                 ]
             ),
             exp.StrPosition: lambda self, e: self.func(

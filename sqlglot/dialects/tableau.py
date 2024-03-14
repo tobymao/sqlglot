@@ -5,6 +5,8 @@ from sqlglot.dialects.dialect import Dialect, rename_func
 
 
 class Tableau(Dialect):
+    LOG_BASE_FIRST = False
+
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = [("[", "]")]
         QUOTES = ["'", '"']

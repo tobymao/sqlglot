@@ -3109,8 +3109,13 @@ class Generator(metaclass=_Generator):
         this = expression.this
         expr = expression.expression
 
-        if not self.dialect.LOG_BASE_FIRST:
+        if self.dialect.LOG_BASE_FIRST is False:
             this, expr = expr, this
+        elif self.dialect.LOG_BASE_FIRST is None and expr:
+            if this.name in ("2", "10"):
+                return self.func(f"LOG{this.name}", expr)
+
+            self.unsupported(f"Unsupported logarithm with base {self.sql(this)}")
 
         return self.func("LOG", this, expr)
 

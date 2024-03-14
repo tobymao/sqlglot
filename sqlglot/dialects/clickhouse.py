@@ -49,6 +49,7 @@ class ClickHouse(Dialect):
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
+    LOG_BASE_FIRST: t.Optional[bool] = None
 
     ESCAPE_SEQUENCES = {
         "\\0": "\0",

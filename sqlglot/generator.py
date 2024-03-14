@@ -2125,23 +2125,12 @@ class Generator(metaclass=_Generator):
         return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}"
 
     def query_modifiers(self, expression: exp.Expression, *sqls: str) -> str:
-        limit: t.Optional[exp.Fetch | exp.Limit] = expression.args.get("limit")
-
-        # If the limit is generated as TOP, we need to ensure it's not generated twice
-        with_offset_limit_modifiers = not isinstance(limit, exp.Limit) or not self.LIMIT_IS_TOP
+        limit = expression.args.get("limit")
 
         if self.LIMIT_FETCH == "LIMIT" and isinstance(limit, exp.Fetch):
             limit = exp.Limit(expression=exp.maybe_copy(limit.args.get("count")))
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
-
-        fetch = isinstance(limit, exp.Fetch)
-
-        offset_limit_modifiers = (
-            self.offset_limit_modifiers(expression, fetch, limit)
-            if with_offset_limit_modifiers
-            else []
-        )
 
         options = self.expressions(expression, key="options")
         if options:
@@ -2159,7 +2148,7 @@ class Generator(metaclass=_Generator):
             self.sql(expression, "having"),
             *[gen(self, expression) for gen in self.AFTER_HAVING_MODIFIER_TRANSFORMS.values()],
             self.sql(expression, "order"),
-            *offset_limit_modifiers,
+            *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
             options,
             sep="",
@@ -2190,12 +2179,13 @@ class Generator(metaclass=_Generator):
         distinct = self.sql(expression, "distinct")
         distinct = f" {distinct}" if distinct else ""
         kind = self.sql(expression, "kind")
+
         limit = expression.args.get("limit")
-        top = (
-            self.limit_sql(limit, top=True)
-            if isinstance(limit, exp.Limit) and self.LIMIT_IS_TOP
-            else ""
-        )
+        if isinstance(limit, exp.Limit) and self.LIMIT_IS_TOP:
+            top = self.limit_sql(limit, top=True)
+            limit.pop()
+        else:
+            top = ""
 
         expressions = self.expressions(expression)
 

@@ -815,7 +815,9 @@ class TSQL(Dialect):
 
             if expression.args.get("offset"):
                 if not expression.args.get("order"):
-                    # ORDER BY is required in order to use OFFSET in a query
+                    # ORDER BY is required in order to use OFFSET in a query, so we use
+                    # a noop order by, since we don't really care about the order.
+                    # See: https://www.microsoftpressstore.com/articles/article.aspx?p=2314819
                     expression.order_by(exp.select(exp.null()).subquery(), copy=False)
 
                 if isinstance(limit, exp.Limit):

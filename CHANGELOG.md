@@ -1,6 +1,33 @@
 Changelog
 =========
 
+## [v22.5.0] - 2024-03-14
+### :boom: BREAKING CHANGES
+- due to [`2b4952e`](https://github.com/tobymao/sqlglot/commit/2b4952eb151b3f20739803e7bf443b56da457b1f) - desugar LOG2 and LOG10 by converting them into LOG *(PR [#3139](https://github.com/tobymao/sqlglot/pull/3139) by [@georgesittas](https://github.com/georgesittas))*:
+
+  desugar LOG2 and LOG10 by converting them into LOG (#3139)
+
+
+### :sparkles: New Features
+- [`c01ff44`](https://github.com/tobymao/sqlglot/commit/c01ff44b036526807624ba2d1f4b247081e8c56f) - **snowflake**: Add TO_TIMESTAMP test and update env.py *(PR [#3130](https://github.com/tobymao/sqlglot/pull/3130) by [@fool1280](https://github.com/fool1280))*
+- [`8526c8e`](https://github.com/tobymao/sqlglot/commit/8526c8e30376c0826ab31a0a342656d5ebced662) - **tsql**: transpile LIMIT with OFFSET properly *(PR [#3145](https://github.com/tobymao/sqlglot/pull/3145) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3144](https://github.com/tobymao/sqlglot/issues/3144) opened by [@iMayK](https://github.com/iMayK)*
+
+### :bug: Bug Fixes
+- [`a9db8ff`](https://github.com/tobymao/sqlglot/commit/a9db8ff6ac528da8c3a7a66f0b80a3f0d1a0ed7e) - don't mutate parent nested classes if undefined in a dialect *(PR [#3134](https://github.com/tobymao/sqlglot/pull/3134) by [@georgesittas](https://github.com/georgesittas))*
+- [`d6bac3e`](https://github.com/tobymao/sqlglot/commit/d6bac3e54c6445c52daa04015b1b2e4a6933e682) - **duckdb**: Slice + Array bug *(PR [#3137](https://github.com/tobymao/sqlglot/pull/3137) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3136](https://github.com/tobymao/sqlglot/issues/3136) opened by [@cpcloud](https://github.com/cpcloud)*
+- [`230a845`](https://github.com/tobymao/sqlglot/commit/230a845d82576b24ef8a3bbcc83677ed637e8247) - optimizer bugs *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`2b4952e`](https://github.com/tobymao/sqlglot/commit/2b4952eb151b3f20739803e7bf443b56da457b1f) - desugar LOG2 and LOG10 by converting them into LOG *(PR [#3139](https://github.com/tobymao/sqlglot/pull/3139) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3138](https://github.com/tobymao/sqlglot/issues/3138) opened by [@baruchoxman](https://github.com/baruchoxman)*
+
+### :wrench: Chores
+- [`ebbf5a1`](https://github.com/tobymao/sqlglot/commit/ebbf5a14da12b442bff84d93f8542d4322e0811d) - copy sqlglot.svg in docs/ to also display logo in website *(PR [#3147](https://github.com/tobymao/sqlglot/pull/3147) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3146](https://github.com/tobymao/sqlglot/issues/3146) opened by [@lostmygithubaccount](https://github.com/lostmygithubaccount)*
+
+
 ## [v22.4.0] - 2024-03-12
 ### :boom: BREAKING CHANGES
 - due to [`b1c8cac`](https://github.com/tobymao/sqlglot/commit/b1c8cace6ed3e58657726fa5617a6df63d91f737) - traverse union scopes iteratively *(PR [#3112](https://github.com/tobymao/sqlglot/pull/3112) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2913,3 +2940,4 @@ Changelog
 [v22.3.0]: https://github.com/tobymao/sqlglot/compare/v22.2.1...v22.3.0
 [v22.3.1]: https://github.com/tobymao/sqlglot/compare/v22.3.0...v22.3.1
 [v22.4.0]: https://github.com/tobymao/sqlglot/compare/v22.3.1...v22.4.0
+[v22.5.0]: https://github.com/tobymao/sqlglot/compare/v22.4.0...v22.5.0

@@ -2059,6 +2059,8 @@ SELECT
         )
 
     def test_logarithm(self):
+        self.validate_identity("LOG10(a)", "LOG(10, a)")
+
         self.validate_all(
             "LOG(x)",
             read={

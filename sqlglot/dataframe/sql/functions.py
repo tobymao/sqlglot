@@ -184,7 +184,7 @@ def floor(col: ColumnOrName) -> Column:
 
 
 def log10(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(col, expression.Log10)
+    return Column.invoke_expression_over_column(lit(10), expression.Log, expression=col)
 
 
 def log1p(col: ColumnOrName) -> Column:
@@ -192,7 +192,7 @@ def log1p(col: ColumnOrName) -> Column:
 
 
 def log2(col: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(col, expression.Log2)
+    return Column.invoke_expression_over_column(lit(2), expression.Log, expression=col)
 
 
 def log(arg1: t.Union[ColumnOrName, float], arg2: t.Optional[ColumnOrName] = None) -> Column:

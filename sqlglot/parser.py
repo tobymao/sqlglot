@@ -119,6 +119,12 @@ class Parser(metaclass=_Parser):
         "JSON_EXTRACT_PATH_TEXT": build_extract_json_with_path(exp.JSONExtractScalar),
         "LIKE": build_like,
         "LOG": build_logarithm,
+        "LOG2": lambda args, dialect: build_logarithm(
+            [exp.Literal.number(2), seq_get(args, 0)], dialect
+        ),
+        "LOG10": lambda args, dialect: build_logarithm(
+            [exp.Literal.number(10), seq_get(args, 0)], dialect
+        ),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),

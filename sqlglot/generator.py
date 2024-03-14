@@ -2129,7 +2129,7 @@ class Generator(metaclass=_Generator):
 
         if self.LIMIT_FETCH == "LIMIT" and isinstance(limit, exp.Fetch):
             limit = exp.Limit(expression=exp.maybe_copy(limit.args.get("count")))
-        if self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
+        elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 
         options = self.expressions(expression, key="options")

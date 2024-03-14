@@ -7,6 +7,7 @@ from sqlglot.dialects.presto import Presto
 
 class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
+    LOG_BASE_FIRST = True
 
     class Generator(Presto.Generator):
         TRANSFORMS = {

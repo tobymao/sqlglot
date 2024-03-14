@@ -2059,6 +2059,44 @@ SELECT
         )
 
     def test_logarithm(self):
+        for base in (2, 10):
+            with self.subTest(f"Transpiling LOG base {base}"):
+                self.validate_all(
+                    f"LOG({base}, a)",
+                    read={
+                        "": f"LOG{base}(a)",
+                        "bigquery": f"LOG{base}(a)",
+                        "clickhouse": f"LOG{base}(a)",
+                        "databricks": f"LOG{base}(a)",
+                        "duckdb": f"LOG{base}(a)",
+                        "mysql": f"LOG{base}(a)",
+                        "postgres": f"LOG{base}(a)",
+                        "presto": f"LOG{base}(a)",
+                        "spark": f"LOG{base}(a)",
+                        "sqlite": f"LOG{base}(a)",
+                        "trino": f"LOG{base}(a)",
+                        "tsql": f"LOG{base}(a)",
+                    },
+                    write={
+                        "bigquery": f"LOG(a, {base})",
+                        "clickhouse": f"LOG{base}(a)",
+                        "duckdb": f"LOG({base}, a)",
+                        "mysql": f"LOG({base}, a)",
+                        "oracle": f"LOG({base}, a)",
+                        "postgres": f"LOG({base}, a)",
+                        "presto": f"LOG{base}(a)",
+                        "redshift": f"LOG({base}, a)",
+                        "snowflake": f"LOG({base}, a)",
+                        "spark2": f"LOG({base}, a)",
+                        "spark": f"LOG({base}, a)",
+                        "sqlite": f"LOG({base}, a)",
+                        "starrocks": f"LOG({base}, a)",
+                        "tableau": f"LOG(a, {base})",
+                        "trino": f"LOG({base}, a)",
+                        "tsql": f"LOG(a, {base})",
+                    },
+                )
+
         self.validate_all(
             "LOG(x)",
             read={
@@ -2087,6 +2125,7 @@ SELECT
                 "bigquery": "LOG(n, b)",
                 "databricks": "LOG(b, n)",
                 "drill": "LOG(b, n)",
+                "duckdb": "LOG(b, n)",
                 "hive": "LOG(b, n)",
                 "mysql": "LOG(b, n)",
                 "oracle": "LOG(b, n)",
@@ -2094,7 +2133,12 @@ SELECT
                 "snowflake": "LOG(b, n)",
                 "spark": "LOG(b, n)",
                 "sqlite": "LOG(b, n)",
+                "trino": "LOG(b, n)",
                 "tsql": "LOG(n, b)",
+            },
+            write={
+                "clickhouse": UnsupportedError,
+                "presto": UnsupportedError,
             },
         )
 

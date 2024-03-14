@@ -250,9 +250,9 @@ class TestFunctions(unittest.TestCase):
 
     def test_log10(self):
         col_str = SF.log10("cola")
-        self.assertEqual("LOG10(cola)", col_str.sql())
+        self.assertEqual("LOG(10, cola)", col_str.sql())
         col = SF.log10(SF.col("cola"))
-        self.assertEqual("LOG10(cola)", col.sql())
+        self.assertEqual("LOG(10, cola)", col.sql())
 
     def test_log1p(self):
         col_str = SF.log1p("cola")
@@ -262,9 +262,9 @@ class TestFunctions(unittest.TestCase):
 
     def test_log2(self):
         col_str = SF.log2("cola")
-        self.assertEqual("LOG2(cola)", col_str.sql())
+        self.assertEqual("LOG(2, cola)", col_str.sql())
         col = SF.log2(SF.col("cola"))
-        self.assertEqual("LOG2(cola)", col.sql())
+        self.assertEqual("LOG(2, cola)", col.sql())
 
     def test_rint(self):
         col_str = SF.rint("cola")

@@ -168,8 +168,6 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.Exp,
             exp.Ln,
             exp.Log,
-            exp.Log2,
-            exp.Log10,
             exp.Pow,
             exp.Quantile,
             exp.Round,

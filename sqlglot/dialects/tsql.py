@@ -810,6 +810,22 @@ class TSQL(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def select_sql(self, expression: exp.Select) -> str:
+            if expression.args.get("offset"):
+                if not expression.args.get("order"):
+                    # ORDER BY is required in order to use OFFSET in a query, so we use
+                    # a noop order by, since we don't really care about the order.
+                    # See: https://www.microsoftpressstore.com/articles/article.aspx?p=2314819
+                    expression.order_by(exp.select(exp.null()).subquery(), copy=False)
+
+                limit = expression.args.get("limit")
+                if isinstance(limit, exp.Limit):
+                    # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
+                    # we replace here because otherwise TOP would be generated in select_sql
+                    limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
+
+            return super().select_sql(expression)
+
         def convert_sql(self, expression: exp.Convert) -> str:
             name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"
             return self.func(

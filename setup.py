@@ -37,7 +37,7 @@ setup(
             "python-dateutil",
             "pdoc",
             "pre-commit",
-            "ruff",
+            "ruff==3.2",
             "types-python-dateutil",
             "typing_extensions",
             "maturin>=1.4,<2.0",

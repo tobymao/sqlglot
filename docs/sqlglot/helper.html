@@ -91,6 +91,12 @@
                     <a class="function" href="#is_int">is_int</a>
             </li>
             <li>
+                    <a class="function" href="#is_float">is_float</a>
+            </li>
+            <li>
+                    <a class="function" href="#is_type">is_type</a>
+            </li>
+            <li>
                     <a class="function" href="#name_sequence">name_sequence</a>
             </li>
             <li>
@@ -477,209 +483,217 @@
 </span><span id="L-317"><a href="#L-317"><span class="linenos">317</span></a>
 </span><span id="L-318"><a href="#L-318"><span class="linenos">318</span></a>
 </span><span id="L-319"><a href="#L-319"><span class="linenos">319</span></a><span class="k">def</span> <span class="nf">is_int</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-320"><a href="#L-320"><span class="linenos">320</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-321"><a href="#L-321"><span class="linenos">321</span></a>        <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="L-322"><a href="#L-322"><span class="linenos">322</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="L-323"><a href="#L-323"><span class="linenos">323</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="L-324"><a href="#L-324"><span class="linenos">324</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-320"><a href="#L-320"><span class="linenos">320</span></a>    <span class="k">return</span> <span class="n">is_type</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+</span><span id="L-321"><a href="#L-321"><span class="linenos">321</span></a>
+</span><span id="L-322"><a href="#L-322"><span class="linenos">322</span></a>
+</span><span id="L-323"><a href="#L-323"><span class="linenos">323</span></a><span class="k">def</span> <span class="nf">is_float</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-324"><a href="#L-324"><span class="linenos">324</span></a>    <span class="k">return</span> <span class="n">is_type</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
 </span><span id="L-325"><a href="#L-325"><span class="linenos">325</span></a>
 </span><span id="L-326"><a href="#L-326"><span class="linenos">326</span></a>
-</span><span id="L-327"><a href="#L-327"><span class="linenos">327</span></a><span class="k">def</span> <span class="nf">name_sequence</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="L-328"><a href="#L-328"><span class="linenos">328</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a name generator given a prefix (e.g. a0, a1, a2, ... if the prefix is &quot;a&quot;).&quot;&quot;&quot;</span>
-</span><span id="L-329"><a href="#L-329"><span class="linenos">329</span></a>    <span class="n">sequence</span> <span class="o">=</span> <span class="n">count</span><span class="p">()</span>
-</span><span id="L-330"><a href="#L-330"><span class="linenos">330</span></a>    <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="nb">next</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="L-331"><a href="#L-331"><span class="linenos">331</span></a>
-</span><span id="L-332"><a href="#L-332"><span class="linenos">332</span></a>
-</span><span id="L-333"><a href="#L-333"><span class="linenos">333</span></a><span class="k">def</span> <span class="nf">object_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
-</span><span id="L-334"><a href="#L-334"><span class="linenos">334</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a dictionary created from an object&#39;s attributes.&quot;&quot;&quot;</span>
-</span><span id="L-335"><a href="#L-335"><span class="linenos">335</span></a>    <span class="k">return</span> <span class="p">{</span>
-</span><span id="L-336"><a href="#L-336"><span class="linenos">336</span></a>        <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">&quot;copy&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">copy</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
-</span><span id="L-337"><a href="#L-337"><span class="linenos">337</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="L-338"><a href="#L-338"><span class="linenos">338</span></a>    <span class="p">}</span>
+</span><span id="L-327"><a href="#L-327"><span class="linenos">327</span></a><span class="k">def</span> <span class="nf">is_type</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_type</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-328"><a href="#L-328"><span class="linenos">328</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-329"><a href="#L-329"><span class="linenos">329</span></a>        <span class="n">target_type</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="L-330"><a href="#L-330"><span class="linenos">330</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-331"><a href="#L-331"><span class="linenos">331</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="L-332"><a href="#L-332"><span class="linenos">332</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-333"><a href="#L-333"><span class="linenos">333</span></a>
+</span><span id="L-334"><a href="#L-334"><span class="linenos">334</span></a>
+</span><span id="L-335"><a href="#L-335"><span class="linenos">335</span></a><span class="k">def</span> <span class="nf">name_sequence</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="L-336"><a href="#L-336"><span class="linenos">336</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a name generator given a prefix (e.g. a0, a1, a2, ... if the prefix is &quot;a&quot;).&quot;&quot;&quot;</span>
+</span><span id="L-337"><a href="#L-337"><span class="linenos">337</span></a>    <span class="n">sequence</span> <span class="o">=</span> <span class="n">count</span><span class="p">()</span>
+</span><span id="L-338"><a href="#L-338"><span class="linenos">338</span></a>    <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="nb">next</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 </span><span id="L-339"><a href="#L-339"><span class="linenos">339</span></a>
 </span><span id="L-340"><a href="#L-340"><span class="linenos">340</span></a>
-</span><span id="L-341"><a href="#L-341"><span class="linenos">341</span></a><span class="k">def</span> <span class="nf">split_num_words</span><span class="p">(</span>
-</span><span id="L-342"><a href="#L-342"><span class="linenos">342</span></a>    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">min_num_words</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fill_from_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="L-343"><a href="#L-343"><span class="linenos">343</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-</span><span id="L-344"><a href="#L-344"><span class="linenos">344</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-345"><a href="#L-345"><span class="linenos">345</span></a><span class="sd">    Perform a split on a value and return N words as a result with `None` used for words that don&#39;t exist.</span>
-</span><span id="L-346"><a href="#L-346"><span class="linenos">346</span></a>
-</span><span id="L-347"><a href="#L-347"><span class="linenos">347</span></a><span class="sd">    Args:</span>
-</span><span id="L-348"><a href="#L-348"><span class="linenos">348</span></a><span class="sd">        value: The value to be split.</span>
-</span><span id="L-349"><a href="#L-349"><span class="linenos">349</span></a><span class="sd">        sep: The value to use to split on.</span>
-</span><span id="L-350"><a href="#L-350"><span class="linenos">350</span></a><span class="sd">        min_num_words: The minimum number of words that are going to be in the result.</span>
-</span><span id="L-351"><a href="#L-351"><span class="linenos">351</span></a><span class="sd">        fill_from_start: Indicates that if `None` values should be inserted at the start or end of the list.</span>
-</span><span id="L-352"><a href="#L-352"><span class="linenos">352</span></a>
-</span><span id="L-353"><a href="#L-353"><span class="linenos">353</span></a><span class="sd">    Examples:</span>
-</span><span id="L-354"><a href="#L-354"><span class="linenos">354</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3)</span>
-</span><span id="L-355"><a href="#L-355"><span class="linenos">355</span></a><span class="sd">        [None, &#39;db&#39;, &#39;table&#39;]</span>
-</span><span id="L-356"><a href="#L-356"><span class="linenos">356</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3, fill_from_start=False)</span>
-</span><span id="L-357"><a href="#L-357"><span class="linenos">357</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;, None]</span>
-</span><span id="L-358"><a href="#L-358"><span class="linenos">358</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 1)</span>
-</span><span id="L-359"><a href="#L-359"><span class="linenos">359</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;]</span>
+</span><span id="L-341"><a href="#L-341"><span class="linenos">341</span></a><span class="k">def</span> <span class="nf">object_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
+</span><span id="L-342"><a href="#L-342"><span class="linenos">342</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a dictionary created from an object&#39;s attributes.&quot;&quot;&quot;</span>
+</span><span id="L-343"><a href="#L-343"><span class="linenos">343</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="L-344"><a href="#L-344"><span class="linenos">344</span></a>        <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">&quot;copy&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">copy</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+</span><span id="L-345"><a href="#L-345"><span class="linenos">345</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="L-346"><a href="#L-346"><span class="linenos">346</span></a>    <span class="p">}</span>
+</span><span id="L-347"><a href="#L-347"><span class="linenos">347</span></a>
+</span><span id="L-348"><a href="#L-348"><span class="linenos">348</span></a>
+</span><span id="L-349"><a href="#L-349"><span class="linenos">349</span></a><span class="k">def</span> <span class="nf">split_num_words</span><span class="p">(</span>
+</span><span id="L-350"><a href="#L-350"><span class="linenos">350</span></a>    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">min_num_words</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fill_from_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="L-351"><a href="#L-351"><span class="linenos">351</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+</span><span id="L-352"><a href="#L-352"><span class="linenos">352</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-353"><a href="#L-353"><span class="linenos">353</span></a><span class="sd">    Perform a split on a value and return N words as a result with `None` used for words that don&#39;t exist.</span>
+</span><span id="L-354"><a href="#L-354"><span class="linenos">354</span></a>
+</span><span id="L-355"><a href="#L-355"><span class="linenos">355</span></a><span class="sd">    Args:</span>
+</span><span id="L-356"><a href="#L-356"><span class="linenos">356</span></a><span class="sd">        value: The value to be split.</span>
+</span><span id="L-357"><a href="#L-357"><span class="linenos">357</span></a><span class="sd">        sep: The value to use to split on.</span>
+</span><span id="L-358"><a href="#L-358"><span class="linenos">358</span></a><span class="sd">        min_num_words: The minimum number of words that are going to be in the result.</span>
+</span><span id="L-359"><a href="#L-359"><span class="linenos">359</span></a><span class="sd">        fill_from_start: Indicates that if `None` values should be inserted at the start or end of the list.</span>
 </span><span id="L-360"><a href="#L-360"><span class="linenos">360</span></a>
-</span><span id="L-361"><a href="#L-361"><span class="linenos">361</span></a><span class="sd">    Returns:</span>
-</span><span id="L-362"><a href="#L-362"><span class="linenos">362</span></a><span class="sd">        The list of words returned by `split`, possibly augmented by a number of `None` values.</span>
-</span><span id="L-363"><a href="#L-363"><span class="linenos">363</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-364"><a href="#L-364"><span class="linenos">364</span></a>    <span class="n">words</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
-</span><span id="L-365"><a href="#L-365"><span class="linenos">365</span></a>    <span class="k">if</span> <span class="n">fill_from_start</span><span class="p">:</span>
-</span><span id="L-366"><a href="#L-366"><span class="linenos">366</span></a>        <span class="k">return</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span> <span class="o">+</span> <span class="n">words</span>
-</span><span id="L-367"><a href="#L-367"><span class="linenos">367</span></a>    <span class="k">return</span> <span class="n">words</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span>
+</span><span id="L-361"><a href="#L-361"><span class="linenos">361</span></a><span class="sd">    Examples:</span>
+</span><span id="L-362"><a href="#L-362"><span class="linenos">362</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3)</span>
+</span><span id="L-363"><a href="#L-363"><span class="linenos">363</span></a><span class="sd">        [None, &#39;db&#39;, &#39;table&#39;]</span>
+</span><span id="L-364"><a href="#L-364"><span class="linenos">364</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3, fill_from_start=False)</span>
+</span><span id="L-365"><a href="#L-365"><span class="linenos">365</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;, None]</span>
+</span><span id="L-366"><a href="#L-366"><span class="linenos">366</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 1)</span>
+</span><span id="L-367"><a href="#L-367"><span class="linenos">367</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;]</span>
 </span><span id="L-368"><a href="#L-368"><span class="linenos">368</span></a>
-</span><span id="L-369"><a href="#L-369"><span class="linenos">369</span></a>
-</span><span id="L-370"><a href="#L-370"><span class="linenos">370</span></a><span class="k">def</span> <span class="nf">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-371"><a href="#L-371"><span class="linenos">371</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-372"><a href="#L-372"><span class="linenos">372</span></a><span class="sd">    Checks if the value is an iterable, excluding the types `str` and `bytes`.</span>
-</span><span id="L-373"><a href="#L-373"><span class="linenos">373</span></a>
-</span><span id="L-374"><a href="#L-374"><span class="linenos">374</span></a><span class="sd">    Examples:</span>
-</span><span id="L-375"><a href="#L-375"><span class="linenos">375</span></a><span class="sd">        &gt;&gt;&gt; is_iterable([1,2])</span>
-</span><span id="L-376"><a href="#L-376"><span class="linenos">376</span></a><span class="sd">        True</span>
-</span><span id="L-377"><a href="#L-377"><span class="linenos">377</span></a><span class="sd">        &gt;&gt;&gt; is_iterable(&quot;test&quot;)</span>
-</span><span id="L-378"><a href="#L-378"><span class="linenos">378</span></a><span class="sd">        False</span>
-</span><span id="L-379"><a href="#L-379"><span class="linenos">379</span></a>
-</span><span id="L-380"><a href="#L-380"><span class="linenos">380</span></a><span class="sd">    Args:</span>
-</span><span id="L-381"><a href="#L-381"><span class="linenos">381</span></a><span class="sd">        value: The value to check if it is an iterable.</span>
-</span><span id="L-382"><a href="#L-382"><span class="linenos">382</span></a>
-</span><span id="L-383"><a href="#L-383"><span class="linenos">383</span></a><span class="sd">    Returns:</span>
-</span><span id="L-384"><a href="#L-384"><span class="linenos">384</span></a><span class="sd">        A `bool` value indicating if it is an iterable.</span>
-</span><span id="L-385"><a href="#L-385"><span class="linenos">385</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a>    <span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">Expression</span>
+</span><span id="L-369"><a href="#L-369"><span class="linenos">369</span></a><span class="sd">    Returns:</span>
+</span><span id="L-370"><a href="#L-370"><span class="linenos">370</span></a><span class="sd">        The list of words returned by `split`, possibly augmented by a number of `None` values.</span>
+</span><span id="L-371"><a href="#L-371"><span class="linenos">371</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-372"><a href="#L-372"><span class="linenos">372</span></a>    <span class="n">words</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
+</span><span id="L-373"><a href="#L-373"><span class="linenos">373</span></a>    <span class="k">if</span> <span class="n">fill_from_start</span><span class="p">:</span>
+</span><span id="L-374"><a href="#L-374"><span class="linenos">374</span></a>        <span class="k">return</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span> <span class="o">+</span> <span class="n">words</span>
+</span><span id="L-375"><a href="#L-375"><span class="linenos">375</span></a>    <span class="k">return</span> <span class="n">words</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span>
+</span><span id="L-376"><a href="#L-376"><span class="linenos">376</span></a>
+</span><span id="L-377"><a href="#L-377"><span class="linenos">377</span></a>
+</span><span id="L-378"><a href="#L-378"><span class="linenos">378</span></a><span class="k">def</span> <span class="nf">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-379"><a href="#L-379"><span class="linenos">379</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-380"><a href="#L-380"><span class="linenos">380</span></a><span class="sd">    Checks if the value is an iterable, excluding the types `str` and `bytes`.</span>
+</span><span id="L-381"><a href="#L-381"><span class="linenos">381</span></a>
+</span><span id="L-382"><a href="#L-382"><span class="linenos">382</span></a><span class="sd">    Examples:</span>
+</span><span id="L-383"><a href="#L-383"><span class="linenos">383</span></a><span class="sd">        &gt;&gt;&gt; is_iterable([1,2])</span>
+</span><span id="L-384"><a href="#L-384"><span class="linenos">384</span></a><span class="sd">        True</span>
+</span><span id="L-385"><a href="#L-385"><span class="linenos">385</span></a><span class="sd">        &gt;&gt;&gt; is_iterable(&quot;test&quot;)</span>
+</span><span id="L-386"><a href="#L-386"><span class="linenos">386</span></a><span class="sd">        False</span>
 </span><span id="L-387"><a href="#L-387"><span class="linenos">387</span></a>
-</span><span id="L-388"><a href="#L-388"><span class="linenos">388</span></a>    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;__iter__&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">Expression</span><span class="p">))</span>
-</span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a>
+</span><span id="L-388"><a href="#L-388"><span class="linenos">388</span></a><span class="sd">    Args:</span>
+</span><span id="L-389"><a href="#L-389"><span class="linenos">389</span></a><span class="sd">        value: The value to check if it is an iterable.</span>
 </span><span id="L-390"><a href="#L-390"><span class="linenos">390</span></a>
-</span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
-</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="sd">    Flattens an iterable that can contain both iterable and non-iterable elements. Objects of</span>
-</span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a><span class="sd">    type `str` and `bytes` are not regarded as iterables.</span>
+</span><span id="L-391"><a href="#L-391"><span class="linenos">391</span></a><span class="sd">    Returns:</span>
+</span><span id="L-392"><a href="#L-392"><span class="linenos">392</span></a><span class="sd">        A `bool` value indicating if it is an iterable.</span>
+</span><span id="L-393"><a href="#L-393"><span class="linenos">393</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-394"><a href="#L-394"><span class="linenos">394</span></a>    <span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">Expression</span>
 </span><span id="L-395"><a href="#L-395"><span class="linenos">395</span></a>
-</span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a><span class="sd">    Examples:</span>
-</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([[1, 2], 3, {4}, (5, &quot;bla&quot;)]))</span>
-</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a><span class="sd">        [1, 2, 3, 4, 5, &#39;bla&#39;]</span>
-</span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([1, 2, 3]))</span>
-</span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a><span class="sd">        [1, 2, 3]</span>
-</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a>
-</span><span id="L-402"><a href="#L-402"><span class="linenos">402</span></a><span class="sd">    Args:</span>
-</span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a><span class="sd">        values: The value to be flattened.</span>
-</span><span id="L-404"><a href="#L-404"><span class="linenos">404</span></a>
-</span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a><span class="sd">    Yields:</span>
-</span><span id="L-406"><a href="#L-406"><span class="linenos">406</span></a><span class="sd">        Non-iterable elements in `values`.</span>
-</span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a>    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
-</span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a>        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
-</span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a>            <span class="k">yield from</span> <span class="n">flatten</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a>            <span class="k">yield</span> <span class="n">value</span>
-</span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a>
-</span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a>
-</span><span id="L-415"><a href="#L-415"><span class="linenos">415</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="L-416"><a href="#L-416"><span class="linenos">416</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-417"><a href="#L-417"><span class="linenos">417</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
-</span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a>
-</span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a><span class="sd">    Example:</span>
-</span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
-</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a><span class="sd">        0</span>
-</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
-</span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a><span class="sd">        1</span>
-</span><span id="L-424"><a href="#L-424"><span class="linenos">424</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
-</span><span id="L-425"><a href="#L-425"><span class="linenos">425</span></a><span class="sd">        1</span>
-</span><span id="L-426"><a href="#L-426"><span class="linenos">426</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
-</span><span id="L-427"><a href="#L-427"><span class="linenos">427</span></a><span class="sd">        2</span>
-</span><span id="L-428"><a href="#L-428"><span class="linenos">428</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
-</span><span id="L-429"><a href="#L-429"><span class="linenos">429</span></a><span class="sd">        3</span>
-</span><span id="L-430"><a href="#L-430"><span class="linenos">430</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-431"><a href="#L-431"><span class="linenos">431</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-432"><a href="#L-432"><span class="linenos">432</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
-</span><span id="L-433"><a href="#L-433"><span class="linenos">433</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-</span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
-</span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a>        <span class="k">return</span> <span class="mi">0</span>
-</span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
-</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
-</span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a>        <span class="k">return</span> <span class="mi">1</span>
-</span><span id="L-439"><a href="#L-439"><span class="linenos">439</span></a>
-</span><span id="L-440"><a href="#L-440"><span class="linenos">440</span></a>
-</span><span id="L-441"><a href="#L-441"><span class="linenos">441</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-</span><span id="L-442"><a href="#L-442"><span class="linenos">442</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable (useful for sets).&quot;&quot;&quot;</span>
-</span><span id="L-443"><a href="#L-443"><span class="linenos">443</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
-</span><span id="L-444"><a href="#L-444"><span class="linenos">444</span></a>
-</span><span id="L-445"><a href="#L-445"><span class="linenos">445</span></a>
-</span><span id="L-446"><a href="#L-446"><span class="linenos">446</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
-</span><span id="L-447"><a href="#L-447"><span class="linenos">447</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-448"><a href="#L-448"><span class="linenos">448</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
-</span><span id="L-449"><a href="#L-449"><span class="linenos">449</span></a><span class="sd">    belong to some totally-ordered set.</span>
-</span><span id="L-450"><a href="#L-450"><span class="linenos">450</span></a>
-</span><span id="L-451"><a href="#L-451"><span class="linenos">451</span></a><span class="sd">    Example:</span>
-</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
-</span><span id="L-453"><a href="#L-453"><span class="linenos">453</span></a><span class="sd">        [(1, 6)]</span>
-</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-455"><a href="#L-455"><span class="linenos">455</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
-</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a>        <span class="k">return</span> <span class="p">[]</span>
-</span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a>
-</span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
-</span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a>
-</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a>
-</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a>
-</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
-</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-396"><a href="#L-396"><span class="linenos">396</span></a>    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;__iter__&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">Expression</span><span class="p">))</span>
+</span><span id="L-397"><a href="#L-397"><span class="linenos">397</span></a>
+</span><span id="L-398"><a href="#L-398"><span class="linenos">398</span></a>
+</span><span id="L-399"><a href="#L-399"><span class="linenos">399</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
+</span><span id="L-400"><a href="#L-400"><span class="linenos">400</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-401"><a href="#L-401"><span class="linenos">401</span></a><span class="sd">    Flattens an iterable that can contain both iterable and non-iterable elements. Objects of</span>
+</span><span id="L-402"><a href="#L-402"><span class="linenos">402</span></a><span class="sd">    type `str` and `bytes` are not regarded as iterables.</span>
+</span><span id="L-403"><a href="#L-403"><span class="linenos">403</span></a>
+</span><span id="L-404"><a href="#L-404"><span class="linenos">404</span></a><span class="sd">    Examples:</span>
+</span><span id="L-405"><a href="#L-405"><span class="linenos">405</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([[1, 2], 3, {4}, (5, &quot;bla&quot;)]))</span>
+</span><span id="L-406"><a href="#L-406"><span class="linenos">406</span></a><span class="sd">        [1, 2, 3, 4, 5, &#39;bla&#39;]</span>
+</span><span id="L-407"><a href="#L-407"><span class="linenos">407</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([1, 2, 3]))</span>
+</span><span id="L-408"><a href="#L-408"><span class="linenos">408</span></a><span class="sd">        [1, 2, 3]</span>
+</span><span id="L-409"><a href="#L-409"><span class="linenos">409</span></a>
+</span><span id="L-410"><a href="#L-410"><span class="linenos">410</span></a><span class="sd">    Args:</span>
+</span><span id="L-411"><a href="#L-411"><span class="linenos">411</span></a><span class="sd">        values: The value to be flattened.</span>
+</span><span id="L-412"><a href="#L-412"><span class="linenos">412</span></a>
+</span><span id="L-413"><a href="#L-413"><span class="linenos">413</span></a><span class="sd">    Yields:</span>
+</span><span id="L-414"><a href="#L-414"><span class="linenos">414</span></a><span class="sd">        Non-iterable elements in `values`.</span>
+</span><span id="L-415"><a href="#L-415"><span class="linenos">415</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-416"><a href="#L-416"><span class="linenos">416</span></a>    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+</span><span id="L-417"><a href="#L-417"><span class="linenos">417</span></a>        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+</span><span id="L-418"><a href="#L-418"><span class="linenos">418</span></a>            <span class="k">yield from</span> <span class="n">flatten</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span><span id="L-419"><a href="#L-419"><span class="linenos">419</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-420"><a href="#L-420"><span class="linenos">420</span></a>            <span class="k">yield</span> <span class="n">value</span>
+</span><span id="L-421"><a href="#L-421"><span class="linenos">421</span></a>
+</span><span id="L-422"><a href="#L-422"><span class="linenos">422</span></a>
+</span><span id="L-423"><a href="#L-423"><span class="linenos">423</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="L-424"><a href="#L-424"><span class="linenos">424</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-425"><a href="#L-425"><span class="linenos">425</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
+</span><span id="L-426"><a href="#L-426"><span class="linenos">426</span></a>
+</span><span id="L-427"><a href="#L-427"><span class="linenos">427</span></a><span class="sd">    Example:</span>
+</span><span id="L-428"><a href="#L-428"><span class="linenos">428</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
+</span><span id="L-429"><a href="#L-429"><span class="linenos">429</span></a><span class="sd">        0</span>
+</span><span id="L-430"><a href="#L-430"><span class="linenos">430</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
+</span><span id="L-431"><a href="#L-431"><span class="linenos">431</span></a><span class="sd">        1</span>
+</span><span id="L-432"><a href="#L-432"><span class="linenos">432</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
+</span><span id="L-433"><a href="#L-433"><span class="linenos">433</span></a><span class="sd">        1</span>
+</span><span id="L-434"><a href="#L-434"><span class="linenos">434</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
+</span><span id="L-435"><a href="#L-435"><span class="linenos">435</span></a><span class="sd">        2</span>
+</span><span id="L-436"><a href="#L-436"><span class="linenos">436</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
+</span><span id="L-437"><a href="#L-437"><span class="linenos">437</span></a><span class="sd">        3</span>
+</span><span id="L-438"><a href="#L-438"><span class="linenos">438</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-439"><a href="#L-439"><span class="linenos">439</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-440"><a href="#L-440"><span class="linenos">440</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+</span><span id="L-441"><a href="#L-441"><span class="linenos">441</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+</span><span id="L-442"><a href="#L-442"><span class="linenos">442</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
+</span><span id="L-443"><a href="#L-443"><span class="linenos">443</span></a>        <span class="k">return</span> <span class="mi">0</span>
+</span><span id="L-444"><a href="#L-444"><span class="linenos">444</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+</span><span id="L-445"><a href="#L-445"><span class="linenos">445</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
+</span><span id="L-446"><a href="#L-446"><span class="linenos">446</span></a>        <span class="k">return</span> <span class="mi">1</span>
+</span><span id="L-447"><a href="#L-447"><span class="linenos">447</span></a>
+</span><span id="L-448"><a href="#L-448"><span class="linenos">448</span></a>
+</span><span id="L-449"><a href="#L-449"><span class="linenos">449</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+</span><span id="L-450"><a href="#L-450"><span class="linenos">450</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable (useful for sets).&quot;&quot;&quot;</span>
+</span><span id="L-451"><a href="#L-451"><span class="linenos">451</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
+</span><span id="L-452"><a href="#L-452"><span class="linenos">452</span></a>
+</span><span id="L-453"><a href="#L-453"><span class="linenos">453</span></a>
+</span><span id="L-454"><a href="#L-454"><span class="linenos">454</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
+</span><span id="L-455"><a href="#L-455"><span class="linenos">455</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-456"><a href="#L-456"><span class="linenos">456</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
+</span><span id="L-457"><a href="#L-457"><span class="linenos">457</span></a><span class="sd">    belong to some totally-ordered set.</span>
+</span><span id="L-458"><a href="#L-458"><span class="linenos">458</span></a>
+</span><span id="L-459"><a href="#L-459"><span class="linenos">459</span></a><span class="sd">    Example:</span>
+</span><span id="L-460"><a href="#L-460"><span class="linenos">460</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
+</span><span id="L-461"><a href="#L-461"><span class="linenos">461</span></a><span class="sd">        [(1, 6)]</span>
+</span><span id="L-462"><a href="#L-462"><span class="linenos">462</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-463"><a href="#L-463"><span class="linenos">463</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
+</span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a>        <span class="k">return</span> <span class="p">[]</span>
+</span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a>
+</span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>
+</span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
 </span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a>
-</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a>    <span class="k">return</span> <span class="n">merged</span>
-</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a>
+</span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="L-471"><a href="#L-471"><span class="linenos">471</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 </span><span id="L-472"><a href="#L-472"><span class="linenos">472</span></a>
-</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="L-477"><a href="#L-477"><span class="linenos">477</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="L-473"><a href="#L-473"><span class="linenos">473</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
+</span><span id="L-474"><a href="#L-474"><span class="linenos">474</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-475"><a href="#L-475"><span class="linenos">475</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="L-476"><a href="#L-476"><span class="linenos">476</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="L-477"><a href="#L-477"><span class="linenos">477</span></a>
+</span><span id="L-478"><a href="#L-478"><span class="linenos">478</span></a>    <span class="k">return</span> <span class="n">merged</span>
 </span><span id="L-479"><a href="#L-479"><span class="linenos">479</span></a>
 </span><span id="L-480"><a href="#L-480"><span class="linenos">480</span></a>
-</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-481"><a href="#L-481"><span class="linenos">481</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="L-482"><a href="#L-482"><span class="linenos">482</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="L-483"><a href="#L-483"><span class="linenos">483</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="L-483"><a href="#L-483"><span class="linenos">483</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
 </span><span id="L-484"><a href="#L-484"><span class="linenos">484</span></a>        <span class="k">return</span> <span class="kc">True</span>
 </span><span id="L-485"><a href="#L-485"><span class="linenos">485</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
 </span><span id="L-486"><a href="#L-486"><span class="linenos">486</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span><span id="L-487"><a href="#L-487"><span class="linenos">487</span></a>
 </span><span id="L-488"><a href="#L-488"><span class="linenos">488</span></a>
-</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a><span class="c1"># Interval units that operate on date components</span>
-</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a><span class="n">DATE_UNITS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;quarter&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">,</span> <span class="s2">&quot;year_month&quot;</span><span class="p">}</span>
-</span><span id="L-491"><a href="#L-491"><span class="linenos">491</span></a>
-</span><span id="L-492"><a href="#L-492"><span class="linenos">492</span></a>
-</span><span id="L-493"><a href="#L-493"><span class="linenos">493</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="L-494"><a href="#L-494"><span class="linenos">494</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
+</span><span id="L-489"><a href="#L-489"><span class="linenos">489</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-490"><a href="#L-490"><span class="linenos">490</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="L-491"><a href="#L-491"><span class="linenos">491</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="L-492"><a href="#L-492"><span class="linenos">492</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="L-493"><a href="#L-493"><span class="linenos">493</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="L-494"><a href="#L-494"><span class="linenos">494</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span><span id="L-495"><a href="#L-495"><span class="linenos">495</span></a>
 </span><span id="L-496"><a href="#L-496"><span class="linenos">496</span></a>
-</span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a><span class="n">K</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">)</span>
-</span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a><span class="n">V</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
+</span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a><span class="c1"># Interval units that operate on date components</span>
+</span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a><span class="n">DATE_UNITS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;quarter&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">,</span> <span class="s2">&quot;year_month&quot;</span><span class="p">}</span>
 </span><span id="L-499"><a href="#L-499"><span class="linenos">499</span></a>
 </span><span id="L-500"><a href="#L-500"><span class="linenos">500</span></a>
-</span><span id="L-501"><a href="#L-501"><span class="linenos">501</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
-</span><span id="L-502"><a href="#L-502"><span class="linenos">502</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="L-503"><a href="#L-503"><span class="linenos">503</span></a><span class="sd">    Mapping where all keys return the same value.</span>
+</span><span id="L-501"><a href="#L-501"><span class="linenos">501</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="L-502"><a href="#L-502"><span class="linenos">502</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
+</span><span id="L-503"><a href="#L-503"><span class="linenos">503</span></a>
 </span><span id="L-504"><a href="#L-504"><span class="linenos">504</span></a>
-</span><span id="L-505"><a href="#L-505"><span class="linenos">505</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
-</span><span id="L-506"><a href="#L-506"><span class="linenos">506</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
-</span><span id="L-507"><a href="#L-507"><span class="linenos">507</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-505"><a href="#L-505"><span class="linenos">505</span></a><span class="n">K</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">)</span>
+</span><span id="L-506"><a href="#L-506"><span class="linenos">506</span></a><span class="n">V</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
+</span><span id="L-507"><a href="#L-507"><span class="linenos">507</span></a>
 </span><span id="L-508"><a href="#L-508"><span class="linenos">508</span></a>
-</span><span id="L-509"><a href="#L-509"><span class="linenos">509</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
-</span><span id="L-510"><a href="#L-510"><span class="linenos">510</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
-</span><span id="L-511"><a href="#L-511"><span class="linenos">511</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+</span><span id="L-509"><a href="#L-509"><span class="linenos">509</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
+</span><span id="L-510"><a href="#L-510"><span class="linenos">510</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-511"><a href="#L-511"><span class="linenos">511</span></a><span class="sd">    Mapping where all keys return the same value.</span>
 </span><span id="L-512"><a href="#L-512"><span class="linenos">512</span></a>
-</span><span id="L-513"><a href="#L-513"><span class="linenos">513</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
-</span><span id="L-514"><a href="#L-514"><span class="linenos">514</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
-</span><span id="L-515"><a href="#L-515"><span class="linenos">515</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
-</span><span id="L-516"><a href="#L-516"><span class="linenos">516</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="L-517"><a href="#L-517"><span class="linenos">517</span></a>
-</span><span id="L-518"><a href="#L-518"><span class="linenos">518</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="L-519"><a href="#L-519"><span class="linenos">519</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="L-513"><a href="#L-513"><span class="linenos">513</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
+</span><span id="L-514"><a href="#L-514"><span class="linenos">514</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
+</span><span id="L-515"><a href="#L-515"><span class="linenos">515</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-516"><a href="#L-516"><span class="linenos">516</span></a>
+</span><span id="L-517"><a href="#L-517"><span class="linenos">517</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="L-518"><a href="#L-518"><span class="linenos">518</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="L-519"><a href="#L-519"><span class="linenos">519</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
 </span><span id="L-520"><a href="#L-520"><span class="linenos">520</span></a>
-</span><span id="L-521"><a href="#L-521"><span class="linenos">521</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
-</span><span id="L-522"><a href="#L-522"><span class="linenos">522</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="L-521"><a href="#L-521"><span class="linenos">521</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
+</span><span id="L-522"><a href="#L-522"><span class="linenos">522</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
+</span><span id="L-523"><a href="#L-523"><span class="linenos">523</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+</span><span id="L-524"><a href="#L-524"><span class="linenos">524</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="L-525"><a href="#L-525"><span class="linenos">525</span></a>
+</span><span id="L-526"><a href="#L-526"><span class="linenos">526</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="L-527"><a href="#L-527"><span class="linenos">527</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="L-528"><a href="#L-528"><span class="linenos">528</span></a>
+</span><span id="L-529"><a href="#L-529"><span class="linenos">529</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
+</span><span id="L-530"><a href="#L-530"><span class="linenos">530</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1392,11 +1406,49 @@ of the corresponding enum's identifier (e.g. FOO.value results in "FOO").</p>
     </div>
     <a class="headerlink" href="#is_int"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="is_int-320"><a href="#is_int-320"><span class="linenos">320</span></a><span class="k">def</span> <span class="nf">is_int</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_int-321"><a href="#is_int-321"><span class="linenos">321</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="is_int-322"><a href="#is_int-322"><span class="linenos">322</span></a>        <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="is_int-323"><a href="#is_int-323"><span class="linenos">323</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="is_int-324"><a href="#is_int-324"><span class="linenos">324</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="is_int-325"><a href="#is_int-325"><span class="linenos">325</span></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="is_int-321"><a href="#is_int-321"><span class="linenos">321</span></a>    <span class="k">return</span> <span class="n">is_type</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="is_float">
+                            <input id="is_float-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">is_float</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">text</span><span class="p">:</span> <span class="nb">str</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+                <label class="view-source-button" for="is_float-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#is_float"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_float-324"><a href="#is_float-324"><span class="linenos">324</span></a><span class="k">def</span> <span class="nf">is_float</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_float-325"><a href="#is_float-325"><span class="linenos">325</span></a>    <span class="k">return</span> <span class="n">is_type</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+</span></pre></div>
+
+
+    
+
+                </section>
+                <section id="is_type">
+                            <input id="is_type-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+<div class="attr function">
+            
+        <span class="def">def</span>
+        <span class="name">is_type</span><span class="signature pdoc-code condensed">(<span class="param"><span class="n">text</span><span class="p">:</span> <span class="nb">str</span>, </span><span class="param"><span class="n">target_type</span><span class="p">:</span> <span class="n">Type</span></span><span class="return-annotation">) -> <span class="nb">bool</span>:</span></span>
+
+                <label class="view-source-button" for="is_type-view-source"><span>View Source</span></label>
+
+    </div>
+    <a class="headerlink" href="#is_type"></a>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_type-328"><a href="#is_type-328"><span class="linenos">328</span></a><span class="k">def</span> <span class="nf">is_type</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_type</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_type-329"><a href="#is_type-329"><span class="linenos">329</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="is_type-330"><a href="#is_type-330"><span class="linenos">330</span></a>        <span class="n">target_type</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="is_type-331"><a href="#is_type-331"><span class="linenos">331</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="is_type-332"><a href="#is_type-332"><span class="linenos">332</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="is_type-333"><a href="#is_type-333"><span class="linenos">333</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1414,10 +1466,10 @@ of the corresponding enum's identifier (e.g. FOO.value results in "FOO").</p>
 
     </div>
     <a class="headerlink" href="#name_sequence"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="name_sequence-328"><a href="#name_sequence-328"><span class="linenos">328</span></a><span class="k">def</span> <span class="nf">name_sequence</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[],</span> <span class="nb">str</span><span class="p">]:</span>
-</span><span id="name_sequence-329"><a href="#name_sequence-329"><span class="linenos">329</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a name generator given a prefix (e.g. a0, a1, a2, ... if the prefix is &quot;a&quot;).&quot;&quot;&quot;</span>
-</span><span id="name_sequence-330"><a href="#name_sequence-330"><span class="linenos">330</span></a>    <span class="n">sequence</span> <span class="o">=</span> <span class="n">count</span><span class="p">()</span>
-</span><span id="name_sequence-331"><a href="#name_sequence-331"><span class="linenos">331</span></a>    <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="nb">next</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="name_sequence-336"><a href="#name_sequence-336"><span class="linenos">336</span></a><span class="k">def</span> <span class="nf">name_sequence</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[],</span> <span class="nb">str</span><span class="p">]:</span>
+</span><span id="name_sequence-337"><a href="#name_sequence-337"><span class="linenos">337</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a name generator given a prefix (e.g. a0, a1, a2, ... if the prefix is &quot;a&quot;).&quot;&quot;&quot;</span>
+</span><span id="name_sequence-338"><a href="#name_sequence-338"><span class="linenos">338</span></a>    <span class="n">sequence</span> <span class="o">=</span> <span class="n">count</span><span class="p">()</span>
+</span><span id="name_sequence-339"><a href="#name_sequence-339"><span class="linenos">339</span></a>    <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="nb">next</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 </span></pre></div>
 
 
@@ -1437,12 +1489,12 @@ of the corresponding enum's identifier (e.g. FOO.value results in "FOO").</p>
 
     </div>
     <a class="headerlink" href="#object_to_dict"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="object_to_dict-334"><a href="#object_to_dict-334"><span class="linenos">334</span></a><span class="k">def</span> <span class="nf">object_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
-</span><span id="object_to_dict-335"><a href="#object_to_dict-335"><span class="linenos">335</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a dictionary created from an object&#39;s attributes.&quot;&quot;&quot;</span>
-</span><span id="object_to_dict-336"><a href="#object_to_dict-336"><span class="linenos">336</span></a>    <span class="k">return</span> <span class="p">{</span>
-</span><span id="object_to_dict-337"><a href="#object_to_dict-337"><span class="linenos">337</span></a>        <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">&quot;copy&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">copy</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
-</span><span id="object_to_dict-338"><a href="#object_to_dict-338"><span class="linenos">338</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-</span><span id="object_to_dict-339"><a href="#object_to_dict-339"><span class="linenos">339</span></a>    <span class="p">}</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="object_to_dict-342"><a href="#object_to_dict-342"><span class="linenos">342</span></a><span class="k">def</span> <span class="nf">object_to_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">:</span>
+</span><span id="object_to_dict-343"><a href="#object_to_dict-343"><span class="linenos">343</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a dictionary created from an object&#39;s attributes.&quot;&quot;&quot;</span>
+</span><span id="object_to_dict-344"><a href="#object_to_dict-344"><span class="linenos">344</span></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="object_to_dict-345"><a href="#object_to_dict-345"><span class="linenos">345</span></a>        <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">&quot;copy&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">copy</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+</span><span id="object_to_dict-346"><a href="#object_to_dict-346"><span class="linenos">346</span></a>        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+</span><span id="object_to_dict-347"><a href="#object_to_dict-347"><span class="linenos">347</span></a>    <span class="p">}</span>
 </span></pre></div>
 
 
@@ -1462,33 +1514,33 @@ of the corresponding enum's identifier (e.g. FOO.value results in "FOO").</p>
 
     </div>
     <a class="headerlink" href="#split_num_words"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="split_num_words-342"><a href="#split_num_words-342"><span class="linenos">342</span></a><span class="k">def</span> <span class="nf">split_num_words</span><span class="p">(</span>
-</span><span id="split_num_words-343"><a href="#split_num_words-343"><span class="linenos">343</span></a>    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">min_num_words</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fill_from_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="split_num_words-344"><a href="#split_num_words-344"><span class="linenos">344</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-</span><span id="split_num_words-345"><a href="#split_num_words-345"><span class="linenos">345</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="split_num_words-346"><a href="#split_num_words-346"><span class="linenos">346</span></a><span class="sd">    Perform a split on a value and return N words as a result with `None` used for words that don&#39;t exist.</span>
-</span><span id="split_num_words-347"><a href="#split_num_words-347"><span class="linenos">347</span></a>
-</span><span id="split_num_words-348"><a href="#split_num_words-348"><span class="linenos">348</span></a><span class="sd">    Args:</span>
-</span><span id="split_num_words-349"><a href="#split_num_words-349"><span class="linenos">349</span></a><span class="sd">        value: The value to be split.</span>
-</span><span id="split_num_words-350"><a href="#split_num_words-350"><span class="linenos">350</span></a><span class="sd">        sep: The value to use to split on.</span>
-</span><span id="split_num_words-351"><a href="#split_num_words-351"><span class="linenos">351</span></a><span class="sd">        min_num_words: The minimum number of words that are going to be in the result.</span>
-</span><span id="split_num_words-352"><a href="#split_num_words-352"><span class="linenos">352</span></a><span class="sd">        fill_from_start: Indicates that if `None` values should be inserted at the start or end of the list.</span>
-</span><span id="split_num_words-353"><a href="#split_num_words-353"><span class="linenos">353</span></a>
-</span><span id="split_num_words-354"><a href="#split_num_words-354"><span class="linenos">354</span></a><span class="sd">    Examples:</span>
-</span><span id="split_num_words-355"><a href="#split_num_words-355"><span class="linenos">355</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3)</span>
-</span><span id="split_num_words-356"><a href="#split_num_words-356"><span class="linenos">356</span></a><span class="sd">        [None, &#39;db&#39;, &#39;table&#39;]</span>
-</span><span id="split_num_words-357"><a href="#split_num_words-357"><span class="linenos">357</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3, fill_from_start=False)</span>
-</span><span id="split_num_words-358"><a href="#split_num_words-358"><span class="linenos">358</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;, None]</span>
-</span><span id="split_num_words-359"><a href="#split_num_words-359"><span class="linenos">359</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 1)</span>
-</span><span id="split_num_words-360"><a href="#split_num_words-360"><span class="linenos">360</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;]</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="split_num_words-350"><a href="#split_num_words-350"><span class="linenos">350</span></a><span class="k">def</span> <span class="nf">split_num_words</span><span class="p">(</span>
+</span><span id="split_num_words-351"><a href="#split_num_words-351"><span class="linenos">351</span></a>    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">min_num_words</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fill_from_start</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="split_num_words-352"><a href="#split_num_words-352"><span class="linenos">352</span></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+</span><span id="split_num_words-353"><a href="#split_num_words-353"><span class="linenos">353</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="split_num_words-354"><a href="#split_num_words-354"><span class="linenos">354</span></a><span class="sd">    Perform a split on a value and return N words as a result with `None` used for words that don&#39;t exist.</span>
+</span><span id="split_num_words-355"><a href="#split_num_words-355"><span class="linenos">355</span></a>
+</span><span id="split_num_words-356"><a href="#split_num_words-356"><span class="linenos">356</span></a><span class="sd">    Args:</span>
+</span><span id="split_num_words-357"><a href="#split_num_words-357"><span class="linenos">357</span></a><span class="sd">        value: The value to be split.</span>
+</span><span id="split_num_words-358"><a href="#split_num_words-358"><span class="linenos">358</span></a><span class="sd">        sep: The value to use to split on.</span>
+</span><span id="split_num_words-359"><a href="#split_num_words-359"><span class="linenos">359</span></a><span class="sd">        min_num_words: The minimum number of words that are going to be in the result.</span>
+</span><span id="split_num_words-360"><a href="#split_num_words-360"><span class="linenos">360</span></a><span class="sd">        fill_from_start: Indicates that if `None` values should be inserted at the start or end of the list.</span>
 </span><span id="split_num_words-361"><a href="#split_num_words-361"><span class="linenos">361</span></a>
-</span><span id="split_num_words-362"><a href="#split_num_words-362"><span class="linenos">362</span></a><span class="sd">    Returns:</span>
-</span><span id="split_num_words-363"><a href="#split_num_words-363"><span class="linenos">363</span></a><span class="sd">        The list of words returned by `split`, possibly augmented by a number of `None` values.</span>
-</span><span id="split_num_words-364"><a href="#split_num_words-364"><span class="linenos">364</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="split_num_words-365"><a href="#split_num_words-365"><span class="linenos">365</span></a>    <span class="n">words</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
-</span><span id="split_num_words-366"><a href="#split_num_words-366"><span class="linenos">366</span></a>    <span class="k">if</span> <span class="n">fill_from_start</span><span class="p">:</span>
-</span><span id="split_num_words-367"><a href="#split_num_words-367"><span class="linenos">367</span></a>        <span class="k">return</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span> <span class="o">+</span> <span class="n">words</span>
-</span><span id="split_num_words-368"><a href="#split_num_words-368"><span class="linenos">368</span></a>    <span class="k">return</span> <span class="n">words</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span>
+</span><span id="split_num_words-362"><a href="#split_num_words-362"><span class="linenos">362</span></a><span class="sd">    Examples:</span>
+</span><span id="split_num_words-363"><a href="#split_num_words-363"><span class="linenos">363</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3)</span>
+</span><span id="split_num_words-364"><a href="#split_num_words-364"><span class="linenos">364</span></a><span class="sd">        [None, &#39;db&#39;, &#39;table&#39;]</span>
+</span><span id="split_num_words-365"><a href="#split_num_words-365"><span class="linenos">365</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 3, fill_from_start=False)</span>
+</span><span id="split_num_words-366"><a href="#split_num_words-366"><span class="linenos">366</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;, None]</span>
+</span><span id="split_num_words-367"><a href="#split_num_words-367"><span class="linenos">367</span></a><span class="sd">        &gt;&gt;&gt; split_num_words(&quot;db.table&quot;, &quot;.&quot;, 1)</span>
+</span><span id="split_num_words-368"><a href="#split_num_words-368"><span class="linenos">368</span></a><span class="sd">        [&#39;db&#39;, &#39;table&#39;]</span>
+</span><span id="split_num_words-369"><a href="#split_num_words-369"><span class="linenos">369</span></a>
+</span><span id="split_num_words-370"><a href="#split_num_words-370"><span class="linenos">370</span></a><span class="sd">    Returns:</span>
+</span><span id="split_num_words-371"><a href="#split_num_words-371"><span class="linenos">371</span></a><span class="sd">        The list of words returned by `split`, possibly augmented by a number of `None` values.</span>
+</span><span id="split_num_words-372"><a href="#split_num_words-372"><span class="linenos">372</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="split_num_words-373"><a href="#split_num_words-373"><span class="linenos">373</span></a>    <span class="n">words</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
+</span><span id="split_num_words-374"><a href="#split_num_words-374"><span class="linenos">374</span></a>    <span class="k">if</span> <span class="n">fill_from_start</span><span class="p">:</span>
+</span><span id="split_num_words-375"><a href="#split_num_words-375"><span class="linenos">375</span></a>        <span class="k">return</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span> <span class="o">+</span> <span class="n">words</span>
+</span><span id="split_num_words-376"><a href="#split_num_words-376"><span class="linenos">376</span></a>    <span class="k">return</span> <span class="n">words</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">min_num_words</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span>
 </span></pre></div>
 
 
@@ -1537,25 +1589,25 @@ of the corresponding enum's identifier (e.g. FOO.value results in "FOO").</p>
 
     </div>
     <a class="headerlink" href="#is_iterable"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iterable-371"><a href="#is_iterable-371"><span class="linenos">371</span></a><span class="k">def</span> <span class="nf">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_iterable-372"><a href="#is_iterable-372"><span class="linenos">372</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="is_iterable-373"><a href="#is_iterable-373"><span class="linenos">373</span></a><span class="sd">    Checks if the value is an iterable, excluding the types `str` and `bytes`.</span>
-</span><span id="is_iterable-374"><a href="#is_iterable-374"><span class="linenos">374</span></a>
-</span><span id="is_iterable-375"><a href="#is_iterable-375"><span class="linenos">375</span></a><span class="sd">    Examples:</span>
-</span><span id="is_iterable-376"><a href="#is_iterable-376"><span class="linenos">376</span></a><span class="sd">        &gt;&gt;&gt; is_iterable([1,2])</span>
-</span><span id="is_iterable-377"><a href="#is_iterable-377"><span class="linenos">377</span></a><span class="sd">        True</span>
-</span><span id="is_iterable-378"><a href="#is_iterable-378"><span class="linenos">378</span></a><span class="sd">        &gt;&gt;&gt; is_iterable(&quot;test&quot;)</span>
-</span><span id="is_iterable-379"><a href="#is_iterable-379"><span class="linenos">379</span></a><span class="sd">        False</span>
-</span><span id="is_iterable-380"><a href="#is_iterable-380"><span class="linenos">380</span></a>
-</span><span id="is_iterable-381"><a href="#is_iterable-381"><span class="linenos">381</span></a><span class="sd">    Args:</span>
-</span><span id="is_iterable-382"><a href="#is_iterable-382"><span class="linenos">382</span></a><span class="sd">        value: The value to check if it is an iterable.</span>
-</span><span id="is_iterable-383"><a href="#is_iterable-383"><span class="linenos">383</span></a>
-</span><span id="is_iterable-384"><a href="#is_iterable-384"><span class="linenos">384</span></a><span class="sd">    Returns:</span>
-</span><span id="is_iterable-385"><a href="#is_iterable-385"><span class="linenos">385</span></a><span class="sd">        A `bool` value indicating if it is an iterable.</span>
-</span><span id="is_iterable-386"><a href="#is_iterable-386"><span class="linenos">386</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="is_iterable-387"><a href="#is_iterable-387"><span class="linenos">387</span></a>    <span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">Expression</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iterable-379"><a href="#is_iterable-379"><span class="linenos">379</span></a><span class="k">def</span> <span class="nf">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_iterable-380"><a href="#is_iterable-380"><span class="linenos">380</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="is_iterable-381"><a href="#is_iterable-381"><span class="linenos">381</span></a><span class="sd">    Checks if the value is an iterable, excluding the types `str` and `bytes`.</span>
+</span><span id="is_iterable-382"><a href="#is_iterable-382"><span class="linenos">382</span></a>
+</span><span id="is_iterable-383"><a href="#is_iterable-383"><span class="linenos">383</span></a><span class="sd">    Examples:</span>
+</span><span id="is_iterable-384"><a href="#is_iterable-384"><span class="linenos">384</span></a><span class="sd">        &gt;&gt;&gt; is_iterable([1,2])</span>
+</span><span id="is_iterable-385"><a href="#is_iterable-385"><span class="linenos">385</span></a><span class="sd">        True</span>
+</span><span id="is_iterable-386"><a href="#is_iterable-386"><span class="linenos">386</span></a><span class="sd">        &gt;&gt;&gt; is_iterable(&quot;test&quot;)</span>
+</span><span id="is_iterable-387"><a href="#is_iterable-387"><span class="linenos">387</span></a><span class="sd">        False</span>
 </span><span id="is_iterable-388"><a href="#is_iterable-388"><span class="linenos">388</span></a>
-</span><span id="is_iterable-389"><a href="#is_iterable-389"><span class="linenos">389</span></a>    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;__iter__&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">Expression</span><span class="p">))</span>
+</span><span id="is_iterable-389"><a href="#is_iterable-389"><span class="linenos">389</span></a><span class="sd">    Args:</span>
+</span><span id="is_iterable-390"><a href="#is_iterable-390"><span class="linenos">390</span></a><span class="sd">        value: The value to check if it is an iterable.</span>
+</span><span id="is_iterable-391"><a href="#is_iterable-391"><span class="linenos">391</span></a>
+</span><span id="is_iterable-392"><a href="#is_iterable-392"><span class="linenos">392</span></a><span class="sd">    Returns:</span>
+</span><span id="is_iterable-393"><a href="#is_iterable-393"><span class="linenos">393</span></a><span class="sd">        A `bool` value indicating if it is an iterable.</span>
+</span><span id="is_iterable-394"><a href="#is_iterable-394"><span class="linenos">394</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="is_iterable-395"><a href="#is_iterable-395"><span class="linenos">395</span></a>    <span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">Expression</span>
+</span><span id="is_iterable-396"><a href="#is_iterable-396"><span class="linenos">396</span></a>
+</span><span id="is_iterable-397"><a href="#is_iterable-397"><span class="linenos">397</span></a>    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;__iter__&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">Expression</span><span class="p">))</span>
 </span></pre></div>
 
 
@@ -1599,28 +1651,28 @@ of the corresponding enum's identifier (e.g. FOO.value results in "FOO").</p>
 
     </div>
     <a class="headerlink" href="#flatten"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="flatten-392"><a href="#flatten-392"><span class="linenos">392</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
-</span><span id="flatten-393"><a href="#flatten-393"><span class="linenos">393</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="flatten-394"><a href="#flatten-394"><span class="linenos">394</span></a><span class="sd">    Flattens an iterable that can contain both iterable and non-iterable elements. Objects of</span>
-</span><span id="flatten-395"><a href="#flatten-395"><span class="linenos">395</span></a><span class="sd">    type `str` and `bytes` are not regarded as iterables.</span>
-</span><span id="flatten-396"><a href="#flatten-396"><span class="linenos">396</span></a>
-</span><span id="flatten-397"><a href="#flatten-397"><span class="linenos">397</span></a><span class="sd">    Examples:</span>
-</span><span id="flatten-398"><a href="#flatten-398"><span class="linenos">398</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([[1, 2], 3, {4}, (5, &quot;bla&quot;)]))</span>
-</span><span id="flatten-399"><a href="#flatten-399"><span class="linenos">399</span></a><span class="sd">        [1, 2, 3, 4, 5, &#39;bla&#39;]</span>
-</span><span id="flatten-400"><a href="#flatten-400"><span class="linenos">400</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([1, 2, 3]))</span>
-</span><span id="flatten-401"><a href="#flatten-401"><span class="linenos">401</span></a><span class="sd">        [1, 2, 3]</span>
-</span><span id="flatten-402"><a href="#flatten-402"><span class="linenos">402</span></a>
-</span><span id="flatten-403"><a href="#flatten-403"><span class="linenos">403</span></a><span class="sd">    Args:</span>
-</span><span id="flatten-404"><a href="#flatten-404"><span class="linenos">404</span></a><span class="sd">        values: The value to be flattened.</span>
-</span><span id="flatten-405"><a href="#flatten-405"><span class="linenos">405</span></a>
-</span><span id="flatten-406"><a href="#flatten-406"><span class="linenos">406</span></a><span class="sd">    Yields:</span>
-</span><span id="flatten-407"><a href="#flatten-407"><span class="linenos">407</span></a><span class="sd">        Non-iterable elements in `values`.</span>
-</span><span id="flatten-408"><a href="#flatten-408"><span class="linenos">408</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="flatten-409"><a href="#flatten-409"><span class="linenos">409</span></a>    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
-</span><span id="flatten-410"><a href="#flatten-410"><span class="linenos">410</span></a>        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
-</span><span id="flatten-411"><a href="#flatten-411"><span class="linenos">411</span></a>            <span class="k">yield from</span> <span class="n">flatten</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span><span id="flatten-412"><a href="#flatten-412"><span class="linenos">412</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="flatten-413"><a href="#flatten-413"><span class="linenos">413</span></a>            <span class="k">yield</span> <span class="n">value</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="flatten-400"><a href="#flatten-400"><span class="linenos">400</span></a><span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
+</span><span id="flatten-401"><a href="#flatten-401"><span class="linenos">401</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="flatten-402"><a href="#flatten-402"><span class="linenos">402</span></a><span class="sd">    Flattens an iterable that can contain both iterable and non-iterable elements. Objects of</span>
+</span><span id="flatten-403"><a href="#flatten-403"><span class="linenos">403</span></a><span class="sd">    type `str` and `bytes` are not regarded as iterables.</span>
+</span><span id="flatten-404"><a href="#flatten-404"><span class="linenos">404</span></a>
+</span><span id="flatten-405"><a href="#flatten-405"><span class="linenos">405</span></a><span class="sd">    Examples:</span>
+</span><span id="flatten-406"><a href="#flatten-406"><span class="linenos">406</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([[1, 2], 3, {4}, (5, &quot;bla&quot;)]))</span>
+</span><span id="flatten-407"><a href="#flatten-407"><span class="linenos">407</span></a><span class="sd">        [1, 2, 3, 4, 5, &#39;bla&#39;]</span>
+</span><span id="flatten-408"><a href="#flatten-408"><span class="linenos">408</span></a><span class="sd">        &gt;&gt;&gt; list(flatten([1, 2, 3]))</span>
+</span><span id="flatten-409"><a href="#flatten-409"><span class="linenos">409</span></a><span class="sd">        [1, 2, 3]</span>
+</span><span id="flatten-410"><a href="#flatten-410"><span class="linenos">410</span></a>
+</span><span id="flatten-411"><a href="#flatten-411"><span class="linenos">411</span></a><span class="sd">    Args:</span>
+</span><span id="flatten-412"><a href="#flatten-412"><span class="linenos">412</span></a><span class="sd">        values: The value to be flattened.</span>
+</span><span id="flatten-413"><a href="#flatten-413"><span class="linenos">413</span></a>
+</span><span id="flatten-414"><a href="#flatten-414"><span class="linenos">414</span></a><span class="sd">    Yields:</span>
+</span><span id="flatten-415"><a href="#flatten-415"><span class="linenos">415</span></a><span class="sd">        Non-iterable elements in `values`.</span>
+</span><span id="flatten-416"><a href="#flatten-416"><span class="linenos">416</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="flatten-417"><a href="#flatten-417"><span class="linenos">417</span></a>    <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+</span><span id="flatten-418"><a href="#flatten-418"><span class="linenos">418</span></a>        <span class="k">if</span> <span class="n">is_iterable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+</span><span id="flatten-419"><a href="#flatten-419"><span class="linenos">419</span></a>            <span class="k">yield from</span> <span class="n">flatten</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+</span><span id="flatten-420"><a href="#flatten-420"><span class="linenos">420</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="flatten-421"><a href="#flatten-421"><span class="linenos">421</span></a>            <span class="k">yield</span> <span class="n">value</span>
 </span></pre></div>
 
 
@@ -1665,30 +1717,30 @@ type <code>str</code> and <code>bytes</code> are not regarded as iterables.</p>
 
     </div>
     <a class="headerlink" href="#dict_depth"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="dict_depth-416"><a href="#dict_depth-416"><span class="linenos">416</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="dict_depth-417"><a href="#dict_depth-417"><span class="linenos">417</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="dict_depth-418"><a href="#dict_depth-418"><span class="linenos">418</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
-</span><span id="dict_depth-419"><a href="#dict_depth-419"><span class="linenos">419</span></a>
-</span><span id="dict_depth-420"><a href="#dict_depth-420"><span class="linenos">420</span></a><span class="sd">    Example:</span>
-</span><span id="dict_depth-421"><a href="#dict_depth-421"><span class="linenos">421</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
-</span><span id="dict_depth-422"><a href="#dict_depth-422"><span class="linenos">422</span></a><span class="sd">        0</span>
-</span><span id="dict_depth-423"><a href="#dict_depth-423"><span class="linenos">423</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
-</span><span id="dict_depth-424"><a href="#dict_depth-424"><span class="linenos">424</span></a><span class="sd">        1</span>
-</span><span id="dict_depth-425"><a href="#dict_depth-425"><span class="linenos">425</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
-</span><span id="dict_depth-426"><a href="#dict_depth-426"><span class="linenos">426</span></a><span class="sd">        1</span>
-</span><span id="dict_depth-427"><a href="#dict_depth-427"><span class="linenos">427</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
-</span><span id="dict_depth-428"><a href="#dict_depth-428"><span class="linenos">428</span></a><span class="sd">        2</span>
-</span><span id="dict_depth-429"><a href="#dict_depth-429"><span class="linenos">429</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
-</span><span id="dict_depth-430"><a href="#dict_depth-430"><span class="linenos">430</span></a><span class="sd">        3</span>
-</span><span id="dict_depth-431"><a href="#dict_depth-431"><span class="linenos">431</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="dict_depth-432"><a href="#dict_depth-432"><span class="linenos">432</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="dict_depth-433"><a href="#dict_depth-433"><span class="linenos">433</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
-</span><span id="dict_depth-434"><a href="#dict_depth-434"><span class="linenos">434</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-</span><span id="dict_depth-435"><a href="#dict_depth-435"><span class="linenos">435</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
-</span><span id="dict_depth-436"><a href="#dict_depth-436"><span class="linenos">436</span></a>        <span class="k">return</span> <span class="mi">0</span>
-</span><span id="dict_depth-437"><a href="#dict_depth-437"><span class="linenos">437</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
-</span><span id="dict_depth-438"><a href="#dict_depth-438"><span class="linenos">438</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
-</span><span id="dict_depth-439"><a href="#dict_depth-439"><span class="linenos">439</span></a>        <span class="k">return</span> <span class="mi">1</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="dict_depth-424"><a href="#dict_depth-424"><span class="linenos">424</span></a><span class="k">def</span> <span class="nf">dict_depth</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="dict_depth-425"><a href="#dict_depth-425"><span class="linenos">425</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="dict_depth-426"><a href="#dict_depth-426"><span class="linenos">426</span></a><span class="sd">    Get the nesting depth of a dictionary.</span>
+</span><span id="dict_depth-427"><a href="#dict_depth-427"><span class="linenos">427</span></a>
+</span><span id="dict_depth-428"><a href="#dict_depth-428"><span class="linenos">428</span></a><span class="sd">    Example:</span>
+</span><span id="dict_depth-429"><a href="#dict_depth-429"><span class="linenos">429</span></a><span class="sd">        &gt;&gt;&gt; dict_depth(None)</span>
+</span><span id="dict_depth-430"><a href="#dict_depth-430"><span class="linenos">430</span></a><span class="sd">        0</span>
+</span><span id="dict_depth-431"><a href="#dict_depth-431"><span class="linenos">431</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({})</span>
+</span><span id="dict_depth-432"><a href="#dict_depth-432"><span class="linenos">432</span></a><span class="sd">        1</span>
+</span><span id="dict_depth-433"><a href="#dict_depth-433"><span class="linenos">433</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: &quot;b&quot;})</span>
+</span><span id="dict_depth-434"><a href="#dict_depth-434"><span class="linenos">434</span></a><span class="sd">        1</span>
+</span><span id="dict_depth-435"><a href="#dict_depth-435"><span class="linenos">435</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {}})</span>
+</span><span id="dict_depth-436"><a href="#dict_depth-436"><span class="linenos">436</span></a><span class="sd">        2</span>
+</span><span id="dict_depth-437"><a href="#dict_depth-437"><span class="linenos">437</span></a><span class="sd">        &gt;&gt;&gt; dict_depth({&quot;a&quot;: {&quot;b&quot;: {}}})</span>
+</span><span id="dict_depth-438"><a href="#dict_depth-438"><span class="linenos">438</span></a><span class="sd">        3</span>
+</span><span id="dict_depth-439"><a href="#dict_depth-439"><span class="linenos">439</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="dict_depth-440"><a href="#dict_depth-440"><span class="linenos">440</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="dict_depth-441"><a href="#dict_depth-441"><span class="linenos">441</span></a>        <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">dict_depth</span><span class="p">(</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+</span><span id="dict_depth-442"><a href="#dict_depth-442"><span class="linenos">442</span></a>    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+</span><span id="dict_depth-443"><a href="#dict_depth-443"><span class="linenos">443</span></a>        <span class="c1"># d doesn&#39;t have attribute &quot;values&quot;</span>
+</span><span id="dict_depth-444"><a href="#dict_depth-444"><span class="linenos">444</span></a>        <span class="k">return</span> <span class="mi">0</span>
+</span><span id="dict_depth-445"><a href="#dict_depth-445"><span class="linenos">445</span></a>    <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+</span><span id="dict_depth-446"><a href="#dict_depth-446"><span class="linenos">446</span></a>        <span class="c1"># d.values() returns an empty sequence</span>
+</span><span id="dict_depth-447"><a href="#dict_depth-447"><span class="linenos">447</span></a>        <span class="k">return</span> <span class="mi">1</span>
 </span></pre></div>
 
 
@@ -1726,9 +1778,9 @@ type <code>str</code> and <code>bytes</code> are not regarded as iterables.</p>
 
     </div>
     <a class="headerlink" href="#first"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="first-442"><a href="#first-442"><span class="linenos">442</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-</span><span id="first-443"><a href="#first-443"><span class="linenos">443</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable (useful for sets).&quot;&quot;&quot;</span>
-</span><span id="first-444"><a href="#first-444"><span class="linenos">444</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="first-450"><a href="#first-450"><span class="linenos">450</span></a><span class="k">def</span> <span class="nf">first</span><span class="p">(</span><span class="n">it</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+</span><span id="first-451"><a href="#first-451"><span class="linenos">451</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the first element from an iterable (useful for sets).&quot;&quot;&quot;</span>
+</span><span id="first-452"><a href="#first-452"><span class="linenos">452</span></a>    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">it</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1748,31 +1800,31 @@ type <code>str</code> and <code>bytes</code> are not regarded as iterables.</p>
 
     </div>
     <a class="headerlink" href="#merge_ranges"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="merge_ranges-447"><a href="#merge_ranges-447"><span class="linenos">447</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
-</span><span id="merge_ranges-448"><a href="#merge_ranges-448"><span class="linenos">448</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="merge_ranges-449"><a href="#merge_ranges-449"><span class="linenos">449</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
-</span><span id="merge_ranges-450"><a href="#merge_ranges-450"><span class="linenos">450</span></a><span class="sd">    belong to some totally-ordered set.</span>
-</span><span id="merge_ranges-451"><a href="#merge_ranges-451"><span class="linenos">451</span></a>
-</span><span id="merge_ranges-452"><a href="#merge_ranges-452"><span class="linenos">452</span></a><span class="sd">    Example:</span>
-</span><span id="merge_ranges-453"><a href="#merge_ranges-453"><span class="linenos">453</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
-</span><span id="merge_ranges-454"><a href="#merge_ranges-454"><span class="linenos">454</span></a><span class="sd">        [(1, 6)]</span>
-</span><span id="merge_ranges-455"><a href="#merge_ranges-455"><span class="linenos">455</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="merge_ranges-456"><a href="#merge_ranges-456"><span class="linenos">456</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
-</span><span id="merge_ranges-457"><a href="#merge_ranges-457"><span class="linenos">457</span></a>        <span class="k">return</span> <span class="p">[]</span>
-</span><span id="merge_ranges-458"><a href="#merge_ranges-458"><span class="linenos">458</span></a>
-</span><span id="merge_ranges-459"><a href="#merge_ranges-459"><span class="linenos">459</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
-</span><span id="merge_ranges-460"><a href="#merge_ranges-460"><span class="linenos">460</span></a>
-</span><span id="merge_ranges-461"><a href="#merge_ranges-461"><span class="linenos">461</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-</span><span id="merge_ranges-462"><a href="#merge_ranges-462"><span class="linenos">462</span></a>
-</span><span id="merge_ranges-463"><a href="#merge_ranges-463"><span class="linenos">463</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-</span><span id="merge_ranges-464"><a href="#merge_ranges-464"><span class="linenos">464</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-</span><span id="merge_ranges-465"><a href="#merge_ranges-465"><span class="linenos">465</span></a>
-</span><span id="merge_ranges-466"><a href="#merge_ranges-466"><span class="linenos">466</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
-</span><span id="merge_ranges-467"><a href="#merge_ranges-467"><span class="linenos">467</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
-</span><span id="merge_ranges-468"><a href="#merge_ranges-468"><span class="linenos">468</span></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="merge_ranges-469"><a href="#merge_ranges-469"><span class="linenos">469</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="merge_ranges-455"><a href="#merge_ranges-455"><span class="linenos">455</span></a><span class="k">def</span> <span class="nf">merge_ranges</span><span class="p">(</span><span class="n">ranges</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">A</span><span class="p">]]:</span>
+</span><span id="merge_ranges-456"><a href="#merge_ranges-456"><span class="linenos">456</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="merge_ranges-457"><a href="#merge_ranges-457"><span class="linenos">457</span></a><span class="sd">    Merges a sequence of ranges, represented as tuples (low, high) whose values</span>
+</span><span id="merge_ranges-458"><a href="#merge_ranges-458"><span class="linenos">458</span></a><span class="sd">    belong to some totally-ordered set.</span>
+</span><span id="merge_ranges-459"><a href="#merge_ranges-459"><span class="linenos">459</span></a>
+</span><span id="merge_ranges-460"><a href="#merge_ranges-460"><span class="linenos">460</span></a><span class="sd">    Example:</span>
+</span><span id="merge_ranges-461"><a href="#merge_ranges-461"><span class="linenos">461</span></a><span class="sd">        &gt;&gt;&gt; merge_ranges([(1, 3), (2, 6)])</span>
+</span><span id="merge_ranges-462"><a href="#merge_ranges-462"><span class="linenos">462</span></a><span class="sd">        [(1, 6)]</span>
+</span><span id="merge_ranges-463"><a href="#merge_ranges-463"><span class="linenos">463</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="merge_ranges-464"><a href="#merge_ranges-464"><span class="linenos">464</span></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
+</span><span id="merge_ranges-465"><a href="#merge_ranges-465"><span class="linenos">465</span></a>        <span class="k">return</span> <span class="p">[]</span>
+</span><span id="merge_ranges-466"><a href="#merge_ranges-466"><span class="linenos">466</span></a>
+</span><span id="merge_ranges-467"><a href="#merge_ranges-467"><span class="linenos">467</span></a>    <span class="n">ranges</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span>
+</span><span id="merge_ranges-468"><a href="#merge_ranges-468"><span class="linenos">468</span></a>
+</span><span id="merge_ranges-469"><a href="#merge_ranges-469"><span class="linenos">469</span></a>    <span class="n">merged</span> <span class="o">=</span> <span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
 </span><span id="merge_ranges-470"><a href="#merge_ranges-470"><span class="linenos">470</span></a>
-</span><span id="merge_ranges-471"><a href="#merge_ranges-471"><span class="linenos">471</span></a>    <span class="k">return</span> <span class="n">merged</span>
+</span><span id="merge_ranges-471"><a href="#merge_ranges-471"><span class="linenos">471</span></a>    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+</span><span id="merge_ranges-472"><a href="#merge_ranges-472"><span class="linenos">472</span></a>        <span class="n">last_start</span><span class="p">,</span> <span class="n">last_end</span> <span class="o">=</span> <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</span><span id="merge_ranges-473"><a href="#merge_ranges-473"><span class="linenos">473</span></a>
+</span><span id="merge_ranges-474"><a href="#merge_ranges-474"><span class="linenos">474</span></a>        <span class="k">if</span> <span class="n">start</span> <span class="o">&lt;=</span> <span class="n">last_end</span><span class="p">:</span>
+</span><span id="merge_ranges-475"><a href="#merge_ranges-475"><span class="linenos">475</span></a>            <span class="n">merged</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_start</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">last_end</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="merge_ranges-476"><a href="#merge_ranges-476"><span class="linenos">476</span></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="merge_ranges-477"><a href="#merge_ranges-477"><span class="linenos">477</span></a>            <span class="n">merged</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">))</span>
+</span><span id="merge_ranges-478"><a href="#merge_ranges-478"><span class="linenos">478</span></a>
+</span><span id="merge_ranges-479"><a href="#merge_ranges-479"><span class="linenos">479</span></a>    <span class="k">return</span> <span class="n">merged</span>
 </span></pre></div>
 
 
@@ -1803,12 +1855,12 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#is_iso_date"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_date-474"><a href="#is_iso_date-474"><span class="linenos">474</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_iso_date-475"><a href="#is_iso_date-475"><span class="linenos">475</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="is_iso_date-476"><a href="#is_iso_date-476"><span class="linenos">476</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="is_iso_date-477"><a href="#is_iso_date-477"><span class="linenos">477</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="is_iso_date-478"><a href="#is_iso_date-478"><span class="linenos">478</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="is_iso_date-479"><a href="#is_iso_date-479"><span class="linenos">479</span></a>        <span class="k">return</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_date-482"><a href="#is_iso_date-482"><span class="linenos">482</span></a><span class="k">def</span> <span class="nf">is_iso_date</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_iso_date-483"><a href="#is_iso_date-483"><span class="linenos">483</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="is_iso_date-484"><a href="#is_iso_date-484"><span class="linenos">484</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="is_iso_date-485"><a href="#is_iso_date-485"><span class="linenos">485</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="is_iso_date-486"><a href="#is_iso_date-486"><span class="linenos">486</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="is_iso_date-487"><a href="#is_iso_date-487"><span class="linenos">487</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1826,12 +1878,12 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#is_iso_datetime"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_datetime-482"><a href="#is_iso_datetime-482"><span class="linenos">482</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_iso_datetime-483"><a href="#is_iso_datetime-483"><span class="linenos">483</span></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="is_iso_datetime-484"><a href="#is_iso_datetime-484"><span class="linenos">484</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
-</span><span id="is_iso_datetime-485"><a href="#is_iso_datetime-485"><span class="linenos">485</span></a>        <span class="k">return</span> <span class="kc">True</span>
-</span><span id="is_iso_datetime-486"><a href="#is_iso_datetime-486"><span class="linenos">486</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span id="is_iso_datetime-487"><a href="#is_iso_datetime-487"><span class="linenos">487</span></a>        <span class="k">return</span> <span class="kc">False</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_iso_datetime-490"><a href="#is_iso_datetime-490"><span class="linenos">490</span></a><span class="k">def</span> <span class="nf">is_iso_datetime</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_iso_datetime-491"><a href="#is_iso_datetime-491"><span class="linenos">491</span></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="is_iso_datetime-492"><a href="#is_iso_datetime-492"><span class="linenos">492</span></a>        <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+</span><span id="is_iso_datetime-493"><a href="#is_iso_datetime-493"><span class="linenos">493</span></a>        <span class="k">return</span> <span class="kc">True</span>
+</span><span id="is_iso_datetime-494"><a href="#is_iso_datetime-494"><span class="linenos">494</span></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="is_iso_datetime-495"><a href="#is_iso_datetime-495"><span class="linenos">495</span></a>        <span class="k">return</span> <span class="kc">False</span>
 </span></pre></div>
 
 
@@ -1841,7 +1893,7 @@ belong to some totally-ordered set.</p>
                 <section id="DATE_UNITS">
                     <div class="attr variable">
             <span class="name">DATE_UNITS</span>        =
-<span class="default_value">{&#39;year_month&#39;, &#39;week&#39;, &#39;quarter&#39;, &#39;day&#39;, &#39;month&#39;, &#39;year&#39;}</span>
+<span class="default_value">{&#39;month&#39;, &#39;day&#39;, &#39;year&#39;, &#39;week&#39;, &#39;quarter&#39;, &#39;year_month&#39;}</span>
 
         
     </div>
@@ -1861,8 +1913,8 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#is_date_unit"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="is_date_unit-494"><a href="#is_date_unit-494"><span class="linenos">494</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="is_date_unit-495"><a href="#is_date_unit-495"><span class="linenos">495</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="is_date_unit-502"><a href="#is_date_unit-502"><span class="linenos">502</span></a><span class="k">def</span> <span class="nf">is_date_unit</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">exp</span><span class="o">.</span><span class="n">Expression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="is_date_unit-503"><a href="#is_date_unit-503"><span class="linenos">503</span></a>    <span class="k">return</span> <span class="n">expression</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">expression</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">DATE_UNITS</span>
 </span></pre></div>
 
 
@@ -1880,28 +1932,28 @@ belong to some totally-ordered set.</p>
 
     </div>
     <a class="headerlink" href="#SingleValuedMapping"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping-502"><a href="#SingleValuedMapping-502"><span class="linenos">502</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
-</span><span id="SingleValuedMapping-503"><a href="#SingleValuedMapping-503"><span class="linenos">503</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="SingleValuedMapping-504"><a href="#SingleValuedMapping-504"><span class="linenos">504</span></a><span class="sd">    Mapping where all keys return the same value.</span>
-</span><span id="SingleValuedMapping-505"><a href="#SingleValuedMapping-505"><span class="linenos">505</span></a>
-</span><span id="SingleValuedMapping-506"><a href="#SingleValuedMapping-506"><span class="linenos">506</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
-</span><span id="SingleValuedMapping-507"><a href="#SingleValuedMapping-507"><span class="linenos">507</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
-</span><span id="SingleValuedMapping-508"><a href="#SingleValuedMapping-508"><span class="linenos">508</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="SingleValuedMapping-509"><a href="#SingleValuedMapping-509"><span class="linenos">509</span></a>
-</span><span id="SingleValuedMapping-510"><a href="#SingleValuedMapping-510"><span class="linenos">510</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
-</span><span id="SingleValuedMapping-511"><a href="#SingleValuedMapping-511"><span class="linenos">511</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
-</span><span id="SingleValuedMapping-512"><a href="#SingleValuedMapping-512"><span class="linenos">512</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping-510"><a href="#SingleValuedMapping-510"><span class="linenos">510</span></a><span class="k">class</span> <span class="nc">SingleValuedMapping</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Mapping</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
+</span><span id="SingleValuedMapping-511"><a href="#SingleValuedMapping-511"><span class="linenos">511</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="SingleValuedMapping-512"><a href="#SingleValuedMapping-512"><span class="linenos">512</span></a><span class="sd">    Mapping where all keys return the same value.</span>
 </span><span id="SingleValuedMapping-513"><a href="#SingleValuedMapping-513"><span class="linenos">513</span></a>
-</span><span id="SingleValuedMapping-514"><a href="#SingleValuedMapping-514"><span class="linenos">514</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
-</span><span id="SingleValuedMapping-515"><a href="#SingleValuedMapping-515"><span class="linenos">515</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
-</span><span id="SingleValuedMapping-516"><a href="#SingleValuedMapping-516"><span class="linenos">516</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
-</span><span id="SingleValuedMapping-517"><a href="#SingleValuedMapping-517"><span class="linenos">517</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="SingleValuedMapping-518"><a href="#SingleValuedMapping-518"><span class="linenos">518</span></a>
-</span><span id="SingleValuedMapping-519"><a href="#SingleValuedMapping-519"><span class="linenos">519</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span id="SingleValuedMapping-520"><a href="#SingleValuedMapping-520"><span class="linenos">520</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-514"><a href="#SingleValuedMapping-514"><span class="linenos">514</span></a><span class="sd">    This rigamarole is meant to avoid copying keys, which was originally intended</span>
+</span><span id="SingleValuedMapping-515"><a href="#SingleValuedMapping-515"><span class="linenos">515</span></a><span class="sd">    as an optimization while qualifying columns for tables with lots of columns.</span>
+</span><span id="SingleValuedMapping-516"><a href="#SingleValuedMapping-516"><span class="linenos">516</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="SingleValuedMapping-517"><a href="#SingleValuedMapping-517"><span class="linenos">517</span></a>
+</span><span id="SingleValuedMapping-518"><a href="#SingleValuedMapping-518"><span class="linenos">518</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="SingleValuedMapping-519"><a href="#SingleValuedMapping-519"><span class="linenos">519</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-520"><a href="#SingleValuedMapping-520"><span class="linenos">520</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
 </span><span id="SingleValuedMapping-521"><a href="#SingleValuedMapping-521"><span class="linenos">521</span></a>
-</span><span id="SingleValuedMapping-522"><a href="#SingleValuedMapping-522"><span class="linenos">522</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
-</span><span id="SingleValuedMapping-523"><a href="#SingleValuedMapping-523"><span class="linenos">523</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-522"><a href="#SingleValuedMapping-522"><span class="linenos">522</span></a>    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-523"><a href="#SingleValuedMapping-523"><span class="linenos">523</span></a>        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-524"><a href="#SingleValuedMapping-524"><span class="linenos">524</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+</span><span id="SingleValuedMapping-525"><a href="#SingleValuedMapping-525"><span class="linenos">525</span></a>        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-526"><a href="#SingleValuedMapping-526"><span class="linenos">526</span></a>
+</span><span id="SingleValuedMapping-527"><a href="#SingleValuedMapping-527"><span class="linenos">527</span></a>    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="SingleValuedMapping-528"><a href="#SingleValuedMapping-528"><span class="linenos">528</span></a>        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping-529"><a href="#SingleValuedMapping-529"><span class="linenos">529</span></a>
+</span><span id="SingleValuedMapping-530"><a href="#SingleValuedMapping-530"><span class="linenos">530</span></a>    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Iterator</span><span class="p">[</span><span class="n">K</span><span class="p">]:</span>
+</span><span id="SingleValuedMapping-531"><a href="#SingleValuedMapping-531"><span class="linenos">531</span></a>        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -1922,9 +1974,9 @@ as an optimization while qualifying columns for tables with lots of columns.</p>
 
     </div>
     <a class="headerlink" href="#SingleValuedMapping.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping.__init__-510"><a href="#SingleValuedMapping.__init__-510"><span class="linenos">510</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
-</span><span id="SingleValuedMapping.__init__-511"><a href="#SingleValuedMapping.__init__-511"><span class="linenos">511</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
-</span><span id="SingleValuedMapping.__init__-512"><a href="#SingleValuedMapping.__init__-512"><span class="linenos">512</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="SingleValuedMapping.__init__-518"><a href="#SingleValuedMapping.__init__-518"><span class="linenos">518</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Collection</span><span class="p">[</span><span class="n">K</span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n">V</span><span class="p">):</span>
+</span><span id="SingleValuedMapping.__init__-519"><a href="#SingleValuedMapping.__init__-519"><span class="linenos">519</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">keys</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">Set</span><span class="p">)</span> <span class="k">else</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+</span><span id="SingleValuedMapping.__init__-520"><a href="#SingleValuedMapping.__init__-520"><span class="linenos">520</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
 </span></pre></div>
 
 

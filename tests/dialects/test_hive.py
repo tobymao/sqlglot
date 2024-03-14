@@ -654,15 +654,6 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "LOG(10, 2)",
-            write={
-                "duckdb": "LOG(10, 2)",
-                "presto": "LOG(10, 2)",
-                "hive": "LOG(10, 2)",
-                "spark": "LOG(10, 2)",
-            },
-        )
-        self.validate_all(
             'ds = "2020-01-01"',
             write={
                 "duckdb": "ds = '2020-01-01'",

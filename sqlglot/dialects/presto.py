@@ -196,6 +196,7 @@ class Presto(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
+    LOG_BASE_FIRST: t.Optional[bool] = None
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289

@@ -207,8 +207,11 @@ class Dialect(metaclass=_Dialect):
         False: Disables function name normalization.
     """
 
-    LOG_BASE_FIRST = True
-    """Whether the base comes first in the `LOG` function."""
+    LOG_BASE_FIRST: t.Optional[bool] = True
+    """
+    Whether the base comes first in the `LOG` function.
+    Possible values: `True`, `False`, `None` (two arguments are not supported by `LOG`)
+    """
 
     NULL_ORDERING = "nulls_are_small"
     """

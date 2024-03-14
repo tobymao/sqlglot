@@ -544,6 +544,9 @@ def simplify_literals(expression, root=True):
     return expression
 
 
+NULL_OK = (exp.NullSafeEQ, exp.NullSafeNEQ, exp.PropertyEQ)
+
+
 def _simplify_binary(expression, a, b):
     if isinstance(expression, exp.Is):
         if isinstance(b, exp.Not):
@@ -558,7 +561,7 @@ def _simplify_binary(expression, a, b):
                 return exp.true() if not_ else exp.false()
             if is_null(a):
                 return exp.false() if not_ else exp.true()
-    elif isinstance(expression, (exp.NullSafeEQ, exp.NullSafeNEQ)):
+    elif isinstance(expression, NULL_OK):
         return None
     elif is_null(a) or is_null(b):
         return exp.null()

@@ -52,6 +52,9 @@ FALSE;
 'x' = 'x';
 TRUE;
 
+STRUCT(NULL AS a);
+STRUCT(NULL AS a);
+
 NULL AND TRUE;
 NULL;
 

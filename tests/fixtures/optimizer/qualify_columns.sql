@@ -121,6 +121,10 @@ SELECT 2 AS d FROM x AS x GROUP BY 1 ORDER BY d;
 SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
+# execute: false
+SELECT (SELECT MIN(a) FROM UNNEST([1, 2])) AS f FROM x GROUP BY 1;
+SELECT (SELECT MIN(_q_0.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS _q_0) AS f FROM x AS x GROUP BY 1;
+
 SELECT SUM(x.a) AS c FROM x JOIN y ON x.b = y.b GROUP BY c;
 SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
 

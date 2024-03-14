@@ -328,21 +328,6 @@ def _json_extract_sql(
     return self.func("ISNULL", json_query, json_value)
 
 
-def _replace_limit_with_offset_fetch(expression: exp.Expression) -> exp.Expression:
-    limit = expression.args.get("limit")
-    if (
-        isinstance(expression, exp.Select)
-        and isinstance(limit, exp.Limit)
-        and expression.args.get("offset")
-    ):
-        limit.replace(exp.Fetch(direction="NEXT", count=limit.expression))
-
-        if not expression.args.get("order"):
-            expression.order_by(exp.select(exp.null()).subquery(), copy=False)
-
-    return expression
-
-
 class TSQL(Dialect):
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TIME_FORMAT = "'yyyy-mm-dd hh:mm:ss'"
@@ -800,7 +785,6 @@ class TSQL(Dialect):
                     transforms.eliminate_distinct_on,
                     transforms.eliminate_semi_and_anti_joins,
                     transforms.eliminate_qualify,
-                    _replace_limit_with_offset_fetch,
                 ]
             ),
             exp.StrPosition: lambda self, e: self.func(
@@ -825,6 +809,21 @@ class TSQL(Dialect):
             **generator.Generator.PROPERTIES_LOCATION,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def select_sql(self, expression: exp.Select) -> str:
+            limit = expression.args.get("limit")
+
+            if expression.args.get("offset"):
+                if not expression.args.get("order"):
+                    # ORDER BY is required in order to use OFFSET in a query
+                    expression.order_by(exp.select(exp.null()).subquery(), copy=False)
+
+                if isinstance(limit, exp.Limit):
+                    # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
+                    # we replace here because otherwise TOP would be generated in select_sql
+                    limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
+
+            return super().select_sql(expression)
 
         def convert_sql(self, expression: exp.Convert) -> str:
             name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"

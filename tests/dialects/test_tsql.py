@@ -273,11 +273,21 @@ class TestTSQL(Validator):
         )
 
         self.validate_all(
-            "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY",
+            "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 2 ROWS",
+            read={
+                "postgres": "SELECT * FROM t OFFSET 2",
+            },
+            write={
+                "postgres": "SELECT * FROM t ORDER BY (SELECT NULL) NULLS FIRST OFFSET 2",
+                "tsql": "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 2 ROWS",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY",
             read={
                 "duckdb": "SELECT * FROM t LIMIT 10 OFFSET 5",
                 "sqlite": "SELECT * FROM t LIMIT 5, 10",
-                "tsql": "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY",
+                "tsql": "SELECT * FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY",
             },
             write={
                 "duckdb": "SELECT * FROM t ORDER BY (SELECT NULL) NULLS FIRST LIMIT 10 OFFSET 5",

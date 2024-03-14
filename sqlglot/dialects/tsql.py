@@ -811,8 +811,6 @@ class TSQL(Dialect):
         }
 
         def select_sql(self, expression: exp.Select) -> str:
-            limit = expression.args.get("limit")
-
             if expression.args.get("offset"):
                 if not expression.args.get("order"):
                     # ORDER BY is required in order to use OFFSET in a query, so we use
@@ -820,6 +818,7 @@ class TSQL(Dialect):
                     # See: https://www.microsoftpressstore.com/articles/article.aspx?p=2314819
                     expression.order_by(exp.select(exp.null()).subquery(), copy=False)
 
+                limit = expression.args.get("limit")
                 if isinstance(limit, exp.Limit):
                     # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
                     # we replace here because otherwise TOP would be generated in select_sql

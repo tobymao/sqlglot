@@ -39,6 +39,8 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import DialectType
 
+    Q = t.TypeVar("Q", bound="Query")
+
 
 class _Expression(type):
     def __new__(cls, clsname, bases, attrs):
@@ -1010,13 +1012,13 @@ class Query(Expression):
         raise NotImplementedError("Query objects must implement `named_selects`")
 
     def select(
-        self,
+        self: Q,
         *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> Query:
+    ) -> Q:
         """
         Append to or set the SELECT expressions.
 
@@ -1039,7 +1041,7 @@ class Query(Expression):
         raise NotImplementedError("Query objects must implement `select`")
 
     def with_(
-        self,
+        self: Q,
         alias: ExpOrStr,
         as_: ExpOrStr,
         recursive: t.Optional[bool] = None,
@@ -1047,7 +1049,7 @@ class Query(Expression):
         dialect: DialectType = None,
         copy: bool = True,
         **opts,
-    ) -> Query:
+    ) -> Q:
         """
         Append to or set the common table expressions.
 

@@ -616,7 +616,7 @@ class MySQL(Dialect):
         def _parse_group_concat(self) -> t.Optional[exp.Expression]:
             def concat_exprs(
                 node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
-            ) -> t.Optional[exp.Expression]:
+            ) -> exp.Expression:
                 if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
                     concat_exprs = [self.expression(exp.Concat, expressions=node.expressions)]
                     node.set("expressions", concat_exprs)

@@ -3379,49 +3379,49 @@ LIMIT 100;
 -- TPC-DS 28
 --------------------------------------
 SELECT *
-FROM   (SELECT Avg(ss_list_price)            B1_LP,
-               Count(ss_list_price)          B1_CNT,
-               Count(DISTINCT ss_list_price) B1_CNTD
+FROM   (SELECT Avg(ss_list_price)            b1_lp,
+               Count(ss_list_price)          b1_cnt,
+               Count(DISTINCT ss_list_price) b1_cntd
         FROM   store_sales
         WHERE  ss_quantity BETWEEN 0 AND 5
                AND ( ss_list_price BETWEEN 18 AND 18 + 10
                       OR ss_coupon_amt BETWEEN 1939 AND 1939 + 1000
                       OR ss_wholesale_cost BETWEEN 34 AND 34 + 20 )) B1,
-       (SELECT Avg(ss_list_price)            B2_LP,
-               Count(ss_list_price)          B2_CNT,
-               Count(DISTINCT ss_list_price) B2_CNTD
+       (SELECT Avg(ss_list_price)            b2_lp,
+               Count(ss_list_price)          b2_cnt,
+               Count(DISTINCT ss_list_price) b2_cntd
         FROM   store_sales
         WHERE  ss_quantity BETWEEN 6 AND 10
                AND ( ss_list_price BETWEEN 1 AND 1 + 10
                       OR ss_coupon_amt BETWEEN 35 AND 35 + 1000
                       OR ss_wholesale_cost BETWEEN 50 AND 50 + 20 )) B2,
-       (SELECT Avg(ss_list_price)            B3_LP,
-               Count(ss_list_price)          B3_CNT,
-               Count(DISTINCT ss_list_price) B3_CNTD
+       (SELECT Avg(ss_list_price)            b3_lp,
+               Count(ss_list_price)          b3_cnt,
+               Count(DISTINCT ss_list_price) b3_cntd
         FROM   store_sales
         WHERE  ss_quantity BETWEEN 11 AND 15
                AND ( ss_list_price BETWEEN 91 AND 91 + 10
                       OR ss_coupon_amt BETWEEN 1412 AND 1412 + 1000
                       OR ss_wholesale_cost BETWEEN 17 AND 17 + 20 )) B3,
-       (SELECT Avg(ss_list_price)            B4_LP,
-               Count(ss_list_price)          B4_CNT,
-               Count(DISTINCT ss_list_price) B4_CNTD
+       (SELECT Avg(ss_list_price)            b4_lp,
+               Count(ss_list_price)          b4_cnt,
+               Count(DISTINCT ss_list_price) b4_cntd
         FROM   store_sales
         WHERE  ss_quantity BETWEEN 16 AND 20
                AND ( ss_list_price BETWEEN 9 AND 9 + 10
                       OR ss_coupon_amt BETWEEN 5270 AND 5270 + 1000
                       OR ss_wholesale_cost BETWEEN 29 AND 29 + 20 )) B4,
-       (SELECT Avg(ss_list_price)            B5_LP,
-               Count(ss_list_price)          B5_CNT,
-               Count(DISTINCT ss_list_price) B5_CNTD
+       (SELECT Avg(ss_list_price)            b5_lp,
+               Count(ss_list_price)          b5_cnt,
+               Count(DISTINCT ss_list_price) b5_cntd
         FROM   store_sales
         WHERE  ss_quantity BETWEEN 21 AND 25
                AND ( ss_list_price BETWEEN 45 AND 45 + 10
                       OR ss_coupon_amt BETWEEN 826 AND 826 + 1000
                       OR ss_wholesale_cost BETWEEN 5 AND 5 + 20 )) B5,
-       (SELECT Avg(ss_list_price)            B6_LP,
-               Count(ss_list_price)          B6_CNT,
-               Count(DISTINCT ss_list_price) B6_CNTD
+       (SELECT Avg(ss_list_price)            b6_lp,
+               Count(ss_list_price)          b6_cnt,
+               Count(DISTINCT ss_list_price) b6_cntd
         FROM   store_sales
         WHERE  ss_quantity BETWEEN 26 AND 30
                AND ( ss_list_price BETWEEN 174 AND 174 + 10
@@ -12048,10 +12048,11 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 91
 --------------------------------------
-SELECT cc_call_center_id Call_Center,
-       cc_name           Call_Center_Name,
-       cc_manager        Manager,
-       Sum(cr_net_loss)  Returns_Loss
+# execute: true
+SELECT cc_call_center_id call_center,
+       cc_name           call_center_name,
+       cc_manager        manager,
+       Sum(cr_net_loss)  returns_loss
 FROM   call_center,
        catalog_returns,
        date_dim,

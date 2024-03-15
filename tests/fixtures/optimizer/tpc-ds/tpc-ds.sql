@@ -62,6 +62,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 2
 --------------------------------------
+# execute: true
 WITH wscs
      AS (SELECT sold_date_sk,
                 sales_price
@@ -107,13 +108,13 @@ WITH wscs
          WHERE  d_date_sk = sold_date_sk
          GROUP  BY d_week_seq)
 SELECT d_week_seq1,
-       Round(sun_sales1 / sun_sales2, 2),
-       Round(mon_sales1 / mon_sales2, 2),
-       Round(tue_sales1 / tue_sales2, 2),
-       Round(wed_sales1 / wed_sales2, 2),
-       Round(thu_sales1 / thu_sales2, 2),
-       Round(fri_sales1 / fri_sales2, 2),
-       Round(sat_sales1 / sat_sales2, 2)
+       Round(sun_sales1 / sun_sales2, 2) AS "_col_1",
+       Round(mon_sales1 / mon_sales2, 2) AS "_col_2",
+       Round(tue_sales1 / tue_sales2, 2) AS "_col_3",
+       Round(wed_sales1 / wed_sales2, 2) AS "_col_4",
+       Round(thu_sales1 / thu_sales2, 2) AS "_col_5",
+       Round(fri_sales1 / fri_sales2, 2) AS "_col_6",
+       Round(sat_sales1 / sat_sales2, 2) AS "_col_7"
 FROM   (SELECT wswscs.d_week_seq d_week_seq1,
                sun_sales         sun_sales1,
                mon_sales         mon_sales1,
@@ -11524,7 +11525,8 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 87
 --------------------------------------
-select count(*)
+# execute: true
+select count(*) as "_col_0"
 from ((select distinct c_last_name, c_first_name, d_date
        from store_sales, date_dim, customer
        where store_sales.ss_sold_date_sk = date_dim.d_date_sk
@@ -12394,7 +12396,8 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 96
 --------------------------------------
-SELECT Count(*)
+# execute: true
+SELECT Count(*) AS "_col_0"
 FROM   store_sales,
        household_demographics,
        time_dim,
@@ -12583,7 +12586,8 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 99
 --------------------------------------
-SELECT Substr(w_warehouse_name, 1, 20),
+# execute: true
+SELECT Substr(w_warehouse_name, 1, 20) AS "_col_0",
                sm_type,
                cc_name,
                Sum(CASE

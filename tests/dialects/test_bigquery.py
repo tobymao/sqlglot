@@ -182,16 +182,15 @@ class TestBigQuery(Validator):
             """SELECT JSON_EXTRACT_SCALAR('5')""", """SELECT JSON_EXTRACT_SCALAR('5', '$')"""
         )
         self.validate_identity(
+            "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
+        )
+        self.validate_identity(
             "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
             "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
         )
         self.validate_identity(
             "select array_contains([1, 2, 3], 1)",
             "SELECT EXISTS(SELECT 1 FROM UNNEST([1, 2, 3]) AS _col WHERE _col = 1)",
-        )
-        self.validate_identity(
-            "create or replace view test (tenant_id OPTIONS(description='Test description on table creation')) select 1 as tenant_id, 1 as customer_id;",
-            "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
         )
         self.validate_identity(
             "SELECT SPLIT(foo)",

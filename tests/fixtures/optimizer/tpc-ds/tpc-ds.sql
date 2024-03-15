@@ -2375,7 +2375,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 16
 --------------------------------------
-# execute: true
 SELECT
          Count(DISTINCT cs_order_number) AS "order count" ,
          Sum(cs_ext_ship_cost)           AS "total shipping cost" ,
@@ -11061,7 +11060,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 82
 --------------------------------------
-# execute: true
 SELECT
          i_item_id ,
          i_item_desc ,
@@ -12132,7 +12130,6 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 92
 --------------------------------------
-# execute: true
 SELECT
          Sum(ws_ext_discount_amt) AS "Excess Discount Amount"
 FROM     web_sales ,
@@ -12249,7 +12246,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 94
 --------------------------------------
-# execute: true
 SELECT
          Count(DISTINCT ws_order_number) AS "order count" ,
          Sum(ws_ext_ship_cost)           AS "total shipping cost" ,
@@ -12324,7 +12320,6 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 95
 --------------------------------------
-# execute: true
 WITH ws_wh AS
 (
        SELECT ws1.ws_order_number,

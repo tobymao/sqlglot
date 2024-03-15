@@ -636,7 +636,7 @@ class MySQL(Dialect):
                     args[-1] = order.this
                     order.set("this", concat_exprs(order.this, args))
 
-                this = order or (args and concat_exprs(args[0], args))
+                this = order or concat_exprs(args[0], args)
             else:
                 this = None
 

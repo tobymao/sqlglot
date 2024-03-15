@@ -724,6 +724,16 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
+            "GROUP_CONCAT(a, b, c SEPARATOR ',')",
+            write={
+                "mysql": "GROUP_CONCAT(CONCAT(a, b, c) SEPARATOR ',')",
+                "sqlite": "GROUP_CONCAT(a || b || c, ',')",
+                "tsql": "STRING_AGG(CONCAT(a, b, c), ',')",
+                "postgres": "STRING_AGG(CONCAT(a, b, c), ',')",
+                "presto": "ARRAY_JOIN(ARRAY_AGG(CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR), CAST(c AS VARCHAR))), ',')",
+            },
+        )
+        self.validate_all(
             "GROUP_CONCAT(a, b, c SEPARATOR '')",
             write={
                 "mysql": "GROUP_CONCAT(CONCAT(a, b, c) SEPARATOR '')",

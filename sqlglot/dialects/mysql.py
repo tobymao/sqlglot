@@ -618,11 +618,15 @@ class MySQL(Dialect):
                 node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
             ) -> exp.Expression:
                 if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
-                    concat_exprs = [self.expression(exp.Concat, expressions=node.expressions)]
+                    concat_exprs = [
+                        self.expression(exp.Concat, expressions=node.expressions, safe=True)
+                    ]
                     node.set("expressions", concat_exprs)
                     return node
                 return (
-                    exprs[0] if len(exprs) == 1 else self.expression(exp.Concat, expressions=args)
+                    exprs[0]
+                    if len(exprs) == 1
+                    else self.expression(exp.Concat, expressions=args, safe=True)
                 )
 
             args = self._parse_csv(self._parse_lambda)

@@ -3545,7 +3545,10 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_limit(
-        self, this: t.Optional[exp.Expression] = None, top: bool = False, skip_limit_token: bool = False
+        self,
+        this: t.Optional[exp.Expression] = None,
+        top: bool = False,
+        skip_limit_token: bool = False,
     ) -> t.Optional[exp.Expression]:
         if skip_limit_token or self._match(TokenType.TOP if top else TokenType.LIMIT):
             comments = self._prev_comments

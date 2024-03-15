@@ -623,11 +623,9 @@ class MySQL(Dialect):
                     ]
                     node.set("expressions", concat_exprs)
                     return node
-                return (
-                    exprs[0]
-                    if len(exprs) == 1
-                    else self.expression(exp.Concat, expressions=args, safe=True)
-                )
+                if len(exprs) == 1:
+                    return exprs[0]
+                return self.expression(exp.Concat, expressions=args, safe=True)
 
             args = self._parse_csv(self._parse_lambda)
 

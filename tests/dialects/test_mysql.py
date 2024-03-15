@@ -723,6 +723,42 @@ class TestMySQL(Validator):
                 "postgres": "STRING_AGG(DISTINCT x, '' ORDER BY y DESC NULLS LAST)",
             },
         )
+        self.validate_all(
+            "GROUP_CONCAT(a, b, c SEPARATOR '')",
+            write={
+                "mysql": "GROUP_CONCAT(CONCAT(a, b, c) SEPARATOR '')",
+                "sqlite": "GROUP_CONCAT(a || b || c, '')",
+                "tsql": "STRING_AGG(CONCAT(a, b, c), '')",
+                "postgres": "STRING_AGG(CONCAT(a, b, c), '')",
+            },
+        )
+        self.validate_all(
+            "GROUP_CONCAT(DISTINCT a, b, c SEPARATOR '')",
+            write={
+                "mysql": "GROUP_CONCAT(DISTINCT CONCAT(a, b, c) SEPARATOR '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT a || b || c, '')",
+                "tsql": "STRING_AGG(CONCAT(a, b, c), '')",
+                "postgres": "STRING_AGG(DISTINCT CONCAT(a, b, c), '')",
+            },
+        )
+        self.validate_all(
+            "GROUP_CONCAT(a, b, c ORDER BY d SEPARATOR '')",
+            write={
+                "mysql": "GROUP_CONCAT(CONCAT(a, b, c) ORDER BY d SEPARATOR '')",
+                "sqlite": "GROUP_CONCAT(a || b || c, '')",
+                "tsql": "STRING_AGG(CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
+                "postgres": "STRING_AGG(CONCAT(a, b, c), '' ORDER BY d NULLS FIRST)",
+            },
+        )
+        self.validate_all(
+            "GROUP_CONCAT(DISTINCT a, b, c ORDER BY d SEPARATOR '')",
+            write={
+                "mysql": "GROUP_CONCAT(DISTINCT CONCAT(a, b, c) ORDER BY d SEPARATOR '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT a || b || c, '')",
+                "tsql": "STRING_AGG(CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
+                "postgres": "STRING_AGG(DISTINCT CONCAT(a, b, c), '' ORDER BY d NULLS FIRST)",
+            },
+        )
         self.validate_identity(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'"
         )

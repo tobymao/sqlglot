@@ -319,11 +319,7 @@ class MySQL(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "CHAR": lambda self: self._parse_chr(),
-            "GROUP_CONCAT": lambda self: self.expression(
-                exp.GroupConcat,
-                this=self._parse_lambda(),
-                separator=self._match(TokenType.SEPARATOR) and self._parse_field(),
-            ),
+            "GROUP_CONCAT": lambda self: self._parse_group_concat(),
             # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
             "VALUES": lambda self: self.expression(
                 exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
@@ -616,6 +612,44 @@ class MySQL(Dialect):
                 kwargs["charset"] = self._parse_var()
 
             return self.expression(exp.Chr, **kwargs)
+
+        def _parse_group_concat(self) -> t.Optional[exp.Expression]:
+            def concat_exprs(node, exprs):
+                if node and isinstance(node, exp.Distinct):
+                    exprs = node.expressions
+                    concat_exprs = (
+                        [self.expression(exp.Concat, expressions=exprs)]
+                        if len(exprs) > 1
+                        else exprs
+                    )
+                    return self.expression(exp.Distinct, expressions=concat_exprs)
+                return (
+                    exprs[0] if len(exprs) == 1 else self.expression(exp.Concat, expressions=args)
+                )
+
+            args = self._parse_csv(self._parse_lambda)
+            if len(args) > 1 and isinstance(args[-1], exp.Order):
+                # Case #1 (Only Order By): GROUP_CONCAT(a, b, c ORDER BY d ...)
+                # Order By has consumed only 'c', undo it and put all concatenated exprs in it's place
+                order = args[-1]
+                args.pop()
+                args.append(order.this)
+                order.set("this", concat_exprs(None, args))
+                this = order
+            elif len(args) == 1 and isinstance(args[0], exp.Order):
+                # Case #2 (Distinct + Order By): GROUP_CONCAT([DISTINCT] a, b, c ORDER BY d ...)
+                order = args[0]
+                if isinstance(order.this, exp.Distinct):
+                    order.set("this", concat_exprs(order.this, order.this.expressions))
+                this = order
+            else:
+                # Case #3 (Only Distinct): GROUP_CONCAT([DISTINCT] a, b, c ...)
+                # Case #4 (Only exprs): GROUP_CONCAT(a, b, c, ...)
+                this = concat_exprs(args[0], args)
+
+            separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
+
+            return self.expression(exp.GroupConcat, this=this, separator=separator)
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

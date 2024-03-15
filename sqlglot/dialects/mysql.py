@@ -319,11 +319,7 @@ class MySQL(Dialect):
         FUNCTION_PARSERS = {
             **parser.Parser.FUNCTION_PARSERS,
             "CHAR": lambda self: self._parse_chr(),
-            "GROUP_CONCAT": lambda self: self.expression(
-                exp.GroupConcat,
-                this=self._parse_lambda(),
-                separator=self._match(TokenType.SEPARATOR) and self._parse_field(),
-            ),
+            "GROUP_CONCAT": lambda self: self._parse_group_concat(),
             # https://dev.mysql.com/doc/refman/5.7/en/miscellaneous-functions.html#function_values
             "VALUES": lambda self: self.expression(
                 exp.Anonymous, this="VALUES", expressions=[self._parse_id_var()]
@@ -616,6 +612,39 @@ class MySQL(Dialect):
                 kwargs["charset"] = self._parse_var()
 
             return self.expression(exp.Chr, **kwargs)
+
+        def _parse_group_concat(self) -> t.Optional[exp.Expression]:
+            def concat_exprs(
+                node: t.Optional[exp.Expression], exprs: t.List[exp.Expression]
+            ) -> exp.Expression:
+                if isinstance(node, exp.Distinct) and len(node.expressions) > 1:
+                    concat_exprs = [
+                        self.expression(exp.Concat, expressions=node.expressions, safe=True)
+                    ]
+                    node.set("expressions", concat_exprs)
+                    return node
+                if len(exprs) == 1:
+                    return exprs[0]
+                return self.expression(exp.Concat, expressions=args, safe=True)
+
+            args = self._parse_csv(self._parse_lambda)
+
+            if args:
+                order = args[-1] if isinstance(args[-1], exp.Order) else None
+
+                if order:
+                    # Order By is the last (or only) expression in the list and has consumed the 'expr' before it,
+                    # remove 'expr' from exp.Order and add it back to args
+                    args[-1] = order.this
+                    order.set("this", concat_exprs(order.this, args))
+
+                this = order or concat_exprs(args[0], args)
+            else:
+                this = None
+
+            separator = self._parse_field() if self._match(TokenType.SEPARATOR) else None
+
+            return self.expression(exp.GroupConcat, this=this, separator=separator)
 
     class Generator(generator.Generator):
         LOCKING_READS_SUPPORTED = True

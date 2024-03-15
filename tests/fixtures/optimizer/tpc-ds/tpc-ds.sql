@@ -2329,8 +2329,9 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 15
 --------------------------------------
+# execute: true
 SELECT ca_zip,
-               Sum(cs_sales_price)
+               Sum(cs_sales_price) AS "_col_1"
 FROM   catalog_sales,
        customer,
        customer_address,
@@ -2911,6 +2912,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 23
 --------------------------------------
+# execute: true
 WITH frequent_ss_items
      AS (SELECT Substr(i_item_desc, 1, 30) itemdesc,
                 i_item_sk                  item_sk,
@@ -2947,7 +2949,7 @@ WITH frequent_ss_items
          HAVING Sum(ss_quantity * ss_sales_price) >
                 ( 95 / 100.0 ) * (SELECT *
                                   FROM   max_store_sales))
-SELECT Sum(sales)
+SELECT Sum(sales) AS "_col_0"
 FROM   (SELECT cs_quantity * cs_list_price sales
         FROM   catalog_sales,
                date_dim
@@ -4240,24 +4242,25 @@ ORDER BY
 --------------------------------------
 -- TPC-DS 35
 --------------------------------------
+# execute: true
 SELECT ca_state,
                cd_gender,
                cd_marital_status,
                cd_dep_count,
                Count(*) cnt1,
-               Stddev_samp(cd_dep_count),
-               Avg(cd_dep_count),
-               Max(cd_dep_count),
+               Stddev_samp(cd_dep_count) AS "_col_5",
+               Avg(cd_dep_count) AS "_col_6",
+               Max(cd_dep_count) AS "_col_7",
                cd_dep_employed_count,
                Count(*) cnt2,
-               Stddev_samp(cd_dep_employed_count),
-               Avg(cd_dep_employed_count),
-               Max(cd_dep_employed_count),
+               Stddev_samp(cd_dep_employed_count) AS "_col_10",
+               Avg(cd_dep_employed_count) AS "_col_11",
+               Max(cd_dep_employed_count) AS "_col_12",
                cd_dep_college_count,
                Count(*) cnt3,
-               Stddev_samp(cd_dep_college_count),
-               Avg(cd_dep_college_count),
-               Max(cd_dep_college_count)
+               Stddev_samp(cd_dep_college_count) AS "_col_15",
+               Avg(cd_dep_college_count) AS "_col_16",
+               Max(cd_dep_college_count) AS "_col_17"
 FROM   customer c,
        customer_address ca,
        customer_demographics
@@ -4518,7 +4521,8 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 38
 --------------------------------------
-SELECT Count(*)
+# execute: true
+SELECT Count(*) AS "_col_0"
 FROM   (SELECT DISTINCT c_last_name,
                         c_first_name,
                         d_date
@@ -4986,10 +4990,11 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 42
 --------------------------------------
+# execute: true
 SELECT dt.d_year,
                item.i_category_id,
                item.i_category,
-               Sum(ss_ext_sales_price)
+               Sum(ss_ext_sales_price) AS "_col_3"
 FROM   date_dim dt,
        store_sales,
        item
@@ -5272,9 +5277,10 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 45
 --------------------------------------
+# execute: true
 SELECT ca_zip,
                ca_state,
-               Sum(ws_sales_price)
+               Sum(ws_sales_price) AS "_col_2"
 FROM   web_sales,
        customer,
        customer_address,
@@ -5583,7 +5589,8 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 48
 --------------------------------------
-SELECT Sum (ss_quantity)
+# execute: true
+SELECT Sum (ss_quantity) AS "_col_0"
 FROM   store_sales,
        store,
        customer_demographics,
@@ -7064,6 +7071,7 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 59
 --------------------------------------
+# execute: true
 WITH wss
      AS (SELECT d_week_seq,
                 ss_store_sk,
@@ -7103,13 +7111,13 @@ WITH wss
 SELECT s_store_name1,
                s_store_id1,
                d_week_seq1,
-               sun_sales1 / sun_sales2,
-               mon_sales1 / mon_sales2,
-               tue_sales1 / tue_sales2,
-               wed_sales1 / wed_sales2,
-               thu_sales1 / thu_sales2,
-               fri_sales1 / fri_sales2,
-               sat_sales1 / sat_sales2
+               sun_sales1 / sun_sales2 AS "_col_3",
+               mon_sales1 / mon_sales2 AS "_col_4",
+               tue_sales1 / tue_sales2 AS "_col_5",
+               wed_sales1 / wed_sales2 AS "_col_6",
+               thu_sales1 / thu_sales2 AS "_col_7",
+               fri_sales1 / fri_sales2 AS "_col_8",
+               sat_sales1 / sat_sales2 AS "_col_9"
 FROM   (SELECT s_store_name   s_store_name1,
                wss.d_week_seq d_week_seq1,
                s_store_id     s_store_id1,
@@ -7561,7 +7569,8 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 62
 --------------------------------------
-SELECT Substr(w_warehouse_name, 1, 20),
+# execute: true
+SELECT Substr(w_warehouse_name, 1, 20) AS "_col_0",
                sm_type,
                web_name,
                Sum(CASE
@@ -10611,9 +10620,10 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 79
 --------------------------------------
+# execute: true
 SELECT c_last_name,
                c_first_name,
-               Substr(s_city, 1, 30),
+               Substr(s_city, 1, 30) AS "_col_2",
                ss_ticket_number,
                amt,
                profit
@@ -11345,10 +11355,11 @@ LIMIT 100;
 --------------------------------------
 -- TPC-DS 85
 --------------------------------------
-SELECT Substr(r_reason_desc, 1, 20),
-               Avg(ws_quantity),
-               Avg(wr_refunded_cash),
-               Avg(wr_fee)
+# execute: true
+SELECT Substr(r_reason_desc, 1, 20) AS "_col_0",
+               Avg(ws_quantity) AS "_col_1",
+               Avg(wr_refunded_cash) AS "_col_2",
+               Avg(wr_fee) AS "_col_3"
 FROM   web_sales,
        web_returns,
        web_page,

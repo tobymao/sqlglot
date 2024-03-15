@@ -14,7 +14,6 @@ from sqlglot.errors import ExecuteError
 from sqlglot.executor import execute
 from sqlglot.executor.python import Python
 from sqlglot.executor.table import Table, ensure_tables
-from sqlglot.optimizer.optimizer import optimize
 from tests.helpers import (
     FIXTURES_DIR,
     SKIP_INTEGRATION,
@@ -129,24 +128,9 @@ class TestExecutor(unittest.TestCase):
             return expression
 
         for i, (meta, sql, _) in enumerate(self.tpcds_sqls):
-            if i + 1 in [2, 99, 96, 87]:
-                try:
-                    table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-                    self.subtestHelper(i, table, tpch=False)
-                except Exception as e:
-                    print("failed query", i+1, "error", e)
-
-            # if string_to_bool(meta.get("execute")):
-            #     table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-            #     self.subtestHelper(i, table, tpch=False)
-            # elif i+1 != 13:
-            #     try:
-            #         print("execute false query", i+1)
-            #         table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
-            #         self.subtestHelper(i, table, tpch=False)
-            #     except Exception as e:
-            #         print("failed query", i+1, "error", e)
-            #         continue
+            if string_to_bool(meta.get("execute")):
+                table = execute(parse_one(sql).transform(to_csv).sql(pretty=True), TPCDS_SCHEMA)
+                self.subtestHelper(i, table, tpch=False)
 
     def test_execute_callable(self):
         tables = {

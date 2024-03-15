@@ -2696,13 +2696,8 @@ class Generator(metaclass=_Generator):
         return self.func(self.sql(expression, "this"), *expression.expressions)
 
     def paren_sql(self, expression: exp.Paren) -> str:
-        if isinstance(expression.unnest(), exp.Select):
-            sql = self.wrap(expression)
-        else:
-            sql = self.seg(self.indent(self.sql(expression, "this")), sep="")
-            sql = f"({sql}{self.seg(')', sep='')}"
-
-        return self.prepend_ctes(expression, sql)
+        sql = self.seg(self.indent(self.sql(expression, "this")), sep="")
+        return f"({sql}{self.seg(')', sep='')}"
 
     def neg_sql(self, expression: exp.Neg) -> str:
         # This makes sure we don't convert "- - 5" to "--5", which is a comment

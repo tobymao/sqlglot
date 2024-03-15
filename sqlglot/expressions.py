@@ -357,6 +357,7 @@ class Expression(metaclass=_Expression):
 
     def iter_expressions(self, reverse: bool = False) -> t.Iterator[Expression]:
         """Yields the key and expression for all arguments, exploding list args."""
+        # remove tuple when python 3.7 is deprecated
         for vs in reversed(tuple(self.args.values())) if reverse else self.args.values():
             if type(vs) is list:
                 for v in reversed(vs) if reverse else vs:
@@ -615,11 +616,11 @@ class Expression(metaclass=_Expression):
             The new expression or expressions.
         """
         parent = self.parent
-        key = self.arg_key
 
         if not parent:
             return expression
 
+        key = self.arg_key
         value = parent.args[key]
 
         if isinstance(value, list):
@@ -4315,8 +4316,6 @@ class Not(Unary):
 
 
 class Paren(Unary):
-    arg_types = {"this": True, "with": False}
-
     @property
     def output_name(self) -> str:
         return self.this.name
@@ -6981,14 +6980,18 @@ def replace_children(expression: Expression, fun: t.Callable, *args, **kwargs) -
         expression.set(k, new_child_nodes if is_list_arg else seq_get(new_child_nodes, 0))
 
 
-def replace_tree(expression: Expression, fun: t.Callable) -> Expression:
+def replace_tree(
+    expression: Expression,
+    fun: t.Callable,
+    prune: t.Optional[t.Callable[[Expression], bool]] = None,
+) -> Expression:
     """
     Replace an entire tree with the result of function calls on each node.
 
     This will be traversed in reverse dfs, so leaves first.
     If new nodes are created as a result of function calls, they will also be traversed.
     """
-    stack = list(expression.dfs())
+    stack = list(expression.dfs(prune=prune))
 
     while stack:
         node = stack.pop()
@@ -7000,7 +7003,7 @@ def replace_tree(expression: Expression, fun: t.Callable) -> Expression:
             if isinstance(new_node, Expression):
                 stack.append(new_node)
 
-    return new_node.assert_is(Expression)
+    return new_node
 
 
 def column_table_names(expression: Expression, exclude: str = "") -> t.Set[str]:

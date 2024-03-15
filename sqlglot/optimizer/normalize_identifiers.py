@@ -54,6 +54,7 @@ def normalize_identifiers(expression, dialect=None):
         expression = exp.parse_identifier(expression, dialect=dialect)
 
     for node in expression.walk(prune=lambda n: n.meta.get("case_sensitive")):
-        dialect.normalize_identifier(node)
+        if not node.meta.get("case_sensitive"):
+            dialect.normalize_identifier(node)
 
     return expression

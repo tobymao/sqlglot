@@ -4260,7 +4260,7 @@ class Parser(metaclass=_Parser):
         parser = self.NO_PAREN_FUNCTION_PARSERS.get(upper)
         if optional_parens and parser and token_type not in self.INVALID_FUNC_NAME_TOKENS:
             self._advance()
-            return parser(self)
+            return self._parse_window(parser(self))
 
         if not self._next or self._next.token_type != TokenType.L_PAREN:
             if optional_parens and token_type in self.NO_PAREN_FUNCTIONS:
@@ -4791,8 +4791,8 @@ class Parser(metaclass=_Parser):
             else:
                 self.raise_error("Expected END after CASE", self._prev)
 
-        return self._parse_window(
-            self.expression(exp.Case, comments=comments, this=expression, ifs=ifs, default=default)
+        return self.expression(
+            exp.Case, comments=comments, this=expression, ifs=ifs, default=default
         )
 
     def _parse_if(self) -> t.Optional[exp.Expression]:
@@ -4818,7 +4818,7 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.END)
             this = self.expression(exp.If, this=condition, true=true, false=false)
 
-        return self._parse_window(this)
+        return this
 
     def _parse_next_value_for(self) -> t.Optional[exp.Expression]:
         if not self._match_text_seq("VALUE", "FOR"):

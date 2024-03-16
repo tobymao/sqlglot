@@ -2409,8 +2409,10 @@ class Generator(metaclass=_Generator):
 
     def any_sql(self, expression: exp.Any) -> str:
         this = self.sql(expression, "this")
-        if isinstance(expression.this, exp.UNWRAPPED_QUERIES):
-            this = self.wrap(this)
+        if isinstance(expression.this, (*exp.UNWRAPPED_QUERIES, exp.Paren)):
+            if isinstance(expression.this, exp.UNWRAPPED_QUERIES):
+                this = self.wrap(this)
+            return f"ANY{this}"
         return f"ANY {this}"
 
     def exists_sql(self, expression: exp.Exists) -> str:

@@ -1,7 +1,7 @@
 # Primer on SQLGlot's Abstract Syntax Tree
 
 SQLGlot is a powerful tool for analyzing and transforming SQL, but the learning curve can be intimidating.
- 
+
 This post is intended to familiarize newbies with SQLGlot's abstract syntax trees, how to traverse them, and how to mutate them.
 
 ## The tree
@@ -78,7 +78,7 @@ Navigating this tree requires an understanding of the different Expression types
 ```python
 class Column(Expression):
     arg_types = {
-      "this": True, 
+      "this": True,
       "table": False,
       ...
     }
@@ -104,19 +104,19 @@ There aren't strict rules for when these keys are used, but they help with some 
 You can traverse an AST using just args, but there are some higher-order functions for programmatic traversal.
 
 > [!NOTE]
-> SQLGlot can parse and generate SQL for many different dialects. However, there is only a single set of Expression types for all dialects. We like to say that the AST can represent the _superset_ of all dialects. 
-> 
+> SQLGlot can parse and generate SQL for many different dialects. However, there is only a single set of Expression types for all dialects. We like to say that the AST can represent the _superset_ of all dialects.
+>
 > Sometimes, SQLGlot will parse SQL from a dialect into Expression types you didn't expect:
-> 
+>
 > ```python
 > ast = parse_one("SELECT NOW()", dialect="postgres")
-> 
+>
 > repr(ast)
 > # Select(
 > #   expressions=[
 > #     CurrentTimestamp()])
 > ```
-> 
+>
 > This is because SQLGlot tries to converge dialects on a standard AST. This means you can often write one piece of code that handles multiple dialects.
 
 ## Traversing the AST
@@ -129,7 +129,7 @@ If you know the structure of an AST, you can use `Expression.args` just like abo
 
 ### Walk methods
 
-The walk methods of `Expression` (`find`, `find_all`, and `walk`) are the simplest way to analyze an AST. 
+The walk methods of `Expression` (`find`, `find_all`, and `walk`) are the simplest way to analyze an AST.
 
 `find` and `find_all` search an AST for specific Expression types:
 ```python
@@ -152,11 +152,7 @@ list(ast.find_all(exp.Select))
 
 Both `find` and `find_all` are built on `walk`, which gives finer grained control:
 ```python
-for (
-    node,  # the current AST node
-    parent,  # parent of the current AST node (this will be None for the root node)
-    key  # The 'key' of this node in its parent's args
-) in ast.walk():
+for node in ast.walk():
     ...
 ```
 
@@ -173,15 +169,15 @@ for (
 > )
 > SELECT a FROM x
 > """)
-> 
+>
 > # This is NOT a good way to find all tables in the query!
 > for table in ast.find_all(exp.Table):
 >     print(table)
-> 
+>
 > # x  -- this is a common table expression, NOT an actual table
 > # y
 > ```
-> 
+>
 > For programmatic traversal of ASTs that requires deeper semantic understanding of a query, you need "scope".
 
 ### Scope
@@ -216,9 +212,9 @@ tables = [
     # `selected_sources` contains sources that have been selected in this scope, e.g. in a FROM or JOIN clause.
     # `alias` is the name of this source in this particular scope.
     # `node` is the AST node instance
-    # if the selected source is a subquery (including common table expressions), 
+    # if the selected source is a subquery (including common table expressions),
     #     then `source` will be the Scope instance for that subquery.
-    # if the selected source is a table, 
+    # if the selected source is a table,
     #     then `source` will be a Table instance.
     for alias, (node, source) in scope.selected_sources.items()
     if isinstance(source, exp.Table)
@@ -230,7 +226,7 @@ for table in tables:
 # y  -- Success!
 ```
 
-`build_scope` returns an instance of the `Scope` class. `Scope` has numerous methods for inspecting a query. The best way to browse these methods is directly in the code at [scope.py](../sqlglot/optimizer/scope.py). You can also look for examples of how Scope is used throughout SQLGlot's [optimizer](../sqlglot/optimizer) module. 
+`build_scope` returns an instance of the `Scope` class. `Scope` has numerous methods for inspecting a query. The best way to browse these methods is directly in the code at [scope.py](../sqlglot/optimizer/scope.py). You can also look for examples of how Scope is used throughout SQLGlot's [optimizer](../sqlglot/optimizer) module.
 
 Many methods of Scope depend on a fully qualified SQL expression. For example, let's say we want to trace the lineage of columns in this query:
 ```python
@@ -239,15 +235,15 @@ SELECT
   a,
   c
 FROM (
-  SELECT 
-    a, 
-    b 
+  SELECT
+    a,
+    b
   FROM x
 ) AS x
 JOIN (
-  SELECT 
-    b, 
-    c 
+  SELECT
+    b,
+    c
   FROM y
 ) AS y
   ON x.b = y.b
@@ -299,11 +295,11 @@ For a complete example of tracing column lineage, check out the [lineage](../sql
 
 > [!NOTE]
 > Some queries require the database schema for disambiguation. For example:
-> 
+>
 > ```sql
 > SELECT a FROM x CROSS JOIN y
 > ```
-> 
+>
 > Column `a` might come from table `x` or `y`. In these cases, you must pass the `schema` into `qualify`.
 
 ## Mutating the tree
@@ -325,13 +321,13 @@ ast = (
 
 > [!WARNING]
 > High-level builder methods will attempt to parse string arguments into Expressions. This can be very convenient, but make sure to keep in mind the dialect of the string. If its written in a specific dialect, you need to set the `dialect` argument.
-> 
+>
 > You can avoid parsing by passing Expressions as arguments, e.g. `.where(exp.column("b") < 4)` instead of `.where("b < 4")`
 
 These methods can be used on any AST, including ones you've parsed:
 ```python
 ast = parse_one("""
-SELECT * FROM (SELECT a, b FROM x) 
+SELECT * FROM (SELECT a, b FROM x)
 """)
 
 # To modify the AST in-place, set `copy=False`
@@ -343,7 +339,7 @@ print(ast)
 
 The best place to browse all the available high-level builder methods and their parameters is, as always, directly in the code at [expressions.py](../sqlglot/expressions.py).
 
-### Low-level builder methods 
+### Low-level builder methods
 
 High-level builder methods don't account for all possible expressions you might want to build. In the case where a particular high-level method is missing, use the low-level methods. Here are some examples:
 ```python
@@ -375,7 +371,7 @@ node.append("expressions", col)
 
 ### Transform
 
-The `Expression.transform` method applies a function to all nodes in an AST in depth-first, pre-order. 
+The `Expression.transform` method applies a function to all nodes in an AST in depth-first, pre-order.
 
 ```python
 def transformer(node):
@@ -390,19 +386,19 @@ print(parse_one("SELECT a, b FROM x").transform(transformer))
 ```
 
 > [!WARNING]
-> As with the walk methods, `transform` doesn't manage scope. For safely transforming the columns and tables in complex expressions, you should probably use Scope. 
+> As with the walk methods, `transform` doesn't manage scope. For safely transforming the columns and tables in complex expressions, you should probably use Scope.
 
 ## Summed up
 
 SQLGlot parses SQL statements into an abstract syntax tree (AST) where nodes are instances of `sqlglot.Expression`.
 
 There are 3 ways to traverse an AST:
-1. **args** - use this when you know the exact structure of the AST you're dealing with. 
+1. **args** - use this when you know the exact structure of the AST you're dealing with.
 2. **walk methods** - this is the easiest way. Use this for simple cases.
 3. **scope** - this is the hardest way. Use this for more complex cases that must handle the semantic context of a query.
 
 There are 3 ways to mutate an AST
-1. **high-level builder methods** - use this when you know the exact structure of the AST you're dealing with. 
+1. **high-level builder methods** - use this when you know the exact structure of the AST you're dealing with.
 2. **low-level builder methods** - use this only when high-level builder methods don't exist for what you're trying to build.
 3. **transform** - use this for simple transformations on arbitrary statements.
 

@@ -520,7 +520,6 @@ class TestExpressions(unittest.TestCase):
             return node
 
         self.assertEqual(expression.transform(remove_column_b).sql(), "SELECT a FROM x")
-        self.assertEqual(expression.transform(lambda _: None), None)
 
         expression = parse_one("CAST(x AS FLOAT)")
 
@@ -576,10 +575,8 @@ class TestExpressions(unittest.TestCase):
         expression = parse_one("SELECT * FROM (SELECT * FROM x)")
         self.assertEqual(len(list(expression.walk())), 9)
         self.assertEqual(len(list(expression.walk(bfs=False))), 9)
-        self.assertTrue(all(isinstance(e, exp.Expression) for e, _, _ in expression.walk()))
-        self.assertTrue(
-            all(isinstance(e, exp.Expression) for e, _, _ in expression.walk(bfs=False))
-        )
+        self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk()))
+        self.assertTrue(all(isinstance(e, exp.Expression) for e in expression.walk(bfs=False)))
 
     def test_functions(self):
         self.assertIsInstance(parse_one("x LIKE ANY (y)"), exp.Like)

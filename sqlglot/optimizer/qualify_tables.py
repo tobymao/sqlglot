@@ -56,7 +56,7 @@ def qualify_tables(
                 table.set("catalog", catalog)
 
     if not isinstance(expression, exp.Query):
-        for node, *_ in expression.walk(prune=lambda n, *_: isinstance(n, exp.Query)):
+        for node in expression.walk(prune=lambda n: isinstance(n, exp.Query)):
             if isinstance(node, exp.Table):
                 _qualify(node)
 
@@ -118,11 +118,11 @@ def qualify_tables(
                     for i, e in enumerate(udtf.expressions[0].expressions):
                         table_alias.append("columns", exp.to_identifier(f"_col_{i}"))
             else:
-                for node, parent, _ in scope.walk():
+                for node in scope.walk():
                     if (
                         isinstance(node, exp.Table)
                         and not node.alias
-                        and isinstance(parent, (exp.From, exp.Join))
+                        and isinstance(node.parent, (exp.From, exp.Join))
                     ):
                         # Mutates the table by attaching an alias to it
                         alias(node, node.name, copy=False, table=True)

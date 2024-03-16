@@ -361,7 +361,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_safe_concat.sql())
 
         anon_unquoted_str = parse_one("anonymous(x, y)")
-        self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS x,y")
+        self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS(x,y)")
 
         query = parse_one("SELECT x FROM t")
         self.assertEqual(optimizer.simplify.gen(query), optimizer.simplify.gen(query.copy()))
@@ -369,16 +369,36 @@ class TestOptimizer(unittest.TestCase):
         anon_unquoted_identifier = exp.Anonymous(
             this=exp.to_identifier("anonymous"), expressions=[exp.column("x"), exp.column("y")]
         )
-        self.assertEqual(optimizer.simplify.gen(anon_unquoted_identifier), "ANONYMOUS x,y")
+        self.assertEqual(optimizer.simplify.gen(anon_unquoted_identifier), "ANONYMOUS(x,y)")
 
         anon_quoted = parse_one('"anonymous"(x, y)')
-        self.assertEqual(optimizer.simplify.gen(anon_quoted), '"anonymous" x,y')
+        self.assertEqual(optimizer.simplify.gen(anon_quoted), '"anonymous"(x,y)')
 
         with self.assertRaises(ValueError) as e:
             anon_invalid = exp.Anonymous(this=5)
             optimizer.simplify.gen(anon_invalid)
 
         self.assertIn("Anonymous.this expects a str or an Identifier, got 'int'.", str(e.exception))
+
+        sql = parse_one("""
+        WITH cte AS (select 1 union select 2), cte2 AS (
+            SELECT ROW() OVER (PARTITION BY y) FROM (
+                (select 1) limit 10
+            )
+        )
+        SELECT
+          *,
+          a + 1,
+          a div 1,
+          filter("B", (x, y) -> x + y)
+          FROM (z AS z CROSS JOIN z) AS f(a) LEFT JOIN a.b.c.d.e.f.g USING(n) ORDER BY 1
+        """)
+        self.assertEqual(
+            optimizer.simplify.gen(sql),
+            """
+SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
+""".strip(),
+        )
 
     def test_unnest_subqueries(self):
         self.check_file(
@@ -536,7 +556,7 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(
             {
                 node.sql()
-                for node, *_ in walk_in_scope(expression.find(exp.Where))
+                for node in walk_in_scope(expression.find(exp.Where))
                 if isinstance(node, exp.Column)
             },
             {"s.b"},

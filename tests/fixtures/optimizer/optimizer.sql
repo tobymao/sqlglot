@@ -481,8 +481,8 @@ JOIN "company_table" AS "company_table_2"
 LEFT JOIN "unlocked" AS "unlocked"
   ON "company_table_2"."id" = "unlocked"."company_id"
 WHERE
-  NOT "company_table_2"."id" IS NULL
-  AND CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE;
+  CASE WHEN "unlocked"."company_id" IS NULL THEN 0 ELSE 1 END = FALSE
+  AND NOT "company_table_2"."id" IS NULL;
 
 # title: db.table alias clash
 # execute: false
@@ -1380,11 +1380,11 @@ JOIN `date_dim` AS `date_dim`
   AND `date_dim`.`d_date` >= '2002-02-01'
 WHERE
   `_u_3`.`_u_4` IS NULL
-  AND NOT `_u_0`.`_u_1` IS NULL
   AND (
     SIZE(`_u_0`.`_u_2`) = 0
     OR SIZE(FILTER(`_u_0`.`_u_2`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
   )
+  AND NOT `_u_0`.`_u_1` IS NULL
 ORDER BY
   COUNT(DISTINCT `cs1`.`cs_order_number`)
 LIMIT 100;

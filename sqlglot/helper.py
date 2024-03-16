@@ -181,7 +181,7 @@ def apply_index_offset(
         annotate_types(expression)
     if t.cast(exp.DataType, expression.type).this in exp.DataType.INTEGER_TYPES:
         logger.warning("Applying array index offset (%s)", offset)
-        expression = simplify(exp.Add(this=expression, expression=exp.Literal.number(offset)))
+        expression = simplify(expression + offset)
         return [expression]
 
     return expressions
@@ -204,13 +204,13 @@ def while_changing(expression: Expression, func: t.Callable[[Expression], E]) ->
         The transformed expression.
     """
     while True:
-        for n, *_ in reversed(tuple(expression.walk())):
+        for n in reversed(tuple(expression.walk())):
             n._hash = hash(n)
 
         start = hash(expression)
         expression = func(expression)
 
-        for n, *_ in expression.walk():
+        for n in expression.walk():
             n._hash = None
         if start == hash(expression):
             break

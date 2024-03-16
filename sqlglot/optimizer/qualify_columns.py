@@ -209,7 +209,7 @@ def _expand_alias_refs(scope: Scope, resolver: Resolver) -> None:
         if not node:
             return
 
-        for column, *_ in walk_in_scope(node, prune=lambda node, *_: node.is_star):
+        for column in walk_in_scope(node, prune=lambda node: node.is_star):
             if not isinstance(column, exp.Column):
                 continue
 
@@ -544,7 +544,7 @@ def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool
     """Makes sure all identifiers that need to be quoted are quoted."""
     return expression.transform(
         Dialect.get_or_raise(dialect).quote_identifier, identify=identify, copy=False
-    )
+    )  # type: ignore
 
 
 def pushdown_cte_alias_columns(expression: exp.Expression) -> exp.Expression:

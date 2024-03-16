@@ -188,13 +188,13 @@ class Step:
                     intermediate[v.name] = k
 
             for projection in projections:
-                for node, *_ in projection.walk():
+                for node in projection.walk():
                     name = intermediate.get(node)
                     if name:
                         node.replace(exp.column(name, step.name))
 
             if aggregate.condition:
-                for node, *_ in aggregate.condition.walk():
+                for node in aggregate.condition.walk():
                     name = intermediate.get(node) or intermediate.get(node.name)
                     if name:
                         node.replace(exp.column(name, step.name))

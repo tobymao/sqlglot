@@ -1014,20 +1014,21 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
-            "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
+            "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)]) AS tab",
             read={
-                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)])",
+                "bigquery": "SELECT cola, colb FROM UNNEST([STRUCT(1 AS cola, 'test' AS colb)]) as tab",
                 "snowflake": "SELECT cola, colb FROM (VALUES (1, 'test')) AS tab(cola, colb)",
                 "spark": "SELECT cola, colb FROM VALUES (1, 'test') AS tab(cola, colb)",
             },
         )
         self.validate_all(
-            "SELECT * FROM UNNEST([STRUCT(1 AS id)]) CROSS JOIN UNNEST([STRUCT(1 AS id)])",
+            "SELECT * FROM UNNEST([STRUCT(1 AS id)]) AS t1 CROSS JOIN UNNEST([STRUCT(1 AS id)]) AS t2",
             read={
-                "bigquery": "SELECT * FROM UNNEST([STRUCT(1 AS id)]) CROSS JOIN UNNEST([STRUCT(1 AS id)])",
+                "bigquery": "SELECT * FROM UNNEST([STRUCT(1 AS id)]) AS t1 CROSS JOIN UNNEST([STRUCT(1 AS id)]) AS t2",
                 "postgres": "SELECT * FROM (VALUES (1)) AS t1(id) CROSS JOIN (VALUES (1)) AS t2(id)",
             },
         )
+
         self.validate_all(
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
             write={

@@ -48,7 +48,11 @@ def _derived_table_values_to_unnest(self: BigQuery.Generator, expression: exp.Va
         ]
         structs.append(exp.Struct(expressions=expressions))
 
-    return self.unnest_sql(exp.Unnest(expressions=[exp.array(*structs, copy=False)]))
+    # Due to `UNNEST_COLUMN_ONLY`, it is expected that the table alias be contained in the columns expression
+    alias_name_only = exp.TableAlias(columns=[alias.this]) if alias else None
+    return self.unnest_sql(
+        exp.Unnest(expressions=[exp.array(*structs, copy=False)], alias=alias_name_only)
+    )
 
 
 def _returnsproperty_sql(self: BigQuery.Generator, expression: exp.ReturnsProperty) -> str:

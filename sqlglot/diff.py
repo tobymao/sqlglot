@@ -103,7 +103,7 @@ def diff(
     ) -> t.Dict[int, exp.Expression]:
         return {
             id(old_node): new_node
-            for (old_node, _, _), (new_node, _, _) in zip(original.walk(), copy.walk())
+            for old_node, new_node in zip(original.walk(), copy.walk())
             if id(old_node) in matching_ids
         }
 
@@ -158,14 +158,10 @@ class ChangeDistiller:
         self._source = source
         self._target = target
         self._source_index = {
-            id(n): n
-            for n, *_ in self._source.bfs()
-            if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
+            id(n): n for n in self._source.bfs() if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
         }
         self._target_index = {
-            id(n): n
-            for n, *_ in self._target.bfs()
-            if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
+            id(n): n for n in self._target.bfs() if not isinstance(n, IGNORED_LEAF_EXPRESSION_TYPES)
         }
         self._unmatched_source_nodes = set(self._source_index) - set(pre_matched_nodes)
         self._unmatched_target_nodes = set(self._target_index) - set(pre_matched_nodes.values())
@@ -216,10 +212,10 @@ class ChangeDistiller:
         matching_set = leaves_matching_set.copy()
 
         ordered_unmatched_source_nodes = {
-            id(n): None for n, *_ in self._source.bfs() if id(n) in self._unmatched_source_nodes
+            id(n): None for n in self._source.bfs() if id(n) in self._unmatched_source_nodes
         }
         ordered_unmatched_target_nodes = {
-            id(n): None for n, *_ in self._target.bfs() if id(n) in self._unmatched_target_nodes
+            id(n): None for n in self._target.bfs() if id(n) in self._unmatched_target_nodes
         }
 
         for source_node_id in ordered_unmatched_source_nodes:
@@ -322,7 +318,7 @@ class ChangeDistiller:
 def _get_leaves(expression: exp.Expression) -> t.Iterator[exp.Expression]:
     has_child_exprs = False
 
-    for _, node in expression.iter_expressions():
+    for node in expression.iter_expressions():
         if not isinstance(node, IGNORED_LEAF_EXPRESSION_TYPES):
             has_child_exprs = True
             yield from _get_leaves(node)

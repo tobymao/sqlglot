@@ -74,6 +74,7 @@ class Expression(metaclass=_Expression):
         parent: a reference to the parent expression (or None, in case of root expressions).
         arg_key: the arg key an expression is associated with, i.e. the name its parent expression
             uses to refer to it.
+        index: the index of an expression if it is inside of a list argument in its parent
         comments: a list of comments that are associated with a given expression. This is used in
             order to preserve comments when transpiling SQL code.
         type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the
@@ -93,12 +94,13 @@ class Expression(metaclass=_Expression):
 
     key = "expression"
     arg_types = {"this": True}
-    __slots__ = ("args", "parent", "arg_key", "comments", "_type", "_meta", "_hash")
+    __slots__ = ("args", "parent", "arg_key", "index", "comments", "_type", "_meta", "_hash")
 
     def __init__(self, **args: t.Any):
         self.args: t.Dict[str, t.Any] = args
         self.parent: t.Optional[Expression] = None
         self.arg_key: t.Optional[str] = None
+        self.index: t.Optional[int] = None
         self.comments: t.Optional[t.List[str]] = None
         self._type: t.Optional[DataType] = None
         self._meta: t.Optional[t.Dict[str, t.Any]] = None
@@ -287,9 +289,7 @@ class Expression(metaclass=_Expression):
         """
         Returns a deep copy of the expression.
         """
-        new = deepcopy(self)
-        new.parent = self.parent
-        return new
+        return deepcopy(self)
 
     def add_comments(self, comments: t.Optional[t.List[str]]) -> None:
         if self.comments is None:
@@ -314,8 +314,11 @@ class Expression(metaclass=_Expression):
         """
         if type(self.args.get(arg_key)) is not list:
             self.args[arg_key] = []
-        self.args[arg_key].append(value)
         self._set_parent(arg_key, value)
+        values = self.args[arg_key]
+        if hasattr(value, "parent"):
+            value.index = len(values)
+        values.append(value)
 
     def set(self, arg_key: str, value: t.Any) -> None:
         """
@@ -327,20 +330,21 @@ class Expression(metaclass=_Expression):
         """
         if value is None:
             self.args.pop(arg_key, None)
-            return
+        else:
+            self.args[arg_key] = value
+            self._set_parent(arg_key, value)
 
-        self.args[arg_key] = value
-        self._set_parent(arg_key, value)
-
-    def _set_parent(self, arg_key: str, value: t.Any) -> None:
+    def _set_parent(self, arg_key: str, value: t.Any, index: t.Optional[int] = None) -> None:
         if hasattr(value, "parent"):
             value.parent = self
             value.arg_key = arg_key
+            value.index = index
         elif type(value) is list:
-            for v in value:
+            for index, v in enumerate(value):
                 if hasattr(v, "parent"):
                     v.parent = self
                     v.arg_key = arg_key
+                    v.index = index
 
     @property
     def depth(self) -> int:
@@ -351,17 +355,17 @@ class Expression(metaclass=_Expression):
             return self.parent.depth + 1
         return 0
 
-    def iter_expressions(self, reverse: bool = False) -> t.Iterator[t.Tuple[str, Expression]]:
+    def iter_expressions(self, reverse: bool = False) -> t.Iterator[Expression]:
         """Yields the key and expression for all arguments, exploding list args."""
-        # need to materialize tuple due to python 3.7
-        for k, vs in reversed(tuple(self.args.items())) if reverse else self.args.items():
+        # remove tuple when python 3.7 is deprecated
+        for vs in reversed(tuple(self.args.values())) if reverse else self.args.values():
             if type(vs) is list:
                 for v in reversed(vs) if reverse else vs:
                     if hasattr(v, "parent"):
-                        yield k, v
+                        yield v
             else:
                 if hasattr(vs, "parent"):
-                    yield k, vs
+                    yield vs
 
     def find(self, *expression_types: t.Type[E], bfs: bool = True) -> t.Optional[E]:
         """
@@ -389,7 +393,7 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        for expression, *_ in self.walk(bfs=bfs):
+        for expression in self.walk(bfs=bfs):
             if isinstance(expression, expression_types):
                 yield expression
 
@@ -429,7 +433,9 @@ class Expression(metaclass=_Expression):
             expression = expression.parent
         return expression
 
-    def walk(self, bfs=True, prune=None):
+    def walk(
+        self, bfs: bool = True, prune: t.Optional[t.Callable[[Expression], bool]] = None
+    ) -> t.Iterator[Expression]:
         """
         Returns a generator object which visits all nodes in this tree.
 
@@ -447,7 +453,9 @@ class Expression(metaclass=_Expression):
         else:
             yield from self.dfs(prune=prune)
 
-    def dfs(self, parent=None, key=None, prune=None):
+    def dfs(
+        self, prune: t.Optional[t.Callable[[Expression], bool]] = None
+    ) -> t.Iterator[Expression]:
         """
         Returns a generator object which visits all nodes in this tree in
         the DFS (Depth-first) order.
@@ -455,20 +463,22 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        stack = [(self, parent or self.parent, key)]
+        stack = [self]
 
         while stack:
-            node, parent, key = stack.pop()
+            node = stack.pop()
 
-            yield node, parent, key
+            yield node
 
-            if prune and prune(node, parent, key):
+            if prune and prune(node):
                 continue
 
-            for k, v in node.iter_expressions(reverse=True):
-                stack.append((v, node, k))
+            for v in node.iter_expressions(reverse=True):
+                stack.append(v)
 
-    def bfs(self, prune=None):
+    def bfs(
+        self, prune: t.Optional[t.Callable[[Expression], bool]] = None
+    ) -> t.Iterator[Expression]:
         """
         Returns a generator object which visits all nodes in this tree in
         the BFS (Breadth-first) order.
@@ -476,17 +486,18 @@ class Expression(metaclass=_Expression):
         Returns:
             The generator object.
         """
-        queue = deque([(self, self.parent, None)])
+        queue = deque([self])
 
         while queue:
-            item, parent, key = queue.popleft()
+            node = queue.popleft()
 
-            yield item, parent, key
-            if prune and prune(item, parent, key):
+            yield node
+
+            if prune and prune(node):
                 continue
 
-            for k, v in item.iter_expressions():
-                queue.append((v, item, k))
+            for v in node.iter_expressions():
+                queue.append(v)
 
     def unnest(self):
         """
@@ -509,7 +520,7 @@ class Expression(metaclass=_Expression):
         """
         Returns unnested operands as a tuple.
         """
-        return tuple(arg.unnest() for _, arg in self.iter_expressions())
+        return tuple(arg.unnest() for arg in self.iter_expressions())
 
     def flatten(self, unnest=True):
         """
@@ -517,7 +528,7 @@ class Expression(metaclass=_Expression):
 
         A AND B AND C -> [A, B, C]
         """
-        for node, _, _ in self.dfs(prune=lambda n, p, *_: p and type(n) is not self.__class__):
+        for node in self.dfs(prune=lambda n: n.parent and type(n) is not self.__class__):
             if type(node) is not self.__class__:
                 yield node.unnest() if unnest and not isinstance(node, Subquery) else node
 
@@ -549,9 +560,9 @@ class Expression(metaclass=_Expression):
 
         return Dialect.get_or_raise(dialect).generate(self, **opts)
 
-    def transform(self, fun, *args, copy=True, **kwargs):
+    def transform(self, fun: t.Callable, *args: t.Any, copy: bool = True, **kwargs) -> Expression:
         """
-        Recursively visits all tree nodes (excluding already transformed ones)
+        Visits all tree nodes (excluding already transformed ones)
         and applies the given transformation function to each node.
 
         Args:
@@ -564,17 +575,20 @@ class Expression(metaclass=_Expression):
         Returns:
             The transformed tree.
         """
-        node = self.copy() if copy else self
-        new_node = fun(node, *args, **kwargs)
+        root = None
+        new_node = None
 
-        if new_node is None or not isinstance(new_node, Expression):
-            return new_node
-        if new_node is not node:
-            new_node.parent = node.parent
-            return new_node
+        for node in (self.copy() if copy else self).dfs(prune=lambda n: n is not new_node):
+            new_node = fun(node, *args, **kwargs)
 
-        replace_children(new_node, lambda child: child.transform(fun, *args, copy=False, **kwargs))
-        return new_node
+            if root:
+                if new_node is not node:
+                    node.replace(new_node)
+            else:
+                root = new_node
+
+        assert root
+        return root.assert_is(Expression)
 
     @t.overload
     def replace(self, expression: E) -> E: ...
@@ -601,13 +615,41 @@ class Expression(metaclass=_Expression):
         Returns:
             The new expression or expressions.
         """
-        if not self.parent:
+        parent = self.parent
+
+        if not parent:
             return expression
 
-        parent = self.parent
-        self.parent = None
+        key = self.arg_key
+        value = parent.args[key]
 
-        replace_children(parent, lambda child: expression if child is self else child)
+        if isinstance(value, list):
+            index = self.index
+
+            if isinstance(expression, list):
+                value.pop(index)
+                value[index:index] = expression
+                parent._set_parent(key, value)
+            else:
+                if expression is None:
+                    value.pop(index)
+
+                    for v in value[index:]:
+                        v.index = v.index - 1
+                else:
+                    value[index] = expression
+                    parent._set_parent(key, expression, index=index)
+        else:
+            if expression is None:
+                parent.args.pop(key)
+            else:
+                parent.set(key, expression)
+
+        if expression is not self:
+            self.parent = None
+            self.arg_key = None
+            self.index = None
+
         return expression
 
     def pop(self: E) -> E:
@@ -4274,8 +4316,6 @@ class Not(Unary):
 
 
 class Paren(Unary):
-    arg_types = {"this": True, "with": False}
-
     @property
     def output_name(self) -> str:
         return self.this.name
@@ -6924,7 +6964,7 @@ def replace_children(expression: Expression, fun: t.Callable, *args, **kwargs) -
     """
     Replace children of an expression with the result of a lambda fun(child) -> exp.
     """
-    for k, v in expression.args.items():
+    for k, v in tuple(expression.args.items()):
         is_list_arg = type(v) is list
 
         child_nodes = v if is_list_arg else [v]
@@ -6934,12 +6974,36 @@ def replace_children(expression: Expression, fun: t.Callable, *args, **kwargs) -
             if isinstance(cn, Expression):
                 for child_node in ensure_collection(fun(cn, *args, **kwargs)):
                     new_child_nodes.append(child_node)
-                    child_node.parent = expression
-                    child_node.arg_key = k
             else:
                 new_child_nodes.append(cn)
 
-        expression.args[k] = new_child_nodes if is_list_arg else seq_get(new_child_nodes, 0)
+        expression.set(k, new_child_nodes if is_list_arg else seq_get(new_child_nodes, 0))
+
+
+def replace_tree(
+    expression: Expression,
+    fun: t.Callable,
+    prune: t.Optional[t.Callable[[Expression], bool]] = None,
+) -> Expression:
+    """
+    Replace an entire tree with the result of function calls on each node.
+
+    This will be traversed in reverse dfs, so leaves first.
+    If new nodes are created as a result of function calls, they will also be traversed.
+    """
+    stack = list(expression.dfs(prune=prune))
+
+    while stack:
+        node = stack.pop()
+        new_node = fun(node)
+
+        if new_node is not node:
+            node.replace(new_node)
+
+            if isinstance(new_node, Expression):
+                stack.append(new_node)
+
+    return new_node
 
 
 def column_table_names(expression: Expression, exclude: str = "") -> t.Set[str]:
@@ -7058,7 +7122,7 @@ def replace_tables(
                 return table
         return node
 
-    return expression.transform(_replace_tables, copy=copy)
+    return expression.transform(_replace_tables, copy=copy)  # type: ignore
 
 
 def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:

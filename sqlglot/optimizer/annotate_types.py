@@ -406,7 +406,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         )
 
     def _annotate_args(self, expression: E) -> E:
-        for _, value in expression.iter_expressions():
+        for value in expression.iter_expressions():
             self._maybe_annotate(value)
 
         return expression

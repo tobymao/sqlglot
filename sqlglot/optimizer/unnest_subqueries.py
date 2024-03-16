@@ -138,7 +138,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if isinstance(predicate, exp.Binary):
             key = (
                 predicate.right
-                if any(node is column for node, *_ in predicate.left.walk())
+                if any(node is column for node in predicate.left.walk())
                 else predicate.left
             )
         else:

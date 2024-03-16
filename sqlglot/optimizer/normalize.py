@@ -28,7 +28,7 @@ def normalize(expression: exp.Expression, dnf: bool = False, max_distance: int =
     Returns:
         sqlglot.Expression: normalized expression
     """
-    for node, *_ in tuple(expression.walk(prune=lambda e, *_: isinstance(e, exp.Connector))):
+    for node in tuple(expression.walk(prune=lambda e: isinstance(e, exp.Connector))):
         if isinstance(node, exp.Connector):
             if normalized(node, dnf=dnf):
                 continue

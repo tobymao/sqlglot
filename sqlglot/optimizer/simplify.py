@@ -9,7 +9,7 @@ from decimal import Decimal
 
 import sqlglot
 from sqlglot import Dialect, exp
-from sqlglot.helper import first, is_iterable, merge_ranges, while_changing
+from sqlglot.helper import first, merge_ranges, while_changing
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
 
 if t.TYPE_CHECKING:
@@ -63,14 +63,14 @@ def simplify(
             group.meta[FINAL] = True
 
             for e in expression.selects:
-                for node, *_ in e.walk():
+                for node in e.walk():
                     if node in groups:
                         e.meta[FINAL] = True
                         break
 
             having = expression.args.get("having")
             if having:
-                for node, *_ in having.walk():
+                for node in having.walk():
                     if node in groups:
                         having.meta[FINAL] = True
                         break
@@ -431,7 +431,7 @@ def propagate_constants(expression, root=True):
         and sqlglot.optimizer.normalize.normalized(expression, dnf=True)
     ):
         constant_mapping = {}
-        for expr, *_ in walk_in_scope(expression, prune=lambda node, *_: isinstance(node, exp.If)):
+        for expr in walk_in_scope(expression, prune=lambda node: isinstance(node, exp.If)):
             if isinstance(expr, exp.EQ):
                 l, r = expr.left, expr.right
 
@@ -1172,73 +1172,251 @@ def gen(expression: t.Any) -> str:
     Sorting and deduping sql is a necessary step for optimization. Calling the actual
     generator is expensive so we have a bare minimum sql generator here.
     """
-    if expression is None:
-        return "_"
-    if is_iterable(expression):
-        return ",".join(gen(e) for e in expression)
-    if not isinstance(expression, exp.Expression):
-        return str(expression)
-
-    etype = type(expression)
-    if etype in GEN_MAP:
-        return GEN_MAP[etype](expression)
-    return f"{expression.key} {gen(expression.args.values())}"
+    return Gen().gen(expression)
 
 
-GEN_MAP = {
-    exp.Add: lambda e: _binary(e, "+"),
-    exp.And: lambda e: _binary(e, "AND"),
-    exp.Anonymous: lambda e: _anonymous(e),
-    exp.Between: lambda e: f"{gen(e.this)} BETWEEN {gen(e.args.get('low'))} AND {gen(e.args.get('high'))}",
-    exp.Boolean: lambda e: "TRUE" if e.this else "FALSE",
-    exp.Bracket: lambda e: f"{gen(e.this)}[{gen(e.expressions)}]",
-    exp.Column: lambda e: ".".join(gen(p) for p in e.parts),
-    exp.DataType: lambda e: f"{e.this.name} {gen(tuple(e.args.values())[1:])}",
-    exp.Div: lambda e: _binary(e, "/"),
-    exp.Dot: lambda e: _binary(e, "."),
-    exp.EQ: lambda e: _binary(e, "="),
-    exp.GT: lambda e: _binary(e, ">"),
-    exp.GTE: lambda e: _binary(e, ">="),
-    exp.Identifier: lambda e: f'"{e.name}"' if e.quoted else e.name,
-    exp.ILike: lambda e: _binary(e, "ILIKE"),
-    exp.In: lambda e: f"{gen(e.this)} IN ({gen(tuple(e.args.values())[1:])})",
-    exp.Is: lambda e: _binary(e, "IS"),
-    exp.Like: lambda e: _binary(e, "LIKE"),
-    exp.Literal: lambda e: f"'{e.name}'" if e.is_string else e.name,
-    exp.LT: lambda e: _binary(e, "<"),
-    exp.LTE: lambda e: _binary(e, "<="),
-    exp.Mod: lambda e: _binary(e, "%"),
-    exp.Mul: lambda e: _binary(e, "*"),
-    exp.Neg: lambda e: _unary(e, "-"),
-    exp.NEQ: lambda e: _binary(e, "<>"),
-    exp.Not: lambda e: _unary(e, "NOT"),
-    exp.Null: lambda e: "NULL",
-    exp.Or: lambda e: _binary(e, "OR"),
-    exp.Paren: lambda e: f"({gen(e.this)})",
-    exp.Sub: lambda e: _binary(e, "-"),
-    exp.Subquery: lambda e: f"({gen(e.args.values())})",
-    exp.Table: lambda e: gen(e.args.values()),
-    exp.Var: lambda e: e.name,
-}
+class Gen:
+    def __init__(self):
+        self.stack = []
+        self.sqls = []
 
+    def gen(self, expression: exp.Expression) -> str:
+        self.stack = [expression]
+        self.sqls.clear()
 
-def _anonymous(e: exp.Anonymous) -> str:
-    this = e.this
-    if isinstance(this, str):
-        name = this.upper()
-    elif isinstance(this, exp.Identifier):
-        name = f'"{this.name}"' if this.quoted else this.name.upper()
-    else:
-        raise ValueError(
-            f"Anonymous.this expects a str or an Identifier, got '{this.__class__.__name__}'."
+        while self.stack:
+            node = self.stack.pop()
+
+            if isinstance(node, exp.Expression):
+                exp_handler_name = f"{node.key}_sql"
+
+                if hasattr(self, exp_handler_name):
+                    getattr(self, exp_handler_name)(node)
+                elif isinstance(node, exp.Func):
+                    self._function(node)
+                else:
+                    key = node.key.upper()
+                    self.stack.append(f"{key} " if self._args(node) else key)
+            elif type(node) is list:
+                for n in reversed(node):
+                    if n is not None:
+                        self.stack.extend((n, ","))
+                if node:
+                    self.stack.pop()
+            else:
+                if node is not None:
+                    self.sqls.append(str(node))
+
+        return "".join(self.sqls)
+
+    def add_sql(self, e: exp.Add) -> None:
+        self._binary(e, " + ")
+
+    def alias_sql(self, e: exp.Alias) -> None:
+        self.stack.extend(
+            (
+                e.args.get("alias"),
+                " AS ",
+                e.args.get("this"),
+            )
         )
 
-    return f"{name} {','.join(gen(e) for e in e.expressions)}"
+    def and_sql(self, e: exp.And) -> None:
+        self._binary(e, " AND ")
 
+    def anonymous_sql(self, e: exp.Anonymous) -> None:
+        this = e.this
+        if isinstance(this, str):
+            name = this.upper()
+        elif isinstance(this, exp.Identifier):
+            name = this.this
+            name = f'"{name}"' if this.quoted else name.upper()
+        else:
+            raise ValueError(
+                f"Anonymous.this expects a str or an Identifier, got '{this.__class__.__name__}'."
+            )
 
-def _binary(e: exp.Binary, op: str) -> str:
-    return f"{gen(e.left)} {op} {gen(e.right)}"
+        self.stack.extend(
+            (
+                ")",
+                e.expressions,
+                "(",
+                name,
+            )
+        )
 
+    def between_sql(self, e: exp.Between) -> None:
+        self.stack.extend(
+            (
+                e.args.get("high"),
+                " AND ",
+                e.args.get("low"),
+                " BETWEEN ",
+                e.this,
+            )
+        )
 
-def _unary(e: exp.Unary, op: str) -> str:
-    return f"{op} {gen(e.this)}"
+    def boolean_sql(self, e: exp.Boolean) -> None:
+        self.stack.append("TRUE" if e.this else "FALSE")
+
+    def bracket_sql(self, e: exp.Bracket) -> None:
+        self.stack.extend(
+            (
+                "]",
+                e.expressions,
+                "[",
+                e.this,
+            )
+        )
+
+    def column_sql(self, e: exp.Column) -> None:
+        for p in reversed(e.parts):
+            self.stack.extend((p, "."))
+        self.stack.pop()
+
+    def datatype_sql(self, e: exp.DataType) -> None:
+        self._args(e, 1)
+        self.stack.append(f"{e.this.name} ")
+
+    def div_sql(self, e: exp.Div) -> None:
+        self._binary(e, " / ")
+
+    def dot_sql(self, e: exp.Dot) -> None:
+        self._binary(e, ".")
+
+    def eq_sql(self, e: exp.EQ) -> None:
+        self._binary(e, " = ")
+
+    def from_sql(self, e: exp.From) -> None:
+        self.stack.extend((e.this, "FROM "))
+
+    def gt_sql(self, e: exp.GT) -> None:
+        self._binary(e, " > ")
+
+    def gte_sql(self, e: exp.GTE) -> None:
+        self._binary(e, " >= ")
+
+    def identifier_sql(self, e: exp.Identifier) -> None:
+        self.stack.append(f'"{e.this}"' if e.quoted else e.this)
+
+    def ilike_sql(self, e: exp.ILike) -> None:
+        self._binary(e, " ILIKE ")
+
+    def in_sql(self, e: exp.In) -> None:
+        self.stack.append(")")
+        self._args(e, 1)
+        self.stack.extend(
+            (
+                "(",
+                " IN ",
+                e.this,
+            )
+        )
+
+    def intdiv_sql(self, e: exp.IntDiv) -> None:
+        self._binary(e, " DIV ")
+
+    def is_sql(self, e: exp.Is) -> None:
+        self._binary(e, " IS ")
+
+    def like_sql(self, e: exp.Like) -> None:
+        self._binary(e, " Like ")
+
+    def literal_sql(self, e: exp.Literal) -> None:
+        self.stack.append(f"'{e.this}'" if e.is_string else e.this)
+
+    def lt_sql(self, e: exp.LT) -> None:
+        self._binary(e, " < ")
+
+    def lte_sql(self, e: exp.LTE) -> None:
+        self._binary(e, " <= ")
+
+    def mod_sql(self, e: exp.Mod) -> None:
+        self._binary(e, " % ")
+
+    def mul_sql(self, e: exp.Mul) -> None:
+        self._binary(e, " * ")
+
+    def neg_sql(self, e: exp.Neg) -> None:
+        self._unary(e, "-")
+
+    def neq_sql(self, e: exp.NEQ) -> None:
+        self._binary(e, " <> ")
+
+    def not_sql(self, e: exp.Not) -> None:
+        self._unary(e, "NOT ")
+
+    def null_sql(self, e: exp.Null) -> None:
+        self.stack.append("NULL")
+
+    def or_sql(self, e: exp.Or) -> None:
+        self._binary(e, " OR ")
+
+    def paren_sql(self, e: exp.Paren) -> None:
+        self.stack.extend(
+            (
+                ")",
+                e.this,
+                "(",
+            )
+        )
+
+    def sub_sql(self, e: exp.Sub) -> None:
+        self._binary(e, " - ")
+
+    def subquery_sql(self, e: exp.Subquery) -> None:
+        self._args(e, 2)
+        alias = e.args.get("alias")
+        if alias:
+            self.stack.append(alias)
+        self.stack.extend((")", e.this, "("))
+
+    def table_sql(self, e: exp.Table) -> None:
+        self._args(e, 4)
+        alias = e.args.get("alias")
+        if alias:
+            self.stack.append(alias)
+        for p in reversed(e.parts):
+            self.stack.extend((p, "."))
+        self.stack.pop()
+
+    def tablealias_sql(self, e: exp.TableAlias) -> None:
+        columns = e.columns
+
+        if columns:
+            self.stack.extend((")", columns, "("))
+
+        self.stack.extend((e.this, " AS "))
+
+    def var_sql(self, e: exp.Var) -> None:
+        self.stack.append(e.this)
+
+    def _binary(self, e: exp.Binary, op: str) -> None:
+        self.stack.extend((e.expression, op, e.this))
+
+    def _unary(self, e: exp.Unary, op: str) -> None:
+        self.stack.extend((e.this, op))
+
+    def _function(self, e: exp.Func) -> None:
+        self.stack.extend(
+            (
+                ")",
+                list(e.args.values()),
+                "(",
+                e.sql_name(),
+            )
+        )
+
+    def _args(self, node: exp.Expression, arg_index: int = 0) -> bool:
+        kvs = []
+        arg_types = list(node.arg_types)[arg_index:] if arg_index else node.arg_types
+
+        for k in arg_types or arg_types:
+            v = node.args.get(k)
+
+            if v is not None:
+                kvs.append([f":{k}", v])
+        if kvs:
+            self.stack.append(kvs)
+            return True
+        return False

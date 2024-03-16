@@ -1022,6 +1022,13 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SELECT * FROM UNNEST([STRUCT(1 AS _c0)]) AS t1",
+            read={
+                "bigquery": "SELECT * FROM UNNEST([STRUCT(1 AS _c0)]) AS t1",
+                "postgres": "SELECT * FROM (VALUES (1)) AS t1",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM UNNEST([STRUCT(1 AS id)]) AS t1 CROSS JOIN UNNEST([STRUCT(1 AS id)]) AS t2",
             read={
                 "bigquery": "SELECT * FROM UNNEST([STRUCT(1 AS id)]) AS t1 CROSS JOIN UNNEST([STRUCT(1 AS id)]) AS t2",

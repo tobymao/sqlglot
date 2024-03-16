@@ -315,6 +315,7 @@ class Parser(metaclass=_Parser):
         TokenType.ANTI,
         TokenType.APPLY,
         TokenType.ASC,
+        TokenType.ASOF,
         TokenType.AUTO_INCREMENT,
         TokenType.BEGIN,
         TokenType.BPCHAR,

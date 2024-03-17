@@ -14,6 +14,9 @@ We use github to host code, to track issues and feature requests, as well as acc
 ## Submitting code changes
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
 
+Please keep PR's small and do your best to follow the conventions of the project. If you have a feature that requires a lot of code changes,
+please reach out to us on [Slack](https://tobikodata.com/slack) before making a PR. This will increase the chances of your PR getting in.
+
 1. Fork the repo and create your branch from `main`.
 2. If you've added code that should be tested, add tests.
 3. If you've changed APIs, update the documentation.

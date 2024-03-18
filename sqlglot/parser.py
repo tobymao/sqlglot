@@ -2170,7 +2170,7 @@ class Parser(metaclass=_Parser):
         ignore = self._match(TokenType.IGNORE)
         local = self._match_text_seq("LOCAL")
         alternative = None
-        kind = None
+        is_function = None
 
         if self._match_text_seq("DIRECTORY"):
             this: t.Optional[exp.Expression] = self.expression(
@@ -2186,9 +2186,9 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.INTO)
             comments += ensure_list(self._prev_comments)
             self._match(TokenType.TABLE)
-            kind = self._match(TokenType.FUNCTION)
+            is_function = self._match(TokenType.FUNCTION)
 
-            this = self._parse_table(schema=True) if not kind else self._parse_function()
+            this = self._parse_table(schema=True) if not is_function else self._parse_function()
 
         returning = self._parse_returning()
 
@@ -2196,7 +2196,7 @@ class Parser(metaclass=_Parser):
             exp.Insert,
             comments=comments,
             hint=hint,
-            kind=kind,
+            is_function=is_function,
             this=this,
             by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),

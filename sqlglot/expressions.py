@@ -1931,7 +1931,7 @@ class Insert(DDL, DML):
     arg_types = {
         "hint": False,
         "with": False,
-        "kind": False,
+        "is_function": False,
         "this": True,
         "expression": False,
         "conflict": False,

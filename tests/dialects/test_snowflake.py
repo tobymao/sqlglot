@@ -978,6 +978,8 @@ WHERE
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
 
+        self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
+
         self.validate_identity(
             "SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'",
             "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",

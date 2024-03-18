@@ -121,6 +121,7 @@ class Parser(metaclass=_Parser):
         "LOG": build_logarithm,
         "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),
         "LOG10": lambda args: exp.Log(this=exp.Literal.number(10), expression=seq_get(args, 0)),
+        "MOD": lambda args: exp.Mod(this=seq_get(args, 0), expression=seq_get(args, 1)),
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),

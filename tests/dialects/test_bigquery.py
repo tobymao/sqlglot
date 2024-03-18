@@ -1092,10 +1092,10 @@ WHERE
         )
         self.validate_all(
             "SELECT MOD(x, 10)",
-            read={"postgres": "select x % 10"},
+            read={"postgres": "SELECT x % 10"},
             write={
                 "bigquery": "SELECT MOD(x, 10)",
-                "postgres": "SELECT MOD(x, 10)",
+                "postgres": "SELECT x % 10",
             },
         )
 

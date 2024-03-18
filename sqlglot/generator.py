@@ -1512,7 +1512,9 @@ class Generator(metaclass=_Generator):
         alternative = expression.args.get("alternative")
         alternative = f" OR {alternative}" if alternative else ""
         ignore = " IGNORE" if expression.args.get("ignore") else ""
-
+        is_function = expression.args.get("is_function")
+        if is_function:
+            this = f"{this} FUNCTION"
         this = f"{this} {self.sql(expression, 'this')}"
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""

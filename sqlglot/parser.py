@@ -2185,7 +2185,9 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.INTO)
             comments += ensure_list(self._prev_comments)
             self._match(TokenType.TABLE)
-            this = self._parse_table(schema=True)
+            is_function = self._match(TokenType.FUNCTION)
+
+            this = self._parse_table(schema=True) if not is_function else self._parse_function()
 
         returning = self._parse_returning()
 
@@ -2193,6 +2195,7 @@ class Parser(metaclass=_Parser):
             exp.Insert,
             comments=comments,
             hint=hint,
+            is_function=is_function,
             this=this,
             by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),

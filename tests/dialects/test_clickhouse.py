@@ -390,6 +390,17 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("SYSTEM STOP MERGES foo.bar", check_command_warning=True)
 
+        self.validate_identity(
+            "INSERT INTO FUNCTION s3('url', 'CSV', 'name String, value UInt32', 'gzip') SELECT name, value FROM existing_table"
+        )
+        self.validate_identity(
+            "INSERT INTO FUNCTION remote('localhost', default.simple_table) VALUES (100, 'inserted via remote()')"
+        )
+        self.validate_identity(
+            """INSERT INTO TABLE FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
+            """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
+        )
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")

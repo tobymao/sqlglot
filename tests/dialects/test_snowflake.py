@@ -71,7 +71,6 @@ WHERE
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
         self.validate_identity("CAST(x AS GEOMETRY)")
         self.validate_identity("OBJECT_CONSTRUCT(*)")
-        self.validate_identity("SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'")
         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")
         self.validate_identity("SELECT HLL(*)")
         self.validate_identity("SELECT HLL(a)")
@@ -978,6 +977,35 @@ WHERE
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
+
+        self.validate_identity("TO_DATE('12345')").assert_is(exp.Anonymous)
+
+        self.validate_identity(
+            "SELECT TO_DATE('2019-02-28') + INTERVAL '1 day, 1 year'",
+            "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",
+        )
+
+        self.validate_all(
+            "DATE('01-01-2000', 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TO_DATE('01-01-2000', 'mm-DD-yyyy')",
+                "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
+            },
+        )
+        self.validate_all(
+            "TO_DATE('01-01-2000', 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TO_DATE('01-01-2000', 'mm-DD-yyyy')",
+                "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
+            },
+        )
+        self.validate_all(
+            "TRY_TO_DATE('01-01-2000', 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TRY_TO_DATE('01-01-2000', 'mm-DD-yyyy')",
+                "duckdb": "CAST(STRPTIME('01-01-2000', '%m-%d-%Y') AS DATE)",
+            },
+        )
 
     def test_semi_structured_types(self):
         self.validate_identity("SELECT CAST(a AS VARIANT)")

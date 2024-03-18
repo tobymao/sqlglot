@@ -2170,7 +2170,6 @@ class Parser(metaclass=_Parser):
         ignore = self._match(TokenType.IGNORE)
         local = self._match_text_seq("LOCAL")
         alternative = None
-        is_function = None
 
         if self._match_text_seq("DIRECTORY"):
             this: t.Optional[exp.Expression] = self.expression(

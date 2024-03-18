@@ -616,6 +616,7 @@ class BigQuery(Dialect):
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Max: max_or_greatest,
+            exp.Mod: rename_func("MOD"),
             exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.MD5Digest: rename_func("MD5"),
             exp.Min: min_or_least,

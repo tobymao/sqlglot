@@ -1090,6 +1090,13 @@ WHERE
             },
             pretty=True,
         )
+        self.validate_all(
+            "SELECT x % 10",
+            write={
+                "bigquery": "SELECT MOD(x, 10)",
+                "postgres": "SELECT x % 10",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

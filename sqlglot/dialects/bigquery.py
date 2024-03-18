@@ -898,6 +898,9 @@ class BigQuery(Dialect):
                 self.unsupported("INTERSECT without DISTINCT is not supported in BigQuery")
             return f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
 
+        def mod_sql(self, expression: exp.Mod) -> str:
+            return self.func("MOD", expression.left, expression.right)
+
         def with_properties(self, properties: exp.Properties) -> str:
             return self.properties(properties, prefix=self.seg("OPTIONS"))
 

@@ -700,7 +700,7 @@ class TestDialect(Validator):
                 "hive": "TO_DATE(x)",
                 "postgres": "CAST(x AS DATE)",
                 "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
-                "snowflake": "CAST(x AS DATE)",
+                "snowflake": "TO_DATE(x)",
                 "doris": "TO_DATE(x)",
                 "mysql": "DATE(x)",
             },

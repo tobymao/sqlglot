@@ -5663,7 +5663,7 @@ class TsOrDsToDateStr(Func):
 
 
 class TsOrDsToDate(Func):
-    arg_types = {"this": True, "format": False}
+    arg_types = {"this": True, "format": False, "safe": False}
 
 
 class TsOrDsToTime(Func):

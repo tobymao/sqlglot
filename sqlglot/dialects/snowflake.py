@@ -28,7 +28,9 @@ if t.TYPE_CHECKING:
 
 
 # from https://docs.snowflake.com/en/sql-reference/functions/to_timestamp.html
-def _build_timestamp(name: str, kind: exp.DataType.Type) -> t.Callable[[t.List], exp.Func]:
+def _build_timestamp(
+    name: str, kind: exp.DataType.Type, safe: bool = False
+) -> t.Callable[[t.List], exp.Func]:
     def _builder(args: t.List) -> exp.Func:
         value = seq_get(args, 0)
 
@@ -46,7 +48,10 @@ def _build_timestamp(name: str, kind: exp.DataType.Type) -> t.Callable[[t.List],
                     return exp.UnixToTime(this=value, scale=seq_get(args, 1))
                 if not is_float(value.this):
                     return build_formatted_time(exp.StrToTime, "snowflake")(args)
-
+            if kind == exp.DataType.Type.DATE:
+                formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
+                formatted_exp.set("safe", safe)
+                return formatted_exp
         return exp.Anonymous(this=name, expressions=args)
 
     return _builder
@@ -336,6 +341,7 @@ class Snowflake(Dialect):
             "BIT_XOR": binary_from_function(exp.BitwiseXor),
             "BOOLXOR": binary_from_function(exp.Xor),
             "CONVERT_TIMEZONE": _build_convert_timezone,
+            "DATE": _build_timestamp("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
             "DATEADD": lambda args: exp.DateAdd(
                 this=seq_get(args, 2),
@@ -363,6 +369,8 @@ class Snowflake(Dialect):
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
+            "TRY_TO_DATE": _build_timestamp("TRY_TO_DATE", exp.DataType.Type.DATE, safe=True),
+            "TO_DATE": _build_timestamp("TO_DATE", exp.DataType.Type.DATE),
             "TO_NUMBER": lambda args: exp.ToNumber(
                 this=seq_get(args, 0),
                 format=seq_get(args, 1),
@@ -997,3 +1005,13 @@ class Snowflake(Dialect):
                     values.append(e)
 
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
+
+        def tsordstodate_sql(self, expression: exp.TsOrDsToDate) -> str:
+            safe = expression.args.get("safe")
+            name = "TRY_TO_DATE" if safe else "TO_DATE"
+
+            this = self.sql(expression, "this")
+            format = self.sql(expression, "format")
+            format = f", {self.format_time(expression)}" if format else ""
+
+            return f"{name}({this}{format})"

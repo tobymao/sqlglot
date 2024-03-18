@@ -585,7 +585,7 @@
 </span><span id="L-464"><a href="#L-464"><span class="linenos">464</span></a>        <span class="p">):</span>
 </span><span id="L-465"><a href="#L-465"><span class="linenos">465</span></a>            <span class="n">node</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">neq</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 </span><span id="L-466"><a href="#L-466"><span class="linenos">466</span></a>
-</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>    <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
+</span><span id="L-467"><a href="#L-467"><span class="linenos">467</span></a>    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
 </span><span id="L-468"><a href="#L-468"><span class="linenos">468</span></a>        <span class="n">ensure_bools</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">_ensure_bool</span><span class="p">)</span>
 </span><span id="L-469"><a href="#L-469"><span class="linenos">469</span></a>
 </span><span id="L-470"><a href="#L-470"><span class="linenos">470</span></a>    <span class="k">return</span> <span class="n">expression</span>
@@ -1496,7 +1496,7 @@ moved to the top level so that the final SQL code is valid from a syntax standpo
 </span><span id="ensure_bools-465"><a href="#ensure_bools-465"><span class="linenos">465</span></a>        <span class="p">):</span>
 </span><span id="ensure_bools-466"><a href="#ensure_bools-466"><span class="linenos">466</span></a>            <span class="n">node</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">neq</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
 </span><span id="ensure_bools-467"><a href="#ensure_bools-467"><span class="linenos">467</span></a>
-</span><span id="ensure_bools-468"><a href="#ensure_bools-468"><span class="linenos">468</span></a>    <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
+</span><span id="ensure_bools-468"><a href="#ensure_bools-468"><span class="linenos">468</span></a>    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">expression</span><span class="o">.</span><span class="n">walk</span><span class="p">():</span>
 </span><span id="ensure_bools-469"><a href="#ensure_bools-469"><span class="linenos">469</span></a>        <span class="n">ensure_bools</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">_ensure_bool</span><span class="p">)</span>
 </span><span id="ensure_bools-470"><a href="#ensure_bools-470"><span class="linenos">470</span></a>
 </span><span id="ensure_bools-471"><a href="#ensure_bools-471"><span class="linenos">471</span></a>    <span class="k">return</span> <span class="n">expression</span>

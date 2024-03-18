@@ -2186,12 +2186,9 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.INTO)
             comments += ensure_list(self._prev_comments)
             self._match(TokenType.TABLE)
+            kind = self._match(TokenType.FUNCTION)
 
-            # https://clickhouse.com/docs/en/sql-reference/table-functions
-            if self._match(TokenType.FUNCTION):
-                kind = "FUNCTION"
-
-            this = self._parse_table(schema=True)
+            this = self._parse_table(schema=True) if not kind else self._parse_function()
 
         returning = self._parse_returning()
 

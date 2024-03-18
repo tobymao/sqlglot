@@ -1,6 +1,29 @@
 Changelog
 =========
 
+## [v23.0.0] - 2024-03-18
+### :sparkles: New Features
+- [`e838713`](https://github.com/tobymao/sqlglot/commit/e838713bdb3da8a5d04eed43b2015a9d3a71addd) - **mysql**: Support for multi arg GROUP_CONCAT *(PR [#3150](https://github.com/tobymao/sqlglot/pull/3150) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3142](https://github.com/tobymao/sqlglot/issues/3142) opened by [@optionals](https://github.com/optionals)*
+- [`7e8f134`](https://github.com/tobymao/sqlglot/commit/7e8f134fb2d78940b27f81be7a347caee371601c) - **test**: Add standard alias to some TPC-DS query *(PR [#3151](https://github.com/tobymao/sqlglot/pull/3151) by [@fool1280](https://github.com/fool1280))*
+- [`6d0e965`](https://github.com/tobymao/sqlglot/commit/6d0e9658733c672154ec69fd2a4140332954b466) - add skip limit token kwarg *(PR [#3149](https://github.com/tobymao/sqlglot/pull/3149) by [@z3z1ma](https://github.com/z3z1ma))*
+- [`3ed5845`](https://github.com/tobymao/sqlglot/commit/3ed58458f9c89a1241a6fa6bb787e236289af58d) - include table alias in bigquery unnest *(PR [#3156](https://github.com/tobymao/sqlglot/pull/3156) by [@eakmanrq](https://github.com/eakmanrq))*
+- [`706fac3`](https://github.com/tobymao/sqlglot/commit/706fac382fbde6c1c6af8acd277291a3f18f94ee) - add bigquery mod op *(PR [#3157](https://github.com/tobymao/sqlglot/pull/3157) by [@eakmanrq](https://github.com/eakmanrq))*
+- [`6ffdc25`](https://github.com/tobymao/sqlglot/commit/6ffdc25c673db33c3e9ac5a2c6970c4331a3f978) - **clickhouse**: Support for INSERT INTO TABLE FUNCTION *(PR [#3162](https://github.com/tobymao/sqlglot/pull/3162) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3161](https://github.com/tobymao/sqlglot/issues/3161) opened by [@mlipiev](https://github.com/mlipiev)*
+- [`021af42`](https://github.com/tobymao/sqlglot/commit/021af4206f4ff2ad4bd57d30cf1f2f78f24fc844) - **snowflake**: Adding support for DATE, TO_DATE, TRY_TO_DATE functions *(PR [#3160](https://github.com/tobymao/sqlglot/pull/3160) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3152](https://github.com/tobymao/sqlglot/issues/3152) opened by [@lei0zhou](https://github.com/lei0zhou)*
+
+### :bug: Bug Fixes
+- [`cfde552`](https://github.com/tobymao/sqlglot/commit/cfde552005e1682d6dd1b71850e163021bf4532f) - asof identifier closes [#3153](https://github.com/tobymao/sqlglot/pull/3153) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`b1e6eef`](https://github.com/tobymao/sqlglot/commit/b1e6eefcd4dd60f541047a10ed35c1ac733a636c) - bigquery values transpilation with no column alias *(commit by [@tobymao](https://github.com/tobymao))*
+- [`c0760b3`](https://github.com/tobymao/sqlglot/commit/c0760b3be11af701273e55c2c976d67d9a575cc4) - parse over any closes [#3155](https://github.com/tobymao/sqlglot/pull/3155) *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`38b931e`](https://github.com/tobymao/sqlglot/commit/38b931ebed9255ce5d0d6185414b6f01ca02b0fd) - pin ruff *(commit by [@tobymao](https://github.com/tobymao))*
+- [`66a6284`](https://github.com/tobymao/sqlglot/commit/66a62847342f15b8d412fb91814342951fe23247) - improve type hints of Query methods *(PR [#3148](https://github.com/tobymao/sqlglot/pull/3148) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v22.5.0] - 2024-03-14
 ### :boom: BREAKING CHANGES
 - due to [`2b4952e`](https://github.com/tobymao/sqlglot/commit/2b4952eb151b3f20739803e7bf443b56da457b1f) - desugar LOG2 and LOG10 by converting them into LOG *(PR [#3139](https://github.com/tobymao/sqlglot/pull/3139) by [@georgesittas](https://github.com/georgesittas))*:
@@ -2941,3 +2964,4 @@ Changelog
 [v22.3.1]: https://github.com/tobymao/sqlglot/compare/v22.3.0...v22.3.1
 [v22.4.0]: https://github.com/tobymao/sqlglot/compare/v22.3.1...v22.4.0
 [v22.5.0]: https://github.com/tobymao/sqlglot/compare/v22.4.0...v22.5.0
+[v23.0.0]: https://github.com/tobymao/sqlglot/compare/v22.5.0...v23.0.0

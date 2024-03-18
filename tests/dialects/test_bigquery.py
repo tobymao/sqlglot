@@ -1068,24 +1068,24 @@ class TestBigQuery(Validator):
         )
         self.validate_all(
             """SELECT
-  `u`.`harness_user_email` AS `harness_user_email`,
-  `d`.`harness_user_id` AS `harness_user_id`,
-  `harness_account_id` AS `harness_account_id`
-FROM `analytics_staging`.`stg_mongodb__users` AS `u`, UNNEST(`u`.`harness_cluster_details`) AS `d`, UNNEST(`d`.`harness_account_ids`) AS `harness_account_id`
+  `u`.`user_email` AS `user_email`,
+  `d`.`user_id` AS `user_id`,
+  `account_id` AS `account_id`
+FROM `analytics_staging`.`stg_mongodb__users` AS `u`, UNNEST(`u`.`cluster_details`) AS `d`, UNNEST(`d`.`account_ids`) AS `account_id`
 WHERE
-  NOT `harness_account_id` IS NULL""",
+  NOT `account_id` IS NULL""",
             read={
                 "": """
                 SELECT
-                  "u"."harness_user_email" AS "harness_user_email",
-                  "_q_0"."d"."harness_user_id" AS "harness_user_id",
-                  "_q_1"."harness_account_id" AS "harness_account_id"
+                  "u"."user_email" AS "user_email",
+                  "_q_0"."d"."user_id" AS "user_id",
+                  "_q_1"."account_id" AS "account_id"
                 FROM
                   "analytics_staging"."stg_mongodb__users" AS "u",
-                  UNNEST("u"."harness_cluster_details") AS "_q_0"("d"),
-                  UNNEST("_q_0"."d"."harness_account_ids") AS "_q_1"("harness_account_id")
+                  UNNEST("u"."cluster_details") AS "_q_0"("d"),
+                  UNNEST("_q_0"."d"."account_ids") AS "_q_1"("account_id")
                 WHERE
-                  NOT "_q_1"."harness_account_id" IS NULL
+                  NOT "_q_1"."account_id" IS NULL
                 """
             },
             pretty=True,

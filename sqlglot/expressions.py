@@ -621,7 +621,7 @@ class Expression(metaclass=_Expression):
             return expression
 
         key = self.arg_key
-        value = parent.args[key]
+        value = parent.args.get(key)
 
         if isinstance(value, list):
             index = self.index
@@ -639,7 +639,7 @@ class Expression(metaclass=_Expression):
                 else:
                     value[index] = expression
                     parent._set_parent(key, expression, index=index)
-        else:
+        elif value is not None:
             if expression is None:
                 parent.args.pop(key)
             else:

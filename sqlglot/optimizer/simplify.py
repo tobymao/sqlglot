@@ -957,7 +957,7 @@ JOINS = {
 def remove_where_true(expression):
     for where in expression.find_all(exp.Where):
         if always_true(where.this):
-            where.parent.set("where", None)
+            where.pop()
     for join in expression.find_all(exp.Join):
         if (
             always_true(join.args.get("on"))
@@ -965,7 +965,7 @@ def remove_where_true(expression):
             and not join.args.get("method")
             and (join.side, join.kind) in JOINS
         ):
-            join.set("on", None)
+            join.args["on"].pop()
             join.set("side", None)
             join.set("kind", "CROSS")
 

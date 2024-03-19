@@ -2768,7 +2768,7 @@ class Generator(metaclass=_Generator):
         self,
         expression: exp.Connector,
         op: str,
-        stack: t.Optional[t.List[str, exp.Expression]] = None,
+        stack: t.Optional[t.List[str | exp.Expression]] = None,
     ) -> str:
         if stack is not None:
             if expression.expressions:
@@ -2782,7 +2782,7 @@ class Generator(metaclass=_Generator):
             return op
 
         stack = [expression]
-        sqls = []
+        sqls: t.List[str] = []
         ops = set()
 
         while stack:

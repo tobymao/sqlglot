@@ -342,6 +342,9 @@ class TestOptimizer(unittest.TestCase):
     def test_simplify(self):
         self.check_file("simplify", simplify, set_dialect=True)
 
+        expression = parse_one("SELECT a, c, b FROM table1 WHERE 1 = 1")
+        self.assertEqual(simplify(simplify(expression.find(exp.Where))).sql(), "WHERE TRUE")
+
         expression = parse_one("TRUE AND TRUE AND TRUE")
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression))
         self.assertEqual(exp.true(), optimizer.simplify.simplify(expression.this))

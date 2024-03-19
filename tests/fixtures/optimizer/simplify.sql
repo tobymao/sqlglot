@@ -105,6 +105,10 @@ a AND b;
 a AND (b AND b);
 a AND b;
 
+-- bigquery doesn't allow unparenthesis comparisons
+(x is not null) != (y is null);
+(NOT x IS NULL) <> (y IS NULL);
+
 --------------------------------------
 -- Absorption
 --------------------------------------

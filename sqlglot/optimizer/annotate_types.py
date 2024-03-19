@@ -264,6 +264,9 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
         exp.Dot: lambda self, e: self._annotate_dot(e),
         exp.Explode: lambda self, e: self._annotate_explode(e),
         exp.Filter: lambda self, e: self._annotate_by_args(e, "this"),
+        exp.GenerateDateArray: lambda self, e: self._annotate_with_type(
+            e, exp.DataType.build("ARRAY<DATE>")
+        ),
         exp.If: lambda self, e: self._annotate_by_args(e, "true", "false"),
         exp.Interval: lambda self, e: self._annotate_with_type(e, exp.DataType.Type.INTERVAL),
         exp.Least: lambda self, e: self._annotate_by_args(e, "expressions"),
@@ -356,6 +359,8 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
                     if isinstance(source.expression, exp.Lateral):
                         if isinstance(source.expression.this, exp.Explode):
                             values = [source.expression.this.this]
+                    elif isinstance(source.expression, exp.Unnest):
+                        values = [source.expression]
                     else:
                         values = source.expression.expressions[0].expressions
 

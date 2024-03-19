@@ -1101,6 +1101,19 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         self.assertEqual(expression.selects[1].type, exp.DataType.build("STRUCT<c int>"))
         self.assertEqual(expression.selects[2].type, exp.DataType.build("int"))
 
+        self.assertEqual(
+            annotate_types(
+                optimizer.qualify.qualify(
+                    parse_one(
+                        "SELECT x FROM UNNEST(GENERATE_DATE_ARRAY('2021-01-01', current_date(), interval 1 day)) AS x"
+                    )
+                )
+            )
+            .selects[0]
+            .type,
+            exp.DataType.build("date"),
+        )
+
     def test_recursive_cte(self):
         query = parse_one(
             """

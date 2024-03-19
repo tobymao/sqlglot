@@ -622,11 +622,13 @@ class Expression(metaclass=_Expression):
 
         key = self.arg_key
         value = parent.args.get(key)
+        value_is_list = type(value) is list
+        exp_is_list = type(expression) is list
 
-        if isinstance(value, list):
+        if value_is_list:
             index = self.index
 
-            if isinstance(expression, list):
+            if exp_is_list:
                 value.pop(index)
                 value[index:index] = expression
                 parent._set_parent(key, value)
@@ -643,7 +645,10 @@ class Expression(metaclass=_Expression):
             if expression is None:
                 parent.args.pop(key)
             else:
-                parent.set(key, expression)
+                if exp_is_list and not value_is_list and value.parent:
+                    value.parent.replace(expression)
+                else:
+                    parent.set(key, expression)
 
         if expression is not self:
             self.parent = None
@@ -886,6 +891,9 @@ class Expression(metaclass=_Expression):
         div.args["typed"] = typed
         div.args["safe"] = safe
         return div
+
+    def asc(self, nulls_first: bool = True) -> Ordered:
+        return Ordered(this=self.copy(), nulls_first=nulls_first)
 
     def desc(self, nulls_first: bool = False) -> Ordered:
         return Ordered(this=self.copy(), desc=True, nulls_first=nulls_first)

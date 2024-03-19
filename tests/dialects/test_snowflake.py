@@ -985,6 +985,8 @@ WHERE
             "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",
         )
 
+        self.validate_identity("DATE(x)").assert_is(exp.Anonymous)
+        self.validate_identity("TO_DATE(x)").assert_is(exp.Anonymous)
         self.validate_identity("TRY_TO_DATE(x)").assert_is(exp.Anonymous)
 
         self.validate_all(

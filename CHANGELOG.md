@@ -1,6 +1,16 @@
 Changelog
 =========
 
+## [v23.0.2] - 2024-03-19
+### :sparkles: New Features
+- [`32cc2be`](https://github.com/tobymao/sqlglot/commit/32cc2be1b19ade551b42cc70a96f1675ac8773f4) - **postgres**: add support for materialized CTEs *(PR [#3171](https://github.com/tobymao/sqlglot/pull/3171) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3170](https://github.com/tobymao/sqlglot/issues/3170) opened by [@betodealmeida](https://github.com/betodealmeida)*
+
+### :bug: Bug Fixes
+- [`df4ce17`](https://github.com/tobymao/sqlglot/commit/df4ce17f24bbb16a64172e351f4e27ac74de668a) - can't expand group by for nulls and bools *(commit by [@tobymao](https://github.com/tobymao))*
+- [`d859fc0`](https://github.com/tobymao/sqlglot/commit/d859fc0f6eeb0971dab5b22748d1e84425829444) - unnest annotation with generate_date_array *(PR [#3169](https://github.com/tobymao/sqlglot/pull/3169) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.0.1] - 2024-03-19
 ### :sparkles: New Features
 - [`931774d`](https://github.com/tobymao/sqlglot/commit/931774dde50aa04efecd1ae9cdd6965655670d71) - iterative connector sql *(commit by [@tobymao](https://github.com/tobymao))*
@@ -2980,3 +2990,4 @@ Changelog
 [v22.5.0]: https://github.com/tobymao/sqlglot/compare/v22.4.0...v22.5.0
 [v23.0.0]: https://github.com/tobymao/sqlglot/compare/v22.5.0...v23.0.0
 [v23.0.1]: https://github.com/tobymao/sqlglot/compare/v23.0.0...v23.0.1
+[v23.0.2]: https://github.com/tobymao/sqlglot/compare/v23.0.1...v23.0.2

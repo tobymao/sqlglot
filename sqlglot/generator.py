@@ -1049,7 +1049,14 @@ class Generator(metaclass=_Generator):
 
     def cte_sql(self, expression: exp.CTE) -> str:
         alias = self.sql(expression, "alias")
-        return f"{alias} AS {self.wrap(expression)}"
+
+        materialized = expression.args.get("materialized")
+        if materialized is False:
+            materialized = "NOT MATERIALIZED "
+        elif materialized:
+            materialized = "MATERIALIZED "
+
+        return f"{alias} AS {materialized or ''}{self.wrap(expression)}"
 
     def tablealias_sql(self, expression: exp.TableAlias) -> str:
         alias = self.sql(expression, "this")

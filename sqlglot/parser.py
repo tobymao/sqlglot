@@ -2546,8 +2546,19 @@ class Parser(metaclass=_Parser):
             self.raise_error("Expected CTE to have alias")
 
         self._match(TokenType.ALIAS)
+
+        if self._match_text_seq("NOT", "MATERIALIZED"):
+            materialized = False
+        elif self._match_text_seq("MATERIALIZED"):
+            materialized = True
+        else:
+            materialized = None
+
         return self.expression(
-            exp.CTE, this=self._parse_wrapped(self._parse_statement), alias=alias
+            exp.CTE,
+            this=self._parse_wrapped(self._parse_statement),
+            alias=alias,
+            materialized=materialized,
         )
 
     def _parse_table_alias(

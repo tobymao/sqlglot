@@ -231,6 +231,7 @@ class TokenType(AutoName):
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()
     CURRENT_USER = auto()
+    DECLARE = auto()
     DEFAULT = auto()
     DELETE = auto()
     DESC = auto()

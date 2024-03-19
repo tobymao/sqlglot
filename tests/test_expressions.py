@@ -546,6 +546,11 @@ class TestExpressions(unittest.TestCase):
         expression.find(exp.Table).replace(parse_one("y"))
         self.assertEqual(expression.sql(), "SELECT c, b FROM y")
 
+        # we try to replace a with a list but a's parent is actually ordered, not the ORDER BY node
+        expression = parse_one("SELECT * FROM x ORDER BY a DESC, c")
+        expression.find(exp.Ordered).this.replace([exp.column("a").asc(), exp.column("b").desc()])
+        self.assertEqual(expression.sql(), "SELECT * FROM x ORDER BY a, b DESC, c")
+
     def test_arg_deletion(self):
         # Using the pop helper method
         expression = parse_one("SELECT a, b FROM x")

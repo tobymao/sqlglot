@@ -621,12 +621,16 @@ def simplify_parens(expression):
 
     this = expression.this
     parent = expression.parent
+    parent_is_predicate = isinstance(parent, exp.Predicate)
 
     if not isinstance(this, exp.Select) and (
         not isinstance(parent, (exp.Condition, exp.Binary))
         or isinstance(parent, exp.Paren)
-        or not isinstance(this, exp.Binary)
-        or (isinstance(this, exp.Predicate) and not isinstance(parent, exp.Predicate))
+        or (
+            not isinstance(this, exp.Binary)
+            and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
+        )
+        or (isinstance(this, exp.Predicate) and not parent_is_predicate)
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
         or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))

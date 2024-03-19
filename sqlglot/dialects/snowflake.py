@@ -48,10 +48,12 @@ def _build_datetime(
                     return exp.UnixToTime(this=value, scale=seq_get(args, 1))
                 if not is_float(value.this):
                     return build_formatted_time(exp.StrToTime, "snowflake")(args)
-            if kind == exp.DataType.Type.DATE and not int_value:
-                formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
-                formatted_exp.set("safe", safe)
-                return formatted_exp
+
+        if len(args) == 2 and kind == exp.DataType.Type.DATE:
+            formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
+            formatted_exp.set("safe", safe)
+            return formatted_exp
+
         return exp.Anonymous(this=name, expressions=args)
 
     return _builder

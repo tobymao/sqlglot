@@ -609,7 +609,8 @@ JOIN "orders" AS "orders"
   AND CAST("orders"."o_orderdate" AS DATE) < CAST('1994-01-01' AS DATE)
   AND CAST("orders"."o_orderdate" AS DATE) >= CAST('1993-10-01' AS DATE)
 JOIN "lineitem" AS "lineitem"
-  ON "lineitem"."l_orderkey" = "orders"."o_orderkey" AND "lineitem"."l_returnflag" = 'R'
+  ON "lineitem"."l_orderkey" = "orders"."o_orderkey"
+  AND "lineitem"."l_returnflag" = 'R'
 GROUP BY
   "customer"."c_custkey",
   "customer"."c_name",
@@ -731,7 +732,8 @@ SELECT
   ) AS "high_line_count",
   SUM(
     CASE
-      WHEN "orders"."o_orderpriority" <> '1-URGENT' AND "orders"."o_orderpriority" <> '2-HIGH'
+      WHEN "orders"."o_orderpriority" <> '1-URGENT'
+      AND "orders"."o_orderpriority" <> '2-HIGH'
       THEN 1
       ELSE 0
     END
@@ -1257,7 +1259,8 @@ WITH "_u_0" AS (
   LEFT JOIN "_u_0" AS "_u_0"
     ON "_u_0"."p_partkey" = "partsupp"."ps_partkey"
   LEFT JOIN "_u_1" AS "_u_1"
-    ON "_u_1"."_u_2" = "partsupp"."ps_partkey" AND "_u_1"."_u_3" = "partsupp"."ps_suppkey"
+    ON "_u_1"."_u_2" = "partsupp"."ps_partkey"
+    AND "_u_1"."_u_3" = "partsupp"."ps_suppkey"
   WHERE
     "_u_1"."_col_0" < "partsupp"."ps_availqty" AND NOT "_u_0"."p_partkey" IS NULL
   GROUP BY
@@ -1270,7 +1273,8 @@ FROM "supplier" AS "supplier"
 LEFT JOIN "_u_4" AS "_u_4"
   ON "_u_4"."ps_suppkey" = "supplier"."s_suppkey"
 JOIN "nation" AS "nation"
-  ON "nation"."n_name" = 'CANADA' AND "nation"."n_nationkey" = "supplier"."s_nationkey"
+  ON "nation"."n_name" = 'CANADA'
+  AND "nation"."n_nationkey" = "supplier"."s_nationkey"
 WHERE
   NOT "_u_4"."ps_suppkey" IS NULL
 ORDER BY

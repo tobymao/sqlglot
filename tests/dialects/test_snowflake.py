@@ -986,6 +986,13 @@ WHERE
         )
 
         self.validate_all(
+            "TO_DATE(x, 'MM-DD-YYYY')",
+            write={
+                "snowflake": "TO_DATE(x, 'mm-DD-yyyy')",
+                "duckdb": "CAST(STRPTIME(x, '%m-%d-%Y') AS DATE)",
+            },
+        )
+        self.validate_all(
             "DATE('01-01-2000', 'MM-DD-YYYY')",
             write={
                 "snowflake": "TO_DATE('01-01-2000', 'mm-DD-yyyy')",

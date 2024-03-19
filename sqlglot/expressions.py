@@ -5060,6 +5060,10 @@ class ToBase64(Func):
     pass
 
 
+class GenerateDateArray(Func):
+    arg_types = {"start": True, "end": True, "interval": False}
+
+
 class Greatest(Func):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

@@ -50,7 +50,7 @@ def _build_datetime(
                 if not is_float(value.this):
                     return build_formatted_time(exp.StrToTime, "snowflake")(args)
 
-        if kind == exp.DataType.Type.DATE and not int_value:
+        if len(args) == 2 and kind == exp.DataType.Type.DATE and not int_value:
             formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
             formatted_exp.set("safe", safe)
             return formatted_exp

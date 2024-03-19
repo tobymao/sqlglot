@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## [v23.0.1] - 2024-03-19
+### :sparkles: New Features
+- [`931774d`](https://github.com/tobymao/sqlglot/commit/931774dde50aa04efecd1ae9cdd6965655670d71) - iterative connector sql *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`5e18d49`](https://github.com/tobymao/sqlglot/commit/5e18d490be3990116bbacd1b09dd52542f51c151) - fill in missing implementation details for replace(None) *(PR [#3166](https://github.com/tobymao/sqlglot/pull/3166) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3165](https://github.com/tobymao/sqlglot/issues/3165) opened by [@streamnsight](https://github.com/streamnsight)*
+- [`a0df28f`](https://github.com/tobymao/sqlglot/commit/a0df28f4092ca84d07111cead550b9d6772993ad) - can't simplify null parens *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`eb0a6c3`](https://github.com/tobymao/sqlglot/commit/eb0a6c31c92d16abe785087271b14f7611ff24bc) - actually pop the where statement *(commit by [@tobymao](https://github.com/tobymao))*
+- [`f6778ef`](https://github.com/tobymao/sqlglot/commit/f6778ef039a646fb5641f0e91b28f6cbc2f52e78) - add recursion test *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.0.0] - 2024-03-18
 ### :sparkles: New Features
 - [`e838713`](https://github.com/tobymao/sqlglot/commit/e838713bdb3da8a5d04eed43b2015a9d3a71addd) - **mysql**: Support for multi arg GROUP_CONCAT *(PR [#3150](https://github.com/tobymao/sqlglot/pull/3150) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -2965,3 +2979,4 @@ Changelog
 [v22.4.0]: https://github.com/tobymao/sqlglot/compare/v22.3.1...v22.4.0
 [v22.5.0]: https://github.com/tobymao/sqlglot/compare/v22.4.0...v22.5.0
 [v23.0.0]: https://github.com/tobymao/sqlglot/compare/v22.5.0...v23.0.0
+[v23.0.1]: https://github.com/tobymao/sqlglot/compare/v23.0.0...v23.0.1

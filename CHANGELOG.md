@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v23.0.3] - 2024-03-19
+### :sparkles: New Features
+- [`bc8bc7f`](https://github.com/tobymao/sqlglot/commit/bc8bc7f8c9a6a20a35bab8ea7b34cf6431616b50) - replace a nested child node with a list convenience *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :bug: Bug Fixes
+- [`eaaeab0`](https://github.com/tobymao/sqlglot/commit/eaaeab088010f55ccc221a9a4968f0d4ff67d8b1) - **snowflake**: Allow non-literal expressions too in DATE functions *(PR [#3167](https://github.com/tobymao/sqlglot/pull/3167) by [@VaggelisD](https://github.com/VaggelisD))*
+
+
 ## [v23.0.2] - 2024-03-19
 ### :sparkles: New Features
 - [`32cc2be`](https://github.com/tobymao/sqlglot/commit/32cc2be1b19ade551b42cc70a96f1675ac8773f4) - **postgres**: add support for materialized CTEs *(PR [#3171](https://github.com/tobymao/sqlglot/pull/3171) by [@georgesittas](https://github.com/georgesittas))*
@@ -2991,3 +2999,4 @@ Changelog
 [v23.0.0]: https://github.com/tobymao/sqlglot/compare/v22.5.0...v23.0.0
 [v23.0.1]: https://github.com/tobymao/sqlglot/compare/v23.0.0...v23.0.1
 [v23.0.2]: https://github.com/tobymao/sqlglot/compare/v23.0.1...v23.0.2
+[v23.0.3]: https://github.com/tobymao/sqlglot/compare/v23.0.2...v23.0.3

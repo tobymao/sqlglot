@@ -907,3 +907,8 @@ FROM base""",
         with self.assertRaises(UnsupportedError) as ctx:
             unsupported(ErrorLevel.IMMEDIATE)
         self.assertEqual(str(ctx.exception).count(error), 1)
+
+    def test_recursion(self):
+        sql = "1 AND 2 OR 3 AND " * 1000
+        sql += "4"
+        self.assertEqual(len(parse_one(sql).sql()), 17001)

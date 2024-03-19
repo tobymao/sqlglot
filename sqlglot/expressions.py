@@ -622,10 +622,9 @@ class Expression(metaclass=_Expression):
 
         key = self.arg_key
         value = parent.args.get(key)
-        value_is_list = type(value) is list
         exp_is_list = type(expression) is list
 
-        if value_is_list:
+        if type(value) is list:
             index = self.index
 
             if exp_is_list:
@@ -645,7 +644,7 @@ class Expression(metaclass=_Expression):
             if expression is None:
                 parent.args.pop(key)
             else:
-                if exp_is_list and not value_is_list and value.parent:
+                if exp_is_list and value.parent:
                     value.parent.replace(expression)
                 else:
                     parent.set(key, expression)

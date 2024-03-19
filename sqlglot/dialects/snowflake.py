@@ -33,7 +33,6 @@ def _build_datetime(
 ) -> t.Callable[[t.List], exp.Func]:
     def _builder(args: t.List) -> exp.Func:
         value = seq_get(args, 0)
-        int_value = False
 
         if isinstance(value, exp.Literal):
             int_value = is_int(value.this)
@@ -50,7 +49,7 @@ def _build_datetime(
                 if not is_float(value.this):
                     return build_formatted_time(exp.StrToTime, "snowflake")(args)
 
-        if len(args) == 2 and kind == exp.DataType.Type.DATE and not int_value:
+        if len(args) == 2 and kind == exp.DataType.Type.DATE:
             formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
             formatted_exp.set("safe", safe)
             return formatted_exp

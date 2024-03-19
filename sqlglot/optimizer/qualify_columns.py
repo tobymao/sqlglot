@@ -306,7 +306,7 @@ def _expand_positional_references(
             else:
                 select = select.this
 
-                if isinstance(select, exp.Literal) or select.find(exp.Explode, exp.Unnest):
+                if isinstance(select, exp.CONSTANTS) or select.find(exp.Explode, exp.Unnest):
                     new_nodes.append(node)
                 else:
                     new_nodes.append(select.copy())

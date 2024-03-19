@@ -7380,3 +7380,15 @@ def null() -> Null:
     Returns a Null expression.
     """
     return Null()
+
+
+NONNULL_CONSTANTS = (
+    Literal,
+    Boolean,
+)
+
+CONSTANTS = (
+    Literal,
+    Boolean,
+    Null,
+)

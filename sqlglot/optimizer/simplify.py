@@ -639,24 +639,12 @@ def simplify_parens(expression):
     return expression
 
 
-NONNULL_CONSTANTS = (
-    exp.Literal,
-    exp.Boolean,
-)
-
-CONSTANTS = (
-    exp.Literal,
-    exp.Boolean,
-    exp.Null,
-)
-
-
 def _is_nonnull_constant(expression: exp.Expression) -> bool:
-    return isinstance(expression, NONNULL_CONSTANTS) or _is_date_literal(expression)
+    return isinstance(expression, exp.NONNULL_CONSTANTS) or _is_date_literal(expression)
 
 
 def _is_constant(expression: exp.Expression) -> bool:
-    return isinstance(expression, CONSTANTS) or _is_date_literal(expression)
+    return isinstance(expression, exp.CONSTANTS) or _is_date_literal(expression)
 
 
 def simplify_coalesce(expression):

@@ -2749,23 +2749,55 @@ class Generator(metaclass=_Generator):
     def add_sql(self, expression: exp.Add) -> str:
         return self.binary(expression, "+")
 
-    def and_sql(self, expression: exp.And) -> str:
-        return self.connector_sql(expression, "AND")
+    def and_sql(
+        self, expression: exp.And, stack: t.Optional[t.List[str | exp.Expression]] = None
+    ) -> str:
+        return self.connector_sql(expression, "AND", stack)
 
-    def xor_sql(self, expression: exp.Xor) -> str:
-        return self.connector_sql(expression, "XOR")
+    def or_sql(
+        self, expression: exp.Or, stack: t.Optional[t.List[str | exp.Expression]] = None
+    ) -> str:
+        return self.connector_sql(expression, "OR", stack)
 
-    def connector_sql(self, expression: exp.Connector, op: str) -> str:
-        if not self.pretty:
-            return self.binary(expression, op)
+    def xor_sql(
+        self, expression: exp.Xor, stack: t.Optional[t.List[str | exp.Expression]] = None
+    ) -> str:
+        return self.connector_sql(expression, "XOR", stack)
 
-        sqls = tuple(
-            self.maybe_comment(self.sql(e), e, e.parent.comments or []) if i != 1 else self.sql(e)
-            for i, e in enumerate(expression.flatten(unnest=False))
-        )
+    def connector_sql(
+        self,
+        expression: exp.Connector,
+        op: str,
+        stack: t.Optional[t.List[str, exp.Expression]] = None,
+    ) -> str:
+        if stack is not None:
+            if expression.expressions:
+                stack.append(self.expressions(expression, sep=f" {op} "))
+            else:
+                stack.append(expression.right)
+                if expression.comments:
+                    for comment in expression.comments:
+                        op += f" /*{self.pad_comment(comment)}*/"
+                stack.extend((op, expression.left))
+            return op
 
-        sep = "\n" if self.text_width(sqls) > self.max_text_width else " "
-        return f"{sep}{op} ".join(sqls)
+        stack = [expression]
+        sqls = []
+        ops = set()
+
+        while stack:
+            node = stack.pop()
+            if isinstance(node, exp.Connector):
+                ops.add(getattr(self, f"{node.key}_sql")(node, stack))
+            else:
+                sql = self.sql(node)
+                if sqls and sqls[-1] in ops:
+                    sqls[-1] += f" {sql}"
+                else:
+                    sqls.append(sql)
+
+        sep = "\n" if self.pretty and self.text_width(sqls) > self.max_text_width else " "
+        return sep.join(sqls)
 
     def bitwiseand_sql(self, expression: exp.BitwiseAnd) -> str:
         return self.binary(expression, "&")
@@ -3081,9 +3113,6 @@ class Generator(metaclass=_Generator):
 
     def nullsafeneq_sql(self, expression: exp.NullSafeNEQ) -> str:
         return self.binary(expression, "IS DISTINCT FROM")
-
-    def or_sql(self, expression: exp.Or) -> str:
-        return self.connector_sql(expression, "OR")
 
     def slice_sql(self, expression: exp.Slice) -> str:
         return self.binary(expression, ":")

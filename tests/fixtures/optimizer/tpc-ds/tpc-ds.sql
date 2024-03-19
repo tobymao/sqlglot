@@ -214,7 +214,8 @@ JOIN "date_dim" AS "date_dim"
 JOIN "wswscs" AS "wswscs_2"
   ON "wswscs"."d_week_seq" = "wswscs_2"."d_week_seq" - 53
 JOIN "date_dim" AS "date_dim_2"
-  ON "date_dim_2"."d_week_seq" = "wswscs_2"."d_week_seq" AND "date_dim_2"."d_year" = 1999
+  ON "date_dim_2"."d_week_seq" = "wswscs_2"."d_week_seq"
+  AND "date_dim_2"."d_year" = 1999
 ORDER BY
   "d_week_seq1";
 
@@ -3436,9 +3437,12 @@ WITH "b1" AS (
   FROM "store_sales" AS "store_sales"
   WHERE
     (
-      "store_sales"."ss_coupon_amt" <= 2939 AND "store_sales"."ss_coupon_amt" >= 1939
-      OR "store_sales"."ss_list_price" <= 28 AND "store_sales"."ss_list_price" >= 18
-      OR "store_sales"."ss_wholesale_cost" <= 54 AND "store_sales"."ss_wholesale_cost" >= 34
+      "store_sales"."ss_coupon_amt" <= 2939
+      AND "store_sales"."ss_coupon_amt" >= 1939
+      OR "store_sales"."ss_list_price" <= 28
+      AND "store_sales"."ss_list_price" >= 18
+      OR "store_sales"."ss_wholesale_cost" <= 54
+      AND "store_sales"."ss_wholesale_cost" >= 34
     )
     AND "store_sales"."ss_quantity" <= 5
     AND "store_sales"."ss_quantity" >= 0
@@ -3450,9 +3454,12 @@ WITH "b1" AS (
   FROM "store_sales" AS "store_sales"
   WHERE
     (
-      "store_sales"."ss_coupon_amt" <= 1035 AND "store_sales"."ss_coupon_amt" >= 35
-      OR "store_sales"."ss_list_price" <= 11 AND "store_sales"."ss_list_price" >= 1
-      OR "store_sales"."ss_wholesale_cost" <= 70 AND "store_sales"."ss_wholesale_cost" >= 50
+      "store_sales"."ss_coupon_amt" <= 1035
+      AND "store_sales"."ss_coupon_amt" >= 35
+      OR "store_sales"."ss_list_price" <= 11
+      AND "store_sales"."ss_list_price" >= 1
+      OR "store_sales"."ss_wholesale_cost" <= 70
+      AND "store_sales"."ss_wholesale_cost" >= 50
     )
     AND "store_sales"."ss_quantity" <= 10
     AND "store_sales"."ss_quantity" >= 6
@@ -3464,9 +3471,12 @@ WITH "b1" AS (
   FROM "store_sales" AS "store_sales"
   WHERE
     (
-      "store_sales"."ss_coupon_amt" <= 2412 AND "store_sales"."ss_coupon_amt" >= 1412
-      OR "store_sales"."ss_list_price" <= 101 AND "store_sales"."ss_list_price" >= 91
-      OR "store_sales"."ss_wholesale_cost" <= 37 AND "store_sales"."ss_wholesale_cost" >= 17
+      "store_sales"."ss_coupon_amt" <= 2412
+      AND "store_sales"."ss_coupon_amt" >= 1412
+      OR "store_sales"."ss_list_price" <= 101
+      AND "store_sales"."ss_list_price" >= 91
+      OR "store_sales"."ss_wholesale_cost" <= 37
+      AND "store_sales"."ss_wholesale_cost" >= 17
     )
     AND "store_sales"."ss_quantity" <= 15
     AND "store_sales"."ss_quantity" >= 11
@@ -3478,9 +3488,12 @@ WITH "b1" AS (
   FROM "store_sales" AS "store_sales"
   WHERE
     (
-      "store_sales"."ss_coupon_amt" <= 6270 AND "store_sales"."ss_coupon_amt" >= 5270
-      OR "store_sales"."ss_list_price" <= 19 AND "store_sales"."ss_list_price" >= 9
-      OR "store_sales"."ss_wholesale_cost" <= 49 AND "store_sales"."ss_wholesale_cost" >= 29
+      "store_sales"."ss_coupon_amt" <= 6270
+      AND "store_sales"."ss_coupon_amt" >= 5270
+      OR "store_sales"."ss_list_price" <= 19
+      AND "store_sales"."ss_list_price" >= 9
+      OR "store_sales"."ss_wholesale_cost" <= 49
+      AND "store_sales"."ss_wholesale_cost" >= 29
     )
     AND "store_sales"."ss_quantity" <= 20
     AND "store_sales"."ss_quantity" >= 16
@@ -3492,9 +3505,12 @@ WITH "b1" AS (
   FROM "store_sales" AS "store_sales"
   WHERE
     (
-      "store_sales"."ss_coupon_amt" <= 1826 AND "store_sales"."ss_coupon_amt" >= 826
-      OR "store_sales"."ss_list_price" <= 55 AND "store_sales"."ss_list_price" >= 45
-      OR "store_sales"."ss_wholesale_cost" <= 25 AND "store_sales"."ss_wholesale_cost" >= 5
+      "store_sales"."ss_coupon_amt" <= 1826
+      AND "store_sales"."ss_coupon_amt" >= 826
+      OR "store_sales"."ss_list_price" <= 55
+      AND "store_sales"."ss_list_price" >= 45
+      OR "store_sales"."ss_wholesale_cost" <= 25
+      AND "store_sales"."ss_wholesale_cost" >= 5
     )
     AND "store_sales"."ss_quantity" <= 25
     AND "store_sales"."ss_quantity" >= 21
@@ -3506,9 +3522,12 @@ WITH "b1" AS (
   FROM "store_sales" AS "store_sales"
   WHERE
     (
-      "store_sales"."ss_coupon_amt" <= 6548 AND "store_sales"."ss_coupon_amt" >= 5548
-      OR "store_sales"."ss_list_price" <= 184 AND "store_sales"."ss_list_price" >= 174
-      OR "store_sales"."ss_wholesale_cost" <= 62 AND "store_sales"."ss_wholesale_cost" >= 42
+      "store_sales"."ss_coupon_amt" <= 6548
+      AND "store_sales"."ss_coupon_amt" >= 5548
+      OR "store_sales"."ss_list_price" <= 184
+      AND "store_sales"."ss_list_price" >= 174
+      OR "store_sales"."ss_wholesale_cost" <= 62
+      AND "store_sales"."ss_wholesale_cost" >= 42
     )
     AND "store_sales"."ss_quantity" <= 30
     AND "store_sales"."ss_quantity" >= 26
@@ -3867,11 +3886,17 @@ SELECT
   "ss3"."store_sales" / "ss2"."store_sales" AS "store_q2_q3_increase"
 FROM "ss" AS "ss1"
 JOIN "ss" AS "ss2"
-  ON "ss1"."ca_county" = "ss2"."ca_county" AND "ss2"."d_qoy" = 2 AND "ss2"."d_year" = 2001
+  ON "ss1"."ca_county" = "ss2"."ca_county"
+  AND "ss2"."d_qoy" = 2
+  AND "ss2"."d_year" = 2001
 JOIN "ws" AS "ws1"
-  ON "ss1"."ca_county" = "ws1"."ca_county" AND "ws1"."d_qoy" = 1 AND "ws1"."d_year" = 2001
+  ON "ss1"."ca_county" = "ws1"."ca_county"
+  AND "ws1"."d_qoy" = 1
+  AND "ws1"."d_year" = 2001
 JOIN "ss" AS "ss3"
-  ON "ss2"."ca_county" = "ss3"."ca_county" AND "ss3"."d_qoy" = 3 AND "ss3"."d_year" = 2001
+  ON "ss2"."ca_county" = "ss3"."ca_county"
+  AND "ss3"."d_qoy" = 3
+  AND "ss3"."d_year" = 2001
 JOIN "ws" AS "ws2"
   ON "ws1"."ca_county" = "ws2"."ca_county"
   AND "ws2"."d_qoy" = 2
@@ -3956,7 +3981,8 @@ FROM "catalog_sales_2" AS "catalog_sales"
 JOIN "date_dim_2" AS "date_dim"
   ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
 JOIN "item" AS "item"
-  ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk" AND "item"."i_manufact_id" = 610
+  ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
+  AND "item"."i_manufact_id" = 610
 LEFT JOIN "_u_0" AS "_u_0"
   ON "_u_0"."_u_1" = "item"."i_item_sk"
 WHERE
@@ -5143,7 +5169,8 @@ FROM "date_dim" AS "date_dim"
 JOIN "store_sales" AS "store_sales"
   ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
 JOIN "store" AS "store"
-  ON "store"."s_gmt_offset" = -5 AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
+  ON "store"."s_gmt_offset" = -5
+  AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
 WHERE
   "date_dim"."d_year" = 2002
 GROUP BY
@@ -5537,10 +5564,14 @@ WITH "v1" AS (
       "date_dim"."d_moy" = 1 OR "date_dim"."d_year" = 1998 OR "date_dim"."d_year" = 1999
     )
     AND (
-      "date_dim"."d_moy" = 12 OR "date_dim"."d_year" = 1999 OR "date_dim"."d_year" = 2000
+      "date_dim"."d_moy" = 12
+      OR "date_dim"."d_year" = 1999
+      OR "date_dim"."d_year" = 2000
     )
     AND (
-      "date_dim"."d_year" = 1998 OR "date_dim"."d_year" = 1999 OR "date_dim"."d_year" = 2000
+      "date_dim"."d_year" = 1998
+      OR "date_dim"."d_year" = 1999
+      OR "date_dim"."d_year" = 2000
     )
   JOIN "store" AS "store"
     ON "store"."s_store_sk" = "store_sales"."ss_store_sk"
@@ -6826,10 +6857,14 @@ WITH "v1" AS (
       "date_dim"."d_moy" = 1 OR "date_dim"."d_year" = 1999 OR "date_dim"."d_year" = 2000
     )
     AND (
-      "date_dim"."d_moy" = 12 OR "date_dim"."d_year" = 2000 OR "date_dim"."d_year" = 2001
+      "date_dim"."d_moy" = 12
+      OR "date_dim"."d_year" = 2000
+      OR "date_dim"."d_year" = 2001
     )
     AND (
-      "date_dim"."d_year" = 1999 OR "date_dim"."d_year" = 2000 OR "date_dim"."d_year" = 2001
+      "date_dim"."d_year" = 1999
+      OR "date_dim"."d_year" = 2000
+      OR "date_dim"."d_year" = 2001
     )
   GROUP BY
     "item"."i_category",
@@ -11414,7 +11449,8 @@ SELECT
   AVG("web_returns"."wr_fee") AS "_col_3"
 FROM "web_sales" AS "web_sales"
 JOIN "date_dim" AS "date_dim"
-  ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk" AND "date_dim"."d_year" = 2001
+  ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
+  AND "date_dim"."d_year" = 2001
 JOIN "web_page" AS "web_page"
   ON "web_page"."wp_web_page_sk" = "web_sales"."ws_web_page_sk"
 JOIN "web_returns" AS "web_returns"
@@ -12430,7 +12466,8 @@ JOIN "household_demographics" AS "household_demographics"
   ON "household_demographics"."hd_demo_sk" = "store_sales"."ss_hdemo_sk"
   AND "household_demographics"."hd_dep_count" = 7
 JOIN "store" AS "store"
-  ON "store"."s_store_name" = 'ese' AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
+  ON "store"."s_store_name" = 'ese'
+  AND "store"."s_store_sk" = "store_sales"."ss_store_sk"
 JOIN "time_dim" AS "time_dim"
   ON "store_sales"."ss_sold_time_sk" = "time_dim"."t_time_sk"
   AND "time_dim"."t_hour" = 15
@@ -12533,7 +12570,8 @@ SELECT
   ) AS "store_and_catalog"
 FROM "ssci" AS "ssci"
 FULL JOIN "csci" AS "csci"
-  ON "csci"."customer_sk" = "ssci"."customer_sk" AND "csci"."item_sk" = "ssci"."item_sk"
+  ON "csci"."customer_sk" = "ssci"."customer_sk"
+  AND "csci"."item_sk" = "ssci"."item_sk"
 LIMIT 100;
 
 --------------------------------------

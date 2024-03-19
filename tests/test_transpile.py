@@ -275,7 +275,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */""",
 FROM b
 /* where */
 WHERE
-  foo /* comment 1 */ AND bar AND bla /* comment 2 */""",
+  foo AND /* comment 1 */ bar AND /* comment 2 */ bla""",
             pretty=True,
         )
         self.validate(

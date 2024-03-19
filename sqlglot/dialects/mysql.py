@@ -781,11 +781,6 @@ class MySQL(Dialect):
                 result = f"{result} UNSIGNED"
             return result
 
-        def xor_sql(self, expression: exp.Xor) -> str:
-            if expression.expressions:
-                return self.expressions(expression, sep=" XOR ")
-            return super().xor_sql(expression)
-
         def jsonarraycontains_sql(self, expression: exp.JSONArrayContains) -> str:
             return f"{self.sql(expression, 'this')} MEMBER OF({self.sql(expression, 'expression')})"
 

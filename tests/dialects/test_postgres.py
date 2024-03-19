@@ -40,13 +40,6 @@ class TestPostgres(Validator):
         self.validate_identity("CAST(x AS DATEMULTIRANGE)")
         self.validate_identity("SELECT ARRAY[1, 2, 3] @> ARRAY[1, 2]")
         self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]")
-        self.validate_all(
-            "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
-            write={
-                "": "SELECT ARRAY_OVERLAPS(ARRAY(1, 2, 3), ARRAY(1, 2))",
-                "postgres": "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
-            },
-        )
         self.validate_identity("x$")
         self.validate_identity("SELECT ARRAY[1, 2, 3]")
         self.validate_identity("SELECT ARRAY(SELECT 1)")
@@ -70,6 +63,9 @@ class TestPostgres(Validator):
         self.validate_identity("EXEC AS myfunc @id = 123", check_command_warning=True)
         self.validate_identity("SELECT CURRENT_USER")
         self.validate_identity("SELECT * FROM ONLY t1")
+        self.validate_identity(
+            "WITH t AS MATERIALIZED (SELECT 1), t2 AS NOT MATERIALIZED (SELECT 2) SELECT * FROM t1, t2"
+        )
         self.validate_identity(
             """LAST_VALUE("col1") OVER (ORDER BY "col2" RANGE BETWEEN INTERVAL '1 DAY' PRECEDING AND '1 month' FOLLOWING)"""
         )
@@ -310,6 +306,13 @@ class TestPostgres(Validator):
         )
         self.validate_identity("SELECT * FROM t1*", "SELECT * FROM t1")
 
+        self.validate_all(
+            "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
+            write={
+                "": "SELECT ARRAY_OVERLAPS(ARRAY(1, 2, 3), ARRAY(1, 2))",
+                "postgres": "SELECT ARRAY[1, 2, 3] && ARRAY[1, 2]",
+            },
+        )
         self.validate_all(
             "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
             read={

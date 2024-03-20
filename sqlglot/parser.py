@@ -5257,6 +5257,9 @@ class Parser(metaclass=_Parser):
     def _parse_window(
         self, this: t.Optional[exp.Expression], alias: bool = False
     ) -> t.Optional[exp.Expression]:
+        func = this
+        comments = func.comments if isinstance(func, exp.Expression) else None
+
         if self._match_pair(TokenType.FILTER, TokenType.L_PAREN):
             self._match(TokenType.WHERE)
             this = self.expression(
@@ -5302,9 +5305,16 @@ class Parser(metaclass=_Parser):
         else:
             over = self._prev.text.upper()
 
+        if comments:
+            func.comments = None  # type: ignore
+
         if not self._match(TokenType.L_PAREN):
             return self.expression(
-                exp.Window, this=this, alias=self._parse_id_var(False), over=over
+                exp.Window,
+                comments=comments,
+                this=this,
+                alias=self._parse_id_var(False),
+                over=over,
             )
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
@@ -5337,6 +5347,7 @@ class Parser(metaclass=_Parser):
 
         window = self.expression(
             exp.Window,
+            comments=comments,
             this=this,
             partition_by=partition,
             order=order,

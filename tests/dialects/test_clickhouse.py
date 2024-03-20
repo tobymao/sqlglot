@@ -401,6 +401,11 @@ class TestClickhouse(Validator):
             """INSERT INTO FUNCTION hdfs('hdfs://hdfs1:9000/test', 'TSV', 'name String, column2 UInt32, column3 UInt32') VALUES ('test', 1, 2)""",
         )
 
+        self.validate_identity("SELECT 1 FORMAT TabSeparated")
+        self.validate_identity("SELECT * FROM t FORMAT TabSeparated")
+        self.validate_identity("SELECT FORMAT")
+        self.validate_identity("1 AS FORMAT").assert_is(exp.Alias)
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")

@@ -405,6 +405,8 @@ class Parser(metaclass=_Parser):
         TokenType.WINDOW,
     }
 
+    ALIAS_TOKENS = ID_VAR_TOKENS
+
     COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
 
     UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
@@ -5399,7 +5401,7 @@ class Parser(metaclass=_Parser):
             self._match_r_paren(aliases)
             return aliases
 
-        alias = self._parse_id_var(any_token) or (
+        alias = self._parse_id_var(any_token, tokens=self.ALIAS_TOKENS) or (
             self.STRING_ALIASES and self._parse_string_as_identifier()
         )
 

@@ -306,6 +306,10 @@ class ClickHouse(Dialect):
             TokenType.SETTINGS,
         }
 
+        ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {
+            TokenType.FORMAT,
+        }
+
         LOG_DEFAULTS_TO_LN = True
 
         QUERY_MODIFIER_PARSERS = {

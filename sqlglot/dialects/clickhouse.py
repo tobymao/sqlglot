@@ -306,6 +306,10 @@ class ClickHouse(Dialect):
             TokenType.SETTINGS,
         }
 
+        ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+            TokenType.FORMAT,
+        }
+
         LOG_DEFAULTS_TO_LN = True
 
         QUERY_MODIFIER_PARSERS = {
@@ -316,10 +320,6 @@ class ClickHouse(Dialect):
             ),
             TokenType.FORMAT: lambda self: ("format", self._advance() or self._parse_id_var()),
         }
-
-        EXCLUDED_IMPLICIT_ALIAS_IDS = [
-            "FORMAT",
-        ]
 
         def _parse_conjunction(self) -> t.Optional[exp.Expression]:
             this = super()._parse_conjunction()

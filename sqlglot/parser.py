@@ -405,6 +405,8 @@ class Parser(metaclass=_Parser):
         TokenType.WINDOW,
     }
 
+    ALIAS_TOKENS = ID_VAR_TOKENS.copy()
+
     COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
 
     UPDATE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.SET}
@@ -1052,9 +1054,6 @@ class Parser(metaclass=_Parser):
     NULL_TOKENS = {TokenType.NULL}
 
     UNNEST_OFFSET_ALIAS_TOKENS = ID_VAR_TOKENS - SET_OPERATIONS
-
-    # Aliases without 'AS' might cause disambiguity
-    EXCLUDED_IMPLICIT_ALIAS_IDS: t.List[str] = []
 
     STRICT_CAST = True
 
@@ -5388,14 +5387,11 @@ class Parser(metaclass=_Parser):
             self._match_r_paren(aliases)
             return aliases
 
-        alias = self._parse_id_var(any_token) or (
+        alias = self._parse_id_var(any_token, tokens=self.ALIAS_TOKENS) or (
             self.STRING_ALIASES and self._parse_string_as_identifier()
         )
 
         if alias:
-            if any_token is None and alias.this.upper() in self.EXCLUDED_IMPLICIT_ALIAS_IDS:
-                self._retreat(self._index - 1)
-                return this
             this = self.expression(exp.Alias, comments=comments, this=this, alias=alias)
             column = this.this
 

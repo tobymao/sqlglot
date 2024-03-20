@@ -402,6 +402,7 @@ class TestClickhouse(Validator):
         )
 
         self.validate_identity("SELECT 1 FORMAT TabSeparated")
+        self.validate_identity("SELECT * FROM t FORMAT TabSeparated")
         self.validate_identity("SELECT FORMAT")
         self.validate_identity("1 AS FORMAT").assert_is(exp.Alias)
 

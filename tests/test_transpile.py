@@ -480,6 +480,13 @@ SELECT
 FROM base""",
             pretty=True,
         )
+        self.validate(
+            """-- comment
+SOME_FUNC(arg IGNORE NULLS)
+  OVER (PARTITION BY foo ORDER BY bla) AS col""",
+            "SOME_FUNC(arg IGNORE NULLS) OVER (PARTITION BY foo ORDER BY bla) AS col /* comment */",
+            pretty=True,
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

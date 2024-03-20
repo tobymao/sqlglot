@@ -504,7 +504,11 @@ FROM (
 
     def test_varchar_max(self):
         self.validate_all(
-            "CREATE TABLE TEST (cola VARCHAR(max))",
+            'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
+            read={
+                "redshift": "CREATE TABLE TEST (cola VARCHAR(max))",
+                "tsql": "CREATE TABLE TEST (cola VARCHAR(max))",
+            },
             write={
                 "redshift": 'CREATE TABLE "TEST" ("cola" VARCHAR(MAX))',
             },

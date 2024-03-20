@@ -501,6 +501,18 @@ class TestExpressions(unittest.TestCase):
 
         self.assertEqual(expression.transform(fun).sql(), "FUN(a)")
 
+    def test_transform_with_parent_mutation(self):
+        expression = parse_one("SELECT COUNT(1) FROM table")
+
+        def fun(node):
+            if str(node) == "COUNT(1)":
+                # node gets silently mutated here - its parent points to the filter node
+                return exp.Filter(this=node, expression=exp.Where(this=exp.true()))
+            return node
+
+        transformed = expression.transform(fun)
+        self.assertEqual(transformed.sql(), "SELECT COUNT(1) FILTER(WHERE TRUE) FROM table")
+
     def test_transform_multiple_children(self):
         expression = parse_one("SELECT * FROM x")
 

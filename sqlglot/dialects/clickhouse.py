@@ -306,7 +306,7 @@ class ClickHouse(Dialect):
             TokenType.SETTINGS,
         }
 
-        ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
+        ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {
             TokenType.FORMAT,
         }
 

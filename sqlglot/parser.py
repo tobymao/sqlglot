@@ -405,7 +405,7 @@ class Parser(metaclass=_Parser):
         TokenType.WINDOW,
     }
 
-    ALIAS_TOKENS = ID_VAR_TOKENS.copy()
+    ALIAS_TOKENS = ID_VAR_TOKENS
 
     COMMENT_TABLE_ALIAS_TOKENS = TABLE_ALIAS_TOKENS - {TokenType.IS}
 

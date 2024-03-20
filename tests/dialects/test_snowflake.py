@@ -40,6 +40,7 @@ WHERE
   )""",
         )
 
+        self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
         self.validate_identity("SELECT CAST([1, 2, 3] AS ARRAY(INT))")
@@ -956,6 +957,9 @@ WHERE
         )
         self.validate_all(
             "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            read={
+                "snowflake": "TIMESTAMPADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            },
             write={
                 "bigquery": "DATE_ADD(CAST('2008-12-25' AS DATE), INTERVAL 5 DAY)",
                 "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",

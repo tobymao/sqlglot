@@ -38,10 +38,12 @@ def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     return f"CAST({this} AS {self.sql(expression.return_type)}) + {interval}"
 
 
-def _date_delta_sql(self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+def _date_delta_sql(
+    self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub | exp.TimeAdd
+) -> str:
     this = self.sql(expression, "this")
     unit = self.sql(expression, "unit").strip("'") or "DAY"
-    op = "+" if isinstance(expression, exp.DateAdd) else "-"
+    op = "+" if isinstance(expression, (exp.DateAdd, exp.TimeAdd)) else "-"
     return f"{this} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 
 
@@ -427,6 +429,7 @@ class DuckDB(Dialect):
                 "EPOCH", self.func("STRPTIME", e.this, self.format_time(e))
             ),
             exp.Struct: _struct_sql,
+            exp.TimeAdd: _date_delta_sql,
             exp.Timestamp: no_timestamp_sql,
             exp.TimestampDiff: lambda self, e: self.func(
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this

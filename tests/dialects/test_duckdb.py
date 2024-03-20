@@ -16,6 +16,17 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
+            read={
+                "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",
+                "snowflake": "SELECT TIMEADD(HOUR, 2, TO_TIME('09:05:03'))",
+            },
+            write={
+                "duckdb": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2' HOUR",
+                "snowflake": "SELECT CAST('09:05:03' AS TIME) + INTERVAL '2 HOUR'",
+            },
+        )
+        self.validate_all(
             'STRUCT_PACK("a b" := 1)',
             write={
                 "duckdb": "{'a b': 1}",

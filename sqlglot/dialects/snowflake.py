@@ -78,6 +78,17 @@ def _build_datediff(args: t.List) -> exp.DateDiff:
     )
 
 
+def _build_date_time_add(expr_type: t.Type[E]) -> t.Callable[[t.List], E]:
+    def _builder(args: t.List) -> E:
+        return expr_type(
+            this=seq_get(args, 2),
+            expression=seq_get(args, 1),
+            unit=_map_date_part(seq_get(args, 0)),
+        )
+
+    return _builder
+
+
 # https://docs.snowflake.com/en/sql-reference/functions/div0
 def _build_if_from_div0(args: t.List) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 1), expression=exp.Literal.number(0))
@@ -345,11 +356,7 @@ class Snowflake(Dialect):
             "CONVERT_TIMEZONE": _build_convert_timezone,
             "DATE": _build_datetime("DATE", exp.DataType.Type.DATE),
             "DATE_TRUNC": _date_trunc_to_time,
-            "DATEADD": lambda args: exp.DateAdd(
-                this=seq_get(args, 2),
-                expression=seq_get(args, 1),
-                unit=_map_date_part(seq_get(args, 0)),
-            ),
+            "DATEADD": _build_date_time_add(exp.DateAdd),
             "DATEDIFF": _build_datediff,
             "DIV0": _build_if_from_div0,
             "FLATTEN": exp.Explode.from_arg_list,
@@ -367,7 +374,9 @@ class Snowflake(Dialect):
             "REGEXP_SUBSTR": exp.RegexpExtract.from_arg_list,
             "RLIKE": exp.RegexpLike.from_arg_list,
             "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
+            "TIMEADD": _build_date_time_add(exp.TimeAdd),
             "TIMEDIFF": _build_datediff,
+            "TIMESTAMPADD": _build_date_time_add(exp.DateAdd),
             "TIMESTAMPDIFF": _build_datediff,
             "TIMESTAMPFROMPARTS": _build_timestamp_from_parts,
             "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
@@ -792,6 +801,7 @@ class Snowflake(Dialect):
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.Stuff: rename_func("INSERT"),
+            exp.TimeAdd: date_delta_sql("TIMEADD"),
             exp.TimestampDiff: lambda self, e: self.func(
                 "TIMESTAMPDIFF", e.unit, e.expression, e.this
             ),

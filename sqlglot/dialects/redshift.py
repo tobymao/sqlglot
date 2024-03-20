@@ -92,14 +92,6 @@ class Redshift(Postgres):
 
             return self.expression(exp.Pivot, this=table, unpivot=True) if unpivot else table
 
-        def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:
-            size = super()._parse_type_size()
-
-            if size and isinstance(size.this, exp.Column):
-                size.set("this", exp.var(size.this.name.upper()))
-
-            return size
-
         def _parse_convert(
             self, strict: bool, safe: t.Optional[bool] = None
         ) -> t.Optional[exp.Expression]:

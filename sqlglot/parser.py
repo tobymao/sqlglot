@@ -3928,6 +3928,9 @@ class Parser(metaclass=_Parser):
         if not this:
             return None
 
+        if isinstance(this, exp.Column) and not this.table:
+            this = exp.var(this.name.upper())
+
         return self.expression(
             exp.DataTypeParam, this=this, expression=self._parse_var(any_token=True)
         )

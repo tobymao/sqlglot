@@ -957,6 +957,9 @@ WHERE
         )
         self.validate_all(
             "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            read={
+                "snowflake": "TIMESTAMPADD(DAY, 5, CAST('2008-12-25' AS DATE))",
+            },
             write={
                 "bigquery": "DATE_ADD(CAST('2008-12-25' AS DATE), INTERVAL 5 DAY)",
                 "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",

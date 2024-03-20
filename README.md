@@ -73,15 +73,15 @@ We'd love to hear from you. Join our community [Slack channel](https://tobikodat
 ## FAQ
 
 I tried to parse SQL that should be valid but it failed, why did that happen?
-  
+
 * Most of the time, issues like this occur because the "source" dialect is omitted during parsing. For example, this is how to correctly parse a SQL query written in Spark SQL: `parse_one(sql, dialect="spark")` (alternatively: `read="spark"`). If no dialect is specified, `parse_one` will attempt to parse the query according to the "SQLGlot dialect", which is designed to be a superset of all supported dialects. If you tried specifying the dialect and it still doesn't work, please file an issue.
 
 I tried to output SQL but it's not in the correct dialect!
-  
+
 * Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")` (alternatively: `transpile(sql, read="spark", write="duckdb")`).
 
 I tried to parse invalid SQL and it worked, even though it should raise an error! Why didn't it validate my SQL?
-  
+
 * SQLGlot does not aim to be a SQL validator - it is designed to be very forgiving. This makes the codebase more comprehensive and also gives more flexibility to its users, e.g. by allowing them to include trailing commas in their projection lists.
 
 ## Examples
@@ -472,6 +472,7 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 ## Used By
 
 * [SQLMesh](https://github.com/TobikoData/sqlmesh)
+* [Superset](https://github.com/apache/superset)
 * [Fugue](https://github.com/fugue-project/fugue)
 * [ibis](https://github.com/ibis-project/ibis)
 * [mysql-mimic](https://github.com/kelsin/mysql-mimic)

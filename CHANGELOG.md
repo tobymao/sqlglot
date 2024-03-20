@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v23.0.5] - 2024-03-20
+### :bug: Bug Fixes
+- [`ed2c9e1`](https://github.com/tobymao/sqlglot/commit/ed2c9e126cc7e679c543adaa2827c1f5c47b96d7) - move varchar max conversion to base *(commit by [@tobymao](https://github.com/tobymao))*
+- [`e3b6139`](https://github.com/tobymao/sqlglot/commit/e3b61392b1d050447f77fcf1b04efd6dcbfc311e) - move comment from window function to Window expression *(PR [#3178](https://github.com/tobymao/sqlglot/pull/3178) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#2299](https://github.com/TobikoData/sqlmesh/issues/2299) opened by [@georgesittas](https://github.com/georgesittas)*
+- [`a452276`](https://github.com/tobymao/sqlglot/commit/a452276da4daaa436a9ac95566bcbb2954d149e3) - **clickhouse**: Fixing FORMAT being parsed as implicit alias *(PR [#3179](https://github.com/tobymao/sqlglot/pull/3179) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3176](https://github.com/tobymao/sqlglot/issues/3176) opened by [@mlipiev](https://github.com/mlipiev)*
+
+
 ## [v23.0.4] - 2024-03-20
 ### :bug: Bug Fixes
 - [`42cf703`](https://github.com/tobymao/sqlglot/commit/42cf70351e7811a077da29af42b28662ede203ac) - redshift varchar(max) catch lower case *(commit by [@tobymao](https://github.com/tobymao))*
@@ -3010,3 +3019,4 @@ Changelog
 [v23.0.2]: https://github.com/tobymao/sqlglot/compare/v23.0.1...v23.0.2
 [v23.0.3]: https://github.com/tobymao/sqlglot/compare/v23.0.2...v23.0.3
 [v23.0.4]: https://github.com/tobymao/sqlglot/compare/v23.0.3...v23.0.4
+[v23.0.5]: https://github.com/tobymao/sqlglot/compare/v23.0.4...v23.0.5

@@ -92,22 +92,13 @@ class Redshift(Postgres):
 
             return self.expression(exp.Pivot, this=table, unpivot=True) if unpivot else table
 
-        def _parse_types(
-            self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
-        ) -> t.Optional[exp.Expression]:
-            this = super()._parse_types(
-                check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
-            )
+        def _parse_type_size(self) -> t.Optional[exp.DataTypeParam]:
+            size = super()._parse_type_size()
 
-            if (
-                isinstance(this, exp.DataType)
-                and this.is_type("varchar")
-                and this.expressions
-                and this.expressions[0].this == exp.column("MAX")
-            ):
-                this.set("expressions", [exp.var("MAX")])
+            if size and isinstance(size.this, exp.Column):
+                size.set("this", exp.var(size.this.name.upper()))
 
-            return this
+            return size
 
         def _parse_convert(
             self, strict: bool, safe: t.Optional[bool] = None

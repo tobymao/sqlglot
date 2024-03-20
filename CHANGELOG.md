@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v23.0.4] - 2024-03-20
+### :bug: Bug Fixes
+- [`42cf703`](https://github.com/tobymao/sqlglot/commit/42cf70351e7811a077da29af42b28662ede203ac) - redshift varchar(max) catch lower case *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`20cd803`](https://github.com/tobymao/sqlglot/commit/20cd8038268b162af7bae63d54ed2f349502042a) - cleanup redundant check *(commit by [@tobymao](https://github.com/tobymao))*
+- [`7e12342`](https://github.com/tobymao/sqlglot/commit/7e12342029d33ff139a3566243789f54e36f4525) - add superset to readme *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.0.3] - 2024-03-19
 ### :sparkles: New Features
 - [`bc8bc7f`](https://github.com/tobymao/sqlglot/commit/bc8bc7f8c9a6a20a35bab8ea7b34cf6431616b50) - replace a nested child node with a list convenience *(commit by [@tobymao](https://github.com/tobymao))*
@@ -3000,3 +3009,4 @@ Changelog
 [v23.0.1]: https://github.com/tobymao/sqlglot/compare/v23.0.0...v23.0.1
 [v23.0.2]: https://github.com/tobymao/sqlglot/compare/v23.0.1...v23.0.2
 [v23.0.3]: https://github.com/tobymao/sqlglot/compare/v23.0.2...v23.0.3
+[v23.0.4]: https://github.com/tobymao/sqlglot/compare/v23.0.3...v23.0.4

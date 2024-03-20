@@ -1053,6 +1053,9 @@ class Parser(metaclass=_Parser):
 
     UNNEST_OFFSET_ALIAS_TOKENS = ID_VAR_TOKENS - SET_OPERATIONS
 
+    # Aliases without 'AS' might cause disambiguity
+    EXCLUDED_IMPLICIT_ALIAS_IDS: t.List[str] = []
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -5390,6 +5393,9 @@ class Parser(metaclass=_Parser):
         )
 
         if alias:
+            if any_token is None and alias.this.upper() in self.EXCLUDED_IMPLICIT_ALIAS_IDS:
+                self._retreat(self._index - 1)
+                return this
             this = self.expression(exp.Alias, comments=comments, this=this, alias=alias)
             column = this.this
 

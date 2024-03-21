@@ -5745,12 +5745,24 @@ class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
+class PearsonCorrelation(Binary, AggFunc):
+    _sql_names = ["CORR"]
+
+
 class Variance(AggFunc):
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 
 
 class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
+
+
+class CovarianceSamp(Binary, AggFunc):
+    _sql_names = ["COVAR_SAMP"]
+
+
+class CovariancePop(Binary, AggFunc):
+    _sql_names = ["COVAR_POP"]
 
 
 class Week(Func):

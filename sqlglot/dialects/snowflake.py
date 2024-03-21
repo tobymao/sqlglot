@@ -368,6 +368,9 @@ class Snowflake(Dialect):
                 this=seq_get(args, 0), unit=_map_date_part(seq_get(args, 1))
             ),
             "LISTAGG": exp.GroupConcat.from_arg_list,
+            "MEDIAN": lambda args: exp.PercentileCont(
+                this=seq_get(args, 0), expression=exp.Literal.number(0.5)
+            ),
             "NULLIFZERO": _build_if_from_nullifzero,
             "OBJECT_CONSTRUCT": _build_object_construct,
             "REGEXP_REPLACE": _build_regexp_replace,

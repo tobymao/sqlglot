@@ -645,7 +645,7 @@ class Expression(metaclass=_Expression):
 
         if type(expression) is list and isinstance(value, Expression):
             # We are trying to replace an Expression with a list, so it's assumed that
-            # the intention was to really replace the *parent* of this expression.
+            # the intention was to really replace the parent of this expression.
             value.parent.replace(expression)
         else:
             parent.set(key, expression, self.index)

@@ -108,6 +108,8 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT * FROM foo, LATERAL (SELECT * FROM bar WHERE bar.id = foo.bar_id) AS ss"
         )
+        self.validate_identity("SELECT ('data' -> 'en-US') AS acat FROM my_table")
+        self.validate_identity("SELECT ('data' ->> 'en-US') AS acat FROM my_table")
         self.validate_identity(
             "SELECT c.oid, n.nspname, c.relname "
             "FROM pg_catalog.pg_class AS c "

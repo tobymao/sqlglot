@@ -413,3 +413,21 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(
             downstream.expression.sql(dialect="oracle"), "TO_DATE('2023-12-19', 'YYYY-MM-DD') AS Y"
         )
+
+    def test_trim(self) -> None:
+        sql = """
+            SELECT a, b, c
+            FROM (select a, b, c from y) z
+        """
+
+        node = lineage("a", sql, trim_selects=False)
+
+        self.assertEqual(node.name, "a")
+        self.assertEqual(
+            node.source.sql(),
+            "SELECT z.a AS a, z.b AS b, z.c AS c FROM (SELECT y.a AS a, y.b AS b, y.c AS c FROM y AS y) AS z",
+        )
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.name, "z.a")
+        self.assertEqual(downstream.source.sql(), "SELECT y.a AS a, y.b AS b, y.c AS c FROM y AS y")

@@ -15,7 +15,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     var_map_sql,
 )
-from sqlglot.errors import ParseError
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
 
@@ -385,21 +384,20 @@ class ClickHouse(Dialect):
             return super()._parse_position(haystack_first=True)
 
         # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
-        def _parse_cte(self) -> exp.CTE:
-            index = self._index
-            try:
-                # WITH <identifier> AS <subquery expression>
-                return super()._parse_cte()
-            except ParseError:
-                # WITH <expression> AS <identifier>
-                self._retreat(index)
+        def _parse_cte(self) -> exp.Expression:
+            # WITH <identifier> AS <subquery expression>
+            cte = super()._try_parse(super()._parse_cte)
 
-                return self.expression(
+            if not cte:
+                # WITH <expression> AS <identifier>
+                cte = self.expression(
                     exp.CTE,
                     this=self._parse_conjunction(),
                     alias=self._parse_table_alias(),
                     scalar=True,
                 )
+
+            return cte
 
         def _parse_join_parts(
             self,

@@ -1346,6 +1346,32 @@ class Parser(metaclass=_Parser):
             exp.Command, this=self._prev.text.upper(), expression=self._parse_string()
         )
 
+    def _try_parse(
+        self, parse_method: t.Callable, retreat: bool = False
+    ) -> t.Optional[exp.Expression]:
+        """
+        Attemps to backtrack if a parse function that contains a try/catch internally raises an error. This behavior can
+        be different depending on the uset-set ErrorLevel, so _try_parse aims to solve this by setting & resetting
+        the parser state accordingly
+        """
+        index = self._index
+        errors = self.errors.copy()
+        error_level = self.error_level
+
+        self.error_level = ErrorLevel.IMMEDIATE
+        this = None
+        try:
+            this = parse_method()
+        except ParseError:
+            this = None
+        finally:
+            if not this or retreat:
+                self._retreat(index)
+            self.error_level = error_level
+            self.errors = errors
+
+        return this
+
     def _parse_comment(self, allow_exists: bool = True) -> exp.Expression:
         start = self._prev
         exists = self._parse_exists() if allow_exists else None
@@ -2542,7 +2568,7 @@ class Parser(metaclass=_Parser):
             exp.With, comments=comments, expressions=expressions, recursive=recursive
         )
 
-    def _parse_cte(self) -> exp.CTE:
+    def _parse_cte(self) -> exp.Expression:
         alias = self._parse_table_alias(self.ID_VAR_TOKENS)
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
@@ -4428,17 +4454,8 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
-        index = self._index
-
-        if not self.errors:
-            try:
-                if self._parse_select(nested=True):
-                    return this
-            except ParseError:
-                pass
-            finally:
-                self.errors.clear()
-                self._retreat(index)
+        if self._try_parse(lambda: self._parse_select(nested=True), retreat=True):
+            return this
 
         if not self._match(TokenType.L_PAREN):
             return this

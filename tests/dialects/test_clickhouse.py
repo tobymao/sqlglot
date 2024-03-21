@@ -1,5 +1,6 @@
 from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
+from sqlglot.errors import ErrorLevel
 
 
 class TestClickhouse(Validator):
@@ -416,6 +417,15 @@ class TestClickhouse(Validator):
         query = parse_one("""WITH (SELECT 1) AS y SELECT * FROM y""", read="clickhouse")
         self.assertIsInstance(query.args["with"].expressions[0].this, exp.Subquery)
         self.assertEqual(query.args["with"].expressions[0].alias, "y")
+
+        query = "WITH 1 AS var SELECT var"
+        for error_level in [ErrorLevel.IGNORE, ErrorLevel.RAISE, ErrorLevel.IMMEDIATE]:
+            self.assertEqual(
+                parse_one(query, dialect=self.dialect, error_level=error_level).sql(
+                    dialect=self.dialect
+                ),
+                query,
+            )
 
     def test_ternary(self):
         self.validate_all("x ? 1 : 2", write={"clickhouse": "CASE WHEN x THEN 1 ELSE 2 END"})

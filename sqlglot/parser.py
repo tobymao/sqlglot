@@ -5695,10 +5695,11 @@ class Parser(metaclass=_Parser):
             return self.expression(exp.AlterColumn, this=column, comment=self._parse_string())
 
         self._match_text_seq("SET", "DATA")
+        self._match_text_seq("TYPE")
         return self.expression(
             exp.AlterColumn,
             this=column,
-            dtype=self._match_text_seq("TYPE") and self._parse_types(),
+            dtype=self._parse_types(),
             collate=self._match(TokenType.COLLATE) and self._parse_term(),
             using=self._match(TokenType.USING) and self._parse_conjunction(),
         )

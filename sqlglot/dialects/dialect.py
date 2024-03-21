@@ -1019,7 +1019,7 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
 
 
 def build_json_extract_path(
-    expr_type: t.Type[F], zero_based_indexing: bool = True
+    expr_type: t.Type[F], zero_based_indexing: bool = True, arrow_req_json_type: bool = False
 ) -> t.Callable[[t.List], F]:
     def _builder(args: t.List) -> F:
         segments: t.List[exp.JSONPathPart] = [exp.JSONPathRoot()]
@@ -1039,7 +1039,11 @@ def build_json_extract_path(
 
         # This is done to avoid failing in the expression validator due to the arg count
         del args[2:]
-        return expr_type(this=seq_get(args, 0), expression=exp.JSONPath(expressions=segments))
+        return expr_type(
+            this=seq_get(args, 0),
+            expression=exp.JSONPath(expressions=segments),
+            only_json_types=arrow_req_json_type,
+        )
 
     return _builder
 

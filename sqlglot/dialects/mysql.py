@@ -408,6 +408,11 @@ class MySQL(Dialect):
             "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         }
 
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,
+            "MODIFY": lambda self: self._parse_alter_table_alter(),
+        }
+
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "FULLTEXT",

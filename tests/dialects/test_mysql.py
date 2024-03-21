@@ -86,6 +86,9 @@ class TestMySQL(Validator):
             "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
         )
         self.validate_identity(
+            "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
+        )
+        self.validate_identity(
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
         )

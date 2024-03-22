@@ -139,6 +139,15 @@ class TestRedshift(Validator):
                 "presto": "LENGTH(x)",
             },
         )
+        self.validate_all(
+            "x LIKE 'abc' || '%'",
+            read={
+                "duckdb": "STARTS_WITH(x, 'abc')",
+            },
+            write={
+                "redshift": "x LIKE 'abc' || '%'",
+            },
+        )
 
         self.validate_all(
             "SELECT SYSDATE",

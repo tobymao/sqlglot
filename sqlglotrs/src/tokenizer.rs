@@ -118,8 +118,27 @@ impl<'a> TokenizerState<'a> {
 
     fn scan(&mut self, until_peek_char: Option<char>) -> Result<(), TokenizerError> {
         while self.size > 0 && !self.is_end {
-            self.start = self.current;
-            self.advance(1)?;
+            let mut current = self.current;
+
+            // Skip spaces here rather than iteratively calling advance() for performance reasons
+            while current < self.size {
+                let ch = self.char_at(current)?;
+
+                if ch == ' ' || ch == '\t' {
+                    current += 1;
+                } else {
+                    break;
+                }
+            }
+
+            let offset = if current > self.current {
+                current - self.current
+            } else {
+                1
+            };
+
+            self.start = current;
+            self.advance(offset as isize)?;
 
             if self.current_char == '\0' {
                 break;
@@ -153,12 +172,10 @@ impl<'a> TokenizerState<'a> {
     }
 
     fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
-        let mut i = i;
         if Some(&self.token_types.break_) == self.settings.white_space.get(&self.current_char) {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
             if self.current_char == '\r' && self.peek_char == '\n' {
-                i = 2;
-                self.start += 1;
+                self.line -= 1;
             }
 
             self.column = 1;

@@ -1055,6 +1055,8 @@ class Parser(metaclass=_Parser):
 
     UNNEST_OFFSET_ALIAS_TOKENS = ID_VAR_TOKENS - SET_OPERATIONS
 
+    SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -1346,20 +1348,16 @@ class Parser(metaclass=_Parser):
             exp.Command, this=self._prev.text.upper(), expression=self._parse_string()
         )
 
-    def _try_parse(
-        self, parse_method: t.Callable, retreat: bool = False
-    ) -> t.Optional[exp.Expression]:
+    def _try_parse(self, parse_method: t.Callable, retreat: bool = False) -> t.Optional[exp.CTE]:
         """
         Attemps to backtrack if a parse function that contains a try/catch internally raises an error. This behavior can
         be different depending on the uset-set ErrorLevel, so _try_parse aims to solve this by setting & resetting
         the parser state accordingly
         """
         index = self._index
-        errors = self.errors.copy()
         error_level = self.error_level
 
         self.error_level = ErrorLevel.IMMEDIATE
-        this = None
         try:
             this = parse_method()
         except ParseError:
@@ -1368,7 +1366,6 @@ class Parser(metaclass=_Parser):
             if not this or retreat:
                 self._retreat(index)
             self.error_level = error_level
-            self.errors = errors
 
         return this
 
@@ -2568,7 +2565,7 @@ class Parser(metaclass=_Parser):
             exp.With, comments=comments, expressions=expressions, recursive=recursive
         )
 
-    def _parse_cte(self) -> exp.Expression:
+    def _parse_cte(self) -> exp.CTE:
         alias = self._parse_table_alias(self.ID_VAR_TOKENS)
         if not alias or not alias.this:
             self.raise_error("Expected CTE to have alias")
@@ -4454,10 +4451,15 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
-        if self._try_parse(lambda: self._parse_select(nested=True), retreat=True):
-            return this
+        index = self._index
 
         if not self._match(TokenType.L_PAREN):
+            return this
+
+        # Disambiguate between schema and subquery/CTE, e.g. in INSERT INTO table (<expr>),
+        # expr can be of both types
+        if self._match_set(self.SELECT_START_TOKENS):
+            self._retreat(index)
             return this
 
         args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def())

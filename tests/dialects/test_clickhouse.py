@@ -421,9 +421,7 @@ class TestClickhouse(Validator):
         query = "WITH 1 AS var SELECT var"
         for error_level in [ErrorLevel.IGNORE, ErrorLevel.RAISE, ErrorLevel.IMMEDIATE]:
             self.assertEqual(
-                parse_one(query, dialect=self.dialect, error_level=error_level).sql(
-                    dialect=self.dialect
-                ),
+                self.parse_one(query, error_level=error_level).sql(dialect=self.dialect),
                 query,
             )
 

@@ -356,9 +356,7 @@ def coalesce(*cols: ColumnOrName) -> Column:
 
 
 def corr(col1: ColumnOrName, col2: ColumnOrName) -> Column:
-    return Column.invoke_expression_over_column(
-        col1, expression.Corr, expression=col2
-    )
+    return Column.invoke_expression_over_column(col1, expression.Corr, expression=col2)
 
 
 def covar_pop(col1: ColumnOrName, col2: ColumnOrName) -> Column:

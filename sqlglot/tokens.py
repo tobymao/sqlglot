@@ -565,8 +565,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
         "@": TokenType.PARAMETER,
-        # used for breaking a var like x'y' but nothing else
-        # the token type doesn't matter
+        # Used for breaking a var like x'y' but nothing else the token type doesn't matter
         "'": TokenType.QUOTE,
         "`": TokenType.IDENTIFIER,
         '"': TokenType.IDENTIFIER,
@@ -892,7 +891,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     COMMAND_PREFIX_TOKENS = {TokenType.SEMICOLON, TokenType.BEGIN}
 
-    # handle numeric literals like in hive (3L = BIGINT)
+    # Handle numeric literals like in hive (3L = BIGINT)
     NUMERIC_LITERALS: t.Dict[str, str] = {}
 
     COMMENTS = ["--", ("/*", "*/")]
@@ -965,8 +964,7 @@ class Tokenizer(metaclass=_Tokenizer):
         while self.size and not self._end:
             current = self._current
 
-            # skip spaces inline rather than iteratively call advance()
-            # for performance reasons
+            # Skip spaces here rather than iteratively calling advance() for performance reasons
             while current < self.size:
                 char = self.sql[current]
 
@@ -975,12 +973,10 @@ class Tokenizer(metaclass=_Tokenizer):
                 else:
                     break
 
-            n = current - self._current
-            self._start = current
-            self._advance(n if n > 1 else 1)
+            offset = current - self._current if current > self._current else 1
 
-            if self._char is None:
-                break
+            self._start = current
+            self._advance(offset)
 
             if not self._char.isspace():
                 if self._char.isdigit():
@@ -1008,12 +1004,9 @@ class Tokenizer(metaclass=_Tokenizer):
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             # Ensures we don't count an extra line if we get a \r\n line break sequence
-            if self._char == "\r" and self._peek == "\n":
-                i = 2
-                self._start += 1
-
-            self._col = 1
-            self._line += 1
+            if not (self._char == "\r" and self._peek == "\n"):
+                self._col = 1
+                self._line += 1
         else:
             self._col += i
 

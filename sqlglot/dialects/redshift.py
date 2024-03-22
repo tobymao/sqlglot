@@ -171,6 +171,8 @@ class Redshift(Postgres):
             ),
             exp.SortKeyProperty: lambda self,
             e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
+            exp.StartsWith: lambda self,
+            e: f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'",
             exp.TableSample: no_tablesample_sql,
             exp.TsOrDsAdd: date_delta_sql("DATEADD"),
             exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),

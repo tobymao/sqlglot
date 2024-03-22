@@ -435,36 +435,23 @@ WHERE
                 "sqlite": "SELECT MIN(c1), MIN(c2) FROM test",
             },
         )
-        self.validate_all(
-            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x)",
-            read={
-                "snowflake": "SELECT MEDIAN(x)",
-                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x)",
-            },
-            write={
-                "": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x NULLS LAST)",
-                "duckdb": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x)",
-                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x)",
-                "snowflake": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x)",
-            },
-        )
-        self.validate_all(
-            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) OVER ()",
-            read={
-                "snowflake": "SELECT MEDIAN(x) OVER ()",
-                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) OVER ()",
-            },
-            write={
-                "": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x NULLS LAST) OVER ()",
-                "duckdb": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) OVER ()",
-                "postgres": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) OVER ()",
-                "snowflake": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) OVER ()",
-            },
-        )
         for suffix in (
             "",
             " OVER ()",
         ):
+            self.validate_all(
+                f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                read={
+                    "snowflake": f"SELECT MEDIAN(x){suffix}",
+                    "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                },
+                write={
+                    "": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x NULLS LAST){suffix}",
+                    "duckdb": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                    "postgres": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                    "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
+                },
+            )
             self.validate_all(
                 f"SELECT MEDIAN(x){suffix}",
                 write={
@@ -474,14 +461,10 @@ WHERE
                     "snowflake": f"SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },
             )
-        for func in (
-            "CORR",
-            "COVAR_POP",
-            "COVAR_SAMP",
-        ):
-            for suffix in (
-                "",
-                " OVER ()",
+            for func in (
+                "CORR",
+                "COVAR_POP",
+                "COVAR_SAMP",
             ):
                 self.validate_all(
                     f"SELECT {func}(y, x){suffix}",

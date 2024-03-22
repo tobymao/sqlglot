@@ -46,9 +46,11 @@ class Generator(metaclass=_Generator):
             'safe': Only quote identifiers that are case insensitive.
         normalize: Whether to normalize identifiers to lowercase.
             Default: False.
-        pad: The pad size in a formatted string.
+        pad: The pad size in a formatted string. For example, this affects the indentation of
+            a projection in a query, relative to its nesting level.
             Default: 2.
-        indent: The indentation size in a formatted string.
+        indent: The indentation size in a formatted string. For example, this affects the
+            indentation of subqueries and filters under a `WHERE` clause.
             Default: 2.
         normalize_functions: How to normalize function names. Possible values are:
             "upper" or True (default): Convert names to uppercase.
@@ -3221,7 +3223,7 @@ class Generator(metaclass=_Generator):
         num_sqls = len(expressions)
 
         # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
-        pad = " " * self.pad
+        pad = " " * len(sep)
         stripped_sep = sep.strip()
 
         result_sqls = []

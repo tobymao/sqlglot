@@ -143,6 +143,7 @@ class Generator(metaclass=_Generator):
         exp.UppercaseColumnConstraint: lambda *_: "UPPERCASE",
         exp.UnloggedProperty: lambda *_: "UNLOGGED",
         exp.VarMap: lambda self, e: self.func("MAP", e.args["keys"], e.args["values"]),
+        exp.ViewAttributeProperty: lambda self, e: f"WITH {self.sql(e, 'this')}",
         exp.VolatileProperty: lambda *_: "VOLATILE",
         exp.WithJournalTableProperty: lambda self, e: f"WITH JOURNAL TABLE={self.sql(e, 'this')}",
         exp.WithOperator: lambda self, e: f"{self.sql(e, 'this')} WITH {self.sql(e, 'op')}",
@@ -453,6 +454,7 @@ class Generator(metaclass=_Generator):
         exp.TransformModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.MergeTreeTTL: exp.Properties.Location.POST_SCHEMA,
         exp.UnloggedProperty: exp.Properties.Location.POST_CREATE,
+        exp.ViewAttributeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.VolatileProperty: exp.Properties.Location.POST_CREATE,
         exp.WithDataProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.WithJournalTableProperty: exp.Properties.Location.POST_NAME,
@@ -1444,15 +1446,9 @@ class Generator(metaclass=_Generator):
         no = " NO" if no else ""
         concurrent = expression.args.get("concurrent")
         concurrent = " CONCURRENT" if concurrent else ""
-
-        for_ = ""
-        if expression.args.get("for_all"):
-            for_ = " FOR ALL"
-        elif expression.args.get("for_insert"):
-            for_ = " FOR INSERT"
-        elif expression.args.get("for_none"):
-            for_ = " FOR NONE"
-        return f"WITH{no}{concurrent} ISOLATED LOADING{for_}"
+        target = self.sql(expression, "target")
+        target = f" {target}" if target else ""
+        return f"WITH{no}{concurrent} ISOLATED LOADING{target}"
 
     def partitionboundspec_sql(self, expression: exp.PartitionBoundSpec) -> str:
         if isinstance(expression.this, list):

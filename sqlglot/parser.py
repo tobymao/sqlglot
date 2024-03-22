@@ -15,6 +15,8 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import Dialect, DialectType
 
+    T = t.TypeVar("T")
+
 logger = logging.getLogger("sqlglot")
 
 OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Union[t.Sequence[str], str]]]
@@ -1348,7 +1350,7 @@ class Parser(metaclass=_Parser):
             exp.Command, this=self._prev.text.upper(), expression=self._parse_string()
         )
 
-    def _try_parse(self, parse_method: t.Callable, retreat: bool = False) -> t.Optional[exp.CTE]:
+    def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> t.Optional[T]:
         """
         Attemps to backtrack if a parse function that contains a try/catch internally raises an error. This behavior can
         be different depending on the uset-set ErrorLevel, so _try_parse aims to solve this by setting & resetting

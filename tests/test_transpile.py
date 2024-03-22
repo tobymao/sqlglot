@@ -67,6 +67,24 @@ class TestTranspile(unittest.TestCase):
 
     def test_leading_comma(self):
         self.validate(
+            "SELECT a, b, c FROM (SELECT a, b, c FROM t)",
+            "SELECT\n"
+            "      a\n"
+            "    , b\n"
+            "    , c\n"
+            "FROM (\n"
+            "    SELECT\n"
+            "          a\n"
+            "        , b\n"
+            "        , c\n"
+            "    FROM t\n"
+            ")",
+            leading_comma=True,
+            pretty=True,
+            pad=4,
+            indent=4,
+        )
+        self.validate(
             "SELECT FOO, BAR, BAZ",
             "SELECT\n    FOO\n  , BAR\n  , BAZ",
             leading_comma=True,

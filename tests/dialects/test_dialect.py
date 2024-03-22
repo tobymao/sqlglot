@@ -17,8 +17,8 @@ from sqlglot.parser import logger as parser_logger
 class Validator(unittest.TestCase):
     dialect = None
 
-    def parse_one(self, sql):
-        return parse_one(sql, read=self.dialect)
+    def parse_one(self, sql, **kwargs):
+        return parse_one(sql, read=self.dialect, **kwargs)
 
     def validate_identity(self, sql, write_sql=None, pretty=False, check_command_warning=False):
         if check_command_warning:

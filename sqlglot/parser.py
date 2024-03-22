@@ -1026,6 +1026,8 @@ class Parser(metaclass=_Parser):
         ),
     }
 
+    ISOLATED_LOADING_OPTIONS: OPTIONS_TYPE = {"FOR": ("ALL", "INSERT", "NONE")}
+
     USABLES: OPTIONS_TYPE = dict.fromkeys(("ROLE", "WAREHOUSE", "DATABASE", "SCHEMA"), tuple())
 
     CAST_ACTIONS: OPTIONS_TYPE = dict.fromkeys(("RENAME", "ADD"), ("FIELDS",))
@@ -1040,6 +1042,8 @@ class Parser(metaclass=_Parser):
     OPTYPE_FOLLOW_TOKENS = {TokenType.COMMA, TokenType.R_PAREN}
 
     TABLE_INDEX_HINT_TOKENS = {TokenType.FORCE, TokenType.IGNORE, TokenType.USE}
+
+    VIEW_ATTRIBUTES = {"ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"}
 
     WINDOW_ALIAS_TOKENS = ID_VAR_TOKENS - {TokenType.ROWS}
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER}
@@ -1798,14 +1802,15 @@ class Parser(metaclass=_Parser):
 
         return prop
 
-    def _parse_with_property(
-        self,
-    ) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
+    def _parse_with_property(self) -> t.Optional[exp.Expression] | t.List[exp.Expression]:
         if self._match(TokenType.L_PAREN, advance=False):
             return self._parse_wrapped_properties()
 
         if self._match_text_seq("JOURNAL"):
             return self._parse_withjournaltable()
+
+        if self._match_texts(self.VIEW_ATTRIBUTES):
+            return self.expression(exp.ViewAttributeProperty, this=self._prev.text.upper())
 
         if self._match_text_seq("DATA"):
             return self._parse_withdata(no=False)
@@ -1954,20 +1959,18 @@ class Parser(metaclass=_Parser):
             autotemp=autotemp,
         )
 
-    def _parse_withisolatedloading(self) -> exp.IsolatedLoadingProperty:
+    def _parse_withisolatedloading(self) -> t.Optional[exp.IsolatedLoadingProperty]:
+        index = self._index
         no = self._match_text_seq("NO")
         concurrent = self._match_text_seq("CONCURRENT")
-        self._match_text_seq("ISOLATED", "LOADING")
-        for_all = self._match_text_seq("FOR", "ALL")
-        for_insert = self._match_text_seq("FOR", "INSERT")
-        for_none = self._match_text_seq("FOR", "NONE")
+
+        if not self._match_text_seq("ISOLATED", "LOADING"):
+            self._retreat(index)
+            return None
+
+        target = self._parse_var_from_options(self.ISOLATED_LOADING_OPTIONS, raise_unmatched=False)
         return self.expression(
-            exp.IsolatedLoadingProperty,
-            no=no,
-            concurrent=concurrent,
-            for_all=for_all,
-            for_insert=for_insert,
-            for_none=for_none,
+            exp.IsolatedLoadingProperty, no=no, concurrent=concurrent, target=target
         )
 
     def _parse_locking(self) -> exp.LockingProperty:

@@ -742,6 +742,9 @@ class TestTSQL(Validator):
         )
 
     def test_ddl(self):
+        for view_attr in ("ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"):
+            self.validate_identity(f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x")
+
         expression = parse_one("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B", dialect="tsql")
         self.assertIsInstance(expression, exp.AlterTable)
         self.assertIsInstance(expression.args["actions"][0], exp.Drop)

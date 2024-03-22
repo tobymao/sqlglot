@@ -2394,13 +2394,7 @@ class OutputModelProperty(Property):
 
 
 class IsolatedLoadingProperty(Property):
-    arg_types = {
-        "no": False,
-        "concurrent": False,
-        "for_all": False,
-        "for_insert": False,
-        "for_none": False,
-    }
+    arg_types = {"no": False, "concurrent": False, "target": False}
 
 
 class JournalProperty(Property):
@@ -2606,6 +2600,11 @@ class TransientProperty(Property):
 
 class UnloggedProperty(Property):
     arg_types = {}
+
+
+# https://learn.microsoft.com/en-us/sql/t-sql/statements/create-view-transact-sql?view=sql-server-ver16
+class ViewAttributeProperty(Property):
+    arg_types = {"this": True}
 
 
 class VolatileProperty(Property):

@@ -15,6 +15,8 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E, Lit
     from sqlglot.dialects.dialect import Dialect, DialectType
 
+    T = t.TypeVar("T")
+
 logger = logging.getLogger("sqlglot")
 
 OPTIONS_TYPE = t.Dict[str, t.Sequence[t.Union[t.Sequence[str], str]]]
@@ -1055,6 +1057,8 @@ class Parser(metaclass=_Parser):
 
     UNNEST_OFFSET_ALIAS_TOKENS = ID_VAR_TOKENS - SET_OPERATIONS
 
+    SELECT_START_TOKENS = {TokenType.L_PAREN, TokenType.WITH, TokenType.SELECT}
+
     STRICT_CAST = True
 
     PREFIXED_PIVOT_COLUMNS = False
@@ -1345,6 +1349,27 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Command, this=self._prev.text.upper(), expression=self._parse_string()
         )
+
+    def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> t.Optional[T]:
+        """
+        Attemps to backtrack if a parse function that contains a try/catch internally raises an error. This behavior can
+        be different depending on the uset-set ErrorLevel, so _try_parse aims to solve this by setting & resetting
+        the parser state accordingly
+        """
+        index = self._index
+        error_level = self.error_level
+
+        self.error_level = ErrorLevel.IMMEDIATE
+        try:
+            this = parse_method()
+        except ParseError:
+            this = None
+        finally:
+            if not this or retreat:
+                self._retreat(index)
+            self.error_level = error_level
+
+        return this
 
     def _parse_comment(self, allow_exists: bool = True) -> exp.Expression:
         start = self._prev
@@ -4430,17 +4455,13 @@ class Parser(metaclass=_Parser):
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         index = self._index
 
-        if not self.errors:
-            try:
-                if self._parse_select(nested=True):
-                    return this
-            except ParseError:
-                pass
-            finally:
-                self.errors.clear()
-                self._retreat(index)
-
         if not self._match(TokenType.L_PAREN):
+            return this
+
+        # Disambiguate between schema and subquery/CTE, e.g. in INSERT INTO table (<expr>),
+        # expr can be of both types
+        if self._match_set(self.SELECT_START_TOKENS):
+            self._retreat(index)
             return this
 
         args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def())

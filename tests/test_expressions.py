@@ -802,6 +802,7 @@ class TestExpressions(unittest.TestCase):
             ),
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
             (math.nan, "NULL"),
+            (b"\x00\x00\x00\x00\x00\x00\x07\xd3", "2003"),
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)

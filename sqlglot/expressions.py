@@ -5745,12 +5745,24 @@ class Upper(Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
+class Corr(Binary, AggFunc):
+    pass
+
+
 class Variance(AggFunc):
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 
 
 class VariancePop(AggFunc):
     _sql_names = ["VARIANCE_POP", "VAR_POP"]
+
+
+class CovarSamp(Binary, AggFunc):
+    pass
+
+
+class CovarPop(Binary, AggFunc):
+    pass
 
 
 class Week(Func):

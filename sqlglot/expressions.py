@@ -6958,6 +6958,8 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         return null()
     if isinstance(value, numbers.Number):
         return Literal.number(value)
+    if isinstance(value, bytes):
+        return HexString(this=value.hex())
     if isinstance(value, datetime.datetime):
         datetime_literal = Literal.string(
             (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat()

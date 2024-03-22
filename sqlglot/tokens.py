@@ -1004,11 +1004,9 @@ class Tokenizer(metaclass=_Tokenizer):
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
         if self.WHITE_SPACE.get(self._char) is TokenType.BREAK:
             # Ensures we don't count an extra line if we get a \r\n line break sequence
-            if self._char == "\r" and self._peek == "\n":
-                self._line -= 1
-
-            self._col = 1
-            self._line += 1
+            if not (self._char == "\r" and self._peek == "\n"):
+                self._col = 1
+                self._line += 1
         else:
             self._col += i
 

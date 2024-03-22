@@ -174,12 +174,10 @@ impl<'a> TokenizerState<'a> {
     fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
         if Some(&self.token_types.break_) == self.settings.white_space.get(&self.current_char) {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
-            if self.current_char == '\r' && self.peek_char == '\n' {
-                self.line -= 1;
+            if ! (self.current_char == '\r' && self.peek_char == '\n') {
+                self.column = 1;
+                self.line += 1;
             }
-
-            self.column = 1;
-            self.line += 1;
         } else {
             self.column = self.column.wrapping_add_signed(i);
         }

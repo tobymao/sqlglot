@@ -188,6 +188,11 @@ class DuckDB(Dialect):
         return super().to_json_path(path)
 
     class Tokenizer(tokens.Tokenizer):
+        HEREDOC_STRINGS = ["$"]
+
+        HEREDOC_TAG_IS_IDENTIFIER = True
+        HEREDOC_STRING_ALTERNATIVE = TokenType.PARAMETER
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "//": TokenType.DIV,

@@ -174,7 +174,7 @@ impl<'a> TokenizerState<'a> {
     fn advance(&mut self, i: isize) -> Result<(), TokenizerError> {
         if Some(&self.token_types.break_) == self.settings.white_space.get(&self.current_char) {
             // Ensures we don't count an extra line if we get a \r\n line break sequence.
-            if ! (self.current_char == '\r' && self.peek_char == '\n') {
+            if !(self.current_char == '\r' && self.peek_char == '\n') {
                 self.column = 1;
                 self.line += 1;
             }
@@ -419,11 +419,19 @@ impl<'a> TokenizerState<'a> {
                 };
 
                 self.advance(1)?;
+
                 let tag = if self.current_char.to_string() == *end {
                     String::from("")
                 } else {
-                    self.extract_string(end, false)?
+                    self.extract_string(end, false, !self.settings.heredoc_tag_is_identifier)?
                 };
+
+                if self.is_end && !tag.is_empty() && self.settings.heredoc_tag_is_identifier {
+                    self.advance(-(tag.len() as isize))?;
+                    self.add(self.token_types.heredoc_string_alternative, None)?;
+                    return Ok(true)
+                }
+
                 (None, *token_type, format!("{}{}{}", start, tag, end))
             } else {
                 (None, *token_type, end.clone())
@@ -433,7 +441,7 @@ impl<'a> TokenizerState<'a> {
         };
 
         self.advance(start.len() as isize)?;
-        let text = self.extract_string(&end, false)?;
+        let text = self.extract_string(&end, false, true)?;
 
         if let Some(b) = base {
             if u64::from_str_radix(&text, b).is_err() {
@@ -576,7 +584,7 @@ impl<'a> TokenizerState<'a> {
 
     fn scan_identifier(&mut self, identifier_end: &str) -> Result<(), TokenizerError> {
         self.advance(1)?;
-        let text = self.extract_string(identifier_end, true)?;
+        let text = self.extract_string(identifier_end, true, true)?;
         self.add(self.token_types.identifier, Some(text))
     }
 
@@ -584,6 +592,7 @@ impl<'a> TokenizerState<'a> {
         &mut self,
         delimiter: &str,
         use_identifier_escapes: bool,
+        raise_unmatched: bool,
     ) -> Result<String, TokenizerError> {
         let mut text = String::from("");
 
@@ -625,6 +634,11 @@ impl<'a> TokenizerState<'a> {
                     break;
                 }
                 if self.is_end {
+                    if !raise_unmatched {
+                        text.push(self.current_char);
+                        return Ok(text)
+                    }
+
                     return self.error_result(format!(
                         "Missing {} from {}:{}",
                         delimiter, self.line, self.current

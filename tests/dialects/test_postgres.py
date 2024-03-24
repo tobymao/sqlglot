@@ -145,6 +145,10 @@ class TestPostgres(Validator):
             "SELECT 'Dianne''s horse'",
         )
         self.validate_identity(
+            "SELECT $$The price is $9.95$$ AS msg",
+            "SELECT 'The price is $9.95' AS msg",
+        )
+        self.validate_identity(
             "COMMENT ON TABLE mytable IS $$doc this$$", "COMMENT ON TABLE mytable IS 'doc this'"
         )
         self.validate_identity(

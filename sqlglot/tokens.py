@@ -1265,7 +1265,19 @@ class Tokenizer(metaclass=_Tokenizer):
                     return True
 
                 self._advance()
-                tag = "" if self._char == end else self._extract_string(end)
+
+                if self._char == end:
+                    tag = ""
+                else:
+                    tag = self._extract_string(
+                        end, raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER
+                    )
+
+                if self._end and tag and self.HEREDOC_TAG_IS_IDENTIFIER:
+                    self._advance(-len(tag))
+                    self._add(self.HEREDOC_STRING_ALTERNATIVE)
+                    return True
+
                 end = f"{start}{tag}{end}"
         else:
             return False
@@ -1286,7 +1298,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
     def _scan_identifier(self, identifier_end: str) -> None:
         self._advance()
-        text = self._extract_string(identifier_end, self._IDENTIFIER_ESCAPES)
+        text = self._extract_string(identifier_end, escapes=self._IDENTIFIER_ESCAPES)
         self._add(TokenType.IDENTIFIER, text)
 
     def _scan_var(self) -> None:
@@ -1303,7 +1315,9 @@ class Tokenizer(metaclass=_Tokenizer):
             else self.KEYWORDS.get(self._text.upper(), TokenType.VAR)
         )
 
-    def _extract_string(self, delimiter: str, escapes=None) -> str:
+    def _extract_string(
+        self, delimiter: str, escapes: t.Optional[t.Set[str]] = None, raise_unmatched: bool = True
+    ) -> str:
         text = ""
         delim_size = len(delimiter)
         escapes = self._STRING_ESCAPES if escapes is None else escapes
@@ -1330,6 +1344,9 @@ class Tokenizer(metaclass=_Tokenizer):
                     break
 
                 if self._end:
+                    if not raise_unmatched:
+                        return text + self._char
+
                     raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 if (

@@ -266,6 +266,18 @@ class TestDuckDB(Validator):
             """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
         )
         self.validate_identity(
+            "SELECT ($$hello)'world$$)",
+            "SELECT ('hello)''world')",
+        )
+        self.validate_identity(
+            "SELECT $$foo$$",
+            "SELECT 'foo'",
+        )
+        self.validate_identity(
+            "SELECT $tag$foo$tag$",
+            "SELECT 'foo'",
+        )
+        self.validate_identity(
             "JSON_EXTRACT(x, '$.family')",
             "x -> '$.family'",
         )

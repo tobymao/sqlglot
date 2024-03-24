@@ -110,12 +110,15 @@ sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read="duckdb", write="hive"
 "SELECT DATE_FORMAT(x, 'yy-M-ss')"
 ```
 
-As another example, let's suppose that we want to read in a SQL query that contains a CTE and a cast to `REAL`, and then transpile it to Spark, which uses backticks for identifiers and `FLOAT` instead of `REAL`:
+Identifier delimiters and data types can be translated between dialects:
 
 ```python
 import sqlglot
 
+# Spark SQL requires backticks (`) for delimited identifiers and uses `FLOAT` over `REAL`
 sql = """WITH baz AS (SELECT a, c FROM foo WHERE a = 1) SELECT f.a, b.b, baz.c, CAST("b"."a" AS REAL) d FROM foo f JOIN bar b ON f.a = b.a LEFT JOIN baz ON f.a = baz.a"""
+
+# Translates the query into Spark SQL, formats it, and delimits all of its identifiers
 print(sqlglot.transpile(sql, write="spark", identify=True, pretty=True)[0])
 ```
 

@@ -110,7 +110,7 @@ sqlglot.transpile("SELECT STRFTIME(x, '%y-%-m-%S')", read="duckdb", write="hive"
 "SELECT DATE_FORMAT(x, 'yy-M-ss')"
 ```
 
-Identifier delimiters and data types can be translated between dialects:
+Identifier delimiters and data types can be translated as well:
 
 ```python
 import sqlglot
@@ -143,7 +143,7 @@ LEFT JOIN `baz`
   ON `f`.`a` = `baz`.`a`
 ```
 
-Comments are also preserved on a best-effort basis when transpiling SQL code:
+Comments are also preserved on a best-effort basis:
 
 ```python
 sql = """
@@ -160,6 +160,7 @@ FROM
   tbl #          comment 6
 """
 
+# Note: MySQL-specific comments (`#`) are converted into standard syntax
 print(sqlglot.transpile(sql, read='mysql', pretty=True)[0])
 ```
 
@@ -178,7 +179,7 @@ FROM bar /* comment 5 */, tbl /*          comment 6 */
 
 ### Metadata
 
-You can explore SQL with expression helpers to do things like find columns and tables:
+You can explore SQL with expression helpers to do things like find columns and tables in a query:
 
 ```python
 from sqlglot import parse_one, exp
@@ -201,7 +202,7 @@ Read the [ast primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_pri
 
 ### Parser Errors
 
-When the parser detects an error in the syntax, it raises a ParseError:
+When the parser detects an error in the syntax, it raises a `ParseError`:
 
 ```python
 import sqlglot
@@ -238,7 +239,7 @@ except sqlglot.errors.ParseError as e:
 
 ### Unsupported Errors
 
-Presto `APPROX_DISTINCT` supports the accuracy argument which is not supported in Hive:
+It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot emits a warning and proceeds to do a best-effort translation by default:
 
 ```python
 import sqlglot
@@ -250,9 +251,20 @@ APPROX_COUNT_DISTINCT does not support accuracy
 'SELECT APPROX_COUNT_DISTINCT(a) FROM foo'
 ```
 
+This behavior can be changed by setting the [`unsupported_level`](https://github.com/tobymao/sqlglot/blob/b0e8dc96ba179edb1776647b5bde4e704238b44d/sqlglot/errors.py#L9) attribute. For example, we can set it to either `RAISE` or `IMMEDIATE` to ensure an exception is raised instead:
+
+```python
+import sqlglot
+sqlglot.transpile("SELECT APPROX_DISTINCT(a, 0.1) FROM foo", read="presto", write="hive", unsupported_level=sqlglot.ErrorLevel.RAISE)
+```
+
+```
+sqlglot.errors.UnsupportedError: APPROX_COUNT_DISTINCT does not support accuracy
+```
+
 ### Build and Modify SQL
 
-SQLGlot supports incrementally building sql expressions:
+SQLGlot supports incrementally building SQL expressions:
 
 ```python
 from sqlglot import select, condition
@@ -265,7 +277,7 @@ select("*").from_("y").where(where).sql()
 'SELECT * FROM y WHERE x = 1 AND y = 1'
 ```
 
-You can also modify a parsed tree:
+It's possible to modify a parsed tree:
 
 ```python
 from sqlglot import parse_one
@@ -276,7 +288,7 @@ parse_one("SELECT x FROM y").from_("z").sql()
 'SELECT x FROM z'
 ```
 
-There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:
+Parsed expressions can also be transformed recursively by applying a mapping function to each node in the tree:
 
 ```python
 from sqlglot import exp, parse_one
@@ -331,7 +343,7 @@ WHERE
 
 ### AST Introspection
 
-You can see the AST version of the sql by calling `repr`:
+You can see the AST version of the parsed SQL by calling `repr`:
 
 ```python
 from sqlglot import parse_one
@@ -351,7 +363,7 @@ Select(
 
 ### AST Diff
 
-SQLGlot can calculate the difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:
+SQLGlot can calculate the semantic difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:
 
 ```python
 from sqlglot import diff, parse_one
@@ -425,7 +437,9 @@ print(Dialect["custom"])
 
 ### SQL Execution
 
-One can even interpret SQL queries using SQLGlot, where the tables are represented as Python dictionaries. Although the engine is not very fast (it's not supposed to be) and is in a relatively early stage of development, it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels (arrow, pandas). Below is an example showcasing the execution of a SELECT expression that involves aggregations and JOINs:
+SQLGlot is able to interpret SQL queries, where the tables are represented as Python dictionaries. The engine is not supposed to be fast, but it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels, such as [Arrow](https://arrow.apache.org/docs/index.html) and [Pandas](https://pandas.pydata.org/).
+
+The example below showcases the execution of a query that involves aggregations and joins:
 
 ```python
 from sqlglot.executor import execute
@@ -497,8 +511,8 @@ make docs-serve
 
 ```
 make style  # Only linter checks
-make unit   # Only unit tests
-make test   # Unit and integration tests
+make unit   # Only unit tests (or unit-rs, to use the Rust tokenizer)
+make test   # Unit and integration tests (or test-rs, to use the Rust tokenizer)
 make check  # Full test suite & linter checks
 ```
 

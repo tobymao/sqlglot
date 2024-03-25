@@ -396,6 +396,7 @@ WHERE
             write={
                 "duckdb": "{'a': b, 'c': d}",
                 "snowflake": "OBJECT_CONSTRUCT('a', b, 'c', d)",
+                "": "STRUCT(b AS a, d AS c)",
             },
         )
         self.validate_identity("OBJECT_CONSTRUCT(a, b, c, d)")

@@ -961,6 +961,7 @@ class TestDialect(Validator):
                 "presto": "CAST(x AS DATE)",
                 "spark": "CAST(x AS DATE)",
                 "sqlite": "x",
+                "tsql": "CAST(x AS DATE)",
             },
         )
         self.validate_all(

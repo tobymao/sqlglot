@@ -430,3 +430,19 @@ WHERE
     FROM q AS q
   );
 SELECT q.a AS a FROM x AS q WHERE q.a IN (SELECT y.b AS a FROM y AS y);
+
+# title: dont merge when inner query has ORDER BY and outer query is UNION
+WITH q AS (
+  SELECT
+    x.a AS a
+  FROM x
+  ORDER BY x.a
+)
+SELECT
+  q.a AS a
+FROM q
+UNION ALL
+SELECT
+  1 AS a;
+WITH q AS (SELECT x.a AS a FROM x AS x ORDER BY x.a) SELECT q.a AS a FROM q AS q UNION ALL SELECT 1 AS a;
+

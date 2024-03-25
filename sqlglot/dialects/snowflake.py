@@ -852,6 +852,16 @@ class Snowflake(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        UNSUPPORTED_VALUES_EXPRESSIONS = {
+            exp.Struct,
+        }
+
+        def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
+            if expression.find(*self.UNSUPPORTED_VALUES_EXPRESSIONS):
+                values_as_table = False
+
+            return super().values_sql(expression, values_as_table=values_as_table)
+
         def datatype_sql(self, expression: exp.DataType) -> str:
             expressions = expression.expressions
             if (

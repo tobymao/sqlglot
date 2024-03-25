@@ -383,7 +383,8 @@ class TestOptimizer(unittest.TestCase):
 
         self.assertIn("Anonymous.this expects a str or an Identifier, got 'int'.", str(e.exception))
 
-        sql = parse_one("""
+        sql = parse_one(
+            """
         WITH cte AS (select 1 union select 2), cte2 AS (
             SELECT ROW() OVER (PARTITION BY y) FROM (
                 (select 1) limit 10
@@ -395,7 +396,8 @@ class TestOptimizer(unittest.TestCase):
           a div 1,
           filter("B", (x, y) -> x + y)
           FROM (z AS z CROSS JOIN z) AS f(a) LEFT JOIN a.b.c.d.e.f.g USING(n) ORDER BY 1
-        """)
+        """
+        )
         self.assertEqual(
             optimizer.simplify.gen(sql),
             """

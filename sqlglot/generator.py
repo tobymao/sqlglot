@@ -1746,9 +1746,11 @@ class Generator(metaclass=_Generator):
         sql = f"UPDATE {this} SET {set_sql}{expression_sql}{order}{limit}"
         return self.prepend_ctes(expression, sql)
 
-    def values_sql(self, expression: exp.Values) -> str:
+    def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
+        values_as_table = values_as_table and self.VALUES_AS_TABLE
+
         # The VALUES clause is still valid in an `INSERT INTO ..` statement, for example
-        if self.VALUES_AS_TABLE or not expression.find_ancestor(exp.From, exp.Join):
+        if values_as_table or not expression.find_ancestor(exp.From, exp.Join):
             args = self.expressions(expression)
             alias = self.sql(expression, "alias")
             values = f"VALUES{self.seg('')}{args}"

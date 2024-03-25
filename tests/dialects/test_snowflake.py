@@ -1416,12 +1416,23 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "spark": "SELECT `c0`, `c1` FROM (VALUES (1, 2), (3, 4)) AS `t0`(`c0`, `c1`)",
             },
         )
-
         self.validate_all(
             """SELECT $1 AS "_1" FROM VALUES ('a'), ('b')""",
             write={
                 "snowflake": """SELECT $1 AS "_1" FROM (VALUES ('a'), ('b'))""",
                 "spark": """SELECT ${1} AS `_1` FROM VALUES ('a'), ('b')""",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT OBJECT_CONSTRUCT('a', 1) AS x) AS t",
+            read={
+                "duckdb": "SELECT * FROM (VALUES ({'a': 1})) AS t(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT OBJECT_CONSTRUCT('a', 1) AS x UNION ALL SELECT OBJECT_CONSTRUCT('a', 2)) AS t",
+            read={
+                "duckdb": "SELECT * FROM (VALUES ({'a': 1}), ({'a': 2})) AS t(x)",
             },
         )
 

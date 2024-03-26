@@ -54,9 +54,7 @@ def pushdown_projections(expression, schema=None, remove_unused_selections=True)
             if any(select.is_star for select in right.expression.selects):
                 referenced_columns[right] = parent_selections
             elif not any(select.is_star for select in left.expression.selects):
-                union_by_name = scope.expression.args.get("by_name")
-
-                if union_by_name:
+                if scope.expression.args.get("by_name"):
                     referenced_columns[right] = referenced_columns[left]
                 else:
                     referenced_columns[right] = [

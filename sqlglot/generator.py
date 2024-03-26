@@ -3192,11 +3192,16 @@ class Generator(metaclass=_Generator):
     def text_width(self, args: t.Iterable) -> int:
         return sum(len(arg) for arg in args)
 
-    def format_time(self, expression: exp.Expression) -> t.Optional[str]:
+    def format_time(
+        self,
+        expression: exp.Expression,
+        inverse_time_mapping: t.Optional[t.Dict[str, str]] = None,
+        inverse_time_trie: t.Optional[t.Dict] = None,
+    ) -> t.Optional[str]:
         return format_time(
             self.sql(expression, "format"),
-            self.dialect.INVERSE_TIME_MAPPING,
-            self.dialect.INVERSE_TIME_TRIE,
+            inverse_time_mapping or self.dialect.INVERSE_TIME_MAPPING,
+            inverse_time_trie or self.dialect.INVERSE_TIME_TRIE,
         )
 
     def expressions(

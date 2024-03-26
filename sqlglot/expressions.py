@@ -74,7 +74,7 @@ class Expression(metaclass=_Expression):
         parent: a reference to the parent expression (or None, in case of root expressions).
         arg_key: the arg key an expression is associated with, i.e. the name its parent expression
             uses to refer to it.
-        index: the index of an expression if it is inside of a list argument in its parent
+        index: the index of an expression if it is inside of a list argument in its parent.
         comments: a list of comments that are associated with a given expression. This is used in
             order to preserve comments when transpiling SQL code.
         type: the `sqlglot.expressions.DataType` type of an expression. This is inferred by the

@@ -1,6 +1,57 @@
 Changelog
 =========
 
+## [v23.1.0] - 2024-03-26
+### :boom: BREAKING CHANGES
+- due to [`71b82b4`](https://github.com/tobymao/sqlglot/commit/71b82b424b9c336072b011785a0e3e9650ae1380) - allow transformations that mutate the visited node's parent *(PR [#3182](https://github.com/tobymao/sqlglot/pull/3182) by [@georgesittas](https://github.com/georgesittas))*:
+
+  allow transformations that mutate the visited node's parent (#3182)
+
+
+### :sparkles: New Features
+- [`c19878a`](https://github.com/tobymao/sqlglot/commit/c19878a329078ce6ebfbb4337316ff5e43b8c924) - transpile Snowflake's ADDTIME *(PR [#3180](https://github.com/tobymao/sqlglot/pull/3180) by [@georgesittas](https://github.com/georgesittas))*
+- [`66e2e49`](https://github.com/tobymao/sqlglot/commit/66e2e497626a77540b9addd35f2edb287c7b62fe) - improve lineage perf *(commit by [@tobymao](https://github.com/tobymao))*
+- [`ad23608`](https://github.com/tobymao/sqlglot/commit/ad23608f9f3724f0c35e5d517bba51f77a84f6cb) - **mysql**: Parse MODIFY COLUMN *(PR [#3189](https://github.com/tobymao/sqlglot/pull/3189) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3186](https://github.com/tobymao/sqlglot/issues/3186) opened by [@kosti-hokkanen-supermetrics](https://github.com/kosti-hokkanen-supermetrics)*
+- [`a18444d`](https://github.com/tobymao/sqlglot/commit/a18444dbd7ccfc05b189dcb2005c85a1048cc8de) - add expressions for CORR, COVAR_SAMP, COVAR_POP *(PR [#3193](https://github.com/tobymao/sqlglot/pull/3193) by [@ttzhou](https://github.com/ttzhou))*
+- [`3620b99`](https://github.com/tobymao/sqlglot/commit/3620b9974c28df7d4d189ebd5fdcb675f41a275d) - add support for converting `bytes` to sqlglot AST *(PR [#3198](https://github.com/tobymao/sqlglot/pull/3198) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3195](https://github.com/tobymao/sqlglot/issues/3195) opened by [@aersam](https://github.com/aersam)*
+- [`648c819`](https://github.com/tobymao/sqlglot/commit/648c819071082f7a1f2f6587336ae765d4915034) - redshift starts with support *(PR [#3194](https://github.com/tobymao/sqlglot/pull/3194) by [@eakmanrq](https://github.com/eakmanrq))*
+- [`c355a4a`](https://github.com/tobymao/sqlglot/commit/c355a4a821c7eaf76df510020d825a9f326068de) - **tsql**: add support for WITH <view_attribute> in view DDL *(PR [#3203](https://github.com/tobymao/sqlglot/pull/3203) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3202](https://github.com/tobymao/sqlglot/issues/3202) opened by [@mr-miles](https://github.com/mr-miles)*
+- [`8622eb2`](https://github.com/tobymao/sqlglot/commit/8622eb21c89a0d7569e27b3c739592cb96946a3a) - **duckdb**: add support for heredoc string syntax *(PR [#3212](https://github.com/tobymao/sqlglot/pull/3212) by [@georgesittas](https://github.com/georgesittas))*
+- [`b50dc5e`](https://github.com/tobymao/sqlglot/commit/b50dc5ecc7d29bce43229d050da8c4e37951853c) - Support for MySQL & Redshift UnixTotime *(PR [#3223](https://github.com/tobymao/sqlglot/pull/3223) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3214](https://github.com/tobymao/sqlglot/issues/3214) opened by [@exgalibas](https://github.com/exgalibas)*
+- [`2f6a2f1`](https://github.com/tobymao/sqlglot/commit/2f6a2f13bbd40f3d5348b0ed1b8cf6736ef9d1c5) - **optimizer**: Support for UNION BY NAME *(PR [#3224](https://github.com/tobymao/sqlglot/pull/3224) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3222](https://github.com/tobymao/sqlglot/issues/3222) opened by [@yiyuanliu](https://github.com/yiyuanliu)*
+
+### :bug: Bug Fixes
+- [`71b82b4`](https://github.com/tobymao/sqlglot/commit/71b82b424b9c336072b011785a0e3e9650ae1380) - allow transformations that mutate the visited node's parent *(PR [#3182](https://github.com/tobymao/sqlglot/pull/3182) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3181](https://github.com/tobymao/sqlglot/issues/3181) opened by [@l-vincent-l](https://github.com/l-vincent-l)*
+- [`6827edd`](https://github.com/tobymao/sqlglot/commit/6827edd108bbc6ecfcc0f03495f00c08022efb3b) - **postgres**: Fix ARROW/DARROW column operators *(PR [#3191](https://github.com/tobymao/sqlglot/pull/3191) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3185](https://github.com/tobymao/sqlglot/issues/3185) opened by [@ZipBrandon](https://github.com/ZipBrandon)*
+- [`0dd9ba5`](https://github.com/tobymao/sqlglot/commit/0dd9ba5ef57d29b6406a5d2a7e381eb6e6f56221) - Fix backtracking through try/catch exceptions *(PR [#3190](https://github.com/tobymao/sqlglot/pull/3190) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3175](https://github.com/tobymao/sqlglot/issues/3175) opened by [@herry13](https://github.com/herry13)*
+- [`5cdd874`](https://github.com/tobymao/sqlglot/commit/5cdd8749bacb101711a477798ff96bace44ccfb1) - **generator**: compute csv leading comma pad length correctly *(PR [#3201](https://github.com/tobymao/sqlglot/pull/3201) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3199](https://github.com/tobymao/sqlglot/issues/3199) opened by [@giovannipcarvalho](https://github.com/giovannipcarvalho)*
+- [`73fc807`](https://github.com/tobymao/sqlglot/commit/73fc807a48bfadc5bbe5594b55ba45480e93be3c) - **tokenizer**: don't increment array cursor by 2 on CRLF *(PR [#3204](https://github.com/tobymao/sqlglot/pull/3204) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3200](https://github.com/tobymao/sqlglot/issues/3200) opened by [@mr-miles](https://github.com/mr-miles)*
+- [`af1b026`](https://github.com/tobymao/sqlglot/commit/af1b02697303160050ee32b1c89ff80f14d9d0fa) - **snowflake**: convert VALUES with invalid expressions into UNION ALL *(PR [#3213](https://github.com/tobymao/sqlglot/pull/3213) by [@georgesittas](https://github.com/georgesittas))*
+- [`ec4648f`](https://github.com/tobymao/sqlglot/commit/ec4648f7eb982bf48b5bf09271c1955b892867fa) - **optimizer**: don't merge ORDER BY into UNION *(PR [#3215](https://github.com/tobymao/sqlglot/pull/3215) by [@barakalon](https://github.com/barakalon))*
+  - :arrow_lower_right: *fixes issue [#3211](https://github.com/tobymao/sqlglot/issues/3211) opened by [@rorynormaness](https://github.com/rorynormaness)*
+- [`e4dd052`](https://github.com/tobymao/sqlglot/commit/e4dd0526031591179156a1eea45089213b23cdf7) - allow snowflake object_construct with string keys to transpile to sqlglot dialect *(commit by [@tobymao](https://github.com/tobymao))*
+- [`9e39076`](https://github.com/tobymao/sqlglot/commit/9e39076b7f581dc68e10c558ff8f6c9809bfe841) - **tsql**: datestrtodate for tsql closes [#3216](https://github.com/tobymao/sqlglot/pull/3216) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`e7c9158`](https://github.com/tobymao/sqlglot/commit/e7c91584ac7fb35082ebd1d4873f13307ea848af) - bq datetime to timestamp *(PR [#3220](https://github.com/tobymao/sqlglot/pull/3220) by [@eakmanrq](https://github.com/eakmanrq))*
+- [`e6b8d1f`](https://github.com/tobymao/sqlglot/commit/e6b8d1f0061d55bf434d1a838f858b9fa412e312) - **optimizer**: constrain UDTF scope boundary *(PR [#3226](https://github.com/tobymao/sqlglot/pull/3226) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3209](https://github.com/tobymao/sqlglot/issues/3209) opened by [@rorynormaness](https://github.com/rorynormaness)*
+
+### :recycle: Refactors
+- [`4cd0e17`](https://github.com/tobymao/sqlglot/commit/4cd0e1719a55a75dac1114736fbbe48a8aa8f294) - get rid of redundant condition in Expression.replace *(PR [#3192](https://github.com/tobymao/sqlglot/pull/3192) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`3879518`](https://github.com/tobymao/sqlglot/commit/3879518f951233fed3434c493a5786573ee814fd) - bump sqlglotrs to 0.1.3 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.0.5] - 2024-03-20
 ### :bug: Bug Fixes
 - [`ed2c9e1`](https://github.com/tobymao/sqlglot/commit/ed2c9e126cc7e679c543adaa2827c1f5c47b96d7) - move varchar max conversion to base *(commit by [@tobymao](https://github.com/tobymao))*
@@ -3020,3 +3071,4 @@ Changelog
 [v23.0.3]: https://github.com/tobymao/sqlglot/compare/v23.0.2...v23.0.3
 [v23.0.4]: https://github.com/tobymao/sqlglot/compare/v23.0.3...v23.0.4
 [v23.0.5]: https://github.com/tobymao/sqlglot/compare/v23.0.4...v23.0.5
+[v23.1.0]: https://github.com/tobymao/sqlglot/compare/v23.0.5...v23.1.0

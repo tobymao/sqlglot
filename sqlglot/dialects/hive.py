@@ -319,7 +319,9 @@ class Hive(Dialect):
             "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "hive"),
             "TO_JSON": exp.JSONFormat.from_arg_list,
             "UNBASE64": exp.FromBase64.from_arg_list,
-            "UNIX_TIMESTAMP": build_formatted_time(exp.StrToUnix, "hive", True),
+            "UNIX_TIMESTAMP": lambda args: build_formatted_time(exp.StrToUnix, "hive", True)(
+                args or [exp.CurrentTimestamp()]
+            ),
             "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate.from_arg_list(args)),
         }
 

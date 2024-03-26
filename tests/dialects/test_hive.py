@@ -369,7 +369,7 @@ class TestHive(Validator):
             "UNIX_TIMESTAMP(x)",
             write={
                 "duckdb": "EPOCH(STRPTIME(x, '%Y-%m-%d %H:%M:%S'))",
-                "presto": "TO_UNIXTIME(DATE_PARSE(x, '%Y-%m-%d %T'))",
+                "presto": "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST(x AS VARCHAR), '%Y-%m-%d %T')), PARSE_DATETIME(CAST(x AS VARCHAR), 'yyyy-MM-dd HH:mm:ss')))",
                 "hive": "UNIX_TIMESTAMP(x)",
                 "spark": "UNIX_TIMESTAMP(x)",
                 "": "STR_TO_UNIX(x, '%Y-%m-%d %H:%M:%S')",

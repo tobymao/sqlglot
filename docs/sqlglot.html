@@ -104,7 +104,7 @@
 
 <p>You can easily <a href="#custom-dialects">customize</a> the parser, <a href="#metadata">analyze</a> queries, traverse expression trees, and programmatically <a href="#build-and-modify-sql">build</a> SQL.</p>
 
-<p>Syntax <a href="#parser-errors">errors</a> are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, it should be noted that SQL validation is not SQLGlot’s goal, so some syntax errors may go unnoticed.</p>
+<p>Syntax <a href="#parser-errors">errors</a> are highlighted and dialect incompatibilities can warn or raise depending on configurations. However, SQLGlot does not aim to be a SQL validator, so it may fail to detect certain syntax errors.</p>
 
 <p>Learn more about SQLGlot in the API <a href="https://sqlglot.com/">documentation</a> and the expression tree <a href="https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md">primer</a>.</p>
 
@@ -223,12 +223,15 @@
 </code></pre>
 </div>
 
-<p>As another example, let's suppose that we want to read in a SQL query that contains a CTE and a cast to <code>REAL</code>, and then transpile it to Spark, which uses backticks for identifiers and <code>FLOAT</code> instead of <code>REAL</code>:</p>
+<p>Identifier delimiters and data types can be translated as well:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
 
+<span class="c1"># Spark SQL requires backticks (`) for delimited identifiers and uses `FLOAT` over `REAL`</span>
 <span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;WITH baz AS (SELECT a, c FROM foo WHERE a = 1) SELECT f.a, b.b, baz.c, CAST(&quot;b&quot;.&quot;a&quot; AS REAL) d FROM foo f JOIN bar b ON f.a = b.a LEFT JOIN baz ON f.a = baz.a&quot;&quot;&quot;</span>
+
+<span class="c1"># Translates the query into Spark SQL, formats it, and delimits all of its identifiers</span>
 <span class="nb">print</span><span class="p">(</span><span class="n"><a href="#transpile">transpile</a></span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="s2">&quot;spark&quot;</span><span class="p">,</span> <span class="n">identify</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">pretty</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 </code></pre>
 </div>
@@ -255,7 +258,7 @@
 </code></pre>
 </div>
 
-<p>Comments are also preserved on a best-effort basis when transpiling SQL code:</p>
+<p>Comments are also preserved on a best-effort basis:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
@@ -272,6 +275,7 @@
 <span class="s2">  tbl #          comment 6</span>
 <span class="s2">&quot;&quot;&quot;</span>
 
+<span class="c1"># Note: MySQL-specific comments (`#`) are converted into standard syntax</span>
 <span class="nb">print</span><span class="p">(</span><span class="n"><a href="#transpile">transpile</a></span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="s1">&#39;mysql&#39;</span><span class="p">,</span> <span class="n">pretty</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 </code></pre>
 </div>
@@ -291,7 +295,7 @@
 
 <h3 id="metadata">Metadata</h3>
 
-<p>You can explore SQL with expression helpers to do things like find columns and tables:</p>
+<p>You can explore SQL with expression helpers to do things like find columns and tables in a query:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">parse_one</span><span class="p">,</span> <span class="n">exp</span>
@@ -315,7 +319,7 @@
 
 <h3 id="parser-errors">Parser Errors</h3>
 
-<p>When the parser detects an error in the syntax, it raises a ParseError:</p>
+<p>When the parser detects an error in the syntax, it raises a <code>ParseError</code>:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
@@ -354,7 +358,7 @@
 
 <h3 id="unsupported-errors">Unsupported Errors</h3>
 
-<p>Presto <code>APPROX_DISTINCT</code> supports the accuracy argument which is not supported in Hive:</p>
+<p>It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot emits a warning and proceeds to do a best-effort translation by default:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
@@ -368,9 +372,20 @@
 </code></pre>
 </div>
 
+<p>This behavior can be changed by setting the <a href="https://github.com/tobymao/sqlglot/blob/b0e8dc96ba179edb1776647b5bde4e704238b44d/sqlglot/errors.py#L9"><code>unsupported_level</code></a> attribute. For example, we can set it to either <code>RAISE</code> or <code>IMMEDIATE</code> to ensure an exception is raised instead:</p>
+
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
+<span class="n"><a href="#transpile">transpile</a></span><span class="p">(</span><span class="s2">&quot;SELECT APPROX_DISTINCT(a, 0.1) FROM foo&quot;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="s2">&quot;presto&quot;</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="s2">&quot;hive&quot;</span><span class="p">,</span> <span class="n">unsupported_level</span><span class="o">=</span><span class="n">sqlglot</span><span class="o">.</span><span class="n">ErrorLevel</span><span class="o">.</span><span class="n">RAISE</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<pre><code><a href="sqlglot/errors.html#UnsupportedError">sqlglot.errors.UnsupportedError</a>: APPROX_COUNT_DISTINCT does not support accuracy
+</code></pre>
+
 <h3 id="build-and-modify-sql">Build and Modify SQL</h3>
 
-<p>SQLGlot supports incrementally building sql expressions:</p>
+<p>SQLGlot supports incrementally building SQL expressions:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">select</span><span class="p">,</span> <span class="n">condition</span>
@@ -385,7 +400,7 @@
 </code></pre>
 </div>
 
-<p>You can also modify a parsed tree:</p>
+<p>It's possible to modify a parsed tree:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">parse_one</span>
@@ -398,7 +413,7 @@
 </code></pre>
 </div>
 
-<p>There is also a way to recursively transform the parsed tree by applying a mapping function to each tree node:</p>
+<p>Parsed expressions can also be transformed recursively by applying a mapping function to each node in the tree:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">parse_one</span>
@@ -457,7 +472,7 @@
 
 <h3 id="ast-introspection">AST Introspection</h3>
 
-<p>You can see the AST version of the sql by calling <code>repr</code>:</p>
+<p>You can see the AST version of the parsed SQL by calling <code>repr</code>:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">parse_one</span>
@@ -479,7 +494,7 @@
 
 <h3 id="ast-diff">AST Diff</h3>
 
-<p>SQLGlot can calculate the difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:</p>
+<p>SQLGlot can calculate the semantic difference between two expressions and output changes in a form of a sequence of actions needed to transform a source expression into a target one:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span> <span class="nn">sqlglot</span> <span class="kn">import</span> <span class="n">diff</span><span class="p">,</span> <span class="n">parse_one</span>
@@ -555,7 +570,9 @@
 
 <h3 id="sql-execution">SQL Execution</h3>
 
-<p>One can even interpret SQL queries using SQLGlot, where the tables are represented as Python dictionaries. Although the engine is not very fast (it's not supposed to be) and is in a relatively early stage of development, it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels (arrow, pandas). Below is an example showcasing the execution of a SELECT expression that involves aggregations and JOINs:</p>
+<p>SQLGlot is able to interpret SQL queries, where the tables are represented as Python dictionaries. The engine is not supposed to be fast, but it can be useful for unit testing and running SQL natively across Python objects. Additionally, the foundation can be easily integrated with fast compute kernels, such as <a href="https://arrow.apache.org/docs/index.html">Arrow</a> and <a href="https://pandas.pydata.org/">Pandas</a>.</p>
+
+<p>The example below showcases the execution of a query that involves aggregations and joins:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">from</span> <span class="nn"><a href="sqlglot/executor.html">sqlglot.executor</a></span> <span class="kn">import</span> <span class="n">execute</span>
@@ -629,8 +646,8 @@
 <h2 id="run-tests-and-lint">Run Tests and Lint</h2>
 
 <pre><code>make style  # Only linter checks
-make unit   # Only unit tests
-make test   # Unit and integration tests
+make unit   # Only unit tests (or unit-rs, to use the Rust tokenizer)
+make test   # Unit and integration tests (or test-rs, to use the Rust tokenizer)
 make check  # Full test suite &amp; linter checks
 </code></pre>
 

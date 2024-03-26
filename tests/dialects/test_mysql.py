@@ -514,6 +514,7 @@ class TestMySQL(Validator):
 
     def test_mysql_time(self):
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")
+        self.validate_identity("SELECT FROM_UNIXTIME(1711366265, '%Y %D %M')")
         self.validate_all(
             "SELECT TO_DAYS(x)",
             write={
@@ -588,14 +589,6 @@ class TestMySQL(Validator):
                 "mysql": "SELECT FROM_UNIXTIME(col)",
                 "postgres": "SELECT TO_TIMESTAMP(col)",
                 "redshift": "SELECT (TIMESTAMP 'epoch' + col * INTERVAL '1 SECOND')",
-            },
-        )
-        self.validate_all(
-            "SELECT FROM_UNIXTIME(1711366265, '%Y %D %M')",
-            write={
-                "mysql": "SELECT FROM_UNIXTIME(1711366265, '%Y %D %M')",
-                "postgres": "SELECT TO_TIMESTAMP(1711366265)",
-                "redshift": "SELECT (TIMESTAMP 'epoch' + 1711366265 * INTERVAL '1 SECOND')",
             },
         )
 

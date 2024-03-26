@@ -5709,11 +5709,11 @@ class UnixToStr(Func):
 class UnixToTime(Func):
     arg_types = {
         "this": True,
-        "format": False,
         "scale": False,
         "zone": False,
         "hours": False,
         "minutes": False,
+        "format": False,
     }
 
     SECONDS = Literal.number(0)

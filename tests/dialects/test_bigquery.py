@@ -1098,6 +1098,13 @@ WHERE
                 "postgres": "SELECT x % 10",
             },
         )
+        self.validate_all(
+            "SELECT CAST(x AS DATETIME)",
+            write={
+                "": "SELECT CAST(x AS TIMESTAMP)",
+                "bigquery": "SELECT CAST(x AS DATETIME)",
+            },
+        )
 
     def test_errors(self):
         with self.assertRaises(TokenError):

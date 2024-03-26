@@ -5707,7 +5707,14 @@ class UnixToStr(Func):
 # https://prestodb.io/docs/current/functions/datetime.html
 # presto has weird zone/hours/minutes
 class UnixToTime(Func):
-    arg_types = {"this": True, "scale": False, "zone": False, "hours": False, "minutes": False}
+    arg_types = {
+        "this": True,
+        "scale": False,
+        "zone": False,
+        "hours": False,
+        "minutes": False,
+        "format": False,
+    }
 
     SECONDS = Literal.number(0)
     DECIS = Literal.number(1)

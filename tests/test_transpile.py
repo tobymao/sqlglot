@@ -702,7 +702,11 @@ SOME_FUNC(arg IGNORE NULLS)
         )
 
         self.validate("STR_TO_TIME('x', 'y')", "DATE_PARSE('x', 'y')", write="presto")
-        self.validate("STR_TO_UNIX('x', 'y')", "TO_UNIXTIME(DATE_PARSE('x', 'y'))", write="presto")
+        self.validate(
+            "STR_TO_UNIX('x', 'y')",
+            "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('x' AS VARCHAR), 'y')), PARSE_DATETIME(CAST('x' AS VARCHAR), 'y')))",
+            write="presto",
+        )
         self.validate("TIME_TO_STR(x, 'y')", "DATE_FORMAT(x, 'y')", write="presto")
         self.validate("TIME_TO_UNIX(x)", "TO_UNIXTIME(x)", write="presto")
         self.validate(

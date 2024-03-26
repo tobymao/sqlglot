@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_add_cast,
 )
+from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
 from sqlglot.tokens import TokenType
@@ -404,9 +405,6 @@ class Presto(Dialect):
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
             exp.StrToTime: _str_to_time_sql,
-            exp.StrToUnix: lambda self, e: self.func(
-                "TO_UNIXTIME", self.func("DATE_PARSE", e.this, self.format_time(e))
-            ),
             exp.StructExtract: struct_extract_sql,
             exp.Table: transforms.preprocess([_unnest_sequence]),
             exp.Timestamp: no_timestamp_sql,
@@ -438,6 +436,22 @@ class Presto(Dialect):
             ),
             exp.Xor: bool_xor_sql,
         }
+
+        def strtounix_sql(self, expression: exp.StrToUnix) -> str:
+            # Since `TO_UNIXTIME` requires a `TIMESTAMP`, we need to parse the argument into one.
+            # To do this, we first try to `DATE_PARSE` it, but since this can fail when there's a
+            # timezone involved, we wrap it in a `TRY` call and use `PARSE_DATETIME` as a fallback,
+            # which seems to be using the same time mapping as Hive, as per:
+            # https://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
+            value_as_text = exp.cast(expression.this, "text")
+            parse_without_tz = self.func("DATE_PARSE", value_as_text, self.format_time(expression))
+            parse_with_tz = self.func(
+                "PARSE_DATETIME",
+                value_as_text,
+                self.format_time(expression, Hive.INVERSE_TIME_MAPPING, Hive.INVERSE_TIME_TRIE),
+            )
+            coalesced = self.func("COALESCE", self.func("TRY", parse_without_tz), parse_with_tz)
+            return self.func("TO_UNIXTIME", coalesced)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             if expression.args.get("safe"):

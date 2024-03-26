@@ -246,12 +246,15 @@ TBLPROPERTIES (
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), (x, i) -> x + i)")
         self.validate_identity("REFRESH TABLE a.b.c")
         self.validate_identity("INTERVAL -86 DAYS")
-        self.validate_identity("SELECT UNIX_TIMESTAMP()")
         self.validate_identity("TRIM('    SparkSQL   ')")
         self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(LEADING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("TRIM(TRAILING 'SL' FROM 'SSparkSQLS')")
         self.validate_identity("SPLIT(str, pattern, lim)")
+        self.validate_identity(
+            "SELECT UNIX_TIMESTAMP()",
+            "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+        )
         self.validate_identity(
             "SELECT CAST('2023-01-01' AS TIMESTAMP) + INTERVAL 23 HOUR + 59 MINUTE + 59 SECONDS",
             "SELECT CAST('2023-01-01' AS TIMESTAMP) + INTERVAL '23' HOUR + INTERVAL '59' MINUTE + INTERVAL '59' SECONDS",

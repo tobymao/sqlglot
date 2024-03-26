@@ -505,6 +505,9 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         )
 
     def test_scope(self):
+        ast = parse_one("SELECT IF(a IN UNNEST(b), 1, 0) AS c FROM t", dialect="bigquery")
+        self.assertEqual(build_scope(ast).columns, [exp.column("a"), exp.column("b")])
+
         many_unions = parse_one(" UNION ALL ".join(["SELECT x FROM t"] * 10000))
         scopes_using_traverse = list(build_scope(many_unions).traverse())
         scopes_using_traverse_scope = traverse_scope(many_unions)

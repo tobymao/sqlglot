@@ -800,10 +800,9 @@ def walk_in_scope(expression, bfs=True, prune=None):
         if (
             isinstance(node, exp.CTE)
             or (
-                _is_derived_table(node)
-                and isinstance(node.parent, (exp.From, exp.Join, exp.Subquery))
+                isinstance(node.parent, (exp.From, exp.Join, exp.Subquery))
+                and (_is_derived_table(node) or isinstance(node, exp.UDTF))
             )
-            or isinstance(node, exp.UDTF)
             or isinstance(node, exp.UNWRAPPED_QUERIES)
         ):
             crossed_scope_boundary = True

@@ -323,6 +323,7 @@ class BigQuery(Dialect):
             "BEGIN TRANSACTION": TokenType.BEGIN,
             "BYTES": TokenType.BINARY,
             "CURRENT_DATETIME": TokenType.CURRENT_DATETIME,
+            "DATETIME": TokenType.TIMESTAMP,
             "DECLARE": TokenType.COMMAND,
             "ELSEIF": TokenType.COMMAND,
             "EXCEPTION": TokenType.COMMAND,

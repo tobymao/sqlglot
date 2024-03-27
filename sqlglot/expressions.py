@@ -6980,7 +6980,9 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         return HexString(this=value.hex())
     if isinstance(value, datetime.datetime):
         datetime_literal = Literal.string(
-            (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat()
+            (value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)).isoformat(
+                sep=" "
+            )
         )
         return TimeStrToTime(this=datetime_literal)
     if isinstance(value, datetime.date):

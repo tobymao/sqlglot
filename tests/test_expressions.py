@@ -794,11 +794,11 @@ class TestExpressions(unittest.TestCase):
             ({"x": None}, "MAP(ARRAY('x'), ARRAY(NULL))"),
             (
                 datetime.datetime(2022, 10, 1, 1, 1, 1, 1),
-                "TIME_STR_TO_TIME('2022-10-01T01:01:01.000001+00:00')",
+                "TIME_STR_TO_TIME('2022-10-01 01:01:01.000001+00:00')",
             ),
             (
                 datetime.datetime(2022, 10, 1, 1, 1, 1, tzinfo=datetime.timezone.utc),
-                "TIME_STR_TO_TIME('2022-10-01T01:01:01+00:00')",
+                "TIME_STR_TO_TIME('2022-10-01 01:01:01+00:00')",
             ),
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
             (math.nan, "NULL"),

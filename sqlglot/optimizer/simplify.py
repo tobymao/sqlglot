@@ -9,6 +9,7 @@ from decimal import Decimal
 
 import sqlglot
 from sqlglot import Dialect, exp
+from sqlglot.expressions import DataType
 from sqlglot.helper import first, merge_ranges, while_changing
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
 
@@ -547,7 +548,21 @@ def simplify_literals(expression, root=True):
 NULL_OK = (exp.NullSafeEQ, exp.NullSafeNEQ, exp.PropertyEQ)
 
 
+def _simplify_integer_cast(expr):
+    if isinstance(expr, exp.Cast) and expr.this.is_int:
+        num = int(expr.this.name)
+        if ((-128 <= num <= 127) and expr.to.this in DataType.SIGNED_INTEGER_TYPES) or (
+            (0 <= num <= 255) and expr.to.this in DataType.UNSIGNED_INTEGER_TYPES
+        ):
+            return expr.this
+
+    return expr
+
+
 def _simplify_binary(expression, a, b):
+    a = _simplify_integer_cast(a)
+    b = _simplify_integer_cast(b)
+
     if isinstance(expression, exp.Is):
         if isinstance(b, exp.Not):
             c = b.this

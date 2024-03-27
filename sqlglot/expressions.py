@@ -3921,15 +3921,17 @@ class DataType(Expression):
         Type.NAME,
     }
 
-    INTEGER_TYPES = {
+    SIGNED_INTEGER_TYPES = {
         Type.BIGINT,
-        Type.BIT,
         Type.INT,
         Type.INT128,
         Type.INT256,
         Type.MEDIUMINT,
         Type.SMALLINT,
         Type.TINYINT,
+    }
+
+    UNSIGNED_INTEGER_TYPES = {
         Type.UBIGINT,
         Type.UINT,
         Type.UINT128,
@@ -3937,6 +3939,12 @@ class DataType(Expression):
         Type.UMEDIUMINT,
         Type.USMALLINT,
         Type.UTINYINT,
+    }
+
+    INTEGER_TYPES = {
+        *SIGNED_INTEGER_TYPES,
+        *UNSIGNED_INTEGER_TYPES,
+        Type.BIT,
     }
 
     FLOAT_TYPES = {

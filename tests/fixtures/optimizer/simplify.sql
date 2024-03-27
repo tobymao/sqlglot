@@ -715,6 +715,27 @@ FUN() > 0;
 RAND() > 0 OR RAND() > 1;
 RAND() > 0 OR RAND() > 1;
 
+CAST(1 AS UINT) >= 0;
+TRUE;
+
+CAST(-1 AS TINYINT) <= 0;
+TRUE;
+
+CAST(-1 AS UINT) <= 0;
+CAST(-1 AS UINT) <= 0;
+
+CAST(-129 AS TINYINT) <= 0;
+CAST(-129 AS TINYINT) <= 0;
+
+CAST(256 AS UINT) >= 0;
+CAST(256 AS UINT) >= 0;
+
+CAST(1 AS INT) = CAST(1 AS UINT);
+TRUE;
+
+CASE WHEN CAST(1 AS TINYINT) = 1 THEN FALSE ELSE TRUE END;
+FALSE;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------

@@ -2091,7 +2091,7 @@ class Generator(metaclass=_Generator):
                     self.unsupported(
                         f"'{nulls_sort_change.strip()}' translation not supported with positional ordering"
                     )
-                else:
+                elif not isinstance(expression.this, exp.Rand):
                     null_sort_order = " DESC" if nulls_sort_change == " NULLS FIRST" else ""
                     this = f"CASE WHEN {this} IS NULL THEN 1 ELSE 0 END{null_sort_order}, {this}"
                 nulls_sort_change = ""

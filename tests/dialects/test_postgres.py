@@ -311,6 +311,15 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT * FROM t1*", "SELECT * FROM t1")
 
         self.validate_all(
+            'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
+            write={
+                "bigquery": "SELECT * FROM `test_table` ORDER BY RAND() NULLS LAST LIMIT 5",
+                "duckdb": 'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
+                "postgres": 'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
+                "tsql": "SELECT TOP 5 * FROM [test_table] ORDER BY RAND()",
+            },
+        )
+        self.validate_all(
             "SELECT (data -> 'en-US') AS acat FROM my_table",
             write={
                 "duckdb": """SELECT (data -> '$."en-US"') AS acat FROM my_table""",

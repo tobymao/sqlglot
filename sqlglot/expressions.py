@@ -3981,6 +3981,11 @@ class DataType(Expression):
         Type.TIMETZ,
     }
 
+    TINYINT_MIN = -128
+    TINYINT_MAX = 127
+    UTINYINT_MIN = 0
+    UTINYINT_MAX = 255
+
     @classmethod
     def build(
         cls,

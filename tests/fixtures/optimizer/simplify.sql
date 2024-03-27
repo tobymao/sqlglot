@@ -736,6 +736,9 @@ TRUE;
 CASE WHEN CAST(1 AS TINYINT) = 1 THEN FALSE ELSE TRUE END;
 FALSE;
 
+CAST(1 AS INT) + 1;
+CAST(1 AS INT) + 1;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------

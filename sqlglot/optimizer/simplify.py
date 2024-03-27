@@ -9,7 +9,6 @@ from decimal import Decimal
 
 import sqlglot
 from sqlglot import Dialect, exp
-from sqlglot.expressions import DataType
 from sqlglot.helper import first, merge_ranges, while_changing
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
 
@@ -548,11 +547,18 @@ def simplify_literals(expression, root=True):
 NULL_OK = (exp.NullSafeEQ, exp.NullSafeNEQ, exp.PropertyEQ)
 
 
-def _simplify_integer_cast(expr):
+def _simplify_integer_cast(expr: exp.Expression) -> exp.Expression:
     if isinstance(expr, exp.Cast) and expr.this.is_int:
         num = int(expr.this.name)
-        if ((-128 <= num <= 127) and expr.to.this in DataType.SIGNED_INTEGER_TYPES) or (
-            (0 <= num <= 255) and expr.to.this in DataType.UNSIGNED_INTEGER_TYPES
+        # Remove the (up)cast from small (byte-sized) integers in predicates which is side-effect free. Downcasts on any
+        # integer type might cause overflow, thus the cast cannot be eliminated and the behavior is
+        # engine-dependent
+        if (
+            exp.DataType.TINYINT_MIN <= num <= exp.DataType.TINYINT_MAX
+            and expr.to.this in exp.DataType.SIGNED_INTEGER_TYPES
+        ) or (
+            exp.DataType.UTINYINT_MIN <= num <= exp.DataType.UTINYINT_MAX
+            and expr.to.this in exp.DataType.UNSIGNED_INTEGER_TYPES
         ):
             return expr.this
 
@@ -560,8 +566,9 @@ def _simplify_integer_cast(expr):
 
 
 def _simplify_binary(expression, a, b):
-    a = _simplify_integer_cast(a)
-    b = _simplify_integer_cast(b)
+    if isinstance(expression, COMPARISONS):
+        a = _simplify_integer_cast(a)
+        b = _simplify_integer_cast(b)
 
     if isinstance(expression, exp.Is):
         if isinstance(b, exp.Not):

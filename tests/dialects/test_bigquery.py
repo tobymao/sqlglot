@@ -185,6 +185,10 @@ class TestBigQuery(Validator):
             "CREATE OR REPLACE VIEW test (tenant_id OPTIONS (description='Test description on table creation')) AS SELECT 1 AS tenant_id, 1 AS customer_id",
         )
         self.validate_identity(
+            "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=TIMESTAMP '2020-01-02T04:05:06.007Z') AS SELECT 1 AS c",
+            "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=CAST('2020-01-02T04:05:06.007Z' AS TIMESTAMP)) AS SELECT 1 AS c",
+        )
+        self.validate_identity(
             "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b)",
             "SELECT ARRAY(SELECT AS STRUCT 1 AS a, 2 AS b)",
         )

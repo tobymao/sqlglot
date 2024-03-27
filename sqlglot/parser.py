@@ -1728,7 +1728,7 @@ class Parser(metaclass=_Parser):
         return self.expression(
             exp.Property,
             this=key.to_dot() if isinstance(key, exp.Column) else key,
-            value=self._parse_column() or self._parse_var(any_token=True),
+            value=self._parse_bitwise() or self._parse_var(any_token=True),
         )
 
     def _parse_stored(self) -> exp.FileFormatProperty:

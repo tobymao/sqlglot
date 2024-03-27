@@ -16,6 +16,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
+            "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+            read={
+                "duckdb": "SELECT CAST('2020-01-01' AS DATE) + INTERVAL (day_offset) DAY FROM t",
+                "mysql": "SELECT DATE '2020-01-01' + INTERVAL day_offset DAY FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT CAST('09:05:03' AS TIME) + INTERVAL 2 HOUR",
             read={
                 "bigquery": "SELECT TIME_ADD(CAST('09:05:03' AS TIME), INTERVAL 2 HOUR)",

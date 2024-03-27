@@ -488,7 +488,7 @@ class DuckDB(Dialect):
 
         STAR_MAPPING = {**generator.Generator.STAR_MAPPING, "except": "EXCLUDE"}
 
-        UNWRAPPED_INTERVAL_VALUES = (exp.Column, exp.Literal, exp.Paren)
+        UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)
 
         # DuckDB doesn't generally support CREATE TABLE .. properties
         # https://duckdb.org/docs/sql/statements/create_table.html

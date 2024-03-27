@@ -150,8 +150,8 @@ class TestDataframeColumn(unittest.TestCase):
             F.col("cola").between(datetime.date(2022, 1, 1), datetime.date(2022, 3, 1)).sql(),
         )
         self.assertEqual(
-            "cola BETWEEN CAST('2022-01-01T01:01:01+00:00' AS TIMESTAMP) "
-            "AND CAST('2022-03-01T01:01:01+00:00' AS TIMESTAMP)",
+            "cola BETWEEN CAST('2022-01-01 01:01:01+00:00' AS TIMESTAMP) "
+            "AND CAST('2022-03-01 01:01:01+00:00' AS TIMESTAMP)",
             F.col("cola")
             .between(datetime.datetime(2022, 1, 1, 1, 1, 1), datetime.datetime(2022, 3, 1, 1, 1, 1))
             .sql(),

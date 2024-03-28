@@ -659,7 +659,7 @@ class Generator(metaclass=_Generator):
         if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return (
                 f"{self.sep()}{comments_sql}{sql}"
-                if sql[0].isspace()
+                if not sql or sql[0].isspace()
                 else f"{comments_sql}{self.sep()}{sql}"
             )
 

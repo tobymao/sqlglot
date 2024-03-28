@@ -1119,6 +1119,13 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
             exp.DataType.build("date"),
         )
 
+    def test_map_annotation(self):
+        expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("MAP(VARCHAR, INT)"))
+
+        expression = annotate_types(parse_one("SELECT MAP('a', 'b')", read="spark"))
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("MAP(VARCHAR, VARCHAR)"))
+
     def test_recursive_cte(self):
         query = parse_one(
             """

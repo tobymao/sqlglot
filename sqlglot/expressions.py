@@ -5355,6 +5355,11 @@ class Map(Func):
         return values.expressions if values else []
 
 
+# Represents the MAP {...} syntax in DuckDB - basically convert a struct to a MAP
+class ToMap(Func):
+    pass
+
+
 class MapFromEntries(Func):
     pass
 

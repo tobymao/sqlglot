@@ -1120,9 +1120,17 @@ FROM READ_CSV('tests/fixtures/optimizer/tpc-h/nation.csv.gz', 'delimiter', '|') 
         )
 
     def test_map_annotation(self):
+        # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))
         self.assertEqual(expression.selects[0].type, exp.DataType.build("MAP(VARCHAR, INT)"))
 
+        # Map annotation
+        expression = annotate_types(
+            parse_one("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])", read="duckdb")
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("MAP(VARCHAR, INT)"))
+
+        # VarMap annotation
         expression = annotate_types(parse_one("SELECT MAP('a', 'b')", read="spark"))
         self.assertEqual(expression.selects[0].type, exp.DataType.build("MAP(VARCHAR, VARCHAR)"))
 

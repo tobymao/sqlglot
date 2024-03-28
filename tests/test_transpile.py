@@ -505,6 +505,25 @@ SOME_FUNC(arg IGNORE NULLS)
             "SOME_FUNC(arg IGNORE NULLS) OVER (PARTITION BY foo ORDER BY bla) AS col /* comment */",
             pretty=True,
         )
+        self.validate(
+            """
+            SELECT *
+            FROM x
+            INNER JOIN y
+            -- inner join z
+            LEFT JOIN z using (id)
+            using (id)
+            """,
+            """SELECT
+  *
+FROM x
+INNER JOIN y
+  LEFT JOIN z
+    USING (id)
+  /* inner join z */
+  USING (id)""",
+            pretty=True,
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

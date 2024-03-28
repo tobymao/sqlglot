@@ -3228,8 +3228,11 @@ class Generator(metaclass=_Generator):
         num_sqls = len(expressions)
 
         # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
-        pad = " " * len(sep)
-        stripped_sep = sep.strip()
+        if self.pretty:
+            if self.leading_comma:
+                pad = " " * len(sep)
+            else:
+                stripped_sep = sep.strip()
 
         result_sqls = []
         for i, e in enumerate(expressions):

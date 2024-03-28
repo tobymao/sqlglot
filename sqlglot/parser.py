@@ -3505,7 +3505,7 @@ class Parser(metaclass=_Parser):
             return None
 
         self._match(TokenType.CONNECT_BY)
-        nocycle = self._match_text_seq("NOCYCLE") or None
+        nocycle = self._match_text_seq("NOCYCLE")
         self.NO_PAREN_FUNCTION_PARSERS["PRIOR"] = lambda self: self.expression(
             exp.Prior, this=self._parse_bitwise()
         )

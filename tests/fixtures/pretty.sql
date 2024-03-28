@@ -384,3 +384,14 @@ JOIN b
 CROSS JOIN d
 JOIN e
   ON d.id = e.id;
+
+SELECT * FROM a JOIN b JOIN c USING (e) JOIN d USING (f) USING (g);
+SELECT
+  *
+FROM a
+JOIN b
+  JOIN c
+    USING (e)
+  JOIN d
+    USING (f)
+  USING (g);

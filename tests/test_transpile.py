@@ -518,9 +518,9 @@ SOME_FUNC(arg IGNORE NULLS)
   *
 FROM x
 INNER JOIN y
+  /* inner join z */
   LEFT JOIN z
     USING (id)
-  /* inner join z */
   USING (id)""",
             pretty=True,
         )

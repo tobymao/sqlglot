@@ -1636,7 +1636,9 @@ class Generator(metaclass=_Generator):
         hints = f" {hints}" if hints and self.TABLE_HINTS else ""
         pivots = self.expressions(expression, key="pivots", sep=" ", flat=True)
         pivots = f" {pivots}" if pivots else ""
-        joins = self.expressions(expression, key="joins", sep="", skip_first=True)
+        joins = self.indent(
+            self.expressions(expression, key="joins", sep="", flat=True), skip_first=True
+        )
         laterals = self.expressions(expression, key="laterals", sep="")
 
         file_format = self.sql(expression, "format")

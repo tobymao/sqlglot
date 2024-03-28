@@ -2658,7 +2658,7 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression]
     ) -> t.Optional[exp.Expression]:
         if isinstance(this, (exp.Query, exp.Table)):
-            for join in iter(self._parse_join, None):
+            for join in self._parse_joins():
                 this.append("joins", join)
             for lateral in iter(self._parse_lateral, None):
                 this.append("laterals", lateral)
@@ -2903,19 +2903,21 @@ class Parser(metaclass=_Parser):
             kwargs["on"] = self._parse_conjunction()
         elif self._match(TokenType.USING):
             kwargs["using"] = self._parse_wrapped_id_vars()
-        elif not (kind and kind.token_type == TokenType.CROSS):
+        elif not isinstance(kwargs["this"], exp.Unnest) and not (
+            kind and kind.token_type == TokenType.CROSS
+        ):
             index = self._index
-            join = self._parse_join()
+            joins: t.Optional[list] = list(self._parse_joins())
 
-            if join and self._match(TokenType.ON):
+            if joins and self._match(TokenType.ON):
                 kwargs["on"] = self._parse_conjunction()
-            elif join and self._match(TokenType.USING):
+            elif joins and self._match(TokenType.USING):
                 kwargs["using"] = self._parse_wrapped_id_vars()
             else:
-                join = None
+                joins = None
                 self._retreat(index)
 
-            kwargs["this"].set("joins", [join] if join else None)
+            kwargs["this"].set("joins", joins if joins else None)
 
         comments = [c for token in (method, side, kind) if token for c in token.comments]
         return self.expression(exp.Join, comments=comments, **kwargs)
@@ -3152,7 +3154,7 @@ class Parser(metaclass=_Parser):
             this = table_sample
 
         if joins:
-            for join in iter(self._parse_join, None):
+            for join in self._parse_joins():
                 this.append("joins", join)
 
         if self._match_pair(TokenType.WITH, TokenType.ORDINALITY):
@@ -3300,6 +3302,9 @@ class Parser(metaclass=_Parser):
 
     def _parse_pivots(self) -> t.Optional[t.List[exp.Pivot]]:
         return list(iter(self._parse_pivot, None)) or None
+
+    def _parse_joins(self) -> t.Iterator[exp.Join]:
+        return iter(self._parse_join, None)
 
     # https://duckdb.org/docs/sql/statements/pivot
     def _parse_simplified_pivot(self) -> exp.Pivot:

@@ -1846,8 +1846,9 @@ class Generator(metaclass=_Generator):
     def connect_sql(self, expression: exp.Connect) -> str:
         start = self.sql(expression, "start")
         start = self.seg(f"START WITH {start}") if start else ""
+        nocycle = " NOCYCLE" if expression.args.get("nocycle") else ""
         connect = self.sql(expression, "connect")
-        connect = self.seg(f"CONNECT BY {connect}")
+        connect = self.seg(f"CONNECT BY{nocycle} {connect}")
         return start + connect
 
     def prior_sql(self, expression: exp.Prior) -> str:

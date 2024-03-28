@@ -3505,6 +3505,7 @@ class Parser(metaclass=_Parser):
             return None
 
         self._match(TokenType.CONNECT_BY)
+        nocycle = self._match_text_seq("NOCYCLE")
         self.NO_PAREN_FUNCTION_PARSERS["PRIOR"] = lambda self: self.expression(
             exp.Prior, this=self._parse_bitwise()
         )
@@ -3514,7 +3515,7 @@ class Parser(metaclass=_Parser):
         if not start and self._match(TokenType.START_WITH):
             start = self._parse_conjunction()
 
-        return self.expression(exp.Connect, start=start, connect=connect)
+        return self.expression(exp.Connect, start=start, connect=connect, nocycle=nocycle)
 
     def _parse_name_as_expression(self) -> exp.Alias:
         return self.expression(

@@ -1839,7 +1839,7 @@ class Check(Expression):
 
 # https://docs.snowflake.com/en/sql-reference/constructs/connect-by
 class Connect(Expression):
-    arg_types = {"start": False, "connect": True}
+    arg_types = {"start": False, "connect": True, "nocycle": False}
 
 
 class Prior(Expression):

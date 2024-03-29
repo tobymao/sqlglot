@@ -5687,6 +5687,10 @@ class TsOrDsToTime(Func):
     pass
 
 
+class TsOrDsToTimestamp(Func):
+    pass
+
+
 class TsOrDiToDi(Func):
     pass
 

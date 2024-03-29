@@ -137,6 +137,7 @@ class Generator(metaclass=_Generator):
         exp.TemporaryProperty: lambda *_: "TEMPORARY",
         exp.TitleColumnConstraint: lambda self, e: f"TITLE {self.sql(e, 'this')}",
         exp.Timestamp: lambda self, e: self.func("TIMESTAMP", e.this, e.expression),
+        exp.ToMap: lambda self, e: f"MAP {self.sql(e, 'this')}",
         exp.ToTableProperty: lambda self, e: f"TO {self.sql(e.this)}",
         exp.TransformModelProperty: lambda self, e: self.func("TRANSFORM", *e.expressions),
         exp.TransientProperty: lambda *_: "TRANSIENT",
@@ -2996,30 +2997,6 @@ class Generator(metaclass=_Generator):
         kind = "MAX" if expression.args.get("max") else "MIN"
         return f"{this_sql} HAVING {kind} {expression_sql}"
 
-    def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
-        if self.IGNORE_NULLS_IN_FUNC and not expression.meta.get("inline"):
-            # The first modifier here will be the one closest to the AggFunc's arg
-            mods = sorted(
-                expression.find_all(exp.HavingMax, exp.Order, exp.Limit),
-                key=lambda x: 0
-                if isinstance(x, exp.HavingMax)
-                else (1 if isinstance(x, exp.Order) else 2),
-            )
-
-            if mods:
-                mod = mods[0]
-                this = expression.__class__(this=mod.this.copy())
-                this.meta["inline"] = True
-                mod.this.replace(this)
-                return self.sql(expression.this)
-
-            agg_func = expression.find(exp.AggFunc)
-
-            if agg_func:
-                return self.sql(agg_func)[:-1] + f" {text})"
-
-        return f"{self.sql(expression, 'this')} {text}"
-
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
         return self.sql(
             exp.Cast(
@@ -3572,30 +3549,6 @@ class Generator(metaclass=_Generator):
 
         return self.function_fallback_sql(expression)
 
-    def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
-        this = expression.this
-        if isinstance(this, exp.JSONPathWildcard):
-            this = self.json_path_part(this)
-            return f".{this}" if this else ""
-
-        if exp.SAFE_IDENTIFIER_RE.match(this):
-            return f".{this}"
-
-        this = self.json_path_part(this)
-        return f"[{this}]" if self.JSON_PATH_BRACKETED_KEY_SUPPORTED else f".{this}"
-
-    def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
-        this = self.json_path_part(expression.this)
-        return f"[{this}]" if this else ""
-
-    def _simplify_unless_literal(self, expression: E) -> E:
-        if not isinstance(expression, exp.Literal):
-            from sqlglot.optimizer.simplify import simplify
-
-            expression = simplify(expression, dialect=self.dialect)
-
-        return expression
-
     def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
         expression.set("is_end_exclusive", None)
         return self.function_fallback_sql(expression)
@@ -3682,3 +3635,51 @@ class Generator(metaclass=_Generator):
             transformed = cast(this=value, to=to, safe=safe)
 
         return self.sql(transformed)
+
+    def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
+        this = expression.this
+        if isinstance(this, exp.JSONPathWildcard):
+            this = self.json_path_part(this)
+            return f".{this}" if this else ""
+
+        if exp.SAFE_IDENTIFIER_RE.match(this):
+            return f".{this}"
+
+        this = self.json_path_part(this)
+        return f"[{this}]" if self.JSON_PATH_BRACKETED_KEY_SUPPORTED else f".{this}"
+
+    def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
+        this = self.json_path_part(expression.this)
+        return f"[{this}]" if this else ""
+
+    def _simplify_unless_literal(self, expression: E) -> E:
+        if not isinstance(expression, exp.Literal):
+            from sqlglot.optimizer.simplify import simplify
+
+            expression = simplify(expression, dialect=self.dialect)
+
+        return expression
+
+    def _embed_ignore_nulls(self, expression: exp.IgnoreNulls | exp.RespectNulls, text: str) -> str:
+        if self.IGNORE_NULLS_IN_FUNC and not expression.meta.get("inline"):
+            # The first modifier here will be the one closest to the AggFunc's arg
+            mods = sorted(
+                expression.find_all(exp.HavingMax, exp.Order, exp.Limit),
+                key=lambda x: 0
+                if isinstance(x, exp.HavingMax)
+                else (1 if isinstance(x, exp.Order) else 2),
+            )
+
+            if mods:
+                mod = mods[0]
+                this = expression.__class__(this=mod.this.copy())
+                this.meta["inline"] = True
+                mod.this.replace(this)
+                return self.sql(expression.this)
+
+            agg_func = expression.find(exp.AggFunc)
+
+            if agg_func:
+                return self.sql(agg_func)[:-1] + f" {text})"
+
+        return f"{self.sql(expression, 'this')} {text}"

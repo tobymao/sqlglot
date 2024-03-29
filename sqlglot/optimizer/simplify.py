@@ -22,6 +22,12 @@ if t.TYPE_CHECKING:
 # Final means that an expression should not be simplified
 FINAL = "final"
 
+# Value ranges for byte-sized signed/unsigned integers
+TINYINT_MIN = -128
+TINYINT_MAX = 127
+UTINYINT_MIN = 0
+UTINYINT_MAX = 255
+
 
 class UnsupportedUnit(Exception):
     pass
@@ -547,7 +553,34 @@ def simplify_literals(expression, root=True):
 NULL_OK = (exp.NullSafeEQ, exp.NullSafeNEQ, exp.PropertyEQ)
 
 
+def _simplify_integer_cast(expr: exp.Expression) -> exp.Expression:
+    if isinstance(expr, exp.Cast) and isinstance(expr.this, exp.Cast):
+        this = _simplify_integer_cast(expr.this)
+    else:
+        this = expr.this
+
+    if isinstance(expr, exp.Cast) and this.is_int:
+        num = int(this.name)
+
+        # Remove the (up)cast from small (byte-sized) integers in predicates which is side-effect free. Downcasts on any
+        # integer type might cause overflow, thus the cast cannot be eliminated and the behavior is
+        # engine-dependent
+        if (
+            TINYINT_MIN <= num <= TINYINT_MAX and expr.to.this in exp.DataType.SIGNED_INTEGER_TYPES
+        ) or (
+            UTINYINT_MIN <= num <= UTINYINT_MAX
+            and expr.to.this in exp.DataType.UNSIGNED_INTEGER_TYPES
+        ):
+            return this
+
+    return expr
+
+
 def _simplify_binary(expression, a, b):
+    if isinstance(expression, COMPARISONS):
+        a = _simplify_integer_cast(a)
+        b = _simplify_integer_cast(b)
+
     if isinstance(expression, exp.Is):
         if isinstance(b, exp.Not):
             c = b.this

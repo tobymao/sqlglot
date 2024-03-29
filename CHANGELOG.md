@@ -1,6 +1,39 @@
 Changelog
 =========
 
+## [v23.3.0] - 2024-03-29
+### :boom: BREAKING CHANGES
+- due to [`0919be5`](https://github.com/tobymao/sqlglot/commit/0919be5eea7aba175e173dbfc0b6547e5c9473a8) - StrToUnix Hive parsing, Presto generation fixes *(PR [#3225](https://github.com/tobymao/sqlglot/pull/3225) by [@georgesittas](https://github.com/georgesittas))*:
+
+  StrToUnix Hive parsing, Presto generation fixes (#3225)
+
+- due to [`163c85c`](https://github.com/tobymao/sqlglot/commit/163c85c8ed327150a6e5c79f1a4b52a8848d4408) - convert dt with isoformat sep space for better compat, trino doesnt accept T *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  convert dt with isoformat sep space for better compat, trino doesnt accept T
+
+
+### :sparkles: New Features
+- [`59f1d13`](https://github.com/tobymao/sqlglot/commit/59f1d13bc5e37ebe6636b05e0381facc9725f7b0) - **oracle**: Support for CONNECT BY [NOCYCLE] *(PR [#3238](https://github.com/tobymao/sqlglot/pull/3238) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3237](https://github.com/tobymao/sqlglot/issues/3237) opened by [@Hal-H2Apps](https://github.com/Hal-H2Apps)*
+- [`12563ae`](https://github.com/tobymao/sqlglot/commit/12563ae0645487d5e63343224e1016cce4be447b) - mvp for transpling sqlite's STRFTIME *(PR [#3242](https://github.com/tobymao/sqlglot/pull/3242) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3240](https://github.com/tobymao/sqlglot/issues/3240) opened by [@markhalonen](https://github.com/markhalonen)*
+
+### :bug: Bug Fixes
+- [`0919be5`](https://github.com/tobymao/sqlglot/commit/0919be5eea7aba175e173dbfc0b6547e5c9473a8) - StrToUnix Hive parsing, Presto generation fixes *(PR [#3225](https://github.com/tobymao/sqlglot/pull/3225) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3221](https://github.com/tobymao/sqlglot/issues/3221) opened by [@luhea](https://github.com/luhea)*
+- [`163c85c`](https://github.com/tobymao/sqlglot/commit/163c85c8ed327150a6e5c79f1a4b52a8848d4408) - convert dt with isoformat sep space for better compat, trino doesnt accept T *(commit by [@tobymao](https://github.com/tobymao))*
+- [`555647d`](https://github.com/tobymao/sqlglot/commit/555647d5541c2e52b40d098ee42f6454518e8401) - make property value parsing more lenient *(PR [#3230](https://github.com/tobymao/sqlglot/pull/3230) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3228](https://github.com/tobymao/sqlglot/issues/3228) opened by [@hsheth2](https://github.com/hsheth2)*
+- [`8325039`](https://github.com/tobymao/sqlglot/commit/83250398c7804863a6b3f339305600df39515ccc) - **duckdb**: wrap columns inside of INTERVAL expressions *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`fd5783f`](https://github.com/tobymao/sqlglot/commit/fd5783f34cb0cb7052477f25a9847a5efd61c04f) - don't evaluate Rand twice when ordering by it *(PR [#3233](https://github.com/tobymao/sqlglot/pull/3233) by [@georgesittas](https://github.com/georgesittas))*
+- [`b097da5`](https://github.com/tobymao/sqlglot/commit/b097da5a624fa467830464427ec57bf3b303de3f) - index error when comment sql is none *(commit by [@tobymao](https://github.com/tobymao))*
+- [`bf94ce3`](https://github.com/tobymao/sqlglot/commit/bf94ce317497ab92e9fe0562b3034f3482601072) - > 1 nested joins closes [#3231](https://github.com/tobymao/sqlglot/pull/3231) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`2a3a5cd`](https://github.com/tobymao/sqlglot/commit/2a3a5cdcffe39d42153b3e960a580d084a27c0eb) - properly parse/generate duckdb MAP {..} syntax, annotate MAPs *(PR [#3241](https://github.com/tobymao/sqlglot/pull/3241) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`647611e`](https://github.com/tobymao/sqlglot/commit/647611e16bdb5ecfc2eec30111cc6689200836b7) - only set vars with necessary *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.1.0] - 2024-03-26
 ### :boom: BREAKING CHANGES
 - due to [`71b82b4`](https://github.com/tobymao/sqlglot/commit/71b82b424b9c336072b011785a0e3e9650ae1380) - allow transformations that mutate the visited node's parent *(PR [#3182](https://github.com/tobymao/sqlglot/pull/3182) by [@georgesittas](https://github.com/georgesittas))*:
@@ -3072,3 +3105,4 @@ Changelog
 [v23.0.4]: https://github.com/tobymao/sqlglot/compare/v23.0.3...v23.0.4
 [v23.0.5]: https://github.com/tobymao/sqlglot/compare/v23.0.4...v23.0.5
 [v23.1.0]: https://github.com/tobymao/sqlglot/compare/v23.0.5...v23.1.0
+[v23.3.0]: https://github.com/tobymao/sqlglot/compare/v23.2.0...v23.3.0

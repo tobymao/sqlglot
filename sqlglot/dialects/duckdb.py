@@ -293,6 +293,11 @@ class DuckDB(Dialect):
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("DECODE")
 
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "MAP": lambda self: self._parse_map(),
+        }
+
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
             TokenType.SEMI,
             TokenType.ANTI,
@@ -306,6 +311,13 @@ class DuckDB(Dialect):
                 else None
             ),
         }
+
+        def _parse_map(self) -> exp.ToMap | exp.Map:
+            if self._match(TokenType.L_BRACE, advance=False):
+                return self.expression(exp.ToMap, this=self._parse_bracket())
+
+            args = self._parse_wrapped_csv(self._parse_conjunction)
+            return self.expression(exp.Map, keys=seq_get(args, 0), values=seq_get(args, 1))
 
         def _parse_types(
             self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True

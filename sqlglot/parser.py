@@ -4504,7 +4504,7 @@ class Parser(metaclass=_Parser):
 
         constraints: t.List[exp.Expression] = []
 
-        if not kind and self._match(TokenType.ALIAS):
+        if (not kind and self._match(TokenType.ALIAS)) or self._match_text_seq("ALIAS"):
             constraints.append(
                 self.expression(
                     exp.ComputedColumnConstraint,

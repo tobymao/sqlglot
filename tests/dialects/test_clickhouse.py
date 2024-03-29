@@ -154,7 +154,9 @@ class TestClickhouse(Validator):
         self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
         self.validate_identity("TRUNCATE DATABASE db")
         self.validate_identity("TRUNCATE DATABASE db ON CLUSTER test_cluster")
-
+        self.validate_identity(
+            "CREATE TABLE t (foo String CODEC(LZ4HC(9), ZSTD, DELTA), size String ALIAS formatReadableSize(size_bytes), INDEX idx1 a TYPE bloom_filter(0.001) GRANULARITY 1, INDEX idx2 a TYPE set(100) GRANULARITY 2, INDEX idx3 a TYPE minmax GRANULARITY 3)"
+        )
         self.validate_all(
             "SELECT arrayJoin([1,2,3])",
             write={

@@ -2694,7 +2694,12 @@ class Parser(metaclass=_Parser):
     def _parse_hint(self) -> t.Optional[exp.Hint]:
         if self._match(TokenType.HINT):
             hints = []
-            for hint in iter(lambda: self._parse_csv(self._parse_function), []):
+            for hint in iter(
+                lambda: self._parse_csv(
+                    lambda: self._parse_function() or self._parse_var(upper=True)
+                ),
+                [],
+            ):
                 hints.extend(hint)
 
             if not self._match_pair(TokenType.STAR, TokenType.SLASH):

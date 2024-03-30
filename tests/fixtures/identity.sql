@@ -836,6 +836,7 @@ SELECT * FROM schema.case
 SELECT * FROM current_date
 SELECT * FROM schema.current_date
 SELECT /*+ SOME_HINT(foo) */ 1
+SELECT /*+ REBALANCE */ * FROM foo
 SELECT * FROM (tbl1 CROSS JOIN (SELECT * FROM tbl2) AS t1)
 /* comment1 */ INSERT INTO x /* comment2 */ VALUES (1, 2, 3)
 /* comment1 */ UPDATE tbl /* comment2 */ SET x = 2 WHERE x < 2

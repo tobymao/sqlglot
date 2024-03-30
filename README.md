@@ -489,7 +489,7 @@ See also: [Writing a Python SQL engine from scratch](https://github.com/tobymao/
 ## Used By
 
 * [SQLMesh](https://github.com/TobikoData/sqlmesh)
-* [Superset](https://github.com/apache/superset)
+* [Apache Superset](https://github.com/apache/superset)
 * [Fugue](https://github.com/fugue-project/fugue)
 * [ibis](https://github.com/ibis-project/ibis)
 * [mysql-mimic](https://github.com/kelsin/mysql-mimic)

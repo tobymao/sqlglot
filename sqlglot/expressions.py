@@ -4449,7 +4449,7 @@ class TimeUnit(Expression):
         super().__init__(**args)
 
     @property
-    def unit(self) -> t.Optional[Var]:
+    def unit(self) -> t.Optional[Var | IntervalSpan]:
         return self.args.get("unit")
 
 

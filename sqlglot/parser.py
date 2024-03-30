@@ -2185,12 +2185,12 @@ class Parser(metaclass=_Parser):
 
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
-        extended = self._match_text_seq("EXTENDED")
+        style = self._match_texts(("EXTENDED", "FORMATTED")) and self._prev.text.upper()
         this = self._parse_table(schema=True)
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None
         return self.expression(
-            exp.Describe, this=this, extended=extended, kind=kind, expressions=expressions
+            exp.Describe, this=this, style=style, kind=kind, expressions=expressions
         )
 
     def _parse_insert(self) -> exp.Insert:

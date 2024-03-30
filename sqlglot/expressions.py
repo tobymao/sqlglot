@@ -7006,6 +7006,15 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         date_literal = Literal.string(value.strftime("%Y-%m-%d"))
         return DateStrToDate(this=date_literal)
     if isinstance(value, tuple):
+        if hasattr(value, "_fields"):
+            return Struct(
+                expressions=[
+                    PropertyEQ(
+                        this=to_identifier(k), expression=convert(getattr(value, k), copy=copy)
+                    )
+                    for k in value._fields
+                ]
+            )
         return Tuple(expressions=[convert(v, copy=copy) for v in value])
     if isinstance(value, list):
         return Array(expressions=[convert(v, copy=copy) for v in value])
@@ -7013,6 +7022,13 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         return Map(
             keys=Array(expressions=[convert(k, copy=copy) for k in value]),
             values=Array(expressions=[convert(v, copy=copy) for v in value.values()]),
+        )
+    if hasattr(value, "__dict__"):
+        return Struct(
+            expressions=[
+                PropertyEQ(this=to_identifier(k), expression=convert(v, copy=copy))
+                for k, v in value.__dict__.items()
+            ]
         )
     raise ValueError(f"Cannot convert {value}")
 

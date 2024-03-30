@@ -1102,6 +1102,9 @@ class Parser(metaclass=_Parser):
     # Whether implicit unnesting is supported, e.g. SELECT 1 FROM y.z AS z, z.a (Redshift)
     SUPPORTS_IMPLICIT_UNNEST = False
 
+    # Whether or not interval spans are supported, INTERVAL 1 YEAR TO MONTHS
+    INTERVAL_SPANS = True
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -3862,6 +3865,11 @@ class Parser(metaclass=_Parser):
                 this = exp.Literal.string(parts[0])
                 unit = self.expression(exp.Var, this=parts[1].upper())
 
+        if self.INTERVAL_SPANS and self._match_text_seq("TO"):
+            unit = self.expression(
+                exp.IntervalSpan, this=unit, expression=self._parse_var(any_token=True, upper=True)
+            )
+
         return self.expression(exp.Interval, this=this, unit=unit)
 
     def _parse_bitwise(self) -> t.Optional[exp.Expression]:
@@ -4084,19 +4092,17 @@ class Parser(metaclass=_Parser):
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
-            unit = self._parse_var()
+            unit = self._parse_var(any_token=True, upper=True)
 
             if self._match_text_seq("TO"):
-                span = [exp.IntervalSpan(this=unit, expression=self._parse_var())]
-            else:
-                span = None
-
-            if span or not unit:
-                this = self.expression(
-                    exp.DataType, this=exp.DataType.Type.INTERVAL, expressions=span
+                unit = exp.IntervalSpan(
+                    this=unit, expression=self._parse_var(any_token=True, upper=True)
                 )
-            else:
+
+            if unit:
                 this = self.expression(exp.DataType, this=self.expression(exp.Interval, unit=unit))
+            else:
+                this = self.expression(exp.DataType, this=exp.DataType.Type.INTERVAL)
 
         if maybe_func and check_func:
             index2 = self._index

@@ -784,6 +784,15 @@ class TestExpressions(unittest.TestCase):
         self.assertRaises(ValueError, exp.Properties.from_dict, {"FORMAT": object})
 
     def test_convert(self):
+        from collections import namedtuple
+
+        PointTuple = namedtuple("Point", ["x", "y"])
+
+        class PointClass:
+            def __init__(self, x=0, y=0):
+                self.x = x
+                self.y = y
+
         for value, expected in [
             (1, "1"),
             ("1", "'1'"),
@@ -803,6 +812,8 @@ class TestExpressions(unittest.TestCase):
             (datetime.date(2022, 10, 1), "DATE_STR_TO_DATE('2022-10-01')"),
             (math.nan, "NULL"),
             (b"\x00\x00\x00\x00\x00\x00\x07\xd3", "2003"),
+            (PointTuple(1, 2), "STRUCT(1 AS x, 2 AS y)"),
+            (PointClass(1, 2), "STRUCT(1 AS x, 2 AS y)"),
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(), expected)

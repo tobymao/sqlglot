@@ -480,9 +480,6 @@ class MySQL(Dialect):
                 elif self._match_text_seq("ENGINE_ATTRIBUTE"):
                     self._match(TokenType.EQ)
                     opt = exp.IndexConstraintOption(engine_attr=self._parse_string())
-                elif self._match_text_seq("ENGINE_ATTRIBUTE"):
-                    self._match(TokenType.EQ)
-                    opt = exp.IndexConstraintOption(engine_attr=self._parse_string())
                 elif self._match_text_seq("SECONDARY_ENGINE_ATTRIBUTE"):
                     self._match(TokenType.EQ)
                     opt = exp.IndexConstraintOption(secondary_engine_attr=self._parse_string())

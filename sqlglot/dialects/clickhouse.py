@@ -790,8 +790,6 @@ class ClickHouse(Dialect):
             expr = f" {expr}" if expr else ""
             index_type = self.sql(expression, "index_type")
             index_type = f" TYPE {index_type}" if index_type else ""
-            options = self.expressions(expression, key="options", sep=" ")
-            options = f" {options}" if options else ""
             granularity = self.sql(expression, "granularity")
             granularity = f" GRANULARITY {granularity}" if granularity else ""
 

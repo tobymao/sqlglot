@@ -56,7 +56,7 @@ class PRQL(Dialect):
                 selects = self._parse_csv(self._parse_expression)
 
                 if not self._match(TokenType.R_BRACE, expression=query):
-                    self.raise_error("Expecting ]")
+                    self.raise_error("Expecting }")
             else:
                 expression = self._parse_expression()
                 selects = [expression] if expression else []

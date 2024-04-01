@@ -89,8 +89,8 @@ WHERE
         self.validate_identity("ALTER TABLE foo UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING")
         self.validate_identity("COMMENT IF EXISTS ON TABLE foo IS 'bar'")
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
-        self.validate_identity("REGEXP_REPLACE('target', 'pattern', '\n')")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
+        self.validate_identity("SELECT MATCH_CONDITION")
         self.validate_identity(
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
@@ -100,7 +100,10 @@ WHERE
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
-        self.validate_identity("SELECT MATCH_CONDITION")
+        self.validate_identity(
+            "REGEXP_REPLACE('target', 'pattern', '\n')",
+            "REGEXP_REPLACE('target', 'pattern', '\\n')",
+        )
         self.validate_identity(
             "SELECT a:from::STRING, a:from || ' test' ",
             "SELECT CAST(GET_PATH(a, 'from') AS TEXT), GET_PATH(a, 'from') || ' test'",

@@ -84,7 +84,6 @@ class Drill(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
-            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "drill"),
             "TO_TIMESTAMP": exp.TimeStrToTime.from_arg_list,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "drill"),
         }

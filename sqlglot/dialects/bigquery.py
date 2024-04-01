@@ -246,16 +246,6 @@ class BigQuery(Dialect):
         "%E6S": "%S.%f",
     }
 
-    ESCAPE_SEQUENCES = {
-        "\\a": "\a",
-        "\\b": "\b",
-        "\\f": "\f",
-        "\\n": "\n",
-        "\\r": "\r",
-        "\\t": "\t",
-        "\\v": "\v",
-    }
-
     FORMAT_MAPPING = {
         "DD": "%d",
         "MM": "%m",

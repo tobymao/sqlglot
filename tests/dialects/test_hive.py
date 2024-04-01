@@ -235,15 +235,18 @@ class TestHive(Validator):
             },
         )
         self.validate_all(
-            "'\\\\a'",
+            "'\\\\\\\\a'",
             read={
+                "drill": "'\\\\\\\\a'",
+                "duckdb": "'\\\\a'",
                 "presto": "'\\\\a'",
             },
             write={
+                "drill": "'\\\\\\\\a'",
                 "duckdb": "'\\\\a'",
+                "hive": "'\\\\\\\\a'",
                 "presto": "'\\\\a'",
-                "hive": "'\\\\a'",
-                "spark": "'\\\\a'",
+                "spark": "'\\\\\\\\a'",
             },
         )
 
@@ -736,13 +739,12 @@ class TestHive(Validator):
         )
 
     def test_escapes(self) -> None:
-        self.validate_identity("'\n'")
+        self.validate_identity("'\n'", "'\\n'")
         self.validate_identity("'\\n'")
-        self.validate_identity("'\\\n'")
+        self.validate_identity("'\\\n'", "'\\\\\\n'")
         self.validate_identity("'\\\\n'")
         self.validate_identity("''")
         self.validate_identity("'\\\\'")
-        self.validate_identity("'\\z'")
         self.validate_identity("'\\\\z'")
 
     def test_data_type(self):

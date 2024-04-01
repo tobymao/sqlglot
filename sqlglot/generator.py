@@ -1113,7 +1113,7 @@ class Generator(metaclass=_Generator):
         return f"{self.dialect.QUOTE_START}{this}{self.dialect.QUOTE_END}"
 
     def rawstring_sql(self, expression: exp.RawString) -> str:
-        string = self.escape_str(expression.this.replace("\\", "\\\\"))
+        string = self.escape_str(expression.this.replace("\\", "\\\\"), escape_backslash=False)
         return f"{self.dialect.QUOTE_START}{string}{self.dialect.QUOTE_END}"
 
     def datatypeparam_sql(self, expression: exp.DataTypeParam) -> str:
@@ -1587,17 +1587,17 @@ class Generator(metaclass=_Generator):
         return f"{self.seg('RETURNING')} {self.expressions(expression, flat=True)}"
 
     def rowformatdelimitedproperty_sql(self, expression: exp.RowFormatDelimitedProperty) -> str:
-        fields = expression.args.get("fields")
+        fields = self.sql(expression, "fields")
         fields = f" FIELDS TERMINATED BY {fields}" if fields else ""
-        escaped = expression.args.get("escaped")
+        escaped = self.sql(expression, "escaped")
         escaped = f" ESCAPED BY {escaped}" if escaped else ""
-        items = expression.args.get("collection_items")
+        items = self.sql(expression, "collection_items")
         items = f" COLLECTION ITEMS TERMINATED BY {items}" if items else ""
-        keys = expression.args.get("map_keys")
+        keys = self.sql(expression, "map_keys")
         keys = f" MAP KEYS TERMINATED BY {keys}" if keys else ""
-        lines = expression.args.get("lines")
+        lines = self.sql(expression, "lines")
         lines = f" LINES TERMINATED BY {lines}" if lines else ""
-        null = expression.args.get("null")
+        null = self.sql(expression, "null")
         null = f" NULL DEFINED AS {null}" if null else ""
         return f"ROW FORMAT DELIMITED{fields}{escaped}{items}{keys}{lines}{null}"
 
@@ -2001,13 +2001,17 @@ class Generator(metaclass=_Generator):
             text = f"{self.dialect.QUOTE_START}{self.escape_str(text)}{self.dialect.QUOTE_END}"
         return text
 
-    def escape_str(self, text: str) -> str:
-        text = text.replace(self.dialect.QUOTE_END, self._escaped_quote_end)
+    def escape_str(self, text: str, escape_backslash: bool = True) -> str:
         if self.dialect.INVERSE_ESCAPE_SEQUENCES:
-            text = "".join(self.dialect.INVERSE_ESCAPE_SEQUENCES.get(ch, ch) for ch in text)
-        elif self.pretty:
+            to_escaped = self.dialect.INVERSE_ESCAPE_SEQUENCES
+            text = "".join(
+                to_escaped.get(ch, ch) if escape_backslash or ch != "\\" else ch for ch in text
+            )
+
+        if self.pretty:
             text = text.replace("\n", self.SENTINEL_LINE_BREAK)
-        return text
+
+        return text.replace(self.dialect.QUOTE_END, self._escaped_quote_end)
 
     def loaddata_sql(self, expression: exp.LoadData) -> str:
         local = " LOCAL" if expression.args.get("local") else ""

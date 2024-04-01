@@ -441,7 +441,7 @@ impl<'a> TokenizerState<'a> {
         };
 
         self.advance(start.len() as isize)?;
-        let text = self.extract_string(&end, false, *token_type != self.token_types.raw_string, true)?;
+        let text = self.extract_string(&end, false, token_type != self.token_types.raw_string, true)?;
 
         if let Some(b) = base {
             if u64::from_str_radix(&text, b).is_err() {

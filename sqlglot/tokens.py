@@ -522,6 +522,7 @@ class _Tokenizer(type):
                 break_=_TOKEN_TYPE_TO_INDEX[TokenType.BREAK],
                 dcolon=_TOKEN_TYPE_TO_INDEX[TokenType.DCOLON],
                 heredoc_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEREDOC_STRING],
+                raw_string=_TOKEN_TYPE_TO_INDEX[TokenType.RAW_STRING],
                 hex_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEX_STRING],
                 identifier=_TOKEN_TYPE_TO_INDEX[TokenType.IDENTIFIER],
                 number=_TOKEN_TYPE_TO_INDEX[TokenType.NUMBER],

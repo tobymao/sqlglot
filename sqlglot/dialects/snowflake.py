@@ -341,6 +341,7 @@ class Snowflake(Dialect):
         }
 
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
+        TABLE_ALIAS_TOKENS.discard(TokenType.MATCH_CONDITION)
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,

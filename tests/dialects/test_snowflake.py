@@ -100,6 +100,7 @@ WHERE
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
+        self.validate_identity("SELECT MATCH_CONDITION")
         self.validate_identity(
             "SELECT a:from::STRING, a:from || ' test' ",
             "SELECT CAST(GET_PATH(a, 'from') AS TEXT), GET_PATH(a, 'from') || ' test'",

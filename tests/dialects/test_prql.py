@@ -13,3 +13,6 @@ class TestPRQL(Validator):
         self.validate_identity(
             "FROM x DERIVE {x = a + 1, b} SELECT {y = x, 2}", "SELECT a + 1 AS y, 2 FROM x"
         )
+        self.validate_identity("FROM x TAKE 10", "SELECT * FROM x LIMIT 10")
+        self.validate_identity("FROM x TAKE 10 TAKE 5", "SELECT * FROM x LIMIT 5")
+

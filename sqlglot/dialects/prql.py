@@ -29,6 +29,7 @@ class PRQL(Dialect):
         TRANSFORM_PARSERS = {
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
+            "TAKE": lambda self, query: self._parse_take(query),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
@@ -77,6 +78,12 @@ class PRQL(Dialect):
             ]
 
             return query.select(*selects, append=append, copy=False)
+        
+        def _parse_take(self, query: exp.Query) -> exp.Query:
+            if self._match(TokenType.NUMBER): # TAKE <NUMBER>
+                return query.limit(self._prev.text) # LIMIT <NUMBER>
+            else:
+                self.raise_error("Error parsing 'TAKE' keyword")
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

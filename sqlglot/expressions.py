@@ -2100,6 +2100,7 @@ class Join(Expression):
         "method": False,
         "global": False,
         "hint": False,
+        "match_condition": False,  # Snowflake
     }
 
     @property

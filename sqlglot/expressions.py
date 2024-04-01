@@ -1665,13 +1665,16 @@ class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
 
 
 # https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+# https://github.com/ClickHouse/ClickHouse/blob/master/src/Parsers/ParserCreateQuery.h#L646
 class IndexColumnConstraint(ColumnConstraintKind):
     arg_types = {
         "this": False,
-        "schema": True,
+        "schema": False,
         "kind": False,
         "index_type": False,
         "options": False,
+        "expression": False,  # Clickhouse
+        "granularity": False,
     }
 
 

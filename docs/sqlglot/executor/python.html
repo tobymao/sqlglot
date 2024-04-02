@@ -121,6 +121,9 @@
 
                         </li>
                         <li>
+                                <a class="variable" href="#Python.UNESCAPED_SEQUENCES">UNESCAPED_SEQUENCES</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Python.tokenizer_class">tokenizer_class</a>
                         </li>
                         <li>
@@ -142,7 +145,7 @@
                                 <a class="variable" href="#Python.INVERSE_TIME_TRIE">INVERSE_TIME_TRIE</a>
                         </li>
                         <li>
-                                <a class="variable" href="#Python.INVERSE_ESCAPE_SEQUENCES">INVERSE_ESCAPE_SEQUENCES</a>
+                                <a class="variable" href="#Python.ESCAPED_SEQUENCES">ESCAPED_SEQUENCES</a>
                         </li>
                         <li>
                                 <a class="variable" href="#Python.QUOTE_START">QUOTE_START</a>
@@ -1691,6 +1694,22 @@
 
     
 
+                            <div id="Python.UNESCAPED_SEQUENCES" class="classattr">
+                                <div class="attr variable">
+            <span class="name">UNESCAPED_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Python.UNESCAPED_SEQUENCES-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Python.UNESCAPED_SEQUENCES-view-value"></label><span class="default_value">{&#39;\\a&#39;: &#39;\x07&#39;, &#39;\\b&#39;: &#39;\x08&#39;, &#39;\\f&#39;: &#39;\x0c&#39;, &#39;\\n&#39;: &#39;\n&#39;, &#39;\\r&#39;: &#39;\r&#39;, &#39;\\t&#39;: &#39;\t&#39;, &#39;\\v&#39;: &#39;\x0b&#39;, &#39;\\\\&#39;: &#39;\\&#39;}</span>
+
+        
+    </div>
+    <a class="headerlink" href="#Python.UNESCAPED_SEQUENCES"></a>
+    
+            <div class="docstring"><p>Mapping of an escaped sequence (<code>\n</code>) to its unescaped version (<code>
+</code>).</p>
+</div>
+
+
+                            </div>
                             <div id="Python.tokenizer_class" class="classattr">
                                 <div class="attr variable">
             <span class="name">tokenizer_class</span>        =
@@ -1775,14 +1794,15 @@
     
 
                             </div>
-                            <div id="Python.INVERSE_ESCAPE_SEQUENCES" class="classattr">
+                            <div id="Python.ESCAPED_SEQUENCES" class="classattr">
                                 <div class="attr variable">
-            <span class="name">INVERSE_ESCAPE_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
-<span class="default_value">{}</span>
+            <span class="name">ESCAPED_SEQUENCES</span><span class="annotation">: Dict[str, str]</span>        =
+<input id="Python.ESCAPED_SEQUENCES-view-value" class="view-value-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+            <label class="view-value-button pdoc-button" for="Python.ESCAPED_SEQUENCES-view-value"></label><span class="default_value">{&#39;\x07&#39;: &#39;\\a&#39;, &#39;\x08&#39;: &#39;\\b&#39;, &#39;\x0c&#39;: &#39;\\f&#39;, &#39;\n&#39;: &#39;\\n&#39;, &#39;\r&#39;: &#39;\\r&#39;, &#39;\t&#39;: &#39;\\t&#39;, &#39;\x0b&#39;: &#39;\\v&#39;, &#39;\\&#39;: &#39;\\\\&#39;}</span>
 
         
     </div>
-    <a class="headerlink" href="#Python.INVERSE_ESCAPE_SEQUENCES"></a>
+    <a class="headerlink" href="#Python.ESCAPED_SEQUENCES"></a>
     
     
 
@@ -1958,7 +1978,6 @@
                 <dd id="Python.TIME_FORMAT" class="variable"><a href="../dialects/dialect.html#Dialect.TIME_FORMAT">TIME_FORMAT</a></dd>
                 <dd id="Python.TIME_MAPPING" class="variable"><a href="../dialects/dialect.html#Dialect.TIME_MAPPING">TIME_MAPPING</a></dd>
                 <dd id="Python.FORMAT_MAPPING" class="variable"><a href="../dialects/dialect.html#Dialect.FORMAT_MAPPING">FORMAT_MAPPING</a></dd>
-                <dd id="Python.ESCAPE_SEQUENCES" class="variable"><a href="../dialects/dialect.html#Dialect.ESCAPE_SEQUENCES">ESCAPE_SEQUENCES</a></dd>
                 <dd id="Python.PSEUDOCOLUMNS" class="variable"><a href="../dialects/dialect.html#Dialect.PSEUDOCOLUMNS">PSEUDOCOLUMNS</a></dd>
                 <dd id="Python.PREFER_CTE_ALIAS_COLUMN" class="variable"><a href="../dialects/dialect.html#Dialect.PREFER_CTE_ALIAS_COLUMN">PREFER_CTE_ALIAS_COLUMN</a></dd>
                 <dd id="Python.get_or_raise" class="function"><a href="../dialects/dialect.html#Dialect.get_or_raise">get_or_raise</a></dd>

@@ -401,7 +401,6 @@ class Presto(Dialect):
                 ]
             ),
             exp.SortArray: _no_sort_array,
-            exp.StrPosition: rename_func("STRPOS"),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
             exp.StrToTime: _str_to_time_sql,
@@ -546,3 +545,14 @@ class Presto(Dialect):
             if kind == "VIEW" and schema.expressions:
                 expression.this.set("expressions", None)
             return super().create_sql(expression)
+
+        def strposition_sql(self, expression: exp.StrPosition) -> str:
+            this = self.sql(expression, "this")
+            substr = self.sql(expression, "substr")
+            position = self.sql(expression, "position")
+            instance = self.sql(expression, "instance")
+            instance = f", {instance}" if instance else ""
+
+            if position:
+                return f"STRPOS(SUBSTR({this}, {position}), {substr}{instance}) + {position} - 1"
+            return f"STRPOS({this}, {substr}{instance})"

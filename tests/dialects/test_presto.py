@@ -177,6 +177,17 @@ class TestPresto(Validator):
                 "spark": "ARRAY_JOIN(x, '-', 'a')",
             },
         )
+        self.validate_all(
+            "STRPOS('ABC', 'A', 3)",
+            read={
+                "trino": "STRPOS('ABC', 'A', 3)",
+            },
+            write={
+                "presto": "STRPOS('ABC', 'A', 3)",
+                "trino": "STRPOS('ABC', 'A', 3)",
+                "snowflake": "POSITION('A', 'ABC')",
+            },
+        )
 
     def test_interval_plural_to_singular(self):
         # Microseconds, weeks and quarters are not supported in Presto/Trino INTERVAL literals

@@ -621,13 +621,21 @@ def no_map_from_entries_sql(self: Generator, expression: exp.MapFromEntries) -> 
     return ""
 
 
-def str_position_sql(self: Generator, expression: exp.StrPosition) -> str:
+def str_position_sql(
+    self: Generator, expression: exp.StrPosition, generate_instance: bool = False
+) -> str:
     this = self.sql(expression, "this")
     substr = self.sql(expression, "substr")
     position = self.sql(expression, "position")
+    instance = expression.args.get("instance") if generate_instance else None
+    position_offset = ""
+
     if position:
-        return f"STRPOS(SUBSTR({this}, {position}), {substr}) + {position} - 1"
-    return f"STRPOS({this}, {substr})"
+        # Normalize third 'pos' argument into 'SUBSTR(..) + offset' across dialects
+        this = self.func("SUBSTR", this, position)
+        position_offset = f" + {position} - 1"
+
+    return self.func("STRPOS", this, substr, instance) + position_offset
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:

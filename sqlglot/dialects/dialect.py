@@ -619,7 +619,7 @@ def str_position_sql(
 
     if position:
         # Normalize third 'pos' argument into 'SUBSTR(..) + offset' across dialects
-        this = f"SUBSTR({this}, {position})"
+        this = self.func("SUBSTR", this, position)
         position_offset = f" + {position} - 1"
 
     return self.func("STRPOS", this, substr, instance) + position_offset

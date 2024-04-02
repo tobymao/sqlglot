@@ -50,7 +50,7 @@ class ClickHouse(Dialect):
     SAFE_DIVISION = True
     LOG_BASE_FIRST: t.Optional[bool] = None
 
-    ESCAPE_SEQUENCES = {
+    UNESCAPED_SEQUENCES = {
         "\\0": "\0",
     }
 

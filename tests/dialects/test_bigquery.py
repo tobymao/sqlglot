@@ -738,10 +738,10 @@ class TestBigQuery(Validator):
         self.validate_all(
             "'\\\\'",
             write={
-                "bigquery": r"'\\'",
-                "duckdb": r"'\\'",
-                "presto": r"'\\'",
-                "hive": r"'\\'",
+                "bigquery": "'\\\\'",
+                "duckdb": "'\\'",
+                "presto": "'\\'",
+                "hive": "'\\\\'",
             },
         )
         self.validate_all(

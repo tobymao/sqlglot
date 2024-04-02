@@ -586,10 +586,10 @@ class Expression(metaclass=_Expression):
         and applies the given transformation function to each node.
 
         Args:
-            fun (function): a function which takes a node as an argument and returns a
+            fun: a function which takes a node as an argument and returns a
                 new transformed node or the same node without modifications. If the function
                 returns None, then the corresponding node will be removed from the syntax tree.
-            copy (bool): if set to True a new tree instance is constructed, otherwise the tree is
+            copy: if set to True a new tree instance is constructed, otherwise the tree is
                 modified in place.
 
         Returns:

@@ -460,10 +460,10 @@ class Expression(metaclass=_Expression):
         Returns a generator object which visits all nodes in this tree.
 
         Args:
-            bfs (bool): if set to True the BFS traversal order will be applied,
+            bfs: if set to True the BFS traversal order will be applied,
                 otherwise the DFS traversal will be used instead.
-            prune ((node, parent, arg_key) -> bool): callable that returns True if
-                the generator should stop traversing this branch of the tree.
+            prune: callable that returns True if the generator should stop traversing
+                this branch of the tree.
 
         Returns:
             the generator object.

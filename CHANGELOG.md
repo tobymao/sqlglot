@@ -1,6 +1,43 @@
 Changelog
 =========
 
+## [v23.4.0] - 2024-04-02
+### :boom: BREAKING CHANGES
+- due to [`e148fe1`](https://github.com/tobymao/sqlglot/commit/e148fe1ace1fe647369c14f2649f428307686a2f) - describe formatted closes [#3244](https://github.com/tobymao/sqlglot/pull/3244) *(commit by [@tobymao](https://github.com/tobymao))*:
+
+  describe formatted closes #3244
+
+- due to [`2c359e7`](https://github.com/tobymao/sqlglot/commit/2c359e790a58e4df9008282401a5578d3ce9d3a4) - properly transpile escape sequences *(PR [#3256](https://github.com/tobymao/sqlglot/pull/3256) by [@georgesittas](https://github.com/georgesittas))*:
+
+  properly transpile escape sequences (#3256)
+
+- due to [`9787567`](https://github.com/tobymao/sqlglot/commit/978756783b639e174f3f614f3e39382fef296640) - bump sqlglotrs to 0.2.0 *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  bump sqlglotrs to 0.2.0
+
+
+### :sparkles: New Features
+- [`8dba8e2`](https://github.com/tobymao/sqlglot/commit/8dba8e2508f04ccdf9b10eaa8a456478190a53a5) - **optimizer**: Support for small integer CAST elimination *(PR [#3234](https://github.com/tobymao/sqlglot/pull/3234) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3229](https://github.com/tobymao/sqlglot/issues/3229) opened by [@NickCrews](https://github.com/NickCrews)*
+- [`e148fe1`](https://github.com/tobymao/sqlglot/commit/e148fe1ace1fe647369c14f2649f428307686a2f) - describe formatted closes [#3244](https://github.com/tobymao/sqlglot/pull/3244) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`a48d7eb`](https://github.com/tobymao/sqlglot/commit/a48d7eb9f3d1f9b3d1ffb9b3ec99b1024b7c3da9) - allow non func hints closes [#3248](https://github.com/tobymao/sqlglot/pull/3248) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`d90ec95`](https://github.com/tobymao/sqlglot/commit/d90ec95001a9747d6066d1872c5a9402e2837f62) - add conversion of named tuples and classes to structs *(PR [#3245](https://github.com/tobymao/sqlglot/pull/3245) by [@tobymao](https://github.com/tobymao))*
+- [`f88640b`](https://github.com/tobymao/sqlglot/commit/f88640b8df22e29ad2fa845b580cf78ad4fb2262) - **clickhouse**: CREATE TABLE computed columns, column compression, index *(PR [#3252](https://github.com/tobymao/sqlglot/pull/3252) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3243](https://github.com/tobymao/sqlglot/issues/3243) opened by [@lksv](https://github.com/lksv)*
+- [`a64ec1b`](https://github.com/tobymao/sqlglot/commit/a64ec1bf60fda00e6dd7122a338c6dac80d005e4) - **snowflake**: MATCH_CONDITION in ASOF JOIN *(PR [#3255](https://github.com/tobymao/sqlglot/pull/3255) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3254](https://github.com/tobymao/sqlglot/issues/3254) opened by [@Bilbottom](https://github.com/Bilbottom)*
+
+### :bug: Bug Fixes
+- [`a630c50`](https://github.com/tobymao/sqlglot/commit/a630c50737bb9deb6f44e1afd374b113612a1d24) - allow interval spans closes [#3246](https://github.com/tobymao/sqlglot/pull/3246) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`28c5ee7`](https://github.com/tobymao/sqlglot/commit/28c5ee7243af9fb8aa5abf2d5d36d6fa4ef47681) - **mysql**: Duplicate parsing of ENGINE_ATTRIBUTE *(PR [#3253](https://github.com/tobymao/sqlglot/pull/3253) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`2c359e7`](https://github.com/tobymao/sqlglot/commit/2c359e790a58e4df9008282401a5578d3ce9d3a4) - properly transpile escape sequences *(PR [#3256](https://github.com/tobymao/sqlglot/pull/3256) by [@georgesittas](https://github.com/georgesittas))*
+- [`6badfd1`](https://github.com/tobymao/sqlglot/commit/6badfd17b416380a4077f2ef48f1efcbed3c78d3) - Fix STRPOS for Presto & Trino *(PR [#3261](https://github.com/tobymao/sqlglot/pull/3261) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3259](https://github.com/tobymao/sqlglot/issues/3259) opened by [@amitgilad3](https://github.com/amitgilad3)*
+
+### :wrench: Chores
+- [`9787567`](https://github.com/tobymao/sqlglot/commit/978756783b639e174f3f614f3e39382fef296640) - bump sqlglotrs to 0.2.0 *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.3.0] - 2024-03-29
 ### :boom: BREAKING CHANGES
 - due to [`0919be5`](https://github.com/tobymao/sqlglot/commit/0919be5eea7aba175e173dbfc0b6547e5c9473a8) - StrToUnix Hive parsing, Presto generation fixes *(PR [#3225](https://github.com/tobymao/sqlglot/pull/3225) by [@georgesittas](https://github.com/georgesittas))*:
@@ -3106,3 +3143,4 @@ Changelog
 [v23.0.5]: https://github.com/tobymao/sqlglot/compare/v23.0.4...v23.0.5
 [v23.1.0]: https://github.com/tobymao/sqlglot/compare/v23.0.5...v23.1.0
 [v23.3.0]: https://github.com/tobymao/sqlglot/compare/v23.2.0...v23.3.0
+[v23.4.0]: https://github.com/tobymao/sqlglot/compare/v23.3.0...v23.4.0

@@ -6985,7 +6985,7 @@ def convert(value: t.Any, copy: bool = False) -> Expression:
         copy: Whether to copy `value` (only applies to Expressions and collections).
 
     Returns:
-        Expression: the equivalent expression object.
+        The equivalent expression object.
     """
     if isinstance(value, Expression):
         return maybe_copy(value, copy)

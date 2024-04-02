@@ -1510,7 +1510,7 @@ class TestDialect(Validator):
             "POSITION(needle, haystack, pos)",
             write={
                 "drill": "STRPOS(SUBSTR(haystack, pos), needle) + pos - 1",
-                "presto": "STRPOS(haystack, needle, pos)",
+                "presto": "STRPOS(SUBSTR(haystack, pos), needle) + pos - 1",
                 "spark": "LOCATE(needle, haystack, pos)",
                 "clickhouse": "position(haystack, needle, pos)",
                 "snowflake": "POSITION(needle, haystack, pos)",

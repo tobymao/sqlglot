@@ -261,7 +261,7 @@ class Dialect(metaclass=_Dialect):
     """
 
     UNESCAPED_SEQUENCES: t.Dict[str, str] = {}
-    """Mapping of an unescaped sequence (`\\n`) to its escaped version (`\n`)."""
+    """Mapping of an escaped sequence (`\\n`) to its unescaped version (`\n`)."""
 
     PSEUDOCOLUMNS: t.Set[str] = set()
     """

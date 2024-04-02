@@ -402,7 +402,7 @@ class Presto(Dialect):
                 ]
             ),
             exp.SortArray: _no_sort_array,
-            exp.StrPosition: lambda self, e: str_position_sql(self, e, True),
+            exp.StrPosition: lambda self, e: str_position_sql(self, e, generate_instance=True),
             exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
             exp.StrToMap: rename_func("SPLIT_TO_MAP"),
             exp.StrToTime: _str_to_time_sql,

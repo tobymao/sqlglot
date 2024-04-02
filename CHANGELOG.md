@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.6.0] - 2024-04-02
+### :wrench: Chores
+- [`4eec748`](https://github.com/tobymao/sqlglot/commit/4eec748d7fd0c73d9593cb3da2b9ebc1d2440436) - deploy sqlglot and then sqlglotrs *(PR [#3264](https://github.com/tobymao/sqlglot/pull/3264) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.4.0] - 2024-04-02
 ### :boom: BREAKING CHANGES
 - due to [`e148fe1`](https://github.com/tobymao/sqlglot/commit/e148fe1ace1fe647369c14f2649f428307686a2f) - describe formatted closes [#3244](https://github.com/tobymao/sqlglot/pull/3244) *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -3144,3 +3149,4 @@ Changelog
 [v23.1.0]: https://github.com/tobymao/sqlglot/compare/v23.0.5...v23.1.0
 [v23.3.0]: https://github.com/tobymao/sqlglot/compare/v23.2.0...v23.3.0
 [v23.4.0]: https://github.com/tobymao/sqlglot/compare/v23.3.0...v23.4.0
+[v23.6.0]: https://github.com/tobymao/sqlglot/compare/v23.5.0...v23.6.0

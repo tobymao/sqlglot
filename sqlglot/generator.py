@@ -1873,6 +1873,8 @@ class Generator(metaclass=_Generator):
             )
             if op
         )
+        match_cond = self.sql(expression, "match_condition")
+        match_cond = f" MATCH_CONDITION ({match_cond})" if match_cond else ""
         on_sql = self.sql(expression, "on")
         using = expression.args.get("using")
 
@@ -1896,7 +1898,7 @@ class Generator(metaclass=_Generator):
             return f", {this_sql}"
 
         op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
-        return f"{self.seg(op_sql)} {this_sql}{on_sql}"
+        return f"{self.seg(op_sql)} {this_sql}{match_cond}{on_sql}"
 
     def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->") -> str:
         args = self.expressions(expression, flat=True)

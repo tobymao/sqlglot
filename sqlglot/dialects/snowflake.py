@@ -335,7 +335,13 @@ class Snowflake(Dialect):
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
 
+        ID_VAR_TOKENS = {
+            *parser.Parser.ID_VAR_TOKENS,
+            TokenType.MATCH_CONDITION,
+        }
+
         TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.WINDOW}
+        TABLE_ALIAS_TOKENS.discard(TokenType.MATCH_CONDITION)
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
@@ -698,6 +704,7 @@ class Snowflake(Dialect):
             "EXCLUDE": TokenType.EXCEPT,
             "ILIKE ANY": TokenType.ILIKE_ANY,
             "LIKE ANY": TokenType.LIKE_ANY,
+            "MATCH_CONDITION": TokenType.MATCH_CONDITION,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
             "NCHAR VARYING": TokenType.VARCHAR,

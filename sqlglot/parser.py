@@ -2907,6 +2907,9 @@ class Parser(metaclass=_Parser):
         if hint:
             kwargs["hint"] = hint
 
+        if self._match(TokenType.MATCH_CONDITION):
+            kwargs["match_condition"] = self._parse_wrapped(self._parse_comparison)
+
         if self._match(TokenType.ON):
             kwargs["on"] = self._parse_conjunction()
         elif self._match(TokenType.USING):

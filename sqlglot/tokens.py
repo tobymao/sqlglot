@@ -291,6 +291,7 @@ class TokenType(AutoName):
     LOAD = auto()
     LOCK = auto()
     MAP = auto()
+    MATCH_CONDITION = auto()
     MATCH_RECOGNIZE = auto()
     MEMBER_OF = auto()
     MERGE = auto()

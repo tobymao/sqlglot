@@ -614,12 +614,15 @@ def str_position_sql(
     this = self.sql(expression, "this")
     substr = self.sql(expression, "substr")
     position = self.sql(expression, "position")
-    instance = self.sql(expression, "instance") if generate_instance else None
-    instance = f", {instance}" if instance else ""
+    instance = expression.args.get("instance") if generate_instance else None
+    position_offset = ""
 
     if position:
-        return f"STRPOS(SUBSTR({this}, {position}), {substr}{instance}) + {position} - 1"
-    return f"STRPOS({this}, {substr}{instance})"
+        # Normalize third 'pos' argument into 'SUBSTR(..) + offset' across dialects
+        this = f"SUBSTR({this}, {position})"
+        position_offset = f" + {position} - 1"
+
+    return self.func("STRPOS", this, substr, instance) + position_offset
 
 
 def struct_extract_sql(self: Generator, expression: exp.StructExtract) -> str:

@@ -2002,8 +2002,8 @@ class Generator(metaclass=_Generator):
         return text
 
     def escape_str(self, text: str, escape_backslash: bool = True) -> str:
-        if self.dialect.INVERSE_ESCAPE_SEQUENCES:
-            to_escaped = self.dialect.INVERSE_ESCAPE_SEQUENCES
+        if self.dialect.ESCAPED_SEQUENCES:
+            to_escaped = self.dialect.ESCAPED_SEQUENCES
             text = "".join(
                 to_escaped.get(ch, ch) if escape_backslash or ch != "\\" else ch for ch in text
             )

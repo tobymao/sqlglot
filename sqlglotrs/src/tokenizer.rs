@@ -606,16 +606,16 @@ impl<'a> TokenizerState<'a> {
             let peek_char_str = self.peek_char.to_string();
 
             if unescape_sequences
-                && !self.dialect_settings.escape_sequences.is_empty()
+                && !self.dialect_settings.unescaped_sequences.is_empty()
                 && !self.peek_char.is_whitespace()
                 && self.settings.string_escapes.contains(&self.current_char)
             {
                 let sequence_key = format!("{}{}", self.current_char, self.peek_char);
-                if let Some(escaped_sequence) =
-                    self.dialect_settings.escape_sequences.get(&sequence_key)
+                if let Some(unescaped_sequence) =
+                    self.dialect_settings.unescaped_sequences.get(&sequence_key)
                 {
                     self.advance(2)?;
-                    text.push_str(escaped_sequence);
+                    text.push_str(unescaped_sequence);
                     continue;
                 }
             }

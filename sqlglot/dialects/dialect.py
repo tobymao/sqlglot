@@ -144,7 +144,7 @@ class _Dialect(type):
         klass.UNICODE_START, klass.UNICODE_END = get_start_end(TokenType.UNICODE_STRING)
 
         if "\\" in klass.tokenizer_class.STRING_ESCAPES:
-            klass.ESCAPE_SEQUENCES = {
+            klass.UNESCAPED_SEQUENCES = {
                 "\\a": "\a",
                 "\\b": "\b",
                 "\\f": "\f",
@@ -153,10 +153,10 @@ class _Dialect(type):
                 "\\t": "\t",
                 "\\v": "\v",
                 "\\\\": "\\",
-                **klass.ESCAPE_SEQUENCES,
+                **klass.UNESCAPED_SEQUENCES,
             }
 
-        klass.INVERSE_ESCAPE_SEQUENCES = {v: k for k, v in klass.ESCAPE_SEQUENCES.items()}
+        klass.ESCAPED_SEQUENCES = {v: k for k, v in klass.UNESCAPED_SEQUENCES.items()}
 
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
@@ -260,8 +260,8 @@ class Dialect(metaclass=_Dialect):
     If empty, the corresponding trie will be constructed off of `TIME_MAPPING`.
     """
 
-    ESCAPE_SEQUENCES: t.Dict[str, str] = {}
-    """Mapping of an unescaped escape sequence to the corresponding character."""
+    UNESCAPED_SEQUENCES: t.Dict[str, str] = {}
+    """Mapping of an unescaped sequence (`\\n`) to its escaped version (`\n`)."""
 
     PSEUDOCOLUMNS: t.Set[str] = set()
     """
@@ -300,7 +300,7 @@ class Dialect(metaclass=_Dialect):
     INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
     INVERSE_TIME_TRIE: t.Dict = {}
 
-    INVERSE_ESCAPE_SEQUENCES: t.Dict[str, str] = {}
+    ESCAPED_SEQUENCES: t.Dict[str, str] = {}
 
     # Delimiters for string literals and identifiers
     QUOTE_START = "'"

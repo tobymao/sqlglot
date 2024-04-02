@@ -154,7 +154,7 @@ impl TokenizerSettings {
 #[derive(Clone, Debug)]
 #[pyclass]
 pub struct TokenizerDialectSettings {
-    pub escape_sequences: HashMap<String, String>,
+    pub unescaped_sequences: HashMap<String, String>,
     pub identifiers_can_start_with_digit: bool,
 }
 
@@ -162,11 +162,11 @@ pub struct TokenizerDialectSettings {
 impl TokenizerDialectSettings {
     #[new]
     pub fn new(
-        escape_sequences: HashMap<String, String>,
+        unescaped_sequences: HashMap<String, String>,
         identifiers_can_start_with_digit: bool,
     ) -> Self {
         TokenizerDialectSettings {
-            escape_sequences,
+            unescaped_sequences,
             identifiers_can_start_with_digit,
         }
     }

@@ -923,7 +923,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if USE_RS_TOKENIZER:
             self._rs_dialect_settings = RsTokenizerDialectSettings(
-                escape_sequences=self.dialect.ESCAPE_SEQUENCES,
+                unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             )
 
@@ -1334,14 +1334,14 @@ class Tokenizer(metaclass=_Tokenizer):
         while True:
             if (
                 unescape_sequences
-                and self.dialect.ESCAPE_SEQUENCES
+                and self.dialect.UNESCAPED_SEQUENCES
                 and self._peek
                 and self._char in self.STRING_ESCAPES
             ):
-                escaped_sequence = self.dialect.ESCAPE_SEQUENCES.get(self._char + self._peek)
-                if escaped_sequence:
+                unescaped_sequence = self.dialect.UNESCAPED_SEQUENCES.get(self._char + self._peek)
+                if unescaped_sequence:
                     self._advance(2)
-                    text += escaped_sequence
+                    text += unescaped_sequence
                     continue
             if (
                 self._char in escapes

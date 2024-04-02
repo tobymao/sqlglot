@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, parser, tokens
 from sqlglot.dialects.dialect import Dialect
+from sqlglot.helper import is_int
 from sqlglot.tokens import TokenType
 
 
@@ -80,10 +81,20 @@ class PRQL(Dialect):
             return query.select(*selects, append=append, copy=False)
         
         def _parse_take(self, query: exp.Query) -> exp.Query:
-            if self._match(TokenType.NUMBER): # TAKE <NUMBER>
-                return query.limit(self._prev.text) # LIMIT <NUMBER>
-            else:
-                self.raise_error("Error parsing 'TAKE' keyword")
+            try:
+                if self._match(TokenType.NUMBER):
+                    first = self._prev.text # TAKE 4..10 -> self._prev.text = "4."
+                    if self._match_pair(TokenType.DOT, TokenType.NUMBER): # TAKE <start>..<end>
+                        first = int(first[:-1])
+                        second = int(self._prev.text)
+                        if second >= first: # valid range
+                            return query.limit(second - first + 1).offset(first - 1) 
+                        else:
+                            return query.limit(0)
+                    else:
+                        return query.limit(first) # TAKE <num>
+            except Exception as e:
+                self.raise_error(e) 
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

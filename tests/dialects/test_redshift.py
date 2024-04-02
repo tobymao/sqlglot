@@ -213,18 +213,6 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid",
-            write={
-                "redshift": "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid",
-            },
-        )
-        self.validate_all(
-            'SELECT tablename, "column" FROM pg_table_def WHERE "column" LIKE \'%start\\_%\' LIMIT 5',
-            write={
-                "redshift": 'SELECT tablename, "column" FROM pg_table_def WHERE "column" LIKE \'%start\\_%\' LIMIT 5'
-            },
-        )
-        self.validate_all(
             "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
             write={
                 "bigquery": "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC NULLS FIRST) AS _row_number FROM x) AS _t WHERE _row_number = 1",
@@ -315,6 +303,12 @@ class TestRedshift(Validator):
         self.validate_identity("CREATE TABLE datetable (start_date DATE, end_date DATE)")
         self.validate_identity("SELECT APPROXIMATE AS y")
         self.validate_identity("CREATE TABLE t (c BIGINT IDENTITY(0, 1))")
+        self.validate_identity(
+            "SELECT * FROM venue WHERE (venuecity, venuestate) IN (('Miami', 'FL'), ('Tampa', 'FL')) ORDER BY venueid"
+        )
+        self.validate_identity(
+            """SELECT tablename, "column" FROM pg_table_def WHERE "column" LIKE '%start\\\\_%' LIMIT 5"""
+        )
         self.validate_identity(
             """SELECT JSON_EXTRACT_PATH_TEXT('{"f2":{"f3":1},"f4":{"f5":99,"f6":"star"}', 'f4', 'f6', TRUE)"""
         )

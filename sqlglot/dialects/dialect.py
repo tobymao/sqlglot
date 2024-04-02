@@ -110,8 +110,6 @@ class _Dialect(type):
         klass.INVERSE_TIME_MAPPING = {v: k for k, v in klass.TIME_MAPPING.items()}
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
 
-        klass.INVERSE_ESCAPE_SEQUENCES = {v: k for k, v in klass.ESCAPE_SEQUENCES.items()}
-
         base = seq_get(bases, 0)
         base_tokenizer = (getattr(base, "tokenizer_class", Tokenizer),)
         base_parser = (getattr(base, "parser_class", Parser),)
@@ -144,6 +142,21 @@ class _Dialect(type):
         klass.HEX_START, klass.HEX_END = get_start_end(TokenType.HEX_STRING)
         klass.BYTE_START, klass.BYTE_END = get_start_end(TokenType.BYTE_STRING)
         klass.UNICODE_START, klass.UNICODE_END = get_start_end(TokenType.UNICODE_STRING)
+
+        if "\\" in klass.tokenizer_class.STRING_ESCAPES:
+            klass.UNESCAPED_SEQUENCES = {
+                "\\a": "\a",
+                "\\b": "\b",
+                "\\f": "\f",
+                "\\n": "\n",
+                "\\r": "\r",
+                "\\t": "\t",
+                "\\v": "\v",
+                "\\\\": "\\",
+                **klass.UNESCAPED_SEQUENCES,
+            }
+
+        klass.ESCAPED_SEQUENCES = {v: k for k, v in klass.UNESCAPED_SEQUENCES.items()}
 
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
@@ -247,8 +260,8 @@ class Dialect(metaclass=_Dialect):
     If empty, the corresponding trie will be constructed off of `TIME_MAPPING`.
     """
 
-    ESCAPE_SEQUENCES: t.Dict[str, str] = {}
-    """Mapping of an unescaped escape sequence to the corresponding character."""
+    UNESCAPED_SEQUENCES: t.Dict[str, str] = {}
+    """Mapping of an escaped sequence (`\\n`) to its unescaped version (`\n`)."""
 
     PSEUDOCOLUMNS: t.Set[str] = set()
     """
@@ -287,7 +300,7 @@ class Dialect(metaclass=_Dialect):
     INVERSE_TIME_MAPPING: t.Dict[str, str] = {}
     INVERSE_TIME_TRIE: t.Dict = {}
 
-    INVERSE_ESCAPE_SEQUENCES: t.Dict[str, str] = {}
+    ESCAPED_SEQUENCES: t.Dict[str, str] = {}
 
     # Delimiters for string literals and identifiers
     QUOTE_START = "'"

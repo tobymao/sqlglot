@@ -522,6 +522,7 @@ class _Tokenizer(type):
                 break_=_TOKEN_TYPE_TO_INDEX[TokenType.BREAK],
                 dcolon=_TOKEN_TYPE_TO_INDEX[TokenType.DCOLON],
                 heredoc_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEREDOC_STRING],
+                raw_string=_TOKEN_TYPE_TO_INDEX[TokenType.RAW_STRING],
                 hex_string=_TOKEN_TYPE_TO_INDEX[TokenType.HEX_STRING],
                 identifier=_TOKEN_TYPE_TO_INDEX[TokenType.IDENTIFIER],
                 number=_TOKEN_TYPE_TO_INDEX[TokenType.NUMBER],
@@ -922,7 +923,7 @@ class Tokenizer(metaclass=_Tokenizer):
 
         if USE_RS_TOKENIZER:
             self._rs_dialect_settings = RsTokenizerDialectSettings(
-                escape_sequences=self.dialect.ESCAPE_SEQUENCES,
+                unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
                 identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             )
 
@@ -1272,7 +1273,9 @@ class Tokenizer(metaclass=_Tokenizer):
                     tag = ""
                 else:
                     tag = self._extract_string(
-                        end, raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER
+                        end,
+                        unescape_sequences=False,
+                        raise_unmatched=not self.HEREDOC_TAG_IS_IDENTIFIER,
                     )
 
                 if self._end and tag and self.HEREDOC_TAG_IS_IDENTIFIER:
@@ -1285,7 +1288,7 @@ class Tokenizer(metaclass=_Tokenizer):
             return False
 
         self._advance(len(start))
-        text = self._extract_string(end)
+        text = self._extract_string(end, unescape_sequences=token_type != TokenType.RAW_STRING)
 
         if base:
             try:
@@ -1318,13 +1321,28 @@ class Tokenizer(metaclass=_Tokenizer):
         )
 
     def _extract_string(
-        self, delimiter: str, escapes: t.Optional[t.Set[str]] = None, raise_unmatched: bool = True
+        self,
+        delimiter: str,
+        escapes: t.Optional[t.Set[str]] = None,
+        unescape_sequences: bool = True,
+        raise_unmatched: bool = True,
     ) -> str:
         text = ""
         delim_size = len(delimiter)
         escapes = self._STRING_ESCAPES if escapes is None else escapes
 
         while True:
+            if (
+                unescape_sequences
+                and self.dialect.UNESCAPED_SEQUENCES
+                and self._peek
+                and self._char in self.STRING_ESCAPES
+            ):
+                unescaped_sequence = self.dialect.UNESCAPED_SEQUENCES.get(self._char + self._peek)
+                if unescaped_sequence:
+                    self._advance(2)
+                    text += unescaped_sequence
+                    continue
             if (
                 self._char in escapes
                 and (self._peek == delimiter or self._peek in escapes)
@@ -1350,17 +1368,6 @@ class Tokenizer(metaclass=_Tokenizer):
                         return text + self._char
 
                     raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
-
-                if (
-                    self.dialect.ESCAPE_SEQUENCES
-                    and self._peek
-                    and self._char in self.STRING_ESCAPES
-                ):
-                    escaped_sequence = self.dialect.ESCAPE_SEQUENCES.get(self._char + self._peek)
-                    if escaped_sequence:
-                        self._advance(2)
-                        text += escaped_sequence
-                        continue
 
                 current = self._current - 1
                 self._advance(alnum=True)

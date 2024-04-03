@@ -86,9 +86,6 @@ class Generator(metaclass=_Generator):
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
         exp.CopyGrantsProperty: lambda *_: "COPY GRANTS",
-        exp.DateAdd: lambda self, e: self.func(
-            "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
-        ),
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
@@ -2283,7 +2280,7 @@ class Generator(metaclass=_Generator):
         return f"@@{kind}{this}"
 
     def placeholder_sql(self, expression: exp.Placeholder) -> str:
-        return f"{self.NAMED_PLACEHOLDER_TOKEN}{expression.name}" if expression.name else "?"
+        return f"{self.NAMED_PLACEHOLDER_TOKEN}{expression.name}" if expression.this else "?"
 
     def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
         alias = self.sql(expression, "alias")
@@ -3540,6 +3537,13 @@ class Generator(metaclass=_Generator):
             self.unsupported("Date parts are not supported in LAST_DAY.")
 
         return self.func("LAST_DAY", expression.this)
+
+    def dateadd_sql(self, expression: exp.DateAdd) -> str:
+        from sqlglot.dialects.dialect import unit_to_str
+
+        return self.func(
+            "DATE_ADD", expression.this, expression.expression, unit_to_str(expression)
+        )
 
     def arrayany_sql(self, expression: exp.ArrayAny) -> str:
         if self.CAN_IMPLEMENT_ARRAY_ANY:

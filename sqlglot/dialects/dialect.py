@@ -731,9 +731,7 @@ def build_date_delta_with_interval(
         if expression and expression.is_string:
             expression = exp.Literal.number(expression.this)
 
-        return expression_class(
-            this=args[0], expression=expression, unit=exp.Literal.string(interval.text("unit"))
-        )
+        return expression_class(this=args[0], expression=expression, unit=unit_to_str(interval))
 
     return _builder
 
@@ -752,18 +750,14 @@ def date_add_interval_sql(
 ) -> t.Callable[[Generator, exp.Expression], str]:
     def func(self: Generator, expression: exp.Expression) -> str:
         this = self.sql(expression, "this")
-        unit = expression.args.get("unit")
-        unit = exp.var(unit.name.upper() if unit else "DAY")
-        interval = exp.Interval(this=expression.expression, unit=unit)
+        interval = exp.Interval(this=expression.expression, unit=unit_to_var(expression))
         return f"{data_type}_{kind}({this}, {self.sql(interval)})"
 
     return func
 
 
 def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
-    return self.func(
-        "DATE_TRUNC", exp.Literal.string(expression.text("unit").upper() or "DAY"), expression.this
-    )
+    return self.func("DATE_TRUNC", unit_to_str(expression), expression.this)
 
 
 def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
@@ -998,12 +992,30 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
 
         return self.func(
             name,
-            exp.var(expression.text("unit").upper() or "DAY"),
+            unit_to_var(expression),
             expression.expression,
             expression.this,
         )
 
     return _delta_sql
+
+
+def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
+    unit = expression.args.get("unit")
+
+    if isinstance(unit, exp.Placeholder):
+        return unit
+    if unit:
+        return exp.Literal.string(unit.name)
+    return exp.Literal.string(default) if default else None
+
+
+def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
+    unit = expression.args.get("unit")
+
+    if isinstance(unit, (exp.Var, exp.Placeholder)):
+        return unit
+    return exp.Var(this=default) if default else None
 
 
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:

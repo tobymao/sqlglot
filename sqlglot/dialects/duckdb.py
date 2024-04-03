@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     str_to_time_sql,
     timestamptrunc_sql,
     timestrtotime_sql,
+    unit_to_var,
 )
 from sqlglot.helper import flatten, seq_get
 from sqlglot.tokens import TokenType
@@ -33,8 +34,7 @@ from sqlglot.tokens import TokenType
 
 def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
-    unit = self.sql(expression, "unit").strip("'") or "DAY"
-    interval = self.sql(exp.Interval(this=expression.expression, unit=unit))
+    interval = self.sql(exp.Interval(this=expression.expression, unit=unit_to_var(expression)))
     return f"CAST({this} AS {self.sql(expression.return_type)}) + {interval}"
 
 
@@ -42,7 +42,7 @@ def _date_delta_sql(
     self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub | exp.TimeAdd
 ) -> str:
     this = self.sql(expression, "this")
-    unit = self.sql(expression, "unit").strip("'") or "DAY"
+    unit = unit_to_var(expression)
     op = "+" if isinstance(expression, (exp.DateAdd, exp.TimeAdd)) else "-"
     return f"{this} {op} {self.sql(exp.Interval(this=expression.expression, unit=unit))}"
 

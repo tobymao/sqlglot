@@ -29,6 +29,7 @@ class PRQL(Dialect):
         TRANSFORM_PARSERS = {
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
+            "TAKE": lambda self, query: self._parse_take(query),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
@@ -56,7 +57,7 @@ class PRQL(Dialect):
                 selects = self._parse_csv(self._parse_expression)
 
                 if not self._match(TokenType.R_BRACE, expression=query):
-                    self.raise_error("Expecting ]")
+                    self.raise_error("Expecting }")
             else:
                 expression = self._parse_expression()
                 selects = [expression] if expression else []
@@ -77,6 +78,10 @@ class PRQL(Dialect):
             ]
 
             return query.select(*selects, append=append, copy=False)
+
+        def _parse_take(self, query: exp.Query) -> exp.Query:
+            num = self._parse_number()
+            return num and query.limit(num)  # TODO: TAKE for ranges a..b
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

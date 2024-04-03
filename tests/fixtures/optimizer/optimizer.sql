@@ -824,7 +824,7 @@ SELECT
 FROM `bigquery-public-data.GooGle_tReNDs.TOp_TeRmS` AS `TOp_TeRmS`
 WHERE
   `TOp_TeRmS`.`rank` = 1
-  AND CAST(`TOp_TeRmS`.`refresh_date` AS DATE) >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
+  AND `TOp_TeRmS`.`refresh_date` >= DATE_SUB(CURRENT_DATE, INTERVAL 2 WEEK)
 GROUP BY
   `day`,
   `top_term`,

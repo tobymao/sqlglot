@@ -36,7 +36,11 @@ def add_text_to_concat(node: exp.Expression) -> exp.Expression:
 
 
 def replace_date_funcs(node: exp.Expression) -> exp.Expression:
-    if isinstance(node, exp.Date) and not node.expressions and not node.args.get("zone"):
+    if (
+        isinstance(node, (exp.Date, exp.TsOrDsToDate))
+        and not node.expressions
+        and not node.args.get("zone")
+    ):
         return exp.cast(node.this, to=exp.DataType.Type.DATE)
     if isinstance(node, exp.Timestamp) and not node.expression:
         if not node.type:
@@ -122,15 +126,11 @@ def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
             a = _coerce_timeunit_arg(a, b.unit)
         if (
             a.type
-            and a.type.this == exp.DataType.Type.DATE
+            and a.type.this in exp.DataType.TEMPORAL_TYPES
             and b.type
-            and b.type.this
-            not in (
-                exp.DataType.Type.DATE,
-                exp.DataType.Type.INTERVAL,
-            )
+            and b.type.this in exp.DataType.TEXT_TYPES
         ):
-            _replace_cast(b, exp.DataType.Type.DATE)
+            _replace_cast(b, exp.DataType.Type.DATETIME)
 
 
 def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:

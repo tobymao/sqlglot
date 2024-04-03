@@ -126,11 +126,11 @@ def _coerce_date(a: exp.Expression, b: exp.Expression) -> None:
             a = _coerce_timeunit_arg(a, b.unit)
         if (
             a.type
-            and a.type.this == exp.DataType.Type.DATE
+            and a.type.this in exp.DataType.TEMPORAL_TYPES
             and b.type
             and b.type.this in exp.DataType.TEXT_TYPES
         ):
-            _replace_cast(b, exp.DataType.Type.DATE)
+            _replace_cast(b, exp.DataType.Type.DATETIME)
 
 
 def _coerce_timeunit_arg(arg: exp.Expression, unit: t.Optional[exp.Expression]) -> exp.Expression:

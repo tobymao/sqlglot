@@ -37,9 +37,7 @@ class PRQL(Dialect):
             expression = expression if expression else self._parse_query()
             return expression
 
-        def _parse_query(
-            self,
-        ) -> t.Optional[exp.Query]:
+        def _parse_query(self) -> t.Optional[exp.Query]:
             from_ = self._parse_from()
 
             if not from_:
@@ -79,9 +77,9 @@ class PRQL(Dialect):
 
             return query.select(*selects, append=append, copy=False)
 
-        def _parse_take(self, query: exp.Query) -> exp.Query:
-            num = self._parse_number()
-            return num and query.limit(num)  # TODO: TAKE for ranges a..b
+        def _parse_take(self, query: exp.Query) -> t.Optional[exp.Query]:
+            num = self._parse_number()  # TODO: TAKE for ranges a..b
+            return query.limit(num) if num else None
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

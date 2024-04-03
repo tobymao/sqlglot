@@ -80,9 +80,8 @@ class PRQL(Dialect):
             return query.select(*selects, append=append, copy=False)
 
         def _parse_take(self, query: exp.Query) -> exp.Query:
-            if self._match(TokenType.NUMBER):
-                val = self._prev.text  # TAKE <NUMBER>
-            return query.limit(int(val))  # TODO: TAKE for ranges a..b
+            num = self._parse_number()
+            return num and query.limit(num)  # TODO: TAKE for ranges a..b
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

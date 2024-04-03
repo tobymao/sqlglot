@@ -4103,9 +4103,7 @@ class Parser(metaclass=_Parser):
             unit = self._parse_var(upper=True)
             if unit:
                 if self._match_text_seq("TO"):
-                    unit = exp.IntervalSpan(
-                        this=unit, expression=self._parse_var(any_token=True, upper=True)
-                    )
+                    unit = exp.IntervalSpan(this=unit, expression=self._parse_var(upper=True))
 
                 this = self.expression(exp.DataType, this=self.expression(exp.Interval, unit=unit))
             else:

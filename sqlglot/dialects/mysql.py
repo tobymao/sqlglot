@@ -461,7 +461,7 @@ class MySQL(Dialect):
 
             this = self._parse_id_var(any_token=False)
             index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
-            schema = self._parse_schema()
+            expressions = self._parse_wrapped_csv(self._parse_ordered)
 
             options = []
             while True:
@@ -495,7 +495,7 @@ class MySQL(Dialect):
             return self.expression(
                 exp.IndexColumnConstraint,
                 this=this,
-                schema=schema,
+                expressions=expressions,
                 kind=kind,
                 index_type=index_type,
                 options=options,

@@ -3421,11 +3421,11 @@ class Generator(metaclass=_Generator):
         this = f" {this}" if this else ""
         index_type = self.sql(expression, "index_type")
         index_type = f" USING {index_type}" if index_type else ""
-        schema = self.sql(expression, "schema")
-        schema = f" {schema}" if schema else ""
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" ({expressions})" if expressions else ""
         options = self.expressions(expression, key="options", sep=" ")
         options = f" {options}" if options else ""
-        return f"{kind}{this}{index_type}{schema}{options}"
+        return f"{kind}{this}{index_type}{expressions}{options}"
 
     def nvl2_sql(self, expression: exp.Nvl2) -> str:
         if self.NVL2_SUPPORTED:

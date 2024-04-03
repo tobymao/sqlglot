@@ -15,8 +15,3 @@ class TestPRQL(Validator):
         )
         self.validate_identity("FROM x TAKE 10", "SELECT * FROM x LIMIT 10")
         self.validate_identity("FROM x TAKE 10 TAKE 5", "SELECT * FROM x LIMIT 5")
-        self.validate_identity(
-            "FROM x SELECT {id, age} TAKE 101..110", "SELECT id, age FROM x LIMIT 10 OFFSET 100"
-        )
-        self.validate_identity("FROM x TAKE 101..101", "SELECT * FROM x LIMIT 1 OFFSET 100")
-        self.validate_identity("FROM x TAKE 101..100", "SELECT * FROM x LIMIT 0")

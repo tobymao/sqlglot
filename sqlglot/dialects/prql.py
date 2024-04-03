@@ -81,19 +81,8 @@ class PRQL(Dialect):
 
         def _parse_take(self, query: exp.Query) -> exp.Query:
             if self._match(TokenType.NUMBER):
-                first = self._prev.text  # TAKE 4..10 -> self._prev.text = "4."
-            else:
-                self.raise_error("Expecting a number")
-
-            if self._match_pair(TokenType.DOT, TokenType.NUMBER):  # TAKE <start>..<end>
-                first = int(first[:-1])
-                second = int(self._prev.text)
-                if second >= first:  # valid range
-                    return query.limit(second - first + 1).offset(first - 1)
-                else:
-                    return query.limit(0)
-
-            return query.limit(first)  # TAKE <num>
+                val = self._prev.text  # TAKE <NUMBER>
+            return query.limit(int(val))  # TODO: TAKE for ranges a..b
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

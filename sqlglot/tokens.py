@@ -34,7 +34,6 @@ class TokenType(AutoName):
     R_BRACE = auto()
     COMMA = auto()
     DOT = auto()
-    DDOT = auto()
     DASH = auto()
     PLUS = auto()
     COLON = auto()
@@ -607,7 +606,6 @@ class Tokenizer(metaclass=_Tokenizer):
         **{f"{prefix}%}}": TokenType.BLOCK_END for prefix in ("", "+", "-")},
         **{f"{{{{{postfix}": TokenType.BLOCK_START for postfix in ("+", "-")},
         **{f"{prefix}}}}}": TokenType.BLOCK_END for prefix in ("+", "-")},
-        "..": TokenType.DDOT,
         "/*+": TokenType.HINT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,

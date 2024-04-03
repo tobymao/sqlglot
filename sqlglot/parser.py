@@ -4100,14 +4100,13 @@ class Parser(metaclass=_Parser):
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
-            unit = self._parse_var(any_token=True, upper=True)
-
-            if self._match_text_seq("TO"):
-                unit = exp.IntervalSpan(
-                    this=unit, expression=self._parse_var(any_token=True, upper=True)
-                )
-
+            unit = self._parse_var(upper=True)
             if unit:
+                if self._match_text_seq("TO"):
+                    unit = exp.IntervalSpan(
+                        this=unit, expression=self._parse_var(any_token=True, upper=True)
+                    )
+
                 this = self.expression(exp.DataType, this=self.expression(exp.Interval, unit=unit))
             else:
                 this = self.expression(exp.DataType, this=exp.DataType.Type.INTERVAL)

@@ -754,6 +754,9 @@ CAST(CAST(1 AS INT) AS BOOLEAN) = 1;
 CAST(CAST(CAST(1 AS INT) AS BOOLEAN) AS INT) = 1;
 CAST(CAST(CAST(1 AS INT) AS BOOLEAN) AS INT) = 1;
 
+x > CAST('2023-01-01' AS DATE) AND x < CAST('2023-01-01' AS DATETIME);
+FALSE;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------

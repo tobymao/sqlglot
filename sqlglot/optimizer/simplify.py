@@ -310,6 +310,8 @@ def _simplify_comparison(expression, left, right, or_=False):
                 r = extract_date(r)
                 if not r:
                     return None
+                # python won't compare date and datetime, but many engines will upcast
+                l, r = cast_as_datetime(l), cast_as_datetime(r)
 
             for (a, av), (b, bv) in itertools.permutations(((left, l), (right, r))):
                 if isinstance(a, LT_LTE) and isinstance(b, LT_LTE):

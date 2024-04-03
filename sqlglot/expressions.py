@@ -3769,6 +3769,10 @@ class SessionParameter(Condition):
 class Placeholder(Condition):
     arg_types = {"this": False, "kind": False}
 
+    @property
+    def name(self) -> str:
+        return self.this or "?"
+
 
 class Null(Condition):
     arg_types: t.Dict[str, t.Any] = {}
@@ -7224,8 +7228,8 @@ def replace_placeholders(expression: Expression, *args, **kwargs) -> Expression:
 
     def _replace_placeholders(node: Expression, args, **kwargs) -> Expression:
         if isinstance(node, Placeholder):
-            if node.name:
-                new_name = kwargs.get(node.name)
+            if node.this:
+                new_name = kwargs.get(node.this)
                 if new_name is not None:
                     return convert(new_name)
             else:

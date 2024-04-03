@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     timestrtotime_sql,
     ts_or_ds_add_cast,
+    unit_to_var,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -198,7 +199,7 @@ def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> st
 def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
     expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
     expression.expression.replace(exp.cast(expression.expression, "TIMESTAMP", copy=True))
-    unit = expression.args.get("unit") or "DAY"
+    unit = unit_to_var(expression)
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
 
@@ -590,7 +591,7 @@ class BigQuery(Dialect):
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", e.this, e.expression, e.unit or "DAY"
+                "DATE_DIFF", e.this, e.expression, unit_to_var(e)
             ),
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,

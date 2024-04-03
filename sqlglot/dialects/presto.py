@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     timestrtotime_sql,
     ts_or_ds_add_cast,
+    unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -95,14 +96,14 @@ def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
     expression = ts_or_ds_add_cast(expression)
-    unit = exp.Literal.string(expression.text("unit") or "DAY")
+    unit = unit_to_str(expression)
     return self.func("DATE_ADD", unit, expression.expression, expression.this)
 
 
 def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
     this = exp.cast(expression.this, "TIMESTAMP")
     expr = exp.cast(expression.expression, "TIMESTAMP")
-    unit = exp.Literal.string(expression.text("unit") or "DAY")
+    unit = unit_to_str(expression)
     return self.func("DATE_DIFF", unit, expr, this)
 
 
@@ -344,19 +345,19 @@ class Presto(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: lambda self, e: self.func(
                 "DATE_ADD",
-                exp.Literal.string(e.text("unit") or "DAY"),
+                unit_to_str(e),
                 _to_int(e.expression),
                 e.this,
             ),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", exp.Literal.string(e.text("unit") or "DAY"), e.expression, e.this
+                "DATE_DIFF", unit_to_str(e), e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self,
             e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
             exp.DateSub: lambda self, e: self.func(
                 "DATE_ADD",
-                exp.Literal.string(e.text("unit") or "DAY"),
+                unit_to_str(e),
                 _to_int(e.expression * -1),
                 e.this,
             ),
@@ -499,8 +500,7 @@ class Presto(Dialect):
             return f"CAST(ROW({', '.join(values)}) AS ROW({', '.join(schema)}))"
 
         def interval_sql(self, expression: exp.Interval) -> str:
-            unit = self.sql(expression, "unit")
-            if expression.this and unit.startswith("WEEK"):
+            if expression.this and expression.text("unit").upper().startswith("WEEK"):
                 return f"({expression.this.name} * INTERVAL '7' DAY)"
             return super().interval_sql(expression)
 

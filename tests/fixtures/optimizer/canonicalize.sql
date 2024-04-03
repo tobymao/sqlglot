@@ -97,6 +97,12 @@ DATE_TRUNC('DAY', CAST('2023-01-01' AS DATE));
 DATEDIFF('2023-01-01', '2023-01-02', DAY);
 DATEDIFF(CAST('2023-01-01' AS DATETIME), CAST('2023-01-02' AS DATETIME), DAY);
 
+SELECT "t"."d" > '2023-01-01' AS "d" FROM "temporal" AS "t";
+SELECT "t"."d" > CAST('2023-01-01' AS DATE) AS "d" FROM "temporal" AS "t";
+
+SELECT "t"."d" > CAST('2023-01-01' AS DATETIME) AS "d" FROM "temporal" AS "t";
+SELECT "t"."d" > CAST('2023-01-01' AS DATETIME) AS "d" FROM "temporal" AS "t";
+
 --------------------------------------
 -- Remove redundant casts
 --------------------------------------

@@ -447,7 +447,7 @@ def move_ctes_to_top_level(expression: exp.Expression) -> exp.Expression:
             if inner_with.recursive:
                 top_level_with.set("recursive", True)
 
-            top_level_with.expressions.extend(inner_with.expressions)
+            top_level_with.set("expressions", inner_with.expressions + top_level_with.expressions)
 
     return expression
 

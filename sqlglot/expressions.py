@@ -1642,6 +1642,10 @@ class ExcludeColumnConstraint(ColumnConstraintKind):
     pass
 
 
+class EphemeralColumnConstraint(ColumnConstraintKind):
+    arg_types = {"this": False}
+
+
 class WithOperator(Expression):
     arg_types = {"this": True, "op": True}
 

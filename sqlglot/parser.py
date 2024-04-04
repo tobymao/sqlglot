@@ -852,6 +852,9 @@ class Parser(metaclass=_Parser):
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),
         "ENCODE": lambda self: self.expression(exp.EncodeColumnConstraint, this=self._parse_var()),
+        "EPHEMERAL": lambda self: self.expression(
+            exp.EphemeralColumnConstraint, this=self._parse_bitwise()
+        ),
         "EXCLUDE": lambda self: self.expression(
             exp.ExcludeColumnConstraint, this=self._parse_index_params()
         ),
@@ -4504,12 +4507,15 @@ class Parser(metaclass=_Parser):
 
         constraints: t.List[exp.Expression] = []
 
-        if (not kind and self._match(TokenType.ALIAS)) or self._match_text_seq("ALIAS"):
+        if (not kind and self._match(TokenType.ALIAS)) or self._match_texts(
+            ("ALIAS", "MATERIALIZED")
+        ):
+            persisted = self._prev.text.upper() == "MATERIALIZED"
             constraints.append(
                 self.expression(
                     exp.ComputedColumnConstraint,
                     this=self._parse_conjunction(),
-                    persisted=self._match_text_seq("PERSISTED"),
+                    persisted=persisted or self._match_text_seq("PERSISTED"),
                     not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
                 )
             )

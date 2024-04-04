@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     filter_array_using_unnest,
     if_sql,
-    inline_array_sql,
+    inline_array_unless_query,
     max_or_greatest,
     min_or_least,
     no_ilike_sql,
@@ -576,6 +576,7 @@ class BigQuery(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
+            exp.Array: inline_array_unless_query,
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
@@ -842,13 +843,6 @@ class BigQuery(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             return self.cast_sql(expression, safe_prefix="SAFE_")
-
-        def array_sql(self, expression: exp.Array) -> str:
-            first_arg = seq_get(expression.expressions, 0)
-            if isinstance(first_arg, exp.Query):
-                return f"ARRAY{self.wrap(self.sql(first_arg))}"
-
-            return inline_array_sql(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             this = expression.this

@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     datestrtodate_sql,
     encode_decode_sql,
     build_formatted_time,
-    inline_array_sql,
+    inline_array_unless_query,
     no_comment_column_constraint_sql,
     no_safe_divide_sql,
     no_timestamp_sql,
@@ -312,6 +312,15 @@ class DuckDB(Dialect):
             ),
         }
 
+        def _parse_bracket(
+            self, this: t.Optional[exp.Expression] = None
+        ) -> t.Optional[exp.Expression]:
+            bracket = super()._parse_bracket(this)
+            if isinstance(bracket, exp.Bracket):
+                bracket.set("returns_list_for_maps", True)
+
+            return bracket
+
         def _parse_map(self) -> exp.ToMap | exp.Map:
             if self._match(TokenType.L_BRACE, advance=False):
                 return self.expression(exp.ToMap, this=self._parse_bracket())
@@ -370,11 +379,7 @@ class DuckDB(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: approx_count_distinct_sql,
-            exp.Array: lambda self, e: (
-                self.func("ARRAY", e.expressions[0])
-                if e.expressions and e.expressions[0].find(exp.Select)
-                else inline_array_sql(self, e)
-            ),
+            exp.Array: inline_array_unless_query,
             exp.ArrayFilter: rename_func("LIST_FILTER"),
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
             exp.ArgMax: arg_max_or_min_no_count("ARG_MAX"),
@@ -593,7 +598,19 @@ class DuckDB(Dialect):
             return super().generateseries_sql(expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
-            if isinstance(expression.this, exp.Array):
-                expression.this.replace(exp.paren(expression.this))
+            this = expression.this
+            if isinstance(this, exp.Array):
+                this.replace(exp.paren(this))
 
-            return super().bracket_sql(expression)
+            bracket = super().bracket_sql(expression)
+
+            if not expression.args.get("returns_list_for_maps"):
+                if not this.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    this = annotate_types(this)
+
+                if this.is_type(exp.DataType.Type.MAP):
+                    bracket = f"({bracket})[1]"
+
+            return bracket

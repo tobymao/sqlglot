@@ -4395,7 +4395,13 @@ class Between(Predicate):
 
 class Bracket(Condition):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
-    arg_types = {"this": True, "expressions": True, "offset": False, "safe": False}
+    arg_types = {
+        "this": True,
+        "expressions": True,
+        "offset": False,
+        "safe": False,
+        "returns_list_for_maps": False,
+    }
 
     @property
     def output_name(self) -> str:

@@ -6,7 +6,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import rename_func, unit_to_var
 from sqlglot.dialects.hive import _build_with_ignore_nulls
 from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider
-from sqlglot.helper import seq_get
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.transforms import (
     ctas_with_tmp_tables_to_create_tmp_view,
     remove_unique_constraints,
@@ -63,6 +63,9 @@ class Spark(Spark2):
             **Spark2.Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
             "DATEDIFF": _build_datediff,
+            "TRY_ELEMENT_AT": lambda args: exp.Bracket(
+                this=seq_get(args, 0), expressions=ensure_list(seq_get(args, 1)), safe=True
+            ),
         }
 
         def _parse_generated_as_identity(
@@ -111,6 +114,13 @@ class Spark(Spark2):
         TRANSFORMS.pop(exp.AnyValue)
         TRANSFORMS.pop(exp.DateDiff)
         TRANSFORMS.pop(exp.Group)
+
+        def bracket_sql(self, expression: exp.Bracket) -> str:
+            if expression.args.get("safe"):
+                key = seq_get(self.bracket_offset_expressions(expression), 0)
+                return self.func("TRY_ELEMENT_AT", expression.this, key)
+
+            return super().bracket_sql(expression)
 
         def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
             return f"GENERATED ALWAYS AS ({self.sql(expression, 'this')})"

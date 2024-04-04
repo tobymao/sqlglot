@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v23.7.0] - 2024-04-04
+### :sparkles: New Features
+- [`e33fb01`](https://github.com/tobymao/sqlglot/commit/e33fb012b47892fab03fab7de896495951f23174) - **prql**: Add support for TAKE  *(PR [#3258](https://github.com/tobymao/sqlglot/pull/3258) by [@fool1280](https://github.com/fool1280))*
+
+### :bug: Bug Fixes
+- [`19302ab`](https://github.com/tobymao/sqlglot/commit/19302abe17a6828e1928075de45c1e2a4f3008ce) - **optimizer**: preserve the original type when creating a date literal *(PR [#3273](https://github.com/tobymao/sqlglot/pull/3273) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.6.4] - 2024-04-03
 ### :bug: Bug Fixes
 - [`803fc9e`](https://github.com/tobymao/sqlglot/commit/803fc9e8f245e48e8b0e13760c5fa60cd596a464) - allow placeholders in units closes [#3265](https://github.com/tobymao/sqlglot/pull/3265) *(PR [#3267](https://github.com/tobymao/sqlglot/pull/3267) by [@tobymao](https://github.com/tobymao))*
@@ -3160,3 +3168,4 @@ Changelog
 [v23.4.0]: https://github.com/tobymao/sqlglot/compare/v23.3.0...v23.4.0
 [v23.6.0]: https://github.com/tobymao/sqlglot/compare/v23.5.0...v23.6.0
 [v23.6.4]: https://github.com/tobymao/sqlglot/compare/v23.6.3...v23.6.4
+[v23.7.0]: https://github.com/tobymao/sqlglot/compare/v23.6.4...v23.7.0

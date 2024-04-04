@@ -41,8 +41,6 @@ def unnest(select, parent_select, next_alias_name):
         return
 
     predicate = select.find_ancestor(exp.Condition)
-    alias = next_alias_name()
-
     if (
         not predicate
         or parent_select is not predicate.parent_select
@@ -50,6 +48,10 @@ def unnest(select, parent_select, next_alias_name):
     ):
         return
 
+    if isinstance(select, exp.Union):
+        select = exp.select(*select.selects).from_(select.subquery(next_alias_name()))
+
+    alias = next_alias_name()
     clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)
 
     # This subquery returns a scalar and can just be converted to a cross join

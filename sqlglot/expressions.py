@@ -1669,7 +1669,7 @@ class GeneratedAsRowColumnConstraint(ColumnConstraintKind):
 class IndexColumnConstraint(ColumnConstraintKind):
     arg_types = {
         "this": False,
-        "schema": False,
+        "expressions": False,
         "kind": False,
         "index_type": False,
         "options": False,

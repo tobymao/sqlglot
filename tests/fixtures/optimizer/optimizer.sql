@@ -1388,3 +1388,45 @@ WHERE
 ORDER BY
   COUNT(DISTINCT `cs1`.`cs_order_number`)
 LIMIT 100;
+
+# execute: false
+SELECT
+  *
+FROM event
+WHERE priority = 'High' AND tagname IN (
+  SELECT
+    tag_input AS tagname
+  FROM cascade
+  WHERE tag_input = 'XXX' OR tag_output = 'XXX'
+  UNION
+  SELECT
+    tag_output AS tagname
+  FROM cascade
+  WHERE tag_input = 'XXX' OR tag_output = 'XXX'
+);
+WITH "_u_0" AS (
+  SELECT
+    "cascade"."tag_input" AS "tagname"
+  FROM "cascade" AS "cascade"
+  WHERE
+    "cascade"."tag_input" = 'XXX' OR "cascade"."tag_output" = 'XXX'
+  UNION
+  SELECT
+    "cascade"."tag_output" AS "tagname"
+  FROM "cascade" AS "cascade"
+  WHERE
+    "cascade"."tag_input" = 'XXX' OR "cascade"."tag_output" = 'XXX'
+), "_u_1" AS (
+  SELECT
+    "cascade"."tag_input" AS "tagname"
+  FROM "_u_0" AS "_u_0"
+  GROUP BY
+    "cascade"."tag_input"
+)
+SELECT
+  *
+FROM "event" AS "event"
+LEFT JOIN "_u_1" AS "_u_1"
+  ON "_u_1"."tagname" = "event"."tagname"
+WHERE
+  "event"."priority" = 'High' AND NOT "_u_1"."tagname" IS NULL;

@@ -634,8 +634,6 @@ class ClickHouse(Dialect):
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: date_delta_sql("DATE_ADD"),
             exp.DateDiff: date_delta_sql("DATE_DIFF"),
-            exp.EphemeralColumnConstraint: lambda self,
-            e: f"EPHEMERAL{(' ' + self.sql(e, 'this')) if e.this else ''}",
             exp.Explode: rename_func("arrayJoin"),
             exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
             exp.IsNan: rename_func("isNaN"),

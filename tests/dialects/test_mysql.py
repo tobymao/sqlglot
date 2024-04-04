@@ -92,6 +92,10 @@ class TestMySQL(Validator):
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
         )
+        self.validate_identity(
+            "CREATE TABLE `foo` (a VARCHAR(10), KEY idx_a (a DESC))",
+            "CREATE TABLE `foo` (a VARCHAR(10), INDEX idx_a (a DESC))",
+        )
 
         self.validate_all(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",

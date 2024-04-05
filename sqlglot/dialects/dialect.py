@@ -571,6 +571,13 @@ def inline_array_sql(self: Generator, expression: exp.Array) -> str:
     return f"[{self.expressions(expression, flat=True)}]"
 
 
+def inline_array_unless_query(self: Generator, expression: exp.Array) -> str:
+    elem = seq_get(expression.expressions, 0)
+    if isinstance(elem, exp.Expression) and elem.find(exp.Query):
+        return self.func("ARRAY", elem)
+    return inline_array_sql(self, expression)
+
+
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
     return self.like_sql(
         exp.Like(this=exp.Lower(this=expression.this), expression=expression.expression)

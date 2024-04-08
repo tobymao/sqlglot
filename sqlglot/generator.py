@@ -1803,10 +1803,15 @@ class Generator(metaclass=_Generator):
         return f"{self.seg('FROM')} {self.sql(expression, 'this')}"
 
     def group_sql(self, expression: exp.Group) -> str:
-        group_by = self.op_expressions("GROUP BY", expression)
+        group_by_all = expression.args.get("all")
+        if group_by_all is True:
+            modifier = " ALL"
+        elif group_by_all is False:
+            modifier = " DISTINCT"
+        else:
+            modifier = ""
 
-        if expression.args.get("all"):
-            return f"{group_by} ALL"
+        group_by = self.op_expressions(f"GROUP BY{modifier}", expression)
 
         grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
         grouping_sets = (

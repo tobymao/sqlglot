@@ -1575,22 +1575,26 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
     def test_match_recognize(self):
-        for row in (
-            "ONE ROW PER MATCH",
-            "ALL ROWS PER MATCH",
-            "ALL ROWS PER MATCH SHOW EMPTY MATCHES",
-            "ALL ROWS PER MATCH OMIT EMPTY MATCHES",
-            "ALL ROWS PER MATCH WITH UNMATCHED ROWS",
-        ):
-            for after in (
-                "AFTER MATCH SKIP",
-                "AFTER MATCH SKIP PAST LAST ROW",
-                "AFTER MATCH SKIP TO NEXT ROW",
-                "AFTER MATCH SKIP TO FIRST x",
-                "AFTER MATCH SKIP TO LAST x",
+        for window_frame in ("", "FINAL ", "RUNNING "):
+            for row in (
+                "ONE ROW PER MATCH",
+                "ALL ROWS PER MATCH",
+                "ALL ROWS PER MATCH SHOW EMPTY MATCHES",
+                "ALL ROWS PER MATCH OMIT EMPTY MATCHES",
+                "ALL ROWS PER MATCH WITH UNMATCHED ROWS",
             ):
-                self.validate_identity(
-                    f"""SELECT
+                for after in (
+                    "AFTER MATCH SKIP",
+                    "AFTER MATCH SKIP PAST LAST ROW",
+                    "AFTER MATCH SKIP TO NEXT ROW",
+                    "AFTER MATCH SKIP TO FIRST x",
+                    "AFTER MATCH SKIP TO LAST x",
+                ):
+                    with self.subTest(
+                        f"MATCH_RECOGNIZE with window frame {window_frame}, rows {row}, after {after}: "
+                    ):
+                        self.validate_identity(
+                            f"""SELECT
   *
 FROM x
 MATCH_RECOGNIZE (
@@ -1598,15 +1602,15 @@ MATCH_RECOGNIZE (
   ORDER BY
     x DESC
   MEASURES
-    y AS b
+    {window_frame}y AS b
   {row}
   {after}
   PATTERN (^ S1 S2*? ( {{- S3 -}} S4 )+ | PERMUTE(S1, S2){{1,2}} $)
   DEFINE
     x AS y
 )""",
-                    pretty=True,
-                )
+                            pretty=True,
+                        )
 
     def test_show_users(self):
         self.validate_identity("SHOW USERS")

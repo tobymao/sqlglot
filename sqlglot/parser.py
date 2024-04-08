@@ -2738,6 +2738,13 @@ class Parser(metaclass=_Parser):
             exp.From, comments=self._prev_comments, this=self._parse_table(joins=joins)
         )
 
+    def _parse_match_recognize_measure(self) -> exp.MatchRecognizeMeasure:
+        return self.expression(
+            exp.MatchRecognizeMeasure,
+            window_frame=self._match_texts(("FINAL", "RUNNING")) and self._prev.text.upper(),
+            this=self._parse_expression(),
+        )
+
     def _parse_match_recognize(self) -> t.Optional[exp.MatchRecognize]:
         if not self._match(TokenType.MATCH_RECOGNIZE):
             return None
@@ -2746,7 +2753,12 @@ class Parser(metaclass=_Parser):
 
         partition = self._parse_partition_by()
         order = self._parse_order()
-        measures = self._parse_expressions() if self._match_text_seq("MEASURES") else None
+
+        measures = (
+            self._parse_csv(self._parse_match_recognize_measure)
+            if self._match_text_seq("MEASURES")
+            else None
+        )
 
         if self._match_text_seq("ONE", "ROW", "PER", "MATCH"):
             rows = exp.var("ONE ROW PER MATCH")

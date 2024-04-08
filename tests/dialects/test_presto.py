@@ -612,6 +612,15 @@ class TestPresto(Validator):
         self.validate_identity(
             "SELECT * FROM example.testdb.customer_orders FOR TIMESTAMP AS OF CAST('2022-03-23 09:59:29.803 Europe/Vienna' AS TIMESTAMP)"
         )
+        self.validate_identity(
+            "SELECT origin_state, destination_state, origin_zip, SUM(package_weight) FROM shipping GROUP BY ALL CUBE (origin_state, destination_state), ROLLUP (origin_state, origin_zip)"
+        )
+        self.validate_identity(
+            "SELECT origin_state, destination_state, origin_zip, SUM(package_weight) FROM shipping GROUP BY DISTINCT CUBE (origin_state, destination_state), ROLLUP (origin_state, origin_zip)"
+        )
+        self.validate_identity(
+            "SELECT JSON_EXTRACT_SCALAR(CAST(extra AS JSON), '$.value_b'), COUNT(*) FROM table_a GROUP BY DISTINCT (JSON_EXTRACT_SCALAR(CAST(extra AS JSON), '$.value_b'))"
+        )
 
         self.validate_all(
             "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",

@@ -3463,10 +3463,12 @@ class Parser(metaclass=_Parser):
         if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
             return None
 
-        elements = defaultdict(list)
+        elements: t.Dict[str, t.Any] = defaultdict(list)
 
         if self._match(TokenType.ALL):
-            return self.expression(exp.Group, all=True)
+            elements["all"] = True
+        elif self._match(TokenType.DISTINCT):
+            elements["all"] = False
 
         while True:
             expressions = self._parse_csv(self._parse_conjunction)

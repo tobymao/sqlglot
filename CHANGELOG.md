@@ -1,6 +1,38 @@
 Changelog
 =========
 
+## [v23.8.0] - 2024-04-08
+### :boom: BREAKING CHANGES
+- due to [`6bba030`](https://github.com/tobymao/sqlglot/commit/6bba0308b590aed73e454c2c40d600c670e0ad7f) - transpile map retrieval to duckdb, transpile TRY_ELEMENT_AT *(PR [#3277](https://github.com/tobymao/sqlglot/pull/3277) by [@georgesittas](https://github.com/georgesittas))*:
+
+  transpile map retrieval to duckdb, transpile TRY_ELEMENT_AT (#3277)
+
+- due to [`02218fc`](https://github.com/tobymao/sqlglot/commit/02218fc4f75d22487976572f51bd131170a728e5) - allow to_column to properly parse quoted column paths, make types simpler *(PR [#3289](https://github.com/tobymao/sqlglot/pull/3289) by [@tobymao](https://github.com/tobymao))*:
+
+  allow to_column to properly parse quoted column paths, make types simpler (#3289)
+
+
+### :sparkles: New Features
+- [`08222c2`](https://github.com/tobymao/sqlglot/commit/08222c2c626353be108347b95644660fe04dfcd1) - **clickhouse**: add support for MATERIALIZED, EPHEMERAL column constraints *(PR [#3275](https://github.com/tobymao/sqlglot/pull/3275) by [@pkit](https://github.com/pkit))*
+- [`6bba030`](https://github.com/tobymao/sqlglot/commit/6bba0308b590aed73e454c2c40d600c670e0ad7f) - transpile map retrieval to duckdb, transpile TRY_ELEMENT_AT *(PR [#3277](https://github.com/tobymao/sqlglot/pull/3277) by [@georgesittas](https://github.com/georgesittas))*
+- [`1726923`](https://github.com/tobymao/sqlglot/commit/17269232ea7f1f2ebf6daae7a49d55ccadc31798) - desc history databricks closes [#3280](https://github.com/tobymao/sqlglot/pull/3280) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`0690cbc`](https://github.com/tobymao/sqlglot/commit/0690cbc14f023589f38bcceea443642c5a9cc586) - **snowflake**: FINAL/RUNNING keywords in MATCH_RECOGNIZE MEASURES *(PR [#3284](https://github.com/tobymao/sqlglot/pull/3284) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *addresses issue [#3282](https://github.com/tobymao/sqlglot/issues/3282) opened by [@galunto](https://github.com/galunto)*
+- [`1311ba3`](https://github.com/tobymao/sqlglot/commit/1311ba3da3b5e05f148d602885fcc34cc73c3c6f) - **presto**: add support for DISTINCT / ALL after GROUP BY *(PR [#3290](https://github.com/tobymao/sqlglot/pull/3290) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#3286](https://github.com/tobymao/sqlglot/issues/3286) opened by [@bkyryliuk](https://github.com/bkyryliuk)*
+
+### :bug: Bug Fixes
+- [`f65d812`](https://github.com/tobymao/sqlglot/commit/f65d8129b0ae887ff882cf5117f04f64b7e7db6f) - move EphemeralColumnConstraint generation to base generator *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`6d1c44d`](https://github.com/tobymao/sqlglot/commit/6d1c44d5b7ac9e3e929de84a761906ad42a07aee) - **optimizer**: unnest union subqueries *(PR [#3278](https://github.com/tobymao/sqlglot/pull/3278) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3276](https://github.com/tobymao/sqlglot/issues/3276) opened by [@khabiri](https://github.com/khabiri)*
+- [`a37d231`](https://github.com/tobymao/sqlglot/commit/a37d231200af1dc99fc45fc40627671ee82f6d5e) - **presto**: allow qualify to be an alias closes [#3287](https://github.com/tobymao/sqlglot/pull/3287) *(commit by [@tobymao](https://github.com/tobymao))*
+- [`02218fc`](https://github.com/tobymao/sqlglot/commit/02218fc4f75d22487976572f51bd131170a728e5) - allow to_column to properly parse quoted column paths, make types simpler *(PR [#3289](https://github.com/tobymao/sqlglot/pull/3289) by [@tobymao](https://github.com/tobymao))*
+- [`fe0eb57`](https://github.com/tobymao/sqlglot/commit/fe0eb57feecce413e3e2992db73424c8cf585599) - pass quoted to the identifier *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`c793629`](https://github.com/tobymao/sqlglot/commit/c79362953a5bf12278f861b8b5d39e6847b22e3b) - another test case *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.7.0] - 2024-04-04
 ### :sparkles: New Features
 - [`e33fb01`](https://github.com/tobymao/sqlglot/commit/e33fb012b47892fab03fab7de896495951f23174) - **prql**: Add support for TAKE  *(PR [#3258](https://github.com/tobymao/sqlglot/pull/3258) by [@fool1280](https://github.com/fool1280))*
@@ -3169,3 +3201,4 @@ Changelog
 [v23.6.0]: https://github.com/tobymao/sqlglot/compare/v23.5.0...v23.6.0
 [v23.6.4]: https://github.com/tobymao/sqlglot/compare/v23.6.3...v23.6.4
 [v23.7.0]: https://github.com/tobymao/sqlglot/compare/v23.6.4...v23.7.0
+[v23.8.0]: https://github.com/tobymao/sqlglot/compare/v23.7.0...v23.8.0

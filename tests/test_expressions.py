@@ -903,6 +903,11 @@ FROM foo""",
         self.assertEqual(table_and_column.args.get("table"), exp.to_identifier("table_name"))
 
         self.assertEqual(exp.to_column("`column_name`", dialect="spark").sql(), '"column_name"')
+        self.assertEqual(exp.to_column("column_name", quoted=True).sql(), '"column_name"')
+        self.assertEqual(
+            exp.to_column("column_name", table=exp.to_identifier("table_name")).sql(),
+            "table_name.column_name",
+        )
 
     def test_union(self):
         expression = parse_one("SELECT cola, colb UNION SELECT colx, coly")

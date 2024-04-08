@@ -716,6 +716,9 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(dot, exp.Dot)
         self.assertEqual(dot.sql(), "a.b.c.d.e.f")
 
+        dot = exp.column("d", "c", "b", "a", fields=["e", "f"], quoted=True)
+        self.assertEqual(dot.sql(), '"a"."b"."c"."d"."e"."f"')
+
     def test_text(self):
         column = parse_one("a.b.c.d.e")
         self.assertEqual(column.text("expression"), "e")

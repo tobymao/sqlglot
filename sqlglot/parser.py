@@ -2739,13 +2739,10 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_match_recognize_measure(self) -> exp.MatchRecognizeMeasure:
-        if self._match_text_seq("FINAL") or self._match_text_seq("RUNNING"):
-            window_frame = self._prev.text
-        else:
-            window_frame = None
-
         return self.expression(
-            exp.MatchRecognizeMeasure, window_frame=window_frame, this=self._parse_expression()
+            exp.MatchRecognizeMeasure,
+            window_frame=self._match_texts(("FINAL", "RUNNING")) and self._prev.text.upper(),
+            this=self._parse_expression(),
         )
 
     def _parse_match_recognize(self) -> t.Optional[exp.MatchRecognize]:

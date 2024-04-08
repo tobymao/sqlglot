@@ -2225,6 +2225,10 @@ class Lateral(UDTF):
     }
 
 
+class MatchRecognizeMeasure(Expression):
+    arg_types = {"window_frame": False, "this": True}
+
+
 class MatchRecognize(Expression):
     arg_types = {
         "partition_by": False,

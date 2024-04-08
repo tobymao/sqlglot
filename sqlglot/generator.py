@@ -2111,6 +2111,14 @@ class Generator(metaclass=_Generator):
 
         return f"{this}{sort_order}{nulls_sort_change}{with_fill}"
 
+    def matchrecognizemeasure_sql(self, expression: exp.MatchRecognizeMeasure) -> str:
+        window_frame = self.sql(expression, "window_frame")
+        window_frame = f"{window_frame} " if window_frame else ""
+
+        this = self.sql(expression, "this")
+
+        return f"{window_frame}{this}"
+
     def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
         partition = self.partition_by_sql(expression)
         order = self.sql(expression, "order")

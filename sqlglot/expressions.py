@@ -2226,7 +2226,10 @@ class Lateral(UDTF):
 
 
 class MatchRecognizeMeasure(Expression):
-    arg_types = {"window_frame": False, "this": True}
+    arg_types = {
+        "this": True,
+        "window_frame": False,
+    }
 
 
 class MatchRecognize(Expression):

@@ -1575,7 +1575,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
     def test_match_recognize(self):
-        for window_frame in ("", "FINAL", "RUNNING"):
+        for window_frame in ("", "FINAL ", "RUNNING "):
             for row in (
                 "ONE ROW PER MATCH",
                 "ALL ROWS PER MATCH",
@@ -1590,8 +1590,11 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                     "AFTER MATCH SKIP TO FIRST x",
                     "AFTER MATCH SKIP TO LAST x",
                 ):
-                    self.validate_identity(
-                        f"""SELECT
+                    with self.subTest(
+                        f"MATCH_RECOGNIZE with window frame {window_frame}, rows {row}, after {after}: "
+                    ):
+                        self.validate_identity(
+                            f"""SELECT
   *
 FROM x
 MATCH_RECOGNIZE (
@@ -1606,8 +1609,8 @@ MATCH_RECOGNIZE (
   DEFINE
     x AS y
 )""",
-                        pretty=True,
-                    )
+                            pretty=True,
+                        )
 
     def test_show_users(self):
         self.validate_identity("SHOW USERS")

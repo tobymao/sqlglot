@@ -6665,7 +6665,11 @@ def to_table(
 
 
 def to_column(
-    sql_path: str | Column, dialect: DialectType = None, copy: bool = True, **kwargs
+    sql_path: str | Column,
+    quoted: bool = False,
+    dialect: DialectType = None,
+    copy: bool = True,
+    **kwargs,
 ) -> Column:
     """
     Create a column from a `[table].[column]` sql path. Table is optional.
@@ -6673,6 +6677,7 @@ def to_column(
 
     Args:
         sql_path: a `[table].[column]` string.
+        quoted: Whether or not to force quote identifiers.
         dialect: the source dialect according to which the column name will be parsed.
         copy: Whether to copy a column if it is passed in.
         kwargs: the kwargs to instantiate the resulting `Column` expression with.
@@ -6687,6 +6692,10 @@ def to_column(
 
     for k, v in kwargs.items():
         column.set(k, v)
+
+    if quoted:
+        for i in column.find_all(Identifier):
+            i.set("quoted", True)
 
     return column
 
@@ -6837,7 +6846,9 @@ def column(
     )
 
     if fields:
-        this = Dot.build((this, *(to_identifier(field, copy=copy) for field in fields)))
+        this = Dot.build(
+            (this, *(to_identifier(field, quoted=quoted, copy=copy) for field in fields))
+        )
     return this
 
 

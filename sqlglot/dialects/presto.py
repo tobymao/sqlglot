@@ -222,6 +222,8 @@ class Presto(Dialect):
             "IPPREFIX": TokenType.IPPREFIX,
         }
 
+        KEYWORDS.pop("QUALIFY")
+
     class Parser(parser.Parser):
         VALUES_FOLLOWED_BY_PAREN = False
 

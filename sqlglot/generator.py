@@ -2877,7 +2877,7 @@ class Generator(metaclass=_Generator):
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")
         kind = expression.args["kind"]
-        materialized = "MATERIALIZED" if expression.args.get("materialized") else ""
+        materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         expression_sql = self.sql(expression, "expression")
         return f"COMMENT{exists_sql}ON{materialized} {kind} {this} IS {expression_sql}"

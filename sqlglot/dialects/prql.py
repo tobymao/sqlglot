@@ -7,7 +7,13 @@ from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import TokenType
 
 
+def _select_all(table: exp.Expression) -> t.Optional[exp.Select]:
+    return exp.select("*").from_(table, copy=False) if table else None
+
+
 class PRQL(Dialect):
+    DPIPE_IS_STRING_CONCAT = False
+
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ["`"]
         QUOTES = ["'", '"']
@@ -26,10 +32,26 @@ class PRQL(Dialect):
         }
 
     class Parser(parser.Parser):
+        CONJUNCTION = {
+            **parser.Parser.CONJUNCTION,
+            TokenType.DAMP: exp.And,
+            TokenType.DPIPE: exp.Or,
+        }
+
         TRANSFORM_PARSERS = {
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
+            "FILTER": lambda self, query: query.where(self._parse_conjunction()),
+            "APPEND": lambda self, query: query.union(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
+            "REMOVE": lambda self, query: query.except_(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
+            "INTERSECT": lambda self, query: query.intersect(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:

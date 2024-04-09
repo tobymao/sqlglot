@@ -600,7 +600,7 @@ def _traverse_ctes(scope):
     sources = {}
 
     for cte in scope.ctes:
-        recursive_scope = None
+        cte_name = cte.alias
 
         # if the scope is a recursive cte, it must be in the form of base_case UNION recursive.
         # thus the recursive scope is the first section of the union.
@@ -609,7 +609,7 @@ def _traverse_ctes(scope):
             union = cte.this
 
             if isinstance(union, exp.Union):
-                recursive_scope = scope.branch(union.this, scope_type=ScopeType.CTE)
+                sources[cte_name] = scope.branch(union.this, scope_type=ScopeType.CTE)
 
         child_scope = None
 
@@ -623,15 +623,9 @@ def _traverse_ctes(scope):
         ):
             yield child_scope
 
-            alias = cte.alias
-            sources[alias] = child_scope
-
-            if recursive_scope:
-                child_scope.add_source(alias, recursive_scope)
-                child_scope.cte_sources[alias] = recursive_scope
-
         # append the final child_scope yielded
         if child_scope:
+            sources[cte_name] = child_scope
             scope.cte_scopes.append(child_scope)
 
     scope.sources.update(sources)

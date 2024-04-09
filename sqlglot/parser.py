@@ -1388,6 +1388,7 @@ class Parser(metaclass=_Parser):
 
         self._match(TokenType.ON)
 
+        materialized = self._match_text_seq("MATERIALIZED")
         kind = self._match_set(self.CREATABLES) and self._prev
         if not kind:
             return self._parse_as_command(start)
@@ -1404,7 +1405,12 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.IS)
 
         return self.expression(
-            exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists
+            exp.Comment,
+            this=this,
+            kind=kind.text,
+            expression=self._parse_string(),
+            exists=exists,
+            materialized=materialized,
         )
 
     def _parse_to_table(

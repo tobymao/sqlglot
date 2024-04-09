@@ -7,6 +7,10 @@ from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import TokenType
 
 
+def _select_all(table: exp.Expression) -> t.Optional[exp.Select]:
+    return exp.select("*").from_(table, copy=False) if table else None
+
+
 class PRQL(Dialect):
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ["`"]
@@ -30,10 +34,16 @@ class PRQL(Dialect):
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
-            "FILTER": lambda self, query: self._parse_filter(query),
-            "APPEND": lambda self, query: self._parse_set_op(query, append=True),
-            "REMOVE": lambda self, query: self._parse_set_op(query, remove=True),
-            "INTERSECT": lambda self, query: self._parse_set_op(query, intersect=True),
+            "FILTER": lambda self, query: query.where(self._parse_conjunction()),
+            "APPEND": lambda self, query: query.union(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
+            "REMOVE": lambda self, query: query.except_(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
+            "INTERSECT": lambda self, query: query.intersect(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
@@ -84,36 +94,6 @@ class PRQL(Dialect):
         def _parse_take(self, query: exp.Query) -> t.Optional[exp.Query]:
             num = self._parse_number()  # TODO: TAKE for ranges a..b
             return query.limit(num) if num else None
-
-        def _parse_filter(self, query: exp.Select) -> t.Optional[exp.Query]:
-            if self._match(TokenType.L_PAREN):  # TODO: FILTER ( expr1 || expr2 && ...)
-                filter = self._parse_conjunction()
-                if not self._match(TokenType.R_PAREN):
-                    self.raise_error("Expecting )")
-            else:
-                filter = self._parse_conjunction()
-            return query.where(filter) if filter else None
-
-        def _parse_set_op(
-            self,
-            query: exp.Query,
-            append: bool = False,
-            intersect: bool = False,
-            remove: bool = False,
-        ) -> t.Optional[exp.Query]:
-            from_ = self._parse_from(skip_from_token=True)
-            if from_:
-                table = exp.select("*").from_(from_, copy=False)
-            else:
-                return None
-
-            if append:
-                return query.union(table, distinct=False)
-            elif remove:
-                return query.except_(table, distinct=False)
-            elif intersect:
-                return query.intersect(table, distinct=False)
-            return None
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

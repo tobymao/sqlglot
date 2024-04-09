@@ -31,6 +31,7 @@ class PRQL(Dialect):
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
             "FILTER": lambda self, query: self._parse_filter(query),
+            "APPEND": lambda self, query: self._parse_append(query),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
@@ -90,6 +91,14 @@ class PRQL(Dialect):
             else:
                 filter = self._parse_conjunction()
             return query.where(filter) if filter else None
+
+        def _parse_append(self, query: exp.Query) -> t.Optional[exp.Query]:
+            from_ = self._parse_from(skip_from_token=True)
+            return (
+                query.union(exp.select("*").from_(from_, copy=False), distinct=False)
+                if from_
+                else None
+            )
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

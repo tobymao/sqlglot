@@ -905,6 +905,7 @@ FROM foo""",
         self.assertEqual(table_and_column.name, "column_name")
         self.assertEqual(table_and_column.args.get("table"), exp.to_identifier("table_name"))
 
+        self.assertEqual(exp.to_column("foo bar").sql(), '"foo bar"')
         self.assertEqual(exp.to_column("`column_name`", dialect="spark").sql(), '"column_name"')
         self.assertEqual(exp.to_column("column_name", quoted=True).sql(), '"column_name"')
         self.assertEqual(

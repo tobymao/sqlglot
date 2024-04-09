@@ -6666,7 +6666,7 @@ def to_table(
 
 def to_column(
     sql_path: str | Column,
-    quoted: bool = False,
+    quoted: t.Optional[bool] = None,
     dialect: DialectType = None,
     copy: bool = True,
     **kwargs,
@@ -6688,16 +6688,19 @@ def to_column(
     if isinstance(sql_path, Column):
         return maybe_copy(sql_path, copy=copy)
 
-    column = maybe_parse(sql_path, into=Column, dialect=dialect)
+    try:
+        col = maybe_parse(sql_path, into=Column, dialect=dialect)
+    except ParseError:
+        return column(*reversed(sql_path.split(".")), quoted=quoted, **kwargs)
 
     for k, v in kwargs.items():
-        column.set(k, v)
+        col.set(k, v)
 
     if quoted:
-        for i in column.find_all(Identifier):
+        for i in col.find_all(Identifier):
             i.set("quoted", True)
 
-    return column
+    return col
 
 
 def alias_(

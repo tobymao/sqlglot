@@ -30,6 +30,7 @@ class PRQL(Dialect):
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
+            "FILTER": lambda self, query: self._parse_filter(query),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
@@ -80,6 +81,15 @@ class PRQL(Dialect):
         def _parse_take(self, query: exp.Query) -> t.Optional[exp.Query]:
             num = self._parse_number()  # TODO: TAKE for ranges a..b
             return query.limit(num) if num else None
+
+        def _parse_filter(self, query: exp.Select) -> t.Optional[exp.Query]:
+            if self._match(TokenType.L_PAREN):
+                filter = self._parse_conjunction()
+                if not self._match(TokenType.R_PAREN):
+                    self.raise_error("Expecting )")
+            else:
+                filter = self._parse_conjunction()
+            return query.where(filter) if filter else None
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

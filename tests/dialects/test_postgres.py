@@ -50,6 +50,7 @@ class TestPostgres(Validator):
         self.validate_identity("STRING_AGG(DISTINCT x, ',' ORDER BY y DESC)")
         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
+        self.validate_identity("COMMENT ON MATERIALIZED VIEW my_view IS 'this'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")

@@ -1536,7 +1536,13 @@ class SwapTable(Expression):
 
 
 class Comment(Expression):
-    arg_types = {"this": True, "kind": True, "expression": True, "exists": False}
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "expression": True,
+        "exists": False,
+        "materialized": False,
+    }
 
 
 class Comprehension(Expression):

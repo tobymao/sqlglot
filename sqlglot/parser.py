@@ -1405,7 +1405,12 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.IS)
 
         return self.expression(
-            exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists, materialized=materialized
+            exp.Comment,
+            this=this,
+            kind=kind.text,
+            expression=self._parse_string(),
+            exists=exists,
+            materialized=materialized,
         )
 
     def _parse_to_table(

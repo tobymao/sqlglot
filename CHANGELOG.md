@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v23.8.1] - 2024-04-09
+### :sparkles: New Features
+- [`942856d`](https://github.com/tobymao/sqlglot/commit/942856d1bdae43b13114a15a66c84467a0f90e75) - **postgres**: add COMMENT ON MATERIALIZED VIEW *(PR [#3293](https://github.com/tobymao/sqlglot/pull/3293) by [@l-vincent-l](https://github.com/l-vincent-l))*
+
+### :bug: Bug Fixes
+- [`fd24b27`](https://github.com/tobymao/sqlglot/commit/fd24b2779fa962077e84d234b6821e67f3815551) - make exp.to_column more lenient *(PR [#3292](https://github.com/tobymao/sqlglot/pull/3292) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.8.0] - 2024-04-08
 ### :boom: BREAKING CHANGES
 - due to [`6bba030`](https://github.com/tobymao/sqlglot/commit/6bba0308b590aed73e454c2c40d600c670e0ad7f) - transpile map retrieval to duckdb, transpile TRY_ELEMENT_AT *(PR [#3277](https://github.com/tobymao/sqlglot/pull/3277) by [@georgesittas](https://github.com/georgesittas))*:
@@ -3202,3 +3210,4 @@ Changelog
 [v23.6.4]: https://github.com/tobymao/sqlglot/compare/v23.6.3...v23.6.4
 [v23.7.0]: https://github.com/tobymao/sqlglot/compare/v23.6.4...v23.7.0
 [v23.8.0]: https://github.com/tobymao/sqlglot/compare/v23.7.0...v23.8.0
+[v23.8.1]: https://github.com/tobymao/sqlglot/compare/v23.8.0...v23.8.1

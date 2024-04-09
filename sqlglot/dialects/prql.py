@@ -12,6 +12,8 @@ def _select_all(table: exp.Expression) -> t.Optional[exp.Select]:
 
 
 class PRQL(Dialect):
+    DPIPE_IS_STRING_CONCAT = False
+
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ["`"]
         QUOTES = ["'", '"']

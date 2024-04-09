@@ -83,7 +83,7 @@ class PRQL(Dialect):
             return query.limit(num) if num else None
 
         def _parse_filter(self, query: exp.Select) -> t.Optional[exp.Query]:
-            if self._match(TokenType.L_PAREN): # TODO: FILTER ( expr1 || expr2 && ...)
+            if self._match(TokenType.L_PAREN):  # TODO: FILTER ( expr1 || expr2 && ...)
                 filter = self._parse_conjunction()
                 if not self._match(TokenType.R_PAREN):
                     self.raise_error("Expecting )")

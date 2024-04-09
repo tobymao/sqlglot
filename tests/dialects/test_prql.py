@@ -13,9 +13,14 @@ class TestPRQL(Validator):
         self.validate_identity("FROM x TAKE 10", "SELECT * FROM x LIMIT 10")
         self.validate_identity("FROM x TAKE 10 TAKE 5", "SELECT * FROM x LIMIT 5")
         self.validate_identity("FROM x FILTER age > 25", "SELECT * FROM x WHERE age > 25")
-        self.validate_identity("FROM x DERIVE {x = a + 1, b} FILTER age > 25", "SELECT *, a + 1 AS x, b FROM x WHERE age > 25")
+        self.validate_identity(
+            "FROM x DERIVE {x = a + 1, b} FILTER age > 25",
+            "SELECT *, a + 1 AS x, b FROM x WHERE age > 25",
+        )
         self.validate_identity("FROM x FILTER dept != 'IT'", "SELECT * FROM x WHERE dept <> 'IT'")
-        
+        self.validate_identity(
+            "FROM x FILTER p == 'product' SELECT { a, b }", "SELECT a, b FROM x WHERE p = 'product'"
+        )
         self.validate_identity(
             "FROM x FILTER age > 25 FILTER age < 27", "SELECT * FROM x WHERE age > 25 AND age < 27"
         )

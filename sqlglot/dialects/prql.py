@@ -30,6 +30,12 @@ class PRQL(Dialect):
         }
 
     class Parser(parser.Parser):
+        CONJUNCTION = {
+            **parser.Parser.CONJUNCTION,
+            TokenType.DAMP: exp.And,
+            TokenType.DPIPE: exp.Or,
+        }
+
         TRANSFORM_PARSERS = {
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),

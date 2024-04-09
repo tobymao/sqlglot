@@ -27,6 +27,9 @@ class TestPRQL(Validator):
         self.validate_identity(
             "FROM x FILTER age > 25 FILTER age < 27", "SELECT * FROM x WHERE age > 25 AND age < 27"
         )
+        self.validate_identity(
+            "FROM x FILTER (age > 25 && age < 27)", "SELECT * FROM x WHERE (age > 25 AND age < 27)"
+        )
         self.validate_identity("FROM x APPEND y", "SELECT * FROM x UNION ALL SELECT * FROM y")
         self.validate_identity("FROM x REMOVE y", "SELECT * FROM x EXCEPT ALL SELECT * FROM y")
         self.validate_identity(

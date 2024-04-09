@@ -230,6 +230,17 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_columns(self, logger):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
+                parse_one(
+                    "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT x + 1 FROM t AS child WHERE x < 10) SELECT * FROM t"
+                ),
+                schema={},
+                infer_schema=False,
+            ).sql(),
+            "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT child.x + 1 AS _col_0 FROM t AS child WHERE child.x < 10) SELECT t.x AS x FROM t",
+        )
+
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
                 parse_one("WITH x AS (SELECT a FROM db.y) SELECT * FROM db.x"),
                 schema={"db": {"x": {"z": "int"}, "y": {"a": "int"}}},
                 expand_stars=False,

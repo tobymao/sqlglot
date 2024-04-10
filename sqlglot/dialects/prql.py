@@ -109,9 +109,11 @@ class PRQL(Dialect):
             if order and not self._match(TokenType.R_BRACE, expression=query):
                 self.raise_error("Expecting }")
             return (
-                query.order_by(order)
+                query.order_by(order, copy=False)
                 if order
-                else query.order_by(self._parse_order(skip_order_token=True))
+                else query.order_by(
+                    self.expression(exp.Order, expressions=self._parse_csv(self._parse_ordered))
+                )
             )
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:

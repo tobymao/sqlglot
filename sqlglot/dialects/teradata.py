@@ -215,6 +215,7 @@ class Teradata(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
         }
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:

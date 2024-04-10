@@ -210,3 +210,12 @@ class TestTeradata(Validator):
                 "teradata": "TRYCAST('-2.5' AS DECIMAL(5, 2))",
             },
         )
+
+    def test_time(self):
+        self.validate_all(
+            "CURRENT_TIMESTAMP",
+            read={
+                "teradata": "CURRENT_TIMESTAMP",
+                "snowflake": "CURRENT_TIMESTAMP()",
+            },
+        )

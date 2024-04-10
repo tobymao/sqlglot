@@ -55,7 +55,7 @@ def qualify_tables(
             if not table.args.get("catalog") and table.args.get("db"):
                 table.set("catalog", catalog)
 
-    if not isinstance(expression, exp.Query):
+    if (db or catalog) and not isinstance(expression, exp.Query):
         for node in expression.walk(prune=lambda n: isinstance(n, exp.Query)):
             if isinstance(node, exp.Table):
                 _qualify(node)
@@ -78,10 +78,10 @@ def qualify_tables(
             if pivots and not pivots[0].alias:
                 pivots[0].set("alias", exp.TableAlias(this=exp.to_identifier(next_alias_name())))
 
+        table_aliases = {}
+
         for name, source in scope.sources.items():
             if isinstance(source, exp.Table):
-                _qualify(source)
-
                 pivots = pivots = source.args.get("pivots")
                 if not source.alias:
                     # Don't add the pivot's alias to the pivoted table, use the table's name instead
@@ -90,6 +90,12 @@ def qualify_tables(
 
                     # Mutates the source by attaching an alias to it
                     alias(source, name or source.name or next_alias_name(), copy=False, table=True)
+
+                table_aliases[".".join(p.name for p in source.parts)] = exp.to_identifier(
+                    source.alias
+                )
+
+                _qualify(source)
 
                 if pivots and not pivots[0].alias:
                     pivots[0].set(
@@ -126,5 +132,14 @@ def qualify_tables(
                     ):
                         # Mutates the table by attaching an alias to it
                         alias(node, node.name, copy=False, table=True)
+
+        for column in scope.columns:
+            if column.db:
+                table_alias = table_aliases.get(".".join(p.name for p in column.parts[0:-1]))
+
+                if table_alias:
+                    for p in exp.COLUMN_PARTS[1:]:
+                        column.set(p, None)
+                    column.set("table", table_alias)
 
     return expression

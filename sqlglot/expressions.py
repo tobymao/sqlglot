@@ -58,6 +58,7 @@ class _Expression(type):
 
 SQLGLOT_META = "sqlglot.meta"
 TABLE_PARTS = ("this", "db", "catalog")
+COLUMN_PARTS = ("this", "table", "db", "catalog")
 
 
 class Expression(metaclass=_Expression):
@@ -4231,7 +4232,7 @@ class Dot(Binary):
 
         parts.reverse()
 
-        for arg in ("this", "table", "db", "catalog"):
+        for arg in COLUMN_PARTS:
             part = this.args.get(arg)
 
             if isinstance(part, Expression):

@@ -276,3 +276,19 @@ class TestTeradata(Validator):
                 "snowflake": "SELECT DATEADD(WEEK, 5, '2023-01-01')",
             },
         )
+        self.validate_all(
+            "CAST(TO_CHAR(x, 'Q') AS INT)",
+            read={
+                "teradata": "CAST(TO_CHAR(x, 'Q') AS INT)",
+                "snowflake": "DATE_PART(QUARTER, x)",
+                "bigquery": "EXTRACT(QUARTER FROM x)",
+            },
+        )
+        self.validate_all(
+            "EXTRACT(MONTH FROM x)",
+            read={
+                "teradata": "EXTRACT(MONTH FROM x)",
+                "snowflake": "DATE_PART(MONTH, x)",
+                "bigquery": "EXTRACT(MONTH FROM x)",
+            },
+        )

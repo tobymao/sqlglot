@@ -13,6 +13,30 @@ from sqlglot.dialects.dialect import (
 from sqlglot.tokens import TokenType
 
 
+def _date_add_sql(
+    kind: t.Literal["+", "-"],
+) -> t.Callable[[Teradata.Generator, exp.DateAdd | exp.DateSub], str]:
+    def func(self: Teradata.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
+        this = self.sql(expression, "this")
+        unit = expression.args.get("unit")
+
+        if expression.expression.is_negative:
+            kind_to_op = {"+": "-", "-": "+"}
+            simplify_expr = expression.expression.this
+        else:
+            kind_to_op = {"+": "+", "-": "-"}
+            simplify_expr = expression.expression
+
+        expression = self._simplify_unless_literal(simplify_expr)
+        if not isinstance(expression, exp.Literal):
+            self.unsupported("Cannot add non literal")
+
+        expression.set("is_string", True)
+        return f"{this} {kind_to_op[kind]} {self.sql(exp.Interval(this=expression, unit=unit))}"
+
+    return func
+
+
 class Teradata(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
@@ -189,6 +213,7 @@ class Teradata(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",
+            exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
         }
 
         PROPERTIES_LOCATION = {
@@ -214,6 +239,9 @@ class Teradata(Dialect):
             exp.ToChar: lambda self, e: self.function_fallback_sql(e),
             exp.ToNumber: to_number_with_nls_param,
             exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
+            exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
+            exp.DateAdd: _date_add_sql("+"),
+            exp.DateSub: _date_add_sql("-"),
         }
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:
@@ -276,3 +304,25 @@ class Teradata(Dialect):
                 return f"{this_name}{this_properties}{self.sep()}{this_schema}"
 
             return super().createable_sql(expression, locations)
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            this = self.sql(expression, "this")
+            if this.upper() != "QUARTER":
+                return super().extract_sql(expression)
+
+            to_char = exp.func("to_char", expression.expression, exp.Literal.string("Q"))
+            return self.sql(exp.cast(to_char, "int"))
+
+        def interval_sql(self, expression: exp.Interval) -> str:
+            multiplier = 0
+            unit = expression.text("unit")
+
+            if unit.startswith("WEEK"):
+                multiplier = 7
+            elif unit.startswith("QUARTER"):
+                multiplier = 90
+
+            if multiplier:
+                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('DAY')))})"
+
+            return super().interval_sql(expression)

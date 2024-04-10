@@ -1667,7 +1667,7 @@ class TestDialect(Validator):
                 "presto": "CAST(a AS DOUBLE) / b",
                 "redshift": "CAST(a AS DOUBLE PRECISION) / b",
                 "sqlite": "CAST(a AS REAL) / b",
-                "teradata": "CAST(a AS DOUBLE) / b",
+                "teradata": "CAST(a AS DOUBLE PRECISION) / b",
                 "trino": "CAST(a AS DOUBLE) / b",
                 "tsql": "CAST(a AS FLOAT) / b",
             },

@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v23.8.2] - 2024-04-10
+### :sparkles: New Features
+- [`eabb708`](https://github.com/tobymao/sqlglot/commit/eabb708db9ce7255f947542d57c31a6c93103985) - **prql**: add filter, set operations  *(PR [#3291](https://github.com/tobymao/sqlglot/pull/3291) by [@fool1280](https://github.com/fool1280))*
+
+### :bug: Bug Fixes
+- [`94c188d`](https://github.com/tobymao/sqlglot/commit/94c188d4920fd03e978253ed98711de259d6acb2) - **optimizer**: propagate recursive CTE source to children scopes early *(PR [#3294](https://github.com/tobymao/sqlglot/pull/3294) by [@georgesittas](https://github.com/georgesittas))*
+- [`281db61`](https://github.com/tobymao/sqlglot/commit/281db61009ee01d10690dcc1f2039062b2a1a58c) - replace fully qualified columns with generated table aliases since they become invalid *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.8.1] - 2024-04-09
 ### :sparkles: New Features
 - [`942856d`](https://github.com/tobymao/sqlglot/commit/942856d1bdae43b13114a15a66c84467a0f90e75) - **postgres**: add COMMENT ON MATERIALIZED VIEW *(PR [#3293](https://github.com/tobymao/sqlglot/pull/3293) by [@l-vincent-l](https://github.com/l-vincent-l))*
@@ -3211,3 +3220,4 @@ Changelog
 [v23.7.0]: https://github.com/tobymao/sqlglot/compare/v23.6.4...v23.7.0
 [v23.8.0]: https://github.com/tobymao/sqlglot/compare/v23.7.0...v23.8.0
 [v23.8.1]: https://github.com/tobymao/sqlglot/compare/v23.8.0...v23.8.1
+[v23.8.2]: https://github.com/tobymao/sqlglot/compare/v23.8.1...v23.8.2

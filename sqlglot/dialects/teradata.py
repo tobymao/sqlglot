@@ -189,6 +189,7 @@ class Teradata(Dialect):
         TYPE_MAPPING = {
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.GEOMETRY: "ST_GEOMETRY",
+            exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
         }
 
         PROPERTIES_LOCATION = {

@@ -219,3 +219,32 @@ class TestTeradata(Validator):
                 "snowflake": "CURRENT_TIMESTAMP()",
             },
         )
+
+        self.validate_all(
+            "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+                "snowflake": "SELECT DATEADD(YEAR, 5, '2023-01-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+                "snowflake": "SELECT DATEADD(YEAR, -5, '2023-01-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' - INTERVAL '5' YEAR",
+                "sqlite": "SELECT DATE_SUB('2023-01-01', 5, YEAR)",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+            read={
+                "teradata": "SELECT '2023-01-01' + INTERVAL '5' YEAR",
+                "sqlite": "SELECT DATE_SUB('2023-01-01', -5, YEAR)",
+            },
+        )

@@ -1003,6 +1003,13 @@ FROM foo""",
             "ALTER TABLE t1 RENAME TO t2",
         )
 
+    def test_is_negative(self):
+        self.assertTrue(parse_one("-1").is_negative)
+        self.assertTrue(parse_one("- 1.0").is_negative)
+        self.assertTrue(exp.Literal.number("-1").is_negative)
+        self.assertFalse(parse_one("1").is_negative)
+        self.assertFalse(parse_one("x").is_negative)
+
     def test_is_star(self):
         assert parse_one("*").is_star
         assert parse_one("foo.*").is_star

@@ -177,6 +177,15 @@ class Expression(metaclass=_Expression):
         return isinstance(self, Literal) and not self.args["is_string"]
 
     @property
+    def is_negative(self) -> bool:
+        """
+        Checks whether an expression is negative.
+
+        Handles both exp.Neg and Literal numbers with "-" which come from optimizer.simplify.
+        """
+        return isinstance(self, Neg) or (self.is_number and self.this.startswith("-"))
+
+    @property
     def is_int(self) -> bool:
         """
         Checks whether a Literal expression is an integer.

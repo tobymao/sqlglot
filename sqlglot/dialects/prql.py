@@ -52,6 +52,7 @@ class PRQL(Dialect):
             "INTERSECT": lambda self, query: query.intersect(
                 _select_all(self._parse_table()), distinct=False, copy=False
             ),
+            "SORT": lambda self, query: self._parse_order_by(query),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
@@ -102,6 +103,16 @@ class PRQL(Dialect):
         def _parse_take(self, query: exp.Query) -> t.Optional[exp.Query]:
             num = self._parse_number()  # TODO: TAKE for ranges a..b
             return query.limit(num) if num else None
+
+        def _parse_order_by(self, query: exp.Select) -> t.Optional[exp.Query]:
+            order = self._parse_sort(exp.Order, TokenType.L_BRACE)
+            if order and not self._match(TokenType.R_BRACE, expression=query):
+                self.raise_error("Expecting }")
+            return (
+                query.order_by(order)
+                if order
+                else query.order_by(self._parse_order(skip_order_token=True))
+            )
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

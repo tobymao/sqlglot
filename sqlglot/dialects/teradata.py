@@ -304,3 +304,17 @@ class Teradata(Dialect):
                 return f"{this_name}{this_properties}{self.sep()}{this_schema}"
 
             return super().createable_sql(expression, locations)
+
+        def interval_sql(self, expression: exp.Interval) -> str:
+            multiplier = 0
+            unit = expression.text("unit")
+
+            if unit.startswith("WEEK"):
+                multiplier = 7
+            elif unit.startswith("QUARTER"):
+                multiplier = 90
+
+            if multiplier:
+                return f"({multiplier} * {super().interval_sql(exp.Interval(this=expression.this, unit=exp.var('DAY')))})"
+
+            return super().interval_sql(expression)

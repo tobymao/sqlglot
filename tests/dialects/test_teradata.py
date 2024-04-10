@@ -248,3 +248,31 @@ class TestTeradata(Validator):
                 "sqlite": "SELECT DATE_SUB('2023-01-01', -5, YEAR)",
             },
         )
+        self.validate_all(
+            "SELECT (90 * INTERVAL '1' DAY)",
+            read={
+                "teradata": "SELECT (90 * INTERVAL '1' DAY)",
+                "snowflake": "SELECT INTERVAL '1' QUARTER",
+            },
+        )
+        self.validate_all(
+            "SELECT (7 * INTERVAL '1' DAY)",
+            read={
+                "teradata": "SELECT (7 * INTERVAL '1' DAY)",
+                "snowflake": "SELECT INTERVAL '1' WEEK",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' + (90 * INTERVAL '5' DAY)",
+            read={
+                "teradata": "SELECT '2023-01-01' + (90 * INTERVAL '5' DAY)",
+                "snowflake": "SELECT DATEADD(QUARTER, 5, '2023-01-01')",
+            },
+        )
+        self.validate_all(
+            "SELECT '2023-01-01' + (7 * INTERVAL '5' DAY)",
+            read={
+                "teradata": "SELECT '2023-01-01' + (7 * INTERVAL '5' DAY)",
+                "snowflake": "SELECT DATEADD(WEEK, 5, '2023-01-01')",
+            },
+        )

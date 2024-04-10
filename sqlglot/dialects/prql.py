@@ -105,16 +105,11 @@ class PRQL(Dialect):
             return query.limit(num) if num else None
 
         def _parse_order_by(self, query: exp.Select) -> t.Optional[exp.Query]:
-            order = self._parse_sort(exp.Order, TokenType.L_BRACE)
-            if order and not self._match(TokenType.R_BRACE, expression=query):
+            l_brace = self._match(TokenType.L_BRACE)
+            expressions = self._parse_csv(self._parse_ordered)
+            if l_brace and not self._match(TokenType.R_BRACE):
                 self.raise_error("Expecting }")
-            return (
-                query.order_by(order, copy=False)
-                if order
-                else query.order_by(
-                    self.expression(exp.Order, expressions=self._parse_csv(self._parse_ordered))
-                )
-            )
+            return query.order_by(self.expression(exp.Order, expressions=expressions), copy=False)
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

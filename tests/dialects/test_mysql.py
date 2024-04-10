@@ -1103,7 +1103,7 @@ COMMENT='客户账户表'"""
                 "presto": "CAST(a AS DOUBLE) / NULLIF(b, 0)",
                 "redshift": "CAST(a AS DOUBLE PRECISION) / NULLIF(b, 0)",
                 "sqlite": "CAST(a AS REAL) / b",
-                "teradata": "CAST(a AS DOUBLE) / NULLIF(b, 0)",
+                "teradata": "CAST(a AS DOUBLE PRECISION) / NULLIF(b, 0)",
                 "trino": "CAST(a AS DOUBLE) / NULLIF(b, 0)",
                 "tsql": "CAST(a AS FLOAT) / NULLIF(b, 0)",
             },

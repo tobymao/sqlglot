@@ -6885,11 +6885,16 @@ def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast
     Returns:
         The new Cast instance.
     """
-    expression = maybe_parse(expression, copy=copy, **opts)
+    expr = maybe_parse(expression, copy=copy, **opts)
     data_type = DataType.build(to, copy=copy, **opts)
-    expression = Cast(this=expression, to=data_type)
-    expression.type = data_type
-    return expression
+
+    if expr.is_type(data_type):
+        return expr
+
+    expr = Cast(this=expr, to=data_type)
+    expr.type = data_type
+
+    return expr
 
 
 def table_(
@@ -7416,27 +7421,6 @@ def case(
     else:
         this = None
     return Case(this=this, ifs=[])
-
-
-def cast_unless(
-    expression: ExpOrStr,
-    to: DATA_TYPE,
-    *types: DATA_TYPE,
-    **opts: t.Any,
-) -> Expression | Cast:
-    """
-    Cast an expression to a data type unless it is a specified type.
-
-    Args:
-        expression: The expression to cast.
-        to: The data type to cast to.
-        **types: The types to exclude from casting.
-        **opts: Extra keyword arguments for parsing `expression`
-    """
-    expr = maybe_parse(expression, **opts)
-    if expr.is_type(*types):
-        return expr
-    return cast(expr, to, **opts)
 
 
 def array(

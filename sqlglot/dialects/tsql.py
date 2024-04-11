@@ -109,7 +109,7 @@ def _build_formatted_time(
         assert len(args) == 2
 
         return exp_class(
-            this=exp.cast(args[1], "datetime"),
+            this=exp.cast(args[1], exp.DataType.Type.DATETIME),
             format=exp.Literal.string(
                 format_time(
                     args[0].name.lower(),

@@ -772,11 +772,11 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
         from sqlglot.optimizer.annotate_types import annotate_types
 
         target_type = annotate_types(expression).type or exp.DataType.Type.TIMESTAMP
-        return self.sql(exp.cast_unless(expression.this, target_type, target_type))
+        return self.sql(exp.cast(expression.this, target_type))
     if expression.text("expression").lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(
-                this=exp.cast_unless(expression.this, "timestamp", "timestamp"),
+                this=exp.cast(expression.this, "timestamp"),
                 zone=expression.expression,
             )
         )
@@ -813,11 +813,11 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
 
 
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
-    return self.sql(exp.cast_unless(expression.this, "timestamp", "timestamp"))
+    return self.sql(exp.cast(expression.this, "timestamp"))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
-    return self.sql(exp.cast_unless(expression.this, "date", "date"))
+    return self.sql(exp.cast(expression.this, "date"))
 
 
 # Used for Presto and Duckdb which use functions that don't support charset, and assume utf-8
@@ -986,9 +986,9 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
     if return_type.is_type(exp.DataType.Type.DATE):
         # If we need to cast to a DATE, we cast to TIMESTAMP first to make sure we
         # can truncate timestamp strings, because some dialects can't cast them to DATE
-        this = exp.cast_unless(this, "timestamp", "timestamp")
+        this = exp.cast(this, "timestamp")
 
-    expression.this.replace(exp.cast_unless(this, return_type, return_type))
+    expression.this.replace(exp.cast(this, return_type))
     return expression
 
 

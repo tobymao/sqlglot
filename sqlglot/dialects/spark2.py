@@ -129,10 +129,8 @@ class Spark2(Hive):
             "DOUBLE": _build_as_cast("double"),
             "FLOAT": _build_as_cast("float"),
             "FROM_UTC_TIMESTAMP": lambda args: exp.AtTimeZone(
-                this=exp.cast_unless(
-                    seq_get(args, 0) or exp.Var(this=""),
-                    exp.DataType.build("timestamp"),
-                    exp.DataType.build("timestamp"),
+                this=exp.cast(
+                    seq_get(args, 0) or exp.Var(this=""), exp.DataType.build("timestamp")
                 ),
                 zone=seq_get(args, 1),
             ),
@@ -150,10 +148,8 @@ class Spark2(Hive):
             ),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "TO_UTC_TIMESTAMP": lambda args: exp.FromTimeZone(
-                this=exp.cast_unless(
-                    seq_get(args, 0) or exp.Var(this=""),
-                    exp.DataType.build("timestamp"),
-                    exp.DataType.build("timestamp"),
+                this=exp.cast(
+                    seq_get(args, 0) or exp.Var(this=""), exp.DataType.build("timestamp")
                 ),
                 zone=seq_get(args, 1),
             ),

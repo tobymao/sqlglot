@@ -665,13 +665,12 @@ class TestBuild(unittest.TestCase):
                 "(x, y) IN ((1, 2), (3, 4))",
                 "postgres",
             ),
+            (lambda: exp.cast("CAST(x AS INT)", "int"), "CAST(x AS INT)"),
+            (lambda: exp.cast("CAST(x AS TEXT)", "int"), "CAST(CAST(x AS TEXT) AS INT)"),
+            (lambda: exp.cast("CAST(x AS TEXT)", "int", overwrite_cast=True), "CAST(x AS INT)"),
             (
-                lambda: exp.cast_unless("CAST(x AS INT)", "int", "int"),
-                "CAST(x AS INT)",
-            ),
-            (
-                lambda: exp.cast_unless("CAST(x AS TEXT)", "int", "int"),
-                "CAST(CAST(x AS TEXT) AS INT)",
+                lambda: exp.cast("CAST(x AS INT)", "int", force_cast=True),
+                "CAST(CAST(x AS INT) AS INT)",
             ),
             (
                 lambda: exp.rename_column("table1", "c1", "c2", True),

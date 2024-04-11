@@ -856,7 +856,7 @@ class Expression(metaclass=_Expression):
         **opts,
     ) -> In:
         subquery = maybe_parse(query, copy=copy, **opts) if query else None
-        if isinstance(subquery, Query) and not isinstance(subquery, Subquery):
+        if subquery and not isinstance(subquery, Subquery):
             subquery = subquery.subquery(copy=False)
 
         return In(

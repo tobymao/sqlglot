@@ -5486,6 +5486,10 @@ class ApproxQuantile(Quantile):
     arg_types = {"this": True, "quantile": True, "accuracy": False, "weight": False}
 
 
+class Quarter(Func):
+    pass
+
+
 class Rand(Func):
     _sql_names = ["RAND", "RANDOM"]
     arg_types = {"this": False}

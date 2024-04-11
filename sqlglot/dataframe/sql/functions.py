@@ -536,7 +536,7 @@ def year(col: ColumnOrName) -> Column:
 
 
 def quarter(col: ColumnOrName) -> Column:
-    return Column.invoke_anonymous_function(col, "QUARTER")
+    return Column.invoke_expression_over_column(col, expression.Quarter)
 
 
 def month(col: ColumnOrName) -> Column:

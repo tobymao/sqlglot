@@ -212,6 +212,7 @@ class TypeAnnotator(metaclass=_TypeAnnotator):
             exp.Month,
             exp.Week,
             exp.Year,
+            exp.Quarter,
         },
         exp.DataType.Type.VARCHAR: {
             exp.ArrayConcat,

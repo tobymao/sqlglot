@@ -634,6 +634,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("MAX(a)"), exp.Max)
         self.assertIsInstance(parse_one("MIN(a)"), exp.Min)
         self.assertIsInstance(parse_one("MONTH(a)"), exp.Month)
+        self.assertIsInstance(parse_one("QUARTER(a)"), exp.Quarter)
         self.assertIsInstance(parse_one("POSITION(' ' IN a)"), exp.StrPosition)
         self.assertIsInstance(parse_one("POW(a, 2)"), exp.Pow)
         self.assertIsInstance(parse_one("POWER(a, 2)"), exp.Pow)

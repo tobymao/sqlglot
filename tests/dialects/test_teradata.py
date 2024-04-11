@@ -292,3 +292,10 @@ class TestTeradata(Validator):
                 "bigquery": "EXTRACT(MONTH FROM x)",
             },
         )
+        self.validate_all(
+            "CAST(TO_CHAR(x, 'Q') AS INT)",
+            read={
+                "snowflake": "quarter(x)",
+                "teradata": "CAST(TO_CHAR(x, 'Q') AS INT)",
+            },
+        )

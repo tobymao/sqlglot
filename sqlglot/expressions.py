@@ -6871,14 +6871,7 @@ def column(
     return this
 
 
-def cast(
-    expression: ExpOrStr,
-    to: DATA_TYPE,
-    force_cast: bool = False,
-    overwrite_cast: bool = False,
-    copy: bool = True,
-    **opts,
-) -> Cast:
+def cast(expression: ExpOrStr, to: DATA_TYPE, copy: bool = True, **opts) -> Cast:
     """Cast an expression to a data type.
 
     Example:
@@ -6888,8 +6881,6 @@ def cast(
     Args:
         expression: The expression to cast.
         to: The datatype to cast to.
-        force_cast: When `False`, `expression` will not be cast if its type is already `to`.
-        overwrite_cast: Whether to change the target type, if `expression` is a `Cast`.
         copy: Whether to copy the supplied expressions.
 
     Returns:
@@ -6898,15 +6889,12 @@ def cast(
     expr = maybe_parse(expression, copy=copy, **opts)
     data_type = DataType.build(to, copy=copy, **opts)
 
-    if not force_cast and expr.is_type(data_type):
+    if expr.is_type(data_type):
         return expr
 
-    if overwrite_cast and isinstance(expr, Cast):
-        expr.set("to", data_type)
-    else:
-        expr = Cast(this=expr, to=data_type)
-
+    expr = Cast(this=expr, to=data_type)
     expr.type = data_type
+
     return expr
 
 

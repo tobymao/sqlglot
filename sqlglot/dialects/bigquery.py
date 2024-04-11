@@ -197,8 +197,10 @@ def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> st
 
 
 def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
-    expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
-    expression.expression.replace(exp.cast(expression.expression, "TIMESTAMP", copy=True))
+    expression.this.replace(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP, copy=True))
+    expression.expression.replace(
+        exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP, copy=True)
+    )
     unit = unit_to_var(expression)
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
@@ -214,7 +216,9 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
     if scale == exp.UnixToTime.MICROS:
         return self.func("TIMESTAMP_MICROS", timestamp)
 
-    unix_seconds = exp.cast(exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), "int64")
+    unix_seconds = exp.cast(
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DataType.Type.BIGINT
+    )
     return self.func("TIMESTAMP_SECONDS", unix_seconds)
 
 

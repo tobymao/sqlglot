@@ -421,8 +421,8 @@ class DuckDB(Dialect):
             exp.MonthsBetween: lambda self, e: self.func(
                 "DATEDIFF",
                 "'month'",
-                exp.cast(e.expression, "timestamp", copy=True),
-                exp.cast(e.this, "timestamp", copy=True),
+                exp.cast(e.expression, exp.DataType.Type.TIMESTAMP, copy=True),
+                exp.cast(e.this, exp.DataType.Type.TIMESTAMP, copy=True),
             ),
             exp.ParseJSON: rename_func("JSON"),
             exp.PercentileCont: _rename_unless_within_group("PERCENTILE_CONT", "QUANTILE_CONT"),
@@ -457,9 +457,11 @@ class DuckDB(Dialect):
                 "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
             ),
             exp.TimestampTrunc: timestamptrunc_sql,
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, "date")),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
-            exp.TimeStrToUnix: lambda self, e: self.func("EPOCH", exp.cast(e.this, "timestamp")),
+            exp.TimeStrToUnix: lambda self, e: self.func(
+                "EPOCH", exp.cast(e.this, exp.DataType.Type.TIMESTAMP)
+            ),
             exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.this, self.format_time(e)),
             exp.TimeToUnix: rename_func("EPOCH"),
             exp.TsOrDiToDi: lambda self,
@@ -468,8 +470,8 @@ class DuckDB(Dialect):
             exp.TsOrDsDiff: lambda self, e: self.func(
                 "DATE_DIFF",
                 f"'{e.args.get('unit') or 'DAY'}'",
-                exp.cast(e.expression, "TIMESTAMP"),
-                exp.cast(e.this, "TIMESTAMP"),
+                exp.cast(e.expression, exp.DataType.Type.TIMESTAMP),
+                exp.cast(e.this, exp.DataType.Type.TIMESTAMP),
             ),
             exp.UnixToStr: lambda self, e: self.func(
                 "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)

@@ -310,7 +310,7 @@ class Teradata(Dialect):
                 return super().extract_sql(expression)
 
             to_char = exp.func("to_char", expression.expression, exp.Literal.string("Q"))
-            return self.sql(exp.cast(to_char, "int"))
+            return self.sql(exp.cast(to_char, exp.DataType.Type.INT))
 
         def interval_sql(self, expression: exp.Interval) -> str:
             multiplier = 0

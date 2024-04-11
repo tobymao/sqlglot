@@ -2504,7 +2504,7 @@ class Generator(metaclass=_Generator):
             args = args[1:]  # Skip the delimiter
 
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
-            args = [exp.cast(e, "text") for e in args]
+            args = [exp.cast(e, exp.DataType.Type.TEXT) for e in args]
 
         if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
             args = [exp.func("coalesce", e, exp.Literal.string("")) for e in args]
@@ -3030,7 +3030,9 @@ class Generator(metaclass=_Generator):
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
-            return self.func("CONCAT", *(exp.cast(e, "text") for e in expression.flatten()))
+            return self.func(
+                "CONCAT", *(exp.cast(e, exp.DataType.Type.TEXT) for e in expression.flatten())
+            )
         return self.binary(expression, "||")
 
     def div_sql(self, expression: exp.Div) -> str:
@@ -3333,17 +3335,17 @@ class Generator(metaclass=_Generator):
         if expression.args.get("format"):
             self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
 
-        return self.sql(exp.cast(expression.this, "text"))
+        return self.sql(exp.cast(expression.this, exp.DataType.Type.TEXT))
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
         if not self.SUPPORTS_TO_NUMBER:
             self.unsupported("Unsupported TO_NUMBER function")
-            return self.sql(exp.cast(expression.this, "double"))
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
 
         fmt = expression.args.get("format")
         if not fmt:
             self.unsupported("Conversion format is required for TO_NUMBER")
-            return self.sql(exp.cast(expression.this, "double"))
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
 
         return self.func("TO_NUMBER", expression.this, fmt)
 
@@ -3514,14 +3516,14 @@ class Generator(metaclass=_Generator):
         if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, "time"))
+        return self.sql(exp.cast(this, exp.DataType.Type.TIME))
 
     def tsordstotimestamp_sql(self, expression: exp.TsOrDsToTimestamp) -> str:
         this = expression.this
         if isinstance(this, exp.TsOrDsToTimestamp) or this.is_type(exp.DataType.Type.TIMESTAMP):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, "timestamp"))
+        return self.sql(exp.cast(this, exp.DataType.Type.TIMESTAMP))
 
     def tsordstodate_sql(self, expression: exp.TsOrDsToDate) -> str:
         this = expression.this
@@ -3529,20 +3531,23 @@ class Generator(metaclass=_Generator):
 
         if time_format and time_format not in (self.dialect.TIME_FORMAT, self.dialect.DATE_FORMAT):
             return self.sql(
-                exp.cast(exp.StrToTime(this=this, format=expression.args["format"]), "date")
+                exp.cast(
+                    exp.StrToTime(this=this, format=expression.args["format"]),
+                    exp.DataType.Type.DATE,
+                )
             )
 
         if isinstance(this, exp.TsOrDsToDate) or this.is_type(exp.DataType.Type.DATE):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, "date"))
+        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
 
     def unixdate_sql(self, expression: exp.UnixDate) -> str:
         return self.sql(
             exp.func(
                 "DATEDIFF",
                 expression.this,
-                exp.cast(exp.Literal.string("1970-01-01"), "date"),
+                exp.cast(exp.Literal.string("1970-01-01"), exp.DataType.Type.DATE),
                 "day",
             )
         )

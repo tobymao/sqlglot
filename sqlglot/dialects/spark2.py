@@ -48,7 +48,7 @@ def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str
     timestamp = expression.this
 
     if scale is None:
-        return self.sql(exp.cast(exp.func("from_unixtime", timestamp), "timestamp"))
+        return self.sql(exp.cast(exp.func("from_unixtime", timestamp), exp.DataType.Type.TIMESTAMP))
     if scale == exp.UnixToTime.SECONDS:
         return self.func("TIMESTAMP_SECONDS", timestamp)
     if scale == exp.UnixToTime.MILLIS:
@@ -129,9 +129,7 @@ class Spark2(Hive):
             "DOUBLE": _build_as_cast("double"),
             "FLOAT": _build_as_cast("float"),
             "FROM_UTC_TIMESTAMP": lambda args: exp.AtTimeZone(
-                this=exp.cast(
-                    seq_get(args, 0) or exp.Var(this=""), exp.DataType.build("timestamp")
-                ),
+                this=exp.cast(seq_get(args, 0) or exp.Var(this=""), exp.DataType.Type.TIMESTAMP),
                 zone=seq_get(args, 1),
             ),
             "INT": _build_as_cast("int"),
@@ -148,9 +146,7 @@ class Spark2(Hive):
             ),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "TO_UTC_TIMESTAMP": lambda args: exp.FromTimeZone(
-                this=exp.cast(
-                    seq_get(args, 0) or exp.Var(this=""), exp.DataType.build("timestamp")
-                ),
+                this=exp.cast(seq_get(args, 0) or exp.Var(this=""), exp.DataType.Type.TIMESTAMP),
                 zone=seq_get(args, 1),
             ),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),

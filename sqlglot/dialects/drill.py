@@ -19,7 +19,7 @@ def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.DATE_FORMAT:
-        return self.sql(exp.cast(this, "date"))
+        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
     return self.func("TO_DATE", this, time_format)
 
 

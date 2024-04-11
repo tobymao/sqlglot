@@ -562,7 +562,7 @@ def if_sql(
 def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
-        this.replace(exp.cast(this, "json"))
+        this.replace(exp.cast(this, exp.DataType.Type.JSON))
 
     return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
@@ -776,7 +776,7 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
     if expression.text("expression").lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(
-                this=exp.cast(expression.this, "timestamp"),
+                this=exp.cast(expression.this, exp.DataType.Type.TIMESTAMP),
                 zone=expression.expression,
             )
         )
@@ -813,11 +813,11 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
 
 
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
-    return self.sql(exp.cast(expression.this, "timestamp"))
+    return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
-    return self.sql(exp.cast(expression.this, "date"))
+    return self.sql(exp.cast(expression.this, exp.DataType.Type.DATE))
 
 
 # Used for Presto and Duckdb which use functions that don't support charset, and assume utf-8
@@ -986,7 +986,7 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
     if return_type.is_type(exp.DataType.Type.DATE):
         # If we need to cast to a DATE, we cast to TIMESTAMP first to make sure we
         # can truncate timestamp strings, because some dialects can't cast them to DATE
-        this = exp.cast(this, "timestamp")
+        this = exp.cast(this, exp.DataType.Type.TIMESTAMP)
 
     expression.this.replace(exp.cast(this, return_type))
     return expression
@@ -1030,7 +1030,7 @@ def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
     plus_one_month = exp.func("date_add", trunc_curr_date, 1, "month")
     minus_one_day = exp.func("date_sub", plus_one_month, 1, "day")
 
-    return self.sql(exp.cast(minus_one_day, "date"))
+    return self.sql(exp.cast(minus_one_day, exp.DataType.Type.DATE))
 
 
 def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:

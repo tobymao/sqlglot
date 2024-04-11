@@ -90,8 +90,10 @@ def _str_to_time_sql(
 def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
-        return self.sql(exp.cast(_str_to_time_sql(self, expression), "DATE"))
-    return self.sql(exp.cast(exp.cast(expression.this, "TIMESTAMP"), "DATE"))
+        return self.sql(exp.cast(_str_to_time_sql(self, expression), exp.DataType.Type.DATE))
+    return self.sql(
+        exp.cast(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP), exp.DataType.Type.DATE)
+    )
 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
@@ -447,7 +449,7 @@ class Presto(Dialect):
             # timezone involved, we wrap it in a `TRY` call and use `PARSE_DATETIME` as a fallback,
             # which seems to be using the same time mapping as Hive, as per:
             # https://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
-            value_as_text = exp.cast(expression.this, "text")
+            value_as_text = exp.cast(expression.this, exp.DataType.Type.TEXT)
             parse_without_tz = self.func("DATE_PARSE", value_as_text, self.format_time(expression))
             parse_with_tz = self.func(
                 "PARSE_DATETIME",

@@ -104,6 +104,17 @@ class PRQL(Dialect):
             num = self._parse_number()  # TODO: TAKE for ranges a..b
             return query.limit(num) if num else None
 
+        def _parse_ordered(
+            self, parse_method: t.Optional[t.Callable] = None
+        ) -> t.Optional[exp.Ordered]:
+            asc = self._match(TokenType.PLUS)
+            desc = self._match(TokenType.DASH) or (asc and False)
+            term = term = super()._parse_ordered(parse_method=parse_method)
+            if term and desc:
+                term.set("desc", True)
+                term.set("nulls_first", False)
+            return term
+
         def _parse_order_by(self, query: exp.Select) -> t.Optional[exp.Query]:
             l_brace = self._match(TokenType.L_BRACE)
             expressions = self._parse_csv(self._parse_ordered)

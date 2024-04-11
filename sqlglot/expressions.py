@@ -6888,7 +6888,7 @@ def cast(
     Args:
         expression: The expression to cast.
         to: The datatype to cast to.
-        force_cast: When `False`, SQLGlot will avoid casting `expression` if its type is `to`.
+        force_cast: When `False`, `expression` will not be cast if its type is already `to`.
         overwrite_cast: Whether to change the target type, if `expression` is a `Cast`.
         copy: Whether to copy the supplied expressions.
 

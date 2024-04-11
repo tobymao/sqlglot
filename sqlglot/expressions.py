@@ -1101,7 +1101,7 @@ class Query(Expression):
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        *opts,
+        **opts,
     ) -> Q:
         """
         Set the ORDER BY expression.

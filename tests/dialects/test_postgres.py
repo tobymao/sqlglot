@@ -468,9 +468,9 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_PART('epoch', '2023-01-04 04:05:06.789')",
+            "SELECT DATE_PART('epoch', CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
             read={
-                "": "SELECT TIME_TO_UNIX('2023-01-04 04:05:06.789')",
+                "": "SELECT TIME_TO_UNIX(TIMESTAMP '2023-01-04 04:05:06.789')",
             },
         )
         self.validate_all(

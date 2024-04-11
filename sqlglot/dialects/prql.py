@@ -115,7 +115,7 @@ class PRQL(Dialect):
             return term
 
         def _parse_order_by(self, query: exp.Select) -> t.Optional[exp.Query]:
-            l_brace = self._match(TokenType.L_BRACE) # TODO: support sort with expression
+            l_brace = self._match(TokenType.L_BRACE)  # TODO: support sort with expression
             expressions = self._parse_csv(self._parse_ordered)
             if l_brace and not self._match(TokenType.R_BRACE):
                 self.raise_error("Expecting }")

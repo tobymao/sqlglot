@@ -103,8 +103,8 @@ def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
 
 
 def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
-    this = exp.cast(expression.this, "TIMESTAMP")
-    expr = exp.cast(expression.expression, "TIMESTAMP")
+    this = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP)
+    expr = exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP)
     unit = unit_to_str(expression)
     return self.func("DATE_DIFF", unit, expr, this)
 

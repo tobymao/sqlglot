@@ -468,6 +468,12 @@ class TestPostgres(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATE_PART('epoch', '2023-01-04 04:05:06.789')",
+            read={
+                "": "SELECT TIME_TO_UNIX('2023-01-04 04:05:06.789')",
+            },
+        )
+        self.validate_all(
             "x ^ y",
             write={
                 "": "POWER(x, y)",

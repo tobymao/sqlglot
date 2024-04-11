@@ -19,7 +19,7 @@ def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.DATE_FORMAT:
-        return self.sql(exp.cast(this, "date"))
+        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
     return self.func("TO_DATE", this, time_format)
 
 
@@ -134,7 +134,7 @@ class Drill(Dialect):
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, "date")),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),

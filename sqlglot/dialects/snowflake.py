@@ -818,7 +818,7 @@ class Snowflake(Dialect):
             exp.TimestampTrunc: timestamptrunc_sql,
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeToStr: lambda self, e: self.func(
-                "TO_CHAR", exp.cast(e.this, "timestamp"), self.format_time(e)
+                "TO_CHAR", exp.cast(e.this, exp.DataType.Type.TIMESTAMP), self.format_time(e)
             ),
             exp.TimeToUnix: lambda self, e: f"EXTRACT(epoch_second FROM {self.sql(e, 'this')})",
             exp.ToArray: rename_func("TO_ARRAY"),

@@ -673,14 +673,8 @@ class TestBuild(unittest.TestCase):
                 "(x, y) IN ((1, 2), (3, 4))",
                 "postgres",
             ),
-            (
-                lambda: exp.cast_unless("CAST(x AS INT)", "int", "int"),
-                "CAST(x AS INT)",
-            ),
-            (
-                lambda: exp.cast_unless("CAST(x AS TEXT)", "int", "int"),
-                "CAST(CAST(x AS TEXT) AS INT)",
-            ),
+            (lambda: exp.cast("CAST(x AS INT)", "int"), "CAST(x AS INT)"),
+            (lambda: exp.cast("CAST(x AS TEXT)", "int"), "CAST(CAST(x AS TEXT) AS INT)"),
             (
                 lambda: exp.rename_column("table1", "c1", "c2", True),
                 "ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2",

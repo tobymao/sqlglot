@@ -510,6 +510,9 @@ class Postgres(Dialect):
             exp.TsOrDsAdd: _date_add_sql("+"),
             exp.TsOrDsDiff: _date_diff_sql,
             exp.UnixToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this),
+            exp.TimeToUnix: lambda self, e: self.func(
+                "DATE_PART", exp.Literal.string("epoch"), e.this
+            ),
             exp.VariancePop: rename_func("VAR_POP"),
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,

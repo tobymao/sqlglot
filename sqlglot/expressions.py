@@ -855,10 +855,14 @@ class Expression(metaclass=_Expression):
         copy: bool = True,
         **opts,
     ) -> In:
+        subquery = maybe_parse(query, copy=copy, **opts) if query else None
+        if isinstance(subquery, Query) and not isinstance(subquery, Subquery):
+            subquery = subquery.subquery(copy=False)
+
         return In(
             this=maybe_copy(self, copy),
             expressions=[convert(e, copy=copy) for e in expressions],
-            query=maybe_parse(query, copy=copy, **opts) if query else None,
+            query=subquery,
             unnest=(
                 Unnest(
                     expressions=[

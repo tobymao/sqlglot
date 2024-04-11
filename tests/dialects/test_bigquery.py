@@ -1435,3 +1435,61 @@ OPTIONS (
 
         with self.assertRaises(ParseError):
             transpile("SELECT JSON_OBJECT('a', 1, 'b') AS json_data", read="bigquery")
+
+    def test_time(self):
+        for dayofweek in ["DAYOFWEEK", "WEEKDAY", "DOW", "DW"]:
+            self.validate_all(
+                "EXTRACT(DAYOFWEEK FROM x)",
+                read={
+                    "snowflake": f"EXTRACT({dayofweek} FROM x)",
+                    "bigquery": "EXTRACT(DAYOFWEEK FROM x)",
+                },
+            )
+        for day in ["DAY", "D", "DD", "DAYS", "DAYOFMONTH"]:
+            self.validate_all(
+                "EXTRACT(DAY FROM x)",
+                read={
+                    "snowflake": f"EXTRACT({day} FROM x)",
+                    "bigquery": "EXTRACT(DAY FROM x)",
+                },
+            )
+        for dayofyear in ["DAYOFYEAR", "YEARDAY", "DY", "DOY"]:
+            self.validate_all(
+                "EXTRACT(DAYOFYEAR FROM x)",
+                read={
+                    "snowflake": f"EXTRACT({dayofyear} FROM x)",
+                    "bigquery": "EXTRACT(DAYOFYEAR FROM x)",
+                },
+            )
+        for week in ["WEEK", "W", "WK", "WEEKOFYEAR", "WOY", "WY", "WEEKS"]:
+            self.validate_all(
+                "EXTRACT(WEEK FROM x)",
+                read={
+                    "snowflake": f"EXTRACT({week} FROM x)",
+                    "bigquery": "EXTRACT(WEEK FROM x)",
+                },
+            )
+        for month in ["MONTH", "MM", "MON", "MONS", "MONTHS"]:
+            self.validate_all(
+                "EXTRACT(MONTH FROM x)",
+                read={
+                    "snowflake": f"EXTRACT({month} FROM x)",
+                    "bigquery": "EXTRACT(MONTH FROM x)",
+                },
+            )
+        for quarter in ["QUARTER", "Q", "QTR", "QTRS", "QUARTERS"]:
+            self.validate_all(
+                "EXTRACT(QUARTER FROM x)",
+                read={
+                    "snowflake": f"EXTRACT({quarter} FROM x)",
+                    "bigquery": "EXTRACT(QUARTER FROM x)",
+                },
+            )
+        for year in ["YEAR", "Y", "YY", "YYY", "YYYY", "YR", "YEARS", "YRS"]:
+            self.validate_all(
+                "EXTRACT(YEAR FROM x)",
+                read={
+                    "snowflake": f"EXTRACT({year} FROM x)",
+                    "bigquery": "EXTRACT(YEAR FROM x)",
+                },
+            )

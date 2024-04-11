@@ -229,6 +229,44 @@ def _build_time(args: t.List) -> exp.Func:
     return exp.Anonymous(this="TIME", expressions=args)
 
 
+# Ref(values): https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions#extract
+# Ref (keys): https://docs.snowflake.com/en/sql-reference/functions-date-time#supported-date-and-time-parts
+# Ref (keys): https://docs.databricks.com/en/sql/language-manual/functions/extract.html#returns
+EXTRACT_PART_MAPPING = {
+    "WEEKDAY": "DAYOFWEEK",
+    "DOW": "DAYOFWEEK",
+    "DW": "DAYOFWEEK",
+    "D": "DAY",
+    "DD": "DAY",
+    "DAYS": "DAY",
+    "DAYOFMONTH": "DAY",
+    "YEARDAY": "DAYOFYEAR",
+    "DY": "DAYOFYEAR",
+    "DOY": "DAYOFYEAR",
+    "W": "WEEK",
+    "WK": "WEEK",
+    "WEEKOFYEAR": "WEEK",
+    "WOY": "WEEK",
+    "WY": "WEEK",
+    "WEEKS": "WEEK",
+    "MM": "MONTH",
+    "MON": "MONTH",
+    "MONS": "MONTH",
+    "MONTHS": "MONTH",
+    "Q": "QUARTER",
+    "QTR": "QUARTER",
+    "QTRS": "QUARTER",
+    "QUARTERS": "QUARTER",
+    "Y": "YEAR",
+    "YY": "YEAR",
+    "YYY": "YEAR",
+    "YYYY": "YEAR",
+    "YR": "YEAR",
+    "YEARS": "YEAR",
+    "YRS": "YEAR",
+}
+
+
 class BigQuery(Dialect):
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
@@ -896,3 +934,8 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            part = self.sql(expression, "this")
+            expression.set("this", exp.Var(this=EXTRACT_PART_MAPPING.get(part.upper(), part)))
+            return super().extract_sql(expression)

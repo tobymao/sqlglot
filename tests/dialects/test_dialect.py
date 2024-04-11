@@ -1333,6 +1333,15 @@ class TestDialect(Validator):
 
     def test_set_operators(self):
         self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",
+            write={
+                "": "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",
+                "clickhouse": "SELECT * FROM (SELECT * FROM a UNION DISTINCT SELECT * FROM b) AS _l_0 ORDER BY x NULLS FIRST LIMIT 1",
+                "tsql": "SELECT TOP 1 * FROM (SELECT * FROM a UNION SELECT * FROM b) AS _l_0 ORDER BY x",
+            },
+        )
+
+        self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",

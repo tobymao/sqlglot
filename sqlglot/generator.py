@@ -334,6 +334,11 @@ class Generator(metaclass=_Generator):
     # Whether the function TO_NUMBER is supported
     SUPPORTS_TO_NUMBER = True
 
+    # Whether or not union modifiers apply to the outer union or select.
+    # SELECT * FROM x UNION SELECT * FROM y LIMIT 1
+    # True means limit 1 happens after the union, False means it it happens on y.
+    OUTER_UNION_MODIFIERS = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -2312,6 +2317,19 @@ class Generator(metaclass=_Generator):
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def set_operations(self, expression: exp.Union) -> str:
+        if not self.OUTER_UNION_MODIFIERS:
+            limit = expression.args.get("limit")
+            order = expression.args.get("order")
+
+            if limit or order:
+                select = exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+
+                if limit:
+                    select = select.limit(limit.pop(), copy=False)
+                if order:
+                    select = select.order_by(order.pop(), copy=False)
+                return self.sql(select)
+
         sqls: t.List[str] = []
         stack: t.List[t.Union[str, exp.Expression]] = [expression]
 

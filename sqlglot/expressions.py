@@ -1028,8 +1028,8 @@ class Query(Expression):
         return Subquery(this=instance, alias=alias)
 
     def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
+        self: Q, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Q:
         """
         Adds a LIMIT clause to this query.
 
@@ -1062,8 +1062,8 @@ class Query(Expression):
         )
 
     def offset(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
+        self: Q, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Q:
         """
         Set the OFFSET expression.
 
@@ -1096,13 +1096,13 @@ class Query(Expression):
         )
 
     def order_by(
-        self,
+        self: Q,
         *expressions: t.Optional[ExpOrStr],
         append: bool = True,
         dialect: DialectType = None,
         copy: bool = True,
-        **opts,
-    ) -> Select:
+        *opts,
+    ) -> Q:
         """
         Set the ORDER BY expression.
 
@@ -6791,7 +6791,7 @@ def subquery(
         A new Select instance with the subquery expression included.
     """
 
-    expression = maybe_parse(expression, dialect=dialect, **opts).subquery(alias)
+    expression = maybe_parse(expression, dialect=dialect, **opts).subquery(alias, **opts)
     return Select().from_(expression, dialect=dialect, **opts)
 
 

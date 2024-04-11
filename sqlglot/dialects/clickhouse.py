@@ -668,6 +668,7 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         EXPLICIT_UNION = True
         GROUPINGS_SEP = ""
+        OUTER_UNION_MODIFIERS = False
 
         # there's no list in docs, but it can be found in Clickhouse code
         # see `ClickHouse/src/Parsers/ParserCreate*.cpp`

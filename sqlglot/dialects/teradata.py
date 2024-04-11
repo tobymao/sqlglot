@@ -19,20 +19,19 @@ def _date_add_sql(
     def func(self: Teradata.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
         this = self.sql(expression, "this")
         unit = expression.args.get("unit")
+        value = self._simplify_unless_literal(expression.expression)
 
-        if expression.expression.is_negative:
-            kind_to_op = {"+": "-", "-": "+"}
-            simplify_expr = expression.expression.this
-        else:
-            kind_to_op = {"+": "+", "-": "-"}
-            simplify_expr = expression.expression
-
-        expression = self._simplify_unless_literal(simplify_expr)
-        if not isinstance(expression, exp.Literal):
+        if not isinstance(value, exp.Literal):
             self.unsupported("Cannot add non literal")
 
-        expression.set("is_string", True)
-        return f"{this} {kind_to_op[kind]} {self.sql(exp.Interval(this=expression, unit=unit))}"
+        if value.is_negative:
+            kind_to_op = {"+": "-", "-": "+"}
+            value = exp.Literal.string(value.name[1:])
+        else:
+            kind_to_op = {"+": "+", "-": "-"}
+            value.set("is_string", True)
+
+        return f"{this} {kind_to_op[kind]} {self.sql(exp.Interval(this=value, unit=unit))}"
 
     return func
 

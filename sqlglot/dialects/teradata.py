@@ -36,10 +36,6 @@ def _date_add_sql(
     return func
 
 
-def _quarter_sql(self: Teradata.Generator, expression: exp.Quarter) -> str:
-    return self.sql(exp.Extract(this="QUARTER", expression=expression.this))
-
-
 class Teradata(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     TYPED_DIVISION = True
@@ -245,7 +241,7 @@ class Teradata(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: _date_add_sql("+"),
             exp.DateSub: _date_add_sql("-"),
-            exp.Quarter: _quarter_sql,
+            exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
         }
 
         def cast_sql(self, expression: exp.Cast, safe_prefix: t.Optional[str] = None) -> str:

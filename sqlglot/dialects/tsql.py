@@ -885,7 +885,11 @@ class TSQL(Dialect):
         def set_operations(self, expression: exp.Union) -> str:
             limit = expression.args.get("limit")
             if limit:
-                return self.sql(expression.limit(limit.pop(), copy=False))
+                return self.sql(
+                    exp.select("*")
+                    .from_(expression.subquery("_l_0", copy=False), copy=False)
+                    .limit(limit.pop(), copy=False),
+                )
 
             return super().set_operations(expression)
 

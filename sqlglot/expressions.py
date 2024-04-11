@@ -1035,7 +1035,7 @@ class Query(Expression):
 
         Example:
             >>> select("1").union(select("1")).limit(1).sql()
-            'SELECT * FROM (SELECT 1 UNION SELECT 1) AS _l_0 LIMIT 1'
+            'SELECT 1 UNION SELECT 1 LIMIT 1'
 
         Args:
             expression: the SQL code string to parse.
@@ -1049,10 +1049,90 @@ class Query(Expression):
         Returns:
             A limited Select expression.
         """
-        return (
-            select("*")
-            .from_(self.subquery(alias="_l_0", copy=copy))
-            .limit(expression, dialect=dialect, copy=False, **opts)
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="limit",
+            into=Limit,
+            prefix="LIMIT",
+            dialect=dialect,
+            copy=copy,
+            into_arg="expression",
+            **opts,
+        )
+
+    def offset(
+        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
+    ) -> Select:
+        """
+        Set the OFFSET expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").offset(10).sql()
+            'SELECT x FROM tbl OFFSET 10'
+
+        Args:
+            expression: the SQL code string to parse.
+                This can also be an integer.
+                If a `Offset` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Offset`.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified Select expression.
+        """
+        return _apply_builder(
+            expression=expression,
+            instance=self,
+            arg="offset",
+            into=Offset,
+            prefix="OFFSET",
+            dialect=dialect,
+            copy=copy,
+            into_arg="expression",
+            **opts,
+        )
+
+    def order_by(
+        self,
+        *expressions: t.Optional[ExpOrStr],
+        append: bool = True,
+        dialect: DialectType = None,
+        copy: bool = True,
+        **opts,
+    ) -> Select:
+        """
+        Set the ORDER BY expression.
+
+        Example:
+            >>> Select().from_("tbl").select("x").order_by("x DESC").sql()
+            'SELECT x FROM tbl ORDER BY x DESC'
+
+        Args:
+            *expressions: the SQL code strings to parse.
+                If a `Group` instance is passed, this is used as-is.
+                If another `Expression` instance is passed, it will be wrapped in a `Order`.
+            append: if `True`, add to any existing expressions.
+                Otherwise, this flattens all the `Order` expression into a single expression.
+            dialect: the dialect used to parse the input expression.
+            copy: if `False`, modify this expression instance in-place.
+            opts: other options to use to parse the input expressions.
+
+        Returns:
+            The modified Select expression.
+        """
+        return _apply_child_list_builder(
+            *expressions,
+            instance=self,
+            arg="order",
+            append=append,
+            copy=copy,
+            prefix="ORDER BY",
+            into=Order,
+            dialect=dialect,
+            **opts,
         )
 
     @property
@@ -3078,46 +3158,6 @@ class Select(Query):
             **opts,
         )
 
-    def order_by(
-        self,
-        *expressions: t.Optional[ExpOrStr],
-        append: bool = True,
-        dialect: DialectType = None,
-        copy: bool = True,
-        **opts,
-    ) -> Select:
-        """
-        Set the ORDER BY expression.
-
-        Example:
-            >>> Select().from_("tbl").select("x").order_by("x DESC").sql()
-            'SELECT x FROM tbl ORDER BY x DESC'
-
-        Args:
-            *expressions: the SQL code strings to parse.
-                If a `Group` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Order`.
-            append: if `True`, add to any existing expressions.
-                Otherwise, this flattens all the `Order` expression into a single expression.
-            dialect: the dialect used to parse the input expression.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The modified Select expression.
-        """
-        return _apply_child_list_builder(
-            *expressions,
-            instance=self,
-            arg="order",
-            append=append,
-            copy=copy,
-            prefix="ORDER BY",
-            into=Order,
-            dialect=dialect,
-            **opts,
-        )
-
     def sort_by(
         self,
         *expressions: t.Optional[ExpOrStr],
@@ -3195,55 +3235,6 @@ class Select(Query):
             prefix="CLUSTER BY",
             into=Cluster,
             dialect=dialect,
-            **opts,
-        )
-
-    def limit(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
-        return _apply_builder(
-            expression=expression,
-            instance=self,
-            arg="limit",
-            into=Limit,
-            prefix="LIMIT",
-            dialect=dialect,
-            copy=copy,
-            into_arg="expression",
-            **opts,
-        )
-
-    def offset(
-        self, expression: ExpOrStr | int, dialect: DialectType = None, copy: bool = True, **opts
-    ) -> Select:
-        """
-        Set the OFFSET expression.
-
-        Example:
-            >>> Select().from_("tbl").select("x").offset(10).sql()
-            'SELECT x FROM tbl OFFSET 10'
-
-        Args:
-            expression: the SQL code string to parse.
-                This can also be an integer.
-                If a `Offset` instance is passed, this is used as-is.
-                If another `Expression` instance is passed, it will be wrapped in a `Offset`.
-            dialect: the dialect used to parse the input expression.
-            copy: if `False`, modify this expression instance in-place.
-            opts: other options to use to parse the input expressions.
-
-        Returns:
-            The modified Select expression.
-        """
-        return _apply_builder(
-            expression=expression,
-            instance=self,
-            arg="offset",
-            into=Offset,
-            prefix="OFFSET",
-            dialect=dialect,
-            copy=copy,
-            into_arg="expression",
             **opts,
         )
 

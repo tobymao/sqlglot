@@ -109,13 +109,14 @@ class PRQL(Dialect):
         ) -> t.Optional[exp.Ordered]:
             asc = self._match(TokenType.PLUS)
             desc = self._match(TokenType.DASH) or (asc and False)
-            term = super()._parse_ordered(parse_method)
+            term = term = super()._parse_ordered(parse_method=parse_method)
             if term and desc:
-                return term.desc()
+                term.set("desc", True)
+                term.set("nulls_first", False)
             return term
 
         def _parse_order_by(self, query: exp.Select) -> t.Optional[exp.Query]:
-            l_brace = self._match(TokenType.L_BRACE)  # TODO: support sort with expression
+            l_brace = self._match(TokenType.L_BRACE)
             expressions = self._parse_csv(self._parse_ordered)
             if l_brace and not self._match(TokenType.R_BRACE):
                 self.raise_error("Expecting }")

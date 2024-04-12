@@ -69,12 +69,12 @@ class TestTranspile(unittest.TestCase):
         self.validate(
             "SELECT a, b, c FROM (SELECT a, b, c FROM t)",
             "SELECT\n"
-            "      a\n"
+            "    a\n"
             "    , b\n"
             "    , c\n"
             "FROM (\n"
             "    SELECT\n"
-            "          a\n"
+            "        a\n"
             "        , b\n"
             "        , c\n"
             "    FROM t\n"
@@ -86,13 +86,13 @@ class TestTranspile(unittest.TestCase):
         )
         self.validate(
             "SELECT FOO, BAR, BAZ",
-            "SELECT\n    FOO\n  , BAR\n  , BAZ",
+            "SELECT\n  FOO\n  , BAR\n  , BAZ",
             leading_comma=True,
             pretty=True,
         )
         self.validate(
             "SELECT FOO, /*x*/\nBAR, /*y*/\nBAZ",
-            "SELECT\n    FOO /* x */\n  , BAR /* y */\n  , BAZ",
+            "SELECT\n  FOO /* x */\n  , BAR /* y */\n  , BAZ",
             leading_comma=True,
             pretty=True,
         )

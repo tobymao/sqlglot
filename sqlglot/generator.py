@@ -3249,11 +3249,8 @@ class Generator(metaclass=_Generator):
         num_sqls = len(expressions)
 
         # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
-        if self.pretty:
-            if self.leading_comma:
-                pad = " " * len(sep)
-            else:
-                stripped_sep = sep.strip()
+        if self.pretty and not self.leading_comma:
+            stripped_sep = sep.strip()
 
         result_sqls = []
         for i, e in enumerate(expressions):
@@ -3265,7 +3262,7 @@ class Generator(metaclass=_Generator):
 
             if self.pretty:
                 if self.leading_comma:
-                    result_sqls.append(f"{sep if i > 0 else pad}{prefix}{sql}{comments}")
+                    result_sqls.append(f"{sep if i > 0 else ''}{prefix}{sql}{comments}")
                 else:
                     result_sqls.append(
                         f"{prefix}{sql}{stripped_sep if i + 1 < num_sqls else ''}{comments}"

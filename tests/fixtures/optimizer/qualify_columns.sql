@@ -494,8 +494,13 @@ SELECT x AS x, y AS y FROM UNNEST([1, 2]) AS x WITH OFFSET AS y;
 
 # dialect: bigquery
 # execute: false
-select x, a, x.a from unnest([STRUCT(1 AS a)]) as x;
-SELECT x AS x, a AS a, x.a AS a FROM UNNEST([STRUCT(1 AS a)]) AS x;
+select x, a, x.a from unnest([STRUCT(1 AS a)]) as x CROSS JOIN m;
+SELECT x AS x, a AS a, x.a AS a FROM UNNEST([STRUCT(1 AS a)]) AS x CROSS JOIN m AS m;
+
+# dialect: bigquery
+# execute: false
+WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) select a, x, m.a from cte, UNNEST(x) AS m CROSS JOIN n;
+WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) SELECT a AS a, cte.x AS x, m.a AS a FROM cte AS cte, UNNEST(cte.x) AS m CROSS JOIN n AS n;
 
 # dialect: presto
 SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(CAST(b AS VARCHAR), ',')) AS i(b);

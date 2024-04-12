@@ -1,6 +1,43 @@
 Changelog
 =========
 
+## [v23.9.0] - 2024-04-12
+### :boom: BREAKING CHANGES
+- due to [`32cdc36`](https://github.com/tobymao/sqlglot/commit/32cdc3635b22e3e5d0cd5caf5a6ad171ca7c34fb) - allow unions to be limited directly and stop subquerying since… *(PR [#3301](https://github.com/tobymao/sqlglot/pull/3301) by [@tobymao](https://github.com/tobymao))*:
+
+  allow unions to be limited directly and stop subquerying since… (#3301)
+
+- due to [`3c97d34`](https://github.com/tobymao/sqlglot/commit/3c97d3437ea573fd3764eab05ed619353fced580) - parse right-hand side of <value> IN (<query>) as a Subquery *(PR [#3304](https://github.com/tobymao/sqlglot/pull/3304) by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse right-hand side of <value> IN (<query>) as a Subquery (#3304)
+
+- due to [`75e0c69`](https://github.com/tobymao/sqlglot/commit/75e0c69e33922168fcadb4e457ae93815bf533e1) - cast less aggressively *(PR [#3302](https://github.com/tobymao/sqlglot/pull/3302) by [@georgesittas](https://github.com/georgesittas))*:
+
+  cast less aggressively (#3302)
+
+
+### :sparkles: New Features
+- [`a721923`](https://github.com/tobymao/sqlglot/commit/a72192306c8fad6253ad9a03661edcfaa15757c7) - **prql**: Add support for SORT *(PR [#3297](https://github.com/tobymao/sqlglot/pull/3297) by [@fool1280](https://github.com/fool1280))*
+- [`2ea438b`](https://github.com/tobymao/sqlglot/commit/2ea438b89f76a357390d657fe3f9e01d2a79e7e4) - is_negative helper method *(commit by [@tobymao](https://github.com/tobymao))*
+- [`b28cd89`](https://github.com/tobymao/sqlglot/commit/b28cd89823a38f3a90c57344a44719364d66d723) - improve transpilation of datetime functions to Teradata *(PR [#3295](https://github.com/tobymao/sqlglot/pull/3295) by [@maureen-daum](https://github.com/maureen-daum))*
+- [`32cdc36`](https://github.com/tobymao/sqlglot/commit/32cdc3635b22e3e5d0cd5caf5a6ad171ca7c34fb) - allow unions to be limited directly and stop subquerying since… *(PR [#3301](https://github.com/tobymao/sqlglot/pull/3301) by [@tobymao](https://github.com/tobymao))*
+  - :arrow_lower_right: *addresses issue [#3300](https://github.com/tobymao/sqlglot/issues/3300) opened by [@williaster](https://github.com/williaster)*
+- [`1bc51df`](https://github.com/tobymao/sqlglot/commit/1bc51dfa9d8fd5d7dbea42d3d55aa1db66776ce5) - **teradata**: handle transpile of quarter function *(PR [#3303](https://github.com/tobymao/sqlglot/pull/3303) by [@maureen-daum](https://github.com/maureen-daum))*
+- [`4790414`](https://github.com/tobymao/sqlglot/commit/4790414b887b347cb94d810eeb3fe4713970984e) - **prql**: Handle DESC with sort *(PR [#3299](https://github.com/tobymao/sqlglot/pull/3299) by [@fool1280](https://github.com/fool1280))*
+
+### :bug: Bug Fixes
+- [`3c97d34`](https://github.com/tobymao/sqlglot/commit/3c97d3437ea573fd3764eab05ed619353fced580) - parse right-hand side of <value> IN (<query>) as a Subquery *(PR [#3304](https://github.com/tobymao/sqlglot/pull/3304) by [@georgesittas](https://github.com/georgesittas))*
+- [`75e0c69`](https://github.com/tobymao/sqlglot/commit/75e0c69e33922168fcadb4e457ae93815bf533e1) - cast less aggressively *(PR [#3302](https://github.com/tobymao/sqlglot/pull/3302) by [@georgesittas](https://github.com/georgesittas))*
+- [`d3472c6`](https://github.com/tobymao/sqlglot/commit/d3472c664fdfb7c9cfa9a54c6b0491b605cf4913) - Add postgres transpilation for TIME_TO_UNIX *(PR [#3305](https://github.com/tobymao/sqlglot/pull/3305) by [@crericha](https://github.com/crericha))*
+- [`2224881`](https://github.com/tobymao/sqlglot/commit/2224881ed378abe075ebcd3bfbc3eee901f89d71) - case when / if should ignore null types *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5b2feb7`](https://github.com/tobymao/sqlglot/commit/5b2feb760ecd4c8ee64f8c464518e7e874f9b9bb) - allow unnesting to bring struct fields into scope *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`b523bb6`](https://github.com/tobymao/sqlglot/commit/b523bb630b28866ebab581d43e99f0b2b821ec12) - cleanup teradata to simplify first *(commit by [@tobymao](https://github.com/tobymao))*
+- [`6f73186`](https://github.com/tobymao/sqlglot/commit/6f73186681e8eb9f100a1fe4104c82cbae9d0f61) - refactor to use inline lambda *(commit by [@tobymao](https://github.com/tobymao))*
+- [`6b21bba`](https://github.com/tobymao/sqlglot/commit/6b21bba378e411797a57d3de8bd06d3efb6afa8c) - make test runnable *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.8.2] - 2024-04-10
 ### :sparkles: New Features
 - [`eabb708`](https://github.com/tobymao/sqlglot/commit/eabb708db9ce7255f947542d57c31a6c93103985) - **prql**: add filter, set operations  *(PR [#3291](https://github.com/tobymao/sqlglot/pull/3291) by [@fool1280](https://github.com/fool1280))*
@@ -3221,3 +3258,4 @@ Changelog
 [v23.8.0]: https://github.com/tobymao/sqlglot/compare/v23.7.0...v23.8.0
 [v23.8.1]: https://github.com/tobymao/sqlglot/compare/v23.8.0...v23.8.1
 [v23.8.2]: https://github.com/tobymao/sqlglot/compare/v23.8.1...v23.8.2
+[v23.9.0]: https://github.com/tobymao/sqlglot/compare/v23.8.2...v23.9.0

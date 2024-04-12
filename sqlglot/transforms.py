@@ -116,7 +116,9 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
                         if select.alias_or_name == column.name:
                             if isinstance(select, exp.Func):
                                 column.replace(select)
-                            elif isinstance(select, exp.Alias) and isinstance(select.args.get("this"), exp.Func):
+                            elif isinstance(select, exp.Alias) and isinstance(
+                                select.args.get("this"), exp.Func
+                            ):
                                 column.replace(select.args.get("this"))
 
                 alias = find_new_name(expression.named_selects, "_w")

@@ -229,6 +229,15 @@ class TestOptimizer(unittest.TestCase):
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):
         self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one("SELECT name FROM t CROSS JOIN UNNEST(t.s) AS s", read="bigquery"),
+                dialect="bigquery",
+                schema={"t": {"s": "STRUCT<name STRING>"}},
+            ).sql(dialect="bigquery"),
+            "SELECT name AS name FROM t AS t CROSS JOIN UNNEST(t.s) AS s",
+        )
+
+        self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
                     "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT x + 1 FROM t AS child WHERE x < 10) SELECT * FROM t"

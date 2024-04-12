@@ -660,12 +660,21 @@ class Resolver:
             # directly select a struct field in a query.
             # this handles the case where the unnest is statically defined.
             if self.schema.dialect == "bigquery":
-                expression = source.expression
-                annotate_types(expression)
+                expression = source.expression.find(exp.Unnest)
+                if expression:
+                    arg = expression.expressions[0]
+                    if (
+                        isinstance(arg, exp.Column)
+                        and arg.table
+                        and self.schema.has_column(arg.table, arg.name)
+                    ):
+                        arg_type = self.schema.get_column_type(arg.table, arg.name)
+                    else:
+                        arg_type = t.cast(exp.DataType, annotate_types(expression).type)
 
-                if expression.is_type(exp.DataType.Type.STRUCT):
-                    for k in expression.type.expressions:  # type: ignore
-                        columns.append(k.name)
+                    if arg_type.is_type(exp.DataType.Type.STRUCT):
+                        for k in arg_type.expressions:
+                            columns.append(k.name)
         else:
             columns = source.expression.named_selects
 

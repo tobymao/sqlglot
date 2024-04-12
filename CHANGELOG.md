@@ -1,6 +1,14 @@
 Changelog
 =========
 
+## [v23.10.0] - 2024-04-12
+### :bug: Bug Fixes
+- [`506760d`](https://github.com/tobymao/sqlglot/commit/506760d2597779e287be4fffdeb1b375994320b1) - **redshift**: unqualify unnest columns *(PR [#3314](https://github.com/tobymao/sqlglot/pull/3314) by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`0450521`](https://github.com/tobymao/sqlglot/commit/0450521a4470633be26ad5399247d5c9083e2afc) - get rid of 1st projection pad for leading comma formatting *(PR [#3308](https://github.com/tobymao/sqlglot/pull/3308) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.9.0] - 2024-04-12
 ### :boom: BREAKING CHANGES
 - due to [`32cdc36`](https://github.com/tobymao/sqlglot/commit/32cdc3635b22e3e5d0cd5caf5a6ad171ca7c34fb) - allow unions to be limited directly and stop subquerying since… *(PR [#3301](https://github.com/tobymao/sqlglot/pull/3301) by [@tobymao](https://github.com/tobymao))*:
@@ -3259,3 +3267,4 @@ Changelog
 [v23.8.1]: https://github.com/tobymao/sqlglot/compare/v23.8.0...v23.8.1
 [v23.8.2]: https://github.com/tobymao/sqlglot/compare/v23.8.1...v23.8.2
 [v23.9.0]: https://github.com/tobymao/sqlglot/compare/v23.8.2...v23.9.0
+[v23.10.0]: https://github.com/tobymao/sqlglot/compare/v23.9.0...v23.10.0

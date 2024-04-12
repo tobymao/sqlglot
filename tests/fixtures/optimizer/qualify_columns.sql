@@ -513,6 +513,11 @@ SELECT t.c1 AS c1, t.c2 AS c2, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
 SELECT c1, c3 FROM foo(bar) AS t(c1, c2, c3);
 SELECT t.c1 AS c1, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
 
+# dialect: redshift
+# execute: false
+SELECT c.f::VARCHAR(MAX) AS f, e AS e FROM a.b AS c, c.d AS e;
+SELECT CAST(c.f AS VARCHAR(MAX)) AS f, e AS e FROM a.b AS c, c.d AS e;
+
 --------------------------------------
 -- Window functions
 --------------------------------------

@@ -80,29 +80,6 @@ def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
     return self.create_sql(expression)
 
 
-def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
-    """Remove references to unnest table aliases since bigquery doesn't allow them.
-
-    These are added by the optimizer's qualify_column step.
-    """
-    from sqlglot.optimizer.scope import find_all_in_scope
-
-    if isinstance(expression, exp.Select):
-        unnest_aliases = {
-            unnest.alias
-            for unnest in find_all_in_scope(expression, exp.Unnest)
-            if isinstance(unnest.parent, (exp.From, exp.Join))
-        }
-        if unnest_aliases:
-            for column in expression.find_all(exp.Column):
-                if column.table in unnest_aliases:
-                    column.set("table", None)
-                elif column.db in unnest_aliases:
-                    column.set("db", None)
-
-    return expression
-
-
 # https://issuetracker.google.com/issues/162294746
 # workaround for bigquery bug when grouping by an expression and then ordering
 # WITH x AS (SELECT 1 y)
@@ -632,7 +609,7 @@ class BigQuery(Dialect):
             exp.Select: transforms.preprocess(
                 [
                     transforms.explode_to_unnest(),
-                    _unqualify_unnest,
+                    transforms.unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,
                     transforms.eliminate_semi_and_anti_joins,

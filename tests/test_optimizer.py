@@ -234,7 +234,7 @@ class TestOptimizer(unittest.TestCase):
                 dialect="bigquery",
                 schema={"t": {"s": "STRUCT<name STRING>"}},
             ).sql(dialect="bigquery"),
-            "SELECT name AS name FROM t AS t CROSS JOIN UNNEST(t.s) AS s",
+            "SELECT `name` AS `name` FROM `t` AS `t` CROSS JOIN UNNEST(`t`.`s`) AS `s`",
         )
 
         self.assertEqual(

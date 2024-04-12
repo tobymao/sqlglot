@@ -167,7 +167,11 @@ class Redshift(Postgres):
             exp.GroupConcat: rename_func("LISTAGG"),
             exp.ParseJSON: rename_func("JSON_PARSE"),
             exp.Select: transforms.preprocess(
-                [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
+                [
+                    transforms.eliminate_distinct_on,
+                    transforms.eliminate_semi_and_anti_joins,
+                    transforms.unqualify_unnest,
+                ]
             ),
             exp.SortKeyProperty: lambda self,
             e: f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})",
@@ -203,7 +207,7 @@ class Redshift(Postgres):
                 return ""
 
             arg = self.sql(seq_get(args, 0))
-            alias = self.expressions(expression.args.get("alias"), key="columns")
+            alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
             return f"{arg} AS {alias}" if alias else arg
 
         def with_properties(self, properties: exp.Properties) -> str:

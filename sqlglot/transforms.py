@@ -94,8 +94,8 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
     projections in the subquery, in order to refer to them in the outer filter using aliases. Also,
     if a column is referenced in the QUALIFY clause but is not selected, we need to include it too,
     otherwise we won't be able to refer to it in the outer query's WHERE clause. In adidion, if a
-    column is referenced in the QUALIFY clause but is build from a functio istead of a column or a
-    column alias, replace the column by the funtion inside.
+    column is referenced in the QUALIFY clause but is newly generated in the select clause (column
+    rename or create from a function), replace the column by the original.
     """
     if isinstance(expression, exp.Select) and expression.args.get("qualify"):
         taken = set(expression.named_selects)
@@ -107,19 +107,18 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
 
         outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
         qualify_filters = expression.args["qualify"].pop().this
+        select_aliases = {
+            select.alias_or_name: select.args.get("this")
+            for select in expression.selects
+            if isinstance(select, exp.Alias)
+        }
 
         select_candidates = exp.Window if expression.is_star else (exp.Window, exp.Column)
         for expr in qualify_filters.find_all(select_candidates):
             if isinstance(expr, exp.Window):
                 for column in expr.find_all(exp.Column):
-                    for select in expression.selects:
-                        if select.alias_or_name == column.name:
-                            if isinstance(select, exp.Func):
-                                column.replace(select)
-                            elif isinstance(select, exp.Alias) and isinstance(
-                                select.args.get("this"), exp.Func
-                            ):
-                                column.replace(select.args.get("this"))
+                    if column.name in select_aliases:
+                        column.replace(select_aliases.get(column.name))
 
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(expr, alias), copy=False)

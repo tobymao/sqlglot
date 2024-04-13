@@ -111,6 +111,21 @@ class TestTransforms(unittest.TestCase):
             "SELECT x FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY p)",
             "SELECT x FROM (SELECT x, ROW_NUMBER() OVER (PARTITION BY p) AS _w, p FROM y) AS _t WHERE _w",
         )
+        self.validate(
+            eliminate_qualify,
+            "SELECT x AS z FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY z)",
+            "SELECT z FROM (SELECT x AS z, ROW_NUMBER() OVER (PARTITION BY x) AS _w, x FROM y) AS _t WHERE _w",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT SOME_UDF(x) AS z FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY z)",
+            "SELECT z FROM (SELECT SOME_UDF(x) AS z, ROW_NUMBER() OVER (PARTITION BY x ORDER BY SOME_UDF(x)) AS _w, x FROM y) AS _t WHERE _w",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT x, t, x || t AS z FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY z DESC)",
+            "SELECT x, t, z FROM (SELECT x, t, x || t AS z, ROW_NUMBER() OVER (PARTITION BY x ORDER BY x || t DESC) AS _w FROM y) AS _t WHERE _w",
+        )
 
     def test_remove_precision_parameterized_types(self):
         self.validate(

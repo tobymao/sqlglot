@@ -2536,11 +2536,6 @@ class Generator(metaclass=_Generator):
         if not self.SUPPORTS_SINGLE_ARG_CONCAT and len(expressions) == 1:
             return self.sql(expressions[0])
 
-        if expression.args.get("dpipe_source"):
-            from sqlglot.dialects.dialect import concat_to_dpipe_sql
-
-            return concat_to_dpipe_sql(self, expression)
-
         return self.func("CONCAT", *expressions)
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:

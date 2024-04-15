@@ -4866,7 +4866,7 @@ class Chr(Func):
 
 
 class Concat(Func):
-    arg_types = {"expressions": True, "safe": False, "coalesce": False, "dpipe_source": False}
+    arg_types = {"expressions": True, "safe": False, "coalesce": False}
     is_var_len_args = True
 
 

@@ -871,7 +871,7 @@ class TestPresto(Validator):
             "SELECT ARRAY_SORT(x, (left, right) -> -1)",
             write={
                 "duckdb": "SELECT ARRAY_SORT(x)",
-                "presto": "SELECT ARRAY_SORT(x, (left, right) -> -1)",
+                "presto": 'SELECT ARRAY_SORT(x, ("left", "right") -> -1)',
                 "hive": "SELECT SORT_ARRAY(x)",
                 "spark": "SELECT ARRAY_SORT(x, (left, right) -> -1)",
             },

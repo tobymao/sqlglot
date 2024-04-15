@@ -1490,7 +1490,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             write={
                 "bigquery": "REGEXP_EXTRACT(subject, pattern, pos, occ)",
                 "hive": "REGEXP_EXTRACT(subject, pattern, group)",
-                "presto": "REGEXP_EXTRACT(subject, pattern, group)",
+                "presto": 'REGEXP_EXTRACT(subject, pattern, "group")',
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, pos, occ, params, group)",
                 "spark": "REGEXP_EXTRACT(subject, pattern, group)",
             },

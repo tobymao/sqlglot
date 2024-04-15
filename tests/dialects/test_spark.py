@@ -234,7 +234,7 @@ TBLPROPERTIES (
         self.validate_identity("first_value(col, true)", "FIRST_VALUE(col) IGNORE NULLS")
         self.validate_identity("last(col, true)", "LAST(col) IGNORE NULLS")
         self.validate_identity("last_value(col, true)", "LAST_VALUE(col) IGNORE NULLS")
-        self.validate_identity("DESCRIBE EXTENDED db.table")
+        self.validate_identity("DESCRIBE EXTENDED db.tbl")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (50 PERCENT)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (5 ROWS)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (BUCKET 4 OUT OF 10)")
@@ -566,7 +566,7 @@ TBLPROPERTIES (
             "ARRAY_SORT(x, (left, right) -> -1)",
             write={
                 "duckdb": "ARRAY_SORT(x)",
-                "presto": "ARRAY_SORT(x, (left, right) -> -1)",
+                "presto": 'ARRAY_SORT(x, ("left", "right") -> -1)',
                 "hive": "SORT_ARRAY(x)",
                 "spark": "ARRAY_SORT(x, (left, right) -> -1)",
             },

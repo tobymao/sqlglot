@@ -1764,7 +1764,11 @@ class Parser(metaclass=_Parser):
     def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
-        return self.expression(exp_class, this=self._parse_field(), **kwargs)
+        field = self._parse_field()
+        if isinstance(field, exp.Identifier) and not field.quoted:
+            field = exp.var(field)
+
+        return self.expression(exp_class, this=field, **kwargs)
 
     def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Properties]:
         properties = []

@@ -6,6 +6,7 @@ import itertools
 import typing as t
 from collections import deque
 from decimal import Decimal
+from functools import reduce
 
 import sqlglot
 from sqlglot import Dialect, exp
@@ -783,6 +784,8 @@ def simplify_concat(expression):
 
     if concat_type is exp.ConcatWs:
         new_args = [sep_expr] + new_args
+    elif isinstance(expression, exp.DPipe):
+        return reduce(lambda x, y: exp.DPipe(this=x, expression=y), new_args)
 
     return concat_type(expressions=new_args, **args)
 

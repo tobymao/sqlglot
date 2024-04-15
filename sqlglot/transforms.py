@@ -118,9 +118,9 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
             if isinstance(expr, exp.Window):
                 if expression_by_alias:
                     for column in expr.find_all(exp.Column):
-                        select = select_aliases.get(column.name)
-                        if select:
-                            column.replace(select)
+                        expr = expression_by_alias.get(column.name)
+                        if expr:
+                            column.replace(expr)
 
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(expr, alias), copy=False)

@@ -869,7 +869,7 @@ CONCAT_WS(sep, 'a', 'b');
 CONCAT_WS(sep, 'a', 'b');
 
 'a' || 'b' || x;
-CONCAT('ab', x);
+'ab' || x;
 
 CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
 CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);

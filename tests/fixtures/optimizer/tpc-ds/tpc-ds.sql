@@ -822,7 +822,7 @@ WITH "salesreturns" AS (
 ), "x" AS (
   SELECT
     'store channel' AS "channel",
-    CONCAT('store', "ssr"."s_store_id") AS "id",
+    'store' || "ssr"."s_store_id" AS "id",
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" - "ssr"."profit_loss" AS "profit"
@@ -830,7 +830,7 @@ WITH "salesreturns" AS (
   UNION ALL
   SELECT
     'catalog channel' AS "channel",
-    CONCAT('catalog_page', "csr"."cp_catalog_page_id") AS "id",
+    'catalog_page' || "csr"."cp_catalog_page_id" AS "id",
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" - "csr"."profit_loss" AS "profit"
@@ -838,7 +838,7 @@ WITH "salesreturns" AS (
   UNION ALL
   SELECT
     'web channel' AS "channel",
-    CONCAT('web_site', "wsr"."web_site_id") AS "id",
+    'web_site' || "wsr"."web_site_id" AS "id",
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" - "wsr"."profit_loss" AS "profit"
@@ -10927,7 +10927,7 @@ WITH "date_dim_2" AS (
 ), "x" AS (
   SELECT
     'store channel' AS "channel",
-    CONCAT('store', "ssr"."store_id") AS "id",
+    'store' || "ssr"."store_id" AS "id",
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" AS "profit"
@@ -10935,7 +10935,7 @@ WITH "date_dim_2" AS (
   UNION ALL
   SELECT
     'catalog channel' AS "channel",
-    CONCAT('catalog_page', "csr"."catalog_page_id") AS "id",
+    'catalog_page' || "csr"."catalog_page_id" AS "id",
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" AS "profit"
@@ -10943,7 +10943,7 @@ WITH "date_dim_2" AS (
   UNION ALL
   SELECT
     'web channel' AS "channel",
-    CONCAT('web_site', "wsr"."web_site_id") AS "id",
+    'web_site' || "wsr"."web_site_id" AS "id",
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" AS "profit"
@@ -11368,7 +11368,7 @@ ORDER  BY c_customer_id
 LIMIT 100;
 SELECT
   "customer"."c_customer_id" AS "customer_id",
-  CONCAT("customer"."c_last_name", ', ', "customer"."c_first_name") AS "customername"
+  "customer"."c_last_name" || ', ' || "customer"."c_first_name" AS "customername"
 FROM "customer" AS "customer"
 JOIN "customer_address" AS "customer_address"
   ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
@@ -12743,4 +12743,3 @@ ORDER BY
   "sm_type",
   "cc_name"
 LIMIT 100;
-

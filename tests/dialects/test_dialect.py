@@ -2426,3 +2426,13 @@ FROM c""",
             """CREATE TEMPORARY SEQUENCE seq START WITH = 1 INCREMENT BY = 2""",
             """CREATE TEMPORARY SEQUENCE seq START WITH 1 INCREMENT BY 2""",
         )
+
+    def test_reserved_keywords(self):
+        order = exp.select("*").from_("order")
+
+        for dialect in ("presto", "redshift"):
+            dialect = Dialect.get_or_raise(dialect)
+            self.assertEqual(
+                order.sql(dialect=dialect),
+                f"SELECT * FROM {dialect.IDENTIFIER_START}order{dialect.IDENTIFIER_END}",
+            )

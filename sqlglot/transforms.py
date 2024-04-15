@@ -93,9 +93,9 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
     Some dialects don't support window functions in the WHERE clause, so we need to include them as
     projections in the subquery, in order to refer to them in the outer filter using aliases. Also,
     if a column is referenced in the QUALIFY clause but is not selected, we need to include it too,
-    otherwise we won't be able to refer to it in the outer query's WHERE clause. In adidion, if a
-    column is referenced in the QUALIFY clause but is newly generated in the select clause (column
-    rename or create from a function), replace the column by the original.
+    otherwise we won't be able to refer to it in the outer query's WHERE clause. Finally, if a
+    newly aliased projection is referenced in the QUALIFY clause, it will be replaced by the
+    corresponding expression to avoid creating invalid column references.
     """
     if isinstance(expression, exp.Select) and expression.args.get("qualify"):
         taken = set(expression.named_selects)

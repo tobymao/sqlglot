@@ -114,24 +114,24 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
         }
 
         select_candidates = exp.Window if expression.is_star else (exp.Window, exp.Column)
-        for expr in qualify_filters.find_all(select_candidates):
-            if isinstance(expr, exp.Window):
+        for select_candidate in qualify_filters.find_all(select_candidates):
+            if isinstance(select_candidate, exp.Window):
                 if expression_by_alias:
-                    for column in expr.find_all(exp.Column):
+                    for column in select_candidate.find_all(exp.Column):
                         expr = expression_by_alias.get(column.name)
                         if expr:
                             column.replace(expr)
 
                 alias = find_new_name(expression.named_selects, "_w")
-                expression.select(exp.alias_(expr, alias), copy=False)
+                expression.select(exp.alias_(select_candidate, alias), copy=False)
                 column = exp.column(alias)
 
-                if isinstance(expr.parent, exp.Qualify):
+                if isinstance(select_candidate.parent, exp.Qualify):
                     qualify_filters = column
                 else:
-                    expr.replace(column)
-            elif expr.name not in expression.named_selects:
-                expression.select(expr.copy(), copy=False)
+                    select_candidate.replace(column)
+            elif select_candidate.name not in expression.named_selects:
+                expression.select(select_candidate.copy(), copy=False)
 
         return outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(
             qualify_filters, copy=False

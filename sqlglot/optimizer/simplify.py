@@ -767,6 +767,8 @@ def simplify_concat(expression):
         args = {
             "safe": expression.args.get("safe"),
             "coalesce": expression.args.get("coalesce"),
+            "dpipe_source": isinstance(expression, exp.DPipe)
+            or expression.args.get("dpipe_source"),
         }
 
     new_args = []

@@ -784,7 +784,7 @@ def simplify_concat(expression):
 
     if concat_type is exp.ConcatWs:
         new_args = [sep_expr] + new_args
-    elif concat_type is exp.Concat and isinstance(expression, exp.DPipe):
+    elif isinstance(expression, exp.DPipe):
         return reduce(lambda x, y: exp.DPipe(this=x, expression=y), new_args)
 
     return concat_type(expressions=new_args, **args)

@@ -93,7 +93,9 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
     Some dialects don't support window functions in the WHERE clause, so we need to include them as
     projections in the subquery, in order to refer to them in the outer filter using aliases. Also,
     if a column is referenced in the QUALIFY clause but is not selected, we need to include it too,
-    otherwise we won't be able to refer to it in the outer query's WHERE clause.
+    otherwise we won't be able to refer to it in the outer query's WHERE clause. Finally, if a
+    newly aliased projection is referenced in the QUALIFY clause, it will be replaced by the
+    corresponding expression to avoid creating invalid column references.
     """
     if isinstance(expression, exp.Select) and expression.args.get("qualify"):
         taken = set(expression.named_selects)
@@ -105,10 +107,21 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
 
         outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
         qualify_filters = expression.args["qualify"].pop().this
+        expression_by_alias = {
+            select.alias: select.this
+            for select in expression.selects
+            if isinstance(select, exp.Alias)
+        }
 
         select_candidates = exp.Window if expression.is_star else (exp.Window, exp.Column)
         for expr in qualify_filters.find_all(select_candidates):
             if isinstance(expr, exp.Window):
+                if expression_by_alias:
+                    for column in expr.find_all(exp.Column):
+                        expr = expression_by_alias.get(column.name)
+                        if expr:
+                            column.replace(expr)
+
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(expr, alias), copy=False)
                 column = exp.column(alias)

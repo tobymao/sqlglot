@@ -116,7 +116,7 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
         select_candidates = exp.Window if expression.is_star else (exp.Window, exp.Column)
         for expr in qualify_filters.find_all(select_candidates):
             if isinstance(expr, exp.Window):
-                if select_aliases:
+                if expression_by_alias:
                     for column in expr.find_all(exp.Column):
                         select = select_aliases.get(column.name)
                         if select:

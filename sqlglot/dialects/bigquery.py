@@ -805,7 +805,7 @@ class BigQuery(Dialect):
                 # to preserve the quoted table path, otherwise the reference breaks
                 table_parts = ".".join(p.name for p in expression.parts[:-1])
                 table_path = self.sql(exp.Identifier(this=table_parts, quoted=True))
-                return ".".join([table_path, self.sql(expression, "this")])
+                return f"{table_path}.{self.sql(expression, 'this')}"
 
             return super().column_parts(expression)
 

@@ -229,6 +229,17 @@ class TestOptimizer(unittest.TestCase):
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):
         self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT `my_db.my_table`.`my_column` FROM `my_db.my_table`",
+                    read="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "SELECT `my_table`.`my_column` AS `my_column` FROM `my_db.my_table` AS `my_table`",
+        )
+
+        self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(
                     "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT x + 1 FROM t AS child WHERE x < 10) SELECT * FROM t"

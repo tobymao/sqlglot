@@ -1,10 +1,7 @@
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from sqlglot.tokens import Tokenizer, TokenType
-    from sqlglot.generator import Generator
+from sqlglot.tokens import Tokenizer, TokenType
+from sqlglot.generator import Generator
 
 
 class Vertica(Dialect):

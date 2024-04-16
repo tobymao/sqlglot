@@ -62,8 +62,10 @@ class TestPRQL(Validator):
             "from x intersect y", "SELECT * FROM x INTERSECT ALL SELECT * FROM y"
         )
         self.validate_identity(
-            "from x filter a == null filter null != b", "SELECT * FROM x WHERE a IS NULL AND NOT b IS NULL"
+            "from x filter a == null filter null != b",
+            "SELECT * FROM x WHERE a IS NULL AND NOT b IS NULL",
         )
         self.validate_identity(
-            "from x filter (a > 1 || null != b || c != null)", "SELECT * FROM x WHERE (a > 1 OR NOT b IS NULL OR NOT c IS NULL)"
+            "from x filter (a > 1 || null != b || c != null)",
+            "SELECT * FROM x WHERE (a > 1 OR NOT b IS NULL OR NOT c IS NULL)",
         )

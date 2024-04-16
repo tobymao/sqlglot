@@ -54,6 +54,7 @@ class Dialects(str, Enum):
     TERADATA = "teradata"
     TRINO = "trino"
     TSQL = "tsql"
+    VERTICA = "vertica"
 
 
 class NormalizationStrategy(str, AutoName):

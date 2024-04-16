@@ -7,10 +7,7 @@ from sqlglot.generator import Generator
 class Vertica(Dialect):
     # Ignoring mypy errors for forward declarations
     class Tokenizer(Tokenizer):  # type: ignore
-        QUOTES = [
-            "'",
-            '"',
-        ]  # Strings can be delimited by either single or double quotes
+        QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
 
         KEYWORDS = {

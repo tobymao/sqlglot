@@ -55,6 +55,16 @@ class PRQL(Dialect):
             "SORT": lambda self, query: self._parse_order_by(query),
         }
 
+        def _parse_equality(self) -> t.Optional[exp.Expression]:
+            x = self._parse_tokens(self._parse_comparison, self.EQUALITY)
+            # https://prql-lang.org/book/reference/spec/null.html
+            if x and (isinstance(x.expression, exp.Null) or isinstance(x.this, exp.Null)):
+                column = x.expression if isinstance(x.expression, exp.Column) else x.this
+                null = x.expression if isinstance(x.expression, exp.Null) else x.this
+                is_exp = exp.Is(this=column, expression=null)
+                return is_exp if isinstance(x, exp.EQ) else exp.Not(this=is_exp)
+            return x
+
         def _parse_statement(self) -> t.Optional[exp.Expression]:
             expression = self._parse_expression()
             expression = expression if expression else self._parse_query()

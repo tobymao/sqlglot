@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arg_max_or_min_no_count,
+    build_formatted_time,
     date_delta_sql,
     inline_array_sql,
     json_extract_segments,
@@ -124,6 +125,8 @@ class ClickHouse(Dialect):
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "DATE_FORMAT": build_formatted_time(exp.TimeToStr, "clickhouse"),
+            "FORMATDATETIME": build_formatted_time(exp.TimeToStr, "clickhouse"),
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
@@ -653,6 +656,7 @@ class ClickHouse(Dialect):
             exp.StrPosition: lambda self, e: self.func(
                 "position", e.this, e.args.get("substr"), e.args.get("position")
             ),
+            exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
         }

@@ -409,6 +409,18 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT FORMAT")
         self.validate_identity("1 AS FORMAT").assert_is(exp.Alias)
 
+        self.validate_all(
+            "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+            read={
+                "clickhouse": "SELECT formatDateTime(NOW(), '%Y-%m-%d')",
+                "mysql": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+            },
+            write={
+                "clickhouse": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+                "mysql": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
+            },
+        )
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")

@@ -15,8 +15,6 @@ class Vertica(Dialect):
             "INT64": TokenType.BIGINT,
             "FLOAT64": TokenType.DOUBLE,
             "VARCHAR": TokenType.STRING,
-            "DATE": TokenType.DATE,
-            "TIMESTAMP": TokenType.TIMESTAMP,
         }
 
     # Ignoring mypy errors for forward declarations

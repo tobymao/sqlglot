@@ -483,17 +483,19 @@ class BigQuery(Dialect):
 
         def _parse_column(self) -> t.Optional[exp.Expression]:
             column = super()._parse_column()
-            if isinstance(column, exp.Column) and any("." in p.name for p in column.parts):
-                catalog, db, table, this, *rest = (
-                    exp.to_identifier(p, quoted=True)
-                    for p in split_num_words(".".join(p.name for p in column.parts), ".", 4)
-                )
+            if isinstance(column, exp.Column):
+                parts = column.parts
+                if any("." in p.name for p in parts):
+                    catalog, db, table, this, *rest = (
+                        exp.to_identifier(p, quoted=True)
+                        for p in split_num_words(".".join(p.name for p in parts), ".", 4)
+                    )
 
-                if rest and this:
-                    this = exp.Dot.build([this, *rest])  # type: ignore
+                    if rest and this:
+                        this = exp.Dot.build([this, *rest])  # type: ignore
 
-                column = exp.Column(this=this, table=table, db=db, catalog=catalog)
-                column.meta["quoted_column"] = True
+                    column = exp.Column(this=this, table=table, db=db, catalog=catalog)
+                    column.meta["quoted_column"] = True
 
             return column
 

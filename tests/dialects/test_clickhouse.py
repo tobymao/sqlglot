@@ -409,6 +409,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT FORMAT")
         self.validate_identity("1 AS FORMAT").assert_is(exp.Alias)
 
+        self.validate_identity("SELECT DATE_FORMAT(NOW(), '%Y-%m-%d', '%T')")
         self.validate_all(
             "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
             read={

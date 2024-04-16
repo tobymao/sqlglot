@@ -2063,6 +2063,7 @@ class Insert(DDL, DML):
         "where": False,
         "ignore": False,
         "by_name": False,
+        "stored": False,
     }
 
     def with_(

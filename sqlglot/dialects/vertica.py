@@ -33,6 +33,4 @@ class Vertica(Dialect):
         exp.DataType.Type.DOUBLE: "FLOAT64",
         exp.DataType.Type.BOOLEAN: "BOOL",
         exp.DataType.Type.TEXT: "STRING",
-        exp.DataType.Type.DATE: "DATE",
-        exp.DataType.Type.TIMESTAMP: "TIMESTAMP",
     }

@@ -1,4 +1,4 @@
-import unittest
+
 from sqlglot.dialects import Vertica
 from tests.dialects.test_dialect import Validator
 

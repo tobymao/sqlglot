@@ -13,7 +13,6 @@ class Vertica(Dialect):
         ]  # Strings can be delimited by either single or double quotes
         IDENTIFIERS = ["`"]  # Identifiers can be delimited by backticks
 
-        # Include Vertica specific keywords
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
             "INT64": TokenType.BIGINT,

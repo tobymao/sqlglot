@@ -1532,9 +1532,6 @@ class Generator(metaclass=_Generator):
         this = f"{this} {self.sql(expression, 'this')}"
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
-        partition_sql = (
-            f" {self.sql(expression, 'partition')}" if expression.args.get("partition") else ""
-        )
         where = self.sql(expression, "where")
         where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
@@ -1548,7 +1545,7 @@ class Generator(metaclass=_Generator):
         else:
             expression_sql = f"{returning}{expression_sql}{on_conflict}"
 
-        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_sql}{where}{expression_sql}"
+        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1637,6 +1634,8 @@ class Generator(metaclass=_Generator):
     def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
         table = self.table_parts(expression)
         only = "ONLY " if expression.args.get("only") else ""
+        partition = self.sql(expression, "partition")
+        partition = f" {partition}" if partition else ""
         version = self.sql(expression, "version")
         version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")
@@ -1665,7 +1664,7 @@ class Generator(metaclass=_Generator):
         if when:
             table = f"{table} {when}"
 
-        return f"{only}{table}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
+        return f"{only}{table}{partition}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
         self,

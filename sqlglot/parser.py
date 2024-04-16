@@ -1109,6 +1109,9 @@ class Parser(metaclass=_Parser):
     # Whether or not interval spans are supported, INTERVAL 1 YEAR TO MONTHS
     INTERVAL_SPANS = True
 
+    # Whether a PARTITION clause can follow a table reference
+    SUPPORTS_PARTITION_SELECTION = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2238,7 +2241,11 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             is_function = self._match(TokenType.FUNCTION)
 
-            this = self._parse_table(schema=True) if not is_function else self._parse_function()
+            this = (
+                self._parse_table(schema=True, parse_partition=True)
+                if not is_function
+                else self._parse_function()
+            )
 
         returning = self._parse_returning()
 
@@ -2251,7 +2258,6 @@ class Parser(metaclass=_Parser):
             stored=self._match_text_seq("STORED") and self._parse_stored(),
             by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),
-            partition=self._parse_partition(),
             where=self._match_pair(TokenType.REPLACE, TokenType.WHERE)
             and self._parse_conjunction(),
             expression=self._parse_derived_table_values() or self._parse_ddl_select(),
@@ -3124,6 +3130,7 @@ class Parser(metaclass=_Parser):
         alias_tokens: t.Optional[t.Collection[TokenType]] = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
+        parse_partition: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -3161,6 +3168,10 @@ class Parser(metaclass=_Parser):
 
         # Postgres supports a wildcard (table) suffix operator, which is a no-op in this context
         self._match_text_seq("*")
+
+        parse_partition = parse_partition or self.SUPPORTS_PARTITION_SELECTION
+        if parse_partition and self._match(TokenType.PARTITION, advance=False):
+            this.set("partition", self._parse_partition())
 
         if schema:
             return self._parse_schema(this=this)
@@ -4506,7 +4517,6 @@ class Parser(metaclass=_Parser):
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         index = self._index
-
         if not self._match(TokenType.L_PAREN):
             return this
 
@@ -4515,9 +4525,7 @@ class Parser(metaclass=_Parser):
         if self._match_set(self.SELECT_START_TOKENS):
             self._retreat(index)
             return this
-
         args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def())
-
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
 
@@ -5498,7 +5506,6 @@ class Parser(metaclass=_Parser):
         tokens: t.Optional[t.Collection[TokenType]] = None,
     ) -> t.Optional[exp.Expression]:
         identifier = self._parse_identifier()
-
         if identifier:
             return identifier
 

@@ -2436,3 +2436,8 @@ FROM c""",
                 order.sql(dialect=dialect),
                 f"SELECT * FROM {dialect.IDENTIFIER_START}order{dialect.IDENTIFIER_END}",
             )
+
+        self.validate_identity(
+            """SELECT partition.d FROM t PARTITION (d)""",
+            """SELECT partition.d FROM t AS PARTITION(d)""",
+        )

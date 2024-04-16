@@ -778,14 +778,8 @@ class Generator(metaclass=_Generator):
         default = "DEFAULT " if expression.args.get("default") else ""
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
-    def column_sql(self, expression: exp.Column) -> str:
-        join_mark = " (+)" if expression.args.get("join_mark") else ""
-
-        if join_mark and not self.COLUMN_JOIN_MARKS_SUPPORTED:
-            join_mark = ""
-            self.unsupported("Outer join syntax using the (+) operator is not supported.")
-
-        column = ".".join(
+    def column_parts(self, expression: exp.Column) -> str:
+        return ".".join(
             self.sql(part)
             for part in (
                 expression.args.get("catalog"),
@@ -796,7 +790,14 @@ class Generator(metaclass=_Generator):
             if part
         )
 
-        return f"{column}{join_mark}"
+    def column_sql(self, expression: exp.Column) -> str:
+        join_mark = " (+)" if expression.args.get("join_mark") else ""
+
+        if join_mark and not self.COLUMN_JOIN_MARKS_SUPPORTED:
+            join_mark = ""
+            self.unsupported("Outer join syntax using the (+) operator is not supported.")
+
+        return f"{self.column_parts(expression)}{join_mark}"
 
     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
         this = self.sql(expression, "this")

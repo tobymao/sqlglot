@@ -20,7 +20,7 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
 
 
-def _build_format(args: t.List) -> exp.TimeToStr:
+def _build_date_format(args: t.List) -> exp.TimeToStr:
     expr = build_formatted_time(exp.TimeToStr, "clickhouse")(args)
 
     timezone = seq_get(args, 2)
@@ -135,8 +135,8 @@ class ClickHouse(Dialect):
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
-            "DATE_FORMAT": lambda args: _build_format(args),
-            "FORMATDATETIME": lambda args: _build_format(args),
+            "DATE_FORMAT": _build_date_format,
+            "FORMATDATETIME": _build_date_format,
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),

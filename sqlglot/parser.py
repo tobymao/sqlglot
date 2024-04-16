@@ -1109,7 +1109,7 @@ class Parser(metaclass=_Parser):
     # Whether or not interval spans are supported, INTERVAL 1 YEAR TO MONTHS
     INTERVAL_SPANS = True
 
-    # Whether the dialect allows syntax such as: select * from t1 partition (p0)
+    # Whether a PARTITION clause can follow a table reference
     SUPPORTS_PARTITION_SELECTION = False
 
     __slots__ = (

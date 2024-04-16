@@ -2248,6 +2248,7 @@ class Parser(metaclass=_Parser):
             hint=hint,
             is_function=is_function,
             this=this,
+            stored=self._match_text_seq("STORED") and self._parse_stored(),
             by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),
             partition=self._parse_partition(),

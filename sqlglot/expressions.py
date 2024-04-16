@@ -5684,7 +5684,7 @@ class StddevSamp(AggFunc):
 
 
 class TimeToStr(Func):
-    arg_types = {"this": True, "format": True, "culture": False}
+    arg_types = {"this": True, "format": True, "culture": False, "timezone": False}
 
 
 class TimeToTimeStr(Func):

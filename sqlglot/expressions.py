@@ -2058,7 +2058,6 @@ class Insert(DDL, DML):
         "returning": False,
         "overwrite": False,
         "exists": False,
-        "partition": False,
         "alternative": False,
         "where": False,
         "ignore": False,
@@ -2912,6 +2911,7 @@ class Table(Expression):
         "ordinality": False,
         "when": False,
         "only": False,
+        "partition": False,
     }
 
     @property

@@ -11,7 +11,7 @@ class Vertica(Dialect):
             "'",
             '"',
         ]  # Strings can be delimited by either single or double quotes
-        IDENTIFIERS = ["`"]  # Identifiers can be delimited by backticks
+        IDENTIFIERS = ["`"]
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,

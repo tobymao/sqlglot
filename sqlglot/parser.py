@@ -1109,6 +1109,9 @@ class Parser(metaclass=_Parser):
     # Whether or not interval spans are supported, INTERVAL 1 YEAR TO MONTHS
     INTERVAL_SPANS = True
 
+    # Whether the dialect allows syntax such as: select * from t1 partition (p0)
+    SUPPORTS_PARTITION_SELECTION = False
+
     __slots__ = (
         "error_level",
         "error_message_context",
@@ -2238,7 +2241,11 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             is_function = self._match(TokenType.FUNCTION)
 
-            this = self._parse_table(schema=True) if not is_function else self._parse_function()
+            this = (
+                self._parse_table(schema=True, parse_partition=True)
+                if not is_function
+                else self._parse_function()
+            )
 
         returning = self._parse_returning()
 
@@ -3123,6 +3130,7 @@ class Parser(metaclass=_Parser):
         alias_tokens: t.Optional[t.Collection[TokenType]] = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
+        parse_partition: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -3161,7 +3169,8 @@ class Parser(metaclass=_Parser):
         # Postgres supports a wildcard (table) suffix operator, which is a no-op in this context
         self._match_text_seq("*")
 
-        if self._match(TokenType.PARTITION, advance=False):
+        parse_partition = parse_partition or self.SUPPORTS_PARTITION_SELECTION
+        if parse_partition and self._match(TokenType.PARTITION, advance=False):
             this.set("partition", self._parse_partition())
 
         if schema:

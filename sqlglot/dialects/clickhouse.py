@@ -383,6 +383,7 @@ class ClickHouse(Dialect):
             alias_tokens: t.Optional[t.Collection[TokenType]] = None,
             parse_bracket: bool = False,
             is_db_reference: bool = False,
+            parse_partition: bool = False,
         ) -> t.Optional[exp.Expression]:
             this = super()._parse_table(
                 schema=schema,

@@ -57,6 +57,9 @@ class TestBigQuery(Validator):
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
         self.assertEqual(exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`")
 
+        column = self.validate_identity("SELECT `db.t`.`c` FROM `db.t`").selects[0]
+        self.assertEqual(len(column.parts), 3)
+
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 

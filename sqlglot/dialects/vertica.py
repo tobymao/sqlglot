@@ -25,7 +25,6 @@ class Vertica(Dialect):
             exp.Array: lambda self, e: f"[{self.expressions(e)}]",
         }
 
-    # Mapping SqlGlot data types to Vertica data types
     TYPE_MAPPING = {
         exp.DataType.Type.TINYINT: "INT64",
         exp.DataType.Type.SMALLINT: "INT64",

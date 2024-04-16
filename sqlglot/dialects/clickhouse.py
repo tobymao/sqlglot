@@ -629,7 +629,8 @@ class ClickHouse(Dialect):
             exp.CountIf: rename_func("countIf"),
             exp.CompressColumnConstraint: lambda self,
             e: f"CODEC({self.expressions(e, key='this', flat=True)})",
-            exp.ComputedColumnConstraint: lambda self, e: f"ALIAS {self.sql(e, 'this')}",
+            exp.ComputedColumnConstraint: lambda self,
+            e: f"{'MATERIALIZED' if e.args.get('persisted') else 'ALIAS'} {self.sql(e, 'this')}",
             exp.CurrentDate: lambda self, e: self.func("CURRENT_DATE"),
             exp.DateAdd: date_delta_sql("DATE_ADD"),
             exp.DateDiff: date_delta_sql("DATE_DIFF"),
@@ -667,6 +668,7 @@ class ClickHouse(Dialect):
         TABLE_HINTS = False
         EXPLICIT_UNION = True
         GROUPINGS_SEP = ""
+        OUTER_UNION_MODIFIERS = False
 
         # there's no list in docs, but it can be found in Clickhouse code
         # see `ClickHouse/src/Parsers/ParserCreate*.cpp`

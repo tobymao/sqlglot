@@ -7,7 +7,13 @@ from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import TokenType
 
 
+def _select_all(table: exp.Expression) -> t.Optional[exp.Select]:
+    return exp.select("*").from_(table, copy=False) if table else None
+
+
 class PRQL(Dialect):
+    DPIPE_IS_STRING_CONCAT = False
+
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ["`"]
         QUOTES = ["'", '"']
@@ -26,9 +32,27 @@ class PRQL(Dialect):
         }
 
     class Parser(parser.Parser):
+        CONJUNCTION = {
+            **parser.Parser.CONJUNCTION,
+            TokenType.DAMP: exp.And,
+            TokenType.DPIPE: exp.Or,
+        }
+
         TRANSFORM_PARSERS = {
             "DERIVE": lambda self, query: self._parse_selection(query),
             "SELECT": lambda self, query: self._parse_selection(query, append=False),
+            "TAKE": lambda self, query: self._parse_take(query),
+            "FILTER": lambda self, query: query.where(self._parse_conjunction()),
+            "APPEND": lambda self, query: query.union(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
+            "REMOVE": lambda self, query: query.except_(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
+            "INTERSECT": lambda self, query: query.intersect(
+                _select_all(self._parse_table()), distinct=False, copy=False
+            ),
+            "SORT": lambda self, query: self._parse_order_by(query),
         }
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
@@ -36,9 +60,7 @@ class PRQL(Dialect):
             expression = expression if expression else self._parse_query()
             return expression
 
-        def _parse_query(
-            self,
-        ) -> t.Optional[exp.Query]:
+        def _parse_query(self) -> t.Optional[exp.Query]:
             from_ = self._parse_from()
 
             if not from_:
@@ -56,7 +78,7 @@ class PRQL(Dialect):
                 selects = self._parse_csv(self._parse_expression)
 
                 if not self._match(TokenType.R_BRACE, expression=query):
-                    self.raise_error("Expecting ]")
+                    self.raise_error("Expecting }")
             else:
                 expression = self._parse_expression()
                 selects = [expression] if expression else []
@@ -77,6 +99,28 @@ class PRQL(Dialect):
             ]
 
             return query.select(*selects, append=append, copy=False)
+
+        def _parse_take(self, query: exp.Query) -> t.Optional[exp.Query]:
+            num = self._parse_number()  # TODO: TAKE for ranges a..b
+            return query.limit(num) if num else None
+
+        def _parse_ordered(
+            self, parse_method: t.Optional[t.Callable] = None
+        ) -> t.Optional[exp.Ordered]:
+            asc = self._match(TokenType.PLUS)
+            desc = self._match(TokenType.DASH) or (asc and False)
+            term = term = super()._parse_ordered(parse_method=parse_method)
+            if term and desc:
+                term.set("desc", True)
+                term.set("nulls_first", False)
+            return term
+
+        def _parse_order_by(self, query: exp.Select) -> t.Optional[exp.Query]:
+            l_brace = self._match(TokenType.L_BRACE)
+            expressions = self._parse_csv(self._parse_ordered)
+            if l_brace and not self._match(TokenType.R_BRACE):
+                self.raise_error("Expecting }")
+            return query.order_by(self.expression(exp.Order, expressions=expressions), copy=False)
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

@@ -301,6 +301,10 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl ORDER BY y",
             ),
             (
+                lambda: parse_one("select * from x union select * from y").order_by("y"),
+                "SELECT * FROM x UNION SELECT * FROM y ORDER BY y",
+            ),
+            (
                 lambda: select("x").from_("tbl").cluster_by("y"),
                 "SELECT x FROM tbl CLUSTER BY y",
                 "hive",
@@ -505,15 +509,19 @@ class TestBuild(unittest.TestCase):
             (lambda: parse_one("(SELECT 1)").select("2"), "(SELECT 1, 2)"),
             (
                 lambda: parse_one("(SELECT 1)").limit(1),
-                "SELECT * FROM ((SELECT 1)) AS _l_0 LIMIT 1",
+                "(SELECT 1) LIMIT 1",
             ),
             (
                 lambda: parse_one("WITH t AS (SELECT 1) (SELECT 1)").limit(1),
-                "SELECT * FROM (WITH t AS (SELECT 1) (SELECT 1)) AS _l_0 LIMIT 1",
+                "WITH t AS (SELECT 1) (SELECT 1) LIMIT 1",
             ),
             (
                 lambda: parse_one("(SELECT 1 LIMIT 2)").limit(1),
-                "SELECT * FROM ((SELECT 1 LIMIT 2)) AS _l_0 LIMIT 1",
+                "(SELECT 1 LIMIT 2) LIMIT 1",
+            ),
+            (
+                lambda: parse_one("SELECT 1 UNION SELECT 2").limit(5).offset(2),
+                "SELECT 1 UNION SELECT 2 LIMIT 5 OFFSET 2",
             ),
             (lambda: parse_one("(SELECT 1)").subquery(), "((SELECT 1))"),
             (lambda: parse_one("(SELECT 1)").subquery("alias"), "((SELECT 1)) AS alias"),
@@ -665,14 +673,8 @@ class TestBuild(unittest.TestCase):
                 "(x, y) IN ((1, 2), (3, 4))",
                 "postgres",
             ),
-            (
-                lambda: exp.cast_unless("CAST(x AS INT)", "int", "int"),
-                "CAST(x AS INT)",
-            ),
-            (
-                lambda: exp.cast_unless("CAST(x AS TEXT)", "int", "int"),
-                "CAST(CAST(x AS TEXT) AS INT)",
-            ),
+            (lambda: exp.cast("CAST(x AS INT)", "int"), "CAST(x AS INT)"),
+            (lambda: exp.cast("CAST(x AS TEXT)", "int"), "CAST(CAST(x AS TEXT) AS INT)"),
             (
                 lambda: exp.rename_column("table1", "c1", "c2", True),
                 "ALTER TABLE table1 RENAME COLUMN IF EXISTS c1 TO c2",

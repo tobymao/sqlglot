@@ -240,6 +240,7 @@ class TestDuckDB(Validator):
 
         self.validate_identity("SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30])")
         self.validate_identity("SELECT MAP {'x': 1}")
+        self.validate_identity("SELECT (MAP {'x': 1})['x']")
         self.validate_identity("SELECT df1.*, df2.* FROM df1 POSITIONAL JOIN df2")
         self.validate_identity("MAKE_TIMESTAMP(1992, 9, 20, 13, 34, 27.123456)")
         self.validate_identity("MAKE_TIMESTAMP(1667810584123456)")

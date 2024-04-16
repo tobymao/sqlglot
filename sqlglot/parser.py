@@ -344,6 +344,7 @@ class Parser(metaclass=_Parser):
         TokenType.FINAL,
         TokenType.FORMAT,
         TokenType.FULL,
+        TokenType.IDENTIFIER,
         TokenType.IS,
         TokenType.ISNULL,
         TokenType.INTERVAL,
@@ -852,6 +853,9 @@ class Parser(metaclass=_Parser):
             exp.DefaultColumnConstraint, this=self._parse_bitwise()
         ),
         "ENCODE": lambda self: self.expression(exp.EncodeColumnConstraint, this=self._parse_var()),
+        "EPHEMERAL": lambda self: self.expression(
+            exp.EphemeralColumnConstraint, this=self._parse_bitwise()
+        ),
         "EXCLUDE": lambda self: self.expression(
             exp.ExcludeColumnConstraint, this=self._parse_index_params()
         ),
@@ -1384,6 +1388,7 @@ class Parser(metaclass=_Parser):
 
         self._match(TokenType.ON)
 
+        materialized = self._match_text_seq("MATERIALIZED")
         kind = self._match_set(self.CREATABLES) and self._prev
         if not kind:
             return self._parse_as_command(start)
@@ -1400,7 +1405,12 @@ class Parser(metaclass=_Parser):
         self._match(TokenType.IS)
 
         return self.expression(
-            exp.Comment, this=this, kind=kind.text, expression=self._parse_string(), exists=exists
+            exp.Comment,
+            this=this,
+            kind=kind.text,
+            expression=self._parse_string(),
+            exists=exists,
+            materialized=materialized,
         )
 
     def _parse_to_table(
@@ -1754,7 +1764,11 @@ class Parser(metaclass=_Parser):
     def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
-        return self.expression(exp_class, this=self._parse_field(), **kwargs)
+        field = self._parse_field()
+        if isinstance(field, exp.Identifier) and not field.quoted:
+            field = exp.var(field)
+
+        return self.expression(exp_class, this=field, **kwargs)
 
     def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Properties]:
         properties = []
@@ -2188,7 +2202,10 @@ class Parser(metaclass=_Parser):
 
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
-        style = self._match_texts(("EXTENDED", "FORMATTED")) and self._prev.text.upper()
+        style = self._match_texts(("EXTENDED", "FORMATTED", "HISTORY")) and self._prev.text.upper()
+        if not self._match_set(self.ID_VAR_TOKENS, advance=False):
+            style = None
+            self._retreat(self._index - 1)
         this = self._parse_table(schema=True)
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None
@@ -2731,6 +2748,13 @@ class Parser(metaclass=_Parser):
             exp.From, comments=self._prev_comments, this=self._parse_table(joins=joins)
         )
 
+    def _parse_match_recognize_measure(self) -> exp.MatchRecognizeMeasure:
+        return self.expression(
+            exp.MatchRecognizeMeasure,
+            window_frame=self._match_texts(("FINAL", "RUNNING")) and self._prev.text.upper(),
+            this=self._parse_expression(),
+        )
+
     def _parse_match_recognize(self) -> t.Optional[exp.MatchRecognize]:
         if not self._match(TokenType.MATCH_RECOGNIZE):
             return None
@@ -2739,7 +2763,12 @@ class Parser(metaclass=_Parser):
 
         partition = self._parse_partition_by()
         order = self._parse_order()
-        measures = self._parse_expressions() if self._match_text_seq("MEASURES") else None
+
+        measures = (
+            self._parse_csv(self._parse_match_recognize_measure)
+            if self._match_text_seq("MEASURES")
+            else None
+        )
 
         if self._match_text_seq("ONE", "ROW", "PER", "MATCH"):
             rows = exp.var("ONE ROW PER MATCH")
@@ -3444,10 +3473,12 @@ class Parser(metaclass=_Parser):
         if not skip_group_by_token and not self._match(TokenType.GROUP_BY):
             return None
 
-        elements = defaultdict(list)
+        elements: t.Dict[str, t.Any] = defaultdict(list)
 
         if self._match(TokenType.ALL):
-            return self.expression(exp.Group, all=True)
+            elements["all"] = True
+        elif self._match(TokenType.DISTINCT):
+            elements["all"] = False
 
         while True:
             expressions = self._parse_csv(self._parse_conjunction)
@@ -3808,7 +3839,7 @@ class Parser(metaclass=_Parser):
             expressions = self._parse_csv(lambda: self._parse_select_or_expression(alias=alias))
 
             if len(expressions) == 1 and isinstance(expressions[0], exp.Query):
-                this = self.expression(exp.In, this=this, query=expressions[0])
+                this = self.expression(exp.In, this=this, query=expressions[0].subquery(copy=False))
             else:
                 this = self.expression(exp.In, this=this, expressions=expressions)
 
@@ -4100,14 +4131,11 @@ class Parser(metaclass=_Parser):
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
         elif type_token == TokenType.INTERVAL:
-            unit = self._parse_var(any_token=True, upper=True)
-
-            if self._match_text_seq("TO"):
-                unit = exp.IntervalSpan(
-                    this=unit, expression=self._parse_var(any_token=True, upper=True)
-                )
-
+            unit = self._parse_var(upper=True)
             if unit:
+                if self._match_text_seq("TO"):
+                    unit = exp.IntervalSpan(this=unit, expression=self._parse_var(upper=True))
+
                 this = self.expression(exp.DataType, this=self.expression(exp.Interval, unit=unit))
             else:
                 this = self.expression(exp.DataType, this=exp.DataType.Type.INTERVAL)
@@ -4507,12 +4535,15 @@ class Parser(metaclass=_Parser):
 
         constraints: t.List[exp.Expression] = []
 
-        if (not kind and self._match(TokenType.ALIAS)) or self._match_text_seq("ALIAS"):
+        if (not kind and self._match(TokenType.ALIAS)) or self._match_texts(
+            ("ALIAS", "MATERIALIZED")
+        ):
+            persisted = self._prev.text.upper() == "MATERIALIZED"
             constraints.append(
                 self.expression(
                     exp.ComputedColumnConstraint,
                     this=self._parse_conjunction(),
-                    persisted=self._match_text_seq("PERSISTED"),
+                    persisted=persisted or self._match_text_seq("PERSISTED"),
                     not_null=self._match_pair(TokenType.NOT, TokenType.NULL),
                 )
             )

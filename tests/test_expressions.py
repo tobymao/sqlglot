@@ -634,6 +634,7 @@ class TestExpressions(unittest.TestCase):
         self.assertIsInstance(parse_one("MAX(a)"), exp.Max)
         self.assertIsInstance(parse_one("MIN(a)"), exp.Min)
         self.assertIsInstance(parse_one("MONTH(a)"), exp.Month)
+        self.assertIsInstance(parse_one("QUARTER(a)"), exp.Quarter)
         self.assertIsInstance(parse_one("POSITION(' ' IN a)"), exp.StrPosition)
         self.assertIsInstance(parse_one("POW(a, 2)"), exp.Pow)
         self.assertIsInstance(parse_one("POWER(a, 2)"), exp.Pow)
@@ -715,6 +716,9 @@ class TestExpressions(unittest.TestCase):
         dot = exp.column("d", "c", "b", "a", fields=["e", "f"])
         self.assertIsInstance(dot, exp.Dot)
         self.assertEqual(dot.sql(), "a.b.c.d.e.f")
+
+        dot = exp.column("d", "c", "b", "a", fields=["e", "f"], quoted=True)
+        self.assertEqual(dot.sql(), '"a"."b"."c"."d"."e"."f"')
 
     def test_text(self):
         column = parse_one("a.b.c.d.e")
@@ -893,8 +897,6 @@ FROM foo""",
         self.assertEqual(catalog_db_and_table.name, "table_name")
         self.assertEqual(catalog_db_and_table.args.get("db"), exp.to_identifier("db"))
         self.assertEqual(catalog_db_and_table.args.get("catalog"), exp.to_identifier("catalog"))
-        with self.assertRaises(ValueError):
-            exp.to_table(1)
 
     def test_to_column(self):
         column_only = exp.to_column("column_name")
@@ -903,8 +905,14 @@ FROM foo""",
         table_and_column = exp.to_column("table_name.column_name")
         self.assertEqual(table_and_column.name, "column_name")
         self.assertEqual(table_and_column.args.get("table"), exp.to_identifier("table_name"))
-        with self.assertRaises(ValueError):
-            exp.to_column(1)
+
+        self.assertEqual(exp.to_column("foo bar").sql(), '"foo bar"')
+        self.assertEqual(exp.to_column("`column_name`", dialect="spark").sql(), '"column_name"')
+        self.assertEqual(exp.to_column("column_name", quoted=True).sql(), '"column_name"')
+        self.assertEqual(
+            exp.to_column("column_name", table=exp.to_identifier("table_name")).sql(),
+            "table_name.column_name",
+        )
 
     def test_union(self):
         expression = parse_one("SELECT cola, colb UNION SELECT colx, coly")
@@ -995,6 +1003,13 @@ FROM foo""",
             exp.rename_table("t1", "t2").sql(),
             "ALTER TABLE t1 RENAME TO t2",
         )
+
+    def test_is_negative(self):
+        self.assertTrue(parse_one("-1").is_negative)
+        self.assertTrue(parse_one("- 1.0").is_negative)
+        self.assertTrue(exp.Literal.number("-1").is_negative)
+        self.assertFalse(parse_one("1").is_negative)
+        self.assertFalse(parse_one("x").is_negative)
 
     def test_is_star(self):
         assert parse_one("*").is_star

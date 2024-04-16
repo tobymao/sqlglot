@@ -736,8 +736,8 @@ WITH "salesreturns" AS (
     "date_dim"."d_date" AS "d_date"
   FROM "date_dim" AS "date_dim"
   WHERE
-    CAST("date_dim"."d_date" AS DATE) <= CAST('2002-09-05' AS DATE)
-    AND CAST("date_dim"."d_date" AS DATE) >= CAST('2002-08-22' AS DATE)
+    CAST("date_dim"."d_date" AS DATETIME) <= CAST('2002-09-05' AS DATE)
+    AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2002-08-22' AS DATE)
 ), "ssr" AS (
   SELECT
     "store"."s_store_id" AS "s_store_id",
@@ -822,7 +822,7 @@ WITH "salesreturns" AS (
 ), "x" AS (
   SELECT
     'store channel' AS "channel",
-    CONCAT('store', "ssr"."s_store_id") AS "id",
+    'store' || "ssr"."s_store_id" AS "id",
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" - "ssr"."profit_loss" AS "profit"
@@ -830,7 +830,7 @@ WITH "salesreturns" AS (
   UNION ALL
   SELECT
     'catalog channel' AS "channel",
-    CONCAT('catalog_page', "csr"."cp_catalog_page_id") AS "id",
+    'catalog_page' || "csr"."cp_catalog_page_id" AS "id",
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" - "csr"."profit_loss" AS "profit"
@@ -838,7 +838,7 @@ WITH "salesreturns" AS (
   UNION ALL
   SELECT
     'web channel' AS "channel",
-    CONCAT('web_site', "wsr"."web_site_id") AS "id",
+    'web_site' || "wsr"."web_site_id" AS "id",
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" - "wsr"."profit_loss" AS "profit"
@@ -1873,8 +1873,8 @@ SELECT
 FROM "web_sales" AS "web_sales"
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
-  AND CAST("date_dim"."d_date" AS DATE) <= CAST('2000-06-10' AS DATE)
-  AND CAST("date_dim"."d_date" AS DATE) >= CAST('2000-05-11' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('2000-06-10' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2000-05-11' AS DATE)
 JOIN "item" AS "item"
   ON "item"."i_category" IN ('Home', 'Men', 'Women')
   AND "item"."i_item_sk" = "web_sales"."ws_item_sk"
@@ -2442,7 +2442,7 @@ JOIN "date_dim" AS "date_dim"
   AND "date_dim"."d_date" >= '2002-3-01'
   AND (
     CAST('2002-3-01' AS DATE) + INTERVAL '60' DAY
-  ) >= CAST("date_dim"."d_date" AS DATE)
+  ) >= CAST("date_dim"."d_date" AS DATETIME)
 WHERE
   "_u_3"."_u_4" IS NULL
   AND ARRAY_ANY("_u_0"."_u_2", "_x" -> "cs1"."cs_warehouse_sk" <> "_x")
@@ -2751,8 +2751,8 @@ SELECT
 FROM "catalog_sales" AS "catalog_sales"
 JOIN "date_dim" AS "date_dim"
   ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
-  AND CAST("date_dim"."d_date" AS DATE) <= CAST('2001-03-05' AS DATE)
-  AND CAST("date_dim"."d_date" AS DATE) >= CAST('2001-02-03' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('2001-03-05' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2001-02-03' AS DATE)
 JOIN "item" AS "item"
   ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   AND "item"."i_category" IN ('Children', 'Women', 'Electronics')
@@ -2831,8 +2831,8 @@ WITH "x" AS (
   FROM "inventory" AS "inventory"
   JOIN "date_dim" AS "date_dim"
     ON "date_dim"."d_date_sk" = "inventory"."inv_date_sk"
-    AND CAST("date_dim"."d_date" AS DATE) <= CAST('2000-06-12' AS DATE)
-    AND CAST("date_dim"."d_date" AS DATE) >= CAST('2000-04-13' AS DATE)
+    AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('2000-06-12' AS DATE)
+    AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2000-04-13' AS DATE)
   JOIN "item" AS "item"
     ON "inventory"."inv_item_sk" = "item"."i_item_sk"
     AND "item"."i_current_price" <= 1.49
@@ -3964,7 +3964,7 @@ WITH "catalog_sales_2" AS (
   FROM "date_dim" AS "date_dim"
   WHERE
     "date_dim"."d_date" >= '2001-03-04'
-    AND CAST("date_dim"."d_date" AS DATE) <= CAST('2001-06-02' AS DATE)
+    AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('2001-06-02' AS DATE)
 ), "_u_0" AS (
   SELECT
     1.3 * AVG("catalog_sales"."cs_ext_discount_amt") AS "_col_0",
@@ -4530,8 +4530,8 @@ JOIN "inventory" AS "inventory"
   AND "inventory"."inv_quantity_on_hand" >= 100
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date_sk" = "inventory"."inv_date_sk"
-  AND CAST("date_dim"."d_date" AS DATE) <= CAST('1999-05-05' AS DATE)
-  AND CAST("date_dim"."d_date" AS DATE) >= CAST('1999-03-06' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('1999-05-05' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('1999-03-06' AS DATE)
 WHERE
   "item"."i_current_price" <= 50
   AND "item"."i_current_price" >= 20
@@ -4807,8 +4807,8 @@ LEFT JOIN "catalog_returns" AS "catalog_returns"
   AND "catalog_returns"."cr_order_number" = "catalog_sales"."cs_order_number"
 JOIN "date_dim" AS "date_dim"
   ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
-  AND CAST("date_dim"."d_date" AS DATE) <= CAST('2002-07-01' AS DATE)
-  AND CAST("date_dim"."d_date" AS DATE) >= CAST('2002-05-02' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('2002-07-01' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2002-05-02' AS DATE)
 JOIN "item" AS "item"
   ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   AND "item"."i_current_price" <= 1.49
@@ -10338,8 +10338,8 @@ WITH "date_dim_2" AS (
     "date_dim"."d_date" AS "d_date"
   FROM "date_dim" AS "date_dim"
   WHERE
-    CAST("date_dim"."d_date" AS DATE) <= CAST('2001-09-15' AS DATE)
-    AND CAST("date_dim"."d_date" AS DATE) >= CAST('2001-08-16' AS DATE)
+    CAST("date_dim"."d_date" AS DATETIME) <= CAST('2001-09-15' AS DATE)
+    AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2001-08-16' AS DATE)
 ), "store_2" AS (
   SELECT
     "store"."s_store_sk" AS "s_store_sk"
@@ -10848,8 +10848,8 @@ WITH "date_dim_2" AS (
     "date_dim"."d_date" AS "d_date"
   FROM "date_dim" AS "date_dim"
   WHERE
-    CAST("date_dim"."d_date" AS DATE) <= CAST('2000-09-25' AS DATE)
-    AND CAST("date_dim"."d_date" AS DATE) >= CAST('2000-08-26' AS DATE)
+    CAST("date_dim"."d_date" AS DATETIME) <= CAST('2000-09-25' AS DATE)
+    AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2000-08-26' AS DATE)
 ), "item_2" AS (
   SELECT
     "item"."i_item_sk" AS "i_item_sk",
@@ -10927,7 +10927,7 @@ WITH "date_dim_2" AS (
 ), "x" AS (
   SELECT
     'store channel' AS "channel",
-    CONCAT('store', "ssr"."store_id") AS "id",
+    'store' || "ssr"."store_id" AS "id",
     "ssr"."sales" AS "sales",
     "ssr"."returns1" AS "returns1",
     "ssr"."profit" AS "profit"
@@ -10935,7 +10935,7 @@ WITH "date_dim_2" AS (
   UNION ALL
   SELECT
     'catalog channel' AS "channel",
-    CONCAT('catalog_page', "csr"."catalog_page_id") AS "id",
+    'catalog_page' || "csr"."catalog_page_id" AS "id",
     "csr"."sales" AS "sales",
     "csr"."returns1" AS "returns1",
     "csr"."profit" AS "profit"
@@ -10943,7 +10943,7 @@ WITH "date_dim_2" AS (
   UNION ALL
   SELECT
     'web channel' AS "channel",
-    CONCAT('web_site', "wsr"."web_site_id") AS "id",
+    'web_site' || "wsr"."web_site_id" AS "id",
     "wsr"."sales" AS "sales",
     "wsr"."returns1" AS "returns1",
     "wsr"."profit" AS "profit"
@@ -11129,8 +11129,8 @@ JOIN "store_sales" AS "store_sales"
   ON "item"."i_item_sk" = "store_sales"."ss_item_sk"
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date_sk" = "inventory"."inv_date_sk"
-  AND CAST("date_dim"."d_date" AS DATE) <= CAST('1998-06-26' AS DATE)
-  AND CAST("date_dim"."d_date" AS DATE) >= CAST('1998-04-27' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('1998-06-26' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('1998-04-27' AS DATE)
 WHERE
   "item"."i_current_price" <= 93
   AND "item"."i_current_price" >= 63
@@ -11368,7 +11368,7 @@ ORDER  BY c_customer_id
 LIMIT 100;
 SELECT
   "customer"."c_customer_id" AS "customer_id",
-  CONCAT("customer"."c_last_name", ', ', "customer"."c_first_name") AS "customername"
+  "customer"."c_last_name" || ', ' || "customer"."c_first_name" AS "customername"
 FROM "customer" AS "customer"
 JOIN "customer_address" AS "customer_address"
   ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
@@ -12200,7 +12200,7 @@ WITH "web_sales_2" AS (
   FROM "date_dim" AS "date_dim"
   WHERE
     "date_dim"."d_date" >= '2002-03-29'
-    AND CAST("date_dim"."d_date" AS DATE) <= CAST('2002-06-27' AS DATE)
+    AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('2002-06-27' AS DATE)
 ), "_u_0" AS (
   SELECT
     1.3 * AVG("web_sales"."ws_ext_discount_amt") AS "_col_0",
@@ -12341,7 +12341,7 @@ JOIN "date_dim" AS "date_dim"
   AND "date_dim"."d_date_sk" = "ws1"."ws_ship_date_sk"
   AND (
     CAST('2000-3-01' AS DATE) + INTERVAL '60' DAY
-  ) >= CAST("date_dim"."d_date" AS DATE)
+  ) >= CAST("date_dim"."d_date" AS DATETIME)
 JOIN "web_site" AS "web_site"
   ON "web_site"."web_company_name" = 'pri'
   AND "web_site"."web_site_sk" = "ws1"."ws_web_site_sk"
@@ -12431,7 +12431,7 @@ JOIN "date_dim" AS "date_dim"
   AND "date_dim"."d_date_sk" = "ws1"."ws_ship_date_sk"
   AND (
     CAST('2000-4-01' AS DATE) + INTERVAL '60' DAY
-  ) >= CAST("date_dim"."d_date" AS DATE)
+  ) >= CAST("date_dim"."d_date" AS DATETIME)
 JOIN "web_site" AS "web_site"
   ON "web_site"."web_company_name" = 'pri'
   AND "web_site"."web_site_sk" = "ws1"."ws_web_site_sk"
@@ -12615,8 +12615,8 @@ SELECT
 FROM "store_sales" AS "store_sales"
 JOIN "date_dim" AS "date_dim"
   ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
-  AND CAST("date_dim"."d_date" AS DATE) <= CAST('2000-06-17' AS DATE)
-  AND CAST("date_dim"."d_date" AS DATE) >= CAST('2000-05-18' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) <= CAST('2000-06-17' AS DATE)
+  AND CAST("date_dim"."d_date" AS DATETIME) >= CAST('2000-05-18' AS DATE)
 JOIN "item" AS "item"
   ON "item"."i_category" IN ('Men', 'Home', 'Electronics')
   AND "item"."i_item_sk" = "store_sales"."ss_item_sk"
@@ -12743,4 +12743,3 @@ ORDER BY
   "sm_type",
   "cc_name"
 LIMIT 100;
-

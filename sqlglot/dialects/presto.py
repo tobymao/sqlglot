@@ -26,6 +26,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     timestrtotime_sql,
     ts_or_ds_add_cast,
+    unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
@@ -89,20 +90,22 @@ def _str_to_time_sql(
 def _ts_or_ds_to_date_sql(self: Presto.Generator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
     if time_format and time_format not in (Presto.TIME_FORMAT, Presto.DATE_FORMAT):
-        return self.sql(exp.cast(_str_to_time_sql(self, expression), "DATE"))
-    return self.sql(exp.cast(exp.cast(expression.this, "TIMESTAMP"), "DATE"))
+        return self.sql(exp.cast(_str_to_time_sql(self, expression), exp.DataType.Type.DATE))
+    return self.sql(
+        exp.cast(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP), exp.DataType.Type.DATE)
+    )
 
 
 def _ts_or_ds_add_sql(self: Presto.Generator, expression: exp.TsOrDsAdd) -> str:
     expression = ts_or_ds_add_cast(expression)
-    unit = exp.Literal.string(expression.text("unit") or "DAY")
+    unit = unit_to_str(expression)
     return self.func("DATE_ADD", unit, expression.expression, expression.this)
 
 
 def _ts_or_ds_diff_sql(self: Presto.Generator, expression: exp.TsOrDsDiff) -> str:
-    this = exp.cast(expression.this, "TIMESTAMP")
-    expr = exp.cast(expression.expression, "TIMESTAMP")
-    unit = exp.Literal.string(expression.text("unit") or "DAY")
+    this = exp.cast(expression.this, exp.DataType.Type.TIMESTAMP)
+    expr = exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP)
+    unit = unit_to_str(expression)
     return self.func("DATE_DIFF", unit, expr, this)
 
 
@@ -220,6 +223,8 @@ class Presto(Dialect):
             "IPADDRESS": TokenType.IPADDRESS,
             "IPPREFIX": TokenType.IPPREFIX,
         }
+
+        KEYWORDS.pop("QUALIFY")
 
     class Parser(parser.Parser):
         VALUES_FOLLOWED_BY_PAREN = False
@@ -344,19 +349,19 @@ class Presto(Dialect):
             exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
             exp.DateAdd: lambda self, e: self.func(
                 "DATE_ADD",
-                exp.Literal.string(e.text("unit") or "DAY"),
+                unit_to_str(e),
                 _to_int(e.expression),
                 e.this,
             ),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", exp.Literal.string(e.text("unit") or "DAY"), e.expression, e.this
+                "DATE_DIFF", unit_to_str(e), e.expression, e.this
             ),
             exp.DateStrToDate: datestrtodate_sql,
             exp.DateToDi: lambda self,
             e: f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {Presto.DATEINT_FORMAT}) AS INT)",
             exp.DateSub: lambda self, e: self.func(
                 "DATE_ADD",
-                exp.Literal.string(e.text("unit") or "DAY"),
+                unit_to_str(e),
                 _to_int(e.expression * -1),
                 e.this,
             ),
@@ -438,13 +443,74 @@ class Presto(Dialect):
             exp.Xor: bool_xor_sql,
         }
 
+        RESERVED_KEYWORDS = {
+            "alter",
+            "and",
+            "as",
+            "between",
+            "by",
+            "case",
+            "cast",
+            "constraint",
+            "create",
+            "cross",
+            "current_time",
+            "current_timestamp",
+            "deallocate",
+            "delete",
+            "describe",
+            "distinct",
+            "drop",
+            "else",
+            "end",
+            "escape",
+            "except",
+            "execute",
+            "exists",
+            "extract",
+            "false",
+            "for",
+            "from",
+            "full",
+            "group",
+            "having",
+            "in",
+            "inner",
+            "insert",
+            "intersect",
+            "into",
+            "is",
+            "join",
+            "left",
+            "like",
+            "natural",
+            "not",
+            "null",
+            "on",
+            "or",
+            "order",
+            "outer",
+            "prepare",
+            "right",
+            "select",
+            "table",
+            "then",
+            "true",
+            "union",
+            "using",
+            "values",
+            "when",
+            "where",
+            "with",
+        }
+
         def strtounix_sql(self, expression: exp.StrToUnix) -> str:
             # Since `TO_UNIXTIME` requires a `TIMESTAMP`, we need to parse the argument into one.
             # To do this, we first try to `DATE_PARSE` it, but since this can fail when there's a
             # timezone involved, we wrap it in a `TRY` call and use `PARSE_DATETIME` as a fallback,
             # which seems to be using the same time mapping as Hive, as per:
             # https://joda-time.sourceforge.net/apidocs/org/joda/time/format/DateTimeFormat.html
-            value_as_text = exp.cast(expression.this, "text")
+            value_as_text = exp.cast(expression.this, exp.DataType.Type.TEXT)
             parse_without_tz = self.func("DATE_PARSE", value_as_text, self.format_time(expression))
             parse_with_tz = self.func(
                 "PARSE_DATETIME",
@@ -499,8 +565,7 @@ class Presto(Dialect):
             return f"CAST(ROW({', '.join(values)}) AS ROW({', '.join(schema)}))"
 
         def interval_sql(self, expression: exp.Interval) -> str:
-            unit = self.sql(expression, "unit")
-            if expression.this and unit.startswith("WEEK"):
+            if expression.this and expression.text("unit").upper().startswith("WEEK"):
                 return f"({expression.this.name} * INTERVAL '7' DAY)"
             return super().interval_sql(expression)
 

@@ -166,3 +166,10 @@ WITH cte AS (SELECT b FROM c.db.y AS y) INSERT INTO c.db.s SELECT * FROM cte AS 
 # title: qualify wrapped query
 (SELECT x FROM t);
 (SELECT x FROM c.db.t AS t);
+
+# title: replace columns with db/catalog refs
+SELECT db1.a.id, db2.a.id FROM db1.a JOIN db2.a ON db1.a.id = db2.a.id;
+SELECT a.id, a_2.id FROM c.db1.a AS a JOIN c.db2.a AS a_2 ON a.id = a_2.id;
+
+SELECT cat.db1.a.id, db2.a.id FROM cat.db1.a JOIN db2.a ON cat.db1.a.id = db2.a.id;
+SELECT a.id, a_2.id FROM cat.db1.a AS a JOIN c.db2.a AS a_2 ON a.id = a_2.id;

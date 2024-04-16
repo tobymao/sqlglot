@@ -2,6 +2,7 @@ from unittest import mock
 
 from sqlglot import exp, parse_one
 from sqlglot.dialects.dialect import Dialects
+from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -223,18 +224,17 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
-        self.validate_identity("any_value(col, true)", "ANY_VALUE(col) IGNORE NULLS")
-        self.validate_identity("first(col, true)", "FIRST(col) IGNORE NULLS")
-        self.validate_identity("first_value(col, true)", "FIRST_VALUE(col) IGNORE NULLS")
-        self.validate_identity("last(col, true)", "LAST(col) IGNORE NULLS")
-        self.validate_identity("last_value(col, true)", "LAST_VALUE(col) IGNORE NULLS")
-
         self.assertEqual(
             parse_one("REFRESH TABLE t", read="spark").assert_is(exp.Refresh).sql(dialect="spark"),
             "REFRESH TABLE t",
         )
 
-        self.validate_identity("DESCRIBE EXTENDED db.table")
+        self.validate_identity("any_value(col, true)", "ANY_VALUE(col) IGNORE NULLS")
+        self.validate_identity("first(col, true)", "FIRST(col) IGNORE NULLS")
+        self.validate_identity("first_value(col, true)", "FIRST_VALUE(col) IGNORE NULLS")
+        self.validate_identity("last(col, true)", "LAST(col) IGNORE NULLS")
+        self.validate_identity("last_value(col, true)", "LAST_VALUE(col) IGNORE NULLS")
+        self.validate_identity("DESCRIBE EXTENDED db.tbl")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (50 PERCENT)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (5 ROWS)")
         self.validate_identity("SELECT * FROM test TABLESAMPLE (BUCKET 4 OUT OF 10)")
@@ -284,6 +284,30 @@ TBLPROPERTIES (
             "SELECT STR_TO_MAP('a:1,b:2,c:3', ',', ':')",
         )
 
+        with self.assertLogs(helper_logger):
+            self.validate_all(
+                "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                read={
+                    "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                },
+                write={
+                    "databricks": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                    "duckdb": "SELECT ([1, 2, 3])[3]",
+                    "spark": "SELECT TRY_ELEMENT_AT(ARRAY(1, 2, 3), 2)",
+                },
+            )
+
+        self.validate_all(
+            "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+            read={
+                "databricks": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+            },
+            write={
+                "databricks": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+                "duckdb": "SELECT (MAP([1, 2], ['a', 'b'])[2])[1]",
+                "spark": "SELECT TRY_ELEMENT_AT(MAP(1, 'a', 2, 'b'), 2)",
+            },
+        )
         self.validate_all(
             "SELECT SPLIT('123|789', '\\\\|')",
             read={
@@ -542,7 +566,7 @@ TBLPROPERTIES (
             "ARRAY_SORT(x, (left, right) -> -1)",
             write={
                 "duckdb": "ARRAY_SORT(x)",
-                "presto": "ARRAY_SORT(x, (left, right) -> -1)",
+                "presto": 'ARRAY_SORT(x, ("left", "right") -> -1)',
                 "hive": "SORT_ARRAY(x)",
                 "spark": "ARRAY_SORT(x, (left, right) -> -1)",
             },

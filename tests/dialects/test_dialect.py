@@ -1333,6 +1333,15 @@ class TestDialect(Validator):
 
     def test_set_operators(self):
         self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",
+            write={
+                "": "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",
+                "clickhouse": "SELECT * FROM (SELECT * FROM a UNION DISTINCT SELECT * FROM b) AS _l_0 ORDER BY x NULLS FIRST LIMIT 1",
+                "tsql": "SELECT TOP 1 * FROM (SELECT * FROM a UNION SELECT * FROM b) AS _l_0 ORDER BY x",
+            },
+        )
+
+        self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b",
             read={
                 "bigquery": "SELECT * FROM a UNION DISTINCT SELECT * FROM b",
@@ -1667,7 +1676,7 @@ class TestDialect(Validator):
                 "presto": "CAST(a AS DOUBLE) / b",
                 "redshift": "CAST(a AS DOUBLE PRECISION) / b",
                 "sqlite": "CAST(a AS REAL) / b",
-                "teradata": "CAST(a AS DOUBLE) / b",
+                "teradata": "CAST(a AS DOUBLE PRECISION) / b",
                 "trino": "CAST(a AS DOUBLE) / b",
                 "tsql": "CAST(a AS FLOAT) / b",
             },
@@ -2240,7 +2249,28 @@ SELECT
             "WITH t1(x) AS (SELECT 1) SELECT * FROM (WITH t2(y) AS (SELECT 2) SELECT y FROM t2) AS subq",
             write={
                 "duckdb": "WITH t1(x) AS (SELECT 1) SELECT * FROM (WITH t2(y) AS (SELECT 2) SELECT y FROM t2) AS subq",
-                "tsql": "WITH t1(x) AS (SELECT 1), t2(y) AS (SELECT 2) SELECT * FROM (SELECT y AS y FROM t2) AS subq",
+                "tsql": "WITH t2(y) AS (SELECT 2), t1(x) AS (SELECT 1) SELECT * FROM (SELECT y AS y FROM t2) AS subq",
+            },
+        )
+        self.validate_all(
+            """
+WITH c AS (
+  WITH b AS (
+    WITH a1 AS (
+      SELECT 1
+    ), a2 AS (
+      SELECT 2
+    )
+    SELECT * FROM a1, a2
+  )
+  SELECT *
+  FROM b
+)
+SELECT *
+FROM c""",
+            write={
+                "duckdb": "WITH c AS (WITH b AS (WITH a1 AS (SELECT 1), a2 AS (SELECT 2) SELECT * FROM a1, a2) SELECT * FROM b) SELECT * FROM c",
+                "hive": "WITH a1 AS (SELECT 1), a2 AS (SELECT 2), b AS (SELECT * FROM a1, a2), c AS (SELECT * FROM b) SELECT * FROM c",
             },
         )
 
@@ -2396,3 +2426,13 @@ SELECT
             """CREATE TEMPORARY SEQUENCE seq START WITH = 1 INCREMENT BY = 2""",
             """CREATE TEMPORARY SEQUENCE seq START WITH 1 INCREMENT BY 2""",
         )
+
+    def test_reserved_keywords(self):
+        order = exp.select("*").from_("order")
+
+        for dialect in ("presto", "redshift"):
+            dialect = Dialect.get_or_raise(dialect)
+            self.assertEqual(
+                order.sql(dialect=dialect),
+                f"SELECT * FROM {dialect.IDENTIFIER_START}order{dialect.IDENTIFIER_END}",
+            )

@@ -86,12 +86,11 @@ class Generator(metaclass=_Generator):
         exp.CollateColumnConstraint: lambda self, e: f"COLLATE {self.sql(e, 'this')}",
         exp.CommentColumnConstraint: lambda self, e: f"COMMENT {self.sql(e, 'this')}",
         exp.CopyGrantsProperty: lambda *_: "COPY GRANTS",
-        exp.DateAdd: lambda self, e: self.func(
-            "DATE_ADD", e.this, e.expression, exp.Literal.string(e.text("unit"))
-        ),
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",
         exp.EncodeColumnConstraint: lambda self, e: f"ENCODE {self.sql(e, 'this')}",
+        exp.EphemeralColumnConstraint: lambda self,
+        e: f"EPHEMERAL{(' ' + self.sql(e, 'this')) if e.this else ''}",
         exp.ExcludeColumnConstraint: lambda self, e: f"EXCLUDE {self.sql(e, 'this').lstrip()}",
         exp.ExecuteAsProperty: lambda self, e: self.naked_property(e),
         exp.ExternalProperty: lambda *_: "EXTERNAL",
@@ -334,6 +333,11 @@ class Generator(metaclass=_Generator):
 
     # Whether the function TO_NUMBER is supported
     SUPPORTS_TO_NUMBER = True
+
+    # Whether or not union modifiers apply to the outer union or select.
+    # SELECT * FROM x UNION SELECT * FROM y LIMIT 1
+    # True means limit 1 happens after the union, False means it it happens on y.
+    OUTER_UNION_MODIFIERS = True
 
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
@@ -1804,10 +1808,15 @@ class Generator(metaclass=_Generator):
         return f"{self.seg('FROM')} {self.sql(expression, 'this')}"
 
     def group_sql(self, expression: exp.Group) -> str:
-        group_by = self.op_expressions("GROUP BY", expression)
+        group_by_all = expression.args.get("all")
+        if group_by_all is True:
+            modifier = " ALL"
+        elif group_by_all is False:
+            modifier = " DISTINCT"
+        else:
+            modifier = ""
 
-        if expression.args.get("all"):
-            return f"{group_by} ALL"
+        group_by = self.op_expressions(f"GROUP BY{modifier}", expression)
 
         grouping_sets = self.expressions(expression, key="grouping_sets", indent=False)
         grouping_sets = (
@@ -2112,6 +2121,14 @@ class Generator(metaclass=_Generator):
 
         return f"{this}{sort_order}{nulls_sort_change}{with_fill}"
 
+    def matchrecognizemeasure_sql(self, expression: exp.MatchRecognizeMeasure) -> str:
+        window_frame = self.sql(expression, "window_frame")
+        window_frame = f"{window_frame} " if window_frame else ""
+
+        this = self.sql(expression, "this")
+
+        return f"{window_frame}{this}"
+
     def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
         partition = self.partition_by_sql(expression)
         order = self.sql(expression, "order")
@@ -2283,7 +2300,7 @@ class Generator(metaclass=_Generator):
         return f"@@{kind}{this}"
 
     def placeholder_sql(self, expression: exp.Placeholder) -> str:
-        return f"{self.NAMED_PLACEHOLDER_TOKEN}{expression.name}" if expression.name else "?"
+        return f"{self.NAMED_PLACEHOLDER_TOKEN}{expression.name}" if expression.this else "?"
 
     def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
         alias = self.sql(expression, "alias")
@@ -2300,6 +2317,19 @@ class Generator(metaclass=_Generator):
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def set_operations(self, expression: exp.Union) -> str:
+        if not self.OUTER_UNION_MODIFIERS:
+            limit = expression.args.get("limit")
+            order = expression.args.get("order")
+
+            if limit or order:
+                select = exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+
+                if limit:
+                    select = select.limit(limit.pop(), copy=False)
+                if order:
+                    select = select.order_by(order.pop(), copy=False)
+                return self.sql(select)
+
         sqls: t.List[str] = []
         stack: t.List[t.Union[str, exp.Expression]] = [expression]
 
@@ -2415,12 +2445,15 @@ class Generator(metaclass=_Generator):
         high = self.sql(expression, "high")
         return f"{this} BETWEEN {low} AND {high}"
 
-    def bracket_sql(self, expression: exp.Bracket) -> str:
-        expressions = apply_index_offset(
+    def bracket_offset_expressions(self, expression: exp.Bracket) -> t.List[exp.Expression]:
+        return apply_index_offset(
             expression.this,
             expression.expressions,
             self.dialect.INDEX_OFFSET - expression.args.get("offset", 0),
         )
+
+    def bracket_sql(self, expression: exp.Bracket) -> str:
+        expressions = self.bracket_offset_expressions(expression)
         expressions_sql = ", ".join(self.sql(e) for e in expressions)
         return f"{self.sql(expression, 'this')}[{expressions_sql}]"
 
@@ -2489,7 +2522,7 @@ class Generator(metaclass=_Generator):
             args = args[1:]  # Skip the delimiter
 
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
-            args = [exp.cast(e, "text") for e in args]
+            args = [exp.cast(e, exp.DataType.Type.TEXT) for e in args]
 
         if not self.dialect.CONCAT_COALESCE and expression.args.get("coalesce"):
             args = [exp.func("coalesce", e, exp.Literal.string("")) for e in args]
@@ -2673,7 +2706,7 @@ class Generator(metaclass=_Generator):
         is_global = " GLOBAL" if expression.args.get("is_global") else ""
 
         if query:
-            in_sql = self.wrap(self.sql(query))
+            in_sql = self.sql(query)
         elif unnest:
             in_sql = self.in_unnest_op(unnest)
         elif field:
@@ -2862,9 +2895,10 @@ class Generator(metaclass=_Generator):
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")
         kind = expression.args["kind"]
+        materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
         expression_sql = self.sql(expression, "expression")
-        return f"COMMENT{exists_sql}ON {kind} {this} IS {expression_sql}"
+        return f"COMMENT{exists_sql}ON{materialized} {kind} {this} IS {expression_sql}"
 
     def mergetreettlaction_sql(self, expression: exp.MergeTreeTTLAction) -> str:
         this = self.sql(expression, "this")
@@ -3014,7 +3048,9 @@ class Generator(metaclass=_Generator):
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
-            return self.func("CONCAT", *(exp.cast(e, "text") for e in expression.flatten()))
+            return self.func(
+                "CONCAT", *(exp.cast(e, exp.DataType.Type.TEXT) for e in expression.flatten())
+            )
         return self.binary(expression, "||")
 
     def div_sql(self, expression: exp.Div) -> str:
@@ -3213,11 +3249,8 @@ class Generator(metaclass=_Generator):
         num_sqls = len(expressions)
 
         # These are calculated once in case we have the leading_comma / pretty option set, correspondingly
-        if self.pretty:
-            if self.leading_comma:
-                pad = " " * len(sep)
-            else:
-                stripped_sep = sep.strip()
+        if self.pretty and not self.leading_comma:
+            stripped_sep = sep.strip()
 
         result_sqls = []
         for i, e in enumerate(expressions):
@@ -3229,7 +3262,7 @@ class Generator(metaclass=_Generator):
 
             if self.pretty:
                 if self.leading_comma:
-                    result_sqls.append(f"{sep if i > 0 else pad}{prefix}{sql}{comments}")
+                    result_sqls.append(f"{sep if i > 0 else ''}{prefix}{sql}{comments}")
                 else:
                     result_sqls.append(
                         f"{prefix}{sql}{stripped_sep if i + 1 < num_sqls else ''}{comments}"
@@ -3317,17 +3350,17 @@ class Generator(metaclass=_Generator):
         if expression.args.get("format"):
             self.unsupported("Format argument unsupported for TO_CHAR/TO_VARCHAR function")
 
-        return self.sql(exp.cast(expression.this, "text"))
+        return self.sql(exp.cast(expression.this, exp.DataType.Type.TEXT))
 
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
         if not self.SUPPORTS_TO_NUMBER:
             self.unsupported("Unsupported TO_NUMBER function")
-            return self.sql(exp.cast(expression.this, "double"))
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
 
         fmt = expression.args.get("format")
         if not fmt:
             self.unsupported("Conversion format is required for TO_NUMBER")
-            return self.sql(exp.cast(expression.this, "double"))
+            return self.sql(exp.cast(expression.this, exp.DataType.Type.DOUBLE))
 
         return self.func("TO_NUMBER", expression.this, fmt)
 
@@ -3424,11 +3457,11 @@ class Generator(metaclass=_Generator):
         this = f" {this}" if this else ""
         index_type = self.sql(expression, "index_type")
         index_type = f" USING {index_type}" if index_type else ""
-        schema = self.sql(expression, "schema")
-        schema = f" {schema}" if schema else ""
+        expressions = self.expressions(expression, flat=True)
+        expressions = f" ({expressions})" if expressions else ""
         options = self.expressions(expression, key="options", sep=" ")
         options = f" {options}" if options else ""
-        return f"{kind}{this}{index_type}{schema}{options}"
+        return f"{kind}{this}{index_type}{expressions}{options}"
 
     def nvl2_sql(self, expression: exp.Nvl2) -> str:
         if self.NVL2_SUPPORTED:
@@ -3498,14 +3531,14 @@ class Generator(metaclass=_Generator):
         if isinstance(this, exp.TsOrDsToTime) or this.is_type(exp.DataType.Type.TIME):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, "time"))
+        return self.sql(exp.cast(this, exp.DataType.Type.TIME))
 
     def tsordstotimestamp_sql(self, expression: exp.TsOrDsToTimestamp) -> str:
         this = expression.this
         if isinstance(this, exp.TsOrDsToTimestamp) or this.is_type(exp.DataType.Type.TIMESTAMP):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, "timestamp"))
+        return self.sql(exp.cast(this, exp.DataType.Type.TIMESTAMP))
 
     def tsordstodate_sql(self, expression: exp.TsOrDsToDate) -> str:
         this = expression.this
@@ -3513,20 +3546,23 @@ class Generator(metaclass=_Generator):
 
         if time_format and time_format not in (self.dialect.TIME_FORMAT, self.dialect.DATE_FORMAT):
             return self.sql(
-                exp.cast(exp.StrToTime(this=this, format=expression.args["format"]), "date")
+                exp.cast(
+                    exp.StrToTime(this=this, format=expression.args["format"]),
+                    exp.DataType.Type.DATE,
+                )
             )
 
         if isinstance(this, exp.TsOrDsToDate) or this.is_type(exp.DataType.Type.DATE):
             return self.sql(this)
 
-        return self.sql(exp.cast(this, "date"))
+        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
 
     def unixdate_sql(self, expression: exp.UnixDate) -> str:
         return self.sql(
             exp.func(
                 "DATEDIFF",
                 expression.this,
-                exp.cast(exp.Literal.string("1970-01-01"), "date"),
+                exp.cast(exp.Literal.string("1970-01-01"), exp.DataType.Type.DATE),
                 "day",
             )
         )
@@ -3540,6 +3576,13 @@ class Generator(metaclass=_Generator):
             self.unsupported("Date parts are not supported in LAST_DAY.")
 
         return self.func("LAST_DAY", expression.this)
+
+    def dateadd_sql(self, expression: exp.DateAdd) -> str:
+        from sqlglot.dialects.dialect import unit_to_str
+
+        return self.func(
+            "DATE_ADD", expression.this, expression.expression, unit_to_str(expression)
+        )
 
     def arrayany_sql(self, expression: exp.ArrayAny) -> str:
         if self.CAN_IMPLEMENT_ARRAY_ANY:

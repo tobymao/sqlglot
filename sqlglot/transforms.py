@@ -93,7 +93,9 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
     Some dialects don't support window functions in the WHERE clause, so we need to include them as
     projections in the subquery, in order to refer to them in the outer filter using aliases. Also,
     if a column is referenced in the QUALIFY clause but is not selected, we need to include it too,
-    otherwise we won't be able to refer to it in the outer query's WHERE clause.
+    otherwise we won't be able to refer to it in the outer query's WHERE clause. Finally, if a
+    newly aliased projection is referenced in the QUALIFY clause, it will be replaced by the
+    corresponding expression to avoid creating invalid column references.
     """
     if isinstance(expression, exp.Select) and expression.args.get("qualify"):
         taken = set(expression.named_selects)
@@ -105,20 +107,31 @@ def eliminate_qualify(expression: exp.Expression) -> exp.Expression:
 
         outer_selects = exp.select(*[select.alias_or_name for select in expression.selects])
         qualify_filters = expression.args["qualify"].pop().this
+        expression_by_alias = {
+            select.alias: select.this
+            for select in expression.selects
+            if isinstance(select, exp.Alias)
+        }
 
         select_candidates = exp.Window if expression.is_star else (exp.Window, exp.Column)
-        for expr in qualify_filters.find_all(select_candidates):
-            if isinstance(expr, exp.Window):
+        for select_candidate in qualify_filters.find_all(select_candidates):
+            if isinstance(select_candidate, exp.Window):
+                if expression_by_alias:
+                    for column in select_candidate.find_all(exp.Column):
+                        expr = expression_by_alias.get(column.name)
+                        if expr:
+                            column.replace(expr)
+
                 alias = find_new_name(expression.named_selects, "_w")
-                expression.select(exp.alias_(expr, alias), copy=False)
+                expression.select(exp.alias_(select_candidate, alias), copy=False)
                 column = exp.column(alias)
 
-                if isinstance(expr.parent, exp.Qualify):
+                if isinstance(select_candidate.parent, exp.Qualify):
                     qualify_filters = column
                 else:
-                    expr.replace(column)
-            elif expr.name not in expression.named_selects:
-                expression.select(expr.copy(), copy=False)
+                    select_candidate.replace(column)
+            elif select_candidate.name not in expression.named_selects:
+                expression.select(select_candidate.copy(), copy=False)
 
         return outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(
             qualify_filters, copy=False
@@ -136,6 +149,26 @@ def remove_precision_parameterized_types(expression: exp.Expression) -> exp.Expr
         node.set(
             "expressions", [e for e in node.expressions if not isinstance(e, exp.DataTypeParam)]
         )
+
+    return expression
+
+
+def unqualify_unnest(expression: exp.Expression) -> exp.Expression:
+    """Remove references to unnest table aliases, added by the optimizer's qualify_columns step."""
+    from sqlglot.optimizer.scope import find_all_in_scope
+
+    if isinstance(expression, exp.Select):
+        unnest_aliases = {
+            unnest.alias
+            for unnest in find_all_in_scope(expression, exp.Unnest)
+            if isinstance(unnest.parent, (exp.From, exp.Join))
+        }
+        if unnest_aliases:
+            for column in expression.find_all(exp.Column):
+                if column.table in unnest_aliases:
+                    column.set("table", None)
+                elif column.db in unnest_aliases:
+                    column.set("db", None)
 
     return expression
 
@@ -447,7 +480,7 @@ def move_ctes_to_top_level(expression: exp.Expression) -> exp.Expression:
             if inner_with.recursive:
                 top_level_with.set("recursive", True)
 
-            top_level_with.expressions.extend(inner_with.expressions)
+            top_level_with.set("expressions", inner_with.expressions + top_level_with.expressions)
 
     return expression
 

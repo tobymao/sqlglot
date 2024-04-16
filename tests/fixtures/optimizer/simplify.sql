@@ -304,6 +304,9 @@ x * (1 - y);
 (((x % 20) = 0) = TRUE);
 ((x % 20) = 0) = TRUE;
 
+ANY(t.value);
+ANY(t.value);
+
 --------------------------------------
 -- Literals
 --------------------------------------
@@ -465,6 +468,18 @@ CAST('1998-09-02 00:00:00' AS DATETIME);
 
 CAST(x AS DATETIME) + interval '1' WEEK;
 CAST(x AS DATETIME) + INTERVAL '1' WEEK;
+
+# dialect: bigquery
+CAST('2023-01-01' AS TIMESTAMP) + INTERVAL 1 DAY;
+CAST('2023-01-02 00:00:00' AS TIMESTAMP);
+
+# dialect: bigquery
+INTERVAL 1 DAY + CAST('2023-01-01' AS TIMESTAMP);
+CAST('2023-01-02 00:00:00' AS TIMESTAMP);
+
+# dialect: bigquery
+CAST('2023-01-02' AS TIMESTAMP) - INTERVAL 1 DAY;
+CAST('2023-01-01 00:00:00' AS TIMESTAMP);
 
 TS_OR_DS_TO_DATE('1998-12-01 00:00:01') - interval '90' day;
 CAST('1998-09-02' AS DATE);
@@ -754,6 +769,9 @@ CAST(CAST(1 AS INT) AS BOOLEAN) = 1;
 CAST(CAST(CAST(1 AS INT) AS BOOLEAN) AS INT) = 1;
 CAST(CAST(CAST(1 AS INT) AS BOOLEAN) AS INT) = 1;
 
+x > CAST('2023-01-01' AS DATE) AND x < CAST('2023-01-01' AS DATETIME);
+FALSE;
+
 --------------------------------------
 -- COALESCE
 --------------------------------------
@@ -851,7 +869,7 @@ CONCAT_WS(sep, 'a', 'b');
 CONCAT_WS(sep, 'a', 'b');
 
 'a' || 'b' || x;
-CONCAT('ab', x);
+'ab' || x;
 
 CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
 CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
@@ -870,17 +888,33 @@ DATE_TRUNC(CAST('2023-12-15' AS DATE), WEEK);
 CAST('2023-12-10' AS DATE);
 
 # dialect: bigquery
+DATE_TRUNC(CAST('2023-10-01' AS TIMESTAMP), QUARTER);
+CAST('2023-10-01 00:00:00' AS TIMESTAMP);
+
+# dialect: bigquery
 DATE_TRUNC(CAST('2023-12-16' AS DATE), WEEK);
 CAST('2023-12-10' AS DATE);
 
 DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
+# dialect: bigquery
+DATE_TRUNC(x, year) = CAST('2021-01-01' AS TIMESTAMP);
+x < CAST('2022-01-01 00:00:00' AS TIMESTAMP) AND x >= CAST('2021-01-01 00:00:00' AS TIMESTAMP);
+
 DATE_TRUNC('quarter', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2021-04-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
+# dialect: bigquery
+DATE_TRUNC(x, quarter) = CAST('2021-01-01' AS TIMESTAMP);
+x < CAST('2021-04-01 00:00:00' AS TIMESTAMP) AND x >= CAST('2021-01-01 00:00:00' AS TIMESTAMP);
+
 DATE_TRUNC('month', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2021-02-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(x, month) = CAST('2021-01-01' AS TIMESTAMP);
+x < CAST('2021-02-01 00:00:00' AS TIMESTAMP) AND x >= CAST('2021-01-01 00:00:00' AS TIMESTAMP);
 
 DATE_TRUNC('week', x) = CAST('2021-01-04' AS DATE);
 x < CAST('2021-01-11' AS DATE) AND x >= CAST('2021-01-04' AS DATE);
@@ -888,8 +922,16 @@ x < CAST('2021-01-11' AS DATE) AND x >= CAST('2021-01-04' AS DATE);
 DATE_TRUNC('day', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2021-01-02' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
+# dialect: bigquery
+DATE_TRUNC(x, DAY) = CAST('2021-01-01' AS TIMESTAMP);
+x < CAST('2021-01-02 00:00:00' AS TIMESTAMP) AND x >= CAST('2021-01-01 00:00:00' AS TIMESTAMP);
+
 CAST('2021-01-01' AS DATE) = DATE_TRUNC('year', x);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+# dialect: bigquery
+CAST('2021-01-01' AS TIMESTAMP) = DATE_TRUNC(x, year);
+x < CAST('2022-01-01 00:00:00' AS TIMESTAMP) AND x >= CAST('2021-01-01 00:00:00' AS TIMESTAMP);
 
 -- Always false, except for nulls
 DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
@@ -905,11 +947,19 @@ DATE_TRUNC('YEAR', x) <> CAST('2021-01-02' AS DATE);
 DATE_TRUNC('year', x) <= CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE);
 
+# dialect: bigquery
+DATE_TRUNC(x, year) <= CAST('2021-01-01' AS TIMESTAMP);
+x < CAST('2022-01-01 00:00:00' AS TIMESTAMP);
+
 DATE_TRUNC('year', x) <= CAST('2021-01-02' AS DATE);
 x < CAST('2022-01-01' AS DATE);
 
 CAST('2021-01-01' AS DATE) >= DATE_TRUNC('year', x);
 x < CAST('2022-01-01' AS DATE);
+
+# dialect: bigquery
+CAST('2021-01-01' AS TIMESTAMP) >= DATE_TRUNC(x, year);
+x < CAST('2022-01-01 00:00:00' AS TIMESTAMP);
 
 DATE_TRUNC('year', x) < CAST('2021-01-01' AS DATE);
 x < CAST('2021-01-01' AS DATE);
@@ -941,6 +991,10 @@ DATE_TRUNC('YEAR', x) <> '2021-01-02';
 
 DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2023-01-01' AS DATE));
 (x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE)) OR (x < CAST('2024-01-01' AS DATE) AND x >= CAST('2023-01-01' AS DATE));
+
+# dialect: bigquery
+DATE_TRUNC(x, year) IN (CAST('2021-01-01' AS TIMESTAMP), CAST('2023-01-01' AS TIMESTAMP));
+(x < CAST('2022-01-01 00:00:00' AS TIMESTAMP) AND x >= CAST('2021-01-01 00:00:00' AS TIMESTAMP)) OR (x < CAST('2024-01-01 00:00:00' AS TIMESTAMP) AND x >= CAST('2023-01-01 00:00:00' AS TIMESTAMP));
 
 -- merge ranges
 DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2022-01-01' AS DATE));

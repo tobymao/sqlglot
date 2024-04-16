@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     build_formatted_time,
     filter_array_using_unnest,
     if_sql,
-    inline_array_sql,
+    inline_array_unless_query,
     max_or_greatest,
     min_or_least,
     no_ilike_sql,
@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     timestrtotime_sql,
     ts_or_ds_add_cast,
+    unit_to_var,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -77,29 +78,6 @@ def _create_sql(self: BigQuery.Generator, expression: exp.Create) -> str:
             expression.set("expression", expression.expression.this)
 
     return self.create_sql(expression)
-
-
-def _unqualify_unnest(expression: exp.Expression) -> exp.Expression:
-    """Remove references to unnest table aliases since bigquery doesn't allow them.
-
-    These are added by the optimizer's qualify_column step.
-    """
-    from sqlglot.optimizer.scope import find_all_in_scope
-
-    if isinstance(expression, exp.Select):
-        unnest_aliases = {
-            unnest.alias
-            for unnest in find_all_in_scope(expression, exp.Unnest)
-            if isinstance(unnest.parent, (exp.From, exp.Join))
-        }
-        if unnest_aliases:
-            for column in expression.find_all(exp.Column):
-                if column.table in unnest_aliases:
-                    column.set("table", None)
-                elif column.db in unnest_aliases:
-                    column.set("db", None)
-
-    return expression
 
 
 # https://issuetracker.google.com/issues/162294746
@@ -196,9 +174,9 @@ def _ts_or_ds_add_sql(self: BigQuery.Generator, expression: exp.TsOrDsAdd) -> st
 
 
 def _ts_or_ds_diff_sql(self: BigQuery.Generator, expression: exp.TsOrDsDiff) -> str:
-    expression.this.replace(exp.cast(expression.this, "TIMESTAMP", copy=True))
-    expression.expression.replace(exp.cast(expression.expression, "TIMESTAMP", copy=True))
-    unit = expression.args.get("unit") or "DAY"
+    expression.this.replace(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP))
+    expression.expression.replace(exp.cast(expression.expression, exp.DataType.Type.TIMESTAMP))
+    unit = unit_to_var(expression)
     return self.func("DATE_DIFF", expression.this, expression.expression, unit)
 
 
@@ -213,7 +191,9 @@ def _unix_to_time_sql(self: BigQuery.Generator, expression: exp.UnixToTime) -> s
     if scale == exp.UnixToTime.MICROS:
         return self.func("TIMESTAMP_MICROS", timestamp)
 
-    unix_seconds = exp.cast(exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), "int64")
+    unix_seconds = exp.cast(
+        exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)), exp.DataType.Type.BIGINT
+    )
     return self.func("TIMESTAMP_SECONDS", unix_seconds)
 
 
@@ -575,6 +555,7 @@ class BigQuery(Dialect):
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArgMax: arg_max_or_min_no_count("MAX_BY"),
             exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
+            exp.Array: inline_array_unless_query,
             exp.ArrayContains: _array_contains_sql,
             exp.ArrayFilter: filter_array_using_unnest,
             exp.ArraySize: rename_func("ARRAY_LENGTH"),
@@ -590,7 +571,7 @@ class BigQuery(Dialect):
             exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
             exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
             exp.DateDiff: lambda self, e: self.func(
-                "DATE_DIFF", e.this, e.expression, e.unit or "DAY"
+                "DATE_DIFF", e.this, e.expression, unit_to_var(e)
             ),
             exp.DateFromParts: rename_func("DATE"),
             exp.DateStrToDate: datestrtodate_sql,
@@ -628,7 +609,7 @@ class BigQuery(Dialect):
             exp.Select: transforms.preprocess(
                 [
                     transforms.explode_to_unnest(),
-                    _unqualify_unnest,
+                    transforms.unqualify_unnest,
                     transforms.eliminate_distinct_on,
                     _alias_ordered_group,
                     transforms.eliminate_semi_and_anti_joins,
@@ -841,13 +822,6 @@ class BigQuery(Dialect):
 
         def trycast_sql(self, expression: exp.TryCast) -> str:
             return self.cast_sql(expression, safe_prefix="SAFE_")
-
-        def array_sql(self, expression: exp.Array) -> str:
-            first_arg = seq_get(expression.expressions, 0)
-            if isinstance(first_arg, exp.Query):
-                return f"ARRAY{self.wrap(self.sql(first_arg))}"
-
-            return inline_array_sql(self, expression)
 
         def bracket_sql(self, expression: exp.Bracket) -> str:
             this = expression.this

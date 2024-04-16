@@ -492,6 +492,16 @@ SELECT x AS x, offset AS offset FROM UNNEST([1, 2]) AS x WITH OFFSET AS offset;
 select * from unnest ([1, 2]) as x with offset as y;
 SELECT x AS x, y AS y FROM UNNEST([1, 2]) AS x WITH OFFSET AS y;
 
+# dialect: bigquery
+# execute: false
+select x, a, x.a from unnest([STRUCT(1 AS a)]) as x CROSS JOIN m;
+SELECT x AS x, a AS a, x.a AS a FROM UNNEST([STRUCT(1 AS a)]) AS x CROSS JOIN m AS m;
+
+# dialect: bigquery
+# execute: false
+WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) select a, x, m.a from cte, UNNEST(x) AS m CROSS JOIN n;
+WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) SELECT a AS a, cte.x AS x, m.a AS a FROM cte AS cte, UNNEST(cte.x) AS m CROSS JOIN n AS n;
+
 # dialect: presto
 SELECT x.a, i.b FROM x CROSS JOIN UNNEST(SPLIT(CAST(b AS VARCHAR), ',')) AS i(b);
 SELECT x.a AS a, i.b AS b FROM x AS x CROSS JOIN UNNEST(SPLIT(CAST(x.b AS VARCHAR), ',')) AS i(b);
@@ -507,6 +517,11 @@ SELECT t.c1 AS c1, t.c2 AS c2, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
 # execute: false
 SELECT c1, c3 FROM foo(bar) AS t(c1, c2, c3);
 SELECT t.c1 AS c1, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
+
+# dialect: redshift
+# execute: false
+SELECT c.f::VARCHAR(MAX) AS f, e AS e FROM a.b AS c, c.d AS e;
+SELECT CAST(c.f AS VARCHAR(MAX)) AS f, e AS e FROM a.b AS c, c.d AS e;
 
 --------------------------------------
 -- Window functions

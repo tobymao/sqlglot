@@ -109,7 +109,7 @@ def _build_formatted_time(
         assert len(args) == 2
 
         return exp_class(
-            this=exp.cast(args[1], "datetime"),
+            this=exp.cast(args[1], exp.DataType.Type.DATETIME),
             format=exp.Literal.string(
                 format_time(
                     args[0].name.lower(),
@@ -726,6 +726,7 @@ class TSQL(Dialect):
         SUPPORTS_SELECT_INTO = True
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_TO_NUMBER = False
+        OUTER_UNION_MODIFIERS = False
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
@@ -881,13 +882,6 @@ class TSQL(Dialect):
                 expression.set("milli", exp.Literal.number(0))
 
             return rename_func("DATETIMEFROMPARTS")(self, expression)
-
-        def set_operations(self, expression: exp.Union) -> str:
-            limit = expression.args.get("limit")
-            if limit:
-                return self.sql(expression.limit(limit.pop(), copy=False))
-
-            return super().set_operations(expression)
 
         def setitem_sql(self, expression: exp.SetItem) -> str:
             this = expression.this

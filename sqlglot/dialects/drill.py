@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import typing as t
 
 from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
@@ -12,23 +11,15 @@ from sqlglot.dialects.dialect import (
     str_position_sql,
     timestrtotime_sql,
 )
+from sqlglot.dialects.mysql import date_add_sql
 from sqlglot.transforms import preprocess, move_schema_columns_to_partitioned_by
-
-
-def _date_add_sql(kind: str) -> t.Callable[[Drill.Generator, exp.DateAdd | exp.DateSub], str]:
-    def func(self: Drill.Generator, expression: exp.DateAdd | exp.DateSub) -> str:
-        this = self.sql(expression, "this")
-        unit = exp.var(expression.text("unit").upper() or "DAY")
-        return self.func(f"DATE_{kind}", this, exp.Interval(this=expression.expression, unit=unit))
-
-    return func
 
 
 def _str_to_date(self: Drill.Generator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
     if time_format == Drill.DATE_FORMAT:
-        return self.sql(exp.cast(this, "date"))
+        return self.sql(exp.cast(this, exp.DataType.Type.DATE))
     return self.func("TO_DATE", this, time_format)
 
 
@@ -123,9 +114,9 @@ class Drill(Dialect):
             exp.ArrayContains: rename_func("REPEATED_CONTAINS"),
             exp.ArraySize: rename_func("REPEATED_COUNT"),
             exp.Create: preprocess([move_schema_columns_to_partitioned_by]),
-            exp.DateAdd: _date_add_sql("ADD"),
+            exp.DateAdd: date_add_sql("ADD"),
             exp.DateStrToDate: datestrtodate_sql,
-            exp.DateSub: _date_add_sql("SUB"),
+            exp.DateSub: date_add_sql("SUB"),
             exp.DateToDi: lambda self,
             e: f"CAST(TO_DATE({self.sql(e, 'this')}, {Drill.DATEINT_FORMAT}) AS INT)",
             exp.DiToDate: lambda self,
@@ -143,7 +134,7 @@ class Drill(Dialect):
                 [transforms.eliminate_distinct_on, transforms.eliminate_semi_and_anti_joins]
             ),
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, "date")),
+            exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DataType.Type.DATE)),
             exp.TimeStrToTime: timestrtotime_sql,
             exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
             exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),

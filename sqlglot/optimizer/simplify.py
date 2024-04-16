@@ -6,6 +6,7 @@ import itertools
 import typing as t
 from collections import deque
 from decimal import Decimal
+from functools import reduce
 
 import sqlglot
 from sqlglot import Dialect, exp
@@ -16,7 +17,7 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
 
     DateTruncBinaryTransform = t.Callable[
-        [exp.Expression, datetime.date, str, Dialect], t.Optional[exp.Expression]
+        [exp.Expression, datetime.date, str, Dialect, exp.DataType], t.Optional[exp.Expression]
     ]
 
 # Final means that an expression should not be simplified
@@ -310,6 +311,8 @@ def _simplify_comparison(expression, left, right, or_=False):
                 r = extract_date(r)
                 if not r:
                     return None
+                # python won't compare date and datetime, but many engines will upcast
+                l, r = cast_as_datetime(l), cast_as_datetime(r)
 
             for (a, av), (b, bv) in itertools.permutations(((left, l), (right, r))):
                 if isinstance(a, LT_LTE) and isinstance(b, LT_LTE):
@@ -627,17 +630,17 @@ def _simplify_binary(expression, a, b):
         if boolean:
             return boolean
     elif _is_date_literal(a) and isinstance(b, exp.Interval):
-        a, b = extract_date(a), extract_interval(b)
-        if a and b:
+        date, b = extract_date(a), extract_interval(b)
+        if date and b:
             if isinstance(expression, (exp.Add, exp.DateAdd, exp.DatetimeAdd)):
-                return date_literal(a + b)
+                return date_literal(date + b, extract_type(a))
             if isinstance(expression, (exp.Sub, exp.DateSub, exp.DatetimeSub)):
-                return date_literal(a - b)
+                return date_literal(date - b, extract_type(a))
     elif isinstance(a, exp.Interval) and _is_date_literal(b):
-        a, b = extract_interval(a), extract_date(b)
+        a, date = extract_interval(a), extract_date(b)
         # you cannot subtract a date from an interval
         if a and b and isinstance(expression, exp.Add):
-            return date_literal(a + b)
+            return date_literal(a + date, extract_type(b))
     elif _is_date_literal(a) and _is_date_literal(b):
         if isinstance(expression, exp.Predicate):
             a, b = extract_date(a), extract_date(b)
@@ -656,17 +659,21 @@ def simplify_parens(expression):
     parent = expression.parent
     parent_is_predicate = isinstance(parent, exp.Predicate)
 
-    if not isinstance(this, exp.Select) and (
-        not isinstance(parent, (exp.Condition, exp.Binary))
-        or isinstance(parent, exp.Paren)
-        or (
-            not isinstance(this, exp.Binary)
-            and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
+    if (
+        not isinstance(this, exp.Select)
+        and not isinstance(parent, exp.SubqueryPredicate)
+        and (
+            not isinstance(parent, (exp.Condition, exp.Binary))
+            or isinstance(parent, exp.Paren)
+            or (
+                not isinstance(this, exp.Binary)
+                and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
+            )
+            or (isinstance(this, exp.Predicate) and not parent_is_predicate)
+            or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
+            or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
+            or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
         )
-        or (isinstance(this, exp.Predicate) and not parent_is_predicate)
-        or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
-        or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
-        or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
     ):
         return this
     return expression
@@ -777,6 +784,8 @@ def simplify_concat(expression):
 
     if concat_type is exp.ConcatWs:
         new_args = [sep_expr] + new_args
+    elif isinstance(expression, exp.DPipe):
+        return reduce(lambda x, y: exp.DPipe(this=x, expression=y), new_args)
 
     return concat_type(expressions=new_args, **args)
 
@@ -848,45 +857,55 @@ def _datetrunc_range(date: datetime.date, unit: str, dialect: Dialect) -> t.Opti
     return floor, floor + interval(unit)
 
 
-def _datetrunc_eq_expression(left: exp.Expression, drange: DateRange) -> exp.Expression:
+def _datetrunc_eq_expression(
+    left: exp.Expression, drange: DateRange, target_type: t.Optional[exp.DataType]
+) -> exp.Expression:
     """Get the logical expression for a date range"""
     return exp.and_(
-        left >= date_literal(drange[0]),
-        left < date_literal(drange[1]),
+        left >= date_literal(drange[0], target_type),
+        left < date_literal(drange[1], target_type),
         copy=False,
     )
 
 
 def _datetrunc_eq(
-    left: exp.Expression, date: datetime.date, unit: str, dialect: Dialect
+    left: exp.Expression,
+    date: datetime.date,
+    unit: str,
+    dialect: Dialect,
+    target_type: t.Optional[exp.DataType],
 ) -> t.Optional[exp.Expression]:
     drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
 
-    return _datetrunc_eq_expression(left, drange)
+    return _datetrunc_eq_expression(left, drange, target_type)
 
 
 def _datetrunc_neq(
-    left: exp.Expression, date: datetime.date, unit: str, dialect: Dialect
+    left: exp.Expression,
+    date: datetime.date,
+    unit: str,
+    dialect: Dialect,
+    target_type: t.Optional[exp.DataType],
 ) -> t.Optional[exp.Expression]:
     drange = _datetrunc_range(date, unit, dialect)
     if not drange:
         return None
 
     return exp.and_(
-        left < date_literal(drange[0]),
-        left >= date_literal(drange[1]),
+        left < date_literal(drange[0], target_type),
+        left >= date_literal(drange[1], target_type),
         copy=False,
     )
 
 
 DATETRUNC_BINARY_COMPARISONS: t.Dict[t.Type[exp.Expression], DateTruncBinaryTransform] = {
-    exp.LT: lambda l, dt, u, d: l
-    < date_literal(dt if dt == date_floor(dt, u, d) else date_floor(dt, u, d) + interval(u)),
-    exp.GT: lambda l, dt, u, d: l >= date_literal(date_floor(dt, u, d) + interval(u)),
-    exp.LTE: lambda l, dt, u, d: l < date_literal(date_floor(dt, u, d) + interval(u)),
-    exp.GTE: lambda l, dt, u, d: l >= date_literal(date_ceil(dt, u, d)),
+    exp.LT: lambda l, dt, u, d, t: l
+    < date_literal(dt if dt == date_floor(dt, u, d) else date_floor(dt, u, d) + interval(u), t),
+    exp.GT: lambda l, dt, u, d, t: l >= date_literal(date_floor(dt, u, d) + interval(u), t),
+    exp.LTE: lambda l, dt, u, d, t: l < date_literal(date_floor(dt, u, d) + interval(u), t),
+    exp.GTE: lambda l, dt, u, d, t: l >= date_literal(date_ceil(dt, u, d), t),
     exp.EQ: _datetrunc_eq,
     exp.NEQ: _datetrunc_neq,
 }
@@ -904,9 +923,11 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
     comparison = expression.__class__
 
     if isinstance(expression, DATETRUNCS):
-        date = extract_date(expression.this)
+        this = expression.this
+        trunc_type = extract_type(this)
+        date = extract_date(this)
         if date and expression.unit:
-            return date_literal(date_floor(date, expression.unit.name.lower(), dialect))
+            return date_literal(date_floor(date, expression.unit.name.lower(), dialect), trunc_type)
     elif comparison not in DATETRUNC_COMPARISONS:
         return expression
 
@@ -917,14 +938,21 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
             return expression
 
         l = t.cast(exp.DateTrunc, l)
+        trunc_arg = l.this
         unit = l.unit.name.lower()
         date = extract_date(r)
 
         if not date:
             return expression
 
-        return DATETRUNC_BINARY_COMPARISONS[comparison](l.this, date, unit, dialect) or expression
-    elif isinstance(expression, exp.In):
+        return (
+            DATETRUNC_BINARY_COMPARISONS[comparison](
+                trunc_arg, date, unit, dialect, extract_type(trunc_arg, r)
+            )
+            or expression
+        )
+
+    if isinstance(expression, exp.In):
         l = expression.this
         rs = expression.expressions
 
@@ -945,8 +973,11 @@ def simplify_datetrunc(expression: exp.Expression, dialect: Dialect) -> exp.Expr
                 return expression
 
             ranges = merge_ranges(ranges)
+            target_type = extract_type(l, *rs)
 
-            return exp.or_(*[_datetrunc_eq_expression(l, drange) for drange in ranges], copy=False)
+            return exp.or_(
+                *[_datetrunc_eq_expression(l, drange, target_type) for drange in ranges], copy=False
+            )
 
     return expression
 
@@ -1095,15 +1126,25 @@ def extract_interval(expression):
         return None
 
 
-def date_literal(date):
-    return exp.cast(
-        exp.Literal.string(date),
-        (
+def extract_type(*expressions):
+    target_type = None
+    for expression in expressions:
+        target_type = expression.to if isinstance(expression, exp.Cast) else expression.type
+        if target_type:
+            break
+
+    return target_type
+
+
+def date_literal(date, target_type=None):
+    if not target_type or not target_type.is_type(*exp.DataType.TEMPORAL_TYPES):
+        target_type = (
             exp.DataType.Type.DATETIME
             if isinstance(date, datetime.datetime)
             else exp.DataType.Type.DATE
-        ),
-    )
+        )
+
+    return exp.cast(exp.Literal.string(date), target_type)
 
 
 def interval(unit: str, n: int = 1):

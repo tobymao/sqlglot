@@ -563,13 +563,20 @@ def if_sql(
 def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
-        this.replace(exp.cast(this, "json"))
+        this.replace(exp.cast(this, exp.DataType.Type.JSON))
 
     return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
 
 
 def inline_array_sql(self: Generator, expression: exp.Array) -> str:
     return f"[{self.expressions(expression, flat=True)}]"
+
+
+def inline_array_unless_query(self: Generator, expression: exp.Array) -> str:
+    elem = seq_get(expression.expressions, 0)
+    if isinstance(elem, exp.Expression) and elem.find(exp.Query):
+        return self.func("ARRAY", elem)
+    return inline_array_sql(self, expression)
 
 
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
@@ -732,9 +739,7 @@ def build_date_delta_with_interval(
         if expression and expression.is_string:
             expression = exp.Literal.number(expression.this)
 
-        return expression_class(
-            this=args[0], expression=expression, unit=exp.Literal.string(interval.text("unit"))
-        )
+        return expression_class(this=args[0], expression=expression, unit=unit_to_str(interval))
 
     return _builder
 
@@ -753,18 +758,14 @@ def date_add_interval_sql(
 ) -> t.Callable[[Generator, exp.Expression], str]:
     def func(self: Generator, expression: exp.Expression) -> str:
         this = self.sql(expression, "this")
-        unit = expression.args.get("unit")
-        unit = exp.var(unit.name.upper() if unit else "DAY")
-        interval = exp.Interval(this=expression.expression, unit=unit)
+        interval = exp.Interval(this=expression.expression, unit=unit_to_var(expression))
         return f"{data_type}_{kind}({this}, {self.sql(interval)})"
 
     return func
 
 
 def timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
-    return self.func(
-        "DATE_TRUNC", exp.Literal.string(expression.text("unit").upper() or "DAY"), expression.this
-    )
+    return self.func("DATE_TRUNC", unit_to_str(expression), expression.this)
 
 
 def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
@@ -772,11 +773,11 @@ def no_timestamp_sql(self: Generator, expression: exp.Timestamp) -> str:
         from sqlglot.optimizer.annotate_types import annotate_types
 
         target_type = annotate_types(expression).type or exp.DataType.Type.TIMESTAMP
-        return self.sql(exp.cast(expression.this, to=target_type))
+        return self.sql(exp.cast(expression.this, target_type))
     if expression.text("expression").lower() in TIMEZONES:
         return self.sql(
             exp.AtTimeZone(
-                this=exp.cast(expression.this, to=exp.DataType.Type.TIMESTAMP),
+                this=exp.cast(expression.this, exp.DataType.Type.TIMESTAMP),
                 zone=expression.expression,
             )
         )
@@ -813,11 +814,11 @@ def right_to_substring_sql(self: Generator, expression: exp.Left) -> str:
 
 
 def timestrtotime_sql(self: Generator, expression: exp.TimeStrToTime) -> str:
-    return self.sql(exp.cast(expression.this, "timestamp"))
+    return self.sql(exp.cast(expression.this, exp.DataType.Type.TIMESTAMP))
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
-    return self.sql(exp.cast(expression.this, "date"))
+    return self.sql(exp.cast(expression.this, exp.DataType.Type.DATE))
 
 
 # Used for Presto and Duckdb which use functions that don't support charset, and assume utf-8
@@ -999,7 +1000,7 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
 
         return self.func(
             name,
-            exp.var(expression.text("unit").upper() or "DAY"),
+            unit_to_var(expression),
             expression.expression,
             expression.this,
         )
@@ -1007,12 +1008,30 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
     return _delta_sql
 
 
+def unit_to_str(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
+    unit = expression.args.get("unit")
+
+    if isinstance(unit, exp.Placeholder):
+        return unit
+    if unit:
+        return exp.Literal.string(unit.name)
+    return exp.Literal.string(default) if default else None
+
+
+def unit_to_var(expression: exp.Expression, default: str = "DAY") -> t.Optional[exp.Expression]:
+    unit = expression.args.get("unit")
+
+    if isinstance(unit, (exp.Var, exp.Placeholder)):
+        return unit
+    return exp.Var(this=default) if default else None
+
+
 def no_last_day_sql(self: Generator, expression: exp.LastDay) -> str:
     trunc_curr_date = exp.func("date_trunc", "month", expression.this)
     plus_one_month = exp.func("date_add", trunc_curr_date, 1, "month")
     minus_one_day = exp.func("date_sub", plus_one_month, 1, "day")
 
-    return self.sql(exp.cast(minus_one_day, "date"))
+    return self.sql(exp.cast(minus_one_day, exp.DataType.Type.DATE))
 
 
 def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:

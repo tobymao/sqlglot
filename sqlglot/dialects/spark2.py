@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     pivot_column_names,
     rename_func,
     trim_sql,
+    unit_to_str,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
@@ -47,7 +48,7 @@ def _unix_to_time_sql(self: Spark2.Generator, expression: exp.UnixToTime) -> str
     timestamp = expression.this
 
     if scale is None:
-        return self.sql(exp.cast(exp.func("from_unixtime", timestamp), "timestamp"))
+        return self.sql(exp.cast(exp.func("from_unixtime", timestamp), exp.DataType.Type.TIMESTAMP))
     if scale == exp.UnixToTime.SECONDS:
         return self.func("TIMESTAMP_SECONDS", timestamp)
     if scale == exp.UnixToTime.MILLIS:
@@ -128,11 +129,7 @@ class Spark2(Hive):
             "DOUBLE": _build_as_cast("double"),
             "FLOAT": _build_as_cast("float"),
             "FROM_UTC_TIMESTAMP": lambda args: exp.AtTimeZone(
-                this=exp.cast_unless(
-                    seq_get(args, 0) or exp.Var(this=""),
-                    exp.DataType.build("timestamp"),
-                    exp.DataType.build("timestamp"),
-                ),
+                this=exp.cast(seq_get(args, 0) or exp.Var(this=""), exp.DataType.Type.TIMESTAMP),
                 zone=seq_get(args, 1),
             ),
             "INT": _build_as_cast("int"),
@@ -149,11 +146,7 @@ class Spark2(Hive):
             ),
             "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
             "TO_UTC_TIMESTAMP": lambda args: exp.FromTimeZone(
-                this=exp.cast_unless(
-                    seq_get(args, 0) or exp.Var(this=""),
-                    exp.DataType.build("timestamp"),
-                    exp.DataType.build("timestamp"),
-                ),
+                this=exp.cast(seq_get(args, 0) or exp.Var(this=""), exp.DataType.Type.TIMESTAMP),
                 zone=seq_get(args, 1),
             ),
             "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
@@ -219,7 +212,7 @@ class Spark2(Hive):
                 ]
             ),
             exp.DateFromParts: rename_func("MAKE_DATE"),
-            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.args.get("unit")),
+            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             exp.DayOfYear: rename_func("DAYOFYEAR"),
@@ -242,9 +235,7 @@ class Spark2(Hive):
             ),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimestampTrunc: lambda self, e: self.func(
-                "DATE_TRUNC", exp.Literal.string(e.text("unit")), e.this
-            ),
+            exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
             exp.Trim: trim_sql,
             exp.UnixToTime: _unix_to_time_sql,
             exp.VariancePop: rename_func("VAR_POP"),

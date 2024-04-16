@@ -6,6 +6,7 @@ from sqlglot import exp, generator, parser, tokens, transforms
 from sqlglot.dialects.dialect import (
     Dialect,
     arg_max_or_min_no_count,
+    build_formatted_time,
     date_delta_sql,
     inline_array_sql,
     json_extract_segments,
@@ -17,6 +18,16 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
+
+
+def _build_date_format(args: t.List) -> exp.TimeToStr:
+    expr = build_formatted_time(exp.TimeToStr, "clickhouse")(args)
+
+    timezone = seq_get(args, 2)
+    if timezone:
+        expr.set("timezone", timezone)
+
+    return expr
 
 
 def _lower_func(sql: str) -> str:
@@ -124,6 +135,8 @@ class ClickHouse(Dialect):
             "DATEDIFF": lambda args: exp.DateDiff(
                 this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
             ),
+            "DATE_FORMAT": _build_date_format,
+            "FORMATDATETIME": _build_date_format,
             "JSONEXTRACTSTRING": build_json_extract_path(
                 exp.JSONExtractScalar, zero_based_indexing=False
             ),
@@ -652,6 +665,9 @@ class ClickHouse(Dialect):
             exp.StartsWith: rename_func("startsWith"),
             exp.StrPosition: lambda self, e: self.func(
                 "position", e.this, e.args.get("substr"), e.args.get("position")
+            ),
+            exp.TimeToStr: lambda self, e: self.func(
+                "DATE_FORMAT", e.this, self.format_time(e), e.args.get("timezone")
             ),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),

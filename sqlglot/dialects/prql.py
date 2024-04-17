@@ -64,7 +64,7 @@ class PRQL(Dialect):
             if isinstance(eq.expression, exp.Null):
                 is_exp = exp.Is(this=eq.this, expression=eq.expression)
                 return is_exp if isinstance(eq, exp.EQ) else exp.Not(this=is_exp)
-            elif isinstance(eq.this, exp.Null):
+            if isinstance(eq.this, exp.Null):
                 is_exp = exp.Is(this=eq.expression, expression=eq.this)
                 return is_exp if isinstance(eq, exp.EQ) else exp.Not(this=is_exp)
             return eq

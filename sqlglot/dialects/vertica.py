@@ -1,7 +1,6 @@
-from sqlglot import exp
+from sqlglot import exp, generator, tokens
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.tokens import Tokenizer, TokenType
-from sqlglot.generator import Generator
 
 
 class Vertica(Dialect):
@@ -17,13 +16,9 @@ class Vertica(Dialect):
             "VARCHAR": TokenType.STRING,
         }
 
-    # Ignoring mypy errors for forward declarations
-    class Generator(Generator):  # type: ignore
-        TRANSFORMS = {
-            exp.Array: lambda self, e: f"[{self.expressions(e)}]",
-        }
+    class Generator(generator.Generator):
 
-    TYPE_MAPPING = {
+        TYPE_MAPPING = {
         exp.DataType.Type.TINYINT: "INT64",
         exp.DataType.Type.SMALLINT: "INT64",
         exp.DataType.Type.INT: "INT64",

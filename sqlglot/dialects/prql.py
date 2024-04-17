@@ -57,7 +57,7 @@ class PRQL(Dialect):
 
         def _parse_equality(self) -> t.Optional[exp.Expression]:
             eq = self._parse_tokens(self._parse_comparison, self.EQUALITY)
-            if not eq or not isinstance(eq, (exp.EQ, exp.NEQ)):
+            if not isinstance(eq, (exp.EQ, exp.NEQ)):
                 return eq
 
             # https://prql-lang.org/book/reference/spec/null.html

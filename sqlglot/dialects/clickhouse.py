@@ -461,9 +461,13 @@ class ClickHouse(Dialect):
             functions: t.Optional[t.Dict[str, t.Callable]] = None,
             anonymous: bool = False,
             optional_parens: bool = True,
+            any_token: bool = False,
         ) -> t.Optional[exp.Expression]:
             func = super()._parse_function(
-                functions=functions, anonymous=anonymous, optional_parens=optional_parens
+                functions=functions,
+                anonymous=anonymous,
+                optional_parens=optional_parens,
+                any_token=any_token,
             )
 
             if isinstance(func, exp.Anonymous):

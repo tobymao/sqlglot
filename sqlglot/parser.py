@@ -4232,7 +4232,7 @@ class Parser(metaclass=_Parser):
             elif op and self._curr:
                 field = self._parse_column_reference()
             else:
-                field = self._parse_field(anonymous_func=True, any_token=True)
+                field = self._parse_field(any_token=True, anonymous_func=True)
 
             if isinstance(field, exp.Func) and this:
                 # bigquery allows function calls like x.y.count(...)
@@ -4320,17 +4320,23 @@ class Parser(metaclass=_Parser):
         tokens: t.Optional[t.Collection[TokenType]] = None,
         anonymous_func: bool = False,
     ) -> t.Optional[exp.Expression]:
-        return (
-            self._parse_primary()
-            or self._parse_function(anonymous=anonymous_func)
-            or self._parse_id_var(any_token=any_token, tokens=tokens)
-        )
+        if anonymous_func:
+            field = (
+                self._parse_function(anonymous=anonymous_func, any_token=any_token)
+                or self._parse_primary()
+            )
+        else:
+            field = self._parse_primary() or self._parse_function(
+                anonymous=anonymous_func, any_token=any_token
+            )
+        return field or self._parse_id_var(any_token=any_token, tokens=tokens)
 
     def _parse_function(
         self,
         functions: t.Optional[t.Dict[str, t.Callable]] = None,
         anonymous: bool = False,
         optional_parens: bool = True,
+        any_token: bool = False,
     ) -> t.Optional[exp.Expression]:
         # This allows us to also parse {fn <function>} syntax (Snowflake, MySQL support this)
         # See: https://community.snowflake.com/s/article/SQL-Escape-Sequences
@@ -4344,7 +4350,10 @@ class Parser(metaclass=_Parser):
             fn_syntax = True
 
         func = self._parse_function_call(
-            functions=functions, anonymous=anonymous, optional_parens=optional_parens
+            functions=functions,
+            anonymous=anonymous,
+            optional_parens=optional_parens,
+            any_token=any_token,
         )
 
         if fn_syntax:
@@ -4357,6 +4366,7 @@ class Parser(metaclass=_Parser):
         functions: t.Optional[t.Dict[str, t.Callable]] = None,
         anonymous: bool = False,
         optional_parens: bool = True,
+        any_token: bool = False,
     ) -> t.Optional[exp.Expression]:
         if not self._curr:
             return None
@@ -4378,7 +4388,7 @@ class Parser(metaclass=_Parser):
 
             return None
 
-        if token_type not in self.FUNC_TOKENS:
+        if not any_token and token_type not in self.FUNC_TOKENS:
             return None
 
         self._advance(2)

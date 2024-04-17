@@ -40,6 +40,10 @@ class TestBigQuery(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
+        self.validate_identity(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)",
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)",
+        )
 
         table = parse_one("x-0._y.z", dialect="bigquery", into=exp.Table)
         self.assertEqual(table.catalog, "x-0")

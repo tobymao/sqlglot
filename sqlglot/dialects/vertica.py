@@ -16,7 +16,6 @@ class Vertica(Dialect):
         }
 
     class Generator(generator.Generator):
-
         TYPE_MAPPING = {
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.SMALLINT: "INT64",

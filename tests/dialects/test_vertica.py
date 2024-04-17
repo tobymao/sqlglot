@@ -2,8 +2,8 @@ from tests.dialects.test_dialect import Validator
 
 
 class TestVertica(Validator):
-    dialect = "vertica" # type:ignore
-    maxDiff = None # type:ignore
+    dialect = "vertica"  # type:ignore
+    maxDiff = None  # type:ignore
 
     def test_vertica(self):
         self.validate_all(

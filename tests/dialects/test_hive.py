@@ -527,9 +527,11 @@ class TestHive(Validator):
         self.validate_all(
             "APPROX_COUNT_DISTINCT(a)",
             write={
+                "bigquery": "APPROX_COUNT_DISTINCT(a)",
                 "duckdb": "APPROX_COUNT_DISTINCT(a)",
                 "presto": "APPROX_DISTINCT(a)",
                 "hive": "APPROX_COUNT_DISTINCT(a)",
+                "snowflake": "APPROX_COUNT_DISTINCT(a)",
                 "spark": "APPROX_COUNT_DISTINCT(a)",
             },
         )

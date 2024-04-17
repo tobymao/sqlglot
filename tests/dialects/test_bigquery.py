@@ -67,6 +67,7 @@ class TestBigQuery(Validator):
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
+        self.validate_identity("assert.true(1 = 1)")
         self.validate_identity("SELECT ARRAY_TO_STRING(list, '--') AS text")
         self.validate_identity("SELECT jsondoc['some_key']")
         self.validate_identity("SELECT `p.d.UdF`(data).* FROM `p.d.t`")

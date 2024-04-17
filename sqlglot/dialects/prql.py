@@ -56,14 +56,18 @@ class PRQL(Dialect):
         }
 
         def _parse_equality(self) -> t.Optional[exp.Expression]:
-            x = self._parse_tokens(self._parse_comparison, self.EQUALITY)
+            eq = self._parse_tokens(self._parse_comparison, self.EQUALITY)
+            if not eq or not isinstance(eq, (exp.EQ, exp.NEQ)):
+                return eq
+
             # https://prql-lang.org/book/reference/spec/null.html
-            if x and (isinstance(x.expression, exp.Null) or isinstance(x.this, exp.Null)):
-                column = x.expression if isinstance(x.expression, exp.Column) else x.this
-                null = x.expression if isinstance(x.expression, exp.Null) else x.this
-                is_exp = exp.Is(this=column, expression=null)
-                return is_exp if isinstance(x, exp.EQ) else exp.Not(this=is_exp)
-            return x
+            if isinstance(eq.expression, exp.Null):
+                is_exp = exp.Is(this=eq.this, expression=eq.expression)
+                return is_exp if isinstance(eq, exp.EQ) else exp.Not(this=is_exp)
+            elif isinstance(eq.this, exp.Null):
+                is_exp = exp.Is(this=eq.expression, expression=eq.this)
+                return is_exp if isinstance(eq, exp.EQ) else exp.Not(this=is_exp)
+            return eq
 
         def _parse_statement(self) -> t.Optional[exp.Expression]:
             expression = self._parse_expression()

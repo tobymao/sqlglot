@@ -289,7 +289,7 @@ class Parser(metaclass=_Parser):
     RESERVED_TOKENS = {
         *Tokenizer.SINGLE_TOKENS.values(),
         TokenType.SELECT,
-    }
+    } - {TokenType.IDENTIFIER}
 
     DB_CREATABLES = {
         TokenType.DATABASE,
@@ -4388,7 +4388,10 @@ class Parser(metaclass=_Parser):
 
             return None
 
-        if not any_token and token_type not in self.FUNC_TOKENS:
+        if any_token:
+            if token_type in self.RESERVED_TOKENS:
+                return None
+        elif token_type not in self.FUNC_TOKENS:
             return None
 
         self._advance(2)

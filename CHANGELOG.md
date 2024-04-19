@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.11.1] - 2024-04-19
+### :bug: Bug Fixes
+- [`9cf6f4e`](https://github.com/tobymao/sqlglot/commit/9cf6f4e49208d5a41bca1bd437d31b1ed894e6eb) - don't allow any_token on reserved keywords *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.11.0] - 2024-04-19
 ### :boom: BREAKING CHANGES
 - due to [`290e408`](https://github.com/tobymao/sqlglot/commit/290e408ccf0d0eeec767d4b58bc1293878a3a3ae) - Preserve DPipe in simplify_concat *(PR [#3317](https://github.com/tobymao/sqlglot/pull/3317) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -3320,3 +3325,4 @@ Changelog
 [v23.9.0]: https://github.com/tobymao/sqlglot/compare/v23.8.2...v23.9.0
 [v23.10.0]: https://github.com/tobymao/sqlglot/compare/v23.9.0...v23.10.0
 [v23.11.0]: https://github.com/tobymao/sqlglot/compare/v23.10.0...v23.11.0
+[v23.11.1]: https://github.com/tobymao/sqlglot/compare/v23.11.0...v23.11.1

@@ -2488,7 +2488,7 @@ class Generator(metaclass=_Generator):
 
         statements.append("END")
 
-        if self.pretty and self.text_width(statements) > self.max_text_width:
+        if self.pretty and self.too_wide(statements):
             return self.indent("\n".join(statements), skip_first=True, skip_last=True)
 
         return " ".join(statements)
@@ -2849,7 +2849,7 @@ class Generator(metaclass=_Generator):
                 else:
                     sqls.append(sql)
 
-        sep = "\n" if self.pretty and self.text_width(sqls) > self.max_text_width else " "
+        sep = "\n" if self.pretty and self.too_wide(sqls) else " "
         return sep.join(sqls)
 
     def bitwiseand_sql(self, expression: exp.BitwiseAnd) -> str:
@@ -3210,12 +3210,12 @@ class Generator(metaclass=_Generator):
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
         arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)
-        if self.pretty and self.text_width(arg_sqls) > self.max_text_width:
+        if self.pretty and self.too_wide(arg_sqls):
             return self.indent("\n" + ",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
         return ", ".join(arg_sqls)
 
-    def text_width(self, args: t.Iterable) -> int:
-        return sum(len(arg) for arg in args)
+    def too_wide(self, args: t.Iterable) -> bool:
+        return sum(len(arg) for arg in args) > self.max_text_width
 
     def format_time(
         self,
@@ -3237,8 +3237,11 @@ class Generator(metaclass=_Generator):
         flat: bool = False,
         indent: bool = True,
         skip_first: bool = False,
+        skip_last: bool = False,
         sep: str = ", ",
         prefix: str = "",
+        dynamic: bool = False,
+        new_line: bool = False,
     ) -> str:
         expressions = expression.args.get(key or "expressions") if expression else sqls
 
@@ -3272,8 +3275,18 @@ class Generator(metaclass=_Generator):
             else:
                 result_sqls.append(f"{prefix}{sql}{comments}{sep if i + 1 < num_sqls else ''}")
 
-        result_sql = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
-        return self.indent(result_sql, skip_first=skip_first) if indent else result_sql
+        if self.pretty and (not dynamic or self.too_wide(result_sqls)):
+            if new_line:
+                result_sqls.insert(0, "")
+                result_sqls.append("")
+            result_sql = "\n".join(result_sqls)
+        else:
+            result_sql = "".join(result_sqls)
+        return (
+            self.indent(result_sql, skip_first=skip_first, skip_last=skip_last)
+            if indent
+            else result_sql
+        )
 
     def op_expressions(self, op: str, expression: exp.Expression, flat: bool = False) -> str:
         flat = flat or isinstance(expression.parent, exp.Properties)

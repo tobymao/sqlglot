@@ -336,8 +336,8 @@ SELECT * /* multi
    comment */;
 SELECT
   * /* multi
-     line
-     comment */;
+   line
+   comment */;
 WITH table_data AS (
     SELECT 'bob' AS name, ARRAY['banana', 'apple', 'orange'] AS fruit_basket
 )

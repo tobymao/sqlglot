@@ -644,6 +644,7 @@ class Generator(metaclass=_Generator):
         sql: str,
         expression: t.Optional[exp.Expression] = None,
         comments: t.Optional[t.List[str]] = None,
+        separated: bool = False,
     ) -> str:
         comments = (
             ((expression and expression.comments) if comments is None else comments)  # type: ignore
@@ -661,7 +662,7 @@ class Generator(metaclass=_Generator):
         if not comments_sql:
             return sql
 
-        if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
+        if separated or isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return (
                 f"{self.sep()}{comments_sql}{sql}"
                 if not sql or sql[0].isspace()
@@ -2343,8 +2344,8 @@ class Generator(metaclass=_Generator):
                 stack.append(
                     self.maybe_comment(
                         getattr(self, f"{node.key}_op")(node),
-                        expression=node.this,
                         comments=node.comments,
+                        separated=True,
                     )
                 )
                 stack.append(node.this)

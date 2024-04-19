@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.11.2] - 2024-04-19
+### :bug: Bug Fixes
+- [`68595eb`](https://github.com/tobymao/sqlglot/commit/68595eba02ca9f3a01359566104b4315a313ec0a) - edge case *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.11.1] - 2024-04-19
 ### :bug: Bug Fixes
 - [`9cf6f4e`](https://github.com/tobymao/sqlglot/commit/9cf6f4e49208d5a41bca1bd437d31b1ed894e6eb) - don't allow any_token on reserved keywords *(commit by [@tobymao](https://github.com/tobymao))*
@@ -3326,3 +3331,4 @@ Changelog
 [v23.10.0]: https://github.com/tobymao/sqlglot/compare/v23.9.0...v23.10.0
 [v23.11.0]: https://github.com/tobymao/sqlglot/compare/v23.10.0...v23.11.0
 [v23.11.1]: https://github.com/tobymao/sqlglot/compare/v23.11.0...v23.11.1
+[v23.11.2]: https://github.com/tobymao/sqlglot/compare/v23.11.1...v23.11.2

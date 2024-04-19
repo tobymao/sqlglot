@@ -20,6 +20,27 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity(
+            "[a, a(1, 2,3,4444444444444444, tttttaoeunthaoentuhaoentuheoantu, toheuntaoheutnahoeunteoahuntaoeh), b(3, 4,5), c, d, tttttttttttttttteeeeeeeeeeeeeett, 12312312312]",
+            """[
+  a,
+  a(
+    1,
+    2,
+    3,
+    4444444444444444,
+    tttttaoeunthaoentuhaoentuheoantu,
+    toheuntaoheutnahoeunteoahuntaoeh
+  ),
+  b(3, 4, 5),
+  c,
+  d,
+  tttttttttttttttteeeeeeeeeeeeeett,
+  12312312312
+]""",
+            pretty=True,
+        )
+
         self.validate_all(
             "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 as a, 'abc' AS b), STRUCT(str_col AS abc)",
             write={

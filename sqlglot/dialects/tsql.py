@@ -1052,3 +1052,14 @@ class TSQL(Dialect):
 
         def partition_sql(self, expression: exp.Partition) -> str:
             return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
+
+        def altertable_sql(self, expression: exp.AlterTable) -> str:
+            actions = expression.args["actions"]
+            if isinstance(actions[0], exp.RenameTable):
+                table = self.sql(expression.this)
+                target = actions[0].this
+                target = self.sql(
+                    exp.table_(target.this) if isinstance(target, exp.Table) else target
+                )
+                return f"EXEC sp_rename '{table}', '{target}'"
+            return super().altertable_sql(expression)

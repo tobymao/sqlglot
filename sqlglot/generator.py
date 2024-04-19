@@ -662,6 +662,8 @@ class Generator(metaclass=_Generator):
         if not comments_sql:
             return sql
 
+        comments_sql = self._replace_line_breaks(comments_sql)
+
         if separated or isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return (
                 f"{self.sep()}{comments_sql}{sql}"
@@ -2020,10 +2022,9 @@ class Generator(metaclass=_Generator):
                 to_escaped.get(ch, ch) if escape_backslash or ch != "\\" else ch for ch in text
             )
 
-        if self.pretty:
-            text = text.replace("\n", self.SENTINEL_LINE_BREAK)
-
-        return text.replace(self.dialect.QUOTE_END, self._escaped_quote_end)
+        return self._replace_line_breaks(text).replace(
+            self.dialect.QUOTE_END, self._escaped_quote_end
+        )
 
     def loaddata_sql(self, expression: exp.LoadData) -> str:
         local = " LOCAL" if expression.args.get("local") else ""
@@ -3749,3 +3750,9 @@ class Generator(metaclass=_Generator):
                 return self.sql(agg_func)[:-1] + f" {text})"
 
         return f"{self.sql(expression, 'this')} {text}"
+
+    def _replace_line_breaks(self, string: str) -> str:
+        """We don't want to extra indent line breaks so we temporarily replace them with sentinels."""
+        if self.pretty:
+            return string.replace("\n", self.SENTINEL_LINE_BREAK)
+        return string

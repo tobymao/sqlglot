@@ -528,6 +528,28 @@ INNER JOIN y
   USING (id)""",
             pretty=True,
         )
+        self.validate(
+            """with x as (
+  SELECT *
+  /*
+NOTE: LEFT JOIN because blah blah blah
+  */
+  FROM a
+)
+select * from x""",
+            """WITH x AS (
+  SELECT
+    *
+  /*
+NOTE: LEFT JOIN because blah blah blah
+  */
+  FROM a
+)
+SELECT
+  *
+FROM x""",
+            pretty=True,
+        )
 
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")

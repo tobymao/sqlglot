@@ -124,6 +124,10 @@ class TestTranspile(unittest.TestCase):
             "SELECT * FROM t1 /* x */ UNION ALL SELECT * FROM t2",
         )
         self.validate(
+            "/* comment */ SELECT * FROM a UNION SELECT * FROM b",
+            "/* comment */ SELECT * FROM a UNION SELECT * FROM b",
+        )
+        self.validate(
             "SELECT * FROM t1\n/*x*/\nINTERSECT ALL SELECT * FROM t2",
             "SELECT * FROM t1 /* x */ INTERSECT ALL SELECT * FROM t2",
         )

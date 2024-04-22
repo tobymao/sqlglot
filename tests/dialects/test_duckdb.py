@@ -724,6 +724,14 @@ class TestDuckDB(Validator):
             """SELECT i FROM GENERATE_SERIES(0, 12) AS _(i) ORDER BY i ASC""",
         )
 
+        self.validate_identity(
+            "COPY lineitem FROM 'lineitem.ndjson' (FORMAT JSON, DELIMITER ',', AUTO_DETECT TRUE, COMPRESSION SNAPPY, CODEC ZSTD, FORCE_NOT_NULL(col1, col2))"
+        )
+        self.validate_identity(
+            "COPY (SELECT 42 AS a, 'hello' AS b) TO 'query.json' (FORMAT JSON, ARRAY TRUE)"
+        )
+        self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' (DELIMITER '|')")
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

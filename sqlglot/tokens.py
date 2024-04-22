@@ -223,6 +223,7 @@ class TokenType(AutoName):
     COMMIT = auto()
     CONNECT_BY = auto()
     CONSTRAINT = auto()
+    COPY = auto()
     CREATE = auto()
     CROSS = auto()
     CUBE = auto()
@@ -647,6 +648,7 @@ class Tokenizer(metaclass=_Tokenizer):
         "COMMIT": TokenType.COMMIT,
         "CONNECT BY": TokenType.CONNECT_BY,
         "CONSTRAINT": TokenType.CONSTRAINT,
+        "COPY": TokenType.COPY,
         "CREATE": TokenType.CREATE,
         "CROSS": TokenType.CROSS,
         "CUBE": TokenType.CUBE,
@@ -867,7 +869,6 @@ class Tokenizer(metaclass=_Tokenizer):
         "ANALYZE": TokenType.COMMAND,
         "CALL": TokenType.COMMAND,
         "COMMENT": TokenType.COMMENT,
-        "COPY": TokenType.COMMAND,
         "EXPLAIN": TokenType.COMMAND,
         "GRANT": TokenType.COMMAND,
         "OPTIMIZE": TokenType.COMMAND,

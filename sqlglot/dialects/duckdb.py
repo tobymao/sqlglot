@@ -161,6 +161,7 @@ class DuckDB(Dialect):
     SAFE_DIVISION = True
     INDEX_OFFSET = 1
     CONCAT_COALESCE = True
+    COPY_PARAMS_SEP = TokenType.COMMA
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

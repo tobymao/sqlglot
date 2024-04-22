@@ -38,6 +38,7 @@ class Redshift(Postgres):
 
     SUPPORTS_USER_DEFINED_TYPES = False
     INDEX_OFFSET = 0
+    COPY_PARAMS_SEP = None
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {

@@ -336,6 +336,7 @@ class TSQL(Dialect):
     LOG_BASE_FIRST = False
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
+    COPY_PARAMS_SEP = TokenType.COMMA
 
     TIME_MAPPING = {
         "year": "%Y",

@@ -4301,7 +4301,7 @@ class Parser(metaclass=_Parser):
                 this = self._parse_subquery(
                     this=self._parse_set_operations(this), parse_alias=False
                 )
-            elif len(expressions) > 1:
+            elif len(expressions) > 1 or self._prev.token_type == TokenType.COMMA:
                 this = self.expression(exp.Tuple, expressions=expressions)
             else:
                 this = self.expression(exp.Paren, this=this)

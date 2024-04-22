@@ -301,9 +301,10 @@ class Expression(metaclass=_Expression):
         """
         return deepcopy(self)
 
-    def add_comments(self, comments: t.Optional[t.List[str]]) -> None:
+    def add_comments(self, comments: t.Optional[t.List[str]] = None) -> None:
         if self.comments is None:
             self.comments = []
+
         if comments:
             for comment in comments:
                 _, *meta = comment.split(SQLGLOT_META)
@@ -313,6 +314,11 @@ class Expression(metaclass=_Expression):
                         value = v[0].strip() if v else True
                         self.meta[k.strip()] = value
                 self.comments.append(comment)
+
+    def pop_comments(self) -> t.List[str]:
+        comments = self.comments or []
+        self.comments = None
+        return comments
 
     def append(self, arg_key: str, value: t.Any) -> None:
         """

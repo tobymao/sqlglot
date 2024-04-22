@@ -87,6 +87,9 @@ class TestParser(unittest.TestCase):
 
         self.assertIsNotNone(parse_one("date").find(exp.Column))
 
+    def test_tuple(self):
+        parse_one("(a,)").assert_is(exp.Tuple)
+
     def test_structs(self):
         cast = parse_one("cast(x as struct<int>)")
         self.assertIsInstance(cast.to.expressions[0], exp.DataType)

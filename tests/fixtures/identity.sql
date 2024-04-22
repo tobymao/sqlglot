@@ -692,6 +692,7 @@ INSERT INTO y (SELECT 1) UNION (SELECT 2)
 INSERT INTO result_table (WITH test AS (SELECT * FROM source_table) SELECT * FROM test)
 INSERT INTO "tests_user" ("username", "first_name", "last_name") VALUES ('fiara', 'Fiara', 'Ironhide') RETURNING "tests_user"."id"
 INSERT INTO t1 (tc1 /* tc1 */, tc2 /* tc2 */) SELECT c1 /* sc1 */, c2 /* sc2 */ FROM t
+INSERT INTO t1 ("tc1" /* tc1 */, "tc2" /* tc2 */) SELECT "c1" /* sc1 */, "c2" /* sc2 */ FROM t
 INSERT OVERWRITE TABLE x IF EXISTS SELECT * FROM y
 INSERT OVERWRITE TABLE a.b IF EXISTS SELECT * FROM y
 INSERT OVERWRITE DIRECTORY 'x' SELECT 1

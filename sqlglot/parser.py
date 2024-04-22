@@ -4319,6 +4319,7 @@ class Parser(metaclass=_Parser):
         any_token: bool = False,
         tokens: t.Optional[t.Collection[TokenType]] = None,
         anonymous_func: bool = False,
+        comment: bool = False,
     ) -> t.Optional[exp.Expression]:
         if anonymous_func:
             field = (
@@ -4329,7 +4330,7 @@ class Parser(metaclass=_Parser):
             field = self._parse_primary() or self._parse_function(
                 anonymous=anonymous_func, any_token=any_token
             )
-        return field or self._parse_id_var(any_token=any_token, tokens=tokens)
+        return field or self._parse_id_var(any_token=any_token, tokens=tokens, comment=comment)
 
     def _parse_function(
         self,
@@ -4543,7 +4544,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.Schema, this=this, expressions=args)
 
     def _parse_field_def(self) -> t.Optional[exp.Expression]:
-        return self._parse_column_def(self._parse_field(any_token=True))
+        return self._parse_column_def(self._parse_field(any_token=True, comment=True))
 
     def _parse_column_def(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         # column defs are not really columns, they're identifiers
@@ -5517,16 +5518,18 @@ class Parser(metaclass=_Parser):
         self,
         any_token: bool = True,
         tokens: t.Optional[t.Collection[TokenType]] = None,
+        comment: bool = False,
     ) -> t.Optional[exp.Expression]:
-        identifier = self._parse_identifier()
-        if identifier:
-            return identifier
-
-        if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
+        expression = self._parse_identifier()
+        if not expression and (
+            (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS)
+        ):
             quoted = self._prev.token_type == TokenType.STRING
-            return exp.Identifier(this=self._prev.text, quoted=quoted)
+            expression = exp.Identifier(this=self._prev.text, quoted=quoted)
+            if comment:
+                self._add_comments(expression)
 
-        return None
+        return expression
 
     def _parse_string(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.STRING_PARSERS):

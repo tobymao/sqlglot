@@ -623,17 +623,16 @@ class Snowflake(Dialect):
             self,
             any_token: bool = True,
             tokens: t.Optional[t.Collection[TokenType]] = None,
-            comment: bool = False,
         ) -> t.Optional[exp.Expression]:
             if self._match_text_seq("IDENTIFIER", "("):
                 identifier = (
-                    super()._parse_id_var(any_token=any_token, tokens=tokens, comment=comment)
+                    super()._parse_id_var(any_token=any_token, tokens=tokens)
                     or self._parse_string()
                 )
                 self._match_r_paren()
                 return self.expression(exp.Anonymous, this="IDENTIFIER", expressions=[identifier])
 
-            return super()._parse_id_var(any_token=any_token, tokens=tokens, comment=comment)
+            return super()._parse_id_var(any_token=any_token, tokens=tokens)
 
         def _parse_show_snowflake(self, this: str) -> exp.Show:
             scope = None

@@ -357,7 +357,7 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
-        self.assertEqual(expression.this.comments, ["comment2"])
+        self.assertEqual(expression.this.this.comments, ["comment2"])
 
     def test_comments_insert_cte(self):
         expression = parse_one(
@@ -372,7 +372,7 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(expression.comments, ["comment2"])
-        self.assertEqual(expression.this.comments, ["comment3"])
+        self.assertEqual(expression.this.this.comments, ["comment3"])
         self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
 
     def test_comments_update(self):
@@ -390,7 +390,7 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
-        self.assertEqual(expression.this.comments, ["comment2"])
+        self.assertEqual(expression.this.this.comments, ["comment2"])
         self.assertEqual(expression.args.get("where").comments, ["comment4"])
 
     def test_comments_update_cte(self):
@@ -406,7 +406,7 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(expression.comments, ["comment2"])
-        self.assertEqual(expression.this.comments, ["comment3"])
+        self.assertEqual(expression.this.this.comments, ["comment3"])
         self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
 
     def test_comments_delete(self):
@@ -423,7 +423,7 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(expression.comments, ["comment1.1", "comment1.2", "comment1.3"])
-        self.assertEqual(expression.this.comments, ["comment3"])
+        self.assertEqual(expression.this.this.comments, ["comment3"])
         self.assertEqual(expression.args.get("where").comments, ["comment4"])
 
     def test_comments_delete_cte(self):
@@ -438,8 +438,8 @@ class TestParser(unittest.TestCase):
         )
 
         self.assertEqual(expression.comments, ["comment2"])
-        self.assertEqual(expression.this.comments, ["comment3"])
-        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+        self.assertEqual(expression.this.this.comments, ["comment3"])
+        self.assertEqual(expression.args["with"].comments, ["comment1.1", "comment1.2"])
 
     def test_type_literals(self):
         self.assertEqual(parse_one("int 1"), parse_one("CAST(1 AS INT)"))

@@ -33,10 +33,9 @@ def _build_datetime(
 ) -> t.Callable[[t.List], exp.Func]:
     def _builder(args: t.List) -> exp.Func:
         value = seq_get(args, 0)
+        int_value = value is not None and is_int(value.name)
 
         if isinstance(value, exp.Literal):
-            int_value = is_int(value.this)
-
             # Converts calls like `TO_TIME('01:02:03')` into casts
             if len(args) == 1 and value.is_string and not int_value:
                 return exp.cast(value, kind)
@@ -49,7 +48,7 @@ def _build_datetime(
                 if not is_float(value.this):
                     return build_formatted_time(exp.StrToTime, "snowflake")(args)
 
-        if len(args) == 2 and kind == exp.DataType.Type.DATE:
+        if kind == exp.DataType.Type.DATE and not int_value:
             formatted_exp = build_formatted_time(exp.TsOrDsToDate, "snowflake")(args)
             formatted_exp.set("safe", safe)
             return formatted_exp

@@ -1104,6 +1104,6 @@ FROM foo""",
         parse_one("x").assert_is(exp.Column)
 
         with self.assertRaisesRegex(
-            AssertionError, "x is not <class 'sqlglot.expressions.Identifier'>\."
+            AssertionError, "x is not <class 'sqlglot.expressions.Identifier'>\\."
         ):
             parse_one("x").assert_is(exp.Identifier)

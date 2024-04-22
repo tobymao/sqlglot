@@ -3109,6 +3109,9 @@ class Parser(metaclass=_Parser):
             else:
                 table = exp.Identifier(this="*")
 
+        # We bubble up comments from the Identifier to the Table
+        comments = table.pop_comments() if isinstance(table, exp.Expression) else None
+
         if is_db_reference:
             catalog = db
             db = table
@@ -3120,7 +3123,12 @@ class Parser(metaclass=_Parser):
             self.raise_error(f"Expected database name but got {self._curr}")
 
         return self.expression(
-            exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
+            exp.Table,
+            comments=comments,
+            this=table,
+            db=db,
+            catalog=catalog,
+            pivots=self._parse_pivots(),
         )
 
     def _parse_table(
@@ -4216,7 +4224,11 @@ class Parser(metaclass=_Parser):
         ):
             this = self._parse_id_var()
 
-        return self.expression(exp.Column, this=this) if isinstance(this, exp.Identifier) else this
+        if isinstance(this, exp.Identifier):
+            # We bubble up comments from the Identifier to the Column
+            this = self.expression(exp.Column, comments=this.pop_comments(), this=this)
+
+        return this
 
     def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         this = self._parse_bracket(this)
@@ -5404,8 +5416,8 @@ class Parser(metaclass=_Parser):
         else:
             over = self._prev.text.upper()
 
-        if comments:
-            func.comments = None  # type: ignore
+        if comments and isinstance(func, exp.Expression):
+            func.pop_comments()
 
         if not self._match(TokenType.L_PAREN):
             return self.expression(
@@ -5483,7 +5495,7 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression], explicit: bool = False
     ) -> t.Optional[exp.Expression]:
         any_token = self._match(TokenType.ALIAS)
-        comments = self._prev_comments
+        comments = self._prev_comments or []
 
         if explicit and not any_token:
             return this
@@ -5503,13 +5515,13 @@ class Parser(metaclass=_Parser):
         )
 
         if alias:
+            comments.extend(alias.pop_comments())
             this = self.expression(exp.Alias, comments=comments, this=this, alias=alias)
             column = this.this
 
             # Moves the comment next to the alias in `expr /* comment */ AS alias`
             if not this.comments and column and column.comments:
-                this.comments = column.comments
-                column.comments = None
+                this.comments = column.pop_comments()
 
         return this
 
@@ -5518,15 +5530,14 @@ class Parser(metaclass=_Parser):
         any_token: bool = True,
         tokens: t.Optional[t.Collection[TokenType]] = None,
     ) -> t.Optional[exp.Expression]:
-        identifier = self._parse_identifier()
-        if identifier:
-            return identifier
-
-        if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
+        expression = self._parse_identifier()
+        if not expression and (
+            (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS)
+        ):
             quoted = self._prev.token_type == TokenType.STRING
-            return exp.Identifier(this=self._prev.text, quoted=quoted)
+            expression = self.expression(exp.Identifier, this=self._prev.text, quoted=quoted)
 
-        return None
+        return expression
 
     def _parse_string(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.STRING_PARSERS):

@@ -442,7 +442,7 @@ class TestParser(unittest.TestCase):
 
         self.assertEqual(expression.comments, ["comment2"])
         self.assertEqual(expression.this.comments, ["comment3"])
-        self.assertEqual(expression.args.get("with").comments, ["comment1.1", "comment1.2"])
+        self.assertEqual(expression.args["with"].comments, ["comment1.1", "comment1.2"])
 
     def test_type_literals(self):
         self.assertEqual(parse_one("int 1"), parse_one("CAST(1 AS INT)"))

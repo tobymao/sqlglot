@@ -5506,7 +5506,7 @@ class Parser(metaclass=_Parser):
         )
 
         if alias:
-            comments += alias.pop_comments()
+            comments.extend(alias.pop_comments())
             this = self.expression(exp.Alias, comments=comments, this=this, alias=alias)
             column = this.this
 

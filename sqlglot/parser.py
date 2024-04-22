@@ -3109,6 +3109,9 @@ class Parser(metaclass=_Parser):
             else:
                 table = exp.Identifier(this="*")
 
+        # We bubble up comments from the Identifier to the Table
+        comments = table.pop_comments() if isinstance(table, exp.Expression) else None
+
         if is_db_reference:
             catalog = db
             db = table
@@ -3120,7 +3123,12 @@ class Parser(metaclass=_Parser):
             self.raise_error(f"Expected database name but got {self._curr}")
 
         return self.expression(
-            exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
+            exp.Table,
+            comments=comments,
+            this=table,
+            db=db,
+            catalog=catalog,
+            pivots=self._parse_pivots(),
         )
 
     def _parse_table(
@@ -4217,6 +4225,7 @@ class Parser(metaclass=_Parser):
             this = self._parse_id_var()
 
         if isinstance(this, exp.Identifier):
+            # We bubble up comments from the Identifier to the Column
             this = self.expression(exp.Column, comments=this.pop_comments(), this=this)
 
         return this

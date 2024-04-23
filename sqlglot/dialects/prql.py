@@ -61,12 +61,12 @@ class PRQL(Dialect):
         }
 
         AGG_FUNCTIONS = {
-            "MIN": exp.Min,
-            "MAX": exp.Max,
-            "COUNT": exp.Count,
-            "AVERAGE": exp.Avg,
-            "STDDEV": exp.Stddev,
-            "SUM": exp.Sum,
+            "MIN": lambda arg: exp.Min(this=arg),
+            "MAX": lambda arg: exp.Max(this=arg),
+            "COUNT": lambda arg: exp.Count(this=arg),
+            "AVERAGE": lambda arg: exp.Avg(this=arg),
+            "STDDEV": lambda arg: exp.Stddev(this=arg),
+            "SUM": lambda arg: exp.func("COALESCE", exp.Sum(this=arg), 0)
         }
 
         def _parse_equality(self) -> t.Optional[exp.Expression]:
@@ -165,7 +165,7 @@ class PRQL(Dialect):
             if function:
                 self._advance()
                 arg = exp.Star() if self._match_texts("THIS") else self._parse_id_var()
-                func = function(this=arg)
+                func = function(arg)
             else:
                 self.raise_error("Aggregation function is not supported in PRQL")
 

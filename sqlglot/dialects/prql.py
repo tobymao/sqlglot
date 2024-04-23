@@ -66,7 +66,7 @@ class PRQL(Dialect):
             "COUNT": lambda arg: exp.Count(this=arg),
             "AVERAGE": lambda arg: exp.Avg(this=arg),
             "STDDEV": lambda arg: exp.Stddev(this=arg),
-            "SUM": lambda arg: exp.func("COALESCE", exp.Sum(this=arg), 0)
+            "SUM": lambda arg: exp.func("COALESCE", exp.Sum(this=arg), 0),
         }
 
         def _parse_equality(self) -> t.Optional[exp.Expression]:

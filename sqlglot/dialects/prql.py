@@ -39,8 +39,10 @@ class PRQL(Dialect):
         }
 
         TRANSFORM_PARSERS = {
-            "DERIVE": lambda self, query: self._parse_selection(query),
-            "SELECT": lambda self, query: self._parse_selection(query, append=False),
+            "DERIVE": lambda self, query: self._parse_selection(query, self._parse_expression),
+            "SELECT": lambda self, query: self._parse_selection(
+                query, self._parse_expression, append=False
+            ),
             "TAKE": lambda self, query: self._parse_take(query),
             "FILTER": lambda self, query: query.where(self._parse_conjunction()),
             "APPEND": lambda self, query: query.union(
@@ -53,6 +55,16 @@ class PRQL(Dialect):
                 _select_all(self._parse_table()), distinct=False, copy=False
             ),
             "SORT": lambda self, query: self._parse_order_by(query),
+            "AGGREGATE": lambda self, query: self._parse_selection(
+                query, self._parse_aggregate, append=False
+            ),
+        }
+
+        FUNCTIONS = {
+            "AVERAGE": exp.Avg.from_arg_list,
+            "MIN": exp.Min.from_arg_list,
+            "MAX": exp.Max.from_arg_list,
+            "COUNT": exp.Count.from_arg_list,
         }
 
         def _parse_equality(self) -> t.Optional[exp.Expression]:
@@ -87,14 +99,19 @@ class PRQL(Dialect):
 
             return query
 
-        def _parse_selection(self, query: exp.Query, append: bool = True) -> exp.Query:
+        def _parse_selection(
+            self,
+            query: exp.Query,
+            parse_method: t.Callable,
+            append: bool = True,
+        ) -> exp.Query:
             if self._match(TokenType.L_BRACE):
-                selects = self._parse_csv(self._parse_expression)
+                selects = self._parse_csv(parse_method)
 
                 if not self._match(TokenType.R_BRACE, expression=query):
                     self.raise_error("Expecting }")
             else:
-                expression = self._parse_expression()
+                expression = parse_method()
                 selects = [expression] if expression else []
 
             projections = {
@@ -135,6 +152,24 @@ class PRQL(Dialect):
             if l_brace and not self._match(TokenType.R_BRACE):
                 self.raise_error("Expecting }")
             return query.order_by(self.expression(exp.Order, expressions=expressions), copy=False)
+
+        def _parse_aggregate(self) -> t.Optional[exp.Expression]:
+            alias = None
+            if self._next and self._next.token_type == TokenType.ALIAS:
+                alias = self._parse_id_var(True)
+                self._match(TokenType.ALIAS)
+
+            function = self.FUNCTIONS.get(self._curr.text.upper())
+            if function:
+                self._advance()
+                args = [self._parse_id_var()]
+                func = function(args)
+            else:
+                self.raise_error("Aggregation function is not supported in PRQL")
+
+            if alias:
+                return self.expression(exp.Alias, this=func, alias=alias)
+            return func
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

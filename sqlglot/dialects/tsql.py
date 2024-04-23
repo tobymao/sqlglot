@@ -1054,7 +1054,7 @@ class TSQL(Dialect):
             return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
 
         def altertable_sql(self, expression: exp.AlterTable) -> str:
-            action = expression.args["actions"][0]
+            action = seq_get(expression.args.get("actions") or [], 0)
             if isinstance(action, exp.RenameTable):
                 return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
             return super().altertable_sql(expression)

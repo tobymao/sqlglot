@@ -829,3 +829,28 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "CREATE TABLE t1 (a String EPHEMERAL, b String EPHEMERAL func(), c String MATERIALIZED func(), d String ALIAS func()) ENGINE=TinyLog()"
         )
+
+    def test_agg_functions(self):
+        def extract_agg_func(query):
+            return parse_one(query, read="clickhouse").args.get("expressions")[0].this
+
+        self.assertIsInstance(
+            extract_agg_func("select quantileGK(100, 0.95) OVER (PARTITION BY id) FROM table"),
+            exp.AnonymousAggFunc,
+        )
+        self.assertIsInstance(
+            extract_agg_func(
+                "select quantileGK(100, 0.95)(reading) OVER (PARTITION BY id) FROM table"
+            ),
+            exp.ParameterizedAgg,
+        )
+        self.assertIsInstance(
+            extract_agg_func("select quantileGKIf(100, 0.95) OVER (PARTITION BY id) FROM table"),
+            exp.CombinedAggFunc,
+        )
+        self.assertIsInstance(
+            extract_agg_func(
+                "select quantileGKIf(100, 0.95)(reading) OVER (PARTITION BY id) FROM table"
+            ),
+            exp.CombinedParameterizedAgg,
+        )

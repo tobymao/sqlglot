@@ -463,48 +463,51 @@ class ClickHouse(Dialect):
             optional_parens: bool = True,
             any_token: bool = False,
         ) -> t.Optional[exp.Expression]:
-            func = super()._parse_function(
+            expr = super()._parse_function(
                 functions=functions,
                 anonymous=anonymous,
                 optional_parens=optional_parens,
                 any_token=any_token,
             )
 
+            func = expr.this if isinstance(expr, exp.Window) else expr
+
             if isinstance(func, exp.Anonymous):
                 parts = self.AGG_FUNC_MAPPING.get(func.this)
+                is_combined = parts and parts[1]
                 params = self._parse_func_params(func)
 
-                if params:
-                    if parts and parts[1]:
-                        func = self.expression(
-                            exp.CombinedParameterizedAgg,
-                            this=func.this,
-                            expressions=func.expressions,
-                            params=params,
-                            parts=parts,
-                        )
-                    func = self.expression(
-                        exp.ParameterizedAgg,
-                        this=func.this,
-                        expressions=func.expressions,
-                        params=params,
-                    )
-                    return self._parse_window(func)
-                if parts:
-                    if parts[1]:
-                        return self.expression(
-                            exp.CombinedAggFunc,
-                            this=func.this,
-                            expressions=func.expressions,
-                            parts=parts,
-                        )
-                    return self.expression(
-                        exp.AnonymousAggFunc,
-                        this=func.this,
-                        expressions=func.expressions,
-                    )
+                if is_combined:
+                    exp_class = exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
+                else:
+                    exp_class = exp.ParameterizedAgg if params else exp.AnonymousAggFunc
 
-            return func
+                kwargs = {
+                    "exp_class": exp_class,
+                    "this": func.this,
+                    "expressions": func.expressions,
+                }
+
+                if is_combined:
+                    kwargs["parts"] = parts
+                if params:
+                    kwargs["params"] = params
+
+                func = self.expression(**kwargs)
+
+                # Params have blocked super()._parse_function() from parsing the following window
+                # (if that exists) as they're standing between the function call and the window spec
+                if params:
+                    func = self._parse_window(func)
+
+                # The window's func was parsed as Anonymous in base parser, fix it's
+                # type to be CH style CombinedAnonymousAggFunc / AnonymousAggFunc
+                if isinstance(expr, exp.Window):
+                    expr.set("this", func)
+                elif parts or params:
+                    expr = func
+
+            return expr
 
         def _parse_func_params(
             self, this: t.Optional[exp.Func] = None

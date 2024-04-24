@@ -222,6 +222,7 @@ class Oracle(Dialect):
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.BINARY: "BLOB",
             exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DataType.Type.ROWVERSION: "BLOB",
         }
 
         TRANSFORMS = {

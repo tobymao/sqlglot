@@ -239,7 +239,7 @@ except sqlglot.errors.ParseError as e:
 
 ### Unsupported Errors
 
-It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot emits a warning and proceeds to do a best-effort translation by default:
+It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and proceeds to do a best-effort translation by default. Transpilation is difficult and not all permutations are supported. If transpilation does not work, it may not be implemented yet. Well documented / tested PRs / issues are appreciated. Some transpilation cases that require db schemas are made possible through the optimizer but are not included in base transpilation:
 
 ```python
 import sqlglot

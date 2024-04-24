@@ -464,6 +464,7 @@ class TSQL(Dialect):
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
             "TOP": TokenType.TOP,
+            "TIMESTAMP": TokenType.ROWVERSION,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
@@ -755,6 +756,7 @@ class TSQL(Dialect):
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
+            exp.DataType.Type.ROWVERSION: "ROWVERSION",
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)

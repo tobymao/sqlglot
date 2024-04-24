@@ -476,20 +476,20 @@ class ClickHouse(Dialect):
 
                 if params:
                     if parts and parts[1]:
-                        return self.expression(
+                        func = self.expression(
                             exp.CombinedParameterizedAgg,
                             this=func.this,
                             expressions=func.expressions,
                             params=params,
                             parts=parts,
                         )
-                    return self.expression(
+                    func = self.expression(
                         exp.ParameterizedAgg,
                         this=func.this,
                         expressions=func.expressions,
                         params=params,
                     )
-
+                    return self._parse_window(func)
                 if parts:
                     if parts[1]:
                         return self.expression(

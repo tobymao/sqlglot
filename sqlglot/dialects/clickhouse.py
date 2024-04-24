@@ -477,19 +477,17 @@ class ClickHouse(Dialect):
                 is_combined = parts and parts[1]
                 params = self._parse_func_params(func)
 
+                kwargs = {
+                    "this": func.this,
+                    "expressions": func.expressions,
+                }
                 if is_combined:
+                    kwargs["parts"] = parts
                     exp_class = exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
                 else:
                     exp_class = exp.ParameterizedAgg if params else exp.AnonymousAggFunc
 
-                kwargs = {
-                    "exp_class": exp_class,
-                    "this": func.this,
-                    "expressions": func.expressions,
-                }
-
-                if is_combined:
-                    kwargs["parts"] = parts
+                kwargs["exp_class"] = exp_class
                 if params:
                     kwargs["params"] = params
 

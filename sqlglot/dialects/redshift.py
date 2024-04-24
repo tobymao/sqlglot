@@ -146,6 +146,7 @@ class Redshift(Postgres):
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "VARBYTE",
+            exp.DataType.Type.ROWVERSION: "VARBYTE",
         }
 
         TRANSFORMS = {

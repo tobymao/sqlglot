@@ -481,7 +481,7 @@ class TestTSQL(Validator):
             },
             write={
                 "tsql": "CAST(x AS ROWVERSION)",
-                "databricks": "CAST(x AS BINARY)",
+                "hive": "CAST(x AS BINARY)",
             },
         )
 

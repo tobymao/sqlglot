@@ -99,7 +99,7 @@
             <section class="module-info">
                         <a class="pdoc-button git-button" href="https://github.com/tobymao/sqlglot/tree/main/sqlglot/__init__.py">Edit on GitHub</a>
                 
-                        <div class="docstring"><p><img src="sqlglot.svg" alt="SQLGlot logo" /></p>
+                        <div class="docstring"><p><img src="sqlglot.png" alt="SQLGlot logo" /></p>
 
 <p>SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between <a href="https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py">21 different dialects</a> like <a href="https://duckdb.org/">DuckDB</a>, <a href="https://prestodb.io/">Presto</a> / <a href="https://trino.io/">Trino</a>, <a href="https://spark.apache.org/">Spark</a> / <a href="https://www.databricks.com/">Databricks</a>, <a href="https://www.snowflake.com/en/">Snowflake</a>, and <a href="https://cloud.google.com/bigquery/">BigQuery</a>. It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.</p>
 
@@ -361,7 +361,7 @@
 
 <h3 id="unsupported-errors">Unsupported Errors</h3>
 
-<p>It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot emits a warning and proceeds to do a best-effort translation by default:</p>
+<p>It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and proceeds to do a best-effort translation by default. Transpilation is difficult and not all permutations are supported. If transpilation does not work, it may not be implemented yet. Well documented / tested PRs / issues are appreciated. Some transpilation cases that require db schemas are made possible through the optimizer but are not included in base transpilation:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>

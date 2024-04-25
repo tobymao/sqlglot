@@ -821,6 +821,13 @@ WHERE
                 "snowflake": "CASE WHEN x = a OR (x IS NULL AND a IS NULL) THEN b WHEN x = c OR (x IS NULL AND c IS NULL) THEN d ELSE e END",
             },
         )
+        self.validate_all(
+            "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
+            read={"snowflake": "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t"},
+            write={
+                "duckdb": "SELECT GROUP_CONCAT(col1, ', ' ORDER BY col2) FROM t",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

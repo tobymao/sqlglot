@@ -609,18 +609,17 @@ class DuckDB(Dialect):
             return bracket
 
         def withingroup_sql(self, expression: exp.WithinGroup) -> str:
-            expression_sql = self.sql(expression, "expression")[1:]
+            expression_sql = self.sql(expression, "expression")
 
-            if isinstance(expression.this, (exp.PercentileCont, exp.PercentileDisc)):
-                name = (
-                    "PERCENTILE_CONT"
-                    if isinstance(expression.this, exp.PercentileCont)
-                    else "PERCENTILE_DISC"
-                )
-                this = rename_func(name)(self, expression.this)
-
-                return f"{this} WITHIN GROUP ({expression_sql})"
+            func = expression.this
+            if isinstance(func, (exp.PercentileCont, exp.PercentileDisc)):
+                # Make the order key the first arg and slide the fraction to the right
+                # https://duckdb.org/docs/sql/aggregates#ordered-set-aggregate-functions
+                order_col = expression.find(exp.Ordered)
+                if order_col:
+                    func.set("expression", func.this)
+                    func.set("this", order_col.this)
 
             this = self.sql(expression, "this").rstrip(")")
 
-            return f"{this} {expression_sql})"
+            return f"{this}{expression_sql})"

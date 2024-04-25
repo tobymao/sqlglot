@@ -93,6 +93,9 @@ class TestClickhouse(Validator):
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
+        self.validate_identity(
+            "SELECT id, quantileGK(100, 0.95)(reading) OVER (PARTITION BY id ORDER BY id RANGE BETWEEN 30000 PRECEDING AND CURRENT ROW) AS window FROM table"
+        )
 
         self.validate_identity(
             "SELECT $1$foo$1$",
@@ -825,4 +828,29 @@ LIFETIME(MIN 0 MAX 0)""",
         )
         self.validate_identity(
             "CREATE TABLE t1 (a String EPHEMERAL, b String EPHEMERAL func(), c String MATERIALIZED func(), d String ALIAS func()) ENGINE=TinyLog()"
+        )
+
+    def test_agg_functions(self):
+        def extract_agg_func(query):
+            return parse_one(query, read="clickhouse").selects[0].this
+
+        self.assertIsInstance(
+            extract_agg_func("select quantileGK(100, 0.95) OVER (PARTITION BY id) FROM table"),
+            exp.AnonymousAggFunc,
+        )
+        self.assertIsInstance(
+            extract_agg_func(
+                "select quantileGK(100, 0.95)(reading) OVER (PARTITION BY id) FROM table"
+            ),
+            exp.ParameterizedAgg,
+        )
+        self.assertIsInstance(
+            extract_agg_func("select quantileGKIf(100, 0.95) OVER (PARTITION BY id) FROM table"),
+            exp.CombinedAggFunc,
+        )
+        self.assertIsInstance(
+            extract_agg_func(
+                "select quantileGKIf(100, 0.95)(reading) OVER (PARTITION BY id) FROM table"
+            ),
+            exp.CombinedParameterizedAgg,
         )

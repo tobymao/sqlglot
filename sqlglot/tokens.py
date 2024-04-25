@@ -567,11 +567,11 @@ class Tokenizer(metaclass=_Tokenizer):
         "~": TokenType.TILDA,
         "?": TokenType.PLACEHOLDER,
         "@": TokenType.PARAMETER,
-        # Used for breaking a var like x'y' but nothing else the token type doesn't matter
-        "'": TokenType.QUOTE,
-        "`": TokenType.IDENTIFIER,
-        '"': TokenType.IDENTIFIER,
         "#": TokenType.HASH,
+        # Used for breaking a var like x'y' but nothing else the token type doesn't matter
+        "'": TokenType.UNKNOWN,
+        "`": TokenType.UNKNOWN,
+        '"': TokenType.UNKNOWN,
     }
 
     BIT_STRINGS: t.List[str | t.Tuple[str, str]] = []

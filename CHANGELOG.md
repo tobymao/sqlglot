@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v23.12.1] - 2024-04-25
+### :wrench: Chores
+- [`719d394`](https://github.com/tobymao/sqlglot/commit/719d3949b75bcdac0d19b86d7398c5d9c4b5bdc3) - add a test for quoted aliases *(commit by [@tobymao](https://github.com/tobymao))*
+- [`6d7a9f4`](https://github.com/tobymao/sqlglot/commit/6d7a9f4ec0cd87efe19128dc9e55967172bf324e) - use unknown token types *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.12.0] - 2024-04-25
 ### :boom: BREAKING CHANGES
 - due to [`c5ce47b`](https://github.com/tobymao/sqlglot/commit/c5ce47ba7863e0c536e076ea78ec27cb52324493) - Combine aggregate functions with orderby from WITHIN GROUP *(PR [#3352](https://github.com/tobymao/sqlglot/pull/3352) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -3358,3 +3364,4 @@ Changelog
 [v23.11.1]: https://github.com/tobymao/sqlglot/compare/v23.11.0...v23.11.1
 [v23.11.2]: https://github.com/tobymao/sqlglot/compare/v23.11.1...v23.11.2
 [v23.12.0]: https://github.com/tobymao/sqlglot/compare/v23.11.2...v23.12.0
+[v23.12.1]: https://github.com/tobymao/sqlglot/compare/v23.12.0...v23.12.1

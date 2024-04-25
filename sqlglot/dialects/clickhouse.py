@@ -254,6 +254,14 @@ class ClickHouse(Dialect):
             "sparkBar",
             "sumCount",
             "largestTriangleThreeBuckets",
+            "histogram",
+            "sequenceMatch",
+            "sequenceCount",
+            "windowFunnel",
+            "retention",
+            "uniqUpTo",
+            "sequenceNextNode",
+            "exponentialTimeDecayedAvg",
         }
 
         AGG_FUNCTIONS_SUFFIXES = [
@@ -472,16 +480,17 @@ class ClickHouse(Dialect):
 
             func = expr.this if isinstance(expr, exp.Window) else expr
 
-            if isinstance(func, exp.Anonymous):
-                parts = self.AGG_FUNC_MAPPING.get(func.this)
-                is_combined = parts and parts[1]
+            # Aggregate functions can be split in <aggfunc name><suffix>
+            parts = self.AGG_FUNC_MAPPING.get(func.this) if func else None
+
+            if isinstance(func, exp.Anonymous) and parts:
                 params = self._parse_func_params(func)
 
                 kwargs = {
                     "this": func.this,
                     "expressions": func.expressions,
                 }
-                if is_combined:
+                if parts[1]:
                     kwargs["parts"] = parts
                     exp_class = exp.CombinedParameterizedAgg if params else exp.CombinedAggFunc
                 else:
@@ -501,7 +510,7 @@ class ClickHouse(Dialect):
                     # Params have blocked super()._parse_function() from parsing the following window
                     # (if that exists) as they're standing between the function call and the window spec
                     expr = self._parse_window(func)
-                elif parts:
+                else:
                     expr = func
 
             return expr

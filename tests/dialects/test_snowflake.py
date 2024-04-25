@@ -823,9 +823,9 @@ WHERE
         )
         self.validate_all(
             "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
-            read={"snowflake": "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t"},
             write={
                 "duckdb": "SELECT GROUP_CONCAT(col1, ', ' ORDER BY col2) FROM t",
+                "snowflake": "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
             },
         )
 

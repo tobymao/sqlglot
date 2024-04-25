@@ -480,10 +480,12 @@ class ClickHouse(Dialect):
 
             func = expr.this if isinstance(expr, exp.Window) else expr
 
-            # Aggregate functions can be split in <aggfunc name><suffix>
-            parts = self.AGG_FUNC_MAPPING.get(func.this) if func else None
+            # Aggregate functions can be split in 2 parts: <func_name><suffix>
+            parts = (
+                self.AGG_FUNC_MAPPING.get(func.this) if isinstance(func, exp.Anonymous) else None
+            )
 
-            if isinstance(func, exp.Anonymous) and parts:
+            if parts:
                 params = self._parse_func_params(func)
 
                 kwargs = {
@@ -502,9 +504,9 @@ class ClickHouse(Dialect):
 
                 func = self.expression(**kwargs)
 
-                # The window's func was parsed as Anonymous in base parser, fix it's
-                # type to be CH style CombinedAnonymousAggFunc / AnonymousAggFunc
                 if isinstance(expr, exp.Window):
+                    # The window's func was parsed as Anonymous in base parser, fix it's
+                    # type to be CH style CombinedAnonymousAggFunc / AnonymousAggFunc
                     expr.set("this", func)
                 elif params:
                     # Params have blocked super()._parse_function() from parsing the following window

@@ -505,7 +505,7 @@ class ClickHouse(Dialect):
                 func = self.expression(**kwargs)
 
                 if isinstance(expr, exp.Window):
-                    # The window's func was parsed as Anonymous in base parser, fix it's
+                    # The window's func was parsed as Anonymous in base parser, fix its
                     # type to be CH style CombinedAnonymousAggFunc / AnonymousAggFunc
                     expr.set("this", func)
                 elif params:

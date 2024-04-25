@@ -223,6 +223,7 @@ class TestMySQL(Validator):
         self.validate_identity("CHAR(0)")
         self.validate_identity("CHAR(77, 121, 83, 81, '76')")
         self.validate_identity("CHAR(77, 77.3, '77.3' USING utf8mb4)")
+        self.validate_identity("SELECT * FROM t1 PARTITION(p0)")
 
     def test_types(self):
         self.validate_identity("CAST(x AS MEDIUMINT) + CAST(y AS YEAR(4))")

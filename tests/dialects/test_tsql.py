@@ -455,7 +455,6 @@ class TestTSQL(Validator):
         self.validate_identity("CAST(x AS UNIQUEIDENTIFIER)")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS SMALLMONEY)")
-        self.validate_identity("CAST(x AS ROWVERSION)")
         self.validate_identity("CAST(x AS IMAGE)")
         self.validate_identity("CAST(x AS SQL_VARIANT)")
         self.validate_identity("CAST(x AS BIT)")
@@ -473,6 +472,16 @@ class TestTSQL(Validator):
             "CAST(x AS DATETIME2(6))",
             write={
                 "hive": "CAST(x AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS ROWVERSION)",
+            read={
+                "tsql": "CAST(x AS TIMESTAMP)",
+            },
+            write={
+                "tsql": "CAST(x AS ROWVERSION)",
+                "hive": "CAST(x AS BINARY)",
             },
         )
 

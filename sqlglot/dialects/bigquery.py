@@ -222,7 +222,6 @@ class BigQuery(Dialect):
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
     TIME_MAPPING = {
         "%D": "%m/%d/%y",
-        "%E*S": "%S.%f",
         "%E6S": "%S.%f",
     }
 
@@ -474,10 +473,30 @@ class BigQuery(Dialect):
                 if rest and this:
                     this = exp.Dot.build([this, *rest])  # type: ignore
 
-                table = exp.Table(this=this, db=db, catalog=catalog)
+                table = exp.Table(
+                    this=this, db=db, catalog=catalog, pivots=table.args.get("pivots")
+                )
                 table.meta["quoted_table"] = True
 
             return table
+
+        def _parse_column(self) -> t.Optional[exp.Expression]:
+            column = super()._parse_column()
+            if isinstance(column, exp.Column):
+                parts = column.parts
+                if any("." in p.name for p in parts):
+                    catalog, db, table, this, *rest = (
+                        exp.to_identifier(p, quoted=True)
+                        for p in split_num_words(".".join(p.name for p in parts), ".", 4)
+                    )
+
+                    if rest and this:
+                        this = exp.Dot.build([this, *rest])  # type: ignore
+
+                    column = exp.Column(this=this, table=table, db=db, catalog=catalog)
+                    column.meta["quoted_column"] = True
+
+            return column
 
         @t.overload
         def _parse_json_object(self, agg: Lit[False]) -> exp.JSONObject: ...
@@ -670,6 +689,7 @@ class BigQuery(Dialect):
             exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP",
             exp.DataType.Type.TINYINT: "INT64",
             exp.DataType.Type.VARBINARY: "BYTES",
+            exp.DataType.Type.ROWVERSION: "BYTES",
             exp.DataType.Type.VARCHAR: "STRING",
             exp.DataType.Type.VARIANT: "ANY TYPE",
         }
@@ -780,6 +800,16 @@ class BigQuery(Dialect):
             "with",
             "within",
         }
+
+        def column_parts(self, expression: exp.Column) -> str:
+            if expression.meta.get("quoted_column"):
+                # If a column reference is of the form `dataset.table`.name, we need
+                # to preserve the quoted table path, otherwise the reference breaks
+                table_parts = ".".join(p.name for p in expression.parts[:-1])
+                table_path = self.sql(exp.Identifier(this=table_parts, quoted=True))
+                return f"{table_path}.{self.sql(expression, 'this')}"
+
+            return super().column_parts(expression)
 
         def table_parts(self, expression: exp.Table) -> str:
             # Depending on the context, `x.y` may not resolve to the same data source as `x`.`y`, so

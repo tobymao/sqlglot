@@ -289,7 +289,7 @@ class Parser(metaclass=_Parser):
     RESERVED_TOKENS = {
         *Tokenizer.SINGLE_TOKENS.values(),
         TokenType.SELECT,
-    }
+    } - {TokenType.IDENTIFIER}
 
     DB_CREATABLES = {
         TokenType.DATABASE,
@@ -1108,6 +1108,9 @@ class Parser(metaclass=_Parser):
 
     # Whether or not interval spans are supported, INTERVAL 1 YEAR TO MONTHS
     INTERVAL_SPANS = True
+
+    # Whether a PARTITION clause can follow a table reference
+    SUPPORTS_PARTITION_SELECTION = False
 
     __slots__ = (
         "error_level",
@@ -2238,7 +2241,11 @@ class Parser(metaclass=_Parser):
             self._match(TokenType.TABLE)
             is_function = self._match(TokenType.FUNCTION)
 
-            this = self._parse_table(schema=True) if not is_function else self._parse_function()
+            this = (
+                self._parse_table(schema=True, parse_partition=True)
+                if not is_function
+                else self._parse_function()
+            )
 
         returning = self._parse_returning()
 
@@ -2248,9 +2255,9 @@ class Parser(metaclass=_Parser):
             hint=hint,
             is_function=is_function,
             this=this,
+            stored=self._match_text_seq("STORED") and self._parse_stored(),
             by_name=self._match_text_seq("BY", "NAME"),
             exists=self._parse_exists(),
-            partition=self._parse_partition(),
             where=self._match_pair(TokenType.REPLACE, TokenType.WHERE)
             and self._parse_conjunction(),
             expression=self._parse_derived_table_values() or self._parse_ddl_select(),
@@ -3102,6 +3109,9 @@ class Parser(metaclass=_Parser):
             else:
                 table = exp.Identifier(this="*")
 
+        # We bubble up comments from the Identifier to the Table
+        comments = table.pop_comments() if isinstance(table, exp.Expression) else None
+
         if is_db_reference:
             catalog = db
             db = table
@@ -3113,7 +3123,12 @@ class Parser(metaclass=_Parser):
             self.raise_error(f"Expected database name but got {self._curr}")
 
         return self.expression(
-            exp.Table, this=table, db=db, catalog=catalog, pivots=self._parse_pivots()
+            exp.Table,
+            comments=comments,
+            this=table,
+            db=db,
+            catalog=catalog,
+            pivots=self._parse_pivots(),
         )
 
     def _parse_table(
@@ -3123,6 +3138,7 @@ class Parser(metaclass=_Parser):
         alias_tokens: t.Optional[t.Collection[TokenType]] = None,
         parse_bracket: bool = False,
         is_db_reference: bool = False,
+        parse_partition: bool = False,
     ) -> t.Optional[exp.Expression]:
         lateral = self._parse_lateral()
         if lateral:
@@ -3160,6 +3176,10 @@ class Parser(metaclass=_Parser):
 
         # Postgres supports a wildcard (table) suffix operator, which is a no-op in this context
         self._match_text_seq("*")
+
+        parse_partition = parse_partition or self.SUPPORTS_PARTITION_SELECTION
+        if parse_partition and self._match(TokenType.PARTITION, advance=False):
+            this.set("partition", self._parse_partition())
 
         if schema:
             return self._parse_schema(this=this)
@@ -4204,7 +4224,11 @@ class Parser(metaclass=_Parser):
         ):
             this = self._parse_id_var()
 
-        return self.expression(exp.Column, this=this) if isinstance(this, exp.Identifier) else this
+        if isinstance(this, exp.Identifier):
+            # We bubble up comments from the Identifier to the Column
+            this = self.expression(exp.Column, comments=this.pop_comments(), this=this)
+
+        return this
 
     def _parse_column_ops(self, this: t.Optional[exp.Expression]) -> t.Optional[exp.Expression]:
         this = self._parse_bracket(this)
@@ -4220,7 +4244,7 @@ class Parser(metaclass=_Parser):
             elif op and self._curr:
                 field = self._parse_column_reference()
             else:
-                field = self._parse_field(anonymous_func=True, any_token=True)
+                field = self._parse_field(any_token=True, anonymous_func=True)
 
             if isinstance(field, exp.Func) and this:
                 # bigquery allows function calls like x.y.count(...)
@@ -4289,7 +4313,7 @@ class Parser(metaclass=_Parser):
                 this = self._parse_subquery(
                     this=self._parse_set_operations(this), parse_alias=False
                 )
-            elif len(expressions) > 1:
+            elif len(expressions) > 1 or self._prev.token_type == TokenType.COMMA:
                 this = self.expression(exp.Tuple, expressions=expressions)
             else:
                 this = self.expression(exp.Paren, this=this)
@@ -4308,17 +4332,23 @@ class Parser(metaclass=_Parser):
         tokens: t.Optional[t.Collection[TokenType]] = None,
         anonymous_func: bool = False,
     ) -> t.Optional[exp.Expression]:
-        return (
-            self._parse_primary()
-            or self._parse_function(anonymous=anonymous_func)
-            or self._parse_id_var(any_token=any_token, tokens=tokens)
-        )
+        if anonymous_func:
+            field = (
+                self._parse_function(anonymous=anonymous_func, any_token=any_token)
+                or self._parse_primary()
+            )
+        else:
+            field = self._parse_primary() or self._parse_function(
+                anonymous=anonymous_func, any_token=any_token
+            )
+        return field or self._parse_id_var(any_token=any_token, tokens=tokens)
 
     def _parse_function(
         self,
         functions: t.Optional[t.Dict[str, t.Callable]] = None,
         anonymous: bool = False,
         optional_parens: bool = True,
+        any_token: bool = False,
     ) -> t.Optional[exp.Expression]:
         # This allows us to also parse {fn <function>} syntax (Snowflake, MySQL support this)
         # See: https://community.snowflake.com/s/article/SQL-Escape-Sequences
@@ -4332,7 +4362,10 @@ class Parser(metaclass=_Parser):
             fn_syntax = True
 
         func = self._parse_function_call(
-            functions=functions, anonymous=anonymous, optional_parens=optional_parens
+            functions=functions,
+            anonymous=anonymous,
+            optional_parens=optional_parens,
+            any_token=any_token,
         )
 
         if fn_syntax:
@@ -4345,6 +4378,7 @@ class Parser(metaclass=_Parser):
         functions: t.Optional[t.Dict[str, t.Callable]] = None,
         anonymous: bool = False,
         optional_parens: bool = True,
+        any_token: bool = False,
     ) -> t.Optional[exp.Expression]:
         if not self._curr:
             return None
@@ -4366,7 +4400,10 @@ class Parser(metaclass=_Parser):
 
             return None
 
-        if token_type not in self.FUNC_TOKENS:
+        if any_token:
+            if token_type in self.RESERVED_TOKENS:
+                return None
+        elif token_type not in self.FUNC_TOKENS:
             return None
 
         self._advance(2)
@@ -4505,7 +4542,6 @@ class Parser(metaclass=_Parser):
 
     def _parse_schema(self, this: t.Optional[exp.Expression] = None) -> t.Optional[exp.Expression]:
         index = self._index
-
         if not self._match(TokenType.L_PAREN):
             return this
 
@@ -4514,9 +4550,7 @@ class Parser(metaclass=_Parser):
         if self._match_set(self.SELECT_START_TOKENS):
             self._retreat(index)
             return this
-
         args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def())
-
         self._match_r_paren()
         return self.expression(exp.Schema, this=this, expressions=args)
 
@@ -5382,8 +5416,8 @@ class Parser(metaclass=_Parser):
         else:
             over = self._prev.text.upper()
 
-        if comments:
-            func.comments = None  # type: ignore
+        if comments and isinstance(func, exp.Expression):
+            func.pop_comments()
 
         if not self._match(TokenType.L_PAREN):
             return self.expression(
@@ -5461,7 +5495,7 @@ class Parser(metaclass=_Parser):
         self, this: t.Optional[exp.Expression], explicit: bool = False
     ) -> t.Optional[exp.Expression]:
         any_token = self._match(TokenType.ALIAS)
-        comments = self._prev_comments
+        comments = self._prev_comments or []
 
         if explicit and not any_token:
             return this
@@ -5481,13 +5515,13 @@ class Parser(metaclass=_Parser):
         )
 
         if alias:
+            comments.extend(alias.pop_comments())
             this = self.expression(exp.Alias, comments=comments, this=this, alias=alias)
             column = this.this
 
             # Moves the comment next to the alias in `expr /* comment */ AS alias`
             if not this.comments and column and column.comments:
-                this.comments = column.comments
-                column.comments = None
+                this.comments = column.pop_comments()
 
         return this
 
@@ -5496,16 +5530,14 @@ class Parser(metaclass=_Parser):
         any_token: bool = True,
         tokens: t.Optional[t.Collection[TokenType]] = None,
     ) -> t.Optional[exp.Expression]:
-        identifier = self._parse_identifier()
-
-        if identifier:
-            return identifier
-
-        if (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS):
+        expression = self._parse_identifier()
+        if not expression and (
+            (any_token and self._advance_any()) or self._match_set(tokens or self.ID_VAR_TOKENS)
+        ):
             quoted = self._prev.token_type == TokenType.STRING
-            return exp.Identifier(this=self._prev.text, quoted=quoted)
+            expression = self.expression(exp.Identifier, this=self._prev.text, quoted=quoted)
 
-        return None
+        return expression
 
     def _parse_string(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.STRING_PARSERS):

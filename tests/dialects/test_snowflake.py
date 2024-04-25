@@ -1038,10 +1038,16 @@ WHERE
             "SELECT CAST('2019-02-28' AS DATE) + INTERVAL '1 day, 1 year'",
         )
 
-        self.validate_identity("DATE(x)").assert_is(exp.Anonymous)
-        self.validate_identity("TO_DATE(x)").assert_is(exp.Anonymous)
-        self.validate_identity("TRY_TO_DATE(x)").assert_is(exp.Anonymous)
+        self.validate_identity("TO_DATE(x)").assert_is(exp.TsOrDsToDate)
+        self.validate_identity("TRY_TO_DATE(x)").assert_is(exp.TsOrDsToDate)
 
+        self.validate_all(
+            "DATE(x)",
+            write={
+                "duckdb": "CAST(x AS DATE)",
+                "snowflake": "TO_DATE(x)",
+            },
+        )
         self.validate_all(
             "TO_DATE(x, 'MM-DD-YYYY')",
             write={

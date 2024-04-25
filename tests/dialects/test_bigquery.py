@@ -20,6 +20,27 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity(
+            "[a, a(1, 2,3,4444444444444444, tttttaoeunthaoentuhaoentuheoantu, toheuntaoheutnahoeunteoahuntaoeh), b(3, 4,5), c, d, tttttttttttttttteeeeeeeeeeeeeett, 12312312312]",
+            """[
+  a,
+  a(
+    1,
+    2,
+    3,
+    4444444444444444,
+    tttttaoeunthaoentuhaoentuheoantu,
+    toheuntaoheutnahoeunteoahuntaoeh
+  ),
+  b(3, 4, 5),
+  c,
+  d,
+  tttttttttttttttteeeeeeeeeeeeeett,
+  12312312312
+]""",
+            pretty=True,
+        )
+
         self.validate_all(
             "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 as a, 'abc' AS b), STRUCT(str_col AS abc)",
             write={
@@ -40,6 +61,10 @@ class TestBigQuery(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
+        self.validate_identity(
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)",
+            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*S%z', x)",
+        )
 
         table = parse_one("x-0._y.z", dialect="bigquery", into=exp.Table)
         self.assertEqual(table.catalog, "x-0")
@@ -57,9 +82,13 @@ class TestBigQuery(Validator):
         self.assertEqual(exp.to_table("`x.y.z`", dialect="bigquery").sql("bigquery"), "`x.y.z`")
         self.assertEqual(exp.to_table("`x`.`y`", dialect="bigquery").sql("bigquery"), "`x`.`y`")
 
+        column = self.validate_identity("SELECT `db.t`.`c` FROM `db.t`").selects[0]
+        self.assertEqual(len(column.parts), 3)
+
         select_with_quoted_udf = self.validate_identity("SELECT `p.d.UdF`(data) FROM `p.d.t`")
         self.assertEqual(select_with_quoted_udf.selects[0].name, "p.d.UdF")
 
+        self.validate_identity("assert.true(1 = 1)")
         self.validate_identity("SELECT ARRAY_TO_STRING(list, '--') AS text")
         self.validate_identity("SELECT jsondoc['some_key']")
         self.validate_identity("SELECT `p.d.UdF`(data).* FROM `p.d.t`")

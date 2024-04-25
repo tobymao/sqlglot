@@ -464,6 +464,7 @@ class TSQL(Dialect):
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
             "TOP": TokenType.TOP,
+            "TIMESTAMP": TokenType.ROWVERSION,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
@@ -755,6 +756,7 @@ class TSQL(Dialect):
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
+            exp.DataType.Type.ROWVERSION: "ROWVERSION",
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)
@@ -1052,3 +1054,9 @@ class TSQL(Dialect):
 
         def partition_sql(self, expression: exp.Partition) -> str:
             return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
+
+        def altertable_sql(self, expression: exp.AlterTable) -> str:
+            action = seq_get(expression.args.get("actions") or [], 0)
+            if isinstance(action, exp.RenameTable):
+                return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
+            return super().altertable_sql(expression)

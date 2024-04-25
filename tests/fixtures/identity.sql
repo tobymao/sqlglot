@@ -659,6 +659,7 @@ INSERT OVERWRITE TABLE a.b PARTITION(ds) SELECT x FROM y
 INSERT OVERWRITE TABLE a.b PARTITION(ds = 'YYYY-MM-DD') SELECT x FROM y
 INSERT OVERWRITE TABLE a.b PARTITION(ds, hour) SELECT x FROM y
 INSERT OVERWRITE TABLE a.b PARTITION(ds = 'YYYY-MM-DD', hour = 'hh') SELECT x FROM y
+INSERT INTO a.b PARTITION(DAY = '2024-04-14') (col1, col2) SELECT x FROM y
 DELETE FROM x WHERE y > 1
 DELETE FROM y
 DELETE FROM event USING sales WHERE event.eventid = sales.eventid
@@ -690,6 +691,8 @@ INSERT INTO y (a, b, c) SELECT a, b, c FROM x
 INSERT INTO y (SELECT 1) UNION (SELECT 2)
 INSERT INTO result_table (WITH test AS (SELECT * FROM source_table) SELECT * FROM test)
 INSERT INTO "tests_user" ("username", "first_name", "last_name") VALUES ('fiara', 'Fiara', 'Ironhide') RETURNING "tests_user"."id"
+INSERT INTO t1 (tc1 /* tc1 */, tc2 /* tc2 */) SELECT c1 /* sc1 */, c2 /* sc2 */ FROM t
+INSERT INTO t1 ("tc1" /* tc1 */, "tc2" /* tc2 */) SELECT "c1" /* sc1 */, "c2" /* sc2 */ FROM t
 INSERT OVERWRITE TABLE x IF EXISTS SELECT * FROM y
 INSERT OVERWRITE TABLE a.b IF EXISTS SELECT * FROM y
 INSERT OVERWRITE DIRECTORY 'x' SELECT 1

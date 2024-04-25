@@ -1075,6 +1075,15 @@ class TestDuckDB(Validator):
             write={
                 "snowflake": "ALTER TABLE db.t1 RENAME TO db.t2",
                 "duckdb": "ALTER TABLE db.t1 RENAME TO t2",
+                "tsql": "EXEC sp_rename 'db.t1', 't2'",
+            },
+        )
+        self.validate_all(
+            'ALTER TABLE "db"."t1" RENAME TO "db"."t2"',
+            write={
+                "snowflake": 'ALTER TABLE "db"."t1" RENAME TO "db"."t2"',
+                "duckdb": 'ALTER TABLE "db"."t1" RENAME TO "t2"',
+                "tsql": "EXEC sp_rename '[db].[t1]', 't2'",
             },
         )
 

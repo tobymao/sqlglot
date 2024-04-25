@@ -1,4 +1,4 @@
-![SQLGlot logo](sqlglot.svg)
+![SQLGlot logo](sqlglot.png)
 
 SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [21 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
 
@@ -239,7 +239,7 @@ except sqlglot.errors.ParseError as e:
 
 ### Unsupported Errors
 
-It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot emits a warning and proceeds to do a best-effort translation by default:
+It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and proceeds to do a best-effort translation by default. Transpilation is difficult and not all permutations are supported. If transpilation does not work, it may not be implemented yet. Well documented / tested PRs / issues are appreciated. Some transpilation cases that require db schemas are made possible through the optimizer but are not included in base transpilation:
 
 ```python
 import sqlglot

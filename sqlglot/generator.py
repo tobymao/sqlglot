@@ -349,6 +349,7 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.LONGBLOB: "BLOB",
         exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
+        exp.DataType.Type.ROWVERSION: "VARBINARY",
     }
 
     STAR_MAPPING = {
@@ -644,6 +645,7 @@ class Generator(metaclass=_Generator):
         sql: str,
         expression: t.Optional[exp.Expression] = None,
         comments: t.Optional[t.List[str]] = None,
+        separated: bool = False,
     ) -> str:
         comments = (
             ((expression and expression.comments) if comments is None else comments)  # type: ignore
@@ -661,7 +663,9 @@ class Generator(metaclass=_Generator):
         if not comments_sql:
             return sql
 
-        if isinstance(expression, self.WITH_SEPARATED_COMMENTS):
+        comments_sql = self._replace_line_breaks(comments_sql)
+
+        if separated or isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return (
                 f"{self.sep()}{comments_sql}{sql}"
                 if not sql or sql[0].isspace()
@@ -778,14 +782,8 @@ class Generator(metaclass=_Generator):
         default = "DEFAULT " if expression.args.get("default") else ""
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
-    def column_sql(self, expression: exp.Column) -> str:
-        join_mark = " (+)" if expression.args.get("join_mark") else ""
-
-        if join_mark and not self.COLUMN_JOIN_MARKS_SUPPORTED:
-            join_mark = ""
-            self.unsupported("Outer join syntax using the (+) operator is not supported.")
-
-        column = ".".join(
+    def column_parts(self, expression: exp.Column) -> str:
+        return ".".join(
             self.sql(part)
             for part in (
                 expression.args.get("catalog"),
@@ -796,7 +794,14 @@ class Generator(metaclass=_Generator):
             if part
         )
 
-        return f"{column}{join_mark}"
+    def column_sql(self, expression: exp.Column) -> str:
+        join_mark = " (+)" if expression.args.get("join_mark") else ""
+
+        if join_mark and not self.COLUMN_JOIN_MARKS_SUPPORTED:
+            join_mark = ""
+            self.unsupported("Outer join syntax using the (+) operator is not supported.")
+
+        return f"{self.column_parts(expression)}{join_mark}"
 
     def columnposition_sql(self, expression: exp.ColumnPosition) -> str:
         this = self.sql(expression, "this")
@@ -1520,6 +1525,8 @@ class Generator(metaclass=_Generator):
         else:
             this = self.INSERT_OVERWRITE if overwrite else " INTO"
 
+        stored = self.sql(expression, "stored")
+        stored = f" {stored}" if stored else ""
         alternative = expression.args.get("alternative")
         alternative = f" OR {alternative}" if alternative else ""
         ignore = " IGNORE" if expression.args.get("ignore") else ""
@@ -1529,9 +1536,6 @@ class Generator(metaclass=_Generator):
         this = f"{this} {self.sql(expression, 'this')}"
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
-        partition_sql = (
-            f" {self.sql(expression, 'partition')}" if expression.args.get("partition") else ""
-        )
         where = self.sql(expression, "where")
         where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
@@ -1545,7 +1549,7 @@ class Generator(metaclass=_Generator):
         else:
             expression_sql = f"{returning}{expression_sql}{on_conflict}"
 
-        sql = f"INSERT{hint}{alternative}{ignore}{this}{by_name}{exists}{partition_sql}{where}{expression_sql}"
+        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{where}{expression_sql}"
         return self.prepend_ctes(expression, sql)
 
     def intersect_sql(self, expression: exp.Intersect) -> str:
@@ -1634,6 +1638,8 @@ class Generator(metaclass=_Generator):
     def table_sql(self, expression: exp.Table, sep: str = " AS ") -> str:
         table = self.table_parts(expression)
         only = "ONLY " if expression.args.get("only") else ""
+        partition = self.sql(expression, "partition")
+        partition = f" {partition}" if partition else ""
         version = self.sql(expression, "version")
         version = f" {version}" if version else ""
         alias = self.sql(expression, "alias")
@@ -1662,7 +1668,7 @@ class Generator(metaclass=_Generator):
         if when:
             table = f"{table} {when}"
 
-        return f"{only}{table}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
+        return f"{only}{table}{partition}{version}{file_format}{alias}{hints}{pivots}{joins}{laterals}{ordinality}"
 
     def tablesample_sql(
         self,
@@ -2017,10 +2023,9 @@ class Generator(metaclass=_Generator):
                 to_escaped.get(ch, ch) if escape_backslash or ch != "\\" else ch for ch in text
             )
 
-        if self.pretty:
-            text = text.replace("\n", self.SENTINEL_LINE_BREAK)
-
-        return text.replace(self.dialect.QUOTE_END, self._escaped_quote_end)
+        return self._replace_line_breaks(text).replace(
+            self.dialect.QUOTE_END, self._escaped_quote_end
+        )
 
     def loaddata_sql(self, expression: exp.LoadData) -> str:
         local = " LOCAL" if expression.args.get("local") else ""
@@ -2341,8 +2346,8 @@ class Generator(metaclass=_Generator):
                 stack.append(
                     self.maybe_comment(
                         getattr(self, f"{node.key}_op")(node),
-                        expression=node.this,
                         comments=node.comments,
+                        separated=True,
                     )
                 )
                 stack.append(node.this)
@@ -2486,7 +2491,7 @@ class Generator(metaclass=_Generator):
 
         statements.append("END")
 
-        if self.pretty and self.text_width(statements) > self.max_text_width:
+        if self.pretty and self.too_wide(statements):
             return self.indent("\n".join(statements), skip_first=True, skip_last=True)
 
         return " ".join(statements)
@@ -2847,7 +2852,7 @@ class Generator(metaclass=_Generator):
                 else:
                     sqls.append(sql)
 
-        sep = "\n" if self.pretty and self.text_width(sqls) > self.max_text_width else " "
+        sep = "\n" if self.pretty and self.too_wide(sqls) else " "
         return sep.join(sqls)
 
     def bitwiseand_sql(self, expression: exp.BitwiseAnd) -> str:
@@ -3208,12 +3213,12 @@ class Generator(metaclass=_Generator):
 
     def format_args(self, *args: t.Optional[str | exp.Expression]) -> str:
         arg_sqls = tuple(self.sql(arg) for arg in args if arg is not None)
-        if self.pretty and self.text_width(arg_sqls) > self.max_text_width:
+        if self.pretty and self.too_wide(arg_sqls):
             return self.indent("\n" + ",\n".join(arg_sqls) + "\n", skip_first=True, skip_last=True)
         return ", ".join(arg_sqls)
 
-    def text_width(self, args: t.Iterable) -> int:
-        return sum(len(arg) for arg in args)
+    def too_wide(self, args: t.Iterable) -> bool:
+        return sum(len(arg) for arg in args) > self.max_text_width
 
     def format_time(
         self,
@@ -3235,8 +3240,11 @@ class Generator(metaclass=_Generator):
         flat: bool = False,
         indent: bool = True,
         skip_first: bool = False,
+        skip_last: bool = False,
         sep: str = ", ",
         prefix: str = "",
+        dynamic: bool = False,
+        new_line: bool = False,
     ) -> str:
         expressions = expression.args.get(key or "expressions") if expression else sqls
 
@@ -3270,8 +3278,18 @@ class Generator(metaclass=_Generator):
             else:
                 result_sqls.append(f"{prefix}{sql}{comments}{sep if i + 1 < num_sqls else ''}")
 
-        result_sql = "\n".join(result_sqls) if self.pretty else "".join(result_sqls)
-        return self.indent(result_sql, skip_first=skip_first) if indent else result_sql
+        if self.pretty and (not dynamic or self.too_wide(result_sqls)):
+            if new_line:
+                result_sqls.insert(0, "")
+                result_sqls.append("")
+            result_sql = "\n".join(result_sqls)
+        else:
+            result_sql = "".join(result_sqls)
+        return (
+            self.indent(result_sql, skip_first=skip_first, skip_last=skip_last)
+            if indent
+            else result_sql
+        )
 
     def op_expressions(self, op: str, expression: exp.Expression, flat: bool = False) -> str:
         flat = flat or isinstance(expression.parent, exp.Properties)
@@ -3733,3 +3751,9 @@ class Generator(metaclass=_Generator):
                 return self.sql(agg_func)[:-1] + f" {text})"
 
         return f"{self.sql(expression, 'this')} {text}"
+
+    def _replace_line_breaks(self, string: str) -> str:
+        """We don't want to extra indent line breaks so we temporarily replace them with sentinels."""
+        if self.pretty:
+            return string.replace("\n", self.SENTINEL_LINE_BREAK)
+        return string

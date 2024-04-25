@@ -79,6 +79,7 @@ class Redshift(Postgres):
             alias_tokens: t.Optional[t.Collection[TokenType]] = None,
             parse_bracket: bool = False,
             is_db_reference: bool = False,
+            parse_partition: bool = False,
         ) -> t.Optional[exp.Expression]:
             # Redshift supports UNPIVOTing SUPER objects, e.g. `UNPIVOT foo.obj[0] AS val AT attr`
             unpivot = self._match(TokenType.UNPIVOT)
@@ -145,6 +146,7 @@ class Redshift(Postgres):
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "VARBYTE",
+            exp.DataType.Type.ROWVERSION: "VARBYTE",
         }
 
         TRANSFORMS = {

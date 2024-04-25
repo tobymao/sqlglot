@@ -86,20 +86,20 @@ SELECT * FROM (SELECT * FROM (SELECT * FROM x)) ORDER BY a LIMIT 1;
 SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY x.a LIMIT 1;
 
 # title: CTE
-WITH x AS (SELECT a, b FROM x) SELECT a, b FROM x;
-SELECT x.a AS a, x.b AS b FROM x AS x;
+WITH x AS (SELECT a, b FROM main.x) SELECT a, b FROM x;
+SELECT x.a AS a, x.b AS b FROM main.x AS x;
 
 # title: CTE with outer table alias
 WITH y AS (SELECT a, b FROM x) SELECT a, b FROM y AS z;
 SELECT x.a AS a, x.b AS b FROM x AS x;
 
 # title: Nested CTE
-WITH x2 AS (SELECT a FROM x), x3 AS (SELECT a FROM x2) SELECT a FROM x3;
-SELECT x.a AS a FROM x AS x;
+WITH x2 AS (SELECT a FROM main.x), x3 AS (SELECT a FROM x2) SELECT a FROM x3;
+SELECT x.a AS a FROM main.x AS x;
 
 # title: CTE WHERE clause is merged
-WITH x AS (SELECT a, b FROM x WHERE a > 1) SELECT a, SUM(b) AS b FROM x GROUP BY a;
-SELECT x.a AS a, SUM(x.b) AS b FROM x AS x WHERE x.a > 1 GROUP BY x.a;
+WITH x AS (SELECT a, b FROM main.x WHERE a > 1) SELECT a, SUM(b) AS b FROM x GROUP BY a;
+SELECT x.a AS a, SUM(x.b) AS b FROM main.x AS x WHERE x.a > 1 GROUP BY x.a;
 
 # title: CTE Outer query has join
 WITH x2 AS (SELECT a, b FROM x WHERE a > 1) SELECT a, c FROM x2 AS x JOIN y ON x.b = y.b;
@@ -110,8 +110,8 @@ WITH y AS (SELECT a, b FROM x AS q) SELECT a, b FROM y AS z;
 SELECT q.a AS a, q.b AS b FROM x AS q;
 
 # title: Nested CTE
-SELECT * FROM (WITH x AS (SELECT a, b FROM x) SELECT a, b FROM x);
-SELECT x.a AS a, x.b AS b FROM x AS x;
+SELECT * FROM (WITH x AS (SELECT a, b FROM main.x) SELECT a, b FROM x);
+SELECT x.a AS a, x.b AS b FROM main.x AS x;
 
 # title: Inner select is an expression
 SELECT a FROM (SELECT a FROM (SELECT COALESCE(a) AS a FROM x LEFT JOIN y ON x.a = y.b) AS x) AS x;

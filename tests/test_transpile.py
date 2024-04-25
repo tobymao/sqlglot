@@ -124,6 +124,10 @@ class TestTranspile(unittest.TestCase):
             "SELECT * FROM t1 /* x */ UNION ALL SELECT * FROM t2",
         )
         self.validate(
+            "/* comment */ SELECT * FROM a UNION SELECT * FROM b",
+            "/* comment */ SELECT * FROM a UNION SELECT * FROM b",
+        )
+        self.validate(
             "SELECT * FROM t1\n/*x*/\nINTERSECT ALL SELECT * FROM t2",
             "SELECT * FROM t1 /* x */ INTERSECT ALL SELECT * FROM t2",
         )
@@ -522,6 +526,28 @@ INNER JOIN y
   LEFT JOIN z
     USING (id)
   USING (id)""",
+            pretty=True,
+        )
+        self.validate(
+            """with x as (
+  SELECT *
+  /*
+NOTE: LEFT JOIN because blah blah blah
+  */
+  FROM a
+)
+select * from x""",
+            """WITH x AS (
+  SELECT
+    *
+  /*
+NOTE: LEFT JOIN because blah blah blah
+  */
+  FROM a
+)
+SELECT
+  *
+FROM x""",
             pretty=True,
         )
 

@@ -832,7 +832,7 @@ LIFETIME(MIN 0 MAX 0)""",
 
     def test_agg_functions(self):
         def extract_agg_func(query):
-            return parse_one(query, read="clickhouse").args.get("expressions")[0].this
+            return parse_one(query, read="clickhouse").selects[0].this
 
         self.assertIsInstance(
             extract_agg_func("select quantileGK(100, 0.95) OVER (PARTITION BY id) FROM table"),

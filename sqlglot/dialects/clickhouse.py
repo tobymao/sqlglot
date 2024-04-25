@@ -497,10 +497,12 @@ class ClickHouse(Dialect):
                 # type to be CH style CombinedAnonymousAggFunc / AnonymousAggFunc
                 if isinstance(expr, exp.Window):
                     expr.set("this", func)
-                elif parts or params:
+                elif params:
                     # Params have blocked super()._parse_function() from parsing the following window
                     # (if that exists) as they're standing between the function call and the window spec
-                    expr = self._parse_window(func) if params else func
+                    expr = self._parse_window(func)
+                elif parts:
+                    expr = func
 
             return expr
 

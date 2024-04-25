@@ -10,20 +10,16 @@ class Vertica(Dialect):
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
-            "INT64": TokenType.BIGINT,
-            "FLOAT64": TokenType.DOUBLE,
-            "VARCHAR": TokenType.STRING,
+            "LONGVARBINARY": TokenType.VARBINARY,
+            "INTERVAL DAY TO SECOND": TokenType.INTERVAL,
+            "INTERVAL YEAR TO MONTH": TokenType.INTERVAL,
+            "MONEY": TokenType.MONEY,
         }
 
     class Generator(generator.Generator):
         TYPE_MAPPING = {
-            exp.DataType.Type.TINYINT: "INT64",
-            exp.DataType.Type.SMALLINT: "INT64",
-            exp.DataType.Type.INT: "INT64",
-            exp.DataType.Type.BIGINT: "INT64",
-            exp.DataType.Type.DECIMAL: "NUMERIC",
-            exp.DataType.Type.FLOAT: "FLOAT64",
-            exp.DataType.Type.DOUBLE: "FLOAT64",
-            exp.DataType.Type.BOOLEAN: "BOOL",
-            exp.DataType.Type.TEXT: "STRING",
+            exp.DataType.Type.VARBINARY: "LONGVARBINARY",
+            exp.DataType.Type.INTERVAL: "INTERVAL DAY TO SECOND",
+            exp.DataType.Type.INTERVAL: "INTERVAL YEAR TO MONTH",
+            exp.DataType.Type.MONEY: "MONEY",
         }

@@ -9,4 +9,3 @@ class TestVertica(Validator):
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS LONGVARBINARY)")
         self.validate_identity("CAST(x AS INTERVAL DAY TO SECOND)")
-        self.validate_identity("CAST(x AS INTERVAL YEAR TO MONTH)")

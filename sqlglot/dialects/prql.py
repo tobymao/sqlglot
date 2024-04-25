@@ -29,7 +29,6 @@ class PRQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
-            "THIS": TokenType.STAR,
         }
 
     class Parser(parser.Parser):
@@ -167,15 +166,18 @@ class PRQL(Dialect):
             if not func:
                 self.raise_error("Aggregation function is not supported in PRQL")
 
+            # convert "this" to exp.Star()
+            if (
+                isinstance(func, exp.Count)
+                and isinstance(func.this, exp.Column)
+                and isinstance(func.this.this, exp.Identifier)
+                and func.this.this.this == "this"
+            ):
+                func.this.set("this", exp.Star())
+
             if alias:
                 return self.expression(exp.Alias, this=func, alias=alias)
             return func
-
-        def _parse_conjunction(self) -> t.Optional[exp.Expression]:
-            term = super()._parse_conjunction()
-            if term and isinstance(term, exp.Dot) and isinstance(term.this, exp.Star):
-                term = term.expression
-            return term
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

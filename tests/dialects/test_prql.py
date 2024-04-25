@@ -79,7 +79,3 @@ class TestPRQL(Validator):
             "from a aggregate { min y, b = stddev x, max z }",
             "SELECT MIN(y), STDDEV(x) AS b, MAX(z) FROM a",
         )
-        self.validate_identity(
-            "from a derive { t = this.time }",
-            "SELECT *, time AS t FROM a",
-        )

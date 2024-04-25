@@ -854,3 +854,5 @@ LIFETIME(MIN 0 MAX 0)""",
             ),
             exp.CombinedParameterizedAgg,
         )
+
+        parse_one("foobar(x)").assert_is(exp.Anonymous)

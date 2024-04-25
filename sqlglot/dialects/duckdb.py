@@ -612,7 +612,7 @@ class DuckDB(Dialect):
             expression_sql = self.sql(expression, "expression")
 
             func = expression.this
-            if isinstance(func, (exp.PercentileCont, exp.PercentileDisc)):
+            if isinstance(func, exp.PERCENTILES):
                 # Make the order key the first arg and slide the fraction to the right
                 # https://duckdb.org/docs/sql/aggregates#ordered-set-aggregate-functions
                 order_col = expression.find(exp.Ordered)

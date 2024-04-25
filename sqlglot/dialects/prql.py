@@ -29,6 +29,7 @@ class PRQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "THIS": TokenType.STAR,
         }
 
     class Parser(parser.Parser):
@@ -60,13 +61,14 @@ class PRQL(Dialect):
             ),
         }
 
-        AGG_FUNCTIONS = {
-            "MIN": lambda arg: exp.Min(this=arg),
-            "MAX": lambda arg: exp.Max(this=arg),
-            "COUNT": lambda arg: exp.Count(this=arg),
-            "AVERAGE": lambda arg: exp.Avg(this=arg),
-            "STDDEV": lambda arg: exp.Stddev(this=arg),
-            "SUM": lambda arg: exp.func("COALESCE", exp.Sum(this=arg), 0),
+        NO_PAREN_FUNCTION_PARSERS = {
+            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
+            "MIN": lambda self: exp.Min(this=self._parse_lambda()),
+            "MAX": lambda self: exp.Max(this=self._parse_lambda()),
+            "COUNT": lambda self: exp.Count(this=self._parse_lambda()),
+            "AVERAGE": lambda self: exp.Avg(this=self._parse_lambda()),
+            "STDDEV": lambda self: exp.Stddev(this=self._parse_lambda()),
+            "SUM": lambda self: exp.func("COALESCE", exp.Sum(this=self._parse_lambda()), 0),
         }
 
         def _parse_equality(self) -> t.Optional[exp.Expression]:
@@ -161,17 +163,19 @@ class PRQL(Dialect):
                 alias = self._parse_id_var(True)
                 self._match(TokenType.ALIAS)
 
-            function = self.AGG_FUNCTIONS.get(self._curr.text.upper())
-            if function:
-                self._advance()
-                arg = exp.Star() if self._match_texts("THIS") else self._parse_id_var()
-                func = function(arg)
-            else:
+            func = self._parse_function()
+            if not func:
                 self.raise_error("Aggregation function is not supported in PRQL")
 
             if alias:
                 return self.expression(exp.Alias, this=func, alias=alias)
             return func
+
+        def _parse_conjunction(self) -> t.Optional[exp.Expression]:
+            term = super()._parse_conjunction()
+            if term and isinstance(term, exp.Dot) and isinstance(term.this, exp.Star):
+                term = term.expression
+            return term
 
         def _parse_expression(self) -> t.Optional[exp.Expression]:
             if self._next and self._next.token_type == TokenType.ALIAS:

@@ -2206,9 +2206,9 @@ class Parser(metaclass=_Parser):
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
         style = self._match_texts(("EXTENDED", "FORMATTED", "HISTORY")) and self._prev.text.upper()
-        if not self._match_set(self.ID_VAR_TOKENS, advance=False):
+        if self._match(TokenType.DOT):
             style = None
-            self._retreat(self._index - 1)
+            self._retreat(self._index - 2)
         this = self._parse_table(schema=True)
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None

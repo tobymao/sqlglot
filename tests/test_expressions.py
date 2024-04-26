@@ -871,6 +871,8 @@ FROM foo""",
 FROM foo""",
         )
 
+        self.assertEqual(parse_one('max(x) as "a b" -- comment').comments, [" comment"])
+
     def test_to_interval(self):
         self.assertEqual(exp.to_interval("1day").sql(), "INTERVAL '1' DAY")
         self.assertEqual(exp.to_interval("  5     months").sql(), "INTERVAL '5' MONTHS")

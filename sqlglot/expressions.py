@@ -5880,6 +5880,8 @@ FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_na
 
 JSON_PATH_PARTS = subclasses(__name__, JSONPathPart, (JSONPathPart,))
 
+PERCENTILES = (PercentileCont, PercentileDisc)
+
 
 # Helpers
 @t.overload

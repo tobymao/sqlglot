@@ -417,6 +417,7 @@ class Generator(metaclass=_Generator):
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
+        exp.DataDeletionProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DefinerProperty: exp.Properties.Location.POST_CREATE,
         exp.DictRange: exp.Properties.Location.POST_SCHEMA,
         exp.DictProperty: exp.Properties.Location.POST_SCHEMA,
@@ -1536,19 +1537,23 @@ class Generator(metaclass=_Generator):
         return f"{data_sql}{statistics_sql}"
 
     def withsystemversioningproperty_sql(self, expression: exp.WithSystemVersioningProperty) -> str:
-        sql = "WITH(SYSTEM_VERSIONING=ON"
+        this = self.sql(expression, "this")
+        this = f"HISTORY_TABLE={this}" if this else ""
+        data_consistency = self.sql(expression, "data_consistency")
+        data_consistency = f"DATA_CONSISTENCY_CHECK={data_consistency}" if data_consistency else ""
+        retention_period = self.sql(expression, "retention_period")
+        retention_period = (
+            f"HISTORY_RETENTION_PERIOD={retention_period}" if retention_period else ""
+        )
 
-        if expression.this:
-            history_table = self.sql(expression, "this")
-            sql = f"{sql}(HISTORY_TABLE={history_table}"
+        if this:
+            on_sql = self.func("ON", this, data_consistency or None, retention_period or None)
+        else:
+            on_sql = "ON" if expression.args.get("on") else "OFF"
 
-            if expression.expression:
-                data_consistency_check = self.sql(expression, "expression")
-                sql = f"{sql}, DATA_CONSISTENCY_CHECK={data_consistency_check}"
+        sql = f"SYSTEM_VERSIONING={on_sql}"
 
-            sql = f"{sql})"
-
-        return f"{sql})"
+        return f"WITH({sql})" if expression.args.get("with") else sql
 
     def insert_sql(self, expression: exp.Insert) -> str:
         hint = self.sql(expression, "hint")
@@ -3031,6 +3036,12 @@ class Generator(metaclass=_Generator):
         new_column = self.sql(expression, "to")
         return f"RENAME COLUMN{exists} {old_column} TO {new_column}"
 
+    def alterset_sql(self, expression: exp.AlterSet) -> str:
+        exprs = self.expressions(expression, flat=True)
+        exprs = exprs.lstrip(" ")
+
+        return f"SET {exprs}"
+
     def altertable_sql(self, expression: exp.AlterTable) -> str:
         actions = expression.args["actions"]
 
@@ -3889,3 +3900,15 @@ class Generator(metaclass=_Generator):
 
     def semicolon_sql(self, expression: exp.Semicolon) -> str:
         return ""
+
+    def datadeletionproperty_sql(self, expression: exp.DataDeletionProperty) -> str:
+        on_sql = "ON" if expression.args.get("on") else "OFF"
+        filter_col = self.sql(expression, "filter_column")
+        filter_col = f"FILTER_COLUMN={filter_col}" if filter_col else ""
+        retention_period = self.sql(expression, "retention_period")
+        retention_period = f"RETENTION_PERIOD={retention_period}" if retention_period else ""
+
+        if filter_col or retention_period:
+            on_sql = self.func("ON", filter_col or None, retention_period or None)
+
+        return f"DATA_DELETION={on_sql}"

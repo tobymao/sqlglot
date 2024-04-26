@@ -770,17 +770,26 @@ class TestTSQL(Validator):
             expression.sql(dialect="tsql"), "ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B"
         )
 
-        for clusterd_keyword in ("CLUSTERED", "NONCLUSTERED"):
+        for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):
             self.validate_identity(
                 'CREATE TABLE "dbo"."benchmark" ('
                 '"name" CHAR(7) NOT NULL, '
                 '"internal_id" VARCHAR(10) NOT NULL, '
-                f'UNIQUE {clusterd_keyword} ("internal_id" ASC))',
+                f'UNIQUE {clustered_keyword} ("internal_id" ASC))',
                 "CREATE TABLE [dbo].[benchmark] ("
                 "[name] CHAR(7) NOT NULL, "
                 "[internal_id] VARCHAR(10) NOT NULL, "
-                f"UNIQUE {clusterd_keyword} ([internal_id] ASC))",
+                f"UNIQUE {clustered_keyword} ([internal_id] ASC))",
             )
+
+        self.validate_identity(
+            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, DATA_CONSISTENCY_CHECK=OFF, HISTORY_RETENTION_PERIOD=5 DAYS)"
+        )
+        self.validate_identity(
+            "ALTER TABLE tbl SET SYSTEM_VERSIONING=ON(HISTORY_TABLE=db.tbl, HISTORY_RETENTION_PERIOD=INFINITE)"
+        )
+        self.validate_identity("ALTER TABLE tbl SET SYSTEM_VERSIONING=OFF")
+        self.validate_identity("ALTER TABLE tbl SET FILESTREAM_ON = 'test'")
 
         self.validate_identity(
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",

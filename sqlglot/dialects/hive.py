@@ -254,7 +254,7 @@ class Hive(Dialect):
             "REFRESH": TokenType.REFRESH,
             "TIMESTAMP AS OF": TokenType.TIMESTAMP_SNAPSHOT,
             "VERSION AS OF": TokenType.VERSION_SNAPSHOT,
-            "WITH SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
+            "SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
 
         NUMERIC_LITERALS = {
@@ -332,7 +332,7 @@ class Hive(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
-            "WITH SERDEPROPERTIES": lambda self: exp.SerdeProperties(
+            "SERDEPROPERTIES": lambda self: exp.SerdeProperties(
                 expressions=self._parse_wrapped_csv(self._parse_property)
             ),
         }
@@ -562,7 +562,6 @@ class Hive(Dialect):
             exp.UnixToTime: _unix_to_time_sql,
             exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
             exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
-            exp.SerdeProperties: lambda self, e: self.properties(e, prefix="WITH SERDEPROPERTIES"),
             exp.NumberToStr: rename_func("FORMAT_NUMBER"),
             exp.National: lambda self, e: self.national_sql(e, prefix=""),
             exp.ClusteredColumnConstraint: lambda self,
@@ -665,3 +664,22 @@ class Hive(Dialect):
                     values.append(e)
 
             return self.func("STRUCT", *values)
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            location = self.sql(expression, "location")
+            location = f" LOCATION {location}" if location else ""
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
+            file_format = f" FILEFORMAT {file_format}" if file_format else ""
+            serde = self.sql(expression, "serde")
+            serde = f" SERDE {serde}" if serde else ""
+            tags = self.expressions(expression, key="tag", flat=True, sep="")
+            tags = f" TAGS {tags}" if tags else ""
+
+            return f"SET{serde}{exprs}{location}{file_format}{tags}"
+
+        def serdeproperties_sql(self, expression: exp.SerdeProperties) -> str:
+            prefix = "WITH " if expression.args.get("with") else ""
+            exprs = self.expressions(expression, flat=True, sep=", ")
+
+            return f"{prefix}SERDEPROPERTIES ({exprs})"

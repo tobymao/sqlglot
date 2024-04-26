@@ -426,7 +426,6 @@ class Snowflake(Dialect):
 
         ALTER_PARSERS = {
             **parser.Parser.ALTER_PARSERS,
-            "SET": lambda self: self._parse_set(tag=self._match_text_seq("TAG")),
             "UNSET": lambda self: self.expression(
                 exp.Set,
                 tag=self._match_text_seq("TAG"),
@@ -1071,3 +1070,14 @@ class Snowflake(Dialect):
                 )
 
             return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))
+
+        def alterset_sql(self, expression: exp.AlterSet) -> str:
+            exprs = self.expressions(expression, flat=True)
+            file_format = self.expressions(expression, key="file_format", flat=True, sep=" ")
+            file_format = f" STAGE_FILE_FORMAT = ({file_format})" if file_format else ""
+            copy_options = self.expressions(expression, key="copy_options", flat=True, sep=" ")
+            copy_options = f" STAGE_COPY_OPTIONS = ({copy_options})" if copy_options else ""
+            tag = self.expressions(expression, key="tag", flat=True)
+            tag = f" TAG {tag}" if tag else ""
+
+            return f"SET{exprs}{file_format}{copy_options}{tag}"

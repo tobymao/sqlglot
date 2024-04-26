@@ -210,7 +210,6 @@ class Postgres(Dialect):
     CONCAT_COALESCE = True
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
-    COPY_PARAMS_SEP: t.Optional[TokenType] = TokenType.COMMA
 
     TIME_MAPPING = {
         "AM": "%p",
@@ -418,6 +417,7 @@ class Postgres(Dialect):
         LIKE_PROPERTY_INSIDE_SCHEMA = True
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        COPY_HAS_INTO_KEYWORD = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

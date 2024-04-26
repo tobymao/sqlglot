@@ -161,7 +161,6 @@ class DuckDB(Dialect):
     SAFE_DIVISION = True
     INDEX_OFFSET = 1
     CONCAT_COALESCE = True
-    COPY_PARAMS_SEP = TokenType.COMMA
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
@@ -366,6 +365,7 @@ class DuckDB(Dialect):
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
+        COPY_HAS_INTO_KEYWORD = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

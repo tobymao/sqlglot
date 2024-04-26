@@ -1961,13 +1961,10 @@ class CopyParameter(Expression):
 
 class Copy(Expression):
     arg_types = {
-        "into": False,
         "this": True,
         "kind": True,
         "files": True,
         "credentials": False,
-        "with_token": False,
-        "wrapped": False,
         "format": False,
         "params": False,
     }

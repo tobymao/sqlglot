@@ -319,7 +319,7 @@ class Dialect(metaclass=_Dialect):
     UNICODE_END: t.Optional[str] = None
 
     # Separator of COPY statement parameters
-    COPY_PARAMS_SEP: t.Optional[TokenType] = None
+    COPY_PARAMS_ARE_CSV: bool = True
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:

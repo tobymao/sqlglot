@@ -339,6 +339,15 @@ class Generator(metaclass=_Generator):
     # True means limit 1 happens after the union, False means it it happens on y.
     OUTER_UNION_MODIFIERS = True
 
+    # Whether parameters from COPY statement are wrapped in parentheses
+    COPY_PARAMS_ARE_WRAPPED = True
+
+    # Whether values of params are set with "=" token or empty space
+    COPY_PARAMS_EQ_REQUIRED = False
+
+    # Whether COPY statement has INTO keyword
+    COPY_HAS_INTO_KEYWORD = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -3761,27 +3770,13 @@ class Generator(metaclass=_Generator):
     def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
         option = self.sql(expression, "this")
         value = self.sql(expression, "value")
-        value = f" {value}" if value else ""
 
-        return f"{option}{value}"
+        if not value:
+            return option
 
-    def copy_sql(self, expression: exp.Copy) -> str:
-        this = self.sql(expression, "this")
-        this = f" INTO {this}" if expression.args.get("into") else f" {this}"
+        op = " = " if self.COPY_PARAMS_EQ_REQUIRED else " "
 
-        credentials = self.sql(expression, "credentials")
-        credentials = f" {credentials}" if credentials else ""
-
-        kind = " FROM " if expression.args.get("kind") else " TO "
-        files = self.expressions(expression, "files", flat=True)
-
-        sep = ", " if self.dialect.COPY_PARAMS_SEP else " "
-        params = self.expressions(expression, "params", flat=True, sep=sep)
-        if params:
-            params = self.wrap(params) if expression.args.get("wrapped") else params
-            params = f" WITH {params}" if expression.args.get("with_token") else f" {params}"
-
-        return f"COPY{this}{kind}{files}{credentials}{params}"
+        return f"{option}{op}{value}"
 
     def credentials_sql(self, expression: exp.Credentials) -> str:
         cred_expr = expression.args.get("credentials")
@@ -3791,13 +3786,13 @@ class Generator(metaclass=_Generator):
             credentials = f"CREDENTIALS {credentials}"
         else:
             # Snowflake case: CREDENTIALS = (...)
-            credentials = self.expressions(expression, "credentials", flat=True, sep=" ")
+            credentials = self.expressions(expression, key="credentials", flat=True, sep=" ")
             credentials = f"CREDENTIALS = ({credentials})" if credentials else ""
 
         storage = self.sql(expression, "storage")
         storage = f" {storage}" if storage else ""
 
-        encryption = self.expressions(expression, "encryption", flat=True, sep=" ")
+        encryption = self.expressions(expression, key="encryption", flat=True, sep=" ")
         encryption = f"ENCRYPTION = ({encryption})" if encryption else ""
 
         iam_role = self.sql(expression, "iam_role")
@@ -3807,3 +3802,20 @@ class Generator(metaclass=_Generator):
         region = f" REGION {region}" if region else ""
 
         return f"{credentials}{storage}{encryption}{iam_role}{region}"
+
+    def copy_sql(self, expression: exp.Copy) -> str:
+        this = self.sql(expression, "this")
+        this = f" INTO {this}" if self.COPY_HAS_INTO_KEYWORD else f" {this}"
+
+        credentials = self.sql(expression, "credentials")
+        credentials = f" {credentials}" if credentials else ""
+
+        kind = " FROM " if expression.args.get("kind") else " TO "
+        files = self.expressions(expression, key="files", flat=True)
+
+        sep = ", " if self.dialect.COPY_PARAMS_ARE_CSV else " "
+        params = self.expressions(expression, key="params", flat=True, sep=sep)
+        if params:
+            params = f" WITH ({params})" if self.COPY_PARAMS_ARE_WRAPPED else f" {params}"
+
+        return f"COPY{this}{kind}{files}{credentials}{params}"

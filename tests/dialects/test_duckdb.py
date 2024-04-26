@@ -725,12 +725,12 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity(
-            "COPY lineitem FROM 'lineitem.ndjson' (FORMAT JSON, DELIMITER ',', AUTO_DETECT TRUE, COMPRESSION SNAPPY, CODEC ZSTD, FORCE_NOT_NULL(col1, col2))"
+            "COPY lineitem FROM 'lineitem.ndjson' WITH (FORMAT JSON, DELIMITER ',', AUTO_DETECT TRUE, COMPRESSION SNAPPY, CODEC ZSTD, FORCE_NOT_NULL(col1, col2))"
         )
         self.validate_identity(
-            "COPY (SELECT 42 AS a, 'hello' AS b) TO 'query.json' (FORMAT JSON, ARRAY TRUE)"
+            "COPY (SELECT 42 AS a, 'hello' AS b) TO 'query.json' WITH (FORMAT JSON, ARRAY TRUE)"
         )
-        self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' (DELIMITER '|')")
+        self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' WITH (DELIMITER '|')")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

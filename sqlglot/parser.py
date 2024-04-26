@@ -329,6 +329,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMMENT,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
+        TokenType.COPY,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESC,
@@ -1775,9 +1776,8 @@ class Parser(metaclass=_Parser):
     def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
         self._match(TokenType.EQ)
         self._match(TokenType.ALIAS)
-        this = self._parse_unquoted_field()
 
-        return self.expression(exp_class, this=this, **kwargs)
+        return self.expression(exp_class, this=self._parse_unquoted_field(), **kwargs)
 
     def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Properties]:
         properties = []
@@ -6300,7 +6300,7 @@ class Parser(metaclass=_Parser):
         return self.expression(exp.WithOperator, this=this, op=op)
 
     def _parse_copy_parameters(self) -> t.List[exp.CopyParameter]:
-        sep = self.dialect.COPY_PARAMS_SEP
+        sep = TokenType.COMMA if self.dialect.COPY_PARAMS_ARE_CSV else None
 
         options = []
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
@@ -6309,12 +6309,9 @@ class Parser(metaclass=_Parser):
             # Some options are defined as functions with the values as params
             if not isinstance(option, exp.Func):
                 # Different dialects might separate options and values by white space, "=" and "AS"
-                eq = self._match(TokenType.EQ)
+                self._match(TokenType.EQ)
                 self._match(TokenType.ALIAS)
                 value = self._parse_unquoted_field()
-                if eq:
-                    option = exp.EQ(this=option, expression=value)
-                    value = None
 
             param = self.expression(exp.CopyParameter, this=option, value=value)
             options.append(param)
@@ -6329,7 +6326,7 @@ class Parser(metaclass=_Parser):
             opts = []
             self._match(TokenType.EQ)
             self._match(TokenType.L_PAREN)
-            while not self._match(TokenType.R_PAREN):
+            while self._curr and not self._match(TokenType.R_PAREN):
                 opts.append(self._parse_conjunction())
             return opts
 
@@ -6353,7 +6350,7 @@ class Parser(metaclass=_Parser):
     def _parse_copy(self):
         start = self._prev
 
-        into = self._match_text_seq("INTO")
+        self._match(TokenType.INTO)
 
         this = (
             self._parse_conjunction()
@@ -6361,16 +6358,12 @@ class Parser(metaclass=_Parser):
             else self._parse_table(schema=True)
         )
 
-        if self._match(TokenType.FROM):
-            kind = True
-        elif self._match_text_seq("TO"):
-            kind = False
+        kind = self._match(TokenType.FROM) or not self._match_text_seq("TO")
 
         files = self._parse_csv(self._parse_conjunction)
         credentials = self._parse_credentials()
 
-        with_token = self._match_text_seq("WITH")
-        wrapped = self._match(TokenType.L_PAREN, advance=False)
+        self._match_text_seq("WITH")
 
         params = self._parse_wrapped(self._parse_copy_parameters, optional=True)
 
@@ -6380,12 +6373,9 @@ class Parser(metaclass=_Parser):
 
         return self.expression(
             exp.Copy,
-            into=into,
             this=this,
             kind=kind,
             credentials=credentials,
-            with_token=with_token,
-            wrapped=wrapped,
             files=files,
             params=params,
         )

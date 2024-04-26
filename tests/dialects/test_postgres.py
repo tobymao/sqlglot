@@ -315,6 +315,12 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT * FROM t1*", "SELECT * FROM t1")
 
         self.validate_all(
+            "CREATE TABLE t (c INT)",
+            read={
+                "mysql": "CREATE TABLE t (c INT COMMENT 'comment')",
+            },
+        )
+        self.validate_all(
             'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
             write={
                 "bigquery": "SELECT * FROM `test_table` ORDER BY RAND() NULLS LAST LIMIT 5",

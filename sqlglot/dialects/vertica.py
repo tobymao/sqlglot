@@ -10,9 +10,8 @@ class Vertica(Dialect):
 
         KEYWORDS = {
             **Tokenizer.KEYWORDS,
-            "MONEY": TokenType.MONEY,
-            "LONGVARBINARY": TokenType.VARBINARY,
-            "INTERVAL DAY TO SECOND": TokenType.INTERVAL,
+            "REFRESH": TokenType.REFRESH,
+            "TEMP": TokenType.TEMPORARY,
         }
 
     class Generator(generator.Generator):
@@ -20,4 +19,5 @@ class Vertica(Dialect):
             exp.DataType.Type.MONEY: "MONEY",
             exp.DataType.Type.VARBINARY: "LONGVARBINARY",
             exp.DataType.Type.INTERVAL: "INTERVAL DAY TO SECOND",
+            exp.DataType.Type.INTERVAL: "INTERVAL YEAR TO MONTH",
         }

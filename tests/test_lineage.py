@@ -224,15 +224,49 @@ class TestLineage(unittest.TestCase):
             downstream.source.sql(dialect="snowflake"),
             "LATERAL FLATTEN(INPUT => TEST_TABLE.RESULT, OUTER => TRUE) AS FLATTENED(SEQ, KEY, PATH, INDEX, VALUE, THIS)",
         )
-        self.assertEqual(
-            downstream.expression.sql(dialect="snowflake"),
-            "VALUE",
-        )
+        self.assertEqual(downstream.expression.sql(dialect="snowflake"), "VALUE")
         self.assertEqual(len(downstream.downstream), 1)
 
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "TEST_TABLE.RESULT")
         self.assertEqual(downstream.source.sql(dialect="snowflake"), "TEST_TABLE AS TEST_TABLE")
+
+        node = lineage(
+            "FIELD",
+            "SELECT FLATTENED.VALUE:field::text AS FIELD FROM SNOWFLAKE.SCHEMA.MODEL AS MODEL_ALIAS, LATERAL FLATTEN(INPUT => MODEL_ALIAS.A) AS FLATTENED",
+            schema={"SNOWFLAKE": {"SCHEMA": {"TABLE": {"A": "integer"}}}},
+            sources={"SNOWFLAKE.SCHEMA.MODEL": "SELECT A FROM SNOWFLAKE.SCHEMA.TABLE"},
+            dialect="snowflake",
+        )
+        self.assertEqual(node.name, "FIELD")
+
+        downstream = node.downstream[0]
+        self.assertEqual(downstream.name, "FLATTENED.VALUE")
+        self.assertEqual(
+            downstream.source.sql(dialect="snowflake"),
+            "LATERAL FLATTEN(INPUT => MODEL_ALIAS.A) AS FLATTENED(SEQ, KEY, PATH, INDEX, VALUE, THIS)",
+        )
+        self.assertEqual(downstream.expression.sql(dialect="snowflake"), "VALUE")
+        self.assertEqual(len(downstream.downstream), 1)
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(downstream.name, "MODEL_ALIAS.A")
+        self.assertEqual(downstream.source_name, "SNOWFLAKE.SCHEMA.MODEL")
+        self.assertEqual(
+            downstream.source.sql(dialect="snowflake"),
+            "SELECT TABLE.A AS A FROM SNOWFLAKE.SCHEMA.TABLE AS TABLE",
+        )
+        self.assertEqual(downstream.expression.sql(dialect="snowflake"), "TABLE.A AS A")
+        self.assertEqual(len(downstream.downstream), 1)
+
+        downstream = downstream.downstream[0]
+        self.assertEqual(downstream.name, "TABLE.A")
+        self.assertEqual(
+            downstream.source.sql(dialect="snowflake"), "SNOWFLAKE.SCHEMA.TABLE AS TABLE"
+        )
+        self.assertEqual(
+            downstream.expression.sql(dialect="snowflake"), "SNOWFLAKE.SCHEMA.TABLE AS TABLE"
+        )
 
     def test_subquery(self) -> None:
         node = lineage(

@@ -1956,7 +1956,7 @@ class Connect(Expression):
 
 
 class CopyParameter(Expression):
-    arg_types = {"this": True, "value": False}
+    arg_types = {"this": True, "expression": False}
 
 
 class Copy(Expression):

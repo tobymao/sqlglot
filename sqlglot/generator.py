@@ -3769,7 +3769,7 @@ class Generator(metaclass=_Generator):
 
     def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
         option = self.sql(expression, "this")
-        value = self.sql(expression, "value")
+        value = self.sql(expression, "expression")
 
         if not value:
             return option

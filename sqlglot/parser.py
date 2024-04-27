@@ -6313,7 +6313,7 @@ class Parser(metaclass=_Parser):
                 self._match(TokenType.ALIAS)
                 value = self._parse_unquoted_field()
 
-            param = self.expression(exp.CopyParameter, this=option, value=value)
+            param = self.expression(exp.CopyParameter, this=option, expression=value)
             options.append(param)
 
             if sep:

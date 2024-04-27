@@ -365,6 +365,7 @@ class DuckDB(Dialect):
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
+        COPY_HAS_INTO_KEYWORD = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

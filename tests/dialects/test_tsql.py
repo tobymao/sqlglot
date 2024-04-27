@@ -29,6 +29,9 @@ class TestTSQL(Validator):
         self.validate_identity("1 AND true", "1 <> 0 AND (1 = 1)")
         self.validate_identity("CAST(x AS int) OR y", "CAST(x AS INTEGER) <> 0 OR y <> 0")
         self.validate_identity("TRUNCATE TABLE t1 WITH (PARTITIONS(1, 2 TO 5, 10 TO 20, 84))")
+        self.validate_identity(
+            "COPY INTO test_1 FROM 'path' WITH (FILE_TYPE = 'CSV', CREDENTIAL = (IDENTITY = 'Shared Access Signature', SECRET = 'token'), FIELDTERMINATOR = ';', ROWTERMINATOR = '0X0A', ENCODING = 'UTF8', DATEFORMAT = 'ymd', MAXERRORS = 10, ERRORFILE = 'errorsfolder', IDENTITY_INSERT = 'ON')"
+        )
 
         self.validate_all(
             "SELECT IIF(cond <> 0, 'True', 'False')",

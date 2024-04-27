@@ -1955,6 +1955,31 @@ class Connect(Expression):
     arg_types = {"start": False, "connect": True, "nocycle": False}
 
 
+class CopyParameter(Expression):
+    arg_types = {"this": True, "expression": False}
+
+
+class Copy(Expression):
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "files": True,
+        "credentials": False,
+        "format": False,
+        "params": False,
+    }
+
+
+class Credentials(Expression):
+    arg_types = {
+        "credentials": False,
+        "encryption": False,
+        "storage": False,
+        "iam_role": False,
+        "region": False,
+    }
+
+
 class Prior(Expression):
     pass
 

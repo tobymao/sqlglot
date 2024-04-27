@@ -869,3 +869,4 @@ TRUNCATE(a, b)
 SELECT enum
 SELECT unlogged
 SELECT name
+SELECT copy

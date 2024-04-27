@@ -728,6 +728,7 @@ class TSQL(Dialect):
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_TO_NUMBER = False
         OUTER_UNION_MODIFIERS = False
+        COPY_PARAMS_EQ_REQUIRED = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,

@@ -666,6 +666,16 @@ class TestPostgres(Validator):
         )
         self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)
 
+        self.validate_identity(
+            "COPY tbl (col1, col2) FROM 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+        self.validate_identity(
+            "COPY tbl (col1, col2) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+        self.validate_identity(
+            "COPY (SELECT * FROM t) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

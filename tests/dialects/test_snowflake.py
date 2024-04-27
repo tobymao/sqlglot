@@ -102,6 +102,9 @@ WHERE
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
+            "COPY INTO mytable (col1, col2) FROM 's3://mybucket/data/files' FILES = ('file1', 'file2') PATTERN = 'pattern' FILE_FORMAT = (FORMAT_NAME = my_csv_format) PARSE_HEADER = TRUE"
+        )
+        self.validate_identity(
             "REGEXP_REPLACE('target', 'pattern', '\n')",
             "REGEXP_REPLACE('target', 'pattern', '\\n')",
         )
@@ -878,10 +881,6 @@ WHERE
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
         self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
-        self.validate_identity(
-            'COPY INTO NEW_TABLE ("foo", "bar") FROM (SELECT $1, $2, $3, $4 FROM @%old_table)',
-            check_command_warning=True,
-        )
         self.validate_identity(
             "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla"
         )

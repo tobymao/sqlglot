@@ -417,6 +417,7 @@ class Postgres(Dialect):
         LIKE_PROPERTY_INSIDE_SCHEMA = True
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        COPY_HAS_INTO_KEYWORD = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,

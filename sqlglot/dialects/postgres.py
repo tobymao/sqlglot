@@ -528,6 +528,10 @@ class Postgres(Dialect):
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
 
+        def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
+            self.unsupported("Table comments are not supported in the CREATE statement")
+            return ""
+
         def commentcolumnconstraint_sql(self, expression: exp.CommentColumnConstraint) -> str:
             self.unsupported("Column comments are not supported in the CREATE statement")
             return ""

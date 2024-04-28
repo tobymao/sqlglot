@@ -317,7 +317,7 @@ class TestPostgres(Validator):
         self.validate_all(
             "CREATE TABLE t (c INT)",
             read={
-                "mysql": "CREATE TABLE t (c INT COMMENT 'comment')",
+                "mysql": "CREATE TABLE t (c INT COMMENT 'comment 1') COMMENT = 'comment 2'",
             },
         )
         self.validate_all(

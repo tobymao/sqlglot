@@ -875,3 +875,16 @@ class MySQL(Dialect):
             charset = expression.args.get("charset")
             using = f" USING {self.sql(charset)}" if charset else ""
             return f"CHAR({this}{using})"
+
+        def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+            unit = expression.args.get("unit")
+
+            # Pick an old-enough date to avoid negative timestamp diffs
+            start_ts = "'0000-01-01 00:00:00'"
+
+            # Source: https://stackoverflow.com/a/32955740
+            timestamp_diff = build_date_delta(exp.TimestampDiff)([unit, start_ts, expression.this])
+            interval = exp.Interval(this=timestamp_diff, unit=unit)
+            dateadd = build_date_delta_with_interval(exp.DateAdd)([start_ts, interval])
+
+            return self.sql(dateadd)

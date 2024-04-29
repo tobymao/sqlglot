@@ -12,6 +12,8 @@ from sqlglot.helper import ensure_collection, find_new_name, seq_get
 
 logger = logging.getLogger("sqlglot")
 
+TRAVERSABLES = (exp.Query, exp.DDL, exp.DML)
+
 
 class ScopeType(Enum):
     ROOT = auto()
@@ -495,25 +497,8 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
     Returns:
         A list of the created scope instances
     """
-    if isinstance(expression, exp.DDL) and isinstance(expression.expression, exp.Query):
-        # We ignore the DDL expression and build a scope for its query instead
-        ddl_with = expression.args.get("with")
-        expression = expression.expression
-
-        # If the DDL has CTEs attached, we need to add them to the query, or
-        # prepend them if the query itself already has CTEs attached to it
-        if ddl_with:
-            ddl_with.pop()
-            query_ctes = expression.ctes
-            if not query_ctes:
-                expression.set("with", ddl_with)
-            else:
-                expression.args["with"].set("recursive", ddl_with.recursive)
-                expression.args["with"].set("expressions", [*ddl_with.expressions, *query_ctes])
-
-    if isinstance(expression, exp.Query):
+    if isinstance(expression, TRAVERSABLES):
         return list(_traverse_scope(Scope(expression)))
-
     return []
 
 
@@ -531,25 +516,37 @@ def build_scope(expression: exp.Expression) -> t.Optional[Scope]:
 
 
 def _traverse_scope(scope):
-    if isinstance(scope.expression, exp.Select):
+    expression = scope.expression
+
+    if isinstance(expression, exp.Select):
         yield from _traverse_select(scope)
-    elif isinstance(scope.expression, exp.Union):
+    elif isinstance(expression, exp.Union):
         yield from _traverse_ctes(scope)
         yield from _traverse_union(scope)
         return
-    elif isinstance(scope.expression, exp.Subquery):
+    elif isinstance(expression, exp.Subquery):
         if scope.is_root:
             yield from _traverse_select(scope)
         else:
             yield from _traverse_subqueries(scope)
-    elif isinstance(scope.expression, exp.Table):
+    elif isinstance(expression, exp.Table):
         yield from _traverse_tables(scope)
-    elif isinstance(scope.expression, exp.UDTF):
+    elif isinstance(expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
+    elif isinstance(expression, exp.DDL):
+        if isinstance(expression.expression, exp.Query):
+            yield from _traverse_ctes(scope)
+            yield from _traverse_scope(Scope(expression.expression, cte_sources=scope.cte_sources))
+        return
+    elif isinstance(expression, exp.DML):
+        yield from _traverse_ctes(scope)
+        for query in find_all_in_scope(expression, exp.Query):
+            # This check ensures we don't yield the CTE queries twice
+            if not isinstance(query.parent, exp.CTE):
+                yield from _traverse_scope(Scope(query, cte_sources=scope.cte_sources))
+        return
     else:
-        logger.warning(
-            "Cannot traverse scope %s with type '%s'", scope.expression, type(scope.expression)
-        )
+        logger.warning("Cannot traverse scope %s with type '%s'", expression, type(expression))
         return
 
     yield scope

@@ -867,3 +867,29 @@ class MySQL(Dialect):
             charset = expression.args.get("charset")
             using = f" USING {self.sql(charset)}" if charset else ""
             return f"CHAR({this}{using})"
+
+        def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+            this = self.sql(expression, "this")
+            unit = expression.args.get("unit")
+            unix_timestart = "'1900-01-01 00:00:00'"
+
+            mysql_unit = unit
+            if isinstance(unit, exp.Var):
+                # Match abbrevations, most coming from Snowflake
+                unit = unit.this.upper()
+                if unit.startswith("Y"):
+                    mysql_unit = "YEAR"
+                elif unit == "MM" or unit.startswith("MON"):
+                    mysql_unit = "MONTH"
+                elif unit.startswith("W"):
+                    mysql_unit = "WEEK"
+                elif unit.startswith("D"):
+                    mysql_unit = "DAY"
+                elif unit.startswith("MIN"):
+                    mysql_unit = "MINUTE"
+                elif unit.startswith("SEC"):
+                    mysql_unit = "SECOND"
+                elif unit.startswith("MS"):
+                    mysql_unit = "MILLISECOND"
+
+            return f"DATE_ADD({unix_timestart}, interval TIMESTAMPDIFF({mysql_unit}, {unix_timestart}, {this}) {mysql_unit})"

@@ -499,22 +499,15 @@ def traverse_scope(expression: exp.Expression) -> t.List[Scope]:
         # We ignore the DDL expression and build a scope for its query instead
         ddl_with = expression.args.get("with")
         expression = expression.expression
+    else:
+        ddl_with = None
 
-        # If the DDL has CTEs attached, we need to add them to the query, or
-        # prepend them if the query itself already has CTEs attached to it
-        if ddl_with:
-            ddl_with.pop()
-            query_ctes = expression.ctes
-            if not query_ctes:
-                expression.set("with", ddl_with)
-            else:
-                expression.args["with"].set("recursive", ddl_with.recursive)
-                expression.args["with"].set("expressions", [*ddl_with.expressions, *query_ctes])
+    scope = Scope(expression)
+    if ddl_with:
+        scope._collect()
+        scope._ctes = [*ddl_with.expressions, *scope._ctes]
 
-    if isinstance(expression, exp.Query):
-        return list(_traverse_scope(Scope(expression)))
-
-    return []
+    return list(_traverse_scope(scope)) if isinstance(expression, exp.Query) else []
 
 
 def build_scope(expression: exp.Expression) -> t.Optional[Scope]:

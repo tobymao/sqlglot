@@ -98,13 +98,6 @@ class TestMySQL(Validator):
         )
 
         self.validate_all(
-            "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",
-            read={
-                "mysql": "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",
-                "postgres": "SELECT EXTRACT(epoch FROM TIMESTAMP '2024-04-29 12:00:00')",
-            },
-        )
-        self.validate_all(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
             write={
                 "duckdb": "CREATE TABLE z (a INT)",
@@ -605,6 +598,13 @@ class TestMySQL(Validator):
         )
 
     def test_mysql(self):
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",
+            read={
+                "mysql": "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",
+                "postgres": "SELECT EXTRACT(epoch FROM TIMESTAMP '2024-04-29 12:00:00')",
+            },
+        )
         self.validate_all(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
             read={

@@ -869,7 +869,6 @@ class MySQL(Dialect):
             return f"CHAR({this}{using})"
 
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
-            this = self.sql(expression, "this")
             unit = expression.args.get("unit")
 
             # Pick an old-enough date to avoid negative timestamp diffs

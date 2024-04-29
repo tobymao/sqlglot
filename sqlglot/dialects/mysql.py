@@ -876,7 +876,7 @@ class MySQL(Dialect):
             start_ts = "'0000-01-01 00:00:00'"
 
             # Source: https://stackoverflow.com/a/32955740
-            timestamp_diff = build_date_delta(exp.TimestampDiff)([unit, start_ts, this])
+            timestamp_diff = build_date_delta(exp.TimestampDiff)([unit, start_ts, expression.this])
             interval = exp.Interval(this=timestamp_diff, unit=unit)
             dateadd = build_date_delta_with_interval(exp.DateAdd)([start_ts, interval])
 

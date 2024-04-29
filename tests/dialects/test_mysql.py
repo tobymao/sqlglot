@@ -1122,3 +1122,23 @@ COMMENT='客户账户表'"""
                 "tsql": "CAST(a AS FLOAT) / NULLIF(b, 0)",
             },
         )
+
+    def test_timestamp_trunc(self):
+        for dialect in ("postgres", "snowflake", "duckdb", "spark", "databricks"):
+            for unit in (
+                "MILLISECOND",
+                "SECOND",
+                "DAY",
+                "MONTH",
+                "YEAR",
+            ):
+                with self.subTest(f"MySQL -> {dialect} Timestamp Trunc with unit {unit}: "):
+                    self.validate_all(
+                        f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', CAST('2001-02-16 20:38:40' AS DATETIME))) {unit})",
+                        read={
+                            dialect: f"DATE_TRUNC({unit}, TIMESTAMP '2001-02-16 20:38:40')",
+                        },
+                        write={
+                            "mysql": f"DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF({unit}, '0000-01-01 00:00:00', CAST('2001-02-16 20:38:40' AS DATETIME))) {unit})",
+                        },
+                    )

@@ -871,25 +871,13 @@ class MySQL(Dialect):
         def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
             this = self.sql(expression, "this")
             unit = expression.args.get("unit")
-            unix_timestart = "'1900-01-01 00:00:00'"
 
-            mysql_unit = unit
-            if isinstance(unit, exp.Var):
-                # Match abbrevations, most coming from Snowflake
-                unit = unit.this.upper()
-                if unit.startswith("Y"):
-                    mysql_unit = "YEAR"
-                elif unit == "MM" or unit.startswith("MON"):
-                    mysql_unit = "MONTH"
-                elif unit.startswith("W"):
-                    mysql_unit = "WEEK"
-                elif unit.startswith("D"):
-                    mysql_unit = "DAY"
-                elif unit.startswith("MIN"):
-                    mysql_unit = "MINUTE"
-                elif unit.startswith("SEC"):
-                    mysql_unit = "SECOND"
-                elif unit.startswith("MS"):
-                    mysql_unit = "MILLISECOND"
+            # Pick an old-enough date to avoid negative timestamp diffs
+            start_ts = "'0000-01-01 00:00:00'"
 
-            return f"DATE_ADD({unix_timestart}, interval TIMESTAMPDIFF({mysql_unit}, {unix_timestart}, {this}) {mysql_unit})"
+            # Source: https://stackoverflow.com/a/32955740
+            timestamp_diff = build_date_delta(exp.TimestampDiff)([unit, start_ts, this])
+            interval = exp.Interval(this=timestamp_diff, unit=unit)
+            dateadd = build_date_delta_with_interval(exp.DateAdd)([start_ts, interval])
+
+            return self.sql(dateadd)

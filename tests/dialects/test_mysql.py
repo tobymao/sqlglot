@@ -605,6 +605,13 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
+            "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",
+            read={
+                "mysql": "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",
+                "postgres": "SELECT EXTRACT(epoch FROM TIMESTAMP '2024-04-29 12:00:00')",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
             read={
                 "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",

@@ -599,6 +599,12 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT department, GROUP_CONCAT(name) AS employee_names FROM data GROUP BY department",
+            read={
+                "postgres": "SELECT department, array_agg(name) AS employee_names FROM data GROUP BY department",
+            },
+        )
+        self.validate_all(
             "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",
             read={
                 "mysql": "SELECT UNIX_TIMESTAMP(CAST('2024-04-29 12:00:00' AS DATETIME))",

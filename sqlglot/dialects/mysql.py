@@ -782,6 +782,13 @@ class MySQL(Dialect):
             exp.DataType.Type.TIMESTAMPLTZ,
         }
 
+        def extract_sql(self, expression: exp.Extract) -> str:
+            unit = expression.name
+            if unit and unit.lower() == "epoch":
+                return self.func("UNIX_TIMESTAMP", expression.expression)
+
+            return super().extract_sql(expression)
+
         def datatype_sql(self, expression: exp.DataType) -> str:
             # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
             result = super().datatype_sql(expression)

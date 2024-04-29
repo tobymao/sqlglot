@@ -599,6 +599,12 @@ class TestMySQL(Validator):
 
     def test_mysql(self):
         self.validate_all(
+            "SELECT department, GROUP_CONCAT(name) AS employee_names FROM data GROUP BY department",
+            read={
+                "postgres": "SELECT department, array_agg(name) AS employee_names FROM data GROUP BY department",
+            },
+        )
+        self.validate_all(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
             read={
                 "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",

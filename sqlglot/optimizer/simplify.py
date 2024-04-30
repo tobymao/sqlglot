@@ -223,7 +223,9 @@ def flatten(expression):
 
 def simplify_connectors(expression, root=True):
     def _simplify_connectors(expression, left, right):
-        if left == right and not isinstance(expression, exp.Xor):
+        if left == right:
+            if isinstance(expression, exp.Xor):
+                return exp.false()
             return left
         if isinstance(expression, exp.And):
             if is_false(left) or is_false(right):
@@ -368,7 +370,7 @@ def uniq_sort(expression, root=True):
         flattened = tuple(expression.flatten())
 
         if isinstance(expression, exp.Xor):
-            result_func = exp.xor_
+            result_func = exp.xor
             # Do not deduplicate XOR as A XOR A != A if A == True
             deduped = None
             arr = tuple([(gen(e), e) for e in flattened])

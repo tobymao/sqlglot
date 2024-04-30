@@ -6563,14 +6563,14 @@ def or_(
     return t.cast(Condition, _combine(expressions, Or, dialect, copy=copy, **opts))
 
 
-def xor_(
+def xor(
     *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
 ) -> Condition:
     """
     Combine multiple conditions with an XOR logical operator.
 
     Example:
-        >>> xor_("x=1", xor_("y=1", "z=1")).sql()
+        >>> xor("x=1", xor("y=1", "z=1")).sql()
         'x = 1 XOR (y = 1 XOR z = 1)'
 
     Args:

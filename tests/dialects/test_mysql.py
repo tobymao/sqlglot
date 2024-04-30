@@ -1,4 +1,5 @@
 from sqlglot import expressions as exp
+from sqlglot.dialects.mysql import MySQL
 from tests.dialects.test_dialect import Validator
 
 
@@ -6,21 +7,11 @@ class TestMySQL(Validator):
     dialect = "mysql"
 
     def test_ddl(self):
-        int_types = {"BIGINT", "INT", "MEDIUMINT", "SMALLINT", "TINYINT"}
-
-        for t in int_types:
+        for t in ("BIGINT", "INT", "MEDIUMINT", "SMALLINT", "TINYINT"):
             self.validate_identity(f"CREATE TABLE t (id {t} UNSIGNED)")
             self.validate_identity(f"CREATE TABLE t (id {t}(10) UNSIGNED)")
 
         self.validate_identity("CREATE TABLE t (id DECIMAL(20, 4) UNSIGNED)")
-
-        self.validate_all(
-            "CREATE TABLE t (id INT UNSIGNED)",
-            write={
-                "duckdb": "CREATE TABLE t (id UINTEGER)",
-            },
-        )
-
         self.validate_identity("CREATE TABLE foo (a BIGINT, UNIQUE (b) USING BTREE)")
         self.validate_identity("CREATE TABLE foo (id BIGINT)")
         self.validate_identity("CREATE TABLE 00f (1d BIGINT)")
@@ -98,6 +89,13 @@ class TestMySQL(Validator):
         )
 
         self.validate_all(
+            "CREATE TABLE t (id INT UNSIGNED)",
+            write={
+                "duckdb": "CREATE TABLE t (id UINTEGER)",
+                "mysql": "CREATE TABLE t (id INT UNSIGNED)",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE z (a INT) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARACTER SET=utf8 COLLATE=utf8_bin COMMENT='x'",
             write={
                 "duckdb": "CREATE TABLE z (a INT)",
@@ -109,13 +107,8 @@ class TestMySQL(Validator):
         self.validate_all(
             "CREATE TABLE x (id int not null auto_increment, primary key (id))",
             write={
+                "mysql": "CREATE TABLE x (id INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (id))",
                 "sqlite": "CREATE TABLE x (id INTEGER NOT NULL AUTOINCREMENT PRIMARY KEY)",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE x (id int not null auto_increment)",
-            write={
-                "sqlite": "CREATE TABLE x (id INTEGER NOT NULL)",
             },
         )
 
@@ -135,8 +128,6 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT CAST('[4,5]' AS JSON) MEMBER OF('[[3,4],[4,5]]')")
         self.validate_identity("""SELECT 'ab' MEMBER OF('[23, "abc", 17, "ab", 10]')""")
         self.validate_identity("""SELECT * FROM foo WHERE 'ab' MEMBER OF(content)""")
-        self.validate_identity("CAST(x AS ENUM('a', 'b'))")
-        self.validate_identity("CAST(x AS SET('a', 'b'))")
         self.validate_identity("SELECT CURRENT_TIMESTAMP(6)")
         self.validate_identity("x ->> '$.name'")
         self.validate_identity("SELECT CAST(`a`.`b` AS CHAR) FROM foo")
@@ -226,29 +217,47 @@ class TestMySQL(Validator):
         self.validate_identity("SELECT * FROM t1 PARTITION(p0)")
 
     def test_types(self):
-        self.validate_identity("CAST(x AS MEDIUMINT) + CAST(y AS YEAR(4))")
+        for char_type in MySQL.Generator.CHAR_CAST_MAPPING:
+            with self.subTest(f"MySQL cast into {char_type}"):
+                self.validate_identity(f"CAST(x AS {char_type.value})", "CAST(x AS CHAR)")
+
+        for signed_type in MySQL.Generator.SIGNED_CAST_MAPPING:
+            with self.subTest(f"MySQL cast into {signed_type}"):
+                self.validate_identity(f"CAST(x AS {signed_type.value})", "CAST(x AS SIGNED)")
+
+        self.validate_identity("CAST(x AS ENUM('a', 'b'))")
+        self.validate_identity("CAST(x AS SET('a', 'b'))")
+        self.validate_identity(
+            "CAST(x AS MEDIUMINT) + CAST(y AS YEAR(4))",
+            "CAST(x AS SIGNED) + CAST(y AS YEAR(4))",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMP)",
+            "CAST(x AS DATETIME)",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPTZ)",
+            "TIMESTAMP(x)",
+        )
+        self.validate_identity(
+            "CAST(x AS TIMESTAMPLTZ)",
+            "TIMESTAMP(x)",
+        )
 
         self.validate_all(
             "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT) + CAST(z AS TINYTEXT)",
-            read={
-                "mysql": "CAST(x AS MEDIUMTEXT) + CAST(y AS LONGTEXT) + CAST(z AS TINYTEXT)",
-            },
             write={
+                "mysql": "CAST(x AS CHAR) + CAST(y AS CHAR) + CAST(z AS CHAR)",
                 "spark": "CAST(x AS TEXT) + CAST(y AS TEXT) + CAST(z AS TEXT)",
             },
         )
         self.validate_all(
             "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB) + CAST(z AS TINYBLOB)",
-            read={
-                "mysql": "CAST(x AS MEDIUMBLOB) + CAST(y AS LONGBLOB) + CAST(z AS TINYBLOB)",
-            },
             write={
+                "mysql": "CAST(x AS CHAR) + CAST(y AS CHAR) + CAST(z AS CHAR)",
                 "spark": "CAST(x AS BLOB) + CAST(y AS BLOB) + CAST(z AS BLOB)",
             },
         )
-        self.validate_all("CAST(x AS TIMESTAMP)", write={"mysql": "CAST(x AS DATETIME)"})
-        self.validate_all("CAST(x AS TIMESTAMPTZ)", write={"mysql": "TIMESTAMP(x)"})
-        self.validate_all("CAST(x AS TIMESTAMPLTZ)", write={"mysql": "TIMESTAMP(x)"})
 
     def test_canonical_functions(self):
         self.validate_identity("SELECT LEFT('str', 2)", "SELECT LEFT('str', 2)")

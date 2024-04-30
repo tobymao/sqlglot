@@ -5315,8 +5315,10 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.FROM):
             args.append(self._parse_bitwise())
-            if self._match(TokenType.FOR):
-                args.append(self._parse_bitwise())
+        if self._match(TokenType.FOR):
+            if len(args) == 1:
+                args.append(exp.Literal.number(1))
+            args.append(self._parse_bitwise())
 
         return self.validate_expression(exp.Substring.from_arg_list(args), args)
 

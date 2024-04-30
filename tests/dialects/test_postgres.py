@@ -312,7 +312,14 @@ class TestPostgres(Validator):
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
         )
-        self.validate_identity("SELECT * FROM t1*", "SELECT * FROM t1")
+        self.validate_identity(
+            "SELECT * FROM t1*",
+            "SELECT * FROM t1",
+        )
+        self.validate_identity(
+            "SELECT SUBSTRING('afafa' for 1)",
+            "SELECT SUBSTRING('afafa' FROM 1 FOR 1)",
+        )
 
         self.validate_all(
             "CREATE TABLE t (c INT)",

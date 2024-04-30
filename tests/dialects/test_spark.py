@@ -343,7 +343,7 @@ TBLPROPERTIES (
                 "postgres": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul' AT TIME ZONE 'UTC'",
                 "presto": "SELECT WITH_TIMEZONE(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul') AT TIME ZONE 'UTC'",
                 "redshift": "SELECT CAST('2016-08-31' AS TIMESTAMP) AT TIME ZONE 'Asia/Seoul' AT TIME ZONE 'UTC'",
-                "snowflake": "SELECT CONVERT_TIMEZONE('Asia/Seoul', 'UTC', CAST('2016-08-31' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT CONVERT_TIMEZONE('Asia/Seoul', 'UTC', CAST('2016-08-31' AS TIMESTAMP))",
                 "spark": "SELECT TO_UTC_TIMESTAMP(CAST('2016-08-31' AS TIMESTAMP), 'Asia/Seoul')",
             },
         )
@@ -523,7 +523,15 @@ TBLPROPERTIES (
             },
         )
 
-        for data_type in ("BOOLEAN", "DATE", "DOUBLE", "FLOAT", "INT", "TIMESTAMP"):
+        for data_type in (
+            "BOOLEAN",
+            "DATE",
+            "DOUBLE",
+            "FLOAT",
+            "INT",
+            "TIMESTAMP",
+            "TIMESTAMP_NTZ",
+        ):
             self.validate_all(
                 f"{data_type}(x)",
                 write={
@@ -531,6 +539,15 @@ TBLPROPERTIES (
                     "spark": f"CAST(x AS {data_type})",
                 },
             )
+
+        self.validate_all(
+            "TIMESTAMP_LTZ(x)",
+            write={
+                "": "CAST(x AS TIMESTAMPLTZ)",
+                "spark": "CAST(x AS TIMESTAMP_LTZ)",
+            },
+        )
+
         self.validate_all(
             "STRING(x)",
             write={

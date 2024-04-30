@@ -5,7 +5,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot.dialects.dialect import rename_func, unit_to_var
 from sqlglot.dialects.hive import _build_with_ignore_nulls
-from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider
+from sqlglot.dialects.spark2 import Spark2, temporary_storage_provider, _build_as_cast
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.transforms import (
     ctas_with_tmp_tables_to_create_tmp_view,
@@ -63,6 +63,8 @@ class Spark(Spark2):
             **Spark2.Parser.FUNCTIONS,
             "ANY_VALUE": _build_with_ignore_nulls(exp.AnyValue),
             "DATEDIFF": _build_datediff,
+            "TIMESTAMP_LTZ": _build_as_cast("TIMESTAMP_LTZ"),
+            "TIMESTAMP_NTZ": _build_as_cast("TIMESTAMP_NTZ"),
             "TRY_ELEMENT_AT": lambda args: exp.Bracket(
                 this=seq_get(args, 0), expressions=ensure_list(seq_get(args, 1)), safe=True
             ),
@@ -88,6 +90,7 @@ class Spark(Spark2):
             exp.DataType.Type.MONEY: "DECIMAL(15, 4)",
             exp.DataType.Type.SMALLMONEY: "DECIMAL(6, 4)",
             exp.DataType.Type.UNIQUEIDENTIFIER: "STRING",
+            exp.DataType.Type.TIMESTAMPLTZ: "TIMESTAMP_LTZ",
         }
 
         TRANSFORMS = {

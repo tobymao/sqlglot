@@ -362,6 +362,7 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
         exp.DataType.Type.ROWVERSION: "VARBINARY",
+        exp.DataType.Type.TIMESTAMPNTZ: "TIMESTAMP_NTZ",
     }
 
     STAR_MAPPING = {

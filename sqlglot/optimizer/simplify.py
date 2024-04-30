@@ -373,7 +373,7 @@ def uniq_sort(expression, root=True):
             result_func = exp.xor
             # Do not deduplicate XOR as A XOR A != A if A == True
             deduped = None
-            arr = tuple([(gen(e), e) for e in flattened])
+            arr = tuple((gen(e), e) for e in flattened)
         else:
             result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
             deduped = {gen(e): e for e in flattened}

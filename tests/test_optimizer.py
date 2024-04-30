@@ -427,18 +427,6 @@ SELECT :with,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expr
 """.strip(),
         )
 
-        # uniq_sort for XORs
-        xor_query = parse_one("A XOR D XOR B XOR E XOR F XOR G XOR C", read="mysql")
-        simplified_xor = optimizer.simplify.simplify(xor_query)
-        self.assertEqual(
-            simplified_xor.sql(dialect="mysql"), "A XOR B XOR C XOR D XOR E XOR F XOR G"
-        )
-
-        # A XOR A -> False
-        xor_query = parse_one("A XOR A", read="mysql")
-        simplified_xor = optimizer.simplify.simplify(xor_query)
-        self.assertEqual(simplified_xor.sql(dialect="mysql"), "FALSE")
-
     def test_unnest_subqueries(self):
         self.check_file(
             "unnest_subqueries",

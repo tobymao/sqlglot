@@ -161,6 +161,9 @@ class _Dialect(type):
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
+        if enum not in ("", "athena", "presto", "trino"):
+            klass.generator_class.TRY_SUPPORTED = False
+
         if enum not in ("", "databricks", "hive", "spark", "spark2"):
             modifier_transforms = klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS.copy()
             for modifier in ("cluster", "distribute", "sort"):

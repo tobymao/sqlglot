@@ -1059,6 +1059,15 @@ class TestPresto(Validator):
         )
 
     def test_json(self):
+        with self.assertLogs(helper_logger):
+            self.validate_all(
+                """SELECT JSON_EXTRACT_SCALAR(TRY(FILTER(CAST(JSON_EXTRACT('{"k1": [{"k2": "{\\"k3\\": 1}", "k4": "v"}]}', '$.k1') AS ARRAY(MAP(VARCHAR, VARCHAR))), x -> x['k4'] = 'v')[1]['k2']), '$.k3')""",
+                write={
+                    "presto": """SELECT JSON_EXTRACT_SCALAR(TRY(FILTER(CAST(JSON_EXTRACT('{"k1": [{"k2": "{\\"k3\\": 1}", "k4": "v"}]}', '$.k1') AS ARRAY(MAP(VARCHAR, VARCHAR))), x -> x['k4'] = 'v')[1]['k2']), '$.k3')""",
+                    "spark": """SELECT GET_JSON_OBJECT(FILTER(FROM_JSON(GET_JSON_OBJECT('{"k1": [{"k2": "{\\\\"k3\\\\": 1}", "k4": "v"}]}', '$.k1'), 'ARRAY<MAP<STRING, STRING>>'), x -> x['k4'] = 'v')[0]['k2'], '$.k3')""",
+                },
+            )
+
         self.validate_all(
             "SELECT CAST(JSON '[1,23,456]' AS ARRAY(INTEGER))",
             write={
@@ -1073,7 +1082,6 @@ class TestPresto(Validator):
                 "presto": 'SELECT CAST(JSON_PARSE(\'{"k1":1,"k2":23,"k3":456}\') AS MAP(VARCHAR, INTEGER))',
             },
         )
-
         self.validate_all(
             "SELECT CAST(ARRAY [1, 23, 456] AS JSON)",
             write={

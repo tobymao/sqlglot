@@ -6519,7 +6519,7 @@ def condition(
 
 def and_(
     *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
-) -> And:
+) -> Condition:
     """
     Combine multiple conditions with an AND logical operator.
 
@@ -6535,14 +6535,14 @@ def and_(
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        And: the new condition
+        The new condition
     """
-    return t.cast(And, _combine(expressions, And, dialect, copy=copy, **opts))
+    return t.cast(Condition, _combine(expressions, And, dialect, copy=copy, **opts))
 
 
 def or_(
     *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
-) -> Or:
+) -> Condition:
     """
     Combine multiple conditions with an OR logical operator.
 
@@ -6558,14 +6558,14 @@ def or_(
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        Or: the new condition
+        The new condition
     """
-    return t.cast(Or, _combine(expressions, Or, dialect, copy=copy, **opts))
+    return t.cast(Condition, _combine(expressions, Or, dialect, copy=copy, **opts))
 
 
 def xor(
     *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
-) -> Xor:
+) -> Condition:
     """
     Combine multiple conditions with an XOR logical operator.
 
@@ -6581,9 +6581,9 @@ def xor(
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        Xor: the new condition
+        The new condition
     """
-    return t.cast(Xor, _combine(expressions, Xor, dialect, copy=copy, **opts))
+    return t.cast(Condition, _combine(expressions, Xor, dialect, copy=copy, **opts))
 
 
 def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Not:

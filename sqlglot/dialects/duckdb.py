@@ -31,6 +31,9 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
+
 
 def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
     this = self.sql(expression, "this")
@@ -41,6 +44,13 @@ def _ts_or_ds_add_sql(self: DuckDB.Generator, expression: exp.TsOrDsAdd) -> str:
 def _date_delta_sql(
     self: DuckDB.Generator, expression: exp.DateAdd | exp.DateSub | exp.TimeAdd
 ) -> str:
+    if isinstance(expression, exp.DateSub):
+        subexpr = expression.expression
+        if not isinstance(subexpr, exp.Literal) or not subexpr.is_int:
+            # Preserve the DATE_SUB roundtrip; If subexpr was an integer, we'd
+            # convert to interval as in below (e.g. BigQuery -> DuckDB transpilation)
+            return self.func("DATE_SUB", f"'{expression.unit}'", subexpr, expression.this)
+
     this = self.sql(expression, "this")
     unit = unit_to_var(expression)
     op = "+" if isinstance(expression, (exp.DateAdd, exp.TimeAdd)) else "-"
@@ -77,8 +87,9 @@ def _build_sort_array_desc(args: t.List) -> exp.Expression:
     return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
 
 
-def _build_date_diff(args: t.List) -> exp.Expression:
-    return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
+# Parse part-based functions, check https://duckdb.org/docs/sql/functions/date.html#date-functions
+def _build_date_part_exp(exp_class: t.Type[E], args: t.List) -> exp.Expression:
+    return (exp_class)(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
 
 
 def _build_generate_series(end_exclusive: bool = False) -> t.Callable[[t.List], exp.GenerateSeries]:
@@ -227,8 +238,10 @@ class DuckDB(Dialect):
             "ARRAY_HAS": exp.ArrayContains.from_arg_list,
             "ARRAY_REVERSE_SORT": _build_sort_array_desc,
             "ARRAY_SORT": exp.SortArray.from_arg_list,
-            "DATEDIFF": _build_date_diff,
-            "DATE_DIFF": _build_date_diff,
+            "DATEDIFF": lambda args: _build_date_part_exp(exp.DateDiff, args),
+            "DATE_DIFF": lambda args: _build_date_part_exp(exp.DateDiff, args),
+            "DATESUB": lambda args: _build_date_part_exp(exp.DateSub, args),
+            "DATE_SUB": lambda args: _build_date_part_exp(exp.DateSub, args),
             "DATE_TRUNC": date_trunc_to_time,
             "DATETRUNC": date_trunc_to_time,
             "DECODE": lambda args: exp.Decode(

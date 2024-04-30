@@ -329,6 +329,8 @@ class TestDuckDB(Validator):
         self.validate_all("0x1010", write={"": "0 AS x1010"})
         self.validate_all("x ~ y", write={"duckdb": "REGEXP_MATCHES(x, y)"})
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
+        self.validate_all("DATE_SUB('YEAR', DATE '2019-01-01', '2020-01-01')")
+        self.validate_all("DATESUB('YEAR', DATE '2019-01-01', '2020-01-01')")
         self.validate_all(
             "SELECT STRFTIME(CAST('2020-01-01' AS TIMESTAMP), CONCAT('%Y', '%m'))",
             write={

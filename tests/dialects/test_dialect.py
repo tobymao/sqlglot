@@ -293,7 +293,7 @@ class TestDialect(Validator):
                 "bigquery": "CAST(a AS INT64)",
                 "drill": "CAST(a AS INTEGER)",
                 "duckdb": "CAST(a AS SMALLINT)",
-                "mysql": "CAST(a AS SMALLINT)",
+                "mysql": "CAST(a AS SIGNED)",
                 "hive": "CAST(a AS SMALLINT)",
                 "oracle": "CAST(a AS NUMBER)",
                 "postgres": "CAST(a AS SMALLINT)",

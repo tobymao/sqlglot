@@ -767,15 +767,37 @@ class MySQL(Dialect):
 
         LIMIT_ONLY_LITERALS = True
 
+        CHAR_CAST_MAPPING = dict.fromkeys(
+            (
+                exp.DataType.Type.LONGTEXT,
+                exp.DataType.Type.LONGBLOB,
+                exp.DataType.Type.MEDIUMBLOB,
+                exp.DataType.Type.MEDIUMTEXT,
+                exp.DataType.Type.TEXT,
+                exp.DataType.Type.TINYBLOB,
+                exp.DataType.Type.TINYTEXT,
+                exp.DataType.Type.VARCHAR,
+            ),
+            "CHAR",
+        )
+        SIGNED_CAST_MAPPING = dict.fromkeys(
+            (
+                exp.DataType.Type.BIGINT,
+                exp.DataType.Type.BOOLEAN,
+                exp.DataType.Type.INT,
+                exp.DataType.Type.SMALLINT,
+                exp.DataType.Type.TINYINT,
+                exp.DataType.Type.MEDIUMINT,
+            ),
+            "SIGNED",
+        )
+
         # MySQL doesn't support many datatypes in cast.
         # https://dev.mysql.com/doc/refman/8.0/en/cast-functions.html#function_cast
         CAST_MAPPING = {
-            exp.DataType.Type.BIGINT: "SIGNED",
-            exp.DataType.Type.BOOLEAN: "SIGNED",
-            exp.DataType.Type.INT: "SIGNED",
-            exp.DataType.Type.TEXT: "CHAR",
+            **CHAR_CAST_MAPPING,
+            **SIGNED_CAST_MAPPING,
             exp.DataType.Type.UBIGINT: "UNSIGNED",
-            exp.DataType.Type.VARCHAR: "CHAR",
         }
 
         TIMESTAMP_FUNC_TYPES = {

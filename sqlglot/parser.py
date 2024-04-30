@@ -5312,11 +5312,16 @@ class Parser(metaclass=_Parser):
         # https://www.postgresql.org/docs/9.1/functions-string.html @ Table 9-6
 
         args = t.cast(t.List[t.Optional[exp.Expression]], self._parse_csv(self._parse_bitwise))
+        from_ = self._match(TokenType.FROM)
 
-        if self._match(TokenType.FROM):
+        if from_:
             args.append(self._parse_bitwise())
-            if self._match(TokenType.FOR):
-                args.append(self._parse_bitwise())
+        if self._match(TokenType.FOR):
+            # Canonicalize input by appending a default value in the "FROM" clause:
+            # SUBSTRING(<str> FOR <int>) -> SUBSTRING(<str> FROM 1 FOR <int>)
+            if not from_:
+                args.append(exp.Literal.number(1))
+            args.append(self._parse_bitwise())
 
         return self.validate_expression(exp.Substring.from_arg_list(args), args)
 

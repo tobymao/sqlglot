@@ -864,6 +864,10 @@ class TestPostgres(Validator):
             "TRUNCATE TABLE ONLY t1, t2*, ONLY t3, t4, t5* RESTART IDENTITY CASCADE",
             "TRUNCATE TABLE ONLY t1, t2, ONLY t3, t4, t5 RESTART IDENTITY CASCADE",
         )
+        self.validate_identity(
+            "SUBSTRING('abc' FOR 1)",
+            "SUBSTRING('abc' FROM 1 FOR 1)",
+        )
 
         self.validate_all(
             "CREATE TABLE x (a UUID, b BYTEA)",

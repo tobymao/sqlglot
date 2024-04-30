@@ -4872,6 +4872,10 @@ class TryCast(Cast):
     pass
 
 
+class Try(Func):
+    pass
+
+
 class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 

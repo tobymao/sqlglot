@@ -6519,7 +6519,7 @@ def condition(
 
 def and_(
     *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
-) -> Condition:
+) -> And:
     """
     Combine multiple conditions with an AND logical operator.
 
@@ -6537,12 +6537,12 @@ def and_(
     Returns:
         And: the new condition
     """
-    return t.cast(Condition, _combine(expressions, And, dialect, copy=copy, **opts))
+    return t.cast(And, _combine(expressions, And, dialect, copy=copy, **opts))
 
 
 def or_(
     *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
-) -> Condition:
+) -> Or:
     """
     Combine multiple conditions with an OR logical operator.
 
@@ -6560,7 +6560,30 @@ def or_(
     Returns:
         Or: the new condition
     """
-    return t.cast(Condition, _combine(expressions, Or, dialect, copy=copy, **opts))
+    return t.cast(Or, _combine(expressions, Or, dialect, copy=copy, **opts))
+
+
+def xor(
+    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+) -> Xor:
+    """
+    Combine multiple conditions with an XOR logical operator.
+
+    Example:
+        >>> xor("x=1", xor("y=1", "z=1")).sql()
+        'x = 1 XOR (y = 1 XOR z = 1)'
+
+    Args:
+        *expressions: the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        dialect: the dialect used to parse the input expression.
+        copy: whether to copy `expressions` (only applies to Expressions).
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        Xor: the new condition
+    """
+    return t.cast(Xor, _combine(expressions, Xor, dialect, copy=copy, **opts))
 
 
 def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Not:

@@ -348,6 +348,9 @@ class Generator(metaclass=_Generator):
     # Whether COPY statement has INTO keyword
     COPY_HAS_INTO_KEYWORD = True
 
+    # Whether the conditional TRY(expression) function is supported
+    TRY_SUPPORTED = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -3166,6 +3169,13 @@ class Generator(metaclass=_Generator):
 
     def trycast_sql(self, expression: exp.TryCast) -> str:
         return self.cast_sql(expression, safe_prefix="TRY_")
+
+    def try_sql(self, expression: exp.Try) -> str:
+        if not self.TRY_SUPPORTED:
+            self.unsupported("Unsupported TRY function")
+            return self.sql(expression, "this")
+
+        return self.func("TRY", expression.this)
 
     def log_sql(self, expression: exp.Log) -> str:
         this = expression.this

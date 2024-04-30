@@ -223,7 +223,7 @@ def flatten(expression):
 
 def simplify_connectors(expression, root=True):
     def _simplify_connectors(expression, left, right):
-        if left == right:
+        if left == right and not isinstance(expression, exp.Xor):
             return left
         if isinstance(expression, exp.And):
             if is_false(left) or is_false(right):
@@ -365,10 +365,17 @@ def uniq_sort(expression, root=True):
     C AND A AND B AND B -> A AND B AND C
     """
     if isinstance(expression, exp.Connector) and (root or not expression.same_parent):
-        result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
         flattened = tuple(expression.flatten())
-        deduped = {gen(e): e for e in flattened}
-        arr = tuple(deduped.items())
+
+        if isinstance(expression, exp.Xor):
+            result_func = exp.xor_
+            # Do not deduplicate XOR as A XOR A != A if A == True
+            deduped = None
+            arr = tuple([(gen(e), e) for e in flattened])
+        else:
+            result_func = exp.and_ if isinstance(expression, exp.And) else exp.or_
+            deduped = {gen(e): e for e in flattened}
+            arr = tuple(deduped.items())
 
         # check if the operands are already sorted, if not sort them
         # A AND C AND B -> A AND B AND C
@@ -378,7 +385,7 @@ def uniq_sort(expression, root=True):
                 break
         else:
             # we didn't have to sort but maybe we need to dedup
-            if len(deduped) < len(flattened):
+            if deduped and len(deduped) < len(flattened):
                 expression = result_func(*deduped.values(), copy=False)
 
     return expression

@@ -585,16 +585,21 @@ class Snowflake(Dialect):
 
             return table
 
+        def _parse_file_location(self) -> t.Optional[exp.Expression]:
+            # https://docs.snowflake.com/en/user-guide/querying-stage
+            if self._match(TokenType.STRING, advance=False):
+                file = self._parse_string()
+            elif self._match_text_seq("@", advance=False):
+                file = self._parse_location_path()
+            else:
+                file = None
+
+            return file
+
         def _parse_table_parts(
             self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
         ) -> exp.Table:
-            # https://docs.snowflake.com/en/user-guide/querying-stage
-            if self._match(TokenType.STRING, advance=False):
-                table = self._parse_string()
-            elif self._match_text_seq("@", advance=False):
-                table = self._parse_location_path()
-            else:
-                table = None
+            table = self._parse_file_location()
 
             if table:
                 file_format = None
@@ -1037,3 +1042,11 @@ class Snowflake(Dialect):
                     values.append(e)
 
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
+
+        def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
+            option = self.sql(expression, "this")
+            if option == "FILE_FORMAT":
+                value = self.expressions(expression, key="expression", flat=True, sep=" ")
+                return f"{option} = ({value})"
+
+            return super().copyparameter_sql(expression)

@@ -1580,7 +1580,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
             write={
                 "bigquery": "REGEXP_REPLACE(subject, pattern, replacement)",
-                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement)",
+                "duckdb": "REGEXP_REPLACE(subject, pattern, replacement, parameters)",
                 "hive": "REGEXP_REPLACE(subject, pattern, replacement)",
                 "snowflake": "REGEXP_REPLACE(subject, pattern, replacement, position, occurrence, parameters)",
                 "spark": "REGEXP_REPLACE(subject, pattern, replacement, position)",

@@ -5567,7 +5567,6 @@ class RegexpReplace(Func):
         "replacement": False,
         "position": False,
         "occurrence": False,
-        "parameters": False,
         "modifiers": False,
     }
 

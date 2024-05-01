@@ -280,6 +280,8 @@ class DuckDB(Dialect):
             "RANGE": _build_generate_series(end_exclusive=True),
         }
 
+        FUNCTIONS.pop("DATE_SUB")
+
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("DECODE")
 

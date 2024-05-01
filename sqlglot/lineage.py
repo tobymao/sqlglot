@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.errors import SqlglotError
 from sqlglot.optimizer import Scope, build_scope, find_all_in_scope, normalize_identifiers, qualify
+from sqlglot.optimizer.scope import ScopeType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -255,7 +256,12 @@ def to_node(
         source = scope.sources.get(table)
 
         if isinstance(source, Scope):
-            selected_node, _ = scope.selected_sources.get(table, (None, None))
+            reference_node_name = None
+            if source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
+                reference_node_name = table
+            elif source.scope_type == ScopeType.CTE:
+                selected_node, _ = scope.selected_sources.get(table, (None, None))
+                reference_node_name = selected_node.name if selected_node else None
             # The table itself came from a more specific scope. Recurse into that one using the unaliased column name.
             to_node(
                 c.name,
@@ -264,7 +270,7 @@ def to_node(
                 scope_name=table,
                 upstream=node,
                 source_name=source_names.get(table) or source_name,
-                reference_node_name=selected_node.name if selected_node else None,
+                reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
             )
         else:

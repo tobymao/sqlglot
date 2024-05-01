@@ -300,6 +300,7 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.name, "a")
         node = node.downstream[0]
         self.assertEqual(node.name, "cte.a")
+        self.assertEqual(node.reference_node_name, "cte")
         node = node.downstream[0]
         self.assertEqual(node.name, "z.a")
 
@@ -337,6 +338,27 @@ class TestLineage(unittest.TestCase):
 
         node = a.downstream[0]
         self.assertEqual(node.name, "foo.a")
+
+        # Select from derived table
+        node = lineage(
+            "a",
+            "SELECT a FROM (SELECT a FROM x) subquery",
+        )
+        self.assertEqual(node.name, "a")
+        self.assertEqual(len(node.downstream), 1)
+        node = node.downstream[0]
+        self.assertEqual(node.name, "subquery.a")
+        self.assertEqual(node.reference_node_name, "subquery")
+
+        node = lineage(
+            "a",
+            "SELECT a FROM (SELECT a FROM x)",
+        )
+        self.assertEqual(node.name, "a")
+        self.assertEqual(len(node.downstream), 1)
+        node = node.downstream[0]
+        self.assertEqual(node.name, "_q_0.a")
+        self.assertEqual(node.reference_node_name, "_q_0")
 
     def test_lineage_cte_union(self) -> None:
         query = """

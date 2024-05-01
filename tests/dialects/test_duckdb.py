@@ -324,6 +324,8 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT * FROM (PIVOT Cities ON Year USING SUM(Population) GROUP BY Country) AS pivot_alias"
         )
+        self.validate_identity("DATE_SUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
+        self.validate_identity("DATESUB('YEAR', col, '2020-01-01')").assert_is(exp.Anonymous)
 
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
@@ -652,8 +654,14 @@ class TestDuckDB(Validator):
             "SELECT CAST('2020-05-06' AS DATE) + INTERVAL 5 DAY",
             read={"bigquery": "SELECT DATE_ADD(CAST('2020-05-06' AS DATE), INTERVAL 5 DAY)"},
         )
-        self.validate_identity("SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t")
-        self.validate_identity("SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t")
+        self.validate_identity(
+            "SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t",
+            "SELECT QUANTILE_CONT(y, 0.25 ORDER BY y DESC) FROM t",
+        )
+        self.validate_identity(
+            "SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t",
+            "SELECT QUANTILE_DISC(y, 0.25 ORDER BY y DESC) FROM t",
+        )
         self.validate_all(
             "SELECT QUANTILE_CONT(x, q) FROM t",
             write={
@@ -717,6 +725,14 @@ class TestDuckDB(Validator):
             """SELECT i FROM GENERATE_SERIES(12) AS _(i) ORDER BY i ASC""",
             """SELECT i FROM GENERATE_SERIES(0, 12) AS _(i) ORDER BY i ASC""",
         )
+
+        self.validate_identity(
+            "COPY lineitem FROM 'lineitem.ndjson' WITH (FORMAT JSON, DELIMITER ',', AUTO_DETECT TRUE, COMPRESSION SNAPPY, CODEC ZSTD, FORCE_NOT_NULL(col1, col2))"
+        )
+        self.validate_identity(
+            "COPY (SELECT 42 AS a, 'hello' AS b) TO 'query.json' WITH (FORMAT JSON, ARRAY TRUE)"
+        )
+        self.validate_identity("COPY lineitem (l_orderkey) TO 'orderkey.tbl' WITH (DELIMITER '|')")
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
@@ -1076,6 +1092,14 @@ class TestDuckDB(Validator):
                 "snowflake": "ALTER TABLE db.t1 RENAME TO db.t2",
                 "duckdb": "ALTER TABLE db.t1 RENAME TO t2",
                 "tsql": "EXEC sp_rename 'db.t1', 't2'",
+            },
+        )
+        self.validate_all(
+            'ALTER TABLE "db"."t1" RENAME TO "db"."t2"',
+            write={
+                "snowflake": 'ALTER TABLE "db"."t1" RENAME TO "db"."t2"',
+                "duckdb": 'ALTER TABLE "db"."t1" RENAME TO "t2"',
+                "tsql": "EXEC sp_rename '[db].[t1]', 't2'",
             },
         )
 

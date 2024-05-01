@@ -339,6 +339,18 @@ class Generator(metaclass=_Generator):
     # True means limit 1 happens after the union, False means it it happens on y.
     OUTER_UNION_MODIFIERS = True
 
+    # Whether parameters from COPY statement are wrapped in parentheses
+    COPY_PARAMS_ARE_WRAPPED = True
+
+    # Whether values of params are set with "=" token or empty space
+    COPY_PARAMS_EQ_REQUIRED = False
+
+    # Whether COPY statement has INTO keyword
+    COPY_HAS_INTO_KEYWORD = True
+
+    # Whether the conditional TRY(expression) function is supported
+    TRY_SUPPORTED = True
+
     TYPE_MAPPING = {
         exp.DataType.Type.NCHAR: "CHAR",
         exp.DataType.Type.NVARCHAR: "VARCHAR",
@@ -349,6 +361,7 @@ class Generator(metaclass=_Generator):
         exp.DataType.Type.LONGBLOB: "BLOB",
         exp.DataType.Type.TINYBLOB: "BLOB",
         exp.DataType.Type.INET: "INET",
+        exp.DataType.Type.ROWVERSION: "VARBINARY",
     }
 
     STAR_MAPPING = {
@@ -3157,6 +3170,13 @@ class Generator(metaclass=_Generator):
     def trycast_sql(self, expression: exp.TryCast) -> str:
         return self.cast_sql(expression, safe_prefix="TRY_")
 
+    def try_sql(self, expression: exp.Try) -> str:
+        if not self.TRY_SUPPORTED:
+            self.unsupported("Unsupported TRY function")
+            return self.sql(expression, "this")
+
+        return self.func("TRY", expression.this)
+
     def log_sql(self, expression: exp.Log) -> str:
         this = expression.this
         expr = expression.expression
@@ -3756,3 +3776,56 @@ class Generator(metaclass=_Generator):
         if self.pretty:
             return string.replace("\n", self.SENTINEL_LINE_BREAK)
         return string
+
+    def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
+        option = self.sql(expression, "this")
+        value = self.sql(expression, "expression")
+
+        if not value:
+            return option
+
+        op = " = " if self.COPY_PARAMS_EQ_REQUIRED else " "
+
+        return f"{option}{op}{value}"
+
+    def credentials_sql(self, expression: exp.Credentials) -> str:
+        cred_expr = expression.args.get("credentials")
+        if isinstance(cred_expr, exp.Literal):
+            # Redshift case: CREDENTIALS <string>
+            credentials = self.sql(expression, "credentials")
+            credentials = f"CREDENTIALS {credentials}"
+        else:
+            # Snowflake case: CREDENTIALS = (...)
+            credentials = self.expressions(expression, key="credentials", flat=True, sep=" ")
+            credentials = f"CREDENTIALS = ({credentials})" if credentials else ""
+
+        storage = self.sql(expression, "storage")
+        storage = f" {storage}" if storage else ""
+
+        encryption = self.expressions(expression, key="encryption", flat=True, sep=" ")
+        encryption = f"ENCRYPTION = ({encryption})" if encryption else ""
+
+        iam_role = self.sql(expression, "iam_role")
+        iam_role = f"IAM_ROLE {iam_role}" if iam_role else ""
+
+        region = self.sql(expression, "region")
+        region = f" REGION {region}" if region else ""
+
+        return f"{credentials}{storage}{encryption}{iam_role}{region}"
+
+    def copy_sql(self, expression: exp.Copy) -> str:
+        this = self.sql(expression, "this")
+        this = f" INTO {this}" if self.COPY_HAS_INTO_KEYWORD else f" {this}"
+
+        credentials = self.sql(expression, "credentials")
+        credentials = f" {credentials}" if credentials else ""
+
+        kind = " FROM " if expression.args.get("kind") else " TO "
+        files = self.expressions(expression, key="files", flat=True)
+
+        sep = ", " if self.dialect.COPY_PARAMS_ARE_CSV else " "
+        params = self.expressions(expression, key="params", flat=True, sep=sep)
+        if params:
+            params = f" WITH ({params})" if self.COPY_PARAMS_ARE_WRAPPED else f" {params}"
+
+        return f"COPY{this}{kind}{files}{credentials}{params}"

@@ -38,6 +38,7 @@ class Redshift(Postgres):
 
     SUPPORTS_USER_DEFINED_TYPES = False
     INDEX_OFFSET = 0
+    COPY_PARAMS_ARE_CSV = False
 
     TIME_FORMAT = "'YYYY-MM-DD HH:MI:SS'"
     TIME_MAPPING = {
@@ -138,6 +139,7 @@ class Redshift(Postgres):
         LAST_DAY_SUPPORTS_DATE_PART = False
         CAN_IMPLEMENT_ARRAY_ANY = False
         MULTI_ARG_DISTINCT = True
+        COPY_PARAMS_ARE_WRAPPED = False
 
         TYPE_MAPPING = {
             **Postgres.Generator.TYPE_MAPPING,
@@ -146,6 +148,7 @@ class Redshift(Postgres):
             exp.DataType.Type.TIMETZ: "TIME",
             exp.DataType.Type.TIMESTAMPTZ: "TIMESTAMP",
             exp.DataType.Type.VARBINARY: "VARBYTE",
+            exp.DataType.Type.ROWVERSION: "VARBYTE",
         }
 
         TRANSFORMS = {

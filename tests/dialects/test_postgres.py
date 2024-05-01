@@ -312,8 +312,25 @@ class TestPostgres(Validator):
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
         )
-        self.validate_identity("SELECT * FROM t1*", "SELECT * FROM t1")
+        self.validate_identity(
+            "SELECT * FROM t1*",
+            "SELECT * FROM t1",
+        )
+        self.validate_identity(
+            "SELECT SUBSTRING('afafa' for 1)",
+            "SELECT SUBSTRING('afafa' FROM 1 FOR 1)",
+        )
+        self.validate_identity(
+            "CAST(x AS INT8)",
+            "CAST(x AS BIGINT)",
+        )
 
+        self.validate_all(
+            "CREATE TABLE t (c INT)",
+            read={
+                "mysql": "CREATE TABLE t (c INT COMMENT 'comment 1') COMMENT = 'comment 2'",
+            },
+        )
         self.validate_all(
             'SELECT * FROM "test_table" ORDER BY RANDOM() LIMIT 5',
             write={
@@ -659,6 +676,16 @@ class TestPostgres(Validator):
             },
         )
         self.assertIsInstance(self.parse_one("id::UUID"), exp.Cast)
+
+        self.validate_identity(
+            "COPY tbl (col1, col2) FROM 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+        self.validate_identity(
+            "COPY tbl (col1, col2) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
+        self.validate_identity(
+            "COPY (SELECT * FROM t) TO 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
+        )
 
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier

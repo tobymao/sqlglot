@@ -28,7 +28,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     unit_to_var,
 )
-from sqlglot.helper import flatten, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -153,16 +153,6 @@ def _unix_to_time_sql(self: DuckDB.Generator, expression: exp.UnixToTime) -> str
         return self.func("MAKE_TIMESTAMP", timestamp)
 
     return self.func("TO_TIMESTAMP", exp.Div(this=timestamp, expression=exp.func("POW", 10, scale)))
-
-
-def _rename_unless_within_group(
-    a: str, b: str
-) -> t.Callable[[DuckDB.Generator, exp.Expression], str]:
-    return lambda self, expression: (
-        self.func(a, *flatten(expression.args.values()))
-        if isinstance(expression.find_ancestor(exp.Select, exp.WithinGroup), exp.WithinGroup)
-        else self.func(b, *flatten(expression.args.values()))
-    )
 
 
 class DuckDB(Dialect):
@@ -290,6 +280,8 @@ class DuckDB(Dialect):
             "RANGE": _build_generate_series(end_exclusive=True),
         }
 
+        FUNCTIONS.pop("DATE_SUB")
+
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
         FUNCTION_PARSERS.pop("DECODE")
 
@@ -375,6 +367,7 @@ class DuckDB(Dialect):
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
         SUPPORTS_TO_NUMBER = False
+        COPY_HAS_INTO_KEYWORD = False
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
@@ -425,8 +418,8 @@ class DuckDB(Dialect):
                 exp.cast(e.this, exp.DataType.Type.TIMESTAMP, copy=True),
             ),
             exp.ParseJSON: rename_func("JSON"),
-            exp.PercentileCont: _rename_unless_within_group("PERCENTILE_CONT", "QUANTILE_CONT"),
-            exp.PercentileDisc: _rename_unless_within_group("PERCENTILE_DISC", "QUANTILE_DISC"),
+            exp.PercentileCont: rename_func("QUANTILE_CONT"),
+            exp.PercentileDisc: rename_func("QUANTILE_DISC"),
             # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
             # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
             exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
@@ -499,6 +492,7 @@ class DuckDB(Dialect):
             exp.DataType.Type.NVARCHAR: "TEXT",
             exp.DataType.Type.UINT: "UINTEGER",
             exp.DataType.Type.VARBINARY: "BLOB",
+            exp.DataType.Type.ROWVERSION: "BLOB",
             exp.DataType.Type.VARCHAR: "TEXT",
             exp.DataType.Type.TIMESTAMP_S: "TIMESTAMP_S",
             exp.DataType.Type.TIMESTAMP_MS: "TIMESTAMP_MS",
@@ -616,3 +610,19 @@ class DuckDB(Dialect):
                     bracket = f"({bracket})[1]"
 
             return bracket
+
+        def withingroup_sql(self, expression: exp.WithinGroup) -> str:
+            expression_sql = self.sql(expression, "expression")
+
+            func = expression.this
+            if isinstance(func, exp.PERCENTILES):
+                # Make the order key the first arg and slide the fraction to the right
+                # https://duckdb.org/docs/sql/aggregates#ordered-set-aggregate-functions
+                order_col = expression.find(exp.Ordered)
+                if order_col:
+                    func.set("expression", func.this)
+                    func.set("this", order_col.this)
+
+            this = self.sql(expression, "this").rstrip(")")
+
+            return f"{this}{expression_sql})"

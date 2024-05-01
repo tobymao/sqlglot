@@ -464,6 +464,7 @@ class TSQL(Dialect):
             "SMALLMONEY": TokenType.SMALLMONEY,
             "SQL_VARIANT": TokenType.VARIANT,
             "TOP": TokenType.TOP,
+            "TIMESTAMP": TokenType.ROWVERSION,
             "UNIQUEIDENTIFIER": TokenType.UNIQUEIDENTIFIER,
             "UPDATE STATISTICS": TokenType.COMMAND,
             "XML": TokenType.XML,
@@ -727,6 +728,7 @@ class TSQL(Dialect):
         JSON_PATH_BRACKETED_KEY_SUPPORTED = False
         SUPPORTS_TO_NUMBER = False
         OUTER_UNION_MODIFIERS = False
+        COPY_PARAMS_EQ_REQUIRED = True
 
         EXPRESSIONS_WITHOUT_NESTED_CTES = {
             exp.Delete,
@@ -755,6 +757,7 @@ class TSQL(Dialect):
             exp.DataType.Type.TIMESTAMP: "DATETIME2",
             exp.DataType.Type.TIMESTAMPTZ: "DATETIMEOFFSET",
             exp.DataType.Type.VARIANT: "SQL_VARIANT",
+            exp.DataType.Type.ROWVERSION: "ROWVERSION",
         }
 
         TYPE_MAPPING.pop(exp.DataType.Type.NCHAR)
@@ -1054,12 +1057,7 @@ class TSQL(Dialect):
             return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
 
         def altertable_sql(self, expression: exp.AlterTable) -> str:
-            actions = expression.args["actions"]
-            if isinstance(actions[0], exp.RenameTable):
-                table = self.sql(expression.this)
-                target = actions[0].this
-                target = self.sql(
-                    exp.table_(target.this) if isinstance(target, exp.Table) else target
-                )
-                return f"EXEC sp_rename '{table}', '{target}'"
+            action = seq_get(expression.args.get("actions") or [], 0)
+            if isinstance(action, exp.RenameTable):
+                return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
             return super().altertable_sql(expression)

@@ -349,13 +349,10 @@ def explode_to_unnest(index_offset: int = 0) -> t.Callable[[exp.Expression], exp
     return _explode_to_unnest
 
 
-PERCENTILES = (exp.PercentileCont, exp.PercentileDisc)
-
-
 def add_within_group_for_percentiles(expression: exp.Expression) -> exp.Expression:
     """Transforms percentiles by adding a WITHIN GROUP clause to them."""
     if (
-        isinstance(expression, PERCENTILES)
+        isinstance(expression, exp.PERCENTILES)
         and not isinstance(expression.parent, exp.WithinGroup)
         and expression.expression
     ):
@@ -371,7 +368,7 @@ def remove_within_group_for_percentiles(expression: exp.Expression) -> exp.Expre
     """Transforms percentiles by getting rid of their corresponding WITHIN GROUP clause."""
     if (
         isinstance(expression, exp.WithinGroup)
-        and isinstance(expression.this, PERCENTILES)
+        and isinstance(expression.this, exp.PERCENTILES)
         and isinstance(expression.expression, exp.Order)
     ):
         quantile = expression.this.this

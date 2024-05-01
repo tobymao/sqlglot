@@ -289,6 +289,7 @@ class Snowflake(Dialect):
     SUPPORTS_SEMI_ANTI_JOIN = False
     PREFER_CTE_ALIAS_COLUMN = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
+    COPY_PARAMS_ARE_CSV = False
 
     TIME_MAPPING = {
         "YYYY": "%Y",
@@ -745,6 +746,8 @@ class Snowflake(Dialect):
         JSON_KEY_VALUE_PAIR_SEP = ","
         INSERT_OVERWRITE = " OVERWRITE INTO"
         STRUCT_DELIMITER = ("(", ")")
+        COPY_PARAMS_ARE_WRAPPED = False
+        COPY_PARAMS_EQ_REQUIRED = True
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,

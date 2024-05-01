@@ -161,6 +161,9 @@ class _Dialect(type):
         if enum not in ("", "bigquery"):
             klass.generator_class.SELECT_KINDS = ()
 
+        if enum not in ("", "athena", "presto", "trino"):
+            klass.generator_class.TRY_SUPPORTED = False
+
         if enum not in ("", "databricks", "hive", "spark", "spark2"):
             modifier_transforms = klass.generator_class.AFTER_HAVING_MODIFIER_TRANSFORMS.copy()
             for modifier in ("cluster", "distribute", "sort"):
@@ -317,6 +320,9 @@ class Dialect(metaclass=_Dialect):
     BYTE_END: t.Optional[str] = None
     UNICODE_START: t.Optional[str] = None
     UNICODE_END: t.Optional[str] = None
+
+    # Separator of COPY statement parameters
+    COPY_PARAMS_ARE_CSV = True
 
     @classmethod
     def get_or_raise(cls, dialect: DialectType) -> Dialect:

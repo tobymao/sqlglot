@@ -129,12 +129,6 @@ def to_node(
     reference_node_name: t.Optional[str] = None,
     trim_selects: bool = True,
 ) -> Node:
-    source_names = {
-        dt.alias: dt.comments[0].split()[1]
-        for dt in scope.derived_tables
-        if dt.comments and dt.comments[0].startswith("source: ")
-    }
-
     # Find the specific select clause that is the source of the column we want.
     # This can either be a specific, named select or a generic `*` clause.
     select = (
@@ -242,6 +236,19 @@ def to_node(
     # If the source is a UDTF find columns used in the UTDF to generate the table
     if isinstance(source, exp.UDTF):
         source_columns |= set(source.find_all(exp.Column))
+        derived_tables = [
+            source.expression.parent
+            for source in scope.sources.values()
+            if isinstance(source, Scope) and source.is_derived_table
+        ]
+    else:
+        derived_tables = scope.derived_tables
+
+    source_names = {
+        dt.alias: dt.comments[0].split()[1]
+        for dt in derived_tables
+        if dt.comments and dt.comments[0].startswith("source: ")
+    }
 
     for c in source_columns:
         table = c.table

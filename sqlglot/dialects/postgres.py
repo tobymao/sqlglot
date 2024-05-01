@@ -266,24 +266,25 @@ class Postgres(Dialect):
             "BIGSERIAL": TokenType.BIGSERIAL,
             "CHARACTER VARYING": TokenType.VARCHAR,
             "CONSTRAINT TRIGGER": TokenType.COMMAND,
+            "CSTRING": TokenType.PSEUDO_TYPE,
             "DECLARE": TokenType.COMMAND,
             "DO": TokenType.COMMAND,
             "EXEC": TokenType.COMMAND,
             "HSTORE": TokenType.HSTORE,
+            "INT8": TokenType.BIGINT,
             "JSONB": TokenType.JSONB,
             "MONEY": TokenType.MONEY,
+            "NAME": TokenType.NAME,
+            "OID": TokenType.OBJECT_IDENTIFIER,
+            "ONLY": TokenType.ONLY,
+            "OPERATOR": TokenType.OPERATOR,
             "REFRESH": TokenType.COMMAND,
             "REINDEX": TokenType.COMMAND,
             "RESET": TokenType.COMMAND,
             "REVOKE": TokenType.COMMAND,
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
-            "NAME": TokenType.NAME,
             "TEMP": TokenType.TEMPORARY,
-            "CSTRING": TokenType.PSEUDO_TYPE,
-            "OID": TokenType.OBJECT_IDENTIFIER,
-            "ONLY": TokenType.ONLY,
-            "OPERATOR": TokenType.OPERATOR,
             "REGCLASS": TokenType.OBJECT_IDENTIFIER,
             "REGCOLLATION": TokenType.OBJECT_IDENTIFIER,
             "REGCONFIG": TokenType.OBJECT_IDENTIFIER,
@@ -417,6 +418,7 @@ class Postgres(Dialect):
         LIKE_PROPERTY_INSIDE_SCHEMA = True
         MULTI_ARG_DISTINCT = False
         CAN_IMPLEMENT_ARRAY_ANY = True
+        COPY_HAS_INTO_KEYWORD = False
 
         SUPPORTED_JSON_PATH_PARTS = {
             exp.JSONPathKey,
@@ -431,6 +433,7 @@ class Postgres(Dialect):
             exp.DataType.Type.DOUBLE: "DOUBLE PRECISION",
             exp.DataType.Type.BINARY: "BYTEA",
             exp.DataType.Type.VARBINARY: "BYTEA",
+            exp.DataType.Type.ROWVERSION: "BYTEA",
             exp.DataType.Type.DATETIME: "TIMESTAMP",
         }
 
@@ -517,6 +520,7 @@ class Postgres(Dialect):
             exp.Variance: rename_func("VAR_SAMP"),
             exp.Xor: bool_xor_sql,
         }
+        TRANSFORMS.pop(exp.CommentColumnConstraint)
 
         PROPERTIES_LOCATION = {
             **generator.Generator.PROPERTIES_LOCATION,
@@ -524,6 +528,14 @@ class Postgres(Dialect):
             exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
             exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         }
+
+        def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
+            self.unsupported("Table comments are not supported in the CREATE statement")
+            return ""
+
+        def commentcolumnconstraint_sql(self, expression: exp.CommentColumnConstraint) -> str:
+            self.unsupported("Column comments are not supported in the CREATE statement")
+            return ""
 
         def unnest_sql(self, expression: exp.Unnest) -> str:
             if len(expression.expressions) == 1:

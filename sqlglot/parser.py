@@ -329,6 +329,7 @@ class Parser(metaclass=_Parser):
         TokenType.COMMENT,
         TokenType.COMMIT,
         TokenType.CONSTRAINT,
+        TokenType.COPY,
         TokenType.DEFAULT,
         TokenType.DELETE,
         TokenType.DESC,
@@ -597,7 +598,7 @@ class Parser(metaclass=_Parser):
         exp.Condition: lambda self: self._parse_conjunction(),
         exp.DataType: lambda self: self._parse_types(allow_identifiers=False),
         exp.Expression: lambda self: self._parse_expression(),
-        exp.From: lambda self: self._parse_from(),
+        exp.From: lambda self: self._parse_from(joins=True),
         exp.Group: lambda self: self._parse_group(),
         exp.Having: lambda self: self._parse_having(),
         exp.Identifier: lambda self: self._parse_id_var(),
@@ -627,6 +628,7 @@ class Parser(metaclass=_Parser):
         TokenType.CACHE: lambda self: self._parse_cache(),
         TokenType.COMMENT: lambda self: self._parse_comment(),
         TokenType.COMMIT: lambda self: self._parse_commit_or_rollback(),
+        TokenType.COPY: lambda self: self._parse_copy(),
         TokenType.CREATE: lambda self: self._parse_create(),
         TokenType.DELETE: lambda self: self._parse_delete(),
         TokenType.DESC: lambda self: self._parse_describe(),
@@ -1764,14 +1766,18 @@ class Parser(metaclass=_Parser):
             ),
         )
 
-    def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
-        self._match(TokenType.EQ)
-        self._match(TokenType.ALIAS)
+    def _parse_unquoted_field(self):
         field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
             field = exp.var(field)
 
-        return self.expression(exp_class, this=field, **kwargs)
+        return field
+
+    def _parse_property_assignment(self, exp_class: t.Type[E], **kwargs: t.Any) -> E:
+        self._match(TokenType.EQ)
+        self._match(TokenType.ALIAS)
+
+        return self.expression(exp_class, this=self._parse_unquoted_field(), **kwargs)
 
     def _parse_properties(self, before: t.Optional[bool] = None) -> t.Optional[exp.Properties]:
         properties = []
@@ -2206,9 +2212,9 @@ class Parser(metaclass=_Parser):
     def _parse_describe(self) -> exp.Describe:
         kind = self._match_set(self.CREATABLES) and self._prev.text
         style = self._match_texts(("EXTENDED", "FORMATTED", "HISTORY")) and self._prev.text.upper()
-        if not self._match_set(self.ID_VAR_TOKENS, advance=False):
+        if self._match(TokenType.DOT):
             style = None
-            self._retreat(self._index - 1)
+            self._retreat(self._index - 2)
         this = self._parse_table(schema=True)
         properties = self._parse_properties()
         expressions = properties.expressions if properties else None
@@ -5309,8 +5315,10 @@ class Parser(metaclass=_Parser):
 
         if self._match(TokenType.FROM):
             args.append(self._parse_bitwise())
-            if self._match(TokenType.FOR):
-                args.append(self._parse_bitwise())
+        if self._match(TokenType.FOR):
+            if len(args) == 1:
+                args.append(exp.Literal.number(1))
+            args.append(self._parse_bitwise())
 
         return self.validate_expression(exp.Substring.from_arg_list(args), args)
 
@@ -6292,3 +6300,84 @@ class Parser(metaclass=_Parser):
         op = self._parse_var(any_token=True)
 
         return self.expression(exp.WithOperator, this=this, op=op)
+
+    def _parse_copy_parameters(self) -> t.List[exp.CopyParameter]:
+        sep = TokenType.COMMA if self.dialect.COPY_PARAMS_ARE_CSV else None
+
+        options = []
+        while self._curr and not self._match(TokenType.R_PAREN, advance=False):
+            option = self._parse_unquoted_field()
+            value = None
+            # Some options are defined as functions with the values as params
+            if not isinstance(option, exp.Func):
+                # Different dialects might separate options and values by white space, "=" and "AS"
+                self._match(TokenType.EQ)
+                self._match(TokenType.ALIAS)
+                value = self._parse_unquoted_field()
+
+            param = self.expression(exp.CopyParameter, this=option, expression=value)
+            options.append(param)
+
+            if sep:
+                self._match(sep)
+
+        return options
+
+    def _parse_credentials(self) -> t.Optional[exp.Credentials]:
+        def parse_options():
+            opts = []
+            self._match(TokenType.EQ)
+            self._match(TokenType.L_PAREN)
+            while self._curr and not self._match(TokenType.R_PAREN):
+                opts.append(self._parse_conjunction())
+            return opts
+
+        expr = self.expression(exp.Credentials)
+
+        if self._match_text_seq("STORAGE_INTEGRATION", advance=False):
+            expr.set("storage", self._parse_conjunction())
+        if self._match_text_seq("CREDENTIALS"):
+            # Snowflake supports CREDENTIALS = (...), while Redshift CREDENTIALS <string>
+            creds = parse_options() if self._match(TokenType.EQ) else self._parse_field()
+            expr.set("credentials", creds)
+        if self._match_text_seq("ENCRYPTION"):
+            expr.set("encryption", parse_options())
+        if self._match_text_seq("IAM_ROLE"):
+            expr.set("iam_role", self._parse_field())
+        if self._match_text_seq("REGION"):
+            expr.set("region", self._parse_field())
+
+        return expr
+
+    def _parse_copy(self):
+        start = self._prev
+
+        self._match(TokenType.INTO)
+
+        this = (
+            self._parse_conjunction()
+            if self._match(TokenType.L_PAREN, advance=False)
+            else self._parse_table(schema=True)
+        )
+
+        kind = self._match(TokenType.FROM) or not self._match_text_seq("TO")
+
+        files = self._parse_csv(self._parse_conjunction)
+        credentials = self._parse_credentials()
+
+        self._match_text_seq("WITH")
+
+        params = self._parse_wrapped(self._parse_copy_parameters, optional=True)
+
+        # Fallback case
+        if self._curr:
+            return self._parse_as_command(start)
+
+        return self.expression(
+            exp.Copy,
+            this=this,
+            kind=kind,
+            credentials=credentials,
+            files=files,
+            params=params,
+        )

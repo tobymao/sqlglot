@@ -109,6 +109,10 @@ a AND b;
 (x is not null) != (y is null);
 (NOT x IS NULL) <> (y IS NULL);
 
+# dialect: mysql
+A XOR A;
+FALSE;
+
 --------------------------------------
 -- Absorption
 --------------------------------------
@@ -231,6 +235,13 @@ x - 1;
 --------------------------------------
 A AND D AND B AND E AND F AND G AND E AND A;
 A AND B AND D AND E AND F AND G;
+
+A OR D OR B OR E OR F OR G OR E OR A;
+A OR B OR D OR E OR F OR G;
+
+# dialect: mysql
+A XOR D XOR B XOR E XOR F XOR G XOR C;
+A XOR B XOR C XOR D XOR E XOR F XOR G;
 
 A AND NOT B AND C AND B;
 FALSE;

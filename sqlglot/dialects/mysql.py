@@ -668,6 +668,7 @@ class MySQL(Dialect):
 
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
+            exp.ArrayAgg: rename_func("GROUP_CONCAT"),
             exp.CurrentDate: no_paren_current_date_sql,
             exp.DateDiff: _remove_ts_or_ds_to_date(
                 lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
@@ -766,21 +767,50 @@ class MySQL(Dialect):
 
         LIMIT_ONLY_LITERALS = True
 
+        CHAR_CAST_MAPPING = dict.fromkeys(
+            (
+                exp.DataType.Type.LONGTEXT,
+                exp.DataType.Type.LONGBLOB,
+                exp.DataType.Type.MEDIUMBLOB,
+                exp.DataType.Type.MEDIUMTEXT,
+                exp.DataType.Type.TEXT,
+                exp.DataType.Type.TINYBLOB,
+                exp.DataType.Type.TINYTEXT,
+                exp.DataType.Type.VARCHAR,
+            ),
+            "CHAR",
+        )
+        SIGNED_CAST_MAPPING = dict.fromkeys(
+            (
+                exp.DataType.Type.BIGINT,
+                exp.DataType.Type.BOOLEAN,
+                exp.DataType.Type.INT,
+                exp.DataType.Type.SMALLINT,
+                exp.DataType.Type.TINYINT,
+                exp.DataType.Type.MEDIUMINT,
+            ),
+            "SIGNED",
+        )
+
         # MySQL doesn't support many datatypes in cast.
         # https://dev.mysql.com/doc/refman/8.0/en/cast-functions.html#function_cast
         CAST_MAPPING = {
-            exp.DataType.Type.BIGINT: "SIGNED",
-            exp.DataType.Type.BOOLEAN: "SIGNED",
-            exp.DataType.Type.INT: "SIGNED",
-            exp.DataType.Type.TEXT: "CHAR",
+            **CHAR_CAST_MAPPING,
+            **SIGNED_CAST_MAPPING,
             exp.DataType.Type.UBIGINT: "UNSIGNED",
-            exp.DataType.Type.VARCHAR: "CHAR",
         }
 
         TIMESTAMP_FUNC_TYPES = {
             exp.DataType.Type.TIMESTAMPTZ,
             exp.DataType.Type.TIMESTAMPLTZ,
         }
+
+        def extract_sql(self, expression: exp.Extract) -> str:
+            unit = expression.name
+            if unit and unit.lower() == "epoch":
+                return self.func("UNIX_TIMESTAMP", expression.expression)
+
+            return super().extract_sql(expression)
 
         def datatype_sql(self, expression: exp.DataType) -> str:
             # https://dev.mysql.com/doc/refman/8.0/en/numeric-type-syntax.html
@@ -867,3 +897,16 @@ class MySQL(Dialect):
             charset = expression.args.get("charset")
             using = f" USING {self.sql(charset)}" if charset else ""
             return f"CHAR({this}{using})"
+
+        def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
+            unit = expression.args.get("unit")
+
+            # Pick an old-enough date to avoid negative timestamp diffs
+            start_ts = "'0000-01-01 00:00:00'"
+
+            # Source: https://stackoverflow.com/a/32955740
+            timestamp_diff = build_date_delta(exp.TimestampDiff)([unit, start_ts, expression.this])
+            interval = exp.Interval(this=timestamp_diff, unit=unit)
+            dateadd = build_date_delta_with_interval(exp.DateAdd)([start_ts, interval])
+
+            return self.sql(dateadd)

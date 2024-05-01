@@ -158,6 +158,10 @@ ALTER TABLE c.db.t ADD PRIMARY KEY (id) NOT ENFORCED;
 CREATE TABLE t1 AS (WITH cte AS (SELECT x FROM t2) SELECT * FROM cte);
 CREATE TABLE c.db.t1 AS (WITH cte AS (SELECT x FROM c.db.t2 AS t2) SELECT * FROM cte AS cte);
 
+# title: delete statement
+DELETE FROM t1 WHERE NOT c IN (SELECT c FROM t2);
+DELETE FROM c.db.t1 WHERE NOT c IN (SELECT c FROM c.db.t2 AS t2);
+
 # title: insert statement with cte
 # dialect: spark
 WITH cte AS (SELECT b FROM y) INSERT INTO s SELECT * FROM cte;

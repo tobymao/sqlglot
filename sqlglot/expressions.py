@@ -1955,6 +1955,31 @@ class Connect(Expression):
     arg_types = {"start": False, "connect": True, "nocycle": False}
 
 
+class CopyParameter(Expression):
+    arg_types = {"this": True, "expression": False}
+
+
+class Copy(Expression):
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "files": True,
+        "credentials": False,
+        "format": False,
+        "params": False,
+    }
+
+
+class Credentials(Expression):
+    arg_types = {
+        "credentials": False,
+        "encryption": False,
+        "storage": False,
+        "iam_role": False,
+        "region": False,
+    }
+
+
 class Prior(Expression):
     pass
 
@@ -4847,6 +4872,10 @@ class TryCast(Cast):
     pass
 
 
+class Try(Func):
+    pass
+
+
 class CastToStrType(Func):
     arg_types = {"this": True, "to": True}
 
@@ -5880,6 +5909,8 @@ FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_na
 
 JSON_PATH_PARTS = subclasses(__name__, JSONPathPart, (JSONPathPart,))
 
+PERCENTILES = (PercentileCont, PercentileDisc)
+
 
 # Helpers
 @t.overload
@@ -6504,7 +6535,7 @@ def and_(
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        And: the new condition
+        The new condition
     """
     return t.cast(Condition, _combine(expressions, And, dialect, copy=copy, **opts))
 
@@ -6527,9 +6558,32 @@ def or_(
         **opts: other options to use to parse the input expressions.
 
     Returns:
-        Or: the new condition
+        The new condition
     """
     return t.cast(Condition, _combine(expressions, Or, dialect, copy=copy, **opts))
+
+
+def xor(
+    *expressions: t.Optional[ExpOrStr], dialect: DialectType = None, copy: bool = True, **opts
+) -> Condition:
+    """
+    Combine multiple conditions with an XOR logical operator.
+
+    Example:
+        >>> xor("x=1", xor("y=1", "z=1")).sql()
+        'x = 1 XOR (y = 1 XOR z = 1)'
+
+    Args:
+        *expressions: the SQL code strings to parse.
+            If an Expression instance is passed, this is used as-is.
+        dialect: the dialect used to parse the input expression.
+        copy: whether to copy `expressions` (only applies to Expressions).
+        **opts: other options to use to parse the input expressions.
+
+    Returns:
+        The new condition
+    """
+    return t.cast(Condition, _combine(expressions, Xor, dialect, copy=copy, **opts))
 
 
 def not_(expression: ExpOrStr, dialect: DialectType = None, copy: bool = True, **opts) -> Not:

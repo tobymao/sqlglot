@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, parser, tokens
 from sqlglot.dialects.dialect import Dialect
+from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 
@@ -60,14 +61,10 @@ class PRQL(Dialect):
             ),
         }
 
-        NO_PAREN_FUNCTION_PARSERS = {
-            **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
-            "MIN": lambda self: exp.Min(this=self._parse_lambda()),
-            "MAX": lambda self: exp.Max(this=self._parse_lambda()),
-            "COUNT": lambda self: exp.Count(this=self._parse_lambda()),
-            "AVERAGE": lambda self: exp.Avg(this=self._parse_lambda()),
-            "STDDEV": lambda self: exp.Stddev(this=self._parse_lambda()),
-            "SUM": lambda self: exp.func("COALESCE", exp.Sum(this=self._parse_lambda()), 0),
+        FUNCTIONS = {
+            **parser.Parser.FUNCTIONS,
+            "AVERAGE": exp.Avg.from_arg_list,
+            "SUM": lambda args: exp.func("COALESCE", exp.Sum(this=seq_get(args, 0)), 0),
         }
 
         def _parse_equality(self) -> t.Optional[exp.Expression]:
@@ -162,19 +159,15 @@ class PRQL(Dialect):
                 alias = self._parse_id_var(True)
                 self._match(TokenType.ALIAS)
 
-            func = self._parse_function()
-            if not func:
-                self.raise_error("Aggregation function is not supported in PRQL")
-
-            # convert "this" to exp.Star()
-            if (
-                isinstance(func, exp.Count)
-                and isinstance(func.this, exp.Column)
-                and isinstance(func.this.this, exp.Identifier)
-                and func.this.this.this == "this"
-            ):
-                func.this.set("this", exp.Star())
-
+            name = self._curr and self._curr.text.upper()
+            func_builder = self.FUNCTIONS.get(name)
+            if func_builder:
+                self._advance()
+                # "this" keyword in PRQL refers to the current relation
+                args = exp.Star() if self._match_texts("THIS") else self._parse_id_var()
+                func = func_builder([args])
+            else:
+                self.raise_error(f"Unsupported aggregation function {name}")
             if alias:
                 return self.expression(exp.Alias, this=func, alias=alias)
             return func

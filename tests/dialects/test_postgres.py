@@ -326,6 +326,13 @@ class TestPostgres(Validator):
         )
 
         self.validate_all(
+            "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
+            write={
+                "duckdb": "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
+                "postgres": "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE t (c INT)",
             read={
                 "mysql": "CREATE TABLE t (c INT COMMENT 'comment 1') COMMENT = 'comment 2'",

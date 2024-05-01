@@ -903,9 +903,7 @@ def regexp_extract_sql(self: Generator, expression: exp.RegexpExtract) -> str:
 
 
 def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
-    bad_args = list(
-        filter(expression.args.get, ("position", "occurrence", "parameters", "modifiers"))
-    )
+    bad_args = list(filter(expression.args.get, ("position", "occurrence", "modifiers")))
     if bad_args:
         self.unsupported(f"REGEXP_REPLACE does not support the following arg(s): {bad_args}")
 

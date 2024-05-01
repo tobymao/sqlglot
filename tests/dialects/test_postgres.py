@@ -320,6 +320,10 @@ class TestPostgres(Validator):
             "SELECT SUBSTRING('afafa' for 1)",
             "SELECT SUBSTRING('afafa' FROM 1 FOR 1)",
         )
+        self.validate_identity(
+            "CAST(x AS INT8)",
+            "CAST(x AS BIGINT)",
+        )
 
         self.validate_all(
             "CREATE TABLE t (c INT)",

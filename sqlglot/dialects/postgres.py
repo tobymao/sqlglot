@@ -321,7 +321,6 @@ class Postgres(Dialect):
             "MAKE_TIME": exp.TimeFromParts.from_arg_list,
             "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
             "NOW": exp.CurrentTimestamp.from_arg_list,
-            "REGEXP_REPLACE": _build_regexp_replace,
             "TO_CHAR": build_formatted_time(exp.TimeToStr, "postgres"),
             "TO_TIMESTAMP": _build_to_timestamp,
             "UNNEST": exp.Explode.from_arg_list,

@@ -546,6 +546,10 @@ class TestBuild(unittest.TestCase):
                 "UPDATE tbl SET x = 1 FROM tbl2",
             ),
             (
+                lambda: exp.update("tbl", {"x": 1}, from_="tbl2 cross join tbl3"),
+                "UPDATE tbl SET x = 1 FROM tbl2 CROSS JOIN tbl3",
+            ),
+            (
                 lambda: union("SELECT * FROM foo", "SELECT * FROM bla"),
                 "SELECT * FROM foo UNION SELECT * FROM bla",
             ),

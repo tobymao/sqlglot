@@ -746,7 +746,7 @@ def _traverse_udtfs(scope):
             for child_scope in _traverse_scope(
                 scope.branch(
                     expression,
-                    scope_type=ScopeType.DERIVED_TABLE,
+                    scope_type=ScopeType.SUBQUERY,
                     outer_columns=expression.alias_column_names,
                 )
             ):
@@ -754,8 +754,7 @@ def _traverse_udtfs(scope):
                 top = child_scope
                 sources[expression.alias] = child_scope
 
-            scope.derived_table_scopes.append(top)
-            scope.table_scopes.append(top)
+            scope.subquery_scopes.append(top)
 
     scope.sources.update(sources)
 

@@ -6307,7 +6307,7 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.WithOperator, this=this, op=op)
 
-    def _parse_options(self):
+    def _parse_wrapped_options(self) -> t.List[t.Optional[exp.Expression]]:
         opts = []
         self._match(TokenType.EQ)
         self._match(TokenType.L_PAREN)
@@ -6333,7 +6333,7 @@ class Parser(metaclass=_Parser):
 
                 if prev == "FILE_FORMAT" and self._match(TokenType.L_PAREN):
                     # Snowflake FILE_FORMAT case
-                    value = self._parse_options()
+                    value = self._parse_wrapped_options()
                 else:
                     value = self._parse_unquoted_field()
 
@@ -6352,10 +6352,12 @@ class Parser(metaclass=_Parser):
             expr.set("storage", self._parse_conjunction())
         if self._match_text_seq("CREDENTIALS"):
             # Snowflake supports CREDENTIALS = (...), while Redshift CREDENTIALS <string>
-            creds = self._parse_options() if self._match(TokenType.EQ) else self._parse_field()
+            creds = (
+                self._parse_wrapped_options() if self._match(TokenType.EQ) else self._parse_field()
+            )
             expr.set("credentials", creds)
         if self._match_text_seq("ENCRYPTION"):
-            expr.set("encryption", self._parse_options())
+            expr.set("encryption", self._parse_wrapped_options())
         if self._match_text_seq("IAM_ROLE"):
             expr.set("iam_role", self._parse_field())
         if self._match_text_seq("REGION"):
@@ -6363,10 +6365,10 @@ class Parser(metaclass=_Parser):
 
         return expr
 
-    def _parse_file_location(self):
+    def _parse_file_location(self) -> t.Optional[exp.Expression]:
         return self._parse_field()
 
-    def _parse_copy(self):
+    def _parse_copy(self) -> exp.Copy | exp.Command:
         start = self._prev
 
         self._match(TokenType.INTO)

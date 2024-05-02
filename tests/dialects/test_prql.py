@@ -66,3 +66,16 @@ class TestPRQL(Validator):
             "from x filter (a > 1 || null != b || c != null)",
             "SELECT * FROM x WHERE (a > 1 OR NOT b IS NULL OR NOT c IS NULL)",
         )
+        self.validate_identity("from a aggregate { average x }", "SELECT AVG(x) FROM a")
+        self.validate_identity(
+            "from a aggregate { average x, min y, ct = sum z }",
+            "SELECT AVG(x), MIN(y), COALESCE(SUM(z), 0) AS ct FROM a",
+        )
+        self.validate_identity(
+            "from a aggregate { average x, min y, sum z }",
+            "SELECT AVG(x), MIN(y), COALESCE(SUM(z), 0) FROM a",
+        )
+        self.validate_identity(
+            "from a aggregate { min y, b = stddev x, max z }",
+            "SELECT MIN(y), STDDEV(x) AS b, MAX(z) FROM a",
+        )

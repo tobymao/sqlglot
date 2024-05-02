@@ -199,7 +199,6 @@ class TokenType(AutoName):
     AGGREGATEFUNCTION = auto()
     SIMPLEAGGREGATEFUNCTION = auto()
     UNKNOWN = auto()
-    
 
     # keywords
     ALIAS = auto()

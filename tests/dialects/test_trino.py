@@ -17,6 +17,5 @@ class TestTrino(Validator):
             "SELECT TRIM('!' FROM '!foo!')",
         )
 
-
     def test_cast(self):
         self.validate_identity("CAST(col AS TDIGEST)")

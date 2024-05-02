@@ -31,10 +31,7 @@ class Trino(Presto):
             exp.JSONPathSubscript,
         }
 
-        TYPE_MAPPINGS = {
-            **Presto.Generator.TYPE_MAPPING,
-            exp.DataType.Type.TDIGEST: "TDIGEST"
-        }
+        TYPE_MAPPINGS = {**Presto.Generator.TYPE_MAPPING, exp.DataType.Type.TDIGEST: "TDIGEST"}
 
     class Tokenizer(Presto.Tokenizer):
         HEX_STRINGS = [("X'", "'")]

@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql
 from sqlglot.dialects.presto import Presto
+from sqlglot.tokens import TokenType
 
 
 class Trino(Presto):
@@ -30,5 +31,15 @@ class Trino(Presto):
             exp.JSONPathSubscript,
         }
 
+        TYPE_MAPPINGS = {
+            **Presto.Generator.TYPE_MAPPING,
+            exp.DataType.Type.TDIGEST: "TDIGEST"
+        }
+
     class Tokenizer(Presto.Tokenizer):
         HEX_STRINGS = [("X'", "'")]
+
+        KEYWORDS = {
+            **Presto.Tokenizer.KEYWORDS,
+            "TDIGEST": TokenType.TDIGEST,
+        }

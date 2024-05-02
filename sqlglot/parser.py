@@ -4684,7 +4684,7 @@ class Parser(metaclass=_Parser):
                 this.set("cycle", False)
 
             if not identity:
-                this.set("expression", self._parse_bitwise())
+                this.set("expression", self._parse_range())
             elif not this.args.get("start") and self._match(TokenType.NUMBER, advance=False):
                 args = self._parse_csv(self._parse_bitwise)
                 this.set("start", seq_get(args, 0))

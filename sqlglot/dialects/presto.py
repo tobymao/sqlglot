@@ -222,6 +222,8 @@ class Presto(Dialect):
             "ROW": TokenType.STRUCT,
             "IPADDRESS": TokenType.IPADDRESS,
             "IPPREFIX": TokenType.IPPREFIX,
+            "TDIGEST": TokenType.TDIGEST,
+            "QDIGEST": TokenType.QDIGEST,
         }
 
         KEYWORDS.pop("QUALIFY")

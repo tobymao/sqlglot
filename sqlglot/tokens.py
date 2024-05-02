@@ -380,6 +380,7 @@ class TokenType(AutoName):
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
     TDIGEST = auto()
+    QDIGEST = auto()
     OPTION = auto()
 
 

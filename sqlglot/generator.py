@@ -3820,8 +3820,6 @@ class Generator(metaclass=_Generator):
         this = f" INTO {this}" if self.COPY_HAS_INTO_KEYWORD else f" {this}"
 
         credentials = self.sql(expression, "credentials")
-        credentials = f"{credentials}" if credentials else ""
-
         kind = " FROM " if expression.args.get("kind") else " TO "
         files = self.expressions(expression, key="files", flat=True)
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.dialects.dialect import merge_without_target_sql, trim_sql
 from sqlglot.dialects.presto import Presto
-from sqlglot.tokens import TokenType
 
 
 class Trino(Presto):

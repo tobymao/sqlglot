@@ -155,7 +155,7 @@ class PRQL(Dialect):
         def _parse_aggregate(self) -> t.Optional[exp.Expression]:
             alias = None
             if self._next and self._next.token_type == TokenType.ALIAS:
-                alias = self._parse_id_var(True)
+                alias = self._parse_id_var(any_token=True)
                 self._match(TokenType.ALIAS)
 
             name = self._curr and self._curr.text.upper()

@@ -145,6 +145,7 @@ class TokenType(AutoName):
     TIMESTAMP = auto()
     TIMESTAMPTZ = auto()
     TIMESTAMPLTZ = auto()
+    TIMESTAMPNTZ = auto()
     TIMESTAMP_S = auto()
     TIMESTAMP_MS = auto()
     TIMESTAMP_NS = auto()
@@ -847,6 +848,9 @@ class Tokenizer(metaclass=_Tokenizer):
         "TIMESTAMP": TokenType.TIMESTAMP,
         "TIMESTAMPTZ": TokenType.TIMESTAMPTZ,
         "TIMESTAMPLTZ": TokenType.TIMESTAMPLTZ,
+        "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
+        "TIMESTAMPNTZ": TokenType.TIMESTAMPNTZ,
+        "TIMESTAMP_NTZ": TokenType.TIMESTAMPNTZ,
         "DATE": TokenType.DATE,
         "DATETIME": TokenType.DATETIME,
         "INT4RANGE": TokenType.INT4RANGE,

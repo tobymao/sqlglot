@@ -539,10 +539,7 @@ TBLPROPERTIES (
                 },
             )
 
-        for ts_suffix in (
-            "NTZ",
-            "LTZ",
-        ):
+        for ts_suffix in ("NTZ", "LTZ"):
             self.validate_all(
                 f"TIMESTAMP_{ts_suffix}(x)",
                 write={

@@ -3353,9 +3353,10 @@ class Generator(metaclass=_Generator):
 
         then_expression = expression.args.get("then")
         if isinstance(then_expression, exp.Insert):
-            then = f"INSERT {self.sql(then_expression, 'this')}"
-            if "expression" in then_expression.args:
-                then += f" VALUES {self.sql(then_expression, 'expression')}"
+            this = self.sql(then_expression, "this")
+            this = f"INSERT {this}" if this else "INSERT"
+            then = self.sql(then_expression, "expression")
+            then = f"{this} VALUES {then}" if then else this
         elif isinstance(then_expression, exp.Update):
             if isinstance(then_expression.args.get("expressions"), exp.Star):
                 then = f"UPDATE {self.sql(then_expression, 'expressions')}"
@@ -3377,10 +3378,11 @@ class Generator(metaclass=_Generator):
         this = self.sql(table)
         using = f"USING {self.sql(expression, 'using')}"
         on = f"ON {self.sql(expression, 'on')}"
-        expressions = self.expressions(expression, sep=" ")
+        expressions = self.expressions(expression, sep=" ", indent=False)
+        sep = self.sep()
 
         return self.prepend_ctes(
-            expression, f"MERGE INTO {this}{table_alias} {using} {on} {expressions}"
+            expression, f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{expressions}"
         )
 
     def tochar_sql(self, expression: exp.ToChar) -> str:

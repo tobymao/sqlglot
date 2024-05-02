@@ -2083,7 +2083,7 @@ class Insert(DDL, DML):
         "hint": False,
         "with": False,
         "is_function": False,
-        "this": True,
+        "this": False,
         "expression": False,
         "conflict": False,
         "returning": False,

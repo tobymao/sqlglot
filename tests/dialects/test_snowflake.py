@@ -954,12 +954,16 @@ WHERE
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
         self.validate_identity("SELECT DATE_PART(month, a)")
 
-        self.validate_all(
-            "SELECT CAST(a AS TIMESTAMP)",
-            write={
-                "snowflake": "SELECT CAST(a AS TIMESTAMP)",
-            },
-        )
+        for data_type in (
+            "TIMESTAMP",
+            "TIMESTAMPLTZ",
+            "TIMESTAMP_NTZ",
+        ):
+            self.validate_identity(f"CAST(a AS {data_type})")
+
+        self.validate_identity("CAST(a AS TIMESTAMPNTZ)", "CAST(a AS TIMESTAMP_NTZ)")
+        self.validate_identity("CAST(a AS TIMESTAMP_LTZ)", "CAST(a AS TIMESTAMPLTZ)")
+
         self.validate_all(
             "SELECT a::TIMESTAMP_LTZ(9)",
             write={

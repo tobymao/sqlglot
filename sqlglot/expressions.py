@@ -3963,7 +3963,6 @@ class DataType(Expression):
         XML = auto()
         YEAR = auto()
         TDIGEST = auto()
-        QDIGEST = auto()
 
     STRUCT_TYPES = {
         Type.NESTED,

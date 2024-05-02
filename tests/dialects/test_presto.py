@@ -11,8 +11,7 @@ class TestPresto(Validator):
         self.validate_identity("CAST(x AS IPADDRESS)")
         self.validate_identity("CAST(x AS IPPREFIX)")
         self.validate_identity("CAST(col AS TDIGEST)")
-        self.validate_identity("CAST(col AS QDIGEST)")
-
+        
         self.validate_all(
             "CAST(x AS INTERVAL YEAR TO MONTH)",
             write={

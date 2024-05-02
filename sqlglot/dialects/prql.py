@@ -55,7 +55,7 @@ class PRQL(Dialect):
             ),
             "SORT": lambda self, query: self._parse_order_by(query),
             "AGGREGATE": lambda self, query: self._parse_selection(
-                query, self._parse_aggregate, append=False
+                query, parse_method=self._parse_aggregate, append=False
             ),
         }
 

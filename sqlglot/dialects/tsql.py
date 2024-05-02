@@ -913,7 +913,7 @@ class TSQL(Dialect):
                 isinstance(prop, exp.TemporaryProperty)
                 for prop in (properties.expressions if properties else [])
             ):
-                sql = f"#{sql}"
+                sql = f"[#{sql[1:]}" if sql.startswith("[") else f"#{sql}"
 
             return sql
 

@@ -780,6 +780,14 @@ class TestTSQL(Validator):
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < CURRENT_TIMESTAMP - 7 END",
             "CREATE PROCEDURE foo AS BEGIN DELETE FROM bla WHERE foo < GETDATE() - 7 END",
         )
+
+        self.validate_all(
+            "CREATE TABLE [#temptest] (name VARCHAR)",
+            read={
+                "duckdb": "CREATE TEMPORARY TABLE 'temptest' (name VARCHAR)",
+                "tsql": "CREATE TABLE [#temptest] (name VARCHAR)",
+            },
+        )
         self.validate_all(
             "CREATE TABLE tbl (id INTEGER IDENTITY PRIMARY KEY)",
             read={

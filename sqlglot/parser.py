@@ -2467,14 +2467,17 @@ class Parser(metaclass=_Parser):
             exp.Partition, expressions=self._parse_wrapped_csv(self._parse_conjunction)
         )
 
-    def _parse_value(self) -> exp.Tuple:
+    def _parse_value(self) -> t.Optional[exp.Tuple]:
         if self._match(TokenType.L_PAREN):
             expressions = self._parse_csv(self._parse_expression)
             self._match_r_paren()
             return self.expression(exp.Tuple, expressions=expressions)
 
         # In some dialects we can have VALUES 1, 2 which results in 1 column & 2 rows.
-        return self.expression(exp.Tuple, expressions=[self._parse_expression()])
+        expression = self._parse_expression()
+        if expression:
+            return self.expression(exp.Tuple, expressions=[expression])
+        return None
 
     def _parse_projections(self) -> t.List[exp.Expression]:
         return self._parse_expressions()

@@ -957,11 +957,11 @@ WHERE
         for data_type in (
             "TIMESTAMP",
             "TIMESTAMPLTZ",
-            "TIMESTAMP_NTZ",
+            "TIMESTAMPNTZ",
         ):
             self.validate_identity(f"CAST(a AS {data_type})")
 
-        self.validate_identity("CAST(a AS TIMESTAMPNTZ)", "CAST(a AS TIMESTAMP_NTZ)")
+        self.validate_identity("CAST(a AS TIMESTAMP_NTZ)", "CAST(a AS TIMESTAMPNTZ)")
         self.validate_identity("CAST(a AS TIMESTAMP_LTZ)", "CAST(a AS TIMESTAMPLTZ)")
 
         self.validate_all(

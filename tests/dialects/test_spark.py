@@ -530,7 +530,6 @@ TBLPROPERTIES (
             "FLOAT",
             "INT",
             "TIMESTAMP",
-            "TIMESTAMP_NTZ",
         ):
             self.validate_all(
                 f"{data_type}(x)",
@@ -540,13 +539,17 @@ TBLPROPERTIES (
                 },
             )
 
-        self.validate_all(
-            "TIMESTAMP_LTZ(x)",
-            write={
-                "": "CAST(x AS TIMESTAMPLTZ)",
-                "spark": "CAST(x AS TIMESTAMP_LTZ)",
-            },
-        )
+        for ts_suffix in (
+            "NTZ",
+            "LTZ",
+        ):
+            self.validate_all(
+                f"TIMESTAMP_{ts_suffix}(x)",
+                write={
+                    "": f"CAST(x AS TIMESTAMP{ts_suffix})",
+                    "spark": f"CAST(x AS TIMESTAMP_{ts_suffix})",
+                },
+            )
 
         self.validate_all(
             "STRING(x)",

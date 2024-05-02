@@ -217,6 +217,7 @@ class Parser(metaclass=_Parser):
         TokenType.TIMESTAMP_NS,
         TokenType.TIMESTAMPTZ,
         TokenType.TIMESTAMPLTZ,
+        TokenType.TIMESTAMPNTZ,
         TokenType.DATETIME,
         TokenType.DATETIME64,
         TokenType.DATE,

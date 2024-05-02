@@ -394,7 +394,7 @@ WHERE
             "SELECT DATE_PART('year', TIMESTAMP '2020-01-01')",
             write={
                 "hive": "SELECT EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMP))",
-                "snowflake": "SELECT DATE_PART('year', CAST('2020-01-01' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DATE_PART('year', CAST('2020-01-01' AS TIMESTAMP))",
                 "spark": "SELECT EXTRACT(year FROM CAST('2020-01-01' AS TIMESTAMP))",
             },
         )
@@ -597,7 +597,7 @@ WHERE
         self.validate_all(
             "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
             write={
-                "snowflake": "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMPNTZ))",
+                "snowflake": "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -695,7 +695,7 @@ WHERE
             "SELECT TO_TIMESTAMP('2013-04-05 01:02:03')",
             write={
                 "bigquery": "SELECT CAST('2013-04-05 01:02:03' AS DATETIME)",
-                "snowflake": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMPNTZ)",
+                "snowflake": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMP)",
                 "spark": "SELECT CAST('2013-04-05 01:02:03' AS TIMESTAMP)",
             },
         )
@@ -957,12 +957,16 @@ WHERE
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
         self.validate_identity("SELECT DATE_PART(month, a)")
 
-        self.validate_all(
-            "SELECT CAST(a AS TIMESTAMP)",
-            write={
-                "snowflake": "SELECT CAST(a AS TIMESTAMPNTZ)",
-            },
-        )
+        for data_type in (
+            "TIMESTAMP",
+            "TIMESTAMPLTZ",
+            "TIMESTAMPNTZ",
+        ):
+            self.validate_identity(f"CAST(a AS {data_type})")
+
+        self.validate_identity("CAST(a AS TIMESTAMP_NTZ)", "CAST(a AS TIMESTAMPNTZ)")
+        self.validate_identity("CAST(a AS TIMESTAMP_LTZ)", "CAST(a AS TIMESTAMPLTZ)")
+
         self.validate_all(
             "SELECT a::TIMESTAMP_LTZ(9)",
             write={
@@ -1002,14 +1006,14 @@ WHERE
         self.validate_all(
             "SELECT DATE_PART(epoch_second, foo) as ddate from table_name",
             write={
-                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMPNTZ)) AS ddate FROM table_name",
+                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMP)) AS ddate FROM table_name",
                 "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) AS ddate FROM table_name",
             },
         )
         self.validate_all(
             "SELECT DATE_PART(epoch_milliseconds, foo) as ddate from table_name",
             write={
-                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMPNTZ)) * 1000 AS ddate FROM table_name",
+                "snowflake": "SELECT EXTRACT(epoch_second FROM CAST(foo AS TIMESTAMP)) * 1000 AS ddate FROM table_name",
                 "presto": "SELECT TO_UNIXTIME(CAST(foo AS TIMESTAMP)) * 1000 AS ddate FROM table_name",
             },
         )
@@ -1140,7 +1144,7 @@ WHERE
         )
         self.validate_identity(
             "SELECT * FROM my_table AT (TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp)",
-            "SELECT * FROM my_table AT (TIMESTAMP => CAST('Fri, 01 May 2015 16:20:00 -0700' AS TIMESTAMPNTZ))",
+            "SELECT * FROM my_table AT (TIMESTAMP => CAST('Fri, 01 May 2015 16:20:00 -0700' AS TIMESTAMP))",
         )
         self.validate_identity(
             "SELECT * FROM my_table AT(TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp_tz)",

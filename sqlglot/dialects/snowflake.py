@@ -716,10 +716,7 @@ class Snowflake(Dialect):
             "SQL_DOUBLE": TokenType.DOUBLE,
             "SQL_VARCHAR": TokenType.VARCHAR,
             "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,
-            "TIMESTAMP_LTZ": TokenType.TIMESTAMPLTZ,
-            "TIMESTAMP_NTZ": TokenType.TIMESTAMP,
             "TIMESTAMP_TZ": TokenType.TIMESTAMPTZ,
-            "TIMESTAMPNTZ": TokenType.TIMESTAMP,
             "TOP": TokenType.TOP,
         }
 
@@ -848,7 +845,6 @@ class Snowflake(Dialect):
             **generator.Generator.TYPE_MAPPING,
             exp.DataType.Type.NESTED: "OBJECT",
             exp.DataType.Type.STRUCT: "OBJECT",
-            exp.DataType.Type.TIMESTAMP: "TIMESTAMPNTZ",
         }
 
         STAR_MAPPING = {

@@ -466,63 +466,63 @@ class TestMySQL(Validator):
             "SELECT DATE_FORMAT('2017-06-15', '%Y')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y')",
-                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'yyyy')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'yyyy')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('2017-06-15', '%m')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%m')",
-                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'mm')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'mm')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('2017-06-15', '%d')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%d')",
-                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'DD')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'DD')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('2017-06-15', '%Y-%m-%d')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%Y-%m-%d')",
-                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'yyyy-mm-DD')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'yyyy-mm-DD')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('2017-06-15 22:23:34', '%H')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15 22:23:34', '%H')",
-                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15 22:23:34' AS TIMESTAMPNTZ), 'hh24')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15 22:23:34' AS TIMESTAMP), 'hh24')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('2017-06-15', '%w')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%w')",
-                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMPNTZ), 'dy')",
+                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'dy')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('2009-10-04 22:23:00', '%W %M %Y')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2009-10-04 22:23:00', '%W %M %Y')",
-                "snowflake": "SELECT TO_CHAR(CAST('2009-10-04 22:23:00' AS TIMESTAMPNTZ), 'DY mmmm yyyy')",
+                "snowflake": "SELECT TO_CHAR(CAST('2009-10-04 22:23:00' AS TIMESTAMP), 'DY mmmm yyyy')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('2007-10-04 22:23:00', '%H:%i:%s')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2007-10-04 22:23:00', '%T')",
-                "snowflake": "SELECT TO_CHAR(CAST('2007-10-04 22:23:00' AS TIMESTAMPNTZ), 'hh24:mi:ss')",
+                "snowflake": "SELECT TO_CHAR(CAST('2007-10-04 22:23:00' AS TIMESTAMP), 'hh24:mi:ss')",
             },
         )
         self.validate_all(
             "SELECT DATE_FORMAT('1900-10-04 22:23:00', '%d %y %a %d %m %b')",
             write={
                 "mysql": "SELECT DATE_FORMAT('1900-10-04 22:23:00', '%d %y %W %d %m %b')",
-                "snowflake": "SELECT TO_CHAR(CAST('1900-10-04 22:23:00' AS TIMESTAMPNTZ), 'DD yy DY DD mm mon')",
+                "snowflake": "SELECT TO_CHAR(CAST('1900-10-04 22:23:00' AS TIMESTAMP), 'DD yy DY DD mm mon')",
             },
         )
 

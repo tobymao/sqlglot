@@ -3934,6 +3934,7 @@ class DataType(Expression):
         TIME = auto()
         TIMETZ = auto()
         TIMESTAMP = auto()
+        TIMESTAMPNTZ = auto()
         TIMESTAMPLTZ = auto()
         TIMESTAMPTZ = auto()
         TIMESTAMP_S = auto()
@@ -4035,6 +4036,7 @@ class DataType(Expression):
         Type.DATETIME64,
         Type.TIME,
         Type.TIMESTAMP,
+        Type.TIMESTAMPNTZ,
         Type.TIMESTAMPLTZ,
         Type.TIMESTAMPTZ,
         Type.TIMESTAMP_MS,

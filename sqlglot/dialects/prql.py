@@ -40,10 +40,8 @@ class PRQL(Dialect):
         }
 
         TRANSFORM_PARSERS = {
-            "DERIVE": lambda self, query: self._parse_selection(query, self._parse_expression),
-            "SELECT": lambda self, query: self._parse_selection(
-                query, self._parse_expression, append=False
-            ),
+            "DERIVE": lambda self, query: self._parse_selection(query),
+            "SELECT": lambda self, query: self._parse_selection(query, append=False),
             "TAKE": lambda self, query: self._parse_take(query),
             "FILTER": lambda self, query: query.where(self._parse_conjunction()),
             "APPEND": lambda self, query: query.union(
@@ -102,9 +100,10 @@ class PRQL(Dialect):
         def _parse_selection(
             self,
             query: exp.Query,
-            parse_method: t.Callable,
+            parse_method: t.Optional[t.Callable] = None,
             append: bool = True,
         ) -> exp.Query:
+            parse_method = parse_method if parse_method else self._parse_expression
             if self._match(TokenType.L_BRACE):
                 selects = self._parse_csv(parse_method)
 
@@ -163,8 +162,7 @@ class PRQL(Dialect):
             func_builder = self.FUNCTIONS.get(name)
             if func_builder:
                 self._advance()
-                # "this" keyword in PRQL refers to the current relation
-                args = exp.Star() if self._match_texts("THIS") else self._parse_id_var()
+                args = self._parse_column()
                 func = func_builder([args])
             else:
                 self.raise_error(f"Unsupported aggregation function {name}")

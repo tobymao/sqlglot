@@ -379,6 +379,7 @@ class TokenType(AutoName):
     UNIQUE = auto()
     VERSION_SNAPSHOT = auto()
     TIMESTAMP_SNAPSHOT = auto()
+    TDIGEST = auto()
     OPTION = auto()
 
 

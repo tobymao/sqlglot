@@ -266,6 +266,7 @@ class Parser(metaclass=_Parser):
         TokenType.UNKNOWN,
         TokenType.NULL,
         TokenType.NAME,
+        TokenType.TDIGEST,
         *ENUM_TYPE_TOKENS,
         *NESTED_TYPE_TOKENS,
         *AGGREGATE_TYPE_TOKENS,

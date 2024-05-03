@@ -11,6 +11,7 @@ class TestPresto(Validator):
         self.validate_identity("CAST(x AS IPADDRESS)")
         self.validate_identity("CAST(x AS IPPREFIX)")
         self.validate_identity("CAST(TDIGEST_AGG(1) AS TDIGEST)")
+        self.validate_identity("CAST(x AS HYPERLOGLOG)")
 
         self.validate_all(
             "CAST(x AS INTERVAL YEAR TO MONTH)",

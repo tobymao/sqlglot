@@ -199,7 +199,6 @@ class TokenType(AutoName):
     AGGREGATEFUNCTION = auto()
     SIMPLEAGGREGATEFUNCTION = auto()
     TDIGEST = auto()
-    HYPERLOGLOG = auto()
     UNKNOWN = auto()
 
     # keywords

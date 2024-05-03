@@ -440,7 +440,7 @@ class Snowflake(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
-            "LOCATION": lambda self: self._parse_location(),
+            "LOCATION": lambda self: self._parse_location_property(),
         }
 
         SHOW_PARSERS = {
@@ -585,21 +585,16 @@ class Snowflake(Dialect):
 
             return table
 
-        def _parse_file_location(self) -> t.Optional[exp.Expression]:
-            # https://docs.snowflake.com/en/user-guide/querying-stage
-            if self._match(TokenType.STRING, advance=False):
-                file = self._parse_string()
-            elif self._match_text_seq("@", advance=False):
-                file = self._parse_location_path()
-            else:
-                file = None
-
-            return file
-
         def _parse_table_parts(
             self, schema: bool = False, is_db_reference: bool = False, wildcard: bool = False
         ) -> exp.Table:
-            table = self._parse_file_location()
+            # https://docs.snowflake.com/en/user-guide/querying-stage
+            if self._match(TokenType.STRING, advance=False):
+                table = self._parse_string()
+            elif self._match_text_seq("@", advance=False):
+                table = self._parse_location_path()
+            else:
+                table = None
 
             if table:
                 file_format = None
@@ -681,9 +676,12 @@ class Snowflake(Dialect):
             self._match_text_seq("WITH")
             return self.expression(exp.SwapTable, this=self._parse_table(schema=True))
 
-        def _parse_location(self) -> exp.LocationProperty:
+        def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
+
+        def _parse_file_location(self) -> t.Optional[exp.Expression]:
+            return self._parse_table_parts()
 
         def _parse_location_path(self) -> exp.Var:
             parts = [self._advance_any(ignore_reserved=True)]
@@ -1045,8 +1043,8 @@ class Snowflake(Dialect):
 
         def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
             option = self.sql(expression, "this")
-            if option == "FILE_FORMAT":
-                value = self.expressions(expression, key="expression", flat=True, sep=" ")
-                return f"{option} = ({value})"
+            if option.upper() == "FILE_FORMAT":
+                values = self.expressions(expression, key="expression", flat=True, sep=" ")
+                return f"{option} = ({values})"
 
             return super().copyparameter_sql(expression)

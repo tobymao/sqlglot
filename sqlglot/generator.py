@@ -3795,7 +3795,7 @@ class Generator(metaclass=_Generator):
         if isinstance(cred_expr, exp.Literal):
             # Redshift case: CREDENTIALS <string>
             credentials = self.sql(expression, "credentials")
-            credentials = f"CREDENTIALS {credentials}"
+            credentials = f"CREDENTIALS {credentials}" if credentials else ""
         else:
             # Snowflake case: CREDENTIALS = (...)
             credentials = self.expressions(expression, key="credentials", flat=True, sep=" ")
@@ -3805,7 +3805,7 @@ class Generator(metaclass=_Generator):
         storage = f" {storage}" if storage else ""
 
         encryption = self.expressions(expression, key="encryption", flat=True, sep=" ")
-        encryption = f"ENCRYPTION = ({encryption})" if encryption else ""
+        encryption = f" ENCRYPTION = ({encryption})" if encryption else ""
 
         iam_role = self.sql(expression, "iam_role")
         iam_role = f"IAM_ROLE {iam_role}" if iam_role else ""
@@ -3821,7 +3821,6 @@ class Generator(metaclass=_Generator):
 
         credentials = self.sql(expression, "credentials")
         credentials = f" {credentials}" if credentials else ""
-
         kind = " FROM " if expression.args.get("kind") else " TO "
         files = self.expressions(expression, key="files", flat=True)
 

@@ -4323,7 +4323,9 @@ class Parser(metaclass=_Parser):
 
             this = self._parse_query_modifiers(seq_get(expressions, 0))
 
-            if isinstance(this, exp.UNWRAPPED_QUERIES):
+            if not this and self._match(TokenType.R_PAREN, advance=False):
+                this = self.expression(exp.Tuple)
+            elif isinstance(this, exp.UNWRAPPED_QUERIES):
                 this = self._parse_set_operations(
                     self._parse_subquery(this=this, parse_alias=False)
                 )
@@ -6313,6 +6315,15 @@ class Parser(metaclass=_Parser):
 
         return self.expression(exp.WithOperator, this=this, op=op)
 
+    def _parse_wrapped_options(self) -> t.List[t.Optional[exp.Expression]]:
+        opts = []
+        self._match(TokenType.EQ)
+        self._match(TokenType.L_PAREN)
+        while self._curr and not self._match(TokenType.R_PAREN):
+            opts.append(self._parse_conjunction())
+            self._match(TokenType.COMMA)
+        return opts
+
     def _parse_copy_parameters(self) -> t.List[exp.CopyParameter]:
         sep = TokenType.COMMA if self.dialect.COPY_PARAMS_ARE_CSV else None
 
@@ -6320,12 +6331,19 @@ class Parser(metaclass=_Parser):
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
             option = self._parse_unquoted_field()
             value = None
+
             # Some options are defined as functions with the values as params
             if not isinstance(option, exp.Func):
+                prev = self._prev.text.upper()
                 # Different dialects might separate options and values by white space, "=" and "AS"
                 self._match(TokenType.EQ)
                 self._match(TokenType.ALIAS)
-                value = self._parse_unquoted_field()
+
+                if prev == "FILE_FORMAT" and self._match(TokenType.L_PAREN):
+                    # Snowflake FILE_FORMAT case
+                    value = self._parse_wrapped_options()
+                else:
+                    value = self._parse_unquoted_field()
 
             param = self.expression(exp.CopyParameter, this=option, expression=value)
             options.append(param)
@@ -6336,24 +6354,18 @@ class Parser(metaclass=_Parser):
         return options
 
     def _parse_credentials(self) -> t.Optional[exp.Credentials]:
-        def parse_options():
-            opts = []
-            self._match(TokenType.EQ)
-            self._match(TokenType.L_PAREN)
-            while self._curr and not self._match(TokenType.R_PAREN):
-                opts.append(self._parse_conjunction())
-            return opts
-
         expr = self.expression(exp.Credentials)
 
         if self._match_text_seq("STORAGE_INTEGRATION", advance=False):
             expr.set("storage", self._parse_conjunction())
         if self._match_text_seq("CREDENTIALS"):
             # Snowflake supports CREDENTIALS = (...), while Redshift CREDENTIALS <string>
-            creds = parse_options() if self._match(TokenType.EQ) else self._parse_field()
+            creds = (
+                self._parse_wrapped_options() if self._match(TokenType.EQ) else self._parse_field()
+            )
             expr.set("credentials", creds)
         if self._match_text_seq("ENCRYPTION"):
-            expr.set("encryption", parse_options())
+            expr.set("encryption", self._parse_wrapped_options())
         if self._match_text_seq("IAM_ROLE"):
             expr.set("iam_role", self._parse_field())
         if self._match_text_seq("REGION"):
@@ -6361,7 +6373,10 @@ class Parser(metaclass=_Parser):
 
         return expr
 
-    def _parse_copy(self):
+    def _parse_file_location(self) -> t.Optional[exp.Expression]:
+        return self._parse_field()
+
+    def _parse_copy(self) -> exp.Copy | exp.Command:
         start = self._prev
 
         self._match(TokenType.INTO)
@@ -6374,7 +6389,7 @@ class Parser(metaclass=_Parser):
 
         kind = self._match(TokenType.FROM) or not self._match_text_seq("TO")
 
-        files = self._parse_csv(self._parse_conjunction)
+        files = self._parse_csv(self._parse_file_location)
         credentials = self._parse_credentials()
 
         self._match_text_seq("WITH")

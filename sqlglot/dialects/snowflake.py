@@ -440,7 +440,7 @@ class Snowflake(Dialect):
 
         PROPERTY_PARSERS = {
             **parser.Parser.PROPERTY_PARSERS,
-            "LOCATION": lambda self: self._parse_location(),
+            "LOCATION": lambda self: self._parse_location_property(),
         }
 
         SHOW_PARSERS = {
@@ -676,9 +676,12 @@ class Snowflake(Dialect):
             self._match_text_seq("WITH")
             return self.expression(exp.SwapTable, this=self._parse_table(schema=True))
 
-        def _parse_location(self) -> exp.LocationProperty:
+        def _parse_location_property(self) -> exp.LocationProperty:
             self._match(TokenType.EQ)
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
+
+        def _parse_file_location(self) -> t.Optional[exp.Expression]:
+            return self._parse_table_parts()
 
         def _parse_location_path(self) -> exp.Var:
             parts = [self._advance_any(ignore_reserved=True)]
@@ -1037,3 +1040,11 @@ class Snowflake(Dialect):
                     values.append(e)
 
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
+
+        def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
+            option = self.sql(expression, "this")
+            if option.upper() == "FILE_FORMAT":
+                values = self.expressions(expression, key="expression", flat=True, sep=" ")
+                return f"{option} = ({values})"
+
+            return super().copyparameter_sql(expression)

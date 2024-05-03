@@ -1589,7 +1589,15 @@ class Parser(metaclass=_Parser):
                     if return_:
                         expression = self.expression(exp.Return, this=expression)
         elif create_token.token_type == TokenType.INDEX:
-            this = self._parse_index(index=self._parse_id_var())
+            # Postgres allows anonymous indexes, eg. CREATE INDEX IF NOT EXISTS ON t(c)
+            if not self._match(TokenType.ON):
+                index = self._parse_id_var()
+                anonymous = False
+            else:
+                index = None
+                anonymous = True
+
+            this = self._parse_index(index=index, anonymous=anonymous)
         elif create_token.token_type in self.DB_CREATABLES:
             table_parts = self._parse_table_parts(
                 schema=True, is_db_reference=create_token.token_type == TokenType.SCHEMA
@@ -3021,10 +3029,9 @@ class Parser(metaclass=_Parser):
         )
 
     def _parse_index(
-        self,
-        index: t.Optional[exp.Expression] = None,
+        self, index: t.Optional[exp.Expression] = None, anonymous: bool = False
     ) -> t.Optional[exp.Index]:
-        if index:
+        if index or anonymous:
             unique = None
             primary = None
             amp = None

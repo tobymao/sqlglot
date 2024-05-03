@@ -223,6 +223,7 @@ class Presto(Dialect):
             "IPADDRESS": TokenType.IPADDRESS,
             "IPPREFIX": TokenType.IPPREFIX,
             "TDIGEST": TokenType.TDIGEST,
+            "HYPERLOGLOG": TokenType.HYPERLOGLOG,
         }
 
         KEYWORDS.pop("QUALIFY")

@@ -239,7 +239,7 @@ except sqlglot.errors.ParseError as e:
 
 ### Unsupported Errors
 
-It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and proceeds to do a best-effort translation by default. Transpilation is difficult and not all permutations are supported. If transpilation does not work, it may not be implemented yet. Well documented / tested PRs / issues are appreciated. Some transpilation cases that require db schemas are made possible through the optimizer but are not included in base transpilation:
+It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and will proceed to do a best-effort translation by default:
 
 ```python
 import sqlglot
@@ -261,6 +261,10 @@ sqlglot.transpile("SELECT APPROX_DISTINCT(a, 0.1) FROM foo", read="presto", writ
 ```
 sqlglot.errors.UnsupportedError: APPROX_COUNT_DISTINCT does not support accuracy
 ```
+
+There are queries that require additional information to be accurately transpiled, such as the schemas of the tables referenced in them. This is because certain transformations are type-sensitive, meaning that type inference is needed in order to understand their semantics. Even though the `qualify` and `annotate_types` optimizer [rules](https://github.com/tobymao/sqlglot/tree/main/sqlglot/optimizer) can help with this, they are not used by default because they add significant overhead and complexity.
+
+Transpilation is generally a hard problem, so SQLGlot employs an "incremental" approach to solving it. This means that there may be dialect pairs that currently lack support for some inputs, but this is expected to improve over time; we highly appreciate well-documented and tested issues or PRs - feel free to [reach out](#get-in-touch) if you need guidance!
 
 ### Build and Modify SQL
 

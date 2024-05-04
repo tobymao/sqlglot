@@ -14,8 +14,8 @@ jobs:
     outputs:
       deploy: ${{ steps.check_deploy.outputs.deploy }}
     steps:
+      - uses: actions/checkout@v3
       - id: check_deploy
-        uses: actions/checkout@v3
         name: Check if sqlglotrs should be deployed
         run: |
           bash ./.github/workflows/should_deploy_sqlglotrs.sh

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.13.5] - 2024-05-04
+### :wrench: Chores
+- [`0deffd8`](https://github.com/tobymao/sqlglot/commit/0deffd89a8c6d2da90c9a654c22b78dd4c7dd8f6) - refactor publish workflow for sqlglotrs releasing *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.13.4] - 2024-05-04
 ### :wrench: Chores
 - [`5125732`](https://github.com/tobymao/sqlglot/commit/5125732f05408750aceefba99b48aeb4def89557) - refactor publish workflow for sqlglotrs releasing *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -3470,3 +3475,4 @@ Changelog
 [v23.13.2]: https://github.com/tobymao/sqlglot/compare/v23.13.1...v23.13.2
 [v23.13.3]: https://github.com/tobymao/sqlglot/compare/v23.13.2...v23.13.3
 [v23.13.4]: https://github.com/tobymao/sqlglot/compare/v23.13.3...v23.13.4
+[v23.13.5]: https://github.com/tobymao/sqlglot/compare/v23.13.4...v23.13.5

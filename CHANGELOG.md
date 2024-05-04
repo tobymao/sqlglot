@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.13.4] - 2024-05-04
+### :wrench: Chores
+- [`5125732`](https://github.com/tobymao/sqlglot/commit/5125732f05408750aceefba99b48aeb4def89557) - refactor publish workflow for sqlglotrs releasing *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.13.3] - 2024-05-04
 ### :wrench: Chores
 - [`0a36dd8`](https://github.com/tobymao/sqlglot/commit/0a36dd85cd7de544a509f7e4ccdddf0cb0c1f697) - fix should-deploy-rs bash condition *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -3464,3 +3469,4 @@ Changelog
 [v23.13.1]: https://github.com/tobymao/sqlglot/compare/v23.13.0...v23.13.1
 [v23.13.2]: https://github.com/tobymao/sqlglot/compare/v23.13.1...v23.13.2
 [v23.13.3]: https://github.com/tobymao/sqlglot/compare/v23.13.2...v23.13.3
+[v23.13.4]: https://github.com/tobymao/sqlglot/compare/v23.13.3...v23.13.4

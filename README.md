@@ -264,7 +264,7 @@ sqlglot.errors.UnsupportedError: APPROX_COUNT_DISTINCT does not support accuracy
 
 There are queries that require additional information to be accurately transpiled, such as the schemas of the tables referenced in them. This is because certain transformations are type-sensitive, meaning that type inference is needed in order to understand their semantics. Even though the `qualify` and `annotate_types` optimizer [rules](https://github.com/tobymao/sqlglot/tree/main/sqlglot/optimizer) can help with this, they are not used by default because they add significant overhead and complexity.
 
-Transpilation is generally a hard problem, so SQLGlot employs an "incremental" approach to solving it. This means that there may be dialect pairs that currently lack support for some inputs, but this is expected to improve over time; we highly appreciate well-documented and tested issues or PRs - feel free to [reach out](#get-in-touch) if you need guidance!
+Transpilation is generally a hard problem, so SQLGlot employs an "incremental" approach to solving it. This means that there may be dialect pairs that currently lack support for some inputs, but this is expected to improve over time. We highly appreciate well-documented and tested issues or PRs, so feel free to [reach out](#get-in-touch) if you need guidance!
 
 ### Build and Modify SQL
 

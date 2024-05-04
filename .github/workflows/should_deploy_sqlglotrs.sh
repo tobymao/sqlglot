@@ -8,8 +8,4 @@ PREVIOUS_TAG=$(git tag --sort=-creatordate | head -n 2 | tail -n 1)
 PREVIOUS_TAG_COMMIT=$(git rev-list -n 1 $PREVIOUS_TAG)
 
 # We should only deploy sqlglotrs if Cargo.toml was modified between this tag and the previous one
-SHOULD_DEPLOY=$(git merge-base --is-ancestor $PREVIOUS_TAG_COMMIT $CARGO_TOML_MOST_RECENT_COMMIT)
-
-# Print the SHOULD_DEPLOY variable for debugging purposes
-echo "SHOULD_DEPLOY: $SHOULD_DEPLOY"
-exit $SHOULD_DEPLOY
+git merge-base --is-ancestor $PREVIOUS_TAG_COMMIT $CARGO_TOML_MOST_RECENT_COMMIT

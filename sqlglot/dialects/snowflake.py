@@ -1042,8 +1042,8 @@ class Snowflake(Dialect):
             return self.func("OBJECT_CONSTRUCT", *flatten(zip(keys, values)))
 
         def copyparameter_sql(self, expression: exp.CopyParameter) -> str:
-            option = self.sql(expression, "this")
-            if option.upper() == "FILE_FORMAT":
+            option = self.sql(expression, "this").upper()
+            if option == "FILE_FORMAT":
                 values = self.expressions(expression, key="expression", flat=True, sep=" ")
                 return f"{option} = ({values})"
 

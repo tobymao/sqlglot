@@ -19,7 +19,7 @@ jobs:
         name: Check if sqlglotrs should be deployed
         run: |
           bash ./.github/workflows/should_deploy_sqlglotrs.sh
-          if [ $? -eq 0]; then echo "deploy=true"; else echo "deploy=false"; fi >> "$GITHUB_OUTPUT"
+          if [ $? -eq 0 ]; then echo "deploy=true"; else echo "deploy=false"; fi >> "$GITHUB_OUTPUT"
 
   build-rs:
     needs: should-deploy-rs

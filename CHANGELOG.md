@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## [v23.13.1] - 2024-05-04
+### :bug: Bug Fixes
+- [`2c2a788`](https://github.com/tobymao/sqlglot/commit/2c2a788bb3a5a46e7729a117a6e6b62d33beb020) - **snowflake**: COPY postfix *(PR [#3398](https://github.com/tobymao/sqlglot/pull/3398) by [@VaggelisD](https://github.com/VaggelisD))*
+  - :arrow_lower_right: *fixes issue [#3388](https://github.com/tobymao/sqlglot/issues/3388) opened by [@dangoldin](https://github.com/dangoldin)*
+
+
 ## [v23.13.0] - 2024-05-03
 ### :boom: BREAKING CHANGES
 - due to [`cc6259d`](https://github.com/tobymao/sqlglot/commit/cc6259de3d68831ded31bfb7fafe1ce654aa89dd) - Mark UDTF child scopes as ScopeType.SUBQUERY *(PR [#3390](https://github.com/tobymao/sqlglot/pull/3390) by [@VaggelisD](https://github.com/VaggelisD))*:
@@ -3441,3 +3447,4 @@ Changelog
 [v23.12.1]: https://github.com/tobymao/sqlglot/compare/v23.12.0...v23.12.1
 [v23.12.2]: https://github.com/tobymao/sqlglot/compare/v23.12.1...v23.12.2
 [v23.13.0]: https://github.com/tobymao/sqlglot/compare/v23.12.2...v23.13.0
+[v23.13.1]: https://github.com/tobymao/sqlglot/compare/v23.13.0...v23.13.1

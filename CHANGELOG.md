@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.13.3] - 2024-05-04
+### :wrench: Chores
+- [`0a36dd8`](https://github.com/tobymao/sqlglot/commit/0a36dd85cd7de544a509f7e4ccdddf0cb0c1f697) - fix should-deploy-rs bash condition *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.13.2] - 2024-05-04
 ### :bug: Bug Fixes
 - [`fc979a0`](https://github.com/tobymao/sqlglot/commit/fc979a0055c0f402cda77448d9c7dfecf45a901f) - **snowflake**: make FILE_FORMAT option always be uppercase in COPY INTO *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -3458,3 +3463,4 @@ Changelog
 [v23.13.0]: https://github.com/tobymao/sqlglot/compare/v23.12.2...v23.13.0
 [v23.13.1]: https://github.com/tobymao/sqlglot/compare/v23.13.0...v23.13.1
 [v23.13.2]: https://github.com/tobymao/sqlglot/compare/v23.13.1...v23.13.2
+[v23.13.3]: https://github.com/tobymao/sqlglot/compare/v23.13.2...v23.13.3

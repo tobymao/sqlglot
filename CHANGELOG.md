@@ -1,6 +1,15 @@
 Changelog
 =========
 
+## [v23.13.2] - 2024-05-04
+### :bug: Bug Fixes
+- [`fc979a0`](https://github.com/tobymao/sqlglot/commit/fc979a0055c0f402cda77448d9c7dfecf45a901f) - **snowflake**: make FILE_FORMAT option always be uppercase in COPY INTO *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`1b5b77d`](https://github.com/tobymao/sqlglot/commit/1b5b77d849260589a2f7d3593c4472e47cae0280) - improve unsupported error documentation *(PR [#3406](https://github.com/tobymao/sqlglot/pull/3406) by [@georgesittas](https://github.com/georgesittas))*
+- [`fcb51af`](https://github.com/tobymao/sqlglot/commit/fcb51afc4631cfc5f494c9114d4aba667aa46087) - release sqlglotrs only when Cargo.toml is updated *(PR [#3408](https://github.com/tobymao/sqlglot/pull/3408) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.13.1] - 2024-05-04
 ### :bug: Bug Fixes
 - [`2c2a788`](https://github.com/tobymao/sqlglot/commit/2c2a788bb3a5a46e7729a117a6e6b62d33beb020) - **snowflake**: COPY postfix *(PR [#3398](https://github.com/tobymao/sqlglot/pull/3398) by [@VaggelisD](https://github.com/VaggelisD))*
@@ -3448,3 +3457,4 @@ Changelog
 [v23.12.2]: https://github.com/tobymao/sqlglot/compare/v23.12.1...v23.12.2
 [v23.13.0]: https://github.com/tobymao/sqlglot/compare/v23.12.2...v23.13.0
 [v23.13.1]: https://github.com/tobymao/sqlglot/compare/v23.13.0...v23.13.1
+[v23.13.2]: https://github.com/tobymao/sqlglot/compare/v23.13.1...v23.13.2

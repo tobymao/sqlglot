@@ -361,7 +361,7 @@
 
 <h3 id="unsupported-errors">Unsupported Errors</h3>
 
-<p>It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and proceeds to do a best-effort translation by default. Transpilation is difficult and not all permutations are supported. If transpilation does not work, it may not be implemented yet. Well documented / tested PRs / issues are appreciated. Some transpilation cases that require db schemas are made possible through the optimizer but are not included in base transpilation:</p>
+<p>It may not be possible to translate some queries between certain dialects. For these cases, SQLGlot may emit a warning and will proceed to do a best-effort translation by default:</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="kn">import</span> <span class="nn">sqlglot</span>
@@ -385,6 +385,10 @@
 
 <pre><code><a href="sqlglot/errors.html#UnsupportedError">sqlglot.errors.UnsupportedError</a>: APPROX_COUNT_DISTINCT does not support accuracy
 </code></pre>
+
+<p>There are queries that require additional information to be accurately transpiled, such as the schemas of the tables referenced in them. This is because certain transformations are type-sensitive, meaning that type inference is needed in order to understand their semantics. Even though the <code>qualify</code> and <code>annotate_types</code> optimizer <a href="https://github.com/tobymao/sqlglot/tree/main/sqlglot/optimizer">rules</a> can help with this, they are not used by default because they add significant overhead and complexity.</p>
+
+<p>Transpilation is generally a hard problem, so SQLGlot employs an "incremental" approach to solving it. This means that there may be dialect pairs that currently lack support for some inputs, but this is expected to improve over time. We highly appreciate well-documented and tested issues or PRs, so feel free to <a href="#get-in-touch">reach out</a> if you need guidance!</p>
 
 <h3 id="build-and-modify-sql">Build and Modify SQL</h3>
 

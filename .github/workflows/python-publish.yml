@@ -17,7 +17,9 @@ jobs:
       - uses: actions/checkout@v3
       - id: check_deploy
         name: Check if sqlglotrs should be deployed
-        run: bash ./.github/workflows/should_deploy_sqlglotrs.sh
+        run: |
+          bash ./.github/workflows/should_deploy_sqlglotrs.sh
+          if [ $? -eq 0 ]; then exit 1; fi
 
   build-rs:
     needs: should-deploy-rs

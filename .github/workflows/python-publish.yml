@@ -9,7 +9,21 @@ permissions:
   contents: read
 
 jobs:
+  should-deploy-rs:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.check_deploy.outputs.deploy }}
+    steps:
+      - id: check_deploy
+      - uses: actions/checkout@v3
+      - name: Check if sqlglotrs should be deployed
+        run: |
+          bash ./.github/workflows/should_deploy_sqlglotrs.sh
+          if [ $? -eq 0]; then echo "deploy=true"; else echo "deploy=false"; fi >> "$GITHUB_OUTPUT"
+
   build-rs:
+    needs: should-deploy-rs
+    if: ${{ needs.should-deploy-rs.outputs.deploy == 'true' }}
     strategy:
       matrix:
         os: [linux, macos, windows]
@@ -51,6 +65,8 @@ jobs:
         path: sqlglotrs/dist
 
   sdist-rs:
+    needs: should-deploy-rs
+    if: ${{ needs.should-deploy-rs.outputs.deploy == 'true' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -67,8 +83,9 @@ jobs:
         path: sqlglotrs/dist
 
   deploy-rs:
+    needs: [should-deploy-rs, build-rs, sdist-rs]
+    if: ${{ needs.should-deploy-rs.outputs.deploy == 'true' }}
     runs-on: ubuntu-latest
-    needs: [build-rs, sdist-rs]
     steps:
     - uses: actions/download-artifact@v3
       with:

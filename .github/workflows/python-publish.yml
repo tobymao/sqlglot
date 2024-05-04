@@ -15,10 +15,10 @@ jobs:
       deploy: ${{ steps.set_deploy.outputs.deploy }}
     steps:
       - uses: actions/checkout@v3
-      - name: Check if sqlglotrs should be deployed
-        run: bash ./.github/workflows/should_deploy_sqlglotrs.sh
-      - id: set_deploy
-        run: echo "deploy=true" >> $GITHUB_OUTPUT
+      - id: check_deploy
+        run: |
+          bash ./.github/workflows/should_deploy_sqlglotrs.sh
+          if [ $? -eq 0 ]; then echo "deploy=true" >> $GITHUB_OUTPUT; fi
 
   build-rs:
     needs: should-deploy-rs

@@ -862,7 +862,10 @@ class Snowflake(Dialect):
         }
 
         UNSUPPORTED_VALUES_EXPRESSIONS = {
+            exp.Map,
+            exp.StarMap,
             exp.Struct,
+            exp.VarMap,
         }
 
         def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:

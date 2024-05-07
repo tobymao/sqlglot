@@ -1,6 +1,21 @@
 Changelog
 =========
 
+## [v23.14.0] - 2024-05-07
+### :boom: BREAKING CHANGES
+- due to [`258ad3b`](https://github.com/tobymao/sqlglot/commit/258ad3bbf73f55d02ed78a93fa0f16d4630159e3) - parse column instead of identifier for SET assignment LHS *(PR [#3417](https://github.com/tobymao/sqlglot/pull/3417) by [@georgesittas](https://github.com/georgesittas))*:
+
+  parse column instead of identifier for SET assignment LHS (#3417)
+
+
+### :bug: Bug Fixes
+- [`258ad3b`](https://github.com/tobymao/sqlglot/commit/258ad3bbf73f55d02ed78a93fa0f16d4630159e3) - parse column instead of identifier for SET assignment LHS *(PR [#3417](https://github.com/tobymao/sqlglot/pull/3417) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3415](https://github.com/tobymao/sqlglot/issues/3415) opened by [@tekumara](https://github.com/tekumara)*
+- [`17c31da`](https://github.com/tobymao/sqlglot/commit/17c31da9e159dc1cdd91bd6df38c43606bdc48c9) - **lineage**: get rid of comments in Node names *(PR [#3418](https://github.com/tobymao/sqlglot/pull/3418) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#3414](https://github.com/tobymao/sqlglot/issues/3414) opened by [@jaspev123](https://github.com/jaspev123)*
+- [`ea197ea`](https://github.com/tobymao/sqlglot/commit/ea197eae2fcdbeba395b53cf4864fc2e44134c71) - **snowflake**: ensure OBJECT_CONSTRUCT is not generated inside of VALUES *(PR [#3419](https://github.com/tobymao/sqlglot/pull/3419) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.13.7] - 2024-05-04
 ### :wrench: Chores
 - [`4dbcd4f`](https://github.com/tobymao/sqlglot/commit/4dbcd4f7147204b7bafa32d14dfe615882562b6b) - refactor publish workflow for sqlglotrs releasing *(commit by [@georgesittas](https://github.com/georgesittas))*
@@ -3488,3 +3503,4 @@ Changelog
 [v23.13.5]: https://github.com/tobymao/sqlglot/compare/v23.13.4...v23.13.5
 [v23.13.6]: https://github.com/tobymao/sqlglot/compare/v23.13.5...v23.13.6
 [v23.13.7]: https://github.com/tobymao/sqlglot/compare/v23.13.6...v23.13.7
+[v23.14.0]: https://github.com/tobymao/sqlglot/compare/v23.13.7...v23.14.0

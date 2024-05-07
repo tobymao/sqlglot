@@ -5974,7 +5974,7 @@ class Parser(metaclass=_Parser):
         if kind in ("GLOBAL", "SESSION") and self._match_text_seq("TRANSACTION"):
             return self._parse_set_transaction(global_=kind == "GLOBAL")
 
-        left = self._parse_primary() or self._parse_id_var()
+        left = self._parse_primary() or self._parse_column()
         assignment_delimiter = self._match_texts(("=", "TO"))
 
         if not left or (self.SET_REQUIRES_ASSIGNMENT_DELIMITER and not assignment_delimiter):

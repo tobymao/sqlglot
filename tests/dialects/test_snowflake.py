@@ -10,14 +10,6 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
-        self.validate_identity(
-            "MERGE INTO my_db AS ids USING (SELECT new_id FROM my_model WHERE NOT col IS NULL) AS new_ids ON ids.type = new_ids.type AND ids.source = new_ids.source WHEN NOT MATCHED THEN INSERT VALUES (new_ids.new_id)"
-        )
-        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
-        self.validate_identity(
-            "INSERT OVERWRITE TABLE t SELECT 1", "INSERT OVERWRITE INTO t SELECT 1"
-        )
-        self.validate_identity("SELECT rename, replace")
         expr = parse_one("SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
         expr.selects[0].assert_is(exp.AggFunc)
         self.assertEqual(expr.sql(dialect="snowflake"), "SELECT APPROX_TOP_K(C4, 3, 5) FROM t")
@@ -43,6 +35,9 @@ WHERE
   )""",
         )
 
+        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
+        self.validate_identity("SELECT rename, replace")
+        self.validate_identity("ALTER TABLE table1 SET TAG foo.bar = 'baz'")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS OBJECT(a CHAR NOT NULL))")
@@ -95,6 +90,12 @@ WHERE
         self.validate_identity("SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', col)")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
         self.validate_identity("SELECT MATCH_CONDITION")
+        self.validate_identity(
+            "MERGE INTO my_db AS ids USING (SELECT new_id FROM my_model WHERE NOT col IS NULL) AS new_ids ON ids.type = new_ids.type AND ids.source = new_ids.source WHEN NOT MATCHED THEN INSERT VALUES (new_ids.new_id)"
+        )
+        self.validate_identity(
+            "INSERT OVERWRITE TABLE t SELECT 1", "INSERT OVERWRITE INTO t SELECT 1"
+        )
         self.validate_identity(
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )

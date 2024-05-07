@@ -503,7 +503,7 @@ class TestParser(unittest.TestCase):
 
         self.assertIsInstance(set_item, exp.SetItem)
         self.assertIsInstance(set_item.this, exp.EQ)
-        self.assertIsInstance(set_item.this.this, exp.Identifier)
+        self.assertIsInstance(set_item.this.this, exp.Column)
         self.assertIsInstance(set_item.this.expression, exp.Literal)
 
         self.assertEqual(set_item.args.get("kind"), "SESSION")

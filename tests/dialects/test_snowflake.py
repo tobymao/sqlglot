@@ -1436,6 +1436,9 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
     def test_values(self):
+        select = exp.select("*").from_("values (map(['a'], [1]))")
+        self.assertEqual(select.sql("snowflake"), "SELECT * FROM (SELECT OBJECT_CONSTRUCT('a', 1))")
+
         self.validate_all(
             'SELECT "c0", "c1" FROM (VALUES (1, 2), (3, 4)) AS "t0"("c0", "c1")',
             read={

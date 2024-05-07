@@ -487,3 +487,11 @@ class TestLineage(unittest.TestCase):
         downstream = node.downstream[0]
         self.assertEqual(downstream.name, "z.a")
         self.assertEqual(downstream.source.sql(), "SELECT y.a AS a, y.b AS b, y.c AS c FROM y AS y")
+
+    def test_node_name_doesnt_contain_comment(self) -> None:
+        sql = "SELECT * FROM (SELECT x /* c */ FROM t1) AS t2"
+        node = lineage("x", sql)
+
+        self.assertEqual(len(node.downstream), 1)
+        self.assertEqual(len(node.downstream[0].downstream), 1)
+        self.assertEqual(node.downstream[0].downstream[0].name, "t1.x")

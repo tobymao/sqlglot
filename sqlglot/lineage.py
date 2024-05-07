@@ -229,7 +229,9 @@ def to_node(
         for source in scope.sources.values():
             if isinstance(source, Scope):
                 source = source.expression
-            node.downstream.append(Node(name=select.sql(), source=source, expression=source))
+            node.downstream.append(
+                Node(name=select.sql(comments=False), source=source, expression=source)
+            )
 
     # Find all columns that went into creating this one to list their lineage nodes.
     source_columns = set(find_all_in_scope(select, exp.Column))
@@ -278,7 +280,9 @@ def to_node(
             # it means this column's lineage is unknown. This can happen if the definition of a source used in a query
             # is not passed into the `sources` map.
             source = source or exp.Placeholder()
-            node.downstream.append(Node(name=c.sql(), source=source, expression=source))
+            node.downstream.append(
+                Node(name=c.sql(comments=False), source=source, expression=source)
+            )
 
     return node
 

@@ -578,6 +578,21 @@ class ClickHouse(Dialect):
                 granularity=granularity,
             )
 
+        def _parse_partition(self) -> t.Optional[exp.Partition]:
+            # https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#how-to-set-partition-expression
+            if not self._match(TokenType.PARTITION):
+                return None
+
+            if self._match_text_seq("ID"):
+                # Corresponds to the PARTITION ID <string_value> syntax
+                expressions: t.List[exp.Expression] = [
+                    self.expression(exp.PartitionId, this=self._parse_string())
+                ]
+            else:
+                expressions = self._parse_expressions()
+
+            return self.expression(exp.Partition, expressions=expressions)
+
     class Generator(generator.Generator):
         QUERY_HINTS = False
         STRUCT_DELIMITER = ("(", ")")
@@ -828,3 +843,9 @@ class ClickHouse(Dialect):
             granularity = f" GRANULARITY {granularity}" if granularity else ""
 
             return f"INDEX{this}{expr}{index_type}{granularity}"
+
+        def partition_sql(self, expression: exp.Partition) -> str:
+            return f"PARTITION {self.expressions(expression, flat=True)}"
+
+        def partitionid_sql(self, expression: exp.PartitionId) -> str:
+            return f"ID {self.sql(expression.this)}"

@@ -2177,6 +2177,11 @@ class PartitionRange(Expression):
     arg_types = {"this": True, "expression": True}
 
 
+# https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#how-to-set-partition-expression
+class PartitionId(Expression):
+    arg_types = {"this": True}
+
+
 class Fetch(Expression):
     arg_types = {
         "direction": False,

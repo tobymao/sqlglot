@@ -832,6 +832,18 @@ WHERE
                 "snowflake": "SELECT LISTAGG(col1, ', ') WITHIN GROUP (ORDER BY col2) FROM t",
             },
         )
+        self.validate_all(
+            "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+            read={
+                "trino": "SELECT APPROX_PERCENTILE(a, 1, 0.5, 0.001) FROM t",
+                "presto": "SELECT APPROX_PERCENTILE(a, 1, 0.5, 0.001) FROM t",
+            },
+            write={
+                "trino": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+                "presto": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+                "snowflake": "SELECT APPROX_PERCENTILE(a, 0.5) FROM t",
+            },
+        )
 
     def test_null_treatment(self):
         self.validate_all(

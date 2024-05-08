@@ -1678,6 +1678,7 @@ class Parser(metaclass=_Parser):
         index = self._index
 
         while self._curr:
+            self._match(TokenType.COMMA)
             if self._match_text_seq("INCREMENT"):
                 self._match_text_seq("BY")
                 self._match_text_seq("=")

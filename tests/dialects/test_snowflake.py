@@ -1223,6 +1223,14 @@ WHERE
             "CREATE OR REPLACE FUNCTION my_udtf(foo BOOLEAN) RETURNS TABLE(col1 ARRAY(INT)) AS $$ WITH t AS (SELECT CAST([1, 2, 3] AS ARRAY(INT)) AS c) SELECT c FROM t $$",
             "CREATE OR REPLACE FUNCTION my_udtf(foo BOOLEAN) RETURNS TABLE (col1 ARRAY(INT)) AS ' WITH t AS (SELECT CAST([1, 2, 3] AS ARRAY(INT)) AS c) SELECT c FROM t '",
         )
+        self.validate_identity(
+            "CREATE SEQUENCE seq1 WITH START=1, INCREMENT=1 ORDER",
+            "CREATE SEQUENCE seq1 START=1 INCREMENT BY 1 ORDER",
+        )
+        self.validate_identity(
+            "CREATE SEQUENCE seq1 WITH START=1 INCREMENT=1 ORDER",
+            "CREATE SEQUENCE seq1 START=1 INCREMENT=1 ORDER",
+        )
 
         self.validate_all(
             "CREATE TABLE orders_clone CLONE orders",

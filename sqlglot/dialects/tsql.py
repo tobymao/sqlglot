@@ -474,6 +474,8 @@ class TSQL(Dialect):
             "OPTION": TokenType.OPTION,
         }
 
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.END}
+
     class Parser(parser.Parser):
         SET_REQUIRES_ASSIGNMENT_DELIMITER = False
         LOG_DEFAULTS_TO_LN = True
@@ -522,11 +524,6 @@ class TSQL(Dialect):
         RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
             TokenType.TABLE,
             *parser.Parser.TYPE_TOKENS,
-        }
-
-        STATEMENT_PARSERS = {
-            **parser.Parser.STATEMENT_PARSERS,
-            TokenType.END: lambda self: self._parse_command(),
         }
 
         def _parse_options(self) -> t.Optional[t.List[exp.Expression]]:

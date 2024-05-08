@@ -1471,7 +1471,7 @@ class Parser(metaclass=_Parser):
         if self._match_set(self.STATEMENT_PARSERS):
             return self.STATEMENT_PARSERS[self._prev.token_type](self)
 
-        if self._match_set(Tokenizer.COMMANDS):
+        if self._match_set(self.dialect.tokenizer.COMMANDS):
             return self._parse_command()
 
         expression = self._parse_expression()

@@ -251,7 +251,7 @@ class MySQL(Dialect):
             "@@": TokenType.SESSION_PARAMETER,
         }
 
-        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.REPLACE} - {TokenType.SHOW}
 
     class Parser(parser.Parser):
         FUNC_TOKENS = {

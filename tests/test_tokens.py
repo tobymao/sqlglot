@@ -96,6 +96,9 @@ x"""
                     (TokenType.NUMBER, "1"),
                 ],
             )
+    def test_top_token(self):
+        tokens = Tokenizer().tokenize("TOP")
+        self.assertEqual(tokens[0].token_type,TokenType.TOP)
 
     def test_command(self):
         tokens = Tokenizer().tokenize("SHOW;")

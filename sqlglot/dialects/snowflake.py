@@ -345,6 +345,7 @@ class Snowflake(Dialect):
 
         FUNCTIONS = {
             **parser.Parser.FUNCTIONS,
+            "APPROX_PERCENTILE": exp.ApproxQuantile.from_arg_list,
             "ARRAYAGG": exp.ArrayAgg.from_arg_list,
             "ARRAY_CONSTRUCT": exp.Array.from_arg_list,
             "ARRAY_CONTAINS": lambda args: exp.ArrayContains(
@@ -1051,3 +1052,11 @@ class Snowflake(Dialect):
                 return f"{option} = ({values})"
 
             return super().copyparameter_sql(expression)
+
+        def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
+            if expression.args.get("weight") or expression.args.get("accuracy"):
+                self.unsupported(
+                    "APPROX_PERCENTILE with weight and/or accuracy arguments are not supported in Snowflake"
+                )
+
+            return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))

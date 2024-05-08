@@ -753,9 +753,6 @@ class Snowflake(Dialect):
         TRANSFORMS = {
             **generator.Generator.TRANSFORMS,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
-            exp.ApproxQuantile: lambda self, e: self.func(
-                "APPROX_PERCENTILE", e.this, e.args.get("quantile")
-            ),
             exp.ArgMax: rename_func("MAX_BY"),
             exp.ArgMin: rename_func("MIN_BY"),
             exp.Array: inline_array_sql,
@@ -1055,3 +1052,11 @@ class Snowflake(Dialect):
                 return f"{option} = ({values})"
 
             return super().copyparameter_sql(expression)
+
+        def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
+            if expression.args.get("weight") or expression.args.get("accuracy"):
+                self.unsupported(
+                    "APPROX_PERCENTILE with weight and/or accuracy arguments are not supported in Snowflake"
+                )
+
+            return self.func("APPROX_PERCENTILE", expression.this, expression.args.get("quantile"))

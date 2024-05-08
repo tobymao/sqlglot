@@ -74,6 +74,17 @@ def build_extract_json_with_path(expr_type: t.Type[E]) -> t.Callable[[t.List, Di
     return _builder
 
 
+def build_mod(args: t.List) -> exp.Mod:
+    this = seq_get(args, 0)
+    expression = seq_get(args, 1)
+
+    # Wrap the LHS if it's not a single node, e.g. MOD(a + 1, 7) -> (a + 1) % 7
+    if isinstance(this, exp.Binary):
+        this = exp.Paren(this=this)
+
+    return exp.Mod(this=this, expression=expression)
+
+
 class _Parser(type):
     def __new__(cls, clsname, bases, attrs):
         klass = super().__new__(cls, clsname, bases, attrs)
@@ -123,7 +134,7 @@ class Parser(metaclass=_Parser):
         "LOG": build_logarithm,
         "LOG2": lambda args: exp.Log(this=exp.Literal.number(2), expression=seq_get(args, 0)),
         "LOG10": lambda args: exp.Log(this=exp.Literal.number(10), expression=seq_get(args, 0)),
-        "MOD": lambda args: exp.Mod(this=seq_get(args, 0), expression=seq_get(args, 1)),
+        "MOD": build_mod,
         "TIME_TO_TIME_STR": lambda args: exp.Cast(
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DataType.Type.TEXT),

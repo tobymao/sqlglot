@@ -1681,6 +1681,26 @@ class TestDialect(Validator):
                 "tsql": "CAST(a AS FLOAT) / b",
             },
         )
+        self.validate_all(
+            "MOD(8 - 1 + 7, 7)",
+            write={
+                "": "(8 - 1 + 7) % 7",
+                "hive": "(8 - 1 + 7) % 7",
+                "presto": "(8 - 1 + 7) % 7",
+                "snowflake": "(8 - 1 + 7) % 7",
+                "bigquery": "MOD(8 - 1 + 7, 7)",
+            },
+        )
+        self.validate_all(
+            "MOD(a, b)",
+            write={
+                "": "a % b",
+                "hive": "a % b",
+                "presto": "a % b",
+                "snowflake": "a % b",
+                "bigquery": "MOD(a, b)",
+            },
+        )
 
     def test_typeddiv(self):
         typed_div = exp.Div(this=exp.column("a"), expression=exp.column("b"), typed=True)

@@ -353,6 +353,11 @@ class ClickHouse(Dialect):
             "CODEC": lambda self: self._parse_compress(),
         }
 
+        ALTER_PARSERS = {
+            **parser.Parser.ALTER_PARSERS,
+            "REPLACE": lambda self: self._parse_alter_table_replace(),
+        }
+
         SCHEMA_UNNAMED_CONSTRAINTS = {
             *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
             "INDEX",
@@ -592,6 +597,16 @@ class ClickHouse(Dialect):
                 expressions = self._parse_expressions()
 
             return self.expression(exp.Partition, expressions=expressions)
+
+        def _parse_alter_table_replace(self) -> t.Optional[exp.Expression]:
+            partition = self._parse_partition()
+
+            if not partition or not self._match(TokenType.FROM):
+                return None
+
+            return self.expression(
+                exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
+            )
 
     class Generator(generator.Generator):
         QUERY_HINTS = False
@@ -849,3 +864,8 @@ class ClickHouse(Dialect):
 
         def partitionid_sql(self, expression: exp.PartitionId) -> str:
             return f"ID {self.sql(expression.this)}"
+
+        def replacepartition_sql(self, expression: exp.ReplacePartition) -> str:
+            return (
+                f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
+            )

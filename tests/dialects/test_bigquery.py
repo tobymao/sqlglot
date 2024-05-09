@@ -1470,6 +1470,7 @@ OPTIONS (
             with self.subTest(f"Testing BigQuery roundtrip of modulo operation: {sql}"):
                 self.validate_identity(sql)
 
+        self.validate_identity("SELECT MOD((SELECT 1), 2)")
         self.validate_identity(
             "MOD((a + 1), b)",
             "MOD(a + 1, b)",

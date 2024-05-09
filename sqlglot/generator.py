@@ -8,7 +8,7 @@ from functools import reduce
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
-from sqlglot.helper import apply_index_offset, csv, seq_get
+from sqlglot.helper import apply_index_offset, csv, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -539,6 +539,7 @@ class Generator(metaclass=_Generator):
         "unsupported_messages",
         "_escaped_quote_end",
         "_escaped_identifier_end",
+        "_next_name",
     )
 
     def __init__(
@@ -583,6 +584,8 @@ class Generator(metaclass=_Generator):
         self._escaped_identifier_end: str = (
             self.dialect.tokenizer_class.IDENTIFIER_ESCAPES[0] + self.dialect.IDENTIFIER_END
         )
+
+        self._next_name = name_sequence("_t")
 
     def generate(self, expression: exp.Expression, copy: bool = True) -> str:
         """
@@ -1095,7 +1098,7 @@ class Generator(metaclass=_Generator):
             self.unsupported("Named columns are not supported in table alias.")
 
         if not alias and not self.dialect.UNNEST_COLUMN_ONLY:
-            alias = "_t"
+            alias = self._next_name()
 
         return f"{alias}{columns}"
 

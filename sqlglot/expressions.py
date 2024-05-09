@@ -4191,6 +4191,11 @@ class DropPartition(Expression):
     arg_types = {"expressions": True, "exists": False}
 
 
+# https://clickhouse.com/docs/en/sql-reference/statements/alter/partition#replace-partition
+class ReplacePartition(Expression):
+    arg_types = {"expression": True, "source": True}
+
+
 # Binary expressions like (ADD a b)
 class Binary(Condition):
     arg_types = {"this": True, "expression": True}

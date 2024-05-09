@@ -432,6 +432,13 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("ALTER TABLE visits DROP PARTITION ID '201901'")
 
+        self.validate_identity("ALTER TABLE visits REPLACE PARTITION 201901 FROM visits_tmp")
+        self.validate_identity("ALTER TABLE visits REPLACE PARTITION ALL FROM visits_tmp")
+        self.validate_identity(
+            "ALTER TABLE visits REPLACE PARTITION tuple(toYYYYMM(toDate('2019-01-25'))) FROM visits_tmp"
+        )
+        self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
+
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")

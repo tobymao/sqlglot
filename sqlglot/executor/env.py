@@ -240,5 +240,5 @@ ENV = {
         for x in range(0, len(args), 2)
         if (args[x + 1] is not None and args[x] is not None)
     },
-    "UNIXTOTIME": null_if_any(lambda arg: datetime.datetime.utcfromtimestamp(arg)),
+    "UNIXTOTIME": null_if_any(lambda arg: datetime.datetime.fromtimestamp(arg, datetime.UTC)),
 }

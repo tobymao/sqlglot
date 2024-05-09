@@ -4,6 +4,7 @@ from sqlglot import exp, parse_one
 from sqlglot.expressions import Func
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer
+from sqlglot.generator import Generator
 
 
 class TestGenerator(unittest.TestCase):
@@ -43,3 +44,10 @@ class TestGenerator(unittest.TestCase):
         assert parse_one("X").sql(identify="safe") == "X"
         assert parse_one("x as 1").sql(identify="safe") == '"x" AS "1"'
         assert parse_one("X as 1").sql(identify="safe") == 'X AS "1"'
+
+    def test_pad_comment(self):
+        self.assertEqual(Generator().pad_comment(""), "")
+        self.assertEqual(Generator().pad_comment(" leading"), " leading ")
+        self.assertEqual(Generator().pad_comment("trailing "), " trailing ")
+        self.assertEqual(Generator().pad_comment(" leading and trailing "), " leading and trailing ")
+        self.assertEqual(Generator().pad_comment("no padding"), " no padding ")

@@ -2979,6 +2979,19 @@ class Generator(metaclass=_Generator):
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
 
+    def alterdiststyle_sql(self, expression: exp.AlterDistStyle) -> str:
+        this = self.sql(expression, "this")
+        if not isinstance(expression.this, exp.Var):
+            this = f"KEY DISTKEY {this}"
+        return f"ALTER DISTSTYLE {this}"
+
+    def altersortkey_sql(self, expression: exp.AlterSortKey) -> str:
+        compound = " COMPOUND" if expression.args.get("compound") else ""
+        this = self.sql(expression, "this")
+        expressions = self.expressions(expression, flat=True)
+        expressions = f"({expressions})" if expressions else ""
+        return f"ALTER{compound} SORTKEY {this or expressions}"
+
     def renametable_sql(self, expression: exp.RenameTable) -> str:
         if not self.RENAME_TABLE_WITH_DB:
             # Remove db from tables

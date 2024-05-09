@@ -498,7 +498,22 @@ FROM (
             },
         )
 
-    def test_rename_table(self):
+    def test_alter_table(self):
+        self.validate_identity("ALTER TABLE s.t ALTER SORTKEY (c)")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY AUTO")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY NONE")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY (c1, c2)")
+        self.validate_identity("ALTER TABLE t ALTER SORTKEY (c1, c2)")
+        self.validate_identity("ALTER TABLE t ALTER COMPOUND SORTKEY (c1, c2)")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE ALL")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE EVEN")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE AUTO")
+        self.validate_identity("ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c")
+        self.validate_identity(
+            "ALTER TABLE t ALTER DISTKEY c",
+            "ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c",
+        )
+
         self.validate_all(
             "ALTER TABLE db.t1 RENAME TO db.t2",
             write={

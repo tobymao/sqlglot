@@ -878,5 +878,6 @@ class ClickHouse(Dialect):
             return f"ID {self.sql(expression.this)}"
 
         def replacepartition_sql(self, expression: exp.ReplacePartition) -> str:
-            return f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
-}"
+            return (
+                f"REPLACE {self.sql(expression.expression)} FROM {self.sql(expression, 'source')}"
+            )

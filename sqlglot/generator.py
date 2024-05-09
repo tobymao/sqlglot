@@ -2843,7 +2843,7 @@ class Generator(metaclass=_Generator):
                 stack.append(self.expressions(expression, sep=f" {op} "))
             else:
                 stack.append(expression.right)
-                if expression.comments:
+                if expression.comments and self.comments:
                     for comment in expression.comments:
                         op += f" /*{self.pad_comment(comment)}*/"
                 stack.extend((op, expression.left))

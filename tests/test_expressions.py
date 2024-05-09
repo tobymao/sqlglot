@@ -834,21 +834,22 @@ class TestExpressions(unittest.TestCase):
             b AS B,
             c, /*comment*/
             d AS D, -- another comment
-            CAST(x AS INT) -- final comment
+            CAST(x AS INT), -- yet another comment
+            y AND /* foo */ w AS E -- final comment
         FROM foo
         """
         expression = parse_one(sql)
         self.assertEqual(
             [e.alias_or_name for e in expression.expressions],
-            ["a", "B", "c", "D", "x"],
+            ["a", "B", "c", "D", "x", "E"],
         )
         self.assertEqual(
             expression.sql(),
-            "SELECT a, b AS B, c /* comment */, d AS D /* another comment */, CAST(x AS INT) /* final comment */ FROM foo",
+            "SELECT a, b AS B, c /* comment */, d AS D /* another comment */, CAST(x AS INT) /* yet another comment */, y AND /* foo */ w AS E /* final comment */ FROM foo",
         )
         self.assertEqual(
             expression.sql(comments=False),
-            "SELECT a, b AS B, c, d AS D, CAST(x AS INT) FROM foo",
+            "SELECT a, b AS B, c, d AS D, CAST(x AS INT), y AND w AS E FROM foo",
         )
         self.assertEqual(
             expression.sql(pretty=True, comments=False),
@@ -857,7 +858,8 @@ class TestExpressions(unittest.TestCase):
   b AS B,
   c,
   d AS D,
-  CAST(x AS INT)
+  CAST(x AS INT),
+  y AND w AS E
 FROM foo""",
         )
         self.assertEqual(
@@ -867,7 +869,8 @@ FROM foo""",
   b AS B,
   c, /* comment */
   d AS D, /* another comment */
-  CAST(x AS INT) /* final comment */
+  CAST(x AS INT), /* yet another comment */
+  y AND /* foo */ w AS E /* final comment */
 FROM foo""",
         )
 

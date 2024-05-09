@@ -4,7 +4,6 @@ from sqlglot import exp, parse_one
 from sqlglot.expressions import Func
 from sqlglot.parser import Parser
 from sqlglot.tokens import Tokenizer
-from sqlglot.generator import Generator
 
 
 class TestGenerator(unittest.TestCase):

@@ -647,9 +647,11 @@ class Generator(metaclass=_Generator):
     def seg(self, sql: str, sep: str = " ") -> str:
         return f"{self.sep(sep)}{sql}"
 
-    def pad_comment(self, comment: str) -> str:
-        comment = " " + comment if comment[0].strip() else comment
-        comment = comment + " " if comment[-1].strip() else comment
+    @staticmethod
+    def pad_comment(comment: str) -> str:
+        if comment:
+            comment = " " + comment if comment[0].strip() else comment
+            comment = comment + " " if comment[-1].strip() else comment
         return comment
 
     def maybe_comment(

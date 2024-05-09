@@ -1195,7 +1195,7 @@ WHERE
         self.validate_identity("CREATE TABLE IDENTIFIER('foo') (COLUMN1 VARCHAR, COLUMN2 VARCHAR)")
         self.validate_identity("CREATE TABLE IDENTIFIER($foo) (col1 VARCHAR, col2 VARCHAR)")
         self.validate_identity(
-            "DROP function my_udf (OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN)))"
+            "DROP FUNCTION my_udf (OBJECT(city VARCHAR, zipcode DECIMAL, val ARRAY(BOOLEAN)))"
         )
         self.validate_identity(
             "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))"

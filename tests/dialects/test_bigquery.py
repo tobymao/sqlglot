@@ -629,6 +629,7 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT TO_HEX(MD5(some_string))",
             read={
+                "": "SELECT MD5(some_string)",
                 "duckdb": "SELECT MD5(some_string)",
                 "spark": "SELECT MD5(some_string)",
             },
@@ -636,20 +637,71 @@ class TestBigQuery(Validator):
                 "": "SELECT MD5(some_string)",
                 "bigquery": "SELECT TO_HEX(MD5(some_string))",
                 "duckdb": "SELECT MD5(some_string)",
+                "presto": "SELECT LOWER(TO_HEX(MD5(some_string)))",
+                "trino": "SELECT LOWER(TO_HEX(MD5(some_string)))",
+                "clickhouse": "SELECT LOWER(HEX(MD5(some_string)))",
+            },
+        )
+        self.validate_all(
+            "MD5_DIGEST(x)",
+            write={
+                "": "MD5_DIGEST(x)",
+                "bigquery": "MD5(x)",
+                "hive": "UNHEX(MD5(x))",
+                "spark": "UNHEX(MD5(x))",
+                "presto": "MD5(x)",
+                "trino": "MD5(x)",
+            },
+        )
+        self.validate_all(
+            "SHA1(x)",
+            read={
+                "": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+            write={
+                "": "SHA(x)",
+                "bigquery": "SHA1(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+        )
+        self.validate_all(
+            "SHA1(x)",
+            read={
+                "": "SHA(x)",
             },
         )
         self.validate_all(
             "SHA256(x)",
+            read={
+                "": "SHA2(x, 256)",
+                "bigquery": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
+            },
             write={
+                "": "SHA2(x, 256)",
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
             },
         )
         self.validate_all(
             "SHA512(x)",
+            read={
+                "": "SHA2(x, 512)",
+                "bigquery": "SHA512(x)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
+            },
             write={
+                "": "SHA2(x, 512)",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
             },
         )
         self.validate_all(
@@ -1474,4 +1526,32 @@ OPTIONS (
         self.validate_identity(
             "MOD((a + 1), b)",
             "MOD(a + 1, b)",
+        )
+
+    def test_encoding_functions(self):
+        self.validate_all(
+            "LOWER(TO_HEX(x))",
+            write={
+                "": "HEX(x)",
+                "bigquery": "TO_HEX(x)",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+            },
+        )
+        self.validate_all(
+            "TO_HEX(x)",
+            read={
+                "": "HEX(x)",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+            },
+            write={
+                "": "HEX(x)",
+                "bigquery": "TO_HEX(x)",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+            },
         )

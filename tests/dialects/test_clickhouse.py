@@ -863,3 +863,96 @@ LIFETIME(MIN 0 MAX 0)""",
         )
 
         parse_one("foobar(x)").assert_is(exp.Anonymous)
+
+    def test_encoding_functions(self):
+        self.validate_all(
+            "LOWER(HEX(x))",
+            read={
+                "": "HEX(x)",
+            },
+        )
+        self.validate_all(
+            "LOWER(HEX(x))",
+            read={
+                "": "LOWER(HEX(x))",
+                "bigquery": "TO_HEX(x)",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+            },
+            write={
+                "": "HEX(x)",
+                "bigquery": "TO_HEX(x)",
+                "presto": "LOWER(TO_HEX(x))",
+                "trino": "LOWER(TO_HEX(x))",
+                "clickhouse": "LOWER(HEX(x))",
+            },
+        )
+        self.validate_all(
+            "HEX(x)",
+            read={
+                "": "UPPER(HEX(x))",
+                "presto": "TO_HEX(x)",
+                "trino": "TO_HEX(x)",
+                "clickhouse": "HEX(x)",
+            },
+            write={
+                "": "UPPER(HEX(x))",
+                "bigquery": "UPPER(TO_HEX(x))",
+                "presto": "TO_HEX(x)",
+                "trino": "TO_HEX(x)",
+                "clickhouse": "HEX(x)",
+            },
+        )
+
+    def test_hash_functions(self):
+        self.validate_all(
+            "SHA1(x)",
+            read={
+                "": "SHA(x)",
+            },
+        )
+        self.validate_all(
+            "SHA1(x)",
+            read={
+                "": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+            write={
+                "": "SHA(x)",
+                "bigquery": "SHA1(x)",
+                "presto": "SHA1(x)",
+                "trino": "SHA1(x)",
+            },
+        )
+        self.validate_all(
+            "SHA256(x)",
+            read={
+                "": "SHA2(x, 256)",
+                "bigquery": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
+            },
+            write={
+                "": "SHA2(x, 256)",
+                "bigquery": "SHA256(x)",
+                "presto": "SHA256(x)",
+                "trino": "SHA256(x)",
+            },
+        )
+
+        self.validate_all(
+            "SHA512(x)",
+            read={
+                "": "SHA2(x, 512)",
+                "bigquery": "SHA512(x)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
+            },
+            write={
+                "": "SHA2(x, 512)",
+                "bigquery": "SHA512(x)",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
+            },
+        )

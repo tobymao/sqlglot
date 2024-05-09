@@ -20,6 +20,7 @@ from sqlglot.dialects.dialect import (
     no_timestamp_sql,
     regexp_extract_sql,
     rename_func,
+    wrap_func_by_func,
     right_to_substring_sql,
     struct_extract_sql,
     str_position_sql,
@@ -31,6 +32,9 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import apply_index_offset, seq_get
+from sqlglot.parser import (
+    build_lower,
+)
 from sqlglot.tokens import TokenType
 
 
@@ -202,6 +206,7 @@ class Presto(Dialect):
     TYPED_DIVISION = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: t.Optional[bool] = None
+    HEX_LOWERCASE: t.Optional[bool] = False
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289
@@ -276,11 +281,15 @@ class Presto(Dialect):
                 this=seq_get(args, 0), substr=seq_get(args, 1), instance=seq_get(args, 2)
             ),
             "TO_CHAR": _build_to_char,
-            "TO_HEX": exp.Hex.from_arg_list,
+            "TO_HEX": exp.UpperHex.from_arg_list,
             "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
             "TO_UTF8": lambda args: exp.Encode(
                 this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
             ),
+            "LOWER": build_lower,
+            "MD5": exp.MD5Digest.from_arg_list,
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
         }
 
         FUNCTION_PARSERS = parser.Parser.FUNCTION_PARSERS.copy()
@@ -381,7 +390,8 @@ class Presto(Dialect):
             exp.GroupConcat: lambda self, e: self.func(
                 "ARRAY_JOIN", self.func("ARRAY_AGG", e.this), e.args.get("separator")
             ),
-            exp.Hex: rename_func("TO_HEX"),
+            exp.Hex: wrap_func_by_func("LOWER", rename_func("TO_HEX")),
+            exp.UpperHex: rename_func("TO_HEX"),
             exp.If: if_sql(),
             exp.ILike: no_ilike_sql,
             exp.Initcap: _initcap_sql,
@@ -444,6 +454,12 @@ class Presto(Dialect):
                 [transforms.remove_within_group_for_percentiles]
             ),
             exp.Xor: bool_xor_sql,
+            exp.MD5: wrap_func_by_func("LOWER", wrap_func_by_func("TO_HEX", rename_func("MD5"))),
+            exp.MD5Digest: rename_func("MD5"),
+            exp.SHA: rename_func("SHA1"),
+            exp.SHA2: lambda self, e: self.func(
+                "SHA256" if e.text("length") == "256" else "SHA512", e.this
+            ),
         }
 
         RESERVED_KEYWORDS = {

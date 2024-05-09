@@ -25,6 +25,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     ts_or_ds_add_cast,
     unit_to_var,
+    wrap_func_by_func,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -604,6 +605,7 @@ class BigQuery(Dialect):
             exp.GenerateSeries: rename_func("GENERATE_ARRAY"),
             exp.GroupConcat: rename_func("STRING_AGG"),
             exp.Hex: rename_func("TO_HEX"),
+            exp.UpperHex: wrap_func_by_func("UPPER", rename_func("TO_HEX")),
             exp.If: if_sql(false_value="NULL"),
             exp.ILike: no_ilike_sql,
             exp.IntDiv: rename_func("DIV"),
@@ -633,6 +635,7 @@ class BigQuery(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
+            exp.SHA: rename_func("SHA1"),
             exp.SHA2: lambda self, e: self.func(
                 "SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),

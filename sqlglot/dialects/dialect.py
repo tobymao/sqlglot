@@ -290,6 +290,28 @@ class Dialect(metaclass=_Dialect):
         ) SELECT c FROM y;
     """
 
+    HEX_LOWERCASE: t.Optional[bool] = True
+    """
+    In most dialect, `HEX` function is producing a lowercase string by default. But in
+    some dialects, such as Presto and Trino, it produces an uppercase string. To prevent
+    this behavior, we can set this flag to `False`. In that case, `HEX` can be covered
+    by an additional lower function to convert it to lowercase if needed.
+
+    For example,
+        `SELECT HEX(x)`;
+
+        in Snowflake will be rewritten as the following one in Presto and Trino
+
+        `SELECT LOWER(TO_HEX(x))`;
+
+    In another example,
+        `SELECT HEX(x)`;
+
+        in Presto will be rewritten as the following one in Presto and Trino
+
+        `SELECT TO_HEX(x)`;
+    """
+
     # --- Autofilled ---
 
     tokenizer_class = Tokenizer
@@ -543,6 +565,12 @@ DialectType = t.Union[str, Dialect, t.Type[Dialect], None]
 
 def rename_func(name: str) -> t.Callable[[Generator, exp.Expression], str]:
     return lambda self, expression: self.func(name, *flatten(expression.args.values()))
+
+
+def wrap_func_by_func(
+    name: str, func: t.Callable[[Generator, exp.Expression], str]
+) -> t.Callable[[Generator, exp.Expression], str]:
+    return lambda self, expression: self.func(name, func(self, expression))
 
 
 def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -> str:

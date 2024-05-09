@@ -913,6 +913,13 @@ class Parser(metaclass=_Parser):
         "RENAME": lambda self: self._parse_alter_table_rename(),
     }
 
+    ALTER_ALTER_PARSERS = {
+        "DISTKEY": lambda self: self._parse_alter_diststyle(),
+        "DISTSTYLE": lambda self: self._parse_alter_diststyle(),
+        "SORTKEY": lambda self: self._parse_alter_sortkey(),
+        "COMPOUND": lambda self: self._parse_alter_sortkey(compound=True),
+    }
+
     SCHEMA_UNNAMED_CONSTRAINTS = {
         "CHECK",
         "EXCLUDE",
@@ -5824,7 +5831,12 @@ class Parser(metaclass=_Parser):
             return self._parse_wrapped_csv(self._parse_field_def, optional=True)
         return self._parse_wrapped_csv(self._parse_add_column, optional=True)
 
-    def _parse_alter_table_alter(self) -> exp.AlterColumn:
+    def _parse_alter_table_alter(self) -> t.Optional[exp.Expression]:
+        if self._match_texts(self.ALTER_ALTER_PARSERS):
+            return self.ALTER_ALTER_PARSERS[self._prev.text.upper()](self)
+
+        # Many dialects support the ALTER [COLUMN] syntax, so if there is no
+        # keyword after ALTER we default to parsing this statement
         self._match(TokenType.COLUMN)
         column = self._parse_field(any_token=True)
 
@@ -5843,6 +5855,27 @@ class Parser(metaclass=_Parser):
             dtype=self._parse_types(),
             collate=self._match(TokenType.COLLATE) and self._parse_term(),
             using=self._match(TokenType.USING) and self._parse_conjunction(),
+        )
+
+    def _parse_alter_diststyle(self) -> exp.AlterDistStyle:
+        if self._match_texts(("ALL", "EVEN", "AUTO")):
+            return self.expression(exp.AlterDistStyle, this=exp.var(self._prev.text.upper()))
+
+        self._match_text_seq("KEY", "DISTKEY")
+        return self.expression(exp.AlterDistStyle, this=self._parse_column())
+
+    def _parse_alter_sortkey(self, compound: t.Optional[bool] = None) -> exp.AlterSortKey:
+        if compound:
+            self._match_text_seq("SORTKEY")
+
+        if self._match(TokenType.L_PAREN, advance=False):
+            return self.expression(
+                exp.AlterSortKey, expressions=self._parse_wrapped_id_vars(), compound=compound
+            )
+
+        self._match_texts(("AUTO", "NONE"))
+        return self.expression(
+            exp.AlterSortKey, this=exp.var(self._prev.text.upper()), compound=compound
         )
 
     def _parse_alter_table_drop(self) -> t.List[exp.Expression]:

@@ -1623,6 +1623,15 @@ class AlterColumn(Expression):
     }
 
 
+# https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_TABLE.html
+class AlterDistStyle(Expression):
+    pass
+
+
+class AlterSortKey(Expression):
+    arg_types = {"this": False, "expressions": False, "compound": False}
+
+
 class RenameColumn(Expression):
     arg_types = {"this": True, "to": True, "exists": False}
 

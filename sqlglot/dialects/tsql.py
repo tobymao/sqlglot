@@ -1058,3 +1058,8 @@ class TSQL(Dialect):
             if isinstance(action, exp.RenameTable):
                 return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
             return super().altertable_sql(expression)
+
+        def drop_sql(self, expression: exp.Drop) -> str:
+            if expression.args["kind"] == "VIEW":
+                expression.this.set("catalog", None)
+            return super().drop_sql(expression)

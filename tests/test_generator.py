@@ -49,5 +49,7 @@ class TestGenerator(unittest.TestCase):
         self.assertEqual(Generator().pad_comment(""), "")
         self.assertEqual(Generator().pad_comment(" leading"), " leading ")
         self.assertEqual(Generator().pad_comment("trailing "), " trailing ")
-        self.assertEqual(Generator().pad_comment(" leading and trailing "), " leading and trailing ")
+        self.assertEqual(
+            Generator().pad_comment(" leading and trailing "), " leading and trailing "
+        )
         self.assertEqual(Generator().pad_comment("no padding"), " no padding ")

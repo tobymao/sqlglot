@@ -551,6 +551,13 @@ FROM x""",
             pretty=True,
         )
 
+        self.validate(
+            """SELECT X FROM  catalog.db.table WHERE Y 
+        --
+        AND Z""",
+            """SELECT X FROM catalog.db.table WHERE Y AND Z""",
+        )
+
     def test_types(self):
         self.validate("INT 1", "CAST(1 AS INT)")
         self.validate("VARCHAR 'x' y", "CAST('x' AS VARCHAR) AS y")

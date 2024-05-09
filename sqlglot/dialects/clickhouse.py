@@ -604,20 +604,8 @@ class ClickHouse(Dialect):
             if not partition or not self._match(TokenType.FROM):
                 return None
 
-            db = None
-            table = self._parse_id_var(any_token=False)
-
-            if self._match(TokenType.DOT):
-                db = table
-                table = self._parse_id_var(any_token=False)
-
-            if not table:
-                return None
-
             return self.expression(
-                exp.ReplacePartition,
-                expression=partition,
-                source=self.expression(exp.Table, this=table, db=db),
+                exp.ReplacePartition, expression=partition, source=self._parse_table_parts()
             )
 
     class Generator(generator.Generator):

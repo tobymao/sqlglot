@@ -271,6 +271,34 @@ class TestSchema(unittest.TestCase):
             "Table z must match the schema's nesting level: 2.",
         )
 
+        with self.assertRaises(SchemaError) as ctx:
+            MappingSchema(
+                {
+                    "catalog": {
+                        "db": {"tbl": {"col": "a"}},
+                    },
+                    "tbl2": {"col": "b"},
+                },
+            )
+        self.assertEqual(
+            str(ctx.exception),
+            "Table tbl2 must match the schema's nesting level: 3.",
+        )
+
+        with self.assertRaises(SchemaError) as ctx:
+            MappingSchema(
+                {
+                    "tbl2": {"col": "b"},
+                    "catalog": {
+                        "db": {"tbl": {"col": "a"}},
+                    },
+                },
+            )
+        self.assertEqual(
+            str(ctx.exception),
+            "Table catalog.db.tbl must match the schema's nesting level: 1.",
+        )
+
     def test_has_column(self):
         schema = MappingSchema({"x": {"c": "int"}})
         self.assertTrue(schema.has_column("x", exp.column("c")))

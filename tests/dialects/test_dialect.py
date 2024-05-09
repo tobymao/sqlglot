@@ -1692,13 +1692,13 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
-            "MOD(a, b)",
+            "MOD(a, b + 1)",
             write={
-                "": "a % b",
-                "hive": "a % b",
-                "presto": "a % b",
-                "snowflake": "a % b",
-                "bigquery": "MOD(a, b)",
+                "": "a % (b + 1)",
+                "hive": "a % (b + 1)",
+                "presto": "a % (b + 1)",
+                "snowflake": "a % (b + 1)",
+                "bigquery": "MOD(a, b + 1)",
             },
         )
 

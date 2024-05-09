@@ -79,8 +79,8 @@ def build_mod(args: t.List) -> exp.Mod:
     expression = seq_get(args, 1)
 
     # Wrap the LHS if it's not a single node, e.g. MOD(a + 1, 7) -> (a + 1) % 7
-    if isinstance(this, exp.Binary):
-        this = exp.Paren(this=this)
+    this = exp.Paren(this=this) if isinstance(this, exp.Binary) else this
+    expression = exp.Paren(this=expression) if isinstance(expression, exp.Binary) else expression
 
     return exp.Mod(this=this, expression=expression)
 

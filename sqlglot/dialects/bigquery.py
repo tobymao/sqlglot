@@ -609,6 +609,7 @@ class BigQuery(Dialect):
             exp.IntDiv: rename_func("DIV"),
             exp.JSONFormat: rename_func("TO_JSON_STRING"),
             exp.Max: max_or_greatest,
+            exp.Mod: lambda self, e: self.func("MOD", e.this.unnest(), e.expression.unnest()),
             exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
             exp.MD5Digest: rename_func("MD5"),
             exp.Min: min_or_least,
@@ -902,11 +903,3 @@ class BigQuery(Dialect):
             if expression.name == "TIMESTAMP":
                 expression.set("this", "SYSTEM_TIME")
             return super().version_sql(expression)
-
-        def mod_sql(self, expression: exp.Mod) -> str:
-            this = expression.this
-
-            if isinstance(this, exp.Paren):
-                this = this.this
-
-            return self.func("MOD", this, expression.expression)

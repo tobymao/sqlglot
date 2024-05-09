@@ -1466,7 +1466,7 @@ OPTIONS (
             transpile("SELECT JSON_OBJECT('a', 1, 'b') AS json_data", read="bigquery")
 
     def test_mod(self):
-        for sql in ("MOD(a, b)", "MOD('a', b)", "MOD(5, 2)", "MOD((a + 1) * 8, 5)"):
+        for sql in ("MOD(a, b)", "MOD('a', b)", "MOD(5, 2)", "MOD((a + 1) * 8, 5 - 1)"):
             with self.subTest(f"Testing BigQuery roundtrip of modulo operation: {sql}"):
                 self.validate_identity(sql)
 

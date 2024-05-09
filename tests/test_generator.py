@@ -46,10 +46,11 @@ class TestGenerator(unittest.TestCase):
         assert parse_one("X as 1").sql(identify="safe") == 'X AS "1"'
 
     def test_pad_comment(self):
-        self.assertEqual(Generator().pad_comment(""), "")
-        self.assertEqual(Generator().pad_comment(" leading"), " leading ")
-        self.assertEqual(Generator().pad_comment("trailing "), " trailing ")
+        generator = Generator()
+        self.assertEqual(generator.pad_comment(""), "")
+        self.assertEqual(generator.pad_comment(" leading"), " leading ")
+        self.assertEqual(generator.pad_comment("trailing "), " trailing ")
         self.assertEqual(
-            Generator().pad_comment(" leading and trailing "), " leading and trailing "
+            generator.pad_comment(" leading and trailing "), " leading and trailing "
         )
-        self.assertEqual(Generator().pad_comment("no padding"), " no padding ")
+        self.assertEqual(generator.pad_comment("no padding"), " no padding ")

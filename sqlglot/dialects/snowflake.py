@@ -601,8 +601,8 @@ class Snowflake(Dialect):
                 file_format = None
                 pattern = None
 
-                self._match(TokenType.L_PAREN)
-                while self._curr and not self._match(TokenType.R_PAREN):
+                wrapped = self._match(TokenType.L_PAREN)
+                while self._curr and (wrapped and not self._match(TokenType.R_PAREN)):
                     if self._match_text_seq("FILE_FORMAT", "=>"):
                         file_format = self._parse_string() or super()._parse_table_parts(
                             is_db_reference=is_db_reference
@@ -682,14 +682,23 @@ class Snowflake(Dialect):
             return self.expression(exp.LocationProperty, this=self._parse_location_path())
 
         def _parse_file_location(self) -> t.Optional[exp.Expression]:
-            return self._parse_table_parts()
+            # Parse either a subquery or a staged file
+            return (
+                self._parse_primary()
+                if self._match(TokenType.L_PAREN, advance=False)
+                else self._parse_table_parts()
+            )
 
         def _parse_location_path(self) -> exp.Var:
             parts = [self._advance_any(ignore_reserved=True)]
 
             # We avoid consuming a comma token because external tables like @foo and @bar
             # can be joined in a query with a comma separator.
-            while self._is_connected() and not self._match(TokenType.COMMA, advance=False):
+            while (
+                self._is_connected()
+                and not self._match(TokenType.COMMA, advance=False)
+                and not self._match(TokenType.R_PAREN, advance=False)
+            ):
                 parts.append(self._advance_any(ignore_reserved=True))
 
             return exp.var("".join(part.text for part in parts if part))

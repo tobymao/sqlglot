@@ -648,9 +648,8 @@ class Generator(metaclass=_Generator):
         return f"{self.sep(sep)}{sql}"
 
     def pad_comment(self, comment: str) -> str:
-        if comment:
-            comment = " " + comment if comment[0].strip() else comment
-            comment = comment + " " if comment[-1].strip() else comment
+        comment = " " + comment if comment[0].strip() else comment
+        comment = comment + " " if comment[-1].strip() else comment
         return comment
 
     def maybe_comment(
@@ -2846,7 +2845,8 @@ class Generator(metaclass=_Generator):
                 stack.append(expression.right)
                 if expression.comments:
                     for comment in expression.comments:
-                        op += f" /*{self.pad_comment(comment)}*/"
+                        if comment:
+                            op += f" /*{self.pad_comment(comment)}*/"
                 stack.extend((op, expression.left))
             return op
 

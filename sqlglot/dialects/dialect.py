@@ -545,6 +545,12 @@ def rename_func(name: str) -> t.Callable[[Generator, exp.Expression], str]:
     return lambda self, expression: self.func(name, *flatten(expression.args.values()))
 
 
+def wrap_func_by_func(
+    name: str, func: t.Callable[[Generator, exp.Expression], str]
+) -> t.Callable[[Generator, exp.Expression], str]:
+    return lambda self, expression: self.func(name, func(self, expression))
+
+
 def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -> str:
     if expression.args.get("accuracy"):
         self.unsupported("APPROX_COUNT_DISTINCT does not support accuracy")

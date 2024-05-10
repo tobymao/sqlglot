@@ -304,6 +304,17 @@ class DuckDB(Dialect):
             ),
         }
 
+        def _parse_table_sample(self, as_modifier: bool = False) -> t.Optional[exp.TableSample]:
+            # https://duckdb.org/docs/sql/samples.html
+            sample = super()._parse_table_sample(as_modifier=as_modifier)
+            if sample and not sample.args.get("method"):
+                if sample.args.get("size"):
+                    sample.set("method", exp.var("RESERVOIR"))
+                else:
+                    sample.set("method", exp.var("SYSTEM"))
+
+            return sample
+
         def _parse_bracket(
             self, this: t.Optional[exp.Expression] = None
         ) -> t.Optional[exp.Expression]:
@@ -549,6 +560,15 @@ class DuckDB(Dialect):
             if not isinstance(expression.parent, exp.Select):
                 # This sample clause only applies to a single source, not the entire resulting relation
                 tablesample_keyword = "TABLESAMPLE"
+
+            if expression.args.get("size"):
+                method = expression.args.get("method")
+                if method and method.name.upper() != "RESERVOIR":
+                    self.unsupported(
+                        f"Sampling method {method} is not supported with a discrete sample count, "
+                        "defaulting to reservoir sampling"
+                    )
+                    expression.set("method", exp.var("RESERVOIR"))
 
             return super().tablesample_sql(
                 expression, sep=sep, tablesample_keyword=tablesample_keyword

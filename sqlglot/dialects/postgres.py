@@ -233,6 +233,7 @@ class Postgres(Dialect):
     CONCAT_COALESCE = True
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
+    TABLESAMPLE_SIZE_IS_PERCENT = True
 
     TIME_MAPPING = {
         "AM": "%p",

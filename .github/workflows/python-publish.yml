@@ -19,6 +19,7 @@ jobs:
         run: |
           bash ./.github/workflows/should_deploy_sqlglotrs.sh
           if [ $? -eq 0 ]; then echo "deploy=true" >> $GITHUB_OUTPUT; fi
+          cat $GITHUB_OUTPUT
 
   build-rs:
     needs: should-deploy-rs

@@ -422,6 +422,15 @@ class Hive(Dialect):
                 super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY)),
             )
 
+        def _parse_parameter(self) -> exp.Parameter:
+            self._match(TokenType.L_BRACE)
+            this = self._parse_identifier() or self._parse_primary_or_var()
+            expression = self._match(TokenType.COLON) and (
+                self._parse_identifier() or self._parse_primary_or_var()
+            )
+            self._match(TokenType.R_BRACE)
+            return self.expression(exp.Parameter, this=this, expression=expression)
+
     class Generator(generator.Generator):
         LIMIT_FETCH = "LIMIT"
         TABLESAMPLE_WITH_METHOD = False

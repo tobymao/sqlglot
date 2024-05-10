@@ -1877,6 +1877,7 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
     def test_querying_semi_structured_data(self):
         self.validate_identity("SELECT $1")
         self.validate_identity("SELECT $1.elem")
-        self.validate_identity("SELECT $1:a.b")
-        self.validate_identity("SELECT t.$23:a.b")
-        self.validate_identity("SELECT tbl.$17:a[0].b[0].c")
+
+        self.validate_identity("SELECT $1:a.b", "SELECT GET_PATH($1, 'a.b')")
+        self.validate_identity("SELECT t.$23:a.b", "SELECT GET_PATH(t.$23, 'a.b')")
+        self.validate_identity("SELECT t.$17:a[0].b[0].c", "SELECT GET_PATH(t.$17, 'a[0].b[0].c')")

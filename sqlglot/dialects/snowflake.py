@@ -693,11 +693,10 @@ class Snowflake(Dialect):
             parts = [self._advance_any(ignore_reserved=True)]
 
             # We avoid consuming a comma token because external tables like @foo and @bar
-            # can be joined in a query with a comma separator.
-            while (
-                self._is_connected()
-                and not self._match(TokenType.COMMA, advance=False)
-                and not self._match(TokenType.R_PAREN, advance=False)
+            # can be joined in a query with a comma separator, as well as closing paren
+            # in case of subqueries
+            while self._is_connected() and not self._match_set(
+                (TokenType.COMMA, TokenType.R_PAREN), advance=False
             ):
                 parts.append(self._advance_any(ignore_reserved=True))
 

@@ -5644,13 +5644,8 @@ class Parser(metaclass=_Parser):
         return self._parse_placeholder()
 
     def _parse_parameter(self) -> exp.Parameter:
-        self._match(TokenType.L_BRACE)
         this = self._parse_identifier() or self._parse_primary_or_var()
-        expression = self._match(TokenType.COLON) and (
-            self._parse_identifier() or self._parse_primary_or_var()
-        )
-        self._match(TokenType.R_BRACE)
-        return self.expression(exp.Parameter, this=this, expression=expression)
+        return self.expression(exp.Parameter, this=this)
 
     def _parse_placeholder(self) -> t.Optional[exp.Expression]:
         if self._match_set(self.PLACEHOLDER_PARSERS):

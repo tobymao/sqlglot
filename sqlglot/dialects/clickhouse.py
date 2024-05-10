@@ -15,7 +15,6 @@ from sqlglot.dialects.dialect import (
     build_json_extract_path,
     rename_func,
     var_map_sql,
-    wrap_func_by_func,
 )
 from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import Token, TokenType
@@ -722,7 +721,7 @@ class ClickHouse(Dialect):
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
             exp.MD5Digest: rename_func("MD5"),
-            exp.MD5: wrap_func_by_func("LOWER", wrap_func_by_func("HEX", rename_func("MD5"))),
+            exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
             exp.SHA: rename_func("SHA1"),
             exp.SHA2: lambda self, e: self.func(
                 "SHA256" if e.text("length") == "256" else "SHA512", e.this

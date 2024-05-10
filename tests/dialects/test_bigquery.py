@@ -626,11 +626,15 @@ class TestBigQuery(Validator):
         )
         self.validate_all(
             "MD5(x)",
+            read={
+                "clickhouse": "MD5(x)",
+            },
             write={
                 "": "MD5_DIGEST(x)",
                 "bigquery": "MD5(x)",
                 "hive": "UNHEX(MD5(x))",
                 "spark": "UNHEX(MD5(x))",
+                "clickhouse": "MD5(x)",
             },
         )
         self.validate_all(
@@ -643,25 +647,38 @@ class TestBigQuery(Validator):
                 "": "SELECT MD5(some_string)",
                 "bigquery": "SELECT TO_HEX(MD5(some_string))",
                 "duckdb": "SELECT MD5(some_string)",
+                "clickhouse": "SELECT LOWER(HEX(MD5(some_string)))",
             },
         )
         self.validate_all(
             "SHA1(x)",
+            read={
+                "clickhouse": "SHA1(x)",
+            },
             write={
+                "clickhouse": "SHA1(x)",
                 "bigquery": "SHA1(x)",
                 "": "SHA(x)",
             },
         )
         self.validate_all(
             "SHA256(x)",
+            read={
+                "clickhouse": "SHA256(x)",
+            },
             write={
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
+                "clickhouse": "SHA256(x)",
             },
         )
         self.validate_all(
             "SHA512(x)",
+            read={
+                "clickhouse": "SHA512(x)",
+            },
             write={
+                "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
             },

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.15.3] - 2024-05-10
+### :wrench: Chores
+- [`130255e`](https://github.com/tobymao/sqlglot/commit/130255ebc927c48b3d3e479e17c38269bd7d8056) - update rust *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.15.2] - 2024-05-10
 ### :sparkles: New Features
 - [`116172a`](https://github.com/tobymao/sqlglot/commit/116172a41119e72aaf618a83761f73d52f0440d2) - add support for ON property in ALTER and DROP statements *(PR [#3450](https://github.com/tobymao/sqlglot/pull/3450) by [@GaliFFun](https://github.com/GaliFFun))*
@@ -3563,3 +3568,4 @@ Changelog
 [v23.15.0]: https://github.com/tobymao/sqlglot/compare/v23.14.0...v23.15.0
 [v23.15.1]: https://github.com/tobymao/sqlglot/compare/v23.15.0...v23.15.1
 [v23.15.2]: https://github.com/tobymao/sqlglot/compare/v23.15.1...v23.15.2
+[v23.15.3]: https://github.com/tobymao/sqlglot/compare/v23.15.2...v23.15.3

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.15.1] - 2024-05-10
+### :bug: Bug Fixes
+- [`33ac4fc`](https://github.com/tobymao/sqlglot/commit/33ac4fca3e5f162500ddde529cd69c338a6fecc5) - add create view tsql *(commit by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v23.15.0] - 2024-05-09
 ### :boom: BREAKING CHANGES
 - due to [`9338ebc`](https://github.com/tobymao/sqlglot/commit/9338ebc6dc9635f12639b562ee2af140cf708b6b) - tsql drop view no catalog *(commit by [@tobymao](https://github.com/tobymao))*:
@@ -3539,3 +3544,4 @@ Changelog
 [v23.13.7]: https://github.com/tobymao/sqlglot/compare/v23.13.6...v23.13.7
 [v23.14.0]: https://github.com/tobymao/sqlglot/compare/v23.13.7...v23.14.0
 [v23.15.0]: https://github.com/tobymao/sqlglot/compare/v23.14.0...v23.15.0
+[v23.15.1]: https://github.com/tobymao/sqlglot/compare/v23.15.0...v23.15.1

@@ -1948,6 +1948,7 @@ class Drop(Expression):
         "cascade": False,
         "constraints": False,
         "purge": False,
+        "cluster": False,
     }
 
 
@@ -4189,6 +4190,7 @@ class AlterTable(Expression):
         "exists": False,
         "only": False,
         "options": False,
+        "cluster": False,
     }
 
 

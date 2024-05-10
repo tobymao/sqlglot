@@ -438,6 +438,7 @@ class TestClickhouse(Validator):
             "ALTER TABLE visits REPLACE PARTITION tuple(toYYYYMM(toDate('2019-01-25'))) FROM visits_tmp"
         )
         self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
+        self.validate_identity("ALTER TABLE visits ON CLUSTER test_cluster DROP COLUMN col1")
 
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
@@ -870,3 +871,8 @@ LIFETIME(MIN 0 MAX 0)""",
         )
 
         parse_one("foobar(x)").assert_is(exp.Anonymous)
+
+    def test_drop_on_cluster(self):
+        for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
+            with self.subTest(f"Test DROP {creatable} ON CLUSTER"):
+                self.validate_identity(f"DROP {creatable} test ON CLUSTER test_cluster")

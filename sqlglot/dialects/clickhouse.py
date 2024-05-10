@@ -146,6 +146,9 @@ class ClickHouse(Dialect):
             "TUPLE": exp.Struct.from_arg_list,
             "UNIQ": exp.ApproxDistinct.from_arg_list,
             "XOR": lambda args: exp.Xor(expressions=args),
+            "MD5": exp.MD5Digest.from_arg_list,
+            "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
+            "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
         }
 
         AGG_FUNCTIONS = {
@@ -717,6 +720,12 @@ class ClickHouse(Dialect):
             ),
             exp.VarMap: lambda self, e: _lower_func(var_map_sql(self, e)),
             exp.Xor: lambda self, e: self.func("xor", e.this, e.expression, *e.expressions),
+            exp.MD5Digest: rename_func("MD5"),
+            exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
+            exp.SHA: rename_func("SHA1"),
+            exp.SHA2: lambda self, e: self.func(
+                "SHA256" if e.text("length") == "256" else "SHA512", e.this
+            ),
         }
 
         PROPERTIES_LOCATION = {

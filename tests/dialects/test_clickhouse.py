@@ -439,10 +439,6 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("ALTER TABLE visits REPLACE PARTITION ID '201901' FROM visits_tmp")
 
-        self.validate_identity("ALTER TABLE visits ON CLUSTER test_cluster DROP COLUMN col1")
-        self.validate_identity("DROP TABLE visits ON CLUSTER test_cluster")
-        self.validate_identity("DROP DICTIONARY foo ON CLUSTER test_cluster")
-
     def test_cte(self):
         self.validate_identity("WITH 'x' AS foo SELECT foo")
         self.validate_identity("WITH ['c'] AS field_names SELECT field_names")
@@ -874,3 +870,8 @@ LIFETIME(MIN 0 MAX 0)""",
         )
 
         parse_one("foobar(x)").assert_is(exp.Anonymous)
+
+    def test_drop_on_cluster(self):
+        for creatable in ("DATABASE", "TABLE", "VIEW", "DICTIONARY", "FUNCTION"):
+            with self.subTest(f"Test DROP {creatable} ON CLUSTER"):
+                self.validate_identity(f"DROP {creatable} test ON CLUSTER test_cluster")

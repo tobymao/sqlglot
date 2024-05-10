@@ -858,3 +858,13 @@ class TestParser(unittest.TestCase):
 
     def test_distinct_from(self):
         self.assertIsInstance(parse_one("a IS DISTINCT FROM b OR c IS DISTINCT FROM d"), exp.Or)
+
+    def test_trailing_comments(self):
+        expressions = parse("""
+        select * from x;
+        -- my comment
+        """)
+
+        self.assertEqual(
+            ";\n".join(e.sql() for e in expressions), "SELECT * FROM x;\n/* my comment */"
+        )

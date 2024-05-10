@@ -2310,10 +2310,7 @@ class Generator(metaclass=_Generator):
 
     def parameter_sql(self, expression: exp.Parameter) -> str:
         this = self.sql(expression, "this")
-        expr = self.sql(expression, "expression")
-        expr = f":{expr}" if expr else ""
-
-        return f"{self.PARAMETER_TOKEN}{this}{expr}"
+        return f"{self.PARAMETER_TOKEN}{this}"
 
     def sessionparameter_sql(self, expression: exp.SessionParameter) -> str:
         this = self.sql(expression, "this")

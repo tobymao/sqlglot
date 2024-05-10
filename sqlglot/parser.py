@@ -1510,6 +1510,8 @@ class Parser(metaclass=_Parser):
             schema=True, is_db_reference=self._prev.token_type == TokenType.SCHEMA
         )
 
+        cluster = self._parse_on_property() if self._match(TokenType.ON) else None
+
         if self._match(TokenType.L_PAREN, advance=False):
             expressions = self._parse_wrapped_csv(self._parse_types)
         else:
@@ -1527,6 +1529,7 @@ class Parser(metaclass=_Parser):
             cascade=self._match_text_seq("CASCADE"),
             constraints=self._match_text_seq("CONSTRAINTS"),
             purge=self._match_text_seq("PURGE"),
+            cluster=cluster,
         )
 
     def _parse_exists(self, not_: bool = False) -> t.Optional[bool]:
@@ -5912,6 +5915,7 @@ class Parser(metaclass=_Parser):
         exists = self._parse_exists()
         only = self._match_text_seq("ONLY")
         this = self._parse_table(schema=True)
+        cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
         if self._next:
             self._advance()
@@ -5929,6 +5933,7 @@ class Parser(metaclass=_Parser):
                     actions=actions,
                     only=only,
                     options=options,
+                    cluster=cluster,
                 )
 
         return self._parse_as_command(start)

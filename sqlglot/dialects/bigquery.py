@@ -633,6 +633,7 @@ class BigQuery(Dialect):
                     transforms.eliminate_semi_and_anti_joins,
                 ]
             ),
+            exp.SHA: rename_func("SHA1"), 
             exp.SHA2: lambda self, e: self.func(
                 "SHA256" if e.text("length") == "256" else "SHA512", e.this
             ),

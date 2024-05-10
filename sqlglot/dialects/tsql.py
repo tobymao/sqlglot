@@ -917,6 +917,10 @@ class TSQL(Dialect):
         def create_sql(self, expression: exp.Create) -> str:
             kind = expression.kind
             exists = expression.args.pop("exists", None)
+
+            if kind == "VIEW":
+                expression.this.set("catalog", None)
+
             sql = super().create_sql(expression)
 
             like_property = expression.find(exp.LikeProperty)

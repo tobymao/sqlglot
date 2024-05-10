@@ -664,6 +664,7 @@ class Parser(metaclass=_Parser):
             kind=self._parse_var_from_options(self.USABLES, raise_unmatched=False),
             this=self._parse_table(schema=False),
         ),
+        TokenType.SEMICOLON: lambda self: self.expression(exp.Semicolon),
     }
 
     UNARY_PARSERS = {
@@ -1246,6 +1247,9 @@ class Parser(metaclass=_Parser):
 
         for i, token in enumerate(raw_tokens):
             if token.token_type == TokenType.SEMICOLON:
+                if token.comments:
+                    chunks.append([token])
+
                 if i < total - 1:
                     chunks.append([])
             else:

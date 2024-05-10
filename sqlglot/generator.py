@@ -3851,3 +3851,6 @@ class Generator(metaclass=_Generator):
             params = f" WITH ({params})" if self.COPY_PARAMS_ARE_WRAPPED else f" {params}"
 
         return f"COPY{this}{kind}{files}{credentials}{params}"
+
+    def semicolon_sql(self, expression: exp.Semicolon) -> str:
+        return ""

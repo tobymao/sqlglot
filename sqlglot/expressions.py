@@ -5923,6 +5923,12 @@ class NextValueFor(Func):
     arg_types = {"this": True, "order": False}
 
 
+# Refers to a trailing semi-colon. This is only used to preserve trailing comments
+# select 1; -- my comment
+class Semicolon(Expression):
+    arg_types = {}
+
+
 def _norm_arg(arg):
     return arg.lower() if type(arg) is str else arg
 

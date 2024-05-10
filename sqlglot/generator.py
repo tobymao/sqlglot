@@ -1211,12 +1211,14 @@ class Generator(metaclass=_Generator):
         expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]
         exists_sql = " IF EXISTS " if expression.args.get("exists") else " "
+        on_cluster = self.sql(expression, "cluster")
+        on_cluster = f" {on_cluster}" if on_cluster else ""
         temporary = " TEMPORARY" if expression.args.get("temporary") else ""
         materialized = " MATERIALIZED" if expression.args.get("materialized") else ""
         cascade = " CASCADE" if expression.args.get("cascade") else ""
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
-        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{expressions}{cascade}{constraints}{purge}"
+        return f"DROP{temporary}{materialized} {kind}{exists_sql}{this}{on_cluster}{expressions}{cascade}{constraints}{purge}"
 
     def except_sql(self, expression: exp.Except) -> str:
         return self.set_operations(expression)
@@ -3023,10 +3025,12 @@ class Generator(metaclass=_Generator):
             actions = self.expressions(expression, key="actions", flat=True)
 
         exists = " IF EXISTS" if expression.args.get("exists") else ""
+        on_cluster = self.sql(expression, "cluster")
+        on_cluster = f" {on_cluster}" if on_cluster else ""
         only = " ONLY" if expression.args.get("only") else ""
         options = self.expressions(expression, key="options")
         options = f", {options}" if options else ""
-        return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')} {actions}{options}"
+        return f"ALTER TABLE{exists}{only} {self.sql(expression, 'this')}{on_cluster} {actions}{options}"
 
     def add_column_sql(self, expression: exp.AlterTable) -> str:
         if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:

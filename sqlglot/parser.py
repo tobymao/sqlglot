@@ -4345,9 +4345,7 @@ class Parser(metaclass=_Parser):
             if not this and self._match(TokenType.R_PAREN, advance=False):
                 this = self.expression(exp.Tuple)
             elif isinstance(this, exp.UNWRAPPED_QUERIES):
-                this = self._parse_set_operations(
-                    self._parse_subquery(this=this, parse_alias=False)
-                )
+                this = self._parse_subquery(this=this, parse_alias=False)
             elif isinstance(this, exp.Subquery):
                 this = self._parse_subquery(
                     this=self._parse_set_operations(this), parse_alias=False

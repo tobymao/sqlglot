@@ -602,7 +602,7 @@ class Snowflake(Dialect):
                 pattern = None
 
                 wrapped = self._match(TokenType.L_PAREN)
-                while self._curr and (wrapped and not self._match(TokenType.R_PAREN)):
+                while self._curr and wrapped and not self._match(TokenType.R_PAREN):
                     if self._match_text_seq("FILE_FORMAT", "=>"):
                         file_format = self._parse_string() or super()._parse_table_parts(
                             is_db_reference=is_db_reference
@@ -684,7 +684,7 @@ class Snowflake(Dialect):
         def _parse_file_location(self) -> t.Optional[exp.Expression]:
             # Parse either a subquery or a staged file
             return (
-                self._parse_primary()
+                self._parse_select(table=True)
                 if self._match(TokenType.L_PAREN, advance=False)
                 else self._parse_table_parts()
             )

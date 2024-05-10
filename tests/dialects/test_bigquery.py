@@ -646,6 +646,13 @@ class TestBigQuery(Validator):
             },
         )
         self.validate_all(
+            "SHA1(x)",
+            write={
+                "bigquery": "SHA1(x)",
+                "": "SHA(x)",
+            },
+        )
+        self.validate_all(
             "SHA256(x)",
             write={
                 "bigquery": "SHA256(x)",

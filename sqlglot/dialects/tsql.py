@@ -744,7 +744,7 @@ class TSQL(Dialect):
 
                     if self._match(TokenType.TABLE):
                         # data_type = exp.DataType.Type[TokenType.TABLE.value]
-                        print(repr(var))
+                        # print(repr(var))
                         # var = self.expression(exp.Var, this=var_name)
                         table = self.expression(exp.Table, this=var)
                         data_type = self._parse_schema(this=table)

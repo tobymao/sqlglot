@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## [v23.15.6] - 2024-05-11
+### :wrench: Chores
+- [`cd8f568`](https://github.com/tobymao/sqlglot/commit/cd8f568dba53efe6b9883035c48a67134016e612) - fix rust deployment workflow bug *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v23.15.3] - 2024-05-10
 ### :wrench: Chores
 - [`130255e`](https://github.com/tobymao/sqlglot/commit/130255ebc927c48b3d3e479e17c38269bd7d8056) - update rust *(commit by [@tobymao](https://github.com/tobymao))*
@@ -3569,3 +3574,4 @@ Changelog
 [v23.15.1]: https://github.com/tobymao/sqlglot/compare/v23.15.0...v23.15.1
 [v23.15.2]: https://github.com/tobymao/sqlglot/compare/v23.15.1...v23.15.2
 [v23.15.3]: https://github.com/tobymao/sqlglot/compare/v23.15.2...v23.15.3
+[v23.15.6]: https://github.com/tobymao/sqlglot/compare/v23.15.5...v23.15.6

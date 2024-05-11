@@ -690,15 +690,15 @@ class Generator(metaclass=_Generator):
         return f"{sql} {comments_sql}"
 
     def wrap(self, expression: exp.Expression | str) -> str:
-        this_sql = self.indent(
-            (
-                self.sql(expression)
-                if isinstance(expression, exp.UNWRAPPED_QUERIES)
-                else self.sql(expression, "this")
-            ),
-            level=1,
-            pad=0,
+        this_sql = (
+            self.sql(expression)
+            if isinstance(expression, exp.UNWRAPPED_QUERIES)
+            else self.sql(expression, "this")
         )
+        if not this_sql:
+            return "()"
+
+        this_sql = self.indent(this_sql, level=1, pad=0)
         return f"({self.sep('')}{this_sql}{self.seg(')', sep='')}"
 
     def no_identify(self, func: t.Callable[..., str], *args, **kwargs) -> str:

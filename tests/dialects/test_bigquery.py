@@ -21,6 +21,13 @@ class TestBigQuery(Validator):
 
     def test_bigquery(self):
         self.validate_identity(
+            """CREATE TEMPORARY FUNCTION FOO()
+RETURNS STRING
+LANGUAGE js AS
+'return "Hello world!"'""",
+            pretty=True,
+        )
+        self.validate_identity(
             "[a, a(1, 2,3,4444444444444444, tttttaoeunthaoentuhaoentuheoantu, toheuntaoheutnahoeunteoahuntaoeh), b(3, 4,5), c, d, tttttttttttttttteeeeeeeeeeeeeett, 12312312312]",
             """[
   a,

@@ -334,6 +334,7 @@ class Snowflake(Dialect):
 
     class Parser(parser.Parser):
         IDENTIFY_PIVOT_STRINGS = True
+        DEFAULT_SAMPLING_METHOD = "BERNOULLI"
 
         ID_VAR_TOKENS = {
             *parser.Parser.ID_VAR_TOKENS,

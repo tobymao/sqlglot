@@ -892,11 +892,11 @@ class TestDuckDB(Validator):
     def test_sample(self):
         self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 5",
-            "SELECT * FROM tbl USING SAMPLE (5 ROWS)",
+            "SELECT * FROM tbl USING SAMPLE RESERVOIR (5 ROWS)",
         )
         self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 10%",
-            "SELECT * FROM tbl USING SAMPLE (10 PERCENT)",
+            "SELECT * FROM tbl USING SAMPLE SYSTEM (10 PERCENT)",
         )
         self.validate_identity(
             "SELECT * FROM tbl USING SAMPLE 10 PERCENT (bernoulli)",
@@ -920,14 +920,13 @@ class TestDuckDB(Validator):
         )
 
         self.validate_all(
-            "SELECT * FROM example TABLESAMPLE (3 ROWS) REPEATABLE (82)",
+            "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
             read={
                 "duckdb": "SELECT * FROM example TABLESAMPLE (3) REPEATABLE (82)",
                 "snowflake": "SELECT * FROM example SAMPLE (3 ROWS) SEED (82)",
             },
             write={
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3 ROWS) REPEATABLE (82)",
-                "snowflake": "SELECT * FROM example TABLESAMPLE (3 ROWS) SEED (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
             },
         )
 

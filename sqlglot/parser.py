@@ -1103,6 +1103,9 @@ class Parser(metaclass=_Parser):
     # Whether the table sample clause expects CSV syntax
     TABLESAMPLE_CSV = False
 
+    # The default method used for table sampling
+    DEFAULT_SAMPLING_METHOD: t.Optional[str] = None
+
     # Whether the SET command needs a delimiter (e.g. "=") for assignments
     SET_REQUIRES_ASSIGNMENT_DELIMITER = True
 
@@ -3391,6 +3394,9 @@ class Parser(metaclass=_Parser):
             self._match_r_paren()
         elif self._match_texts(("SEED", "REPEATABLE")):
             seed = self._parse_wrapped(self._parse_number)
+
+        if not method and self.DEFAULT_SAMPLING_METHOD:
+            method = exp.var(self.DEFAULT_SAMPLING_METHOD)
 
         return self.expression(
             exp.TableSample,

@@ -100,9 +100,6 @@ WHERE
             'DESCRIBE TABLE "SNOWFLAKE_SAMPLE_DATA"."TPCDS_SF100TCL"."WEB_SITE" type=stage'
         )
         self.validate_identity(
-            "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE (0.1)"
-        )
-        self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
         self.validate_identity(
@@ -145,10 +142,6 @@ WHERE
         self.validate_identity(
             "SELECT TIMESTAMPFROMPARTS(d, t)",
             "SELECT TIMESTAMP_FROM_PARTS(d, t)",
-        )
-        self.validate_identity(
-            "SELECT user_id, value FROM table_name SAMPLE ($s) SEED (0)",
-            "SELECT user_id, value FROM table_name TABLESAMPLE ($s) SEED (0)",
         )
         self.validate_identity(
             "SELECT v:attr[0].name FROM vartab",
@@ -248,18 +241,6 @@ WHERE
                 "bigquery": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
                 "duckdb": "JSON_OBJECT('key_1', 'one', 'key_2', NULL)",
                 "snowflake": "OBJECT_CONSTRUCT_KEEP_NULL('key_1', 'one', 'key_2', NULL)",
-            },
-        )
-        self.validate_all(
-            "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
-            read={
-                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-            },
-            write={
-                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-                "duckdb": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
-                "snowflake": "SELECT * FROM example TABLESAMPLE (3) SEED (82)",
             },
         )
         self.validate_all(
@@ -919,18 +900,27 @@ WHERE
 
     def test_sample(self):
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")
-        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (100)")
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE SYSTEM (3) SEED (82)")
-        self.validate_identity("SELECT * FROM testtable TABLESAMPLE (10 ROWS)")
         self.validate_identity(
-            "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE (50) WHERE t2.j = t1.i"
+            "SELECT a FROM test PIVOT(SUM(x) FOR y IN ('z', 'q')) AS x TABLESAMPLE BERNOULLI (0.1)"
         )
         self.validate_identity(
-            "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)"
+            "SELECT i, j FROM table1 AS t1 INNER JOIN table2 AS t2 TABLESAMPLE BERNOULLI (50) WHERE t2.j = t1.i"
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE BERNOULLI (1)"
+        )
+        self.validate_identity(
+            "SELECT * FROM testtable TABLESAMPLE (10 ROWS)",
+            "SELECT * FROM testtable TABLESAMPLE BERNOULLI (10 ROWS)",
+        )
+        self.validate_identity(
+            "SELECT * FROM testtable TABLESAMPLE (100)",
+            "SELECT * FROM testtable TABLESAMPLE BERNOULLI (100)",
         )
         self.validate_identity(
             "SELECT * FROM testtable SAMPLE (10)",
-            "SELECT * FROM testtable TABLESAMPLE (10)",
+            "SELECT * FROM testtable TABLESAMPLE BERNOULLI (10)",
         )
         self.validate_identity(
             "SELECT * FROM testtable SAMPLE ROW (0)",
@@ -940,7 +930,29 @@ WHERE
             "SELECT a FROM test SAMPLE BLOCK (0.5) SEED (42)",
             "SELECT a FROM test TABLESAMPLE BLOCK (0.5) SEED (42)",
         )
+        self.validate_identity(
+            "SELECT user_id, value FROM table_name SAMPLE BERNOULLI ($s) SEED (0)",
+            "SELECT user_id, value FROM table_name TABLESAMPLE BERNOULLI ($s) SEED (0)",
+        )
 
+        self.validate_all(
+            "SELECT * FROM example TABLESAMPLE BERNOULLI (3) SEED (82)",
+            read={
+                "duckdb": "SELECT * FROM example TABLESAMPLE BERNOULLI (3 PERCENT) REPEATABLE (82)",
+            },
+            write={
+                "databricks": "SELECT * FROM example TABLESAMPLE (3 PERCENT) REPEATABLE (82)",
+                "duckdb": "SELECT * FROM example TABLESAMPLE BERNOULLI (3 PERCENT) REPEATABLE (82)",
+                "snowflake": "SELECT * FROM example TABLESAMPLE BERNOULLI (3) SEED (82)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM test AS _tmp TABLESAMPLE (5)",
+            write={
+                "postgres": "SELECT * FROM test AS _tmp TABLESAMPLE BERNOULLI (5)",
+                "snowflake": "SELECT * FROM test AS _tmp TABLESAMPLE BERNOULLI (5)",
+            },
+        )
         self.validate_all(
             """
             SELECT i, j
@@ -950,7 +962,7 @@ WHERE
                      table2 AS t2 SAMPLE (50)     -- 50% of rows in table2
                 WHERE t2.j = t1.i""",
             write={
-                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
+                "snowflake": "SELECT i, j FROM table1 AS t1 TABLESAMPLE BERNOULLI (25) /* 25% of rows in table1 */ INNER JOIN table2 AS t2 TABLESAMPLE BERNOULLI (50) /* 50% of rows in table2 */ WHERE t2.j = t1.i",
             },
         )
         self.validate_all(
@@ -962,7 +974,7 @@ WHERE
         self.validate_all(
             "SELECT * FROM (SELECT * FROM t1 join t2 on t1.a = t2.c) SAMPLE (1)",
             write={
-                "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1)",
+                "snowflake": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE BERNOULLI (1)",
                 "spark": "SELECT * FROM (SELECT * FROM t1 JOIN t2 ON t1.a = t2.c) TABLESAMPLE (1 PERCENT)",
             },
         )

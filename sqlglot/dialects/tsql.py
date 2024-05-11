@@ -722,6 +722,8 @@ class TSQL(Dialect):
                     var = self._parse_id_var()
                     size = None
                     value = None
+                    # moving past the AS keyword if it's there
+                    self._match(TokenType.AS)
 
                     if self._match(TokenType.TABLE):
                         table = self.expression(exp.Table, this=var)
